@@ -477,53 +477,12 @@ defmodule Pleroma.Web.Router do
   scope "/api", Pleroma.Web do
     pipe_through(:api)
 
-    post("/account/register", TwitterAPI.Controller, :register)
-    post("/account/password_reset", TwitterAPI.Controller, :password_reset)
-
-    post("/account/resend_confirmation_email", TwitterAPI.Controller, :resend_confirmation_email)
-
     get(
       "/account/confirm_email/:user_id/:token",
       TwitterAPI.Controller,
       :confirm_email,
       as: :confirm_email
     )
-
-    scope [] do
-      pipe_through(:oauth_read_or_public)
-
-      get("/statuses/user_timeline", TwitterAPI.Controller, :user_timeline)
-      get("/qvitter/statuses/user_timeline", TwitterAPI.Controller, :user_timeline)
-      get("/users/show", TwitterAPI.Controller, :show_user)
-
-      get("/statuses/followers", TwitterAPI.Controller, :followers)
-      get("/statuses/friends", TwitterAPI.Controller, :friends)
-      get("/statuses/blocks", TwitterAPI.Controller, :blocks)
-      get("/statuses/show/:id", TwitterAPI.Controller, :fetch_status)
-      get("/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation)
-
-      get("/search", TwitterAPI.Controller, :search)
-      get("/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline)
-    end
-  end
-
-  scope "/api", Pleroma.Web do
-    pipe_through([:api, :oauth_read_or_public])
-
-    get("/statuses/public_timeline", TwitterAPI.Controller, :public_timeline)
-
-    get(
-      "/statuses/public_and_external_timeline",
-      TwitterAPI.Controller,
-      :public_and_external_timeline
-    )
-
-    get("/statuses/networkpublic_timeline", TwitterAPI.Controller, :public_and_external_timeline)
-  end
-
-  scope "/api", Pleroma.Web, as: :twitter_api_search do
-    pipe_through([:api, :oauth_read_or_public])
-    get("/pleroma/search_user", TwitterAPI.Controller, :search_user)
   end
 
   scope "/api", Pleroma.Web, as: :authenticated_twitter_api do
@@ -535,66 +494,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_read)
 
-      get("/account/verify_credentials", TwitterAPI.Controller, :verify_credentials)
-      post("/account/verify_credentials", TwitterAPI.Controller, :verify_credentials)
-
-      get("/statuses/home_timeline", TwitterAPI.Controller, :friends_timeline)
-      get("/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline)
-      get("/statuses/mentions", TwitterAPI.Controller, :mentions_timeline)
-      get("/statuses/mentions_timeline", TwitterAPI.Controller, :mentions_timeline)
-      get("/statuses/dm_timeline", TwitterAPI.Controller, :dm_timeline)
-      get("/qvitter/statuses/notifications", TwitterAPI.Controller, :notifications)
-
-      get("/pleroma/friend_requests", TwitterAPI.Controller, :friend_requests)
-
-      get("/friends/ids", TwitterAPI.Controller, :friends_ids)
-      get("/friendships/no_retweets/ids", TwitterAPI.Controller, :empty_array)
-
-      get("/mutes/users/ids", TwitterAPI.Controller, :empty_array)
-      get("/qvitter/mutes", TwitterAPI.Controller, :raw_empty_array)
-
-      get("/externalprofile/show", TwitterAPI.Controller, :external_profile)
-
       post("/qvitter/statuses/notifications/read", TwitterAPI.Controller, :notifications_read)
-    end
-
-    scope [] do
-      pipe_through(:oauth_write)
-
-      post("/account/update_profile", TwitterAPI.Controller, :update_profile)
-      post("/account/update_profile_banner", TwitterAPI.Controller, :update_banner)
-      post("/qvitter/update_background_image", TwitterAPI.Controller, :update_background)
-
-      post("/statuses/update", TwitterAPI.Controller, :status_update)
-      post("/statuses/retweet/:id", TwitterAPI.Controller, :retweet)
-      post("/statuses/unretweet/:id", TwitterAPI.Controller, :unretweet)
-      post("/statuses/destroy/:id", TwitterAPI.Controller, :delete_post)
-
-      post("/statuses/pin/:id", TwitterAPI.Controller, :pin)
-      post("/statuses/unpin/:id", TwitterAPI.Controller, :unpin)
-
-      post("/statusnet/media/upload", TwitterAPI.Controller, :upload)
-      post("/media/upload", TwitterAPI.Controller, :upload_json)
-      post("/media/metadata/create", TwitterAPI.Controller, :update_media)
-
-      post("/favorites/create/:id", TwitterAPI.Controller, :favorite)
-      post("/favorites/create", TwitterAPI.Controller, :favorite)
-      post("/favorites/destroy/:id", TwitterAPI.Controller, :unfavorite)
-
-      post("/qvitter/update_avatar", TwitterAPI.Controller, :update_avatar)
-    end
-
-    scope [] do
-      pipe_through(:oauth_follow)
-
-      post("/pleroma/friendships/approve", TwitterAPI.Controller, :approve_friend_request)
-      post("/pleroma/friendships/deny", TwitterAPI.Controller, :deny_friend_request)
-
-      post("/friendships/create", TwitterAPI.Controller, :follow)
-      post("/friendships/destroy", TwitterAPI.Controller, :unfollow)
-
-      post("/blocks/create", TwitterAPI.Controller, :block)
-      post("/blocks/destroy", TwitterAPI.Controller, :unblock)
     end
   end
 
