@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OStatus: eliminate the possibility of a protocol downgrade attack.
 - OStatus: prevent following locked accounts, bypassing the approval process.
 
+### Removed
+- **Breaking:** GNU Social API with Qvitter extensions support
+- **Breaking:** ActivityPub: The `accept_blocks` configuration setting.
+- Emoji: Remove longfox emojis.
+- Remove `Reply-To` header from report emails for admins.
+
 ### Changed
 - **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
 - **Breaking:** Configuration: `/media/` is now removed when `base_url` is configured, append `/media/` to your `base_url` config to keep the old behaviour if desired
@@ -109,11 +115,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - RichMedia: parsers and their order are configured in `rich_media` config.
 - RichMedia: add the rich media ttl based on image expiration time.
 
-### Removed
-- GNU Social API with Qvitter extensions support
-- Emoji: Remove longfox emojis.
-- Remove `Reply-To` header from report emails for admins.
-- ActivityPub: The `accept_blocks` configuration setting.
 
 ## [1.0.1] - 2019-07-14
 ### Security
