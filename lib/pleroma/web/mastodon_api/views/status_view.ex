@@ -499,7 +499,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     object_tags = for tag when is_binary(tag) <- object_tags, do: tag
 
     Enum.reduce(object_tags, [], fn tag, tags ->
-      tags ++ [%{name: tag, url: "/tag/#{tag}"}]
+      tags ++ [%{name: tag, url: "/tag/#{URI.encode(tag)}"}]
     end)
   end
 
