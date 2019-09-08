@@ -362,12 +362,12 @@ defmodule Pleroma.Activity do
   end
 
   def restrict_deactivated_users(query) do
+    deactivated_users =
+      from(u in User.Query.build(deactivated: true), select: u.ap_id)
+      |> Repo.all()
+
     from(activity in query,
-      where:
-        fragment(
-          "? not in (SELECT ap_id FROM users WHERE info->'deactivated' @> 'true')",
-          activity.actor
-        )
+      where: activity.actor not in ^deactivated_users
     )
   end
 
