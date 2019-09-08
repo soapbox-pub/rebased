@@ -13,10 +13,19 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Healthcheck
   alias Pleroma.Notification
   alias Pleroma.Plugs.AuthenticationPlug
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.WebFinger
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "write:follows"]}
+    when action in [:do_remote_follow, :follow_import]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks_import)
 
   plug(Pleroma.Plugs.SetFormatPlug when action in [:config, :version])
 

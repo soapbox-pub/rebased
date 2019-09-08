@@ -19,6 +19,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Pagination
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -51,6 +52,41 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
   require Pleroma.Constants
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "read:blocks"]} when action in [:blocks, :domain_blocks]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "write:blocks"]}
+    when action in [:block, :unblock, :block_domain, :unblock_domain]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["follow", "read:follows"]} when action == :follow_requests)
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "write:follows"]}
+    when action in [
+           :follow,
+           :unfollow,
+           :subscribe,
+           :unsubscribe,
+           :authorize_follow_request,
+           :reject_follow_request
+         ]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["follow", "read:mutes"]} when action == :mutes)
+  plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:mutes"]}
+    when action in [:mute_conversation, :unmute_conversation]
+  )
 
   @rate_limited_relations_actions ~w(follow unfollow)a
 

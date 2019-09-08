@@ -84,7 +84,8 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
     refute conn.assigns[:user]
   end
 
-  test "returns 403 and halts in case of no :fallback option and `token.scopes` not fulfilling specified 'any of' conditions",
+  test "returns 403 and halts " <>
+         "in case of no :fallback option and `token.scopes` not fulfilling specified 'any of' conditions",
        %{conn: conn} do
     token = insert(:oauth_token, scopes: ["read", "write"])
     any_of_scopes = ["follow"]
@@ -101,7 +102,8 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
     assert Jason.encode!(%{error: expected_error}) == conn.resp_body
   end
 
-  test "returns 403 and halts in case of no :fallback option and `token.scopes` not fulfilling specified 'all of' conditions",
+  test "returns 403 and halts " <>
+         "in case of no :fallback option and `token.scopes` not fulfilling specified 'all of' conditions",
        %{conn: conn} do
     token = insert(:oauth_token, scopes: ["read", "write"])
     all_of_scopes = ["write", "follow"]
@@ -118,5 +120,37 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
       "Insufficient permissions: #{Enum.join(all_of_scopes -- token.scopes, ", ")}."
 
     assert Jason.encode!(%{error: expected_error}) == conn.resp_body
+  end
+
+  describe "with hierarchical scopes, " do
+    test "proceeds with no op if `token.scopes` fulfill specified 'any of' conditions", %{
+      conn: conn
+    } do
+      token = insert(:oauth_token, scopes: ["read", "write"]) |> Repo.preload(:user)
+
+      conn =
+        conn
+        |> assign(:user, token.user)
+        |> assign(:token, token)
+        |> OAuthScopesPlug.call(%{scopes: ["read:something"]})
+
+      refute conn.halted
+      assert conn.assigns[:user]
+    end
+
+    test "proceeds with no op if `token.scopes` fulfill specified 'all of' conditions", %{
+      conn: conn
+    } do
+      token = insert(:oauth_token, scopes: ["scope1", "scope2", "scope3"]) |> Repo.preload(:user)
+
+      conn =
+        conn
+        |> assign(:user, token.user)
+        |> assign(:token, token)
+        |> OAuthScopesPlug.call(%{scopes: ["scope1:subscope", "scope2:subscope"], op: :&})
+
+      refute conn.halted
+      assert conn.assigns[:user]
+    end
   end
 end

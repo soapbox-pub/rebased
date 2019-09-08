@@ -78,19 +78,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert response == "job started"
     end
 
-    test "requires 'follow' permission", %{conn: conn} do
+    test "requires 'follow' or 'write:follows' permissions", %{conn: conn} do
       token1 = insert(:oauth_token, scopes: ["read", "write"])
       token2 = insert(:oauth_token, scopes: ["follow"])
+      token3 = insert(:oauth_token, scopes: ["something"])
       another_user = insert(:user)
 
-      for token <- [token1, token2] do
+      for token <- [token1, token2, token3] do
         conn =
           conn
           |> put_req_header("authorization", "Bearer #{token.token}")
           |> post("/api/pleroma/follow_import", %{"list" => "#{another_user.ap_id}"})
 
-        if token == token1 do
-          assert %{"error" => "Insufficient permissions: follow."} == json_response(conn, 403)
+        if token == token3 do
+          assert %{"error" => "Insufficient permissions: follow | write:follows."} ==
+                   json_response(conn, 403)
         else
           assert json_response(conn, 200)
         end

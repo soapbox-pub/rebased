@@ -13,15 +13,16 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
   def call(%Plug.Conn{assigns: assigns} = conn, %{scopes: scopes} = options) do
     op = options[:op] || :|
     token = assigns[:token]
+    matched_scopes = token && filter_descendants(scopes, token.scopes)
 
     cond do
       is_nil(token) ->
         conn
 
-      op == :| && scopes -- token.scopes != scopes ->
+      op == :| && Enum.any?(matched_scopes) ->
         conn
 
-      op == :& && scopes -- token.scopes == [] ->
+      op == :& && matched_scopes == scopes ->
         conn
 
       options[:fallback] == :proceed_unauthenticated ->
@@ -30,7 +31,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
         |> assign(:token, nil)
 
       true ->
-        missing_scopes = scopes -- token.scopes
+        missing_scopes = scopes -- matched_scopes
         permissions = Enum.join(missing_scopes, " #{op} ")
 
         error_message =
@@ -41,5 +42,18 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
         |> send_resp(:forbidden, Jason.encode!(%{error: error_message}))
         |> halt()
     end
+  end
+
+  @doc "Filters descendants of supported scopes"
+  def filter_descendants(scopes, supported_scopes) do
+    Enum.filter(
+      scopes,
+      fn scope ->
+        Enum.find(
+          supported_scopes,
+          &(scope == &1 || String.starts_with?(scope, &1 <> ":"))
+        )
+      end
+    )
   end
 end

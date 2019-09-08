@@ -104,10 +104,6 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["write"]})
   end
 
-  pipeline :oauth_follow do
-    plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["follow"]})
-  end
-
   pipeline :oauth_push do
     plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["push"]})
   end
@@ -211,11 +207,7 @@ defmodule Pleroma.Web.Router do
 
     post("/main/ostatus", UtilController, :remote_subscribe)
     get("/ostatus_subscribe", UtilController, :remote_follow)
-
-    scope [] do
-      pipe_through(:oauth_follow)
-      post("/ostatus_subscribe", UtilController, :do_remote_follow)
-    end
+    post("/ostatus_subscribe", UtilController, :do_remote_follow)
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
@@ -231,8 +223,6 @@ defmodule Pleroma.Web.Router do
     end
 
     scope [] do
-      pipe_through(:oauth_follow)
-
       post("/blocks_import", UtilController, :blocks_import)
       post("/follow_import", UtilController, :follow_import)
     end
@@ -373,8 +363,6 @@ defmodule Pleroma.Web.Router do
     end
 
     scope [] do
-      pipe_through(:oauth_follow)
-
       post("/follows", MastodonAPIController, :follow)
       post("/accounts/:id/follow", MastodonAPIController, :follow)
 
