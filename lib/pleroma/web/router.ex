@@ -355,19 +355,19 @@ defmodule Pleroma.Web.Router do
 
       patch("/accounts/update_credentials", MastodonAPIController, :update_credentials)
 
-      post("/statuses", MastodonAPIController, :post_status)
-      delete("/statuses/:id", MastodonAPIController, :delete_status)
+      post("/statuses", StatusController, :create)
+      delete("/statuses/:id", StatusController, :delete)
 
-      post("/statuses/:id/reblog", MastodonAPIController, :reblog_status)
-      post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
-      post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
-      post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
-      post("/statuses/:id/pin", MastodonAPIController, :pin_status)
-      post("/statuses/:id/unpin", MastodonAPIController, :unpin_status)
-      post("/statuses/:id/bookmark", MastodonAPIController, :bookmark_status)
-      post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
-      post("/statuses/:id/mute", MastodonAPIController, :mute_conversation)
-      post("/statuses/:id/unmute", MastodonAPIController, :unmute_conversation)
+      post("/statuses/:id/reblog", StatusController, :reblog)
+      post("/statuses/:id/unreblog", StatusController, :unreblog)
+      post("/statuses/:id/favourite", StatusController, :favourite)
+      post("/statuses/:id/unfavourite", StatusController, :unfavourite)
+      post("/statuses/:id/pin", StatusController, :pin)
+      post("/statuses/:id/unpin", StatusController, :unpin)
+      post("/statuses/:id/bookmark", StatusController, :bookmark)
+      post("/statuses/:id/unbookmark", StatusController, :unbookmark)
+      post("/statuses/:id/mute", StatusController, :mute_conversation)
+      post("/statuses/:id/unmute", StatusController, :unmute_conversation)
 
       put("/scheduled_statuses/:id", MastodonAPIController, :update_scheduled_status)
       delete("/scheduled_statuses/:id", MastodonAPIController, :delete_scheduled_status)
@@ -448,10 +448,10 @@ defmodule Pleroma.Web.Router do
     get("/apps/verify_credentials", MastodonAPIController, :verify_app_credentials)
     get("/custom_emojis", MastodonAPIController, :custom_emojis)
 
-    get("/statuses/:id/card", MastodonAPIController, :status_card)
+    get("/statuses/:id/card", StatusController, :card)
 
-    get("/statuses/:id/favourited_by", MastodonAPIController, :favourited_by)
-    get("/statuses/:id/reblogged_by", MastodonAPIController, :reblogged_by)
+    get("/statuses/:id/favourited_by", StatusController, :favourited_by)
+    get("/statuses/:id/reblogged_by", StatusController, :reblogged_by)
 
     get("/trends", MastodonAPIController, :empty_array)
 
@@ -470,9 +470,9 @@ defmodule Pleroma.Web.Router do
       get("/timelines/tag/:tag", TimelineController, :hashtag)
       get("/timelines/list/:list_id", TimelineController, :list)
 
-      get("/statuses", MastodonAPIController, :get_statuses)
-      get("/statuses/:id", MastodonAPIController, :get_status)
-      get("/statuses/:id/context", MastodonAPIController, :get_context)
+      get("/statuses", StatusController, :index)
+      get("/statuses/:id", StatusController, :show)
+      get("/statuses/:id/context", StatusController, :context)
 
       get("/polls/:id", MastodonAPIController, :get_poll)
 
