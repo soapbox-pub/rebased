@@ -54,6 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reverse Proxy limiting `max_body_length` was incorrectly defined and only checked `Content-Length` headers which may not be sufficient in some circumstances
 - MRF: fix use of unserializable keyword lists in describe() implementations
 - ActivityPub: Deactivated user deletion
+- ActivityPub: Fix `/users/:nickname/inbox` crashing without an authenticated user
 - MRF: fix ability to follow a relay when AntiFollowbotPolicy was enabled
 
 ### Added
