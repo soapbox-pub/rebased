@@ -308,9 +308,18 @@ defmodule Pleroma.Activity do
       %{data: %{"type" => "Create", "object" => %{"id" => ap_id}}} -> ap_id == id
       _ -> nil
     end)
+    |> purge_web_resp_cache()
   end
 
   def delete_by_ap_id(_), do: nil
+
+  defp purge_web_resp_cache(%Activity{} = activity) do
+    %{path: path} = URI.parse(activity.data["id"])
+    Cachex.del(:web_resp_cache, path)
+    activity
+  end
+
+  defp purge_web_resp_cache(nil), do: nil
 
   for {ap_type, type} <- @mastodon_notification_types do
     def mastodon_notification_type(%Activity{data: %{"type" => unquote(ap_type)}}),
@@ -362,12 +371,12 @@ defmodule Pleroma.Activity do
   end
 
   def restrict_deactivated_users(query) do
+    deactivated_users =
+      from(u in User.Query.build(deactivated: true), select: u.ap_id)
+      |> Repo.all()
+
     from(activity in query,
-      where:
-        fragment(
-          "? not in (SELECT ap_id FROM users WHERE info->'deactivated' @> 'true')",
-          activity.actor
-        )
+      where: activity.actor not in ^deactivated_users
     )
   end
 

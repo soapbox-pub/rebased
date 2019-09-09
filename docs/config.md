@@ -690,3 +690,12 @@ Supported rate limiters:
 * `:relation_id_action` for actions on relation with a specific user (follow, unfollow)
 * `:statuses_actions` for create / delete / fav / unfav / reblog / unreblog actions on any statuses
 * `:status_id_action` for fav / unfav or reblog / unreblog actions on the same status by the same user
+
+## :web_cache_ttl
+
+The expiration time for the web responses cache. Values should be in milliseconds or `nil` to disable expiration.
+
+Available caches:
+
+* `:activity_pub` - activity pub routes (except question activities). Defaults to `nil` (no expiration).
+* `:activity_pub_question` - activity pub routes (question activities). Defaults to `30_000` (30 seconds).

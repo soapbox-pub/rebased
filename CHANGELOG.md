@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OStatus: eliminate the possibility of a protocol downgrade attack.
 - OStatus: prevent following locked accounts, bypassing the approval process.
 
+### Removed
+- **Breaking:** GNU Social API with Qvitter extensions support
+- **Breaking:** ActivityPub: The `accept_blocks` configuration setting.
+- Emoji: Remove longfox emojis.
+- Remove `Reply-To` header from report emails for admins.
+
 ### Changed
 - **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
 - **Breaking:** Configuration: `/media/` is now removed when `base_url` is configured, append `/media/` to your `base_url` config to keep the old behaviour if desired
@@ -32,7 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `federation_incoming_replies_max_depth` option being ignored in certain cases
 - Federation/MediaProxy not working with instances that have wrong certificate order
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
+- Mastodon API: Misskey's endless polls being unable to render
 - Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
+- Mastodon API: Notifications endpoint crashing if one notification failed to render
 - Mastodon API: follower/following counters not being nullified, when `hide_follows`/`hide_followers` is set
 - Mastodon API: `muted` in the Status entity, using author's account to determine if the tread was muted
 - Mastodon API: Add `account_id`, `type`, `offset`, and `limit` to search API (`/api/v1/search` and `/api/v2/search`)
@@ -52,6 +60,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reverse Proxy limiting `max_body_length` was incorrectly defined and only checked `Content-Length` headers which may not be sufficient in some circumstances
 - MRF: fix use of unserializable keyword lists in describe() implementations
 - ActivityPub: Deactivated user deletion
+- ActivityPub: Fix `/users/:nickname/inbox` crashing without an authenticated user
 - MRF: fix ability to follow a relay when AntiFollowbotPolicy was enabled
 
 ### Added
@@ -100,6 +109,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix Tasks: `mix pleroma.database fix_likes_collections`
 - Federation: Remove `likes` from objects.
 - Admin API: Added moderation log
+- Web response cache (currently, enabled for ActivityPub)
 - Admin API: Added moderation log filters (user/start date/end date/search/pagination)
 
 ### Changed
@@ -108,10 +118,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - RichMedia: parsers and their order are configured in `rich_media` config.
 - RichMedia: add the rich media ttl based on image expiration time.
 
-### Removed
-- Emoji: Remove longfox emojis.
-- Remove `Reply-To` header from report emails for admins.
-- ActivityPub: The `accept_blocks` configuration setting.
 
 ## [1.0.1] - 2019-07-14
 ### Security
