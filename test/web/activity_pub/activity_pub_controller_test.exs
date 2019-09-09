@@ -365,6 +365,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn, 403)
     end
 
+    test "it doesn't crash without an authenticated user", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/inbox")
+
+      assert json_response(conn, 403)
+    end
+
     test "it returns a note activity in a collection", %{conn: conn} do
       note_activity = insert(:direct_note_activity)
       note_object = Object.normalize(note_activity)

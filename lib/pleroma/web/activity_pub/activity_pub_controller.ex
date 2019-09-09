@@ -251,22 +251,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def whoami(_conn, _params), do: {:error, :not_found}
 
-  def read_inbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
-    if nickname == user.nickname do
-      conn
-      |> put_resp_content_type("application/activity+json")
-      |> json(UserView.render("inbox.json", %{user: user, max_id: params["max_id"]}))
-    else
-      err =
-        dgettext("errors", "can't read inbox of %{nickname} as %{as_nickname}",
-          nickname: nickname,
-          as_nickname: user.nickname
-        )
+  def read_inbox(
+        %{assigns: %{user: %{nickname: nickname} = user}} = conn,
+        %{"nickname" => nickname} = params
+      ) do
+    conn
+    |> put_resp_content_type("application/activity+json")
+    |> put_view(UserView)
+    |> render("inbox.json", user: user, max_id: params["max_id"])
+  end
 
-      conn
-      |> put_status(:forbidden)
-      |> json(err)
-    end
+  def read_inbox(%{assigns: %{user: nil}} = conn, %{"nickname" => nickname}) do
+    err = dgettext("errors", "can't read inbox of %{nickname}", nickname: nickname)
+
+    conn
+    |> put_status(:forbidden)
+    |> json(err)
+  end
+
+  def read_inbox(%{assigns: %{user: %{nickname: as_nickname}}} = conn, %{
+        "nickname" => nickname
+      }) do
+    err =
+      dgettext("errors", "can't read inbox of %{nickname} as %{as_nickname}",
+        nickname: nickname,
+        as_nickname: as_nickname
+      )
+
+    conn
+    |> put_status(:forbidden)
+    |> json(err)
   end
 
   def handle_user_activity(user, %{"type" => "Create"} = params) do
