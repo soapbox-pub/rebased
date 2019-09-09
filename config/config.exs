@@ -560,6 +560,10 @@ config :pleroma, :rate_limit, nil
 
 config :pleroma, Pleroma.ActivityExpiration, enabled: true
 
+config :pleroma, :web_cache_ttl,
+  activity_pub: nil,
+  activity_pub_question: 30_000
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
