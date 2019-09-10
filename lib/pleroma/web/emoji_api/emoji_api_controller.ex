@@ -446,4 +446,70 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         e
     end
   end
+
+  def import_from_fs(conn, _params) do
+    case File.ls(@emoji_dir_path) do
+      {:error, _} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> text("Error accessing emoji pack directory")
+
+      {:ok, results} ->
+        imported_pack_names =
+          results
+          |> Enum.filter(fn file ->
+            dir_path = Path.join(@emoji_dir_path, file)
+            # Find the directories that do NOT have pack.json
+            File.dir?(dir_path) and not File.exists?(Path.join(dir_path, "pack.json"))
+          end)
+          |> Enum.map(fn dir ->
+            dir_path = Path.join(@emoji_dir_path, dir)
+            emoji_txt_path = Path.join(dir_path, "emoji.txt")
+
+            files_for_pack =
+              if File.exists?(emoji_txt_path) do
+                # There's an emoji.txt file, it's likely from a pack installed by the pack manager.
+                # Make a pack.json file from the contents of that emoji.txt fileh
+
+                # FIXME: Copy-pasted from Pleroma.Emoji/load_from_file_stream/2
+
+                # Create a map of shortcodes to filenames from emoji.txt
+
+                File.read!(emoji_txt_path)
+                |> String.split("\n")
+                |> Enum.map(&String.trim/1)
+                |> Enum.map(fn line ->
+                  case String.split(line, ~r/,\s*/) do
+                    # This matches both strings with and without tags and we don't care about tags here
+                    [name, file | _] ->
+                      {name, file}
+
+                    _ ->
+                      nil
+                  end
+                end)
+                |> Enum.filter(fn x -> not is_nil(x) end)
+                |> Enum.into(%{})
+              else
+                # If there's no emoji.txt, assume all files that are of certain extensions from the config
+                # are emojis and import them all
+                Pleroma.Emoji.make_shortcode_to_file_map(
+                  dir_path,
+                  Pleroma.Config.get!([:emoji, :pack_extensions])
+                )
+              end
+
+            pack_json_contents = Jason.encode!(%{pack: %{}, files: files_for_pack})
+
+            File.write!(
+              Path.join(dir_path, "pack.json"),
+              pack_json_contents
+            )
+
+            dir
+          end)
+
+        conn |> json(imported_pack_names)
+    end
+  end
 end

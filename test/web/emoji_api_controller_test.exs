@@ -365,4 +365,45 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
     refute File.exists?("#{@emoji_dir_path}/test_created/pack.json")
   end
+
+  test "filesystem import" do
+    on_exit(fn ->
+      File.rm!("#{@emoji_dir_path}/test_pack_for_import/emoji.txt")
+      File.rm!("#{@emoji_dir_path}/test_pack_for_import/pack.json")
+    end)
+
+    conn = build_conn()
+    resp = conn |> get(emoji_api_path(conn, :list_packs)) |> json_response(200)
+
+    refute Map.has_key?(resp, "test_pack_for_import")
+
+    admin = insert(:user, info: %{is_admin: true})
+
+    assert conn
+           |> assign(:user, admin)
+           |> post(emoji_api_path(conn, :import_from_fs))
+           |> json_response(200) == ["test_pack_for_import"]
+
+    resp = conn |> get(emoji_api_path(conn, :list_packs)) |> json_response(200)
+    assert resp["test_pack_for_import"]["files"] == %{"blank" => "blank.png"}
+
+    File.rm!("#{@emoji_dir_path}/test_pack_for_import/pack.json")
+    refute File.exists?("#{@emoji_dir_path}/test_pack_for_import/pack.json")
+
+    emoji_txt_content = "blank, blank.png, Fun\n\nblank2, blank.png"
+
+    File.write!("#{@emoji_dir_path}/test_pack_for_import/emoji.txt", emoji_txt_content)
+
+    assert conn
+           |> assign(:user, admin)
+           |> post(emoji_api_path(conn, :import_from_fs))
+           |> json_response(200) == ["test_pack_for_import"]
+
+    resp = conn |> get(emoji_api_path(conn, :list_packs)) |> json_response(200)
+
+    assert resp["test_pack_for_import"]["files"] == %{
+             "blank" => "blank.png",
+             "blank2" => "blank.png"
+           }
+  end
 end

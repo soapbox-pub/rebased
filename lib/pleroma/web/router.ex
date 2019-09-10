@@ -218,6 +218,8 @@ defmodule Pleroma.Web.Router do
       # Modifying packs
       pipe_through([:admin_api, :oauth_write])
 
+      post("/import_from_fs", EmojiAPIController, :import_from_fs)
+
       post("/update_file/:pack_name", EmojiAPIController, :update_file)
       post("/update_metadata/:pack_name", EmojiAPIController, :update_metadata)
       post("/create/:name", EmojiAPIController, :create)
