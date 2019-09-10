@@ -16,6 +16,12 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
 
   @cache_seconds_per_file Pleroma.Config.get!([:emoji, :shared_pack_cache_seconds_per_file])
 
+  @doc """
+  Lists the packs available on the instance as JSON.
+
+  The information is public and does not require authentification. The format is
+  a map of "pack directory name" to pack.json contents.
+  """
   def list_packs(conn, _params) do
     pack_infos =
       case File.ls(@emoji_dir_path) do
@@ -116,6 +122,10 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     zip_result
   end
 
+  @doc """
+  An endpoint for other instances (via admin UI) or users (via browser)
+  to download packs that the instance shares.
+  """
   def download_shared(conn, %{"name" => name}) do
     pack_dir = Path.join(@emoji_dir_path, name)
     pack_file = Path.join(pack_dir, "pack.json")
@@ -143,6 +153,13 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     end
   end
 
+  @doc """
+  An admin endpoint to request downloading a pack named `pack_name` from the instance
+  `instance_address`.
+
+  If the requested instance's admin chose to share the pack, it will be downloaded
+  from that instance, otherwise it will be downloaded from the fallback source, if there is one.
+  """
   def download_from(conn, %{"instance_address" => address, "pack_name" => name} = data) do
     list_uri = "#{address}/api/pleroma/emoji/packs/list"
 
@@ -211,6 +228,9 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     end
   end
 
+  @doc """
+  Creates an empty pack named `name` which then can be updated via the admin UI.
+  """
   def create(conn, %{"name" => name}) do
     pack_dir = Path.join(@emoji_dir_path, name)
 
@@ -232,6 +252,9 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     end
   end
 
+  @doc """
+  Deletes the pack `name` and all it's files.
+  """
   def delete(conn, %{"name" => name}) do
     pack_dir = Path.join(@emoji_dir_path, name)
 
@@ -244,6 +267,11 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     end
   end
 
+  @doc """
+  An endpoint to update `pack_names`'s metadata.
+
+  `new_data` is the new metadata for the pack, that will replace the old metadata.
+  """
   def update_metadata(conn, %{"pack_name" => name, "new_data" => new_data}) do
     pack_dir = Path.join(@emoji_dir_path, name)
     pack_file_p = Path.join(pack_dir, "pack.json")
@@ -296,6 +324,20 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     end
   end
 
+  @doc """
+  Updates a file in a pack.
+
+  Updating can mean three things:
+
+  - `add` adds an emoji named `shortcode` to the pack `pack_name`,
+    that means that the emoji file needs to be uploaded with the request
+    (thus requiring it to be a multipart request) and be named `file`.
+    There can also be an optional `filename` that will be the new emoji file name
+    (if it's not there, the name will be taken from the uploaded file).
+  - `update` changes emoji shortcode (from `shortcode` to `new_shortcode` or moves the file
+    (from the current filename to `new_filename`)
+  - `remove` removes the emoji named `shortcode` and it's associated file
+  """
   def update_file(
         conn,
         %{"pack_name" => pack_name, "action" => action, "shortcode" => shortcode} = params
@@ -447,6 +489,16 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     end
   end
 
+  @doc """
+  Imports emoji from the filesystem.
+
+  Importing means checking all the directories in the
+  `$instance_static/emoji/` for directories which do not have
+  `pack.json`. If one has an emoji.txt file, that file will be used
+  to create a `pack.json` file with it's contents. If the directory has
+  neither, all the files with specific configured extenstions will be
+  assumed to be emojis and stored in the new `pack.json` file.
+  """
   def import_from_fs(conn, _params) do
     case File.ls(@emoji_dir_path) do
       {:error, _} ->
