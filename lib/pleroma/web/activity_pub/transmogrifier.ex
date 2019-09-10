@@ -41,8 +41,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_summary(%{"summary" => nil} = object) do
-    object
-    |> Map.put("summary", "")
+    Map.put(object, "summary", "")
   end
 
   def fix_summary(%{"summary" => _} = object) do
@@ -50,10 +49,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
   end
 
-  def fix_summary(object) do
-    object
-    |> Map.put("summary", "")
-  end
+  def fix_summary(object), do: Map.put(object, "summary", "")
 
   def fix_addressing_list(map, field) do
     cond do
@@ -73,13 +69,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         explicit_mentions,
         follower_collection
       ) do
-    explicit_to =
-      to
-      |> Enum.filter(fn x -> x in explicit_mentions end)
+    explicit_to = Enum.filter(to, fn x -> x in explicit_mentions end)
 
-    explicit_cc =
-      to
-      |> Enum.filter(fn x -> x not in explicit_mentions end)
+    explicit_cc = Enum.filter(to, fn x -> x not in explicit_mentions end)
 
     final_cc =
       (cc ++ explicit_cc)
@@ -97,13 +89,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_explicit_addressing(%{"directMessage" => true} = object), do: object
 
   def fix_explicit_addressing(object) do
-    explicit_mentions =
+    explicit_mentions = Utils.determine_explicit_mentions(object)
+
+    %User{follower_address: follower_collection} =
       object
-      |> Utils.determine_explicit_mentions()
+      |> Containment.get_actor()
+      |> User.get_cached_by_ap_id()
 
-    follower_collection = User.get_cached_by_ap_id(Containment.get_actor(object)).follower_address
-
-    explicit_mentions = explicit_mentions ++ [Pleroma.Constants.as_public(), follower_collection]
+    explicit_mentions =
+      explicit_mentions ++
+        [
+          Pleroma.Constants.as_public(),
+          follower_collection
+        ]
 
     fix_explicit_addressing(object, explicit_mentions, follower_collection)
   end
@@ -147,48 +145,25 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
-    object
-    |> Map.put("actor", Containment.get_actor(%{"actor" => actor}))
+    Map.put(object, "actor", Containment.get_actor(%{"actor" => actor}))
   end
 
   def fix_in_reply_to(object, options \\ [])
 
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to} = object, options)
       when not is_nil(in_reply_to) do
-    in_reply_to_id =
-      cond do
-        is_bitstring(in_reply_to) ->
-          in_reply_to
-
-        is_map(in_reply_to) && is_bitstring(in_reply_to["id"]) ->
-          in_reply_to["id"]
-
-        is_list(in_reply_to) && is_bitstring(Enum.at(in_reply_to, 0)) ->
-          Enum.at(in_reply_to, 0)
-
-        # Maybe I should output an error too?
-        true ->
-          ""
-      end
-
+    in_reply_to_id = prepare_in_reply_to(in_reply_to)
     object = Map.put(object, "inReplyToAtomUri", in_reply_to_id)
 
     if Federator.allowed_incoming_reply_depth?(options[:depth]) do
-      case get_obj_helper(in_reply_to_id, options) do
-        {:ok, replied_object} ->
-          with %Activity{} = _activity <-
-                 Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
-            object
-            |> Map.put("inReplyTo", replied_object.data["id"])
-            |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
-            |> Map.put("conversation", replied_object.data["context"] || object["conversation"])
-            |> Map.put("context", replied_object.data["context"] || object["conversation"])
-          else
-            e ->
-              Logger.error("Couldn't fetch \"#{inspect(in_reply_to_id)}\", error: #{inspect(e)}")
-              object
-          end
-
+      with {:ok, replied_object} <- get_obj_helper(in_reply_to_id, options),
+           %Activity{} = _ <- Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
+        object
+        |> Map.put("inReplyTo", replied_object.data["id"])
+        |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
+        |> Map.put("conversation", replied_object.data["context"] || object["conversation"])
+        |> Map.put("context", replied_object.data["context"] || object["conversation"])
+      else
         e ->
           Logger.error("Couldn't fetch \"#{inspect(in_reply_to_id)}\", error: #{inspect(e)}")
           object
@@ -200,6 +175,22 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_in_reply_to(object, _options), do: object
 
+  defp prepare_in_reply_to(in_reply_to) do
+    cond do
+      is_bitstring(in_reply_to) ->
+        in_reply_to
+
+      is_map(in_reply_to) && is_bitstring(in_reply_to["id"]) ->
+        in_reply_to["id"]
+
+      is_list(in_reply_to) && is_bitstring(Enum.at(in_reply_to, 0)) ->
+        Enum.at(in_reply_to, 0)
+
+      true ->
+        ""
+    end
+  end
+
   def fix_context(object) do
     context = object["context"] || object["conversation"] || Utils.generate_context_id()
 
@@ -210,8 +201,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_attachments(%{"attachment" => attachment} = object) when is_list(attachment) do
     attachments =
-      attachment
-      |> Enum.map(fn data ->
+      Enum.map(attachment, fn data ->
         media_type = data["mediaType"] || data["mimeType"]
         href = data["url"] || data["href"]
 
@@ -222,30 +212,23 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.put("url", url)
       end)
 
-    object
-    |> Map.put("attachment", attachments)
+    Map.put(object, "attachment", attachments)
   end
 
   def fix_attachments(%{"attachment" => attachment} = object) when is_map(attachment) do
-    Map.put(object, "attachment", [attachment])
-    |> fix_attachments()
+    fix_attachments(Map.put(object, "attachment", [attachment]))
   end
 
   def fix_attachments(object), do: object
 
   def fix_url(%{"url" => url} = object) when is_map(url) do
-    object
-    |> Map.put("url", url["href"])
+    Map.put(object, "url", url["href"])
   end
 
   def fix_url(%{"type" => "Video", "url" => url} = object) when is_list(url) do
     first_element = Enum.at(url, 0)
 
-    link_element =
-      url
-      |> Enum.filter(fn x -> is_map(x) end)
-      |> Enum.filter(fn x -> x["mimeType"] == "text/html" end)
-      |> Enum.at(0)
+    link_element = Enum.find(url, fn x -> is_map(x) and x["mimeType"] == "text/html" end)
 
     object
     |> Map.put("attachment", [first_element])
@@ -263,36 +246,32 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         true -> ""
       end
 
-    object
-    |> Map.put("url", url_string)
+    Map.put(object, "url", url_string)
   end
 
   def fix_url(object), do: object
 
   def fix_emoji(%{"tag" => tags} = object) when is_list(tags) do
-    emoji = tags |> Enum.filter(fn data -> data["type"] == "Emoji" and data["icon"] end)
-
     emoji =
-      emoji
+      tags
+      |> Enum.filter(fn data -> data["type"] == "Emoji" and data["icon"] end)
       |> Enum.reduce(%{}, fn data, mapping ->
         name = String.trim(data["name"], ":")
 
-        mapping |> Map.put(name, data["icon"]["url"])
+        Map.put(mapping, name, data["icon"]["url"])
       end)
 
     # we merge mastodon and pleroma emoji into a single mapping, to allow for both wire formats
     emoji = Map.merge(object["emoji"] || %{}, emoji)
 
-    object
-    |> Map.put("emoji", emoji)
+    Map.put(object, "emoji", emoji)
   end
 
   def fix_emoji(%{"tag" => %{"type" => "Emoji"} = tag} = object) do
     name = String.trim(tag["name"], ":")
     emoji = %{name => tag["icon"]["url"]}
 
-    object
-    |> Map.put("emoji", emoji)
+    Map.put(object, "emoji", emoji)
   end
 
   def fix_emoji(object), do: object
@@ -303,17 +282,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> Enum.filter(fn data -> data["type"] == "Hashtag" and data["name"] end)
       |> Enum.map(fn data -> String.slice(data["name"], 1..-1) end)
 
-    combined = tag ++ tags
-
-    object
-    |> Map.put("tag", combined)
+    Map.put(object, "tag", tag ++ tags)
   end
 
   def fix_tag(%{"tag" => %{"type" => "Hashtag", "name" => hashtag} = tag} = object) do
     combined = [tag, String.slice(hashtag, 1..-1)]
 
-    object
-    |> Map.put("tag", combined)
+    Map.put(object, "tag", combined)
   end
 
   def fix_tag(%{"tag" => %{} = tag} = object), do: Map.put(object, "tag", [tag])
@@ -325,8 +300,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     content_groups = Map.to_list(content_map)
     {_, content} = Enum.at(content_groups, 0)
 
-    object
-    |> Map.put("content", content)
+    Map.put(object, "content", content)
   end
 
   def fix_content_map(object), do: object
@@ -335,16 +309,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_type(%{"inReplyTo" => reply_id, "name" => _} = object, options)
       when is_binary(reply_id) do
-    reply =
-      with true <- Federator.allowed_incoming_reply_depth?(options[:depth]),
-           {:ok, object} <- get_obj_helper(reply_id, options) do
-        object
-      end
-
-    if reply && reply.data["type"] == "Question" do
+    with true <- Federator.allowed_incoming_reply_depth?(options[:depth]),
+         {:ok, %{data: %{"type" => "Question"} = _} = _} <- get_obj_helper(reply_id, options) do
       Map.put(object, "type", "Answer")
     else
-      object
+      _ -> object
     end
   end
 
@@ -376,6 +345,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  # Reduce the object list to find the reported user.
+  defp get_reported(objects) do
+    Enum.reduce_while(objects, nil, fn ap_id, _ ->
+      with %User{} = user <- User.get_cached_by_ap_id(ap_id) do
+        {:halt, user}
+      else
+        _ -> {:cont, nil}
+      end
+    end)
+  end
+
   def handle_incoming(data, options \\ [])
 
   # Flag objects are placed ahead of the ID check because Mastodon 2.8 and earlier send them
@@ -384,31 +364,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with context <- data["context"] || Utils.generate_context_id(),
          content <- data["content"] || "",
          %User{} = actor <- User.get_cached_by_ap_id(actor),
-
          # Reduce the object list to find the reported user.
-         %User{} = account <-
-           Enum.reduce_while(objects, nil, fn ap_id, _ ->
-             with %User{} = user <- User.get_cached_by_ap_id(ap_id) do
-               {:halt, user}
-             else
-               _ -> {:cont, nil}
-             end
-           end),
-
+         %User{} = account <- get_reported(objects),
          # Remove the reported user from the object list.
          statuses <- Enum.filter(objects, fn ap_id -> ap_id != account.ap_id end) do
-      params = %{
+      %{
         actor: actor,
         context: context,
         account: account,
         statuses: statuses,
         content: content,
-        additional: %{
-          "cc" => [account.ap_id]
-        }
+        additional: %{"cc" => [account.ap_id]}
       }
-
-      ActivityPub.flag(params)
+      |> ActivityPub.flag()
     end
   end
 
@@ -755,8 +723,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def handle_incoming(_, _), do: :error
 
+  @spec get_obj_helper(String.t(), Keyword.t()) :: {:ok, Object.t()} | nil
   def get_obj_helper(id, options \\ []) do
-    if object = Object.normalize(id, true, options), do: {:ok, object}, else: nil
+    if object = Object.normalize(id, true, options) do
+      {:ok, object}
+    else
+      nil
+    end
   end
 
   def set_reply_to_uri(%{"inReplyTo" => in_reply_to} = object) when is_binary(in_reply_to) do
@@ -855,26 +828,23 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     {:ok, data}
   end
 
-  def maybe_fix_object_url(data) do
-    if is_binary(data["object"]) and not String.starts_with?(data["object"], "http") do
-      case get_obj_helper(data["object"]) do
-        {:ok, relative_object} ->
-          if relative_object.data["external_url"] do
-            _data =
-              data
-              |> Map.put("object", relative_object.data["external_url"])
-          else
-            data
-          end
-
-        e ->
-          Logger.error("Couldn't fetch #{data["object"]} #{inspect(e)}")
-          data
-      end
+  def maybe_fix_object_url(%{"object" => object} = data) when is_binary(object) do
+    with false <- String.starts_with?(object, "http"),
+         {:fetch, {:ok, relative_object}} <- {:fetch, get_obj_helper(object)},
+         %{data: %{"external_url" => external_url}} when not is_nil(external_url) <-
+           relative_object do
+      Map.put(data, "object", external_url)
     else
-      data
+      {:fetch, e} ->
+        Logger.error("Couldn't fetch #{object} #{inspect(e)}")
+        data
+
+      _ ->
+        data
     end
   end
+
+  def maybe_fix_object_url(data), do: data
 
   def add_hashtags(object) do
     tags =
@@ -893,8 +863,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           tag
       end)
 
-    object
-    |> Map.put("tag", tags)
+    Map.put(object, "tag", tags)
   end
 
   def add_mention_tags(object) do
@@ -907,15 +876,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     tags = object["tag"] || []
 
-    object
-    |> Map.put("tag", tags ++ mentions)
+    Map.put(object, "tag", tags ++ mentions)
   end
 
   def add_emoji_tags(%User{info: %{"emoji" => _emoji} = user_info} = object) do
     user_info = add_emoji_tags(user_info)
 
-    object
-    |> Map.put(:info, user_info)
+    Map.put(object, :info, user_info)
   end
 
   # TODO: we should probably send mtime instead of unix epoch time for updated
@@ -923,8 +890,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     tags = object["tag"] || []
 
     out =
-      emoji
-      |> Enum.map(fn {name, url} ->
+      Enum.map(emoji, fn {name, url} ->
         %{
           "icon" => %{"url" => url, "type" => "Image"},
           "name" => ":" <> name <> ":",
@@ -934,13 +900,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         }
       end)
 
-    object
-    |> Map.put("tag", tags ++ out)
+    Map.put(object, "tag", tags ++ out)
   end
 
-  def add_emoji_tags(object) do
-    object
-  end
+  def add_emoji_tags(object), do: object
 
   def set_conversation(object) do
     Map.put(object, "conversation", object["context"])
@@ -959,9 +922,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def add_attributed_to(object) do
     attributed_to = object["attributedTo"] || object["actor"]
-
-    object
-    |> Map.put("attributedTo", attributed_to)
+    Map.put(object, "attributedTo", attributed_to)
   end
 
   def prepare_attachments(object) do
@@ -972,8 +933,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"url" => href, "mediaType" => media_type, "name" => data["name"], "type" => "Document"}
       end)
 
-    object
-    |> Map.put("attachment", attachments)
+    Map.put(object, "attachment", attachments)
   end
 
   defp strip_internal_fields(object) do
@@ -990,12 +950,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   defp strip_internal_tags(%{"tag" => tags} = object) do
-    tags =
-      tags
-      |> Enum.filter(fn x -> is_map(x) end)
+    tags = Enum.filter(tags, fn x -> is_map(x) end)
 
-    object
-    |> Map.put("tag", tags)
+    Map.put(object, "tag", tags)
   end
 
   defp strip_internal_tags(object), do: object
@@ -1074,16 +1031,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def maybe_fix_user_url(data) do
-    if is_map(data["url"]) do
-      Map.put(data, "url", data["url"]["href"])
-    else
-      data
-    end
+  def maybe_fix_user_url(%{"url" => url} = data) when is_map(url) do
+    Map.put(data, "url", url["href"])
   end
 
-  def maybe_fix_user_object(data) do
-    data
-    |> maybe_fix_user_url
-  end
+  def maybe_fix_user_url(data), do: data
+
+  def maybe_fix_user_object(data), do: maybe_fix_user_url(data)
 end

@@ -1451,4 +1451,166 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       refute recipient.follower_address in fixed_object["to"]
     end
   end
+
+  describe "fix_summary/1" do
+    test "returns fixed object" do
+      assert Transmogrifier.fix_summary(%{"summary" => nil}) == %{"summary" => ""}
+      assert Transmogrifier.fix_summary(%{"summary" => "ok"}) == %{"summary" => "ok"}
+      assert Transmogrifier.fix_summary(%{}) == %{"summary" => ""}
+    end
+  end
+
+  describe "fix_in_reply_to/2" do
+    clear_config([:instance, :federation_incoming_replies_max_depth])
+
+    setup do
+      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      [data: data]
+    end
+
+    test "returns not modified object when hasn't containts inReplyTo field", %{data: data} do
+      assert Transmogrifier.fix_in_reply_to(data) == data
+    end
+
+    test "returns object with inReplyToAtomUri when denied incoming reply", %{data: data} do
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+
+      object_with_reply =
+        Map.put(data["object"], "inReplyTo", "https://shitposter.club/notice/2827873")
+
+      modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
+      assert modified_object["inReplyTo"] == "https://shitposter.club/notice/2827873"
+      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+
+      object_with_reply =
+        Map.put(data["object"], "inReplyTo", %{"id" => "https://shitposter.club/notice/2827873"})
+
+      modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
+      assert modified_object["inReplyTo"] == %{"id" => "https://shitposter.club/notice/2827873"}
+      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+
+      object_with_reply =
+        Map.put(data["object"], "inReplyTo", ["https://shitposter.club/notice/2827873"])
+
+      modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
+      assert modified_object["inReplyTo"] == ["https://shitposter.club/notice/2827873"]
+      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+
+      object_with_reply = Map.put(data["object"], "inReplyTo", [])
+      modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
+      assert modified_object["inReplyTo"] == []
+      assert modified_object["inReplyToAtomUri"] == ""
+    end
+
+    test "returns modified object when allowed incoming reply", %{data: data} do
+      object_with_reply =
+        Map.put(
+          data["object"],
+          "inReplyTo",
+          "https://shitposter.club/notice/2827873"
+        )
+
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 5)
+      modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
+
+      assert modified_object["inReplyTo"] ==
+               "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+
+      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+
+      assert modified_object["conversation"] ==
+               "tag:shitposter.club,2017-05-05:objectType=thread:nonce=3c16e9c2681f6d26"
+
+      assert modified_object["context"] ==
+               "tag:shitposter.club,2017-05-05:objectType=thread:nonce=3c16e9c2681f6d26"
+    end
+  end
+
+  describe "fix_url/1" do
+    test "fixes data for object when url is map" do
+      object = %{
+        "url" => %{
+          "type" => "Link",
+          "mimeType" => "video/mp4",
+          "href" => "https://peede8d-46fb-ad81-2d4c2d1630e3-480.mp4"
+        }
+      }
+
+      assert Transmogrifier.fix_url(object) == %{
+               "url" => "https://peede8d-46fb-ad81-2d4c2d1630e3-480.mp4"
+             }
+    end
+
+    test "fixes data for video object" do
+      object = %{
+        "type" => "Video",
+        "url" => [
+          %{
+            "type" => "Link",
+            "mimeType" => "video/mp4",
+            "href" => "https://peede8d-46fb-ad81-2d4c2d1630e3-480.mp4"
+          },
+          %{
+            "type" => "Link",
+            "mimeType" => "video/mp4",
+            "href" => "https://peertube46fb-ad81-2d4c2d1630e3-240.mp4"
+          },
+          %{
+            "type" => "Link",
+            "mimeType" => "text/html",
+            "href" => "https://peertube.-2d4c2d1630e3"
+          },
+          %{
+            "type" => "Link",
+            "mimeType" => "text/html",
+            "href" => "https://peertube.-2d4c2d16377-42"
+          }
+        ]
+      }
+
+      assert Transmogrifier.fix_url(object) == %{
+               "attachment" => [
+                 %{
+                   "href" => "https://peede8d-46fb-ad81-2d4c2d1630e3-480.mp4",
+                   "mimeType" => "video/mp4",
+                   "type" => "Link"
+                 }
+               ],
+               "type" => "Video",
+               "url" => "https://peertube.-2d4c2d1630e3"
+             }
+    end
+
+    test "fixes url for not Video object" do
+      object = %{
+        "type" => "Text",
+        "url" => [
+          %{
+            "type" => "Link",
+            "mimeType" => "text/html",
+            "href" => "https://peertube.-2d4c2d1630e3"
+          },
+          %{
+            "type" => "Link",
+            "mimeType" => "text/html",
+            "href" => "https://peertube.-2d4c2d16377-42"
+          }
+        ]
+      }
+
+      assert Transmogrifier.fix_url(object) == %{
+               "type" => "Text",
+               "url" => "https://peertube.-2d4c2d1630e3"
+             }
+
+      assert Transmogrifier.fix_url(%{"type" => "Text", "url" => []}) == %{
+               "type" => "Text",
+               "url" => ""
+             }
+    end
+
+    test "retunrs not modified object" do
+      assert Transmogrifier.fix_url(%{"type" => "Text"}) == %{"type" => "Text"}
+    end
+  end
 end
