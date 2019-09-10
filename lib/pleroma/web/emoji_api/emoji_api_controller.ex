@@ -532,7 +532,8 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
                 |> Enum.map(&String.trim/1)
                 |> Enum.map(fn line ->
                   case String.split(line, ~r/,\s*/) do
-                    # This matches both strings with and without tags and we don't care about tags here
+                    # This matches both strings with and without tags
+                    # and we don't care about tags here
                     [name, file | _] ->
                       {name, file}
 
@@ -543,8 +544,8 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
                 |> Enum.filter(fn x -> not is_nil(x) end)
                 |> Enum.into(%{})
               else
-                # If there's no emoji.txt, assume all files that are of certain extensions from the config
-                # are emojis and import them all
+                # If there's no emoji.txt, assume all files
+                # that are of certain extensions from the config are emojis and import them all
                 Pleroma.Emoji.make_shortcode_to_file_map(
                   dir_path,
                   Pleroma.Config.get!([:emoji, :pack_extensions])
