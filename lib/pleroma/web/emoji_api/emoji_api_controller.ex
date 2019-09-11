@@ -124,26 +124,22 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     pack_dir = Path.join(@emoji_dir_path, name)
     pack_file = Path.join(pack_dir, "pack.json")
 
-    if File.exists?(pack_file) do
-      pack = Jason.decode!(File.read!(pack_file))
-
-      if can_download?(pack, pack_dir) do
-        zip_result = make_archive(name, pack, pack_dir)
-
-        conn
-        |> send_download({:binary, zip_result}, filename: "#{name}.zip")
-      else
-        {:error,
-         conn
-         |> put_status(:forbidden)
-         |> text("Pack #{name} cannot be downloaded from this instance, either pack sharing\
-           was disabled for this pack or some files are missing")}
-      end
+    with {_, true} <- {:exists?, File.exists?(pack_file)},
+         pack = Jason.decode!(File.read!(pack_file)),
+         {_, true} <- {:can_download?, can_download?(pack, pack_dir)} do
+      zip_result = make_archive(name, pack, pack_dir)
+      send_download(conn, {:binary, zip_result}, filename: "#{name}.zip")
     else
-      {:error,
-       conn
-       |> put_status(:not_found)
-       |> text("Pack #{name} does not exist")}
+      {:can_download?, _} ->
+        conn
+        |> put_status(:forbidden)
+        |> text("Pack #{name} cannot be downloaded from this instance, either pack sharing\
+           was disabled for this pack or some files are missing")
+
+      {:exists?, _} ->
+        conn
+        |> put_status(:not_found)
+        |> text("Pack #{name} does not exist")
     end
   end
 
