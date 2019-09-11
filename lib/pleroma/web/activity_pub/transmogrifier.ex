@@ -870,40 +870,43 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     mentions =
       object
       |> Utils.get_notified_from_object()
-      |> Enum.map(fn user ->
-        %{"type" => "Mention", "href" => user.ap_id, "name" => "@#{user.nickname}"}
-      end)
+      |> Enum.map(&build_mention_tag/1)
 
     tags = object["tag"] || []
 
     Map.put(object, "tag", tags ++ mentions)
   end
 
-  def add_emoji_tags(%User{info: %{"emoji" => _emoji} = user_info} = object) do
-    user_info = add_emoji_tags(user_info)
+  defp build_mention_tag(%{ap_id: ap_id, nickname: nickname} = _) do
+    %{"type" => "Mention", "href" => ap_id, "name" => "@#{nickname}"}
+  end
 
-    Map.put(object, :info, user_info)
+  def take_emoji_tags(%User{info: %{emoji: emoji} = _user_info} = _user) do
+    emoji
+    |> Enum.flat_map(&Map.to_list/1)
+    |> Enum.map(&build_emoji_tag/1)
   end
 
   # TODO: we should probably send mtime instead of unix epoch time for updated
   def add_emoji_tags(%{"emoji" => emoji} = object) do
     tags = object["tag"] || []
 
-    out =
-      Enum.map(emoji, fn {name, url} ->
-        %{
-          "icon" => %{"url" => url, "type" => "Image"},
-          "name" => ":" <> name <> ":",
-          "type" => "Emoji",
-          "updated" => "1970-01-01T00:00:00Z",
-          "id" => url
-        }
-      end)
+    out = Enum.map(emoji, &build_emoji_tag/1)
 
     Map.put(object, "tag", tags ++ out)
   end
 
   def add_emoji_tags(object), do: object
+
+  defp build_emoji_tag({name, url}) do
+    %{
+      "icon" => %{"url" => url, "type" => "Image"},
+      "name" => ":" <> name <> ":",
+      "type" => "Emoji",
+      "updated" => "1970-01-01T00:00:00Z",
+      "id" => url
+    }
+  end
 
   def set_conversation(object) do
     Map.put(object, "conversation", object["context"])

@@ -1687,4 +1687,35 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
              }
     end
   end
+
+  describe "fix_emoji/1" do
+    test "returns not modified object when object not contains tags" do
+      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      assert Transmogrifier.fix_emoji(data) == data
+    end
+
+    test "returns object with emoji when object contains list tags" do
+      assert Transmogrifier.fix_emoji(%{
+               "tag" => [
+                 %{"type" => "Emoji", "name" => ":bib:", "icon" => %{"url" => "/test"}},
+                 %{"type" => "Hashtag"}
+               ]
+             }) == %{
+               "emoji" => %{"bib" => "/test"},
+               "tag" => [
+                 %{"icon" => %{"url" => "/test"}, "name" => ":bib:", "type" => "Emoji"},
+                 %{"type" => "Hashtag"}
+               ]
+             }
+    end
+
+    test "returns object with emoji when object contains map tag" do
+      assert Transmogrifier.fix_emoji(%{
+               "tag" => %{"type" => "Emoji", "name" => ":bib:", "icon" => %{"url" => "/test"}}
+             }) == %{
+               "emoji" => %{"bib" => "/test"},
+               "tag" => %{"icon" => %{"url" => "/test"}, "name" => ":bib:", "type" => "Emoji"}
+             }
+    end
+  end
 end

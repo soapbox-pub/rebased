@@ -37,6 +37,22 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
            } = UserView.render("user.json", %{user: user})
   end
 
+  test "Renders with emoji tags" do
+    user = insert(:user, %{info: %{emoji: [%{"bib" => "/test"}]}})
+
+    assert %{
+             "tag" => [
+               %{
+                 "icon" => %{"type" => "Image", "url" => "/test"},
+                 "id" => "/test",
+                 "name" => ":bib:",
+                 "type" => "Emoji",
+                 "updated" => "1970-01-01T00:00:00Z"
+               }
+             ]
+           } = UserView.render("user.json", %{user: user})
+  end
+
   test "Does not add an avatar image if the user hasn't set one" do
     user = insert(:user)
     {:ok, user} = User.ensure_keys_present(user)
