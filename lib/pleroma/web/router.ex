@@ -229,7 +229,7 @@ defmodule Pleroma.Web.Router do
 
     scope "/packs" do
       # Pack info / downloading
-      get("/list", EmojiAPIController, :list_packs)
+      get("/", EmojiAPIController, :list_packs)
       get("/download_shared/:name", EmojiAPIController, :download_shared)
     end
   end
