@@ -104,22 +104,14 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     # Having a different pack.json md5 invalidates cache
     pack_file_md5 = :crypto.hash(:md5, File.read!(Path.join(pack_dir, "pack.json")))
 
-    maybe_cached_pack = Cachex.get!(:emoji_packs_cache, name)
+    case Cachex.get!(:emoji_packs_cache, name) do
+      %{pack_file_md5: ^pack_file_md5, pack_data: zip_result} ->
+        Logger.debug("Using cache for the '#{name}' shared emoji pack")
+        zip_result
 
-    zip_result =
-      if is_nil(maybe_cached_pack) do
+      _ ->
         create_archive_and_cache(name, pack, pack_dir, pack_file_md5)
-      else
-        if maybe_cached_pack[:pack_file_md5] == pack_file_md5 do
-          Logger.debug("Using cache for the '#{name}' shared emoji pack")
-
-          maybe_cached_pack[:pack_data]
-        else
-          create_archive_and_cache(name, pack, pack_dir, pack_file_md5)
-        end
-      end
-
-    zip_result
+    end
   end
 
   @doc """
