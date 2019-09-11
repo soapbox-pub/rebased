@@ -183,7 +183,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
 
     with {:ok, %{sha: sha, uri: uri} = pinfo} <- pack_info_res,
          %{body: emoji_archive} <- Tesla.get!(uri),
-         {_, true} <- {:sha, Base.decode16!(sha) == :crypto.hash(:sha256, emoji_archive)} do
+         {_, true} <- {:checksum, Base.decode16!(sha) == :crypto.hash(:sha256, emoji_archive)} do
       local_name = data["as"] || name
       pack_dir = Path.join(@emoji_dir_path, local_name)
       File.mkdir_p!(pack_dir)
@@ -207,7 +207,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       {:error, e} ->
         conn |> put_status(:internal_server_error) |> json(%{error: e})
 
-      {:sha, _} ->
+      {:checksum, _} ->
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "SHA256 for the pack doesn't match the one sent by the server"})
