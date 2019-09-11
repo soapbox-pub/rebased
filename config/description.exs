@@ -2810,5 +2810,28 @@ config :pleroma, :config_description, [
         suggestions: [["Authorization", "Content-Type", "Idempotency-Key"]]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: :web_cache_ttl,
+    type: :group,
+    description:
+      "The expiration time for the web responses cache. Values should be in milliseconds or `nil` to disable expiration.",
+    children: [
+      %{
+        key: :activity_pub,
+        type: :integer,
+        description:
+          "activity pub routes (except question activities). Defaults to `nil` (no expiration).",
+        suggestions: [30_000, nil]
+      },
+      %{
+        key: :activity_pub_question,
+        type: :integer,
+        description:
+          "activity pub routes (question activities). Defaults to `30_000` (30 seconds).",
+        suggestions: [30_000]
+      }
+    ]
   }
 ]
