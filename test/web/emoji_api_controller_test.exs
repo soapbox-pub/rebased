@@ -54,6 +54,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     end)
 
     mock(fn
+      %{method: :get, url: "https://old-instance/nodeinfo/2.1.json"} ->
+        json(%{features: []})
+
+      %{method: :get, url: "https://example.com/nodeinfo/2.1.json"} ->
+        json(%{features: ["shareable_emoji_packs"]})
+
       %{
         method: :get,
         url: "https://example.com/api/pleroma/emoji/packs/list"
@@ -86,6 +92,22 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     admin = insert(:user, info: %{is_admin: true})
 
     conn = build_conn() |> assign(:user, admin)
+
+    assert (conn
+            |> put_req_header("content-type", "application/json")
+            |> post(
+              emoji_api_path(
+                conn,
+                :download_from
+              ),
+              %{
+                instance_address: "https://old-instance",
+                pack_name: "test_pack",
+                as: "test_pack2"
+              }
+              |> Jason.encode!()
+            )
+            |> json_response(500))["error"] =~ "does not support"
 
     assert conn
            |> put_req_header("content-type", "application/json")

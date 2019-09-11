@@ -153,64 +153,79 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   from that instance, otherwise it will be downloaded from the fallback source, if there is one.
   """
   def download_from(conn, %{"instance_address" => address, "pack_name" => name} = data) do
-    full_pack =
-      "#{address}/api/pleroma/emoji/packs/list"
+    shareable_packs_available =
+      "#{address}/nodeinfo/2.1.json"
       |> Tesla.get!()
       |> Map.get(:body)
       |> Jason.decode!()
-      |> Map.get(name)
+      |> Map.get("features")
+      |> Enum.member?("shareable_emoji_packs")
 
-    pack_info_res =
-      case full_pack["pack"] do
-        %{"share-files" => true, "can-download" => true, "download-sha256" => sha} ->
-          {:ok,
-           %{
-             sha: sha,
-             uri: "#{address}/api/pleroma/emoji/packs/download_shared/#{name}"
-           }}
+    if shareable_packs_available do
+      full_pack =
+        "#{address}/api/pleroma/emoji/packs/list"
+        |> Tesla.get!()
+        |> Map.get(:body)
+        |> Jason.decode!()
+        |> Map.get(name)
 
-        %{"fallback-src" => src, "fallback-src-sha256" => sha} when is_binary(src) ->
-          {:ok,
-           %{
-             sha: sha,
-             uri: src,
-             fallback: true
-           }}
+      pack_info_res =
+        case full_pack["pack"] do
+          %{"share-files" => true, "can-download" => true, "download-sha256" => sha} ->
+            {:ok,
+             %{
+               sha: sha,
+               uri: "#{address}/api/pleroma/emoji/packs/download_shared/#{name}"
+             }}
 
-        _ ->
-          {:error, "The pack was not set as shared and there is no fallback src to download from"}
+          %{"fallback-src" => src, "fallback-src-sha256" => sha} when is_binary(src) ->
+            {:ok,
+             %{
+               sha: sha,
+               uri: src,
+               fallback: true
+             }}
+
+          _ ->
+            {:error,
+             "The pack was not set as shared and there is no fallback src to download from"}
+        end
+
+      with {:ok, %{sha: sha, uri: uri} = pinfo} <- pack_info_res,
+           %{body: emoji_archive} <- Tesla.get!(uri),
+           {_, true} <- {:checksum, Base.decode16!(sha) == :crypto.hash(:sha256, emoji_archive)} do
+        local_name = data["as"] || name
+        pack_dir = Path.join(@emoji_dir_path, local_name)
+        File.mkdir_p!(pack_dir)
+
+        files = Enum.map(full_pack["files"], fn {_, path} -> to_charlist(path) end)
+        # Fallback cannot contain a pack.json file
+        files = if pinfo[:fallback], do: files, else: ['pack.json'] ++ files
+
+        {:ok, _} = :zip.unzip(emoji_archive, cwd: to_charlist(pack_dir), file_list: files)
+
+        # Fallback can't contain a pack.json file, since that would cause the fallback-src-sha256
+        # in it to depend on itself
+        if pinfo[:fallback] do
+          pack_file_path = Path.join(pack_dir, "pack.json")
+
+          File.write!(pack_file_path, Jason.encode!(full_pack, pretty: true))
+        end
+
+        json(conn, "ok")
+      else
+        {:error, e} ->
+          conn |> put_status(:internal_server_error) |> json(%{error: e})
+
+        {:checksum, _} ->
+          conn
+          |> put_status(:internal_server_error)
+          |> json(%{error: "SHA256 for the pack doesn't match the one sent by the server"})
       end
-
-    with {:ok, %{sha: sha, uri: uri} = pinfo} <- pack_info_res,
-         %{body: emoji_archive} <- Tesla.get!(uri),
-         {_, true} <- {:checksum, Base.decode16!(sha) == :crypto.hash(:sha256, emoji_archive)} do
-      local_name = data["as"] || name
-      pack_dir = Path.join(@emoji_dir_path, local_name)
-      File.mkdir_p!(pack_dir)
-
-      files = Enum.map(full_pack["files"], fn {_, path} -> to_charlist(path) end)
-      # Fallback cannot contain a pack.json file
-      files = if pinfo[:fallback], do: files, else: ['pack.json'] ++ files
-
-      {:ok, _} = :zip.unzip(emoji_archive, cwd: to_charlist(pack_dir), file_list: files)
-
-      # Fallback can't contain a pack.json file, since that would cause the fallback-src-sha256
-      # in it to depend on itself
-      if pinfo[:fallback] do
-        pack_file_path = Path.join(pack_dir, "pack.json")
-
-        File.write!(pack_file_path, Jason.encode!(full_pack, pretty: true))
-      end
-
-      json(conn, "ok")
     else
-      {:error, e} ->
-        conn |> put_status(:internal_server_error) |> json(%{error: e})
-
-      {:checksum, _} ->
-        conn
-        |> put_status(:internal_server_error)
-        |> json(%{error: "SHA256 for the pack doesn't match the one sent by the server"})
+      conn
+      |> put_status(:internal_server_error)
+      |> json(%{error: "The requested instance does not support sharing emoji packs"})
     end
   end
 
