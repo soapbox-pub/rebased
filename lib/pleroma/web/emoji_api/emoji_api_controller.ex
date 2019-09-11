@@ -94,7 +94,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
       ttl: cache_ms
     )
 
-    Logger.debug("Create an archive for the '#{name}' emoji pack, \
+    Logger.debug("Created an archive for the '#{name}' emoji pack, \
 keeping it in cache for #{div(cache_ms, 1000)}s")
 
     zip_result
