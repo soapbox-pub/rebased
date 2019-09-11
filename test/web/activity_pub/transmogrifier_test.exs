@@ -1613,4 +1613,78 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Transmogrifier.fix_url(%{"type" => "Text"}) == %{"type" => "Text"}
     end
   end
+
+  describe "get_obj_helper/2" do
+    test "returns nil when cannot normalize object" do
+      refute Transmogrifier.get_obj_helper("test-obj-id")
+    end
+
+    test "returns {:ok, %Object{}} for success case" do
+      assert {:ok, %Object{}} =
+               Transmogrifier.get_obj_helper("https://shitposter.club/notice/2827873")
+    end
+  end
+
+  describe "fix_attachments/1" do
+    test "returns not modified object" do
+      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      assert Transmogrifier.fix_attachments(data) == data
+    end
+
+    test "returns modified object when attachment is map" do
+      assert Transmogrifier.fix_attachments(%{
+               "attachment" => %{
+                 "mediaType" => "video/mp4",
+                 "url" => "https://peertube.moe/stat-480.mp4"
+               }
+             }) == %{
+               "attachment" => [
+                 %{
+                   "mediaType" => "video/mp4",
+                   "url" => [
+                     %{
+                       "href" => "https://peertube.moe/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
+                   ]
+                 }
+               ]
+             }
+    end
+
+    test "returns modified object when attachment is list" do
+      assert Transmogrifier.fix_attachments(%{
+               "attachment" => [
+                 %{"mediaType" => "video/mp4", "url" => "https://pe.er/stat-480.mp4"},
+                 %{"mimeType" => "video/mp4", "href" => "https://pe.er/stat-480.mp4"}
+               ]
+             }) == %{
+               "attachment" => [
+                 %{
+                   "mediaType" => "video/mp4",
+                   "url" => [
+                     %{
+                       "href" => "https://pe.er/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
+                   ]
+                 },
+                 %{
+                   "href" => "https://pe.er/stat-480.mp4",
+                   "mediaType" => "video/mp4",
+                   "mimeType" => "video/mp4",
+                   "url" => [
+                     %{
+                       "href" => "https://pe.er/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
+                   ]
+                 }
+               ]
+             }
+    end
+  end
 end

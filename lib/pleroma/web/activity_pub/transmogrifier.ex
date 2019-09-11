@@ -204,7 +204,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       Enum.map(attachment, fn data ->
         media_type = data["mediaType"] || data["mimeType"]
         href = data["url"] || data["href"]
-
         url = [%{"type" => "Link", "mediaType" => media_type, "href" => href}]
 
         data
@@ -216,7 +215,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_attachments(%{"attachment" => attachment} = object) when is_map(attachment) do
-    fix_attachments(Map.put(object, "attachment", [attachment]))
+    object
+    |> Map.put("attachment", [attachment])
+    |> fix_attachments()
   end
 
   def fix_attachments(object), do: object
@@ -725,10 +726,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   @spec get_obj_helper(String.t(), Keyword.t()) :: {:ok, Object.t()} | nil
   def get_obj_helper(id, options \\ []) do
-    if object = Object.normalize(id, true, options) do
-      {:ok, object}
-    else
-      nil
+    case Object.normalize(id, true, options) do
+      %Object{} = object -> {:ok, object}
+      _ -> nil
     end
   end
 
