@@ -373,6 +373,8 @@ config :pleroma, :chat, enabled: true
 
 config :phoenix, :format_encoders, json: Jason
 
+config :phoenix, :json_library, Jason
+
 config :pleroma, :gopher,
   enabled: false,
   ip: {0, 0, 0, 0},
