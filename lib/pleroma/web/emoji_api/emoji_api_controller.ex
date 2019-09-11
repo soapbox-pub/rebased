@@ -153,31 +153,32 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   from that instance, otherwise it will be downloaded from the fallback source, if there is one.
   """
   def download_from(conn, %{"instance_address" => address, "pack_name" => name} = data) do
-    list_uri = "#{address}/api/pleroma/emoji/packs/list"
-
-    list = Tesla.get!(list_uri).body |> Jason.decode!()
-    full_pack = list[name]
+    full_pack =
+      "#{address}/api/pleroma/emoji/packs/list"
+      |> Tesla.get!()
+      |> Map.get(:body)
+      |> Jason.decode!()
+      |> Map.get(name)
     pfiles = full_pack["files"]
-    pack = full_pack["pack"]
 
     pack_info_res =
-      cond do
-        pack["share-files"] && pack["can-download"] ->
+      case full_pack["pack"] do
+        %{"share-files" => true, "can-download" => true, "download-sha256" => sha} ->
           {:ok,
            %{
-             sha: pack["download-sha256"],
+             sha: sha,
              uri: "#{address}/api/pleroma/emoji/packs/download_shared/#{name}"
            }}
 
-        pack["fallback-src"] ->
+        %{"fallback-src" => src, "fallback-src-sha256" => sha} when is_binary(src) ->
           {:ok,
            %{
-             sha: pack["fallback-src-sha256"],
-             uri: pack["fallback-src"],
+             sha: sha,
+             uri: src,
              fallback: true
            }}
 
-        true ->
+        _ ->
           {:error, "The pack was not set as shared and there is no fallback src to download from"}
       end
 
@@ -194,9 +195,9 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
           File.mkdir_p!(pack_dir)
 
           # Fallback cannot contain a pack.json file
-          files =
-            unless(pinfo[:fallback], do: ['pack.json'], else: []) ++
-              (pfiles |> Enum.map(fn {_, path} -> to_charlist(path) end))
+          files = Enum.map(full_pack["files"], fn {_, path} -> to_charlist(path) end)
+          # Fallback cannot contain a pack.json file
+          files = if pinfo[:fallback], do: files, else: ['pack.json'] ++ files
 
           {:ok, _} = :zip.unzip(emoji_archive, cwd: to_charlist(pack_dir), file_list: files)
 
@@ -226,7 +227,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   def create(conn, %{"name" => name}) do
     pack_dir = Path.join(@emoji_dir_path, name)
 
-    unless File.exists?(pack_dir) do
+    if not File.exists?(pack_dir) do
       File.mkdir_p!(pack_dir)
 
       pack_file_p = Path.join(pack_dir, "pack.json")
@@ -265,8 +266,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   `new_data` is the new metadata for the pack, that will replace the old metadata.
   """
   def update_metadata(conn, %{"pack_name" => name, "new_data" => new_data}) do
-    pack_dir = Path.join(@emoji_dir_path, name)
-    pack_file_p = Path.join(pack_dir, "pack.json")
+    pack_file_p = Path.join([@emoji_dir_path, name, "pack.json"])
 
     full_pack = Jason.decode!(File.read!(pack_file_p))
 
@@ -275,45 +275,40 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       not is_nil(new_data["fallback-src"]) and
         new_data["fallback-src"] != full_pack["pack"]["fallback-src"]
 
-    new_data =
-      if should_update_fb_sha do
-        pack_arch = Tesla.get!(new_data["fallback-src"]).body
+    with {_, true} <- {:should_update?, should_update_fb_sha},
+         %{body: pack_arch} <- Tesla.get!(new_data["fallback-src"]),
+         {:ok, flist} <- :zip.unzip(pack_arch, [:memory]),
+         {_, true} <- {:has_all_files?, has_all_files?(full_pack, flist)} do
+      fallback_sha = :crypto.hash(:sha256, pack_arch) |> Base.encode16()
 
-        {:ok, flist} = :zip.unzip(pack_arch, [:memory])
+      new_data = Map.put(new_data, "fallback-src-sha256", fallback_sha)
+      update_metadata_and_send(conn, full_pack, new_data, pack_file_p)
+    else
+      {:should_update?, _} ->
+        update_metadata_and_send(conn, full_pack, new_data, pack_file_p)
 
-        # Check if all files from the pack.json are in the archive
-        has_all_files =
-          Enum.all?(full_pack["files"], fn {_, from_manifest} ->
-            Enum.find(flist, fn {from_archive, _} ->
-              to_string(from_archive) == from_manifest
-            end)
-          end)
-
-        unless has_all_files do
-          {:error,
-           conn
-           |> put_status(:bad_request)
-           |> text("The fallback archive does not have all files specified in pack.json")}
-        else
-          fallback_sha = :crypto.hash(:sha256, pack_arch) |> Base.encode16()
-
-          {:ok, new_data |> Map.put("fallback-src-sha256", fallback_sha)}
-        end
-      else
-        {:ok, new_data}
-      end
-
-    case new_data do
-      {:ok, new_data} ->
-        full_pack = Map.put(full_pack, "pack", new_data)
-        File.write!(pack_file_p, Jason.encode!(full_pack, pretty: true))
-
-        # Send new data back with fallback sha filled
-        conn |> json(new_data)
-
-      {:error, e} ->
-        e
+      {:has_all_files?, _} ->
+        conn
+        |> put_status(:bad_request)
+        |> text("The fallback archive does not have all files specified in pack.json")
     end
+  end
+
+  # Check if all files from the pack.json are in the archive
+  defp has_all_files?(%{"files" => files}, flist) do
+    Enum.all?(files, fn {_, from_manifest} ->
+      Enum.find(flist, fn {from_archive, _} ->
+        to_string(from_archive) == from_manifest
+      end)
+    end)
+  end
+
+  defp update_metadata_and_send(conn, full_pack, new_data, pack_file_p) do
+    full_pack = Map.put(full_pack, "pack", new_data)
+    File.write!(pack_file_p, Jason.encode!(full_pack, pretty: true))
+
+    # Send new data back with fallback sha filled
+    json(conn, new_data)
   end
 
   @doc """
@@ -492,69 +487,63 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   assumed to be emojis and stored in the new `pack.json` file.
   """
   def import_from_fs(conn, _params) do
-    case File.ls(@emoji_dir_path) do
+    with {:ok, results} <- File.ls(@emoji_dir_path) do
+      imported_pack_names =
+        results
+        |> Enum.filter(fn file ->
+          dir_path = Path.join(@emoji_dir_path, file)
+          # Find the directories that do NOT have pack.json
+          File.dir?(dir_path) and not File.exists?(Path.join(dir_path, "pack.json"))
+        end)
+        |> Enum.map(&write_pack_json_contents/1)
+
+      json(conn, imported_pack_names)
+    else
       {:error, _} ->
         conn
         |> put_status(:internal_server_error)
         |> text("Error accessing emoji pack directory")
+    end
+  end
 
-      {:ok, results} ->
-        imported_pack_names =
-          results
-          |> Enum.filter(fn file ->
-            dir_path = Path.join(@emoji_dir_path, file)
-            # Find the directories that do NOT have pack.json
-            File.dir?(dir_path) and not File.exists?(Path.join(dir_path, "pack.json"))
-          end)
-          |> Enum.map(fn dir ->
-            dir_path = Path.join(@emoji_dir_path, dir)
-            emoji_txt_path = Path.join(dir_path, "emoji.txt")
+  defp write_pack_json_contents(dir) do
+    dir_path = Path.join(@emoji_dir_path, dir)
+    emoji_txt_path = Path.join(dir_path, "emoji.txt")
 
-            files_for_pack =
-              if File.exists?(emoji_txt_path) do
-                # There's an emoji.txt file, it's likely from a pack installed by the pack manager.
-                # Make a pack.json file from the contents of that emoji.txt fileh
+    files_for_pack = files_for_pack(emoji_txt_path, dir_path)
+    pack_json_contents = Jason.encode!(%{pack: %{}, files: files_for_pack})
 
-                # FIXME: Copy-pasted from Pleroma.Emoji/load_from_file_stream/2
+    File.write!(Path.join(dir_path, "pack.json"), pack_json_contents)
 
-                # Create a map of shortcodes to filenames from emoji.txt
+    dir
+  end
 
-                File.read!(emoji_txt_path)
-                |> String.split("\n")
-                |> Enum.map(&String.trim/1)
-                |> Enum.map(fn line ->
-                  case String.split(line, ~r/,\s*/) do
-                    # This matches both strings with and without tags
-                    # and we don't care about tags here
-                    [name, file | _] ->
-                      {name, file}
+  defp files_for_pack(emoji_txt_path, dir_path) do
+    if File.exists?(emoji_txt_path) do
+      # There's an emoji.txt file, it's likely from a pack installed by the pack manager.
+      # Make a pack.json file from the contents of that emoji.txt fileh
 
-                    _ ->
-                      nil
-                  end
-                end)
-                |> Enum.filter(fn x -> not is_nil(x) end)
-                |> Enum.into(%{})
-              else
-                # If there's no emoji.txt, assume all files
-                # that are of certain extensions from the config are emojis and import them all
-                Pleroma.Emoji.make_shortcode_to_file_map(
-                  dir_path,
-                  Pleroma.Config.get!([:emoji, :pack_extensions])
-                )
-              end
+      # FIXME: Copy-pasted from Pleroma.Emoji/load_from_file_stream/2
 
-            pack_json_contents = Jason.encode!(%{pack: %{}, files: files_for_pack})
-
-            File.write!(
-              Path.join(dir_path, "pack.json"),
-              pack_json_contents
-            )
-
-            dir
-          end)
-
-        conn |> json(imported_pack_names)
+      # Create a map of shortcodes to filenames from emoji.txt
+      File.read!(emoji_txt_path)
+      |> String.split("\n")
+      |> Enum.map(&String.trim/1)
+      |> Enum.map(fn line ->
+        case String.split(line, ~r/,\s*/) do
+          # This matches both strings with and without tags
+          # and we don't care about tags here
+          [name, file | _] -> {name, file}
+          _ -> nil
+        end
+      end)
+      |> Enum.filter(fn x -> not is_nil(x) end)
+      |> Enum.into(%{})
+    else
+      # If there's no emoji.txt, assume all files
+      # that are of certain extensions from the config are emojis and import them all
+      pack_extensions = Pleroma.Config.get!([:emoji, :pack_extensions])
+      Pleroma.Emoji.make_shortcode_to_file_map(dir_path, pack_extensions)
     end
   end
 end
