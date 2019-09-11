@@ -1,4 +1,4 @@
-defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
+defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   import Tesla.Mock

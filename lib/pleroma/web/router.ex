@@ -207,7 +207,7 @@ defmodule Pleroma.Web.Router do
     get("/moderation_log", AdminAPIController, :list_log)
   end
 
-  scope "/api/pleroma/emoji", Pleroma.Web.EmojiAPI do
+  scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
     scope [] do
       pipe_through([:admin_api, :oauth_write])
 

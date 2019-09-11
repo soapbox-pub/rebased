@@ -1,4 +1,4 @@
-defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
+defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
   use Pleroma.Web, :controller
 
   require Logger
