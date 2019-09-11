@@ -162,8 +162,6 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       |> Jason.decode!()
       |> Map.get(name)
 
-    pfiles = full_pack["files"]
-
     pack_info_res =
       case full_pack["pack"] do
         %{"share-files" => true, "can-download" => true, "download-sha256" => sha} ->
