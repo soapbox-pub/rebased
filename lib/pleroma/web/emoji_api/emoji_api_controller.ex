@@ -6,7 +6,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
   def reload(conn, _params) do
     Pleroma.Emoji.reload()
 
-    conn |> text("ok")
+    conn |> json("ok")
   end
 
   @emoji_dir_path Path.join(
@@ -133,13 +133,15 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       {:can_download?, _} ->
         conn
         |> put_status(:forbidden)
-        |> text("Pack #{name} cannot be downloaded from this instance, either pack sharing\
-           was disabled for this pack or some files are missing")
+        |> json(%{
+          error: "Pack #{name} cannot be downloaded from this instance, either pack sharing\
+           was disabled for this pack or some files are missing"
+        })
 
       {:exists?, _} ->
         conn
         |> put_status(:not_found)
-        |> text("Pack #{name} does not exist")
+        |> json(%{error: "Pack #{name} does not exist"})
     end
   end
 
@@ -200,15 +202,15 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         File.write!(pack_file_path, Jason.encode!(full_pack, pretty: true))
       end
 
-      text(conn, "ok")
+      json(conn, "ok")
     else
       {:error, e} ->
-        conn |> put_status(:internal_server_error) |> text(e)
+        conn |> put_status(:internal_server_error) |> json(%{error: e})
 
       {:sha, _} ->
         conn
         |> put_status(:internal_server_error)
-        |> text("SHA256 for the pack doesn't match the one sent by the server")
+        |> json(%{error: "SHA256 for the pack doesn't match the one sent by the server"})
     end
   end
 
@@ -228,11 +230,11 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         Jason.encode!(%{pack: %{}, files: %{}})
       )
 
-      conn |> text("ok")
+      conn |> json("ok")
     else
       conn
       |> put_status(:conflict)
-      |> text("A pack named \"#{name}\" already exists")
+      |> json(%{error: "A pack named \"#{name}\" already exists"})
     end
   end
 
@@ -244,10 +246,12 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
 
     case File.rm_rf(pack_dir) do
       {:ok, _} ->
-        conn |> text("ok")
+        conn |> json("ok")
 
       {:error, _} ->
-        conn |> put_status(:internal_server_error) |> text("Couldn't delete the pack #{name}")
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: "Couldn't delete the pack #{name}"})
     end
   end
 
@@ -281,7 +285,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       {:has_all_files?, _} ->
         conn
         |> put_status(:bad_request)
-        |> text("The fallback archive does not have all files specified in pack.json")
+        |> json(%{error: "The fallback archive does not have all files specified in pack.json"})
     end
   end
 
@@ -302,6 +306,25 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     json(conn, new_data)
   end
 
+  defp get_filename(%{"filename" => filename}), do: filename
+
+  defp get_filename(%{"file" => file}) do
+    case file do
+      %Plug.Upload{filename: filename} -> filename
+      url when is_binary(url) -> Path.basename(url)
+    end
+  end
+
+  defp empty?(str), do: String.trim(str) == ""
+
+  defp update_file_and_send(conn, updated_full_pack, pack_file_p) do
+    # Write the emoji pack file
+    File.write!(pack_file_p, Jason.encode!(updated_full_pack, pretty: true))
+
+    # Return the modified file list
+    json(conn, updated_full_pack["files"])
+  end
+
   @doc """
   Updates a file in a pack.
 
@@ -316,155 +339,152 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     (from the current filename to `new_filename`)
   - `remove` removes the emoji named `shortcode` and it's associated file
   """
+
+  # Add
   def update_file(
         conn,
-        %{"pack_name" => pack_name, "action" => action, "shortcode" => shortcode} = params
+        %{"pack_name" => pack_name, "action" => "add", "shortcode" => shortcode} = params
       ) do
     pack_dir = Path.join(@emoji_dir_path, pack_name)
     pack_file_p = Path.join(pack_dir, "pack.json")
 
     full_pack = Jason.decode!(File.read!(pack_file_p))
 
-    res =
-      case action do
-        "add" ->
-          unless Map.has_key?(full_pack["files"], shortcode) do
-            filename =
-              if Map.has_key?(params, "filename") do
-                params["filename"]
-              else
-                case params["file"] do
-                  %Plug.Upload{filename: filename} -> filename
-                  url when is_binary(url) -> Path.basename(url)
-                end
-              end
+    with {_, false} <- {:has_shortcode, Map.has_key?(full_pack["files"], shortcode)},
+         filename <- get_filename(params),
+         false <- empty?(shortcode),
+         false <- empty?(filename) do
+      file_path = Path.join(pack_dir, filename)
 
-            unless String.trim(shortcode) |> String.length() == 0 or
-                     String.trim(filename) |> String.length() == 0 do
-              file_path = Path.join(pack_dir, filename)
-
-              # If the name contains directories, create them
-              if String.contains?(file_path, "/") do
-                File.mkdir_p!(Path.dirname(file_path))
-              end
-
-              case params["file"] do
-                %Plug.Upload{path: upload_path} ->
-                  # Copy the uploaded file from the temporary directory
-                  File.copy!(upload_path, file_path)
-
-                url when is_binary(url) ->
-                  # Download and write the file
-                  file_contents = Tesla.get!(url).body
-                  File.write!(file_path, file_contents)
-              end
-
-              updated_full_pack = put_in(full_pack, ["files", shortcode], filename)
-
-              {:ok, updated_full_pack}
-            else
-              {:error,
-               conn
-               |> put_status(:bad_request)
-               |> text("shortcode or filename cannot be empty")}
-            end
-          else
-            {:error,
-             conn
-             |> put_status(:conflict)
-             |> text("An emoji with the \"#{shortcode}\" shortcode already exists")}
-          end
-
-        "remove" ->
-          if Map.has_key?(full_pack["files"], shortcode) do
-            {emoji_file_path, updated_full_pack} = pop_in(full_pack, ["files", shortcode])
-
-            emoji_file_path = Path.join(pack_dir, emoji_file_path)
-
-            # Delete the emoji file
-            File.rm!(emoji_file_path)
-
-            # If the old directory has no more files, remove it
-            if String.contains?(emoji_file_path, "/") do
-              dir = Path.dirname(emoji_file_path)
-
-              if Enum.empty?(File.ls!(dir)) do
-                File.rmdir!(dir)
-              end
-            end
-
-            {:ok, updated_full_pack}
-          else
-            {:error,
-             conn |> put_status(:bad_request) |> text("Emoji \"#{shortcode}\" does not exist")}
-          end
-
-        "update" ->
-          if Map.has_key?(full_pack["files"], shortcode) do
-            with %{"new_shortcode" => new_shortcode, "new_filename" => new_filename} <- params do
-              unless String.trim(new_shortcode) |> String.length() == 0 or
-                       String.trim(new_filename) |> String.length() == 0 do
-                # First, remove the old shortcode, saving the old path
-                {old_emoji_file_path, updated_full_pack} = pop_in(full_pack, ["files", shortcode])
-                old_emoji_file_path = Path.join(pack_dir, old_emoji_file_path)
-                new_emoji_file_path = Path.join(pack_dir, new_filename)
-
-                # If the name contains directories, create them
-                if String.contains?(new_emoji_file_path, "/") do
-                  File.mkdir_p!(Path.dirname(new_emoji_file_path))
-                end
-
-                # Move/Rename the old filename to a new filename
-                # These are probably on the same filesystem, so just rename should work
-                :ok = File.rename(old_emoji_file_path, new_emoji_file_path)
-
-                # If the old directory has no more files, remove it
-                if String.contains?(old_emoji_file_path, "/") do
-                  dir = Path.dirname(old_emoji_file_path)
-
-                  if Enum.empty?(File.ls!(dir)) do
-                    File.rmdir!(dir)
-                  end
-                end
-
-                # Then, put in the new shortcode with the new path
-                updated_full_pack =
-                  put_in(updated_full_pack, ["files", new_shortcode], new_filename)
-
-                {:ok, updated_full_pack}
-              else
-                {:error,
-                 conn
-                 |> put_status(:bad_request)
-                 |> text("new_shortcode or new_filename cannot be empty")}
-              end
-            else
-              _ ->
-                {:error,
-                 conn
-                 |> put_status(:bad_request)
-                 |> text("new_shortcode or new_file were not specified")}
-            end
-          else
-            {:error,
-             conn |> put_status(:bad_request) |> text("Emoji \"#{shortcode}\" does not exist")}
-          end
-
-        _ ->
-          {:error, conn |> put_status(:bad_request) |> text("Unknown action: #{action}")}
+      # If the name contains directories, create them
+      if String.contains?(file_path, "/") do
+        File.mkdir_p!(Path.dirname(file_path))
       end
 
-    case res do
-      {:ok, updated_full_pack} ->
-        # Write the emoji pack file
-        File.write!(pack_file_p, Jason.encode!(updated_full_pack, pretty: true))
+      case params["file"] do
+        %Plug.Upload{path: upload_path} ->
+          # Copy the uploaded file from the temporary directory
+          File.copy!(upload_path, file_path)
 
-        # Return the modified file list
-        conn |> json(updated_full_pack["files"])
+        url when is_binary(url) ->
+          # Download and write the file
+          file_contents = Tesla.get!(url).body
+          File.write!(file_path, file_contents)
+      end
 
-      {:error, e} ->
-        e
+      updated_full_pack = put_in(full_pack, ["files", shortcode], filename)
+      update_file_and_send(conn, updated_full_pack, pack_file_p)
+    else
+      {:has_shortcode, _} ->
+        conn
+        |> put_status(:conflict)
+        |> json(%{error: "An emoji with the \"#{shortcode}\" shortcode already exists"})
+
+      true ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "shortcode or filename cannot be empty"})
     end
+  end
+
+  # Remove
+  def update_file(conn, %{
+        "pack_name" => pack_name,
+        "action" => "remove",
+        "shortcode" => shortcode
+      }) do
+    pack_dir = Path.join(@emoji_dir_path, pack_name)
+    pack_file_p = Path.join(pack_dir, "pack.json")
+
+    full_pack = Jason.decode!(File.read!(pack_file_p))
+
+    if Map.has_key?(full_pack["files"], shortcode) do
+      {emoji_file_path, updated_full_pack} = pop_in(full_pack, ["files", shortcode])
+
+      emoji_file_path = Path.join(pack_dir, emoji_file_path)
+
+      # Delete the emoji file
+      File.rm!(emoji_file_path)
+
+      # If the old directory has no more files, remove it
+      if String.contains?(emoji_file_path, "/") do
+        dir = Path.dirname(emoji_file_path)
+
+        if Enum.empty?(File.ls!(dir)) do
+          File.rmdir!(dir)
+        end
+      end
+
+      update_file_and_send(conn, updated_full_pack, pack_file_p)
+    else
+      conn
+      |> put_status(:bad_request)
+      |> json(%{error: "Emoji \"#{shortcode}\" does not exist"})
+    end
+  end
+
+  # Update
+  def update_file(
+        conn,
+        %{"pack_name" => pack_name, "action" => "update", "shortcode" => shortcode} = params
+      ) do
+    pack_dir = Path.join(@emoji_dir_path, pack_name)
+    pack_file_p = Path.join(pack_dir, "pack.json")
+
+    full_pack = Jason.decode!(File.read!(pack_file_p))
+
+    with {_, true} <- {:has_shortcode, Map.has_key?(full_pack["files"], shortcode)},
+         %{"new_shortcode" => new_shortcode, "new_filename" => new_filename} <- params,
+         false <- empty?(new_shortcode),
+         false <- empty?(new_filename) do
+      # First, remove the old shortcode, saving the old path
+      {old_emoji_file_path, updated_full_pack} = pop_in(full_pack, ["files", shortcode])
+      old_emoji_file_path = Path.join(pack_dir, old_emoji_file_path)
+      new_emoji_file_path = Path.join(pack_dir, new_filename)
+
+      # If the name contains directories, create them
+      if String.contains?(new_emoji_file_path, "/") do
+        File.mkdir_p!(Path.dirname(new_emoji_file_path))
+      end
+
+      # Move/Rename the old filename to a new filename
+      # These are probably on the same filesystem, so just rename should work
+      :ok = File.rename(old_emoji_file_path, new_emoji_file_path)
+
+      # If the old directory has no more files, remove it
+      if String.contains?(old_emoji_file_path, "/") do
+        dir = Path.dirname(old_emoji_file_path)
+
+        if Enum.empty?(File.ls!(dir)) do
+          File.rmdir!(dir)
+        end
+      end
+
+      # Then, put in the new shortcode with the new path
+      updated_full_pack = put_in(updated_full_pack, ["files", new_shortcode], new_filename)
+      update_file_and_send(conn, updated_full_pack, pack_file_p)
+    else
+      {:has_shortcode, _} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Emoji \"#{shortcode}\" does not exist"})
+
+      true ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "new_shortcode or new_filename cannot be empty"})
+
+      _ ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "new_shortcode or new_file were not specified"})
+    end
+  end
+
+  def update_file(conn, %{"action" => action}) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: "Unknown action: #{action}"})
   end
 
   @doc """
@@ -493,7 +513,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       {:error, _} ->
         conn
         |> put_status(:internal_server_error)
-        |> text("Error accessing emoji pack directory")
+        |> json(%{error: "Error accessing emoji pack directory"})
     end
   end
 

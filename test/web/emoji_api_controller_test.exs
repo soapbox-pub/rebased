@@ -101,14 +101,14 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
              }
              |> Jason.encode!()
            )
-           |> text_response(200) == "ok"
+           |> json_response(200) == "ok"
 
     assert File.exists?("#{@emoji_dir_path}/test_pack2/pack.json")
     assert File.exists?("#{@emoji_dir_path}/test_pack2/blank.png")
 
     assert conn
            |> delete(emoji_api_path(conn, :delete, "test_pack2"))
-           |> response(200) == "ok"
+           |> json_response(200) == "ok"
 
     refute File.exists?("#{@emoji_dir_path}/test_pack2")
 
@@ -130,14 +130,14 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
              }
              |> Jason.encode!()
            )
-           |> text_response(200) == "ok"
+           |> json_response(200) == "ok"
 
     assert File.exists?("#{@emoji_dir_path}/test_pack_nonshared2/pack.json")
     assert File.exists?("#{@emoji_dir_path}/test_pack_nonshared2/blank.png")
 
     assert conn
            |> delete(emoji_api_path(conn, :delete, "test_pack_nonshared2"))
-           |> response(200) == "ok"
+           |> json_response(200) == "ok"
 
     refute File.exists?("#{@emoji_dir_path}/test_pack_nonshared2")
   end
@@ -225,15 +225,15 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
       conn = build_conn()
 
-      assert conn
-             |> assign(:user, ctx[:admin])
-             |> post(
-               emoji_api_path(conn, :update_metadata, "test_pack"),
-               %{
-                 "new_data" => new_data
-               }
-             )
-             |> text_response(:bad_request) =~ "does not have all"
+      assert (conn
+              |> assign(:user, ctx[:admin])
+              |> post(
+                emoji_api_path(conn, :update_metadata, "test_pack"),
+                %{
+                  "new_data" => new_data
+                }
+              )
+              |> json_response(:bad_request))["error"] =~ "does not have all"
     end
   end
 
@@ -267,9 +267,9 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
     conn = conn |> assign(:user, admin)
 
-    assert conn
-           |> post(emoji_api_path(conn, :update_file, "test_pack"), same_name)
-           |> text_response(:conflict) =~ "already exists"
+    assert (conn
+            |> post(emoji_api_path(conn, :update_file, "test_pack"), same_name)
+            |> json_response(:conflict))["error"] =~ "already exists"
 
     assert conn
            |> post(emoji_api_path(conn, :update_file, "test_pack"), different_name)
@@ -350,7 +350,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
                "test_created"
              )
            )
-           |> text_response(200) == "ok"
+           |> json_response(200) == "ok"
 
     assert File.exists?("#{@emoji_dir_path}/test_created/pack.json")
 
@@ -361,7 +361,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
     assert conn
            |> delete(emoji_api_path(conn, :delete, "test_created"))
-           |> response(200) == "ok"
+           |> json_response(200) == "ok"
 
     refute File.exists?("#{@emoji_dir_path}/test_created/pack.json")
   end
