@@ -343,7 +343,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
     assert conn
            |> put_req_header("content-type", "application/json")
-           |> post(
+           |> put(
              emoji_api_path(
                conn,
                :create,
