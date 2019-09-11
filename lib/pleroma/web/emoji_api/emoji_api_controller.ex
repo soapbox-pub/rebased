@@ -183,42 +183,36 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
           {:error, "The pack was not set as shared and there is no fallback src to download from"}
       end
 
-    case pack_info_res do
-      {:ok, %{sha: sha, uri: uri} = pinfo} ->
-        sha = Base.decode16!(sha)
-        emoji_archive = Tesla.get!(uri).body
+    with {:ok, %{sha: sha, uri: uri} = pinfo} <- pack_info_res,
+         %{body: emoji_archive} <- Tesla.get!(uri),
+         {_, true} <- {:sha, Base.decode16!(sha) == :crypto.hash(:sha256, emoji_archive)} do
+      local_name = data["as"] || name
+      pack_dir = Path.join(@emoji_dir_path, local_name)
+      File.mkdir_p!(pack_dir)
 
-        got_sha = :crypto.hash(:sha256, emoji_archive)
+      files = Enum.map(full_pack["files"], fn {_, path} -> to_charlist(path) end)
+      # Fallback cannot contain a pack.json file
+      files = if pinfo[:fallback], do: files, else: ['pack.json'] ++ files
 
-        if got_sha == sha do
-          local_name = data["as"] || name
-          pack_dir = Path.join(@emoji_dir_path, local_name)
-          File.mkdir_p!(pack_dir)
+      {:ok, _} = :zip.unzip(emoji_archive, cwd: to_charlist(pack_dir), file_list: files)
 
-          # Fallback cannot contain a pack.json file
-          files = Enum.map(full_pack["files"], fn {_, path} -> to_charlist(path) end)
-          # Fallback cannot contain a pack.json file
-          files = if pinfo[:fallback], do: files, else: ['pack.json'] ++ files
+      # Fallback can't contain a pack.json file, since that would cause the fallback-src-sha256
+      # in it to depend on itself
+      if pinfo[:fallback] do
+        pack_file_path = Path.join(pack_dir, "pack.json")
 
-          {:ok, _} = :zip.unzip(emoji_archive, cwd: to_charlist(pack_dir), file_list: files)
+        File.write!(pack_file_path, Jason.encode!(full_pack, pretty: true))
+      end
 
-          # Fallback can't contain a pack.json file, since that would cause the fallback-src-sha256
-          # in it to depend on itself
-          if pinfo[:fallback] do
-            pack_file_path = Path.join(pack_dir, "pack.json")
-
-            File.write!(pack_file_path, Jason.encode!(full_pack, pretty: true))
-          end
-
-          conn |> text("ok")
-        else
-          conn
-          |> put_status(:internal_server_error)
-          |> text("SHA256 for the pack doesn't match the one sent by the server")
-        end
-
+      text(conn, "ok")
+    else
       {:error, e} ->
         conn |> put_status(:internal_server_error) |> text(e)
+
+      {:sha, _} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> text("SHA256 for the pack doesn't match the one sent by the server")
     end
   end
 
