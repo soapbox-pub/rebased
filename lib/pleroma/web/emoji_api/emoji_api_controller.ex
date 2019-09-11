@@ -23,47 +23,49 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
   a map of "pack directory name" to pack.json contents.
   """
   def list_packs(conn, _params) do
-    pack_infos =
-      case File.ls(@emoji_dir_path) do
-        {:error, _} ->
-          %{}
+    with {:ok, results} <- File.ls(@emoji_dir_path) do
+      pack_infos =
+        results
+        |> Enum.filter(&has_pack_json?/1)
+        |> Enum.map(&load_pack/1)
+        # Check if all the files are in place and can be sent
+        |> Enum.map(&validate_pack/1)
+        # Transform into a map of pack-name => pack-data
+        |> Enum.into(%{})
 
-        {:ok, results} ->
-          results
-          |> Enum.filter(fn file ->
-            dir_path = Path.join(@emoji_dir_path, file)
-            # Filter to only use the pack.json packs
-            File.dir?(dir_path) and File.exists?(Path.join(dir_path, "pack.json"))
-          end)
-          |> Enum.map(fn pack_name ->
-            pack_path = Path.join(@emoji_dir_path, pack_name)
-            pack_file = Path.join(pack_path, "pack.json")
+      json(conn, pack_infos)
+    end
+  end
 
-            {pack_name, Jason.decode!(File.read!(pack_file))}
-          end)
-          # Transform into a map of pack-name => pack-data
-          # Check if all the files are in place and can be sent
-          |> Enum.map(fn {name, pack} ->
-            pack_path = Path.join(@emoji_dir_path, name)
+  defp has_pack_json?(file) do
+    dir_path = Path.join(@emoji_dir_path, file)
+    # Filter to only use the pack.json packs
+    File.dir?(dir_path) and File.exists?(Path.join(dir_path, "pack.json"))
+  end
 
-            if can_download?(pack, pack_path) do
-              archive_for_sha = make_archive(name, pack, pack_path)
-              archive_sha = :crypto.hash(:sha256, archive_for_sha) |> Base.encode16()
+  defp load_pack(pack_name) do
+    pack_path = Path.join(@emoji_dir_path, pack_name)
+    pack_file = Path.join(pack_path, "pack.json")
 
-              {name,
-               pack
-               |> put_in(["pack", "can-download"], true)
-               |> put_in(["pack", "download-sha256"], archive_sha)}
-            else
-              {name,
-               pack
-               |> put_in(["pack", "can-download"], false)}
-            end
-          end)
-          |> Enum.into(%{})
-      end
+    {pack_name, Jason.decode!(File.read!(pack_file))}
+  end
 
-    conn |> json(pack_infos)
+  defp validate_pack({name, pack}) do
+    pack_path = Path.join(@emoji_dir_path, name)
+
+    if can_download?(pack, pack_path) do
+      archive_for_sha = make_archive(name, pack, pack_path)
+      archive_sha = :crypto.hash(:sha256, archive_for_sha) |> Base.encode16()
+
+      pack =
+        pack
+        |> put_in(["pack", "can-download"], true)
+        |> put_in(["pack", "download-sha256"], archive_sha)
+
+      {name, pack}
+    else
+      {name, put_in(pack, ["pack", "can-download"], false)}
+    end
   end
 
   defp can_download?(pack, pack_path) do
@@ -159,6 +161,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       |> Map.get(:body)
       |> Jason.decode!()
       |> Map.get(name)
+
     pfiles = full_pack["files"]
 
     pack_info_res =
