@@ -20,6 +20,7 @@ defmodule Pleroma.Plugs.Cache do
 
   - `ttl`:  An expiration time (time-to-live). This value should be in milliseconds or `nil` to disable expiration. Defaults to `nil`.
   - `query_params`: Take URL query string into account (`true`), ignore it (`false`) or limit to specific params only (list). Defaults to `true`.
+  - `tracking_fun`: A function that is called on successfull responses, no matter if the request is cached or not. It should accept a conn as the first argument and the value assigned to `tracking_fun_data` as the second.
 
   Additionally, you can overwrite the TTL inside a controller action by assigning `cache_ttl` to the connection struct:
 
@@ -56,6 +57,10 @@ defmodule Pleroma.Plugs.Cache do
       {:ok, nil} ->
         cache_resp(conn, opts)
 
+      {:ok, {content_type, body, tracking_fun_data}} ->
+        conn = opts.tracking_fun(conn, tracking_fun_data)
+        send_cached(conn, {content_type, body})
+
       {:ok, record} ->
         send_cached(conn, record)
 
@@ -90,7 +95,16 @@ defmodule Pleroma.Plugs.Cache do
         content_type = content_type(conn)
         record = {content_type, body}
 
-        Cachex.put(:web_resp_cache, key, record, ttl: ttl)
+        conn =
+          unless opts[:tracking_fun] do
+            Cachex.put(:web_resp_cache, key, {content_type, body}, ttl: ttl)
+            conn
+          else
+            tracking_fun_data = Map.get(conn.assigns, :tracking_fun_data, nil)
+            Cachex.put(:web_resp_cache, {content_type, body, tracking_fun_data}, record, ttl: ttl)
+
+            opts.tracking_fun.(conn, tracking_fun_data)
+          end
 
         put_resp_header(conn, "x-cache", "MISS from Pleroma")
 
