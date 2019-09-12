@@ -8,11 +8,39 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 7]
 
   alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Conversation.Participation
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.StatusView
+
+  def emoji_reactions_by(%{assigns: %{user: user}} = conn, %{"id" => activity_id}) do
+    with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
+         %Object{data: %{"reactions" => emoji_reactions}} <- Object.normalize(activity) do
+      reactions =
+        Enum.reduce(emoji_reactions, %{}, fn {emoji, users}, res ->
+          users =
+            users
+            |> Enum.map(&User.get_cached_by_ap_id/1)
+
+          res
+          |> Map.put(
+            emoji,
+            AccountView.render("accounts.json", %{users: users, for: user, as: :user})
+          )
+        end)
+
+      conn
+      |> json(reactions)
+    else
+      _e ->
+        conn
+        |> json(%{})
+    end
+  end
 
   def react_with_emoji(%{assigns: %{user: user}} = conn, %{"id" => activity_id, "emoji" => emoji}) do
     with {:ok, _activity, _object} <- CommonAPI.react_with_emoji(activity_id, user, emoji),

@@ -8,6 +8,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Repo
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MastodonAPI.AccountView
 
   import Pleroma.Factory
 
@@ -24,6 +25,30 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     assert %{"id" => id} = json_response(result, 200)
     assert to_string(activity.id) == id
+  end
+
+  test "GET /api/v1/pleroma/statuses/:id/emoji_reactions_by", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+
+    result =
+      conn
+      |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
+      |> json_response(200)
+
+    assert result == %{}
+
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+
+    result =
+      conn
+      |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
+      |> json_response(200)
+
+    [represented_user] = result["🎅"]
+    assert represented_user["id"] == other_user.id
   end
 
   test "/api/v1/pleroma/conversations/:id", %{conn: conn} do
