@@ -58,7 +58,8 @@ defmodule Pleroma.Plugs.Cache do
         cache_resp(conn, opts)
 
       {:ok, {content_type, body, tracking_fun_data}} ->
-        conn = opts.tracking_fun(conn, tracking_fun_data)
+        conn = opts.tracking_fun.(conn, tracking_fun_data)
+
         send_cached(conn, {content_type, body})
 
       {:ok, record} ->
@@ -93,7 +94,6 @@ defmodule Pleroma.Plugs.Cache do
         ttl = Map.get(conn.assigns, :cache_ttl, opts.ttl)
         key = cache_key(conn, opts)
         content_type = content_type(conn)
-        record = {content_type, body}
 
         conn =
           unless opts[:tracking_fun] do
@@ -101,7 +101,7 @@ defmodule Pleroma.Plugs.Cache do
             conn
           else
             tracking_fun_data = Map.get(conn.assigns, :tracking_fun_data, nil)
-            Cachex.put(:web_resp_cache, {content_type, body, tracking_fun_data}, record, ttl: ttl)
+            Cachex.put(:web_resp_cache, key, {content_type, body, tracking_fun_data}, ttl: ttl)
 
             opts.tracking_fun.(conn, tracking_fun_data)
           end
