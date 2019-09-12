@@ -3,12 +3,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
 
   require Logger
 
-  def reload(conn, _params) do
-    Pleroma.Emoji.reload()
-
-    conn |> json("ok")
-  end
-
   @emoji_dir_path Path.join(
                     Pleroma.Config.get!([:instance, :static_dir]),
                     "emoji"

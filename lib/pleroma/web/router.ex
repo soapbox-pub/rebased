@@ -205,15 +205,11 @@ defmodule Pleroma.Web.Router do
     get("/config/migrate_from_db", AdminAPIController, :migrate_from_db)
 
     get("/moderation_log", AdminAPIController, :list_log)
+
+    post("/reload_emoji", AdminAPIController, :reload_emoji)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
-    scope [] do
-      pipe_through([:admin_api, :oauth_write])
-
-      post("/reload", EmojiAPIController, :reload)
-    end
-
     scope "/packs" do
       # Modifying packs
       pipe_through([:admin_api, :oauth_write])
