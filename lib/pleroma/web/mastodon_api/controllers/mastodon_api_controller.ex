@@ -427,6 +427,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
 
+  def get_statuses(%{assigns: %{user: user}} = conn, %{"ids" => ids}) do
+    limit = 100
+
+    activities =
+      ids
+      |> Enum.take(limit)
+      |> Activity.all_by_ids_with_object()
+      |> Enum.filter(&Visibility.visible_for_user?(&1, user))
+
+    conn
+    |> put_view(StatusView)
+    |> render("index.json", activities: activities, for: user, as: :activity)
+  end
+
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          true <- Visibility.visible_for_user?(activity, user) do

@@ -173,4 +173,16 @@ defmodule Pleroma.ActivityTest do
     |> where([a], a.activity_id == ^activity.id)
     |> Repo.one!()
   end
+
+  test "all_by_ids_with_object/1" do
+    %{id: id1} = insert(:note_activity)
+    %{id: id2} = insert(:note_activity)
+
+    activities =
+      [id1, id2]
+      |> Activity.all_by_ids_with_object()
+      |> Enum.sort(&(&1.id < &2.id))
+
+    assert [%{id: ^id1, object: %Object{}}, %{id: ^id2, object: %Object{}}] = activities
+  end
 end

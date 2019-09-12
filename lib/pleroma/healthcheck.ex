@@ -9,6 +9,7 @@ defmodule Pleroma.Healthcheck do
   alias Pleroma.Healthcheck
   alias Pleroma.Repo
 
+  @derive Jason.Encoder
   defstruct pool_size: 0,
             active: 0,
             idle: 0,
