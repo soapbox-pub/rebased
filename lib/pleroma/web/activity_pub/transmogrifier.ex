@@ -995,9 +995,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("attachment", attachments)
   end
 
-  defp strip_internal_fields(object) do
+  def strip_internal_fields(object) do
     object
     |> Map.drop([
+      "reactions",
+      "reaction_count",
       "likes",
       "like_count",
       "announcements",

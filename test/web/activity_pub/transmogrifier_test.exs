@@ -491,6 +491,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       refute Map.has_key?(object.data, "likes")
     end
 
+    test "it strips internal reactions" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+      {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, user, "📢")
+
+      %{object: object} = Activity.get_by_id_with_object(activity.id)
+      assert Map.has_key?(object.data, "reactions")
+      assert Map.has_key?(object.data, "reaction_count")
+
+      object_data = Transmogrifier.strip_internal_fields(object.data)
+      refute Map.has_key?(object_data, "reactions")
+      refute Map.has_key?(object_data, "reaction_count")
+    end
+
     test "it works for incoming update activities" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
