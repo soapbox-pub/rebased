@@ -628,4 +628,18 @@ defmodule Pleroma.Web.OStatusTest do
       refute OStatus.is_representable?(note_activity)
     end
   end
+
+  describe "make_user/2" do
+    test "creates new user" do
+      {:ok, user} = OStatus.make_user("https://social.heldscal.la/user/23211")
+
+      created_user =
+        User
+        |> Repo.get_by(ap_id: "https://social.heldscal.la/user/23211")
+        |> Map.put(:last_digest_emailed_at, nil)
+
+      assert user.info
+      assert user == created_user
+    end
+  end
 end

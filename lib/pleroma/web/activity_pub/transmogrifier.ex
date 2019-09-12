@@ -1049,8 +1049,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
          {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
          already_ap <- User.ap_enabled?(user),
-         {:ok, user} <- user |> User.upgrade_changeset(data) |> User.update_and_set_cache() do
-      unless already_ap do
+         {:ok, user} <- upgrade_user(user, data) do
+      if not already_ap do
         PleromaJobQueue.enqueue(:transmogrifier, __MODULE__, [:user_upgrade, user])
       end
 
@@ -1059,6 +1059,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       %User{} = user -> {:ok, user}
       e -> e
     end
+  end
+
+  defp upgrade_user(user, data) do
+    user
+    |> User.upgrade_changeset(data)
+    |> User.update_and_set_cache()
   end
 
   def maybe_retire_websub(ap_id) do
