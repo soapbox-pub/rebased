@@ -315,7 +315,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def react_with_emoji(user, object, emoji, options \\ []) do
     with local <- Keyword.get(options, :local, true),
          activity_id <- Keyword.get(options, :activity_id, nil),
-         is_emoji?(emoji),
+         Pleroma.Emoji.is_unicode_emoji?(emoji),
          reaction_data <- make_emoji_reaction_data(user, object, emoji, activity_id),
          {:ok, activity} <- insert(reaction_data, local),
          {:ok, object} <- add_emoji_reaction_to_object(activity, object) do

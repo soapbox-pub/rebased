@@ -8,7 +8,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Repo
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.MastodonAPI.AccountView
 
   import Pleroma.Factory
 
