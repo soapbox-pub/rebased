@@ -8,8 +8,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
   alias Pleroma.Notification
   alias Pleroma.ScheduledActivity
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.MastodonAPI
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   import Pleroma.Factory
 
@@ -75,8 +75,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPITest do
 
       User.subscribe(subscriber, user)
 
-      {:ok, status} = TwitterAPI.create_status(user, %{"status" => "Akariiiin"})
-      {:ok, status1} = TwitterAPI.create_status(user, %{"status" => "Magi"})
+      {:ok, status} = CommonAPI.post(user, %{"status" => "Akariiiin"})
+
+      {:ok, status1} = CommonAPI.post(user, %{"status" => "Magi"})
       {:ok, [notification]} = Notification.create_notifications(status)
       {:ok, [notification1]} = Notification.create_notifications(status1)
       res = MastodonAPI.get_notifications(subscriber)

@@ -150,7 +150,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         content: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["summary"])},
         expires_at: nil,
-        direct_conversation_id: nil
+        direct_conversation_id: nil,
+        thread_muted: false
       }
     }
 
@@ -171,6 +172,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("status.json", %{activity: activity, for: user})
 
     assert status.muted == true
+  end
+
+  test "tells if the message is thread muted" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, user} = User.mute(user, other_user)
+
+    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "test"})
+    status = StatusView.render("status.json", %{activity: activity, for: user})
+
+    assert status.pleroma.thread_muted == false
+
+    {:ok, activity} = CommonAPI.add_mute(user, activity)
+
+    status = StatusView.render("status.json", %{activity: activity, for: user})
+
+    assert status.pleroma.thread_muted == true
   end
 
   test "tells if the status is bookmarked" do
@@ -531,6 +550,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       assert result[:voted] == true
       assert Enum.at(result[:options], 1)[:votes_count] == 1
       assert Enum.at(result[:options], 2)[:votes_count] == 1
+    end
+
+    test "does not crash on polls with no end date" do
+      object = Object.normalize("https://skippers-bin.com/notes/7x9tmrp97i")
+      result = StatusView.render("poll.json", %{object: object})
+
+      assert result[:expires_at] == nil
+      assert result[:expired] == false
     end
   end
 

@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Notification
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -138,37 +137,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
         assert response == "job started"
       end
-    end
-  end
-
-  describe "POST /api/pleroma/notifications/read" do
-    test "it marks a single notification as read", %{conn: conn} do
-      user1 = insert(:user)
-      user2 = insert(:user)
-      {:ok, activity1} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
-      {:ok, activity2} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
-      {:ok, [notification1]} = Notification.create_notifications(activity1)
-      {:ok, [notification2]} = Notification.create_notifications(activity2)
-
-      conn
-      |> assign(:user, user1)
-      |> post("/api/pleroma/notifications/read", %{"id" => "#{notification1.id}"})
-      |> json_response(:ok)
-
-      assert Repo.get(Notification, notification1.id).seen
-      refute Repo.get(Notification, notification2.id).seen
-    end
-
-    test "it returns error when notification not found", %{conn: conn} do
-      user1 = insert(:user)
-
-      response =
-        conn
-        |> assign(:user, user1)
-        |> post("/api/pleroma/notifications/read", %{"id" => "22222222222222"})
-        |> json_response(403)
-
-      assert response == %{"error" => "Cannot get notification"}
     end
   end
 
@@ -692,6 +660,113 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert resp == "\"test_captcha\""
       assert called(Pleroma.Captcha.new())
+    end
+  end
+
+  defp with_credentials(conn, username, password) do
+    header_content = "Basic " <> Base.encode64("#{username}:#{password}")
+    put_req_header(conn, "authorization", header_content)
+  end
+
+  defp valid_user(_context) do
+    user = insert(:user)
+    [user: user]
+  end
+
+  describe "POST /api/pleroma/change_email" do
+    setup [:valid_user]
+
+    test "without credentials", %{conn: conn} do
+      conn = post(conn, "/api/pleroma/change_email")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials and invalid password", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "hi",
+          "email" => "test@test.com"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Invalid password."}
+    end
+
+    test "with credentials, valid password and invalid email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => "foobar"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email has invalid format."}
+    end
+
+    test "with credentials, valid password and no email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email can't be blank."}
+    end
+
+    test "with credentials, valid password and blank email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => ""
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email can't be blank."}
+    end
+
+    test "with credentials, valid password and non unique email", %{
+      conn: conn,
+      user: current_user
+    } do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => user.email
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email has already been taken."}
+    end
+
+    test "with credentials, valid password and valid email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => "cofe@foobar.com"
+        })
+
+      assert json_response(conn, 200) == %{"status" => "success"}
     end
   end
 end

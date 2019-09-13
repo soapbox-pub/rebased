@@ -290,7 +290,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def user(%{assigns: %{user: for_user}} = conn, %{"id" => nickname_or_id}) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id),
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id, for: for_user),
          true <- User.auth_active?(user) || user.id == for_user.id || User.superuser?(for_user) do
       account = AccountView.render("account.json", %{user: user, for: for_user})
       json(conn, account)
@@ -390,7 +390,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def user_statuses(%{assigns: %{user: reading_user}} = conn, params) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"]) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user) do
       params =
         params
         |> Map.put("tag", params["tagged"])
@@ -425,6 +425,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> add_link_headers(:dm_timeline, activities)
     |> put_view(StatusView)
     |> render("index.json", %{activities: activities, for: user, as: :activity})
+  end
+
+  def get_statuses(%{assigns: %{user: user}} = conn, %{"ids" => ids}) do
+    limit = 100
+
+    activities =
+      ids
+      |> Enum.take(limit)
+      |> Activity.all_by_ids_with_object()
+      |> Enum.filter(&Visibility.visible_for_user?(&1, user))
+
+    conn
+    |> put_view(StatusView)
+    |> render("index.json", activities: activities, for: user, as: :activity)
   end
 
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do

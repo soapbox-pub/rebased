@@ -126,13 +126,14 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 ## `/api/pleroma/admin/`…
 See [Admin-API](Admin-API.md)
 
-## `/api/pleroma/notifications/read`
-### Mark a single notification as read
+## `/api/v1/pleroma/notifications/read`
+### Mark notifications as read
 * Method `POST`
 * Authentication: required
-* Params:
-    * `id`: notification's id
-* Response: JSON. Returns `{"status": "success"}` if the reading was successful, otherwise returns `{"error": "error_msg"}`
+* Params (mutually exclusive):
+    * `id`: a single notification id to read
+    * `max_id`: read all notifications up to this id
+* Response: Notification entity/Array of Notification entities that were read. In case of `max_id`, only the first 80 read notifications will be returned.
 
 ## `/api/v1/pleroma/accounts/:id/subscribe`
 ### Subscribe to receive notifications for all statuses posted by a user
@@ -251,7 +252,7 @@ See [Admin-API](Admin-API.md)
 * Params:
     * `email`: email of that needs to be verified
 * Authentication: not required
-* Response: 204 No Content 
+* Response: 204 No Content
 
 ## `/api/v1/pleroma/mascot`
 ### Gets user mascot image
@@ -320,11 +321,21 @@ See [Admin-API](Admin-API.md)
 }
 ```
 
+## `/api/pleroma/change_email`
+### Change account email
+* Method `POST`
+* Authentication: required
+* Params:
+    * `password`: user's password
+    * `email`: new email
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+* Note: Currently, Mastodon has no API for changing email. If they add it in future it might be incompatible with Pleroma.
+
 # Pleroma Conversations
 
 Pleroma Conversations have the same general structure that Mastodon Conversations have. The behavior differs in the following ways when using these endpoints:
 
-1. Pleroma Conversations never add or remove recipients, unless explicitly changed by the user. 
+1. Pleroma Conversations never add or remove recipients, unless explicitly changed by the user.
 2. Pleroma Conversations statuses can be requested by Conversation id.
 3. Pleroma Conversations can be replied to.
 

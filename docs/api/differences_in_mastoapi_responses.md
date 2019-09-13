@@ -26,6 +26,7 @@ Has these additional fields under the `pleroma` object:
 - `content`: a map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
 - `spoiler_text`: a map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
 - `expires_at`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
+- `thread_muted`: true if the thread the post belongs to is muted
 
 ## Attachments
 
@@ -89,6 +90,20 @@ Additional parameters can be added to the JSON body/Form data:
 - `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
 - `expires_in`: The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour.
 - `in_reply_to_conversation_id`: Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`.
+
+## GET `/api/v1/statuses`
+
+An endpoint to get multiple statuses by IDs.
+
+Required parameters:
+
+- `ids`: array of activity ids
+
+Usage example: `GET /api/v1/statuses/?ids[]=1&ids[]=2`.
+
+Returns: array of Status.
+
+The maximum number of statuses is limited to 100 per request.
 
 ## PATCH `/api/v1/update_credentials`
 

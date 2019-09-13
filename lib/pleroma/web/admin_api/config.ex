@@ -90,6 +90,8 @@ defmodule Pleroma.Web.AdminAPI.Config do
     for v <- entity, into: [], do: do_convert(v)
   end
 
+  defp do_convert(%Regex{} = entity), do: inspect(entity)
+
   defp do_convert(entity) when is_map(entity) do
     for {k, v} <- entity, into: %{}, do: {do_convert(k), do_convert(v)}
   end
@@ -122,7 +124,7 @@ defmodule Pleroma.Web.AdminAPI.Config do
 
   def transform(entity), do: :erlang.term_to_binary(entity)
 
-  defp do_transform(%Regex{} = entity) when is_map(entity), do: entity
+  defp do_transform(%Regex{} = entity), do: entity
 
   defp do_transform(%{"tuple" => [":dispatch", [entity]]}) do
     {dispatch_settings, []} = do_eval(entity)
@@ -154,8 +156,15 @@ defmodule Pleroma.Web.AdminAPI.Config do
   defp do_transform(entity), do: entity
 
   defp do_transform_string("~r/" <> pattern) do
-    pattern = String.trim_trailing(pattern, "/")
-    ~r/#{pattern}/
+    modificator = String.split(pattern, "/") |> List.last()
+    pattern = String.trim_trailing(pattern, "/" <> modificator)
+
+    case modificator do
+      "" -> ~r/#{pattern}/
+      "i" -> ~r/#{pattern}/i
+      "u" -> ~r/#{pattern}/u
+      "s" -> ~r/#{pattern}/s
+    end
   end
 
   defp do_transform_string(":" <> atom), do: String.to_atom(atom)

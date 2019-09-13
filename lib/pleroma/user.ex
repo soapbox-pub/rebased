@@ -569,8 +569,22 @@ defmodule Pleroma.User do
     end)
   end
 
-  def get_cached_by_nickname_or_id(nickname_or_id) do
-    get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id)
+  def get_cached_by_nickname_or_id(nickname_or_id, opts \\ []) do
+    restrict_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
+
+    cond do
+      is_integer(nickname_or_id) or Pleroma.FlakeId.is_flake_id?(nickname_or_id) ->
+        get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id)
+
+      restrict_to_local == false ->
+        get_cached_by_nickname(nickname_or_id)
+
+      restrict_to_local == :unauthenticated and match?(%User{}, opts[:for]) ->
+        get_cached_by_nickname(nickname_or_id)
+
+      true ->
+        nil
+    end
   end
 
   def get_by_nickname(nickname) do
@@ -1610,4 +1624,13 @@ defmodule Pleroma.User do
   def is_internal_user?(%User{nickname: nil}), do: true
   def is_internal_user?(%User{local: true, nickname: "internal." <> _}), do: true
   def is_internal_user?(_), do: false
+
+  def change_email(user, email) do
+    user
+    |> cast(%{email: email}, [:email])
+    |> validate_required([:email])
+    |> unique_constraint(:email)
+    |> validate_format(:email, @email_regex)
+    |> update_and_set_cache()
+  end
 end

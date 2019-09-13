@@ -8,19 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OStatus: eliminate the possibility of a protocol downgrade attack.
 - OStatus: prevent following locked accounts, bypassing the approval process.
 
+### Removed
+- **Breaking:** GNU Social API with Qvitter extensions support
+- **Breaking:** ActivityPub: The `accept_blocks` configuration setting.
+- Emoji: Remove longfox emojis.
+- Remove `Reply-To` header from report emails for admins.
+
 ### Changed
 - **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
 - **Breaking:** Configuration: `/media/` is now removed when `base_url` is configured, append `/media/` to your `base_url` config to keep the old behaviour if desired
+- **Breaking:** `/api/pleroma/notifications/read` is moved to `/api/v1/pleroma/notifications/read` and now supports `max_id` and responds with Mastodon API entities.
 - Configuration: OpenGraph and TwitterCard providers enabled by default
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
+- Configuration: added `config/description.exs`, from which `docs/config.md` is generated
 - Federation: Return 403 errors when trying to request pages from a user's follower/following collections if they have `hide_followers`/`hide_follows` set
 - NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
 - NodeInfo: Return `mailerEnabled` in `metadata`
 - Mastodon API: Unsubscribe followers when they unfollow a user
+- Mastodon API: `pleroma.thread_muted` key in the Status entity
 - AdminAPI: Add "godmode" while fetching user statuses (i.e. admin can see private statuses)
 - Improve digest email template
+– Pagination: (optional) return `total` alongside with `items` when paginating
 
 ### Fixed
+- Following from Osada
 - Not being able to pin unlisted posts
 - Objects being re-embedded to activities after being updated (e.g faved/reposted). Running 'mix pleroma.database prune_objects' again is advised.
 - Favorites timeline doing database-intensive queries
@@ -28,7 +39,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `federation_incoming_replies_max_depth` option being ignored in certain cases
 - Federation/MediaProxy not working with instances that have wrong certificate order
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
+- Mastodon API: Misskey's endless polls being unable to render
 - Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
+- Mastodon API: Notifications endpoint crashing if one notification failed to render
 - Mastodon API: follower/following counters not being nullified, when `hide_follows`/`hide_followers` is set
 - Mastodon API: `muted` in the Status entity, using author's account to determine if the tread was muted
 - Mastodon API: Add `account_id`, `type`, `offset`, and `limit` to search API (`/api/v1/search` and `/api/v2/search`)
@@ -48,6 +61,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reverse Proxy limiting `max_body_length` was incorrectly defined and only checked `Content-Length` headers which may not be sufficient in some circumstances
 - MRF: fix use of unserializable keyword lists in describe() implementations
 - ActivityPub: Deactivated user deletion
+- ActivityPub: Fix `/users/:nickname/inbox` crashing without an authenticated user
+- MRF: fix ability to follow a relay when AntiFollowbotPolicy was enabled
 
 ### Added
 - Expiring/ephemeral activites. All activities can have expires_at value set, which controls when they should be deleted automatically.
@@ -91,10 +106,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub: Optional signing of ActivityPub object fetches.
 - Admin API: Endpoint for fetching latest user's statuses
 - Pleroma API: Add `/api/v1/pleroma/accounts/confirmation_resend?email=<email>` for resending account confirmation.
+- Pleroma API: Email change endpoint.
 - Relays: Added a task to list relay subscriptions.
 - Mix Tasks: `mix pleroma.database fix_likes_collections`
 - Federation: Remove `likes` from objects.
 - Admin API: Added moderation log
+- Web response cache (currently, enabled for ActivityPub)
+- Mastodon API: Added an endpoint to get multiple statuses by IDs (`GET /api/v1/statuses/?ids[]=1&ids[]=2`)
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
@@ -102,10 +120,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - RichMedia: parsers and their order are configured in `rich_media` config.
 - RichMedia: add the rich media ttl based on image expiration time.
 
-### Removed
-- Emoji: Remove longfox emojis.
-- Remove `Reply-To` header from report emails for admins.
-- ActivityPub: The `accept_blocks` configuration setting.
 
 ## [1.0.1] - 2019-07-14
 ### Security

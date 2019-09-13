@@ -807,7 +807,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       )
 
     unless opts["skip_preload"] do
-      from([thread_mute: tm] in query, where: is_nil(tm))
+      from([thread_mute: tm] in query, where: is_nil(tm.user_id))
     else
       query
     end

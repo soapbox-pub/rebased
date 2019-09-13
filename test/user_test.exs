@@ -69,8 +69,8 @@ defmodule Pleroma.UserTest do
     locked = insert(:user, %{info: %{locked: true}})
     follower = insert(:user)
 
-    Pleroma.Web.TwitterAPI.TwitterAPI.follow(follower, %{"user_id" => unlocked.id})
-    Pleroma.Web.TwitterAPI.TwitterAPI.follow(follower, %{"user_id" => locked.id})
+    CommonAPI.follow(follower, unlocked)
+    CommonAPI.follow(follower, locked)
 
     assert {:ok, []} = User.get_follow_requests(unlocked)
     assert {:ok, [activity]} = User.get_follow_requests(locked)
@@ -83,9 +83,9 @@ defmodule Pleroma.UserTest do
     pending_follower = insert(:user)
     accepted_follower = insert(:user)
 
-    Pleroma.Web.TwitterAPI.TwitterAPI.follow(pending_follower, %{"user_id" => locked.id})
-    Pleroma.Web.TwitterAPI.TwitterAPI.follow(pending_follower, %{"user_id" => locked.id})
-    Pleroma.Web.TwitterAPI.TwitterAPI.follow(accepted_follower, %{"user_id" => locked.id})
+    CommonAPI.follow(pending_follower, locked)
+    CommonAPI.follow(pending_follower, locked)
+    CommonAPI.follow(accepted_follower, locked)
     User.follow(accepted_follower, locked)
 
     assert {:ok, [activity]} = User.get_follow_requests(locked)
@@ -1279,11 +1279,9 @@ defmodule Pleroma.UserTest do
     {:ok, _follower2} = User.follow(follower2, user)
     {:ok, _follower3} = User.follow(follower3, user)
 
-    {:ok, _} = User.block(user, follower)
+    {:ok, user} = User.block(user, follower)
 
-    user_show = Pleroma.Web.TwitterAPI.UserView.render("show.json", %{user: user})
-
-    assert Map.get(user_show, "followers_count") == 2
+    assert User.user_info(user).follower_count == 2
   end
 
   describe "list_inactive_users_query/1" do
@@ -1327,7 +1325,7 @@ defmodule Pleroma.UserTest do
         to = Enum.random(users -- [user])
 
         {:ok, _} =
-          Pleroma.Web.TwitterAPI.TwitterAPI.create_status(user, %{
+          CommonAPI.post(user, %{
             "status" => "hey @#{to.nickname}"
           })
       end)
@@ -1359,12 +1357,12 @@ defmodule Pleroma.UserTest do
 
       Enum.each(recipients, fn to ->
         {:ok, _} =
-          Pleroma.Web.TwitterAPI.TwitterAPI.create_status(sender, %{
+          CommonAPI.post(sender, %{
             "status" => "hey @#{to.nickname}"
           })
 
         {:ok, _} =
-          Pleroma.Web.TwitterAPI.TwitterAPI.create_status(sender, %{
+          CommonAPI.post(sender, %{
             "status" => "hey again @#{to.nickname}"
           })
       end)
@@ -1614,6 +1612,33 @@ defmodule Pleroma.UserTest do
       {:ok, other_user} = User.follow(other_user, user)
 
       assert User.user_info(other_user).following_count == 152
+    end
+  end
+
+  describe "change_email/2" do
+    setup do
+      [user: insert(:user)]
+    end
+
+    test "blank email returns error", %{user: user} do
+      assert {:error, %{errors: [email: {"can't be blank", _}]}} = User.change_email(user, "")
+      assert {:error, %{errors: [email: {"can't be blank", _}]}} = User.change_email(user, nil)
+    end
+
+    test "non unique email returns error", %{user: user} do
+      %{email: email} = insert(:user)
+
+      assert {:error, %{errors: [email: {"has already been taken", _}]}} =
+               User.change_email(user, email)
+    end
+
+    test "invalid email returns error", %{user: user} do
+      assert {:error, %{errors: [email: {"has invalid format", _}]}} =
+               User.change_email(user, "cofe")
+    end
+
+    test "changes email", %{user: user} do
+      assert {:ok, %User{email: "cofe@cofe.party"}} = User.change_email(user, "cofe@cofe.party")
     end
   end
 end
