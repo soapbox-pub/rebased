@@ -3626,7 +3626,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       res = post(conn, "/api/v1/accounts", valid_params)
       assert json_response(res, 200)
 
-      [{127,0,0,1}, {127,0,0,2}, {127,0,0,3}, {127,0,0,4}]
+      [{127, 0, 0, 1}, {127, 0, 0, 2}, {127, 0, 0, 3}, {127, 0, 0, 4}]
       |> Stream.zip(valid_params)
       |> Enum.each(fn {ip, {attr, _}} ->
         res =
