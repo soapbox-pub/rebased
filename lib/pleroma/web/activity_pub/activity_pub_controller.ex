@@ -130,7 +130,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     assign(conn, :tracking_fun_data, object_id)
   end
 
-  defp maybe_set_tracking_data(conn, _activity), do: assign(conn, :tracking_fun_data, nil)
+  defp maybe_set_tracking_data(conn, _activity), do: conn
 
   defp set_cache_ttl_for(conn, %Activity{object: object}) do
     set_cache_ttl_for(conn, object)
