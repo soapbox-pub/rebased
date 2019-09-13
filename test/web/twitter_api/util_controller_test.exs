@@ -8,6 +8,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Mock
 
@@ -338,12 +339,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "show follow page with error when user cannot fecth by `acct` link", %{conn: conn} do
       user = insert(:user)
 
-      response =
-        conn
-        |> assign(:user, user)
-        |> get("/ostatus_subscribe?acct=https://mastodon.social/users/not_found")
+      assert capture_log(fn ->
+               response =
+                 conn
+                 |> assign(:user, user)
+                 |> get("/ostatus_subscribe?acct=https://mastodon.social/users/not_found")
 
-      assert html_response(response, 200) =~ "Error fetching user"
+               assert html_response(response, 200) =~ "Error fetching user"
+             end) =~ "Object has been deleted"
     end
   end
 

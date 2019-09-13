@@ -3963,13 +3963,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       Config.put([:suggestions, :enabled], true)
       Config.put([:suggestions, :third_party_engine], "http://test500?{{host}}&{{user}}")
 
-      res =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/suggestions")
-        |> json_response(500)
+      assert capture_log(fn ->
+               res =
+                 conn
+                 |> assign(:user, user)
+                 |> get("/api/v1/suggestions")
+                 |> json_response(500)
 
-      assert res == "Something went wrong"
+               assert res == "Something went wrong"
+             end) =~ "Could not retrieve suggestions"
     end
 
     test "returns suggestions", %{conn: conn, user: user, other_user: other_user} do
