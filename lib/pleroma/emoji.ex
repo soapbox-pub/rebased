@@ -261,28 +261,34 @@ defmodule Pleroma.Emoji do
     end)
   end
 
-  {:ok, file} = File.read("lib/pleroma/emoji-data.txt")
+  @external_resource "lib/pleroma/emoji-data.txt"
 
-  @unicode_emoji file
-                 |> String.split("\n")
-                 |> Enum.filter(fn line -> String.starts_with?(line, ["1", "2", "3", "4"]) end)
-                 |> Enum.map(fn line -> String.split(line) |> List.first() end)
-                 |> Enum.map(fn line ->
-                   case String.split(line, "..") do
-                     [number] ->
-                       String.to_integer(number, 16)
+  emojis =
+    @external_resource
+    |> File.read!()
+    |> String.split("\n")
+    |> Enum.filter(fn line -> line != "" and not String.starts_with?(line, "#") end)
+    |> Enum.map(fn line ->
+      line
+      |> String.split(";", parts: 2)
+      |> hd()
+      |> String.trim()
+      |> String.split("..")
+      |> case do
+        [number] ->
+          <<String.to_integer(number, 16)::utf8>>
 
-                     [first, last] ->
-                       Range.new(String.to_integer(first, 16), String.to_integer(last, 16))
-                       |> Enum.to_list()
-                   end
-                 end)
-                 |> List.flatten()
-                 |> Enum.filter(&is_integer/1)
-                 |> Enum.uniq()
-                 |> Enum.map(fn n -> :unicode.characters_to_binary([n], :utf32) end)
+        [first, last] ->
+          String.to_integer(first, 16)..String.to_integer(last, 16)
+          |> Enum.map(&<<&1::utf8>>)
+      end
+    end)
+    |> List.flatten()
+    |> Enum.uniq()
 
-  def is_unicode_emoji?(str) do
-    str in @unicode_emoji
+  for emoji <- emojis do
+    def is_unicode_emoji?(unquote(emoji)), do: true
   end
+
+  def is_unicode_emoji?(_), do: false
 end
