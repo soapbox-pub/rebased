@@ -3626,16 +3626,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       res = post(conn, "/api/v1/accounts", valid_params)
       assert json_response(res, 200)
 
-      Enum.each(valid_params, fn {attr, _} ->
+      [{127,0,0,1}, {127,0,0,2}, {127,0,0,3}, {127,0,0,4}]
+      |> Stream.zip(valid_params)
+      |> Enum.each(fn {ip, {attr, _}} ->
         res =
           conn
-          |> Map.put(
-            :remote_ip,
-            {:rand.uniform(15), :rand.uniform(15), :rand.uniform(15), :rand.uniform(15)}
-          )
+          |> Map.put(:remote_ip, ip)
           |> post("/api/v1/accounts", Map.delete(valid_params, attr))
+          |> json_response(400)
 
-        assert json_response(res, 400) == %{"error" => "Missing parameters"}
+        assert res == %{"error" => "Missing parameters"}
       end)
     end
 
