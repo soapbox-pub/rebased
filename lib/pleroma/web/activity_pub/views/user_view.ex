@@ -118,30 +118,34 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("following.json", %{user: user, page: page} = opts) do
-    showing = (opts[:for] && opts[:for] == user) || !user.info.hide_follows
+    showing_items = (opts[:for] && opts[:for] == user) || !user.info.hide_follows
+    showing_count = showing_items || !user.info.hide_follows_count
+
     query = User.get_friends_query(user)
     query = from(user in query, select: [:ap_id])
     following = Repo.all(query)
 
     total =
-      if showing do
+      if showing_count do
         length(following)
       else
         0
       end
 
-    collection(following, "#{user.ap_id}/following", page, showing, total)
+    collection(following, "#{user.ap_id}/following", page, showing_items, total)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
   def render("following.json", %{user: user} = opts) do
-    showing = (opts[:for] && opts[:for] == user) || !user.info.hide_follows
+    showing_items = (opts[:for] && opts[:for] == user) || !user.info.hide_follows
+    showing_count = showing_items || !user.info.hide_follows_count
+
     query = User.get_friends_query(user)
     query = from(user in query, select: [:ap_id])
     following = Repo.all(query)
 
     total =
-      if showing do
+      if showing_count do
         length(following)
       else
         0
@@ -152,7 +156,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "type" => "OrderedCollection",
       "totalItems" => total,
       "first" =>
-        if showing do
+        if showing_items do
           collection(following, "#{user.ap_id}/following", 1, !user.info.hide_follows)
         else
           "#{user.ap_id}/following?page=1"
@@ -162,32 +166,34 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("followers.json", %{user: user, page: page} = opts) do
-    showing = (opts[:for] && opts[:for] == user) || !user.info.hide_followers
+    showing_items = (opts[:for] && opts[:for] == user) || !user.info.hide_followers
+    showing_count = showing_items || !user.info.hide_followers_count
 
     query = User.get_followers_query(user)
     query = from(user in query, select: [:ap_id])
     followers = Repo.all(query)
 
     total =
-      if showing do
+      if showing_count do
         length(followers)
       else
         0
       end
 
-    collection(followers, "#{user.ap_id}/followers", page, showing, total)
+    collection(followers, "#{user.ap_id}/followers", page, showing_items, total)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
   def render("followers.json", %{user: user} = opts) do
-    showing = (opts[:for] && opts[:for] == user) || !user.info.hide_followers
+    showing_items = (opts[:for] && opts[:for] == user) || !user.info.hide_followers
+    showing_count = showing_items || !user.info.hide_followers_count
 
     query = User.get_followers_query(user)
     query = from(user in query, select: [:ap_id])
     followers = Repo.all(query)
 
     total =
-      if showing do
+      if showing_count do
         length(followers)
       else
         0
@@ -198,8 +204,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "type" => "OrderedCollection",
       "totalItems" => total,
       "first" =>
-        if showing do
-          collection(followers, "#{user.ap_id}/followers", 1, showing, total)
+        if showing_items do
+          collection(followers, "#{user.ap_id}/followers", 1, showing_items, total)
         else
           "#{user.ap_id}/followers?page=1"
         end
