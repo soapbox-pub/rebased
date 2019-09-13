@@ -1219,7 +1219,7 @@ defmodule Pleroma.User do
 
   def delete_user_activities(%User{ap_id: ap_id} = user) do
     ap_id
-    |> Activity.query_by_actor()
+    |> Activity.Queries.by_actor()
     |> RepoStreamer.chunk_stream(50)
     |> Stream.each(fn activities ->
       Enum.each(activities, &delete_activity(&1))

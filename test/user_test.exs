@@ -1081,7 +1081,7 @@ defmodule Pleroma.UserTest do
 
       user_activities =
         user.ap_id
-        |> Activity.query_by_actor()
+        |> Activity.Queries.by_actor()
         |> Repo.all()
         |> Enum.map(fn act -> act.data["type"] end)
 
