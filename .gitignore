@@ -38,6 +38,7 @@ erl_crash.dump
 
 # Prevent committing docs files
 /priv/static/doc/*
+docs/generated_config.md
 
 # Code test coverage
 /cover
