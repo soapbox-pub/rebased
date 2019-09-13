@@ -125,7 +125,7 @@ defmodule Pleroma.Mixfile do
       {:crypt,
        git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
       {:cors_plug, "~> 1.5"},
-      {:ex_doc, "~> 0.20.2", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
       {:swoosh, "~> 0.23.2"},
       {:phoenix_swoosh, "~> 0.2"},
@@ -172,7 +172,8 @@ defmodule Pleroma.Mixfile do
       "ecto.rollback": ["pleroma.ecto.rollback"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"],
+      docs: ["pleroma.docs", "docs"]
     ]
   end
 
