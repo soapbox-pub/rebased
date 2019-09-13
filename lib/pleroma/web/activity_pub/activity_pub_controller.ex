@@ -72,9 +72,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def track_object_fetch(conn, object_id) do
-    case conn.assigns[:user] do
-      %User{id: user_id} -> Delivery.create(object_id, user_id)
-      _ -> nil
+    with %{assigns: %{user: %User{id: user_id}}} <- conn do
+      Delivery.create(object_id, user_id)
     end
 
     conn
