@@ -252,7 +252,7 @@ See [Admin-API](Admin-API.md)
 * Params:
     * `email`: email of that needs to be verified
 * Authentication: not required
-* Response: 204 No Content 
+* Response: 204 No Content
 
 ## `/api/v1/pleroma/mascot`
 ### Gets user mascot image
@@ -320,6 +320,15 @@ See [Admin-API](Admin-API.md)
   "healthy": true # Instance state
 }
 ```
+
+## `/api/pleroma/change_email`
+### Change account email
+* Method `POST`
+* Authentication: required
+* Params:
+    * `password`: user's password
+    * `email`: new email
+* Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
 
 # Pleroma Conversations
 

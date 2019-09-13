@@ -314,6 +314,25 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  def change_email(%{assigns: %{user: user}} = conn, params) do
+    case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
+      {:ok, user} ->
+        with {:ok, _user} <- User.change_email(user, params["email"]) do
+          json(conn, %{status: "success"})
+        else
+          {:error, changeset} ->
+            {_, {error, _}} = Enum.at(changeset.errors, 0)
+            json(conn, %{error: "Email #{error}."})
+
+          _ ->
+            json(conn, %{error: "Unable to change email."})
+        end
+
+      {:error, msg} ->
+        json(conn, %{error: msg})
+    end
+  end
+
   def delete_account(%{assigns: %{user: user}} = conn, params) do
     case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
       {:ok, user} ->
