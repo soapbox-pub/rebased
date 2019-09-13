@@ -354,3 +354,28 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params:
     * `recipients`: A list of ids of users that should receive posts to this conversation. This will replace the current list of recipients, so submit the full list. The owner of owner of the conversation will always be part of the set of recipients, though.
 * Response: JSON, statuses (200 - healthy, 503 unhealthy)
+
+# Emoji Reactions
+
+Emoji reactions work a lot like favourites do. They make it possible to react to a post with a single emoji character.
+
+## `POST /api/v1/pleroma/statuses/:id/react_with_emoji`
+### React to a post with a unicode emoji
+* Method: `POST`
+* Authentication: required
+* Params: `emoji`: A single character unicode emoji
+* Response: JSON, the status.
+
+## `GET /api/v1/pleroma/statuses/:id/emoji_reactions_by`
+### Get an object of emoji to account mappings with accounts that reacted to the post
+* Method: `GET`
+* Authentication: optional
+* Params: None
+* Response: JSON, a map of emoji to account list mappings.
+* Example Response:
+```json
+{
+  "😀" => [{"id" => "xyz.."...}, {"id" => "zyx..."}],
+  "🗡" => [{"id" => "abc..."}] 
+}
+```
