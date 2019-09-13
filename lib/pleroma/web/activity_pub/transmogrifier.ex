@@ -165,7 +165,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.put("context", replied_object.data["context"] || object["conversation"])
       else
         e ->
-          Logger.error("Couldn't fetch \"#{inspect(in_reply_to_id)}\", error: #{inspect(e)}")
+          Logger.error("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
           object
       end
     else
