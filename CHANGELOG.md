@@ -20,11 +20,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** `/api/pleroma/notifications/read` is moved to `/api/v1/pleroma/notifications/read` and now supports `max_id` and responds with Mastodon API entities.
 - Configuration: OpenGraph and TwitterCard providers enabled by default
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
-- Mastodon API: `pleroma.thread_muted` key in the Status entity
+- Configuration: added `config/description.exs`, from which `docs/config.md` is generated
 - Federation: Return 403 errors when trying to request pages from a user's follower/following collections if they have `hide_followers`/`hide_follows` set
 - NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
 - NodeInfo: Return `mailerEnabled` in `metadata`
 - Mastodon API: Unsubscribe followers when they unfollow a user
+- Mastodon API: `pleroma.thread_muted` key in the Status entity
 - AdminAPI: Add "godmode" while fetching user statuses (i.e. admin can see private statuses)
 - Improve digest email template
 – Pagination: (optional) return `total` alongside with `items` when paginating
@@ -105,6 +106,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub: Optional signing of ActivityPub object fetches.
 - Admin API: Endpoint for fetching latest user's statuses
 - Pleroma API: Add `/api/v1/pleroma/accounts/confirmation_resend?email=<email>` for resending account confirmation.
+- Pleroma API: Email change endpoint.
 - Relays: Added a task to list relay subscriptions.
 - Mix Tasks: `mix pleroma.database fix_likes_collections`
 - Federation: Remove `likes` from objects.

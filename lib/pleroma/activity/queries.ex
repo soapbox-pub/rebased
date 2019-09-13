@@ -13,6 +13,14 @@ defmodule Pleroma.Activity.Queries do
 
   alias Pleroma.Activity
 
+  @spec by_ap_id(query, String.t()) :: query
+  def by_ap_id(query \\ Activity, ap_id) do
+    from(
+      activity in query,
+      where: fragment("(?)->>'id' = ?", activity.data, ^to_string(ap_id))
+    )
+  end
+
   @spec by_actor(query, String.t()) :: query
   def by_actor(query \\ Activity, actor) do
     from(
@@ -21,8 +29,23 @@ defmodule Pleroma.Activity.Queries do
     )
   end
 
-  @spec by_object_id(query, String.t()) :: query
-  def by_object_id(query \\ Activity, object_id) do
+  @spec by_object_id(query, String.t() | [String.t()]) :: query
+  def by_object_id(query \\ Activity, object_id)
+
+  def by_object_id(query, object_ids) when is_list(object_ids) do
+    from(
+      activity in query,
+      where:
+        fragment(
+          "coalesce((?)->'object'->>'id', (?)->>'object') = ANY(?)",
+          activity.data,
+          activity.data,
+          ^object_ids
+        )
+    )
+  end
+
+  def by_object_id(query, object_id) when is_binary(object_id) do
     from(activity in query,
       where:
         fragment(
@@ -40,10 +63,5 @@ defmodule Pleroma.Activity.Queries do
       activity in query,
       where: fragment("(?)->>'type' = ?", activity.data, ^activity_type)
     )
-  end
-
-  @spec limit(query, pos_integer()) :: query
-  def limit(query \\ Activity, limit) do
-    from(activity in query, limit: ^limit)
   end
 end

@@ -225,6 +225,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
 
+      post("/change_email", UtilController, :change_email)
       post("/change_password", UtilController, :change_password)
       post("/delete_account", UtilController, :delete_account)
       put("/notification_settings", UtilController, :update_notificaton_settings)
