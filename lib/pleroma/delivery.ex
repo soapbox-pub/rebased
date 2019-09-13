@@ -31,7 +31,7 @@ defmodule Pleroma.Delivery do
   def create(object_id, user_id) do
     %Delivery{}
     |> changeset(%{user_id: user_id, object_id: object_id})
-    |> Repo.insert()
+    |> Repo.insert(on_conflict: :nothing)
   end
 
   def get(object_id, user_id) do
