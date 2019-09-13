@@ -3,9 +3,9 @@ defmodule Pleroma.Docs.Markdown do
 
   @spec process(keyword()) :: {:ok, String.t()}
   def process(descriptions) do
-    config_path = "docs/config.md"
+    config_path = "docs/generated_config.md"
     {:ok, file} = File.open(config_path, [:utf8, :write])
-    IO.write(file, "# Configuration\n")
+    IO.write(file, "# Generated configuration\n")
     IO.write(file, "Date of generation: #{Date.utc_today()}\n\n")
 
     IO.write(
