@@ -417,7 +417,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
   errors downloading the pack
 
 ## `GET /api/pleroma/emoji/packs/:name/download_shared`
-### Requests the instance to download the pack from another instance
+### Requests a local pack from the instance
 * Method `GET`
 * Authentication: not requires
 * Params: None
