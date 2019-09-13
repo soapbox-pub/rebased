@@ -46,6 +46,10 @@ defmodule Pleroma.Delivery do
     end
   end
 
+  # A hack because user delete activities have a fake id for whatever reason
+  # TODO: Get rid of this
+  def delete_all_by_object_id("pleroma:fake_object_id"), do: {0, []}
+
   def delete_all_by_object_id(object_id) do
     from(d in Delivery, where: d.object_id == ^object_id)
     |> Repo.delete_all()

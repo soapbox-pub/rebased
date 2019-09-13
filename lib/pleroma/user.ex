@@ -1627,6 +1627,10 @@ defmodule Pleroma.User do
   def is_internal_user?(%User{local: true, nickname: "internal." <> _}), do: true
   def is_internal_user?(_), do: false
 
+  # A hack because user delete activities have a fake id for whatever reason
+  # TODO: Get rid of this
+  def get_delivered_users_by_object_id("pleroma:fake_object_id"), do: []
+
   def get_delivered_users_by_object_id(object_id) do
     from(u in User,
       inner_join: delivery in assoc(u, :deliveries),
