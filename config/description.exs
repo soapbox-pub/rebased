@@ -39,11 +39,7 @@ config :pleroma, :config_description, [
         key: :link_name,
         type: :boolean,
         description:
-          "If enabled, a name parameter will be added to the url of the upload. For example `https://instance.tld/media/imagehash.png?name=realname.png`",
-        suggestions: [
-          true,
-          false
-        ]
+          "If enabled, a name parameter will be added to the url of the upload. For example `https://instance.tld/media/imagehash.png?name=realname.png`"
       },
       %{
         key: :base_url,
@@ -57,11 +53,7 @@ config :pleroma, :config_description, [
         key: :proxy_remote,
         type: :boolean,
         description:
-          "If enabled, requests to media stored using a remote uploader will be proxied instead of being redirected.",
-        suggestions: [
-          true,
-          false
-        ]
+          "If enabled, requests to media stored using a remote uploader will be proxied instead of being redirected."
       },
       %{
         key: :proxy_opts,
@@ -190,11 +182,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Allow/disallow send emails",
-        suggestions: [
-          true,
-          false
-        ]
+        description: "Allow/disallow send emails"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
@@ -221,8 +209,7 @@ config :pleroma, :config_description, [
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :ssl,
         type: :boolean,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [true, false]
+        description: "`Swoosh.Adapters.SMTP` adapter specific setting"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SMTP},
@@ -256,8 +243,7 @@ config :pleroma, :config_description, [
         group: {:subgroup, Swoosh.Adapters.SMTP},
         key: :no_mx_lookups,
         type: :boolean,
-        description: "`Swoosh.Adapters.SMTP` adapter specific setting",
-        suggestions: [true, false]
+        description: "`Swoosh.Adapters.SMTP` adapter specific setting"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Sendgrid},
@@ -284,8 +270,7 @@ config :pleroma, :config_description, [
         group: {:subgroup, Swoosh.Adapters.Sendmail},
         key: :qmail,
         type: :boolean,
-        description: "`Swoosh.Adapters.Sendmail` adapter specific setting",
-        suggestions: [true, false]
+        description: "`Swoosh.Adapters.Sendmail` adapter specific setting"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Mandrill},
@@ -553,38 +538,22 @@ config :pleroma, :config_description, [
       %{
         key: :registrations_open,
         type: :boolean,
-        description: "Enable registrations for anyone, invitations can be enabled when false",
-        suggestions: [
-          true,
-          false
-        ]
+        description: "Enable registrations for anyone, invitations can be enabled when false"
       },
       %{
         key: :invites_enabled,
         type: :boolean,
-        description: "Enable user invitations for admins (depends on registrations_open: false)",
-        suggestions: [
-          true,
-          false
-        ]
+        description: "Enable user invitations for admins (depends on registrations_open: false)"
       },
       %{
         key: :account_activation_required,
         type: :boolean,
-        description: "Require users to confirm their emails before signing in",
-        suggestions: [
-          true,
-          false
-        ]
+        description: "Require users to confirm their emails before signing in"
       },
       %{
         key: :federating,
         type: :boolean,
-        description: "Enable federation with other instances",
-        suggestions: [
-          true,
-          false
-        ]
+        description: "Enable federation with other instances"
       },
       %{
         key: :federation_incoming_replies_max_depth,
@@ -618,11 +587,7 @@ config :pleroma, :config_description, [
       %{
         key: :allow_relay,
         type: :boolean,
-        description: "Enable Pleroma's Relay, which makes it possible to follow a whole instance",
-        suggestions: [
-          true,
-          false
-        ]
+        description: "Enable Pleroma's Relay, which makes it possible to follow a whole instance"
       },
       %{
         key: :rewrite_policy,
@@ -638,11 +603,7 @@ config :pleroma, :config_description, [
         type: :boolean,
         description:
           "Makes the client API in authentificated mode-only except for user-profiles." <>
-            " Useful for disabling the Local Timeline and The Whole Known Network",
-        suggestions: [
-          true,
-          false
-        ]
+            " Useful for disabling the Local Timeline and The Whole Known Network"
       },
       %{
         key: :quarantined_instances,
@@ -658,11 +619,7 @@ config :pleroma, :config_description, [
         key: :managed_config,
         type: :boolean,
         description:
-          "Whenether the config for pleroma-fe is configured in this config or in static/config.json",
-        suggestions: [
-          true,
-          false
-        ]
+          "Whenether the config for pleroma-fe is configured in this config or in static/config.json"
       },
       %{
         key: :static_dir,
@@ -689,11 +646,7 @@ config :pleroma, :config_description, [
         key: :mrf_transparency,
         type: :boolean,
         description:
-          "Make the content of your Message Rewrite Facility settings public (via nodeinfo)",
-        suggestions: [
-          true,
-          false
-        ]
+          "Make the content of your Message Rewrite Facility settings public (via nodeinfo)"
       },
       %{
         key: :mrf_transparency_exclusions,
@@ -709,11 +662,7 @@ config :pleroma, :config_description, [
         type: :boolean,
         description:
           "Set to true to use extended local nicknames format (allows underscores/dashes)." <>
-            " This will break federation with older software for theses nicknames",
-        suggestions: [
-          true,
-          false
-        ]
+            " This will break federation with older software for theses nicknames"
       },
       %{
         key: :max_pinned_statuses,
@@ -741,11 +690,7 @@ config :pleroma, :config_description, [
         key: :no_attachment_links,
         type: :boolean,
         description:
-          "Set to true to disable automatically adding attachment link text to statuses",
-        suggestions: [
-          true,
-          false
-        ]
+          "Set to true to disable automatically adding attachment link text to statuses"
       },
       %{
         key: :welcome_message,
@@ -780,20 +725,12 @@ config :pleroma, :config_description, [
         description:
           "If set to true, only mentions at the beginning of a post will be used to address people in direct messages." <>
             " This is to prevent accidental mentioning of people when talking about them (e.g. \"@friend hey i really don't like @enemy\")." <>
-            " Default: false",
-        suggestions: [
-          true,
-          false
-        ]
+            " Default: false"
       },
       %{
         key: :healthcheck,
         type: :boolean,
-        description: "If set to true, system data will be shown on /api/pleroma/healthcheck",
-        suggestions: [
-          true,
-          false
-        ]
+        description: "If set to true, system data will be shown on /api/pleroma/healthcheck"
       },
       %{
         key: :remote_post_retention_days,
@@ -823,11 +760,7 @@ config :pleroma, :config_description, [
       %{
         key: :skip_thread_containment,
         type: :boolean,
-        description: "Skip filter out broken threads. The default is true",
-        suggestions: [
-          true,
-          false
-        ]
+        description: "Skip filter out broken threads. The default is true"
       },
       %{
         key: :limit_to_local_content,
@@ -844,11 +777,7 @@ config :pleroma, :config_description, [
         key: :dynamic_configuration,
         type: :boolean,
         description:
-          "Allow transferring configuration to DB with the subsequent customization from Admin api. Defaults to `false`",
-        suggestions: [
-          true,
-          false
-        ]
+          "Allow transferring configuration to DB with the subsequent customization from Admin api. Defaults to `false`"
       },
       %{
         key: :max_account_fields,
@@ -886,11 +815,7 @@ config :pleroma, :config_description, [
       %{
         key: :external_user_synchronization,
         type: :boolean,
-        description: "Enabling following/followers counters synchronization for external users",
-        suggestions: [
-          true,
-          false
-        ]
+        description: "Enabling following/followers counters synchronization for external users"
       }
     ]
   },
@@ -1069,48 +994,40 @@ config :pleroma, :config_description, [
           %{
             key: :showInstanceSpecificPanel,
             type: :boolean,
-            description: "Whenether to show the instance's specific panel",
-            suggestions: [true, false]
+            description: "Whenether to show the instance's specific panel"
           },
           %{
             key: :scopeOptionsEnabled,
             type: :boolean,
-            description: "Enable setting an notice visibility and subject/CW when posting",
-            suggestions: [true, false]
+            description: "Enable setting an notice visibility and subject/CW when posting"
           },
           %{
             key: :formattingOptionsEnabled,
             type: :boolean,
             description:
-              "Enable setting a formatting different than plain-text (ie. HTML, Markdown) when posting, relates to :instance, allowed_post_formats",
-            suggestions: [true, false]
+              "Enable setting a formatting different than plain-text (ie. HTML, Markdown) when posting, relates to :instance, allowed_post_formats"
           },
           %{
             key: :collapseMessageWithSubject,
             type: :boolean,
             description:
-              "When a message has a subject(aka Content Warning), collapse it by default",
-            suggestions: [true, false]
+              "When a message has a subject(aka Content Warning), collapse it by default"
           },
           %{
             key: :hidePostStats,
             type: :boolean,
-            description: "Hide notices statistics(repeats, favorites, ...)",
-            suggestions: [true, false]
+            description: "Hide notices statistics(repeats, favorites, ...)"
           },
           %{
             key: :hideUserStats,
             type: :boolean,
             description:
-              "Hide profile statistics(posts, posts per day, followers, followings, ...)",
-            suggestions: [true, false]
+              "Hide profile statistics(posts, posts per day, followers, followings, ...)"
           },
           %{
             key: :scopeCopy,
             type: :boolean,
-            description:
-              "Copy the scope (private/unlisted/public) in replies to posts by default",
-            suggestions: [true, false]
+            description: "Copy the scope (private/unlisted/public) in replies to posts by default"
           },
           %{
             key: :subjectLineBehavior,
@@ -1124,8 +1041,7 @@ config :pleroma, :config_description, [
           %{
             key: :alwaysShowSubjectInput,
             type: :boolean,
-            description: "When set to false, auto-hide the subject field when it's empty",
-            suggestions: [true, false]
+            description: "When set to false, auto-hide the subject field when it's empty"
           }
         ]
       },
@@ -1142,8 +1058,7 @@ config :pleroma, :config_description, [
           %{
             key: :showInstanceSpecificPanel,
             type: :boolean,
-            description: "Whenether to show the instance's specific panel",
-            suggestions: [true, false]
+            description: "Whenether to show the instance's specific panel"
           }
         ]
       }
@@ -1271,14 +1186,12 @@ config :pleroma, :config_description, [
       %{
         key: :allow_followersonly,
         type: :boolean,
-        description: "whether to allow followers-only posts",
-        suggestions: [true, false]
+        description: "whether to allow followers-only posts"
       },
       %{
         key: :allow_direct,
         type: :boolean,
-        description: "whether to allow direct messages",
-        suggestions: [true, false]
+        description: "whether to allow direct messages"
       }
     ]
   },
@@ -1393,8 +1306,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enables proxying of remote media to the instance's proxy",
-        suggestions: [true, false]
+        description: "Enables proxying of remote media to the instance's proxy"
       },
       %{
         key: :base_url,
@@ -1426,8 +1338,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enables the gopher interface",
-        suggestions: [true, false]
+        description: "Enables the gopher interface"
       },
       %{
         key: :ip,
@@ -1601,8 +1512,7 @@ config :pleroma, :config_description, [
       %{
         key: :secure_cookie_flag,
         type: :boolean,
-        description: "",
-        suggestions: [true, false]
+        description: ""
       },
       %{
         key: :extra_cookie_attrs,
@@ -1621,20 +1531,17 @@ config :pleroma, :config_description, [
       %{
         key: :unfollow_blocked,
         type: :boolean,
-        description: "Whether blocks result in people getting unfollowed",
-        suggestions: [true, false]
+        description: "Whether blocks result in people getting unfollowed"
       },
       %{
         key: :outgoing_blocks,
         type: :boolean,
-        description: "Whether to federate blocks to other instances",
-        suggestions: [true, false]
+        description: "Whether to federate blocks to other instances"
       },
       %{
         key: :sign_object_fetches,
         type: :boolean,
-        description: "Sign object fetches with HTTP signatures",
-        suggestions: [true, false]
+        description: "Sign object fetches with HTTP signatures"
       },
       %{
         key: :follow_handshake_timeout,
@@ -1653,14 +1560,12 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Whether the managed content security policy is enabled",
-        suggestions: [true, false]
+        description: "Whether the managed content security policy is enabled"
       },
       %{
         key: :sts,
         type: :boolean,
-        description: "Whether to additionally send a Strict-Transport-Security header",
-        suggestions: [true, false]
+        description: "Whether to additionally send a Strict-Transport-Security header"
       },
       %{
         key: :sts_max_age,
@@ -1727,8 +1632,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Whether the captcha should be shown on registration",
-        suggestions: [true, false]
+        description: "Whether the captcha should be shown on registration"
       },
       %{
         key: :method,
@@ -1817,8 +1721,7 @@ config :pleroma, :config_description, [
       %{
         key: :verbose,
         type: :boolean,
-        description: "Logs verbose mode",
-        suggestions: [false, true]
+        description: "Logs verbose mode"
       },
       %{
         key: :prune,
@@ -1937,11 +1840,7 @@ config :pleroma, :config_description, [
       %{
         key: :unfurl_nsfw,
         type: :boolean,
-        description: "If set to true nsfw attachments will be shown in previews",
-        suggestions: [
-          true,
-          false
-        ]
+        description: "If set to true nsfw attachments will be shown in previews"
       }
     ]
   },
@@ -1955,8 +1854,7 @@ config :pleroma, :config_description, [
         key: :enabled,
         type: :boolean,
         description:
-          "if enabled the instance will parse metadata from attached links to generate link previews",
-        suggestions: [true, false]
+          "if enabled the instance will parse metadata from attached links to generate link previews"
       },
       %{
         key: :ignore_hosts,
@@ -1998,8 +1896,7 @@ config :pleroma, :config_description, [
         key: :enabled,
         type: :boolean,
         description:
-          "if enabled, when a new user is federated with, fetch some of their latest posts",
-        suggestions: [true, false]
+          "if enabled, when a new user is federated with, fetch some of their latest posts"
       },
       %{
         key: :pages,
@@ -2030,14 +1927,12 @@ config :pleroma, :config_description, [
       %{
         key: :new_window,
         type: :boolean,
-        description: "set to false to remove target='_blank' attribute",
-        suggestions: [true, false]
+        description: "set to false to remove target='_blank' attribute"
       },
       %{
         key: :scheme,
         type: :boolean,
-        description: "Set to true to link urls with schema http://google.com",
-        suggestions: [true, false]
+        description: "Set to true to link urls with schema http://google.com"
       },
       %{
         key: :truncate,
@@ -2049,14 +1944,12 @@ config :pleroma, :config_description, [
       %{
         key: :strip_prefix,
         type: :boolean,
-        description: "Strip the scheme prefix",
-        suggestions: [true, false]
+        description: "Strip the scheme prefix"
       },
       %{
         key: :extra,
         type: :boolean,
-        description: "link urls with rarely used schemes (magnet, ipfs, irc, etc.)",
-        suggestions: [true, false]
+        description: "link urls with rarely used schemes (magnet, ipfs, irc, etc.)"
       }
     ]
   },
@@ -2083,8 +1976,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "whether scheduled activities are sent to the job queue to be executed",
-        suggestions: [true, false]
+        description: "whether scheduled activities are sent to the job queue to be executed"
       }
     ]
   },
@@ -2097,8 +1989,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "whether expired activities will be sent to the job queue to be deleted",
-        suggestions: [true, false]
+        description: "whether expired activities will be sent to the job queue to be deleted"
       }
     ]
   },
@@ -2128,8 +2019,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "enables LDAP authentication",
-        suggestions: [true, false]
+        description: "enables LDAP authentication"
       },
       %{
         key: :host,
@@ -2146,8 +2036,7 @@ config :pleroma, :config_description, [
       %{
         key: :ssl,
         type: :boolean,
-        description: "true to use SSL, usually implies the port 636",
-        suggestions: [true, false]
+        description: "true to use SSL, usually implies the port 636"
       },
       %{
         key: :sslopts,
@@ -2158,8 +2047,7 @@ config :pleroma, :config_description, [
       %{
         key: :tls,
         type: :boolean,
-        description: "true to start TLS, usually implies the port 389",
-        suggestions: [true, false]
+        description: "true to start TLS, usually implies the port 389"
       },
       %{
         key: :tlsopts,
@@ -2237,8 +2125,7 @@ config :pleroma, :config_description, [
           %{
             key: :active,
             type: :boolean,
-            description: "globally enable or disable digest emails",
-            suggestions: [true, false]
+            description: "globally enable or disable digest emails"
           },
           %{
             key: :schedule,
@@ -2346,14 +2233,12 @@ config :pleroma, :config_description, [
         key: :issue_new_refresh_token,
         type: :boolean,
         description:
-          "Keeps old refresh token or generate new refresh token when to obtain an access token",
-        suggestions: [true, false]
+          "Keeps old refresh token or generate new refresh token when to obtain an access token"
       },
       %{
         key: :clean_expired_tokens,
         type: :boolean,
-        description: "Enable a background job to clean expired oauth tokens. Defaults to false",
-        suggestions: [true, false]
+        description: "Enable a background job to clean expired oauth tokens. Defaults to false"
       },
       %{
         key: :clean_expired_tokens_interval,
@@ -2415,8 +2300,7 @@ config :pleroma, :config_description, [
       %{
         key: :rum_enabled,
         type: :boolean,
-        description: "If RUM indexes should be used. Defaults to false",
-        suggestions: [true, false]
+        description: "If RUM indexes should be used. Defaults to false"
       }
     ]
   },
@@ -2475,8 +2359,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enables ssh",
-        suggestions: [true, false]
+        description: "Enables ssh"
       },
       %{
         key: :priv_dir,
@@ -2579,8 +2462,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "",
-        suggestions: [true, false]
+        description: ""
       }
     ]
   },
@@ -2593,8 +2475,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enables suggestions",
-        suggestions: []
+        description: "Enables suggestions"
       },
       %{
         key: :third_party_engine,
@@ -2686,8 +2567,7 @@ config :pleroma, :config_description, [
       %{
         key: :send_user_agent,
         type: :boolean,
-        description: "",
-        suggestions: [true, false]
+        description: ""
       },
       %{
         key: :adapter,
@@ -2715,26 +2595,22 @@ config :pleroma, :config_description, [
       %{
         key: :allow_inline_images,
         type: :boolean,
-        description: "",
-        suggestions: [true, false]
+        description: ""
       },
       %{
         key: :allow_headings,
         type: :boolean,
-        description: "",
-        suggestions: [true, false]
+        description: ""
       },
       %{
         key: :allow_tables,
         type: :boolean,
-        description: "",
-        suggestions: [true, false]
+        description: ""
       },
       %{
         key: :allow_fonts,
         type: :boolean,
-        description: "",
-        suggestions: [true, false]
+        description: ""
       },
       %{
         key: :scrub_policy,
@@ -2753,8 +2629,7 @@ config :pleroma, :config_description, [
       %{
         key: :deny_follow_blocked,
         type: :boolean,
-        description: "",
-        suggestions: [true, false]
+        description: ""
       }
     ]
   },
@@ -2854,8 +2729,7 @@ config :pleroma, :config_description, [
       %{
         key: :credentials,
         type: :boolean,
-        description: "",
-        suggestions: [true, false]
+        description: ""
       },
       %{
         key: :headers,
