@@ -6,6 +6,14 @@ defmodule Pleroma.EmojiTest do
   use ExUnit.Case, async: true
   alias Pleroma.Emoji
 
+  describe "is_unicode_emoji?/1" do
+    test "tells if a string is an unicode emoji" do
+      refute Emoji.is_unicode_emoji?("X")
+      assert Emoji.is_unicode_emoji?("☂")
+      assert Emoji.is_unicode_emoji?("🥺")
+    end
+  end
+
   describe "get_all/0" do
     setup do
       emoji_list = Emoji.get_all()

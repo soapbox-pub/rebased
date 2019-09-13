@@ -260,4 +260,29 @@ defmodule Pleroma.Emoji do
       Enum.any?(patterns, matcher) && group
     end)
   end
+
+  {:ok, file} = File.read("lib/pleroma/emoji-data.txt")
+
+  @unicode_emoji file
+                 |> String.split("\n")
+                 |> Enum.filter(fn line -> String.starts_with?(line, ["1", "2", "3", "4"]) end)
+                 |> Enum.map(fn line -> String.split(line) |> List.first() end)
+                 |> Enum.map(fn line ->
+                   case String.split(line, "..") do
+                     [number] ->
+                       String.to_integer(number, 16)
+
+                     [first, last] ->
+                       Range.new(String.to_integer(first, 16), String.to_integer(last, 16))
+                       |> Enum.to_list()
+                   end
+                 end)
+                 |> List.flatten()
+                 |> Enum.filter(&is_integer/1)
+                 |> Enum.uniq()
+                 |> Enum.map(fn n -> :unicode.characters_to_binary([n], :utf32) end)
+
+  def is_unicode_emoji?(str) do
+    str in @unicode_emoji
+  end
 end
