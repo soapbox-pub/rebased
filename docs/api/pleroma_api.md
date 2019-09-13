@@ -419,7 +419,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 ## `GET /api/pleroma/emoji/packs/:name/download_shared`
 ### Requests a local pack from the instance
 * Method `GET`
-* Authentication: not requires
+* Authentication: not required
 * Params: None
 * Response: the archive of the pack with a 200 status code, 403 if the pack is not set as shared,
   404 if the pack does not exist
