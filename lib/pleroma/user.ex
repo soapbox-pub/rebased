@@ -1624,4 +1624,13 @@ defmodule Pleroma.User do
   def is_internal_user?(%User{nickname: nil}), do: true
   def is_internal_user?(%User{local: true, nickname: "internal." <> _}), do: true
   def is_internal_user?(_), do: false
+
+  def change_email(user, email) do
+    user
+    |> cast(%{email: email}, [:email])
+    |> validate_required([:email])
+    |> unique_constraint(:email)
+    |> validate_format(:email, @email_regex)
+    |> update_and_set_cache()
+  end
 end
