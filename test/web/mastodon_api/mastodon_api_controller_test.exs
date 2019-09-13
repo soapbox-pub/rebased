@@ -1552,7 +1552,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert to_string(other_user.id) == relationship["id"]
     end
 
-    test "returns an empty list when bad request", %{conn: conn} do
+    test "returns an empty list on a bad request", %{conn: conn} do
       user = insert(:user)
 
       conn =
