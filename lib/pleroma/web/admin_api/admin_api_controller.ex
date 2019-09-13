@@ -400,8 +400,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  @doc "Get an account registration invite token"
-  def get_invite_token(conn, params) do
+  @doc "Create an account registration invite token"
+  def create_invite_token(conn, params) do
     opts = %{}
 
     opts =
