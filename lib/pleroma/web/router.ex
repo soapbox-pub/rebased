@@ -300,10 +300,38 @@ defmodule Pleroma.Web.Router do
       get("/bookmarks", MastodonAPIController, :bookmarks)
 
       post("/notifications/clear", MastodonAPIController, :clear_notifications)
+
+      post(
+        "/notifications/subscription/clear",
+        MastodonAPIController,
+        :clear_subscription_notifications
+      )
+
       post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
+
+      post(
+        "/notifications/subscription/dismiss",
+        MastodonAPIController,
+        :dismiss_subscription_notification
+      )
+
       get("/notifications", MastodonAPIController, :notifications)
+      get("/notifications/subscription", MastodonAPIController, :subscription_notifications)
       get("/notifications/:id", MastodonAPIController, :get_notification)
+
+      get(
+        "/notifications/subscription/:id",
+        MastodonAPIController,
+        :get_subscription_notification
+      )
+
       delete("/notifications/destroy_multiple", MastodonAPIController, :destroy_multiple)
+
+      delete(
+        "/notifications/subscription/destroy_multiple",
+        MastodonAPIController,
+        :destroy_multiple_subscription_notifications
+      )
 
       get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
       get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)

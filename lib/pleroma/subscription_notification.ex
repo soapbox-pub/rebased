@@ -2,14 +2,14 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Notification do
+defmodule Pleroma.SubscriptionNotification do
   use Ecto.Schema
 
   alias Pleroma.Activity
-  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Pagination
   alias Pleroma.Repo
+  alias Pleroma.SubscriptionNotification
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Push
@@ -20,22 +20,20 @@ defmodule Pleroma.Notification do
 
   @type t :: %__MODULE__{}
 
-  schema "notifications" do
-    field(:seen, :boolean, default: false)
+  schema "subscription_notifications" do
     belongs_to(:user, User, type: Pleroma.FlakeId)
     belongs_to(:activity, Activity, type: Pleroma.FlakeId)
 
     timestamps()
   end
 
-  def changeset(%Notification{} = notification, attrs) do
-    notification
-    |> cast(attrs, [:seen])
+  def changeset(%SubscriptionNotification{} = notification, attrs) do
+    cast(notification, attrs, [])
   end
 
   def for_user_query(user, opts \\ []) do
     query =
-      Notification
+      SubscriptionNotification
       |> where(user_id: ^user.id)
       |> where(
         [n, a],
@@ -82,10 +80,10 @@ defmodule Pleroma.Notification do
 
   ## Examples
 
-      iex> Pleroma.Notification.for_user_since(%Pleroma.User{}, ~N[2019-04-13 11:22:33])
-      [%Pleroma.Notification{}, %Pleroma.Notification{}]
+      iex> Pleroma.SubscriptionNotification.for_user_since(%Pleroma.User{}, ~N[2019-04-13 11:22:33])
+      [%Pleroma.SubscriptionNotification{}, %Pleroma.SubscriptionNotification{}]
 
-      iex> Pleroma.Notification.for_user_since(%Pleroma.User{}, ~N[2019-04-15 11:22:33])
+      iex> Pleroma.SubscriptionNotification.for_user_since(%Pleroma.User{}, ~N[2019-04-15 11:22:33])
       []
   """
   @spec for_user_since(Pleroma.User.t(), NaiveDateTime.t()) :: [t()]
@@ -96,53 +94,19 @@ defmodule Pleroma.Notification do
     |> Repo.all()
   end
 
-  def set_read_up_to(%{id: user_id} = _user, id) do
-    query =
-      from(
-        n in Notification,
-        where: n.user_id == ^user_id,
-        where: n.id <= ^id,
-        where: n.seen == false,
-        update: [
-          set: [
-            seen: true,
-            updated_at: ^NaiveDateTime.utc_now()
-          ]
-        ],
-        # Ideally we would preload object and activities here
-        # but Ecto does not support preloads in update_all
-        select: n.id
-      )
-
-    {_, notification_ids} = Repo.update_all(query, [])
-
-    Notification
-    |> where([n], n.id in ^notification_ids)
-    |> join(:inner, [n], activity in assoc(n, :activity))
-    |> join(:left, [n, a], object in Object,
-      on:
-        fragment(
-          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
-          object.data,
-          a.data
-        )
+  def clear_up_to(%{id: user_id} = _user, id) do
+    from(
+      n in SubscriptionNotification,
+      where: n.user_id == ^user_id,
+      where: n.id <= ^id
     )
-    |> preload([n, a, o], activity: {a, object: o})
-    |> Repo.all()
-  end
-
-  def read_one(%User{} = user, notification_id) do
-    with {:ok, %Notification{} = notification} <- get(user, notification_id) do
-      notification
-      |> changeset(%{seen: true})
-      |> Repo.update()
-    end
+    |> Repo.delete_all([])
   end
 
   def get(%{id: user_id} = _user, id) do
     query =
       from(
-        n in Notification,
+        n in SubscriptionNotification,
         where: n.id == ^id,
         join: activity in assoc(n, :activity),
         preload: [activity: activity]
@@ -160,12 +124,12 @@ defmodule Pleroma.Notification do
   end
 
   def clear(user) do
-    from(n in Notification, where: n.user_id == ^user.id)
+    from(n in SubscriptionNotification, where: n.user_id == ^user.id)
     |> Repo.delete_all()
   end
 
   def destroy_multiple(%{id: user_id} = _user, ids) do
-    from(n in Notification,
+    from(n in SubscriptionNotification,
       where: n.id in ^ids,
       where: n.user_id == ^user_id
     )
@@ -173,7 +137,7 @@ defmodule Pleroma.Notification do
   end
 
   def dismiss(%{id: user_id} = _user, id) do
-    notification = Repo.get(Notification, id)
+    notification = Repo.get(SubscriptionNotification, id)
 
     case notification do
       %{user_id: ^user_id} ->
@@ -208,10 +172,10 @@ defmodule Pleroma.Notification do
   # TODO move to sql, too.
   def create_notification(%Activity{} = activity, %User{} = user) do
     unless skip?(activity, user) do
-      notification = %Notification{user_id: user.id, activity: activity}
+      notification = %SubscriptionNotification{user_id: user.id, activity: activity}
       {:ok, notification} = Repo.insert(notification)
       Streamer.stream("user", notification)
-      Streamer.stream("user:notification", notification)
+      Streamer.stream("user:subscription_notification", notification)
       Push.send(notification)
       notification
     end
@@ -226,8 +190,7 @@ defmodule Pleroma.Notification do
       when type in ["Create", "Like", "Announce", "Follow"] do
     recipients =
       []
-      |> Utils.maybe_notify_to_recipients(activity)
-      |> Utils.maybe_notify_mentioned_recipients(activity)
+      |> Utils.maybe_notify_subscribers(activity)
       |> Enum.uniq()
 
     User.get_users_from_set(recipients, local_only)
@@ -292,7 +255,7 @@ defmodule Pleroma.Notification do
   def skip?(:recently_followed, %{data: %{"type" => "Follow"}} = activity, user) do
     actor = activity.data["actor"]
 
-    Notification.for_user(user)
+    SubscriptionNotification.for_user(user)
     |> Enum.any?(fn
       %{activity: %{data: %{"type" => "Follow", "actor" => ^actor}}} -> true
       _ -> false

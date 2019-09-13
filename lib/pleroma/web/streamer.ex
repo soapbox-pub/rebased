@@ -10,6 +10,7 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.SubscriptionNotification
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
@@ -208,10 +209,17 @@ defmodule Pleroma.Web.Streamer do
     |> Jason.encode!()
   end
 
-  @spec represent_notification(User.t(), Notification.t()) :: binary()
-  defp represent_notification(%User{} = user, %Notification{} = notify) do
+  @spec represent_notification(User.t(), Notification.t() | %SubscriptionNotification{}) ::
+          binary()
+  defp represent_notification(%User{} = user, notify) do
+    event =
+      case notify do
+        %Notification{} -> "notification"
+        %SubscriptionNotification{} -> "subscription_norification"
+      end
+
     %{
-      event: "notification",
+      event: event,
       payload:
         NotificationView.render(
           "show.json",

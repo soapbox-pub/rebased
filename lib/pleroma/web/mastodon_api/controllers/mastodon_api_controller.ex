@@ -23,6 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
   alias Pleroma.Stats
+  alias Pleroma.SubscriptionNotification
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -39,6 +40,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.ReportView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.MastodonAPI.SubscriptionNotificationView
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
@@ -725,6 +727,28 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render("index.json", %{notifications: notifications, for: user})
   end
 
+  def subscription_notifications(%{assigns: %{user: user}} = conn, params) do
+    notifications = MastodonAPI.get_subscription_notifications(user, params)
+
+    conn
+    |> add_link_headers(:subscription_notifications, notifications)
+    |> put_view(SubscriptionNotificationView)
+    |> render("index.json", %{notifications: notifications, for: user})
+  end
+
+  def get_subscription_notification(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
+    with {:ok, notification} <- SubscriptionNotification.get(user, id) do
+      conn
+      |> put_view(SubscriptionNotificationView)
+      |> render("show.json", %{subscription_notification: notification, for: user})
+    else
+      {:error, reason} ->
+        conn
+        |> put_status(:forbidden)
+        |> json(%{"error" => reason})
+    end
+  end
+
   def get_notification(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
     with {:ok, notification} <- Notification.get(user, id) do
       conn
@@ -743,6 +767,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, %{})
   end
 
+  def clear_subscription_notifications(%{assigns: %{user: user}} = conn, _params) do
+    SubscriptionNotification.clear(user)
+    json(conn, %{})
+  end
+
   def dismiss_notification(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
     with {:ok, _notif} <- Notification.dismiss(user, id) do
       json(conn, %{})
@@ -754,8 +783,27 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def dismiss_subscription_notification(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
+    with {:ok, _notif} <- SubscriptionNotification.dismiss(user, id) do
+      json(conn, %{})
+    else
+      {:error, reason} ->
+        conn
+        |> put_status(:forbidden)
+        |> json(%{"error" => reason})
+    end
+  end
+
   def destroy_multiple(%{assigns: %{user: user}} = conn, %{"ids" => ids} = _params) do
     Notification.destroy_multiple(user, ids)
+    json(conn, %{})
+  end
+
+  def destroy_multiple_subscription_notifications(
+        %{assigns: %{user: user}} = conn,
+        %{"ids" => ids} = _params
+      ) do
+    SubscriptionNotification.destroy_multiple(user, ids)
     json(conn, %{})
   end
 
