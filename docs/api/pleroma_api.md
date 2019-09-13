@@ -366,6 +366,13 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
     * `recipients`: A list of ids of users that should receive posts to this conversation. This will replace the current list of recipients, so submit the full list. The owner of owner of the conversation will always be part of the set of recipients, though.
 * Response: JSON, statuses (200 - healthy, 503 unhealthy)
 
+## `GET /api/pleroma/emoji/packs`
+### Lists the custom emoji packs on the server
+* Method `GET`
+* Authentication: not required
+* Params: None
+* Response: JSON, "ok" and 200 status and the JSON hashmap of "pack name" to "pack contents"
+
 ## `PUT /api/pleroma/emoji/packs/:name`
 ### Creates an empty custom emoji pack
 * Method `PUT`
