@@ -7,9 +7,9 @@ defmodule Pleroma.Delivery do
 
   alias Pleroma.Delivery
   alias Pleroma.FlakeId
-  alias Pleroma.User
-  alias Pleroma.Repo
   alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.User
 
   import Ecto.Changeset
@@ -39,13 +39,6 @@ defmodule Pleroma.Delivery do
     |> Repo.one()
   end
 
-  def get_or_create(object_id, user_id) do
-    case get(object_id, user_id) do
-      %Delivery{} = delivery -> {:ok, delivery}
-      nil -> create(object_id, user_id)
-    end
-  end
-
   # A hack because user delete activities have a fake id for whatever reason
   # TODO: Get rid of this
   def delete_all_by_object_id("pleroma:fake_object_id"), do: {0, []}
@@ -53,10 +46,5 @@ defmodule Pleroma.Delivery do
   def delete_all_by_object_id(object_id) do
     from(d in Delivery, where: d.object_id == ^object_id)
     |> Repo.delete_all()
-  end
-
-  def get_all_by_object_id(object_id) do
-    from(d in Delivery, where: d.object_id == ^object_id)
-    |> Repo.all()
   end
 end

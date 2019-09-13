@@ -8,8 +8,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Delivery
   alias Pleroma.HTTP
   alias Pleroma.Instances
-  alias Pleroma.User
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
 

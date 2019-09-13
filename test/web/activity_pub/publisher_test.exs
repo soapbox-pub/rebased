@@ -10,8 +10,8 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
   import Mock
 
   alias Pleroma.Activity
-  alias Pleroma.Object
   alias Pleroma.Instances
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.CommonAPI
 
