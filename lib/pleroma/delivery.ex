@@ -23,6 +23,7 @@ defmodule Pleroma.Delivery do
   def changeset(delivery, params \\ %{}) do
     delivery
     |> cast(params, [:user_id, :object_id])
+    |> validate_required([:user_id, :object_id])
     |> foreign_key_constraint(:object_id)
     |> foreign_key_constraint(:user_id)
     |> unique_constraint(:user_id, name: :deliveries_user_id_object_id_index)
