@@ -2864,6 +2864,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert response == %{}
     end
+
+    test "returns empty object when id isn't FlakeID", %{conn: conn} do
+      response =
+        conn
+        |> get("/api/v1/statuses/3ebbadd1-eb14-4e20-8118/card")
+        |> json_response(200)
+
+      assert response == %{}
+    end
   end
 
   test "bookmarks" do
