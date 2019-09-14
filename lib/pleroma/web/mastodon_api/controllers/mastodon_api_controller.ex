@@ -842,6 +842,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def favourited_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
          %Object{data: %{"likes" => likes}} <- Object.normalize(activity) do
       q = from(u in User, where: u.ap_id in ^likes)
 
@@ -853,12 +854,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(AccountView)
       |> render("accounts.json", %{for: user, users: users, as: :user})
     else
+      {:visible, false} -> {:error, :not_found}
       _ -> json(conn, [])
     end
   end
 
   def reblogged_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
          %Object{data: %{"announcements" => announces}} <- Object.normalize(activity) do
       q = from(u in User, where: u.ap_id in ^announces)
 
@@ -870,6 +873,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(AccountView)
       |> render("accounts.json", %{for: user, users: users, as: :user})
     else
+      {:visible, false} -> {:error, :not_found}
       _ -> json(conn, [])
     end
   end
