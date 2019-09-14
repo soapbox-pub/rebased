@@ -3890,7 +3890,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         build_conn()
         |> assign(:user, user)
 
-      [conn: conn, activity: activity]
+      [conn: conn, activity: activity, user: user]
     end
 
     test "returns users who have favorited the status", %{conn: conn, activity: activity} do
@@ -3950,6 +3950,32 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       [%{"id" => id}] = response
       assert id == other_user.id
     end
+
+    test "requires authentification for private posts", %{conn: conn, user: user} do
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "@#{other_user.nickname} wanna get some #cofe together?",
+          "visibility" => "direct"
+        })
+
+      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+
+      conn
+      |> assign(:user, nil)
+      |> get("/api/v1/statuses/#{activity.id}/favourited_by")
+      |> json_response(404)
+
+      response =
+        build_conn()
+        |> assign(:user, other_user)
+        |> get("/api/v1/statuses/#{activity.id}/favourited_by")
+        |> json_response(200)
+
+      [%{"id" => id}] = response
+      assert id == other_user.id
+    end
   end
 
   describe "GET /api/v1/statuses/:id/reblogged_by" do
@@ -3961,7 +3987,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         build_conn()
         |> assign(:user, user)
 
-      [conn: conn, activity: activity]
+      [conn: conn, activity: activity, user: user]
     end
 
     test "returns users who have reblogged the status", %{conn: conn, activity: activity} do
@@ -4020,6 +4046,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       [%{"id" => id}] = response
       assert id == other_user.id
+    end
+
+    test "requires authentification for private posts", %{conn: conn, user: user} do
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "@#{other_user.nickname} wanna get some #cofe together?",
+          "visibility" => "direct"
+        })
+
+      conn
+      |> assign(:user, nil)
+      |> get("/api/v1/statuses/#{activity.id}/reblogged_by")
+      |> json_response(404)
+
+      response =
+        build_conn()
+        |> assign(:user, other_user)
+        |> get("/api/v1/statuses/#{activity.id}/reblogged_by")
+        |> json_response(200)
+
+      assert [] == response
     end
   end
 
@@ -4155,13 +4204,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       Config.put([:suggestions, :enabled], true)
       Config.put([:suggestions, :third_party_engine], "http://test500?{{host}}&{{user}}")
 
-      res =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/suggestions")
-        |> json_response(500)
+      assert capture_log(fn ->
+               res =
+                 conn
+                 |> assign(:user, user)
+                 |> get("/api/v1/suggestions")
+                 |> json_response(500)
 
-      assert res == "Something went wrong"
+               assert res == "Something went wrong"
+             end) =~ "Could not retrieve suggestions"
     end
 
     test "returns suggestions", %{conn: conn, user: user, other_user: other_user} do
