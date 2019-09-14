@@ -1090,7 +1090,7 @@ defmodule Pleroma.UserTest do
 
       user_activities =
         user.ap_id
-        |> Activity.query_by_actor()
+        |> Activity.Queries.by_actor()
         |> Repo.all()
         |> Enum.map(fn act -> act.data["type"] end)
 
@@ -1628,6 +1628,33 @@ defmodule Pleroma.UserTest do
       {:ok, other_user} = User.follow(other_user, user)
 
       assert User.user_info(other_user).following_count == 152
+    end
+  end
+
+  describe "change_email/2" do
+    setup do
+      [user: insert(:user)]
+    end
+
+    test "blank email returns error", %{user: user} do
+      assert {:error, %{errors: [email: {"can't be blank", _}]}} = User.change_email(user, "")
+      assert {:error, %{errors: [email: {"can't be blank", _}]}} = User.change_email(user, nil)
+    end
+
+    test "non unique email returns error", %{user: user} do
+      %{email: email} = insert(:user)
+
+      assert {:error, %{errors: [email: {"has already been taken", _}]}} =
+               User.change_email(user, email)
+    end
+
+    test "invalid email returns error", %{user: user} do
+      assert {:error, %{errors: [email: {"has invalid format", _}]}} =
+               User.change_email(user, "cofe")
+    end
+
+    test "changes email", %{user: user} do
+      assert {:ok, %User{email: "cofe@cofe.party"}} = User.change_email(user, "cofe@cofe.party")
     end
   end
 end

@@ -745,6 +745,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == to_string(activity.id)
   end
 
+  test "get statuses by IDs", %{conn: conn} do
+    %{id: id1} = insert(:note_activity)
+    %{id: id2} = insert(:note_activity)
+
+    query_string = "ids[]=#{id1}&ids[]=#{id2}"
+    conn = get(conn, "/api/v1/statuses/?#{query_string}")
+
+    assert [%{"id" => ^id1}, %{"id" => ^id2}] = json_response(conn, :ok)
+  end
+
   describe "deleting a status" do
     test "when you created it", %{conn: conn} do
       activity = insert(:note_activity)
@@ -3957,13 +3967,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       Config.put([:suggestions, :enabled], true)
       Config.put([:suggestions, :third_party_engine], "http://test500?{{host}}&{{user}}")
 
-      res =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/suggestions")
-        |> json_response(500)
+      assert capture_log(fn ->
+               res =
+                 conn
+                 |> assign(:user, user)
+                 |> get("/api/v1/suggestions")
+                 |> json_response(500)
 
-      assert res == "Something went wrong"
+               assert res == "Something went wrong"
+             end) =~ "Could not retrieve suggestions"
     end
 
     test "returns suggestions", %{conn: conn, user: user, other_user: other_user} do

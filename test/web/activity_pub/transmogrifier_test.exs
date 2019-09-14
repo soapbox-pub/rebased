@@ -103,7 +103,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:ok, _returned_activity} = Transmogrifier.handle_incoming(data)
-             end) =~ "[error] Couldn't fetch \"\"https://404.site/whatever\"\", error: nil"
+             end) =~ "[error] Couldn't fetch \"https://404.site/whatever\", error: nil"
     end
 
     test "it works for incoming notices" do
