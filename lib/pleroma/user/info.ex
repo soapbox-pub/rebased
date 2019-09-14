@@ -242,6 +242,13 @@ defmodule Pleroma.User.Info do
   end
 
   def remote_user_creation(info, params) do
+    params =
+      if Map.has_key?(params, :fields) do
+        Map.put(params, :fields, Enum.map(params[:fields], &truncate_field/1))
+      else
+        params
+      end
+
     info
     |> cast(params, [
       :ap_enabled,
@@ -325,6 +332,16 @@ defmodule Pleroma.User.Info do
   end
 
   defp valid_field?(_), do: false
+
+  defp truncate_field(%{"name" => name, "value" => value}) do
+    {name, _chopped} =
+      String.split_at(name, Pleroma.Config.get([:instance, :account_field_name_length], 255))
+
+    {value, _chopped} =
+      String.split_at(value, Pleroma.Config.get([:instance, :account_field_value_length], 255))
+
+    %{"name" => name, "value" => value}
+  end
 
   @spec confirmation_changeset(Info.t(), keyword()) :: Changeset.t()
   def confirmation_changeset(info, opts) do
