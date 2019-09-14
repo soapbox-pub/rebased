@@ -3759,7 +3759,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert id == other_user.id
     end
 
-    test "requires authentifucation for private posts", %{conn: conn, user: user} do
+    test "requires authentification for private posts", %{conn: conn, user: user} do
       other_user = insert(:user)
 
       {:ok, activity} =
