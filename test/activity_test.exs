@@ -215,7 +215,11 @@ defmodule Pleroma.ActivityTest do
 
     assert [] == Activity.all_by_actor_and_id(user, [])
 
-    assert [%Activity{id: ^id2}, %Activity{id: ^id1}] =
-             Activity.all_by_actor_and_id(user.ap_id, [id1, id2])
+    activities =
+      user.ap_id
+      |> Activity.all_by_actor_and_id([id1, id2])
+      |> Enum.sort(&(&1.id < &2.id))
+
+    assert [%Activity{id: ^id1}, %Activity{id: ^id2}] = activities
   end
 end
