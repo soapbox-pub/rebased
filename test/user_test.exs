@@ -570,22 +570,6 @@ defmodule Pleroma.UserTest do
         refute cs.valid?
       end)
     end
-
-    test "it restricts some sizes" do
-      bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
-      name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
-
-      [bio: bio_limit, name: name_limit]
-      |> Enum.each(fn {field, size} ->
-        string = String.pad_leading(".", size)
-        cs = User.remote_user_creation(Map.put(@valid_remote, field, string))
-        assert cs.valid?
-
-        string = String.pad_leading(".", size + 1)
-        cs = User.remote_user_creation(Map.put(@valid_remote, field, string))
-        refute cs.valid?
-      end)
-    end
   end
 
   describe "followers and friends" do
@@ -1081,7 +1065,7 @@ defmodule Pleroma.UserTest do
 
       user_activities =
         user.ap_id
-        |> Activity.query_by_actor()
+        |> Activity.Queries.by_actor()
         |> Repo.all()
         |> Enum.map(fn act -> act.data["type"] end)
 
@@ -1117,11 +1101,60 @@ defmodule Pleroma.UserTest do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
 
-  test "insert or update a user from given data" do
-    user = insert(:user, %{nickname: "nick@name.de"})
-    data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
+  describe "insert or update a user from given data" do
+    test "with normal data" do
+      user = insert(:user, %{nickname: "nick@name.de"})
+      data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
 
-    assert {:ok, %User{}} = User.insert_or_update_user(data)
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
+
+    test "with overly long fields" do
+      current_max_length = Pleroma.Config.get([:instance, :account_field_value_length], 255)
+      user = insert(:user, nickname: "nickname@supergood.domain")
+
+      data = %{
+        ap_id: user.ap_id,
+        name: user.name,
+        nickname: user.nickname,
+        info: %{
+          fields: [
+            %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
+          ]
+        }
+      }
+
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
+
+    test "with an overly long bio" do
+      current_max_length = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+      user = insert(:user, nickname: "nickname@supergood.domain")
+
+      data = %{
+        ap_id: user.ap_id,
+        name: user.name,
+        nickname: user.nickname,
+        bio: String.duplicate("h", current_max_length + 1),
+        info: %{}
+      }
+
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
+
+    test "with an overly long display name" do
+      current_max_length = Pleroma.Config.get([:instance, :user_name_length], 100)
+      user = insert(:user, nickname: "nickname@supergood.domain")
+
+      data = %{
+        ap_id: user.ap_id,
+        name: String.duplicate("h", current_max_length + 1),
+        nickname: user.nickname,
+        info: %{}
+      }
+
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
   end
 
   describe "per-user rich-text filtering" do
@@ -1612,6 +1645,33 @@ defmodule Pleroma.UserTest do
       {:ok, other_user} = User.follow(other_user, user)
 
       assert User.user_info(other_user).following_count == 152
+    end
+  end
+
+  describe "change_email/2" do
+    setup do
+      [user: insert(:user)]
+    end
+
+    test "blank email returns error", %{user: user} do
+      assert {:error, %{errors: [email: {"can't be blank", _}]}} = User.change_email(user, "")
+      assert {:error, %{errors: [email: {"can't be blank", _}]}} = User.change_email(user, nil)
+    end
+
+    test "non unique email returns error", %{user: user} do
+      %{email: email} = insert(:user)
+
+      assert {:error, %{errors: [email: {"has already been taken", _}]}} =
+               User.change_email(user, email)
+    end
+
+    test "invalid email returns error", %{user: user} do
+      assert {:error, %{errors: [email: {"has invalid format", _}]}} =
+               User.change_email(user, "cofe")
+    end
+
+    test "changes email", %{user: user} do
+      assert {:ok, %User{email: "cofe@cofe.party"}} = User.change_email(user, "cofe@cofe.party")
     end
   end
 end

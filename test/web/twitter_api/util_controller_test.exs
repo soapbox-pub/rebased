@@ -8,6 +8,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Mock
 
@@ -338,12 +339,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "show follow page with error when user cannot fecth by `acct` link", %{conn: conn} do
       user = insert(:user)
 
-      response =
-        conn
-        |> assign(:user, user)
-        |> get("/ostatus_subscribe?acct=https://mastodon.social/users/not_found")
+      assert capture_log(fn ->
+               response =
+                 conn
+                 |> assign(:user, user)
+                 |> get("/ostatus_subscribe?acct=https://mastodon.social/users/not_found")
 
-      assert html_response(response, 200) =~ "Error fetching user"
+               assert html_response(response, 200) =~ "Error fetching user"
+             end) =~ "Object has been deleted"
     end
   end
 
@@ -660,6 +663,113 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert resp == "\"test_captcha\""
       assert called(Pleroma.Captcha.new())
+    end
+  end
+
+  defp with_credentials(conn, username, password) do
+    header_content = "Basic " <> Base.encode64("#{username}:#{password}")
+    put_req_header(conn, "authorization", header_content)
+  end
+
+  defp valid_user(_context) do
+    user = insert(:user)
+    [user: user]
+  end
+
+  describe "POST /api/pleroma/change_email" do
+    setup [:valid_user]
+
+    test "without credentials", %{conn: conn} do
+      conn = post(conn, "/api/pleroma/change_email")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials and invalid password", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "hi",
+          "email" => "test@test.com"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Invalid password."}
+    end
+
+    test "with credentials, valid password and invalid email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => "foobar"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email has invalid format."}
+    end
+
+    test "with credentials, valid password and no email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email can't be blank."}
+    end
+
+    test "with credentials, valid password and blank email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => ""
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email can't be blank."}
+    end
+
+    test "with credentials, valid password and non unique email", %{
+      conn: conn,
+      user: current_user
+    } do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => user.email
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email has already been taken."}
+    end
+
+    test "with credentials, valid password and valid email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => "cofe@foobar.com"
+        })
+
+      assert json_response(conn, 200) == %{"status" => "success"}
     end
   end
 end

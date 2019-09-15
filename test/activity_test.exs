@@ -173,4 +173,51 @@ defmodule Pleroma.ActivityTest do
     |> where([a], a.activity_id == ^activity.id)
     |> Repo.one!()
   end
+
+  test "all_by_ids_with_object/1" do
+    %{id: id1} = insert(:note_activity)
+    %{id: id2} = insert(:note_activity)
+
+    activities =
+      [id1, id2]
+      |> Activity.all_by_ids_with_object()
+      |> Enum.sort(&(&1.id < &2.id))
+
+    assert [%{id: ^id1, object: %Object{}}, %{id: ^id2, object: %Object{}}] = activities
+  end
+
+  test "get_by_id_with_object/1" do
+    %{id: id} = insert(:note_activity)
+
+    assert %Activity{id: ^id, object: %Object{}} = Activity.get_by_id_with_object(id)
+  end
+
+  test "get_by_ap_id_with_object/1" do
+    %{data: %{"id" => ap_id}} = insert(:note_activity)
+
+    assert %Activity{data: %{"id" => ^ap_id}, object: %Object{}} =
+             Activity.get_by_ap_id_with_object(ap_id)
+  end
+
+  test "get_by_id/1" do
+    %{id: id} = insert(:note_activity)
+
+    assert %Activity{id: ^id} = Activity.get_by_id(id)
+  end
+
+  test "all_by_actor_and_id/2" do
+    user = insert(:user)
+
+    {:ok, %{id: id1}} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofe"})
+    {:ok, %{id: id2}} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofefe"})
+
+    assert [] == Activity.all_by_actor_and_id(user, [])
+
+    activities =
+      user.ap_id
+      |> Activity.all_by_actor_and_id([id1, id2])
+      |> Enum.sort(&(&1.id < &2.id))
+
+    assert [%Activity{id: ^id1}, %Activity{id: ^id2}] = activities
+  end
 end

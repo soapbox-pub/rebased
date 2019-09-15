@@ -224,6 +224,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
 
+      post("/change_email", UtilController, :change_email)
       post("/change_password", UtilController, :change_password)
       post("/delete_account", UtilController, :delete_account)
       put("/notification_settings", UtilController, :update_notificaton_settings)
@@ -443,6 +444,7 @@ defmodule Pleroma.Web.Router do
       get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
       get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
 
+      get("/statuses", MastodonAPIController, :get_statuses)
       get("/statuses/:id", MastodonAPIController, :get_status)
       get("/statuses/:id/context", MastodonAPIController, :get_context)
 

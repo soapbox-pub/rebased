@@ -6,6 +6,7 @@ defmodule Pleroma.Activity do
   use Ecto.Schema
 
   alias Pleroma.Activity
+  alias Pleroma.Activity.Queries
   alias Pleroma.ActivityExpiration
   alias Pleroma.Bookmark
   alias Pleroma.Notification
@@ -65,8 +66,8 @@ defmodule Pleroma.Activity do
     timestamps()
   end
 
-  def with_joined_object(query) do
-    join(query, :inner, [activity], o in Object,
+  def with_joined_object(query, join_type \\ :inner) do
+    join(query, join_type, [activity], o in Object,
       on:
         fragment(
           "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
@@ -78,10 +79,10 @@ defmodule Pleroma.Activity do
     )
   end
 
-  def with_preloaded_object(query) do
+  def with_preloaded_object(query, join_type \\ :inner) do
     query
     |> has_named_binding?(:object)
-    |> if(do: query, else: with_joined_object(query))
+    |> if(do: query, else: with_joined_object(query, join_type))
     |> preload([activity, object: object], object: object)
   end
 
@@ -107,12 +108,9 @@ defmodule Pleroma.Activity do
   def with_set_thread_muted_field(query, _), do: query
 
   def get_by_ap_id(ap_id) do
-    Repo.one(
-      from(
-        activity in Activity,
-        where: fragment("(?)->>'id' = ?", activity.data, ^to_string(ap_id))
-      )
-    )
+    ap_id
+    |> Queries.by_ap_id()
+    |> Repo.one()
   end
 
   def get_bookmark(%Activity{} = activity, %User{} = user) do
@@ -133,21 +131,10 @@ defmodule Pleroma.Activity do
   end
 
   def get_by_ap_id_with_object(ap_id) do
-    Repo.one(
-      from(
-        activity in Activity,
-        where: fragment("(?)->>'id' = ?", activity.data, ^to_string(ap_id)),
-        left_join: o in Object,
-        on:
-          fragment(
-            "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
-            o.data,
-            activity.data,
-            activity.data
-          ),
-        preload: [object: o]
-      )
-    )
+    ap_id
+    |> Queries.by_ap_id()
+    |> with_preloaded_object(:left)
+    |> Repo.one()
   end
 
   def get_by_id(id) do
@@ -158,66 +145,34 @@ defmodule Pleroma.Activity do
   end
 
   def get_by_id_with_object(id) do
-    from(activity in Activity,
-      where: activity.id == ^id,
-      inner_join: o in Object,
-      on:
-        fragment(
-          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
-          o.data,
-          activity.data,
-          activity.data
-        ),
-      preload: [object: o]
-    )
+    Activity
+    |> where(id: ^id)
+    |> with_preloaded_object()
     |> Repo.one()
   end
 
-  def by_object_ap_id(ap_id) do
-    from(
-      activity in Activity,
-      where:
-        fragment(
-          "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-          activity.data,
-          activity.data,
-          ^to_string(ap_id)
-        )
-    )
+  def all_by_ids_with_object(ids) do
+    Activity
+    |> where([a], a.id in ^ids)
+    |> with_preloaded_object()
+    |> Repo.all()
   end
 
-  def create_by_object_ap_id(ap_ids) when is_list(ap_ids) do
-    from(
-      activity in Activity,
-      where:
-        fragment(
-          "coalesce((?)->'object'->>'id', (?)->>'object') = ANY(?)",
-          activity.data,
-          activity.data,
-          ^ap_ids
-        ),
-      where: fragment("(?)->>'type' = 'Create'", activity.data)
-    )
+  @doc """
+  Accepts `ap_id` or list of `ap_id`.
+  Returns a query.
+  """
+  @spec create_by_object_ap_id(String.t() | [String.t()]) :: Ecto.Queryable.t()
+  def create_by_object_ap_id(ap_id) do
+    ap_id
+    |> Queries.by_object_id()
+    |> Queries.by_type("Create")
   end
-
-  def create_by_object_ap_id(ap_id) when is_binary(ap_id) do
-    from(
-      activity in Activity,
-      where:
-        fragment(
-          "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-          activity.data,
-          activity.data,
-          ^to_string(ap_id)
-        ),
-      where: fragment("(?)->>'type' = 'Create'", activity.data)
-    )
-  end
-
-  def create_by_object_ap_id(_), do: nil
 
   def get_all_create_by_object_ap_id(ap_id) do
-    Repo.all(create_by_object_ap_id(ap_id))
+    ap_id
+    |> create_by_object_ap_id()
+    |> Repo.all()
   end
 
   def get_create_by_object_ap_id(ap_id) when is_binary(ap_id) do
@@ -228,53 +183,16 @@ defmodule Pleroma.Activity do
 
   def get_create_by_object_ap_id(_), do: nil
 
-  def create_by_object_ap_id_with_object(ap_ids) when is_list(ap_ids) do
-    from(
-      activity in Activity,
-      where:
-        fragment(
-          "coalesce((?)->'object'->>'id', (?)->>'object') = ANY(?)",
-          activity.data,
-          activity.data,
-          ^ap_ids
-        ),
-      where: fragment("(?)->>'type' = 'Create'", activity.data),
-      inner_join: o in Object,
-      on:
-        fragment(
-          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
-          o.data,
-          activity.data,
-          activity.data
-        ),
-      preload: [object: o]
-    )
+  @doc """
+  Accepts `ap_id` or list of `ap_id`.
+  Returns a query.
+  """
+  @spec create_by_object_ap_id_with_object(String.t() | [String.t()]) :: Ecto.Queryable.t()
+  def create_by_object_ap_id_with_object(ap_id) do
+    ap_id
+    |> create_by_object_ap_id()
+    |> with_preloaded_object()
   end
-
-  def create_by_object_ap_id_with_object(ap_id) when is_binary(ap_id) do
-    from(
-      activity in Activity,
-      where:
-        fragment(
-          "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-          activity.data,
-          activity.data,
-          ^to_string(ap_id)
-        ),
-      where: fragment("(?)->>'type' = 'Create'", activity.data),
-      inner_join: o in Object,
-      on:
-        fragment(
-          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
-          o.data,
-          activity.data,
-          activity.data
-        ),
-      preload: [object: o]
-    )
-  end
-
-  def create_by_object_ap_id_with_object(_), do: nil
 
   def get_create_by_object_ap_id_with_object(ap_id) when is_binary(ap_id) do
     ap_id
@@ -299,7 +217,8 @@ defmodule Pleroma.Activity do
   def normalize(_), do: nil
 
   def delete_by_ap_id(id) when is_binary(id) do
-    by_object_ap_id(id)
+    id
+    |> Queries.by_object_id()
     |> select([u], u)
     |> Repo.delete_all()
     |> elem(1)
@@ -308,9 +227,18 @@ defmodule Pleroma.Activity do
       %{data: %{"type" => "Create", "object" => %{"id" => ap_id}}} -> ap_id == id
       _ -> nil
     end)
+    |> purge_web_resp_cache()
   end
 
   def delete_by_ap_id(_), do: nil
+
+  defp purge_web_resp_cache(%Activity{} = activity) do
+    %{path: path} = URI.parse(activity.data["id"])
+    Cachex.del(:web_resp_cache, path)
+    activity
+  end
+
+  defp purge_web_resp_cache(nil), do: nil
 
   for {ap_type, type} <- @mastodon_notification_types do
     def mastodon_notification_type(%Activity{data: %{"type" => unquote(ap_type)}}),
@@ -334,31 +262,10 @@ defmodule Pleroma.Activity do
   end
 
   def follow_requests_for_actor(%Pleroma.User{ap_id: ap_id}) do
-    from(
-      a in Activity,
-      where:
-        fragment(
-          "? ->> 'type' = 'Follow'",
-          a.data
-        ),
-      where:
-        fragment(
-          "? ->> 'state' = 'pending'",
-          a.data
-        ),
-      where:
-        fragment(
-          "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-          a.data,
-          a.data,
-          ^ap_id
-        )
-    )
-  end
-
-  @spec query_by_actor(actor()) :: Ecto.Query.t()
-  def query_by_actor(actor) do
-    from(a in Activity, where: a.actor == ^actor)
+    ap_id
+    |> Queries.by_object_id()
+    |> Queries.by_type("Follow")
+    |> where([a], fragment("? ->> 'state' = 'pending'", a.data))
   end
 
   def restrict_deactivated_users(query) do

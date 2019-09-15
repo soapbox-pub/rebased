@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [json_response: 3, add_link_headers: 5, add_link_headers: 4, add_link_headers: 3]
+    only: [json_response: 3, add_link_headers: 2, add_link_headers: 3]
 
   alias Ecto.Changeset
   alias Pleroma.Activity
@@ -365,7 +365,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.reverse()
 
     conn
-    |> add_link_headers(:home_timeline, activities)
+    |> add_link_headers(activities)
     |> put_view(StatusView)
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
@@ -384,7 +384,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.reverse()
 
     conn
-    |> add_link_headers(:public_timeline, activities, false, %{"local" => local_only})
+    |> add_link_headers(activities, %{"local" => local_only})
     |> put_view(StatusView)
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
@@ -398,7 +398,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 
       conn
-      |> add_link_headers(:user_statuses, activities, params["id"])
+      |> add_link_headers(activities)
       |> put_view(StatusView)
       |> render("index.json", %{
         activities: activities,
@@ -422,9 +422,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Pagination.fetch_paginated(params)
 
     conn
-    |> add_link_headers(:dm_timeline, activities)
+    |> add_link_headers(activities)
     |> put_view(StatusView)
     |> render("index.json", %{activities: activities, for: user, as: :activity})
+  end
+
+  def get_statuses(%{assigns: %{user: user}} = conn, %{"ids" => ids}) do
+    limit = 100
+
+    activities =
+      ids
+      |> Enum.take(limit)
+      |> Activity.all_by_ids_with_object()
+      |> Enum.filter(&Visibility.visible_for_user?(&1, user))
+
+    conn
+    |> put_view(StatusView)
+    |> render("index.json", activities: activities, for: user, as: :activity)
   end
 
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
@@ -523,7 +537,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def scheduled_statuses(%{assigns: %{user: user}} = conn, params) do
     with scheduled_activities <- MastodonAPI.get_scheduled_activities(user, params) do
       conn
-      |> add_link_headers(:scheduled_statuses, scheduled_activities)
+      |> add_link_headers(scheduled_activities)
       |> put_view(ScheduledActivityView)
       |> render("index.json", %{scheduled_activities: scheduled_activities})
     end
@@ -706,7 +720,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     notifications = MastodonAPI.get_notifications(user, params)
 
     conn
-    |> add_link_headers(:notifications, notifications)
+    |> add_link_headers(notifications)
     |> put_view(NotificationView)
     |> render("index.json", %{notifications: notifications, for: user})
   end
@@ -828,6 +842,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def favourited_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
          %Object{data: %{"likes" => likes}} <- Object.normalize(activity) do
       q = from(u in User, where: u.ap_id in ^likes)
 
@@ -839,12 +854,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(AccountView)
       |> render("accounts.json", %{for: user, users: users, as: :user})
     else
+      {:visible, false} -> {:error, :not_found}
       _ -> json(conn, [])
     end
   end
 
   def reblogged_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
          %Object{data: %{"announcements" => announces}} <- Object.normalize(activity) do
       q = from(u in User, where: u.ap_id in ^announces)
 
@@ -856,6 +873,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(AccountView)
       |> render("accounts.json", %{for: user, users: users, as: :user})
     else
+      {:visible, false} -> {:error, :not_found}
       _ -> json(conn, [])
     end
   end
@@ -894,7 +912,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.reverse()
 
     conn
-    |> add_link_headers(:hashtag_timeline, activities, params["tag"], %{"local" => local_only})
+    |> add_link_headers(activities, %{"local" => local_only})
     |> put_view(StatusView)
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
@@ -910,7 +928,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         end
 
       conn
-      |> add_link_headers(:followers, followers, user)
+      |> add_link_headers(followers)
       |> put_view(AccountView)
       |> render("accounts.json", %{for: for_user, users: followers, as: :user})
     end
@@ -927,7 +945,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         end
 
       conn
-      |> add_link_headers(:following, followers, user)
+      |> add_link_headers(followers)
       |> put_view(AccountView)
       |> render("accounts.json", %{for: for_user, users: followers, as: :user})
     end
@@ -1152,7 +1170,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.reverse()
 
     conn
-    |> add_link_headers(:favourites, activities)
+    |> add_link_headers(activities)
     |> put_view(StatusView)
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
@@ -1179,7 +1197,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> Enum.reverse()
 
       conn
-      |> add_link_headers(:favourites, activities)
+      |> add_link_headers(activities)
       |> put_view(StatusView)
       |> render("index.json", %{activities: activities, for: for_user, as: :activity})
     else
@@ -1200,7 +1218,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.map(fn b -> Map.put(b.activity, :bookmark, Map.delete(b, :activity)) end)
 
     conn
-    |> add_link_headers(:bookmarks, bookmarks)
+    |> add_link_headers(bookmarks)
     |> put_view(StatusView)
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
@@ -1640,7 +1658,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       end)
 
     conn
-    |> add_link_headers(:conversations, participations)
+    |> add_link_headers(participations)
     |> json(conversations)
   end
 
