@@ -265,12 +265,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
              String.split(line, ",") |> List.first()
            end)
            |> List.delete("Account address") do
-      PleromaJobQueue.enqueue(:background, User, [
-        :follow_import,
-        follower,
-        followed_identifiers
-      ])
-
+      User.follow_import(follower, followed_identifiers)
       json(conn, "job started")
     end
   end
@@ -281,12 +276,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
     with blocked_identifiers <- String.split(list) do
-      PleromaJobQueue.enqueue(:background, User, [
-        :blocks_import,
-        blocker,
-        blocked_identifiers
-      ])
-
+      User.blocks_import(blocker, blocked_identifiers)
       json(conn, "job started")
     end
   end

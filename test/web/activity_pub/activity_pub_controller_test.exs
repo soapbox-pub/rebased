@@ -4,16 +4,20 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   import Pleroma.Factory
   alias Pleroma.Activity
   alias Pleroma.Instances
   alias Pleroma.Object
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.ReceiverWorker
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -365,7 +369,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      :timer.sleep(500)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
       assert Activity.get_by_ap_id(data["id"])
     end
 
@@ -407,7 +412,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{user.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      :timer.sleep(500)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
       assert Activity.get_by_ap_id(data["id"])
     end
 
@@ -436,7 +441,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{recipient.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      :timer.sleep(500)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
       assert Activity.get_by_ap_id(data["id"])
     end
 
@@ -526,6 +531,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> post("/users/#{recipient.nickname}/inbox", data)
       |> json_response(200)
 
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+
       activity = Activity.get_by_ap_id(data["id"])
 
       assert activity.id
@@ -601,6 +608,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{user.nickname}/outbox", data)
 
       result = json_response(conn, 201)
+
       assert Activity.get_by_ap_id(result["id"])
     end
 

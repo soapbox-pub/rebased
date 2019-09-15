@@ -400,35 +400,71 @@ You can then do
 curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
 ```
 
-## :pleroma_job_queue
+## Oban
 
-[Pleroma Job Queue](https://git.pleroma.social/pleroma/pleroma_job_queue) configuration: a list of queues with maximum concurrent jobs.
+[Oban](https://github.com/sorentwo/oban) asynchronous job processor configuration.
+
+Configuration options described in [Oban readme](https://github.com/sorentwo/oban#usage):
+* `repo` - app's Ecto repo (`Pleroma.Repo`)
+* `verbose` - logs verbosity
+* `prune` - non-retryable jobs [pruning settings](https://github.com/sorentwo/oban#pruning) (`:disabled` / `{:maxlen, value}` / `{:maxage, value}`)
+* `queues` - job queues (see below)
 
 Pleroma has the following queues:
 
+* `activity_expiration` - Activity expiration
 * `federator_outgoing` - Outgoing federation
 * `federator_incoming` - Incoming federation
-* `mailer` - Email sender, see [`Pleroma.Emails.Mailer`](#pleroma-emails-mailer)
+* `mailer` - Email sender, see [`Pleroma.Emails.Mailer`](#pleromaemailsmailer)
 * `transmogrifier` - Transmogrifier
 * `web_push` - Web push notifications
-* `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivities`](#pleromascheduledactivity)
+* `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivity`](#pleromascheduledactivity)
 
 Example:
 
 ```elixir
-config :pleroma_job_queue, :queues,
-  federator_incoming: 50,
-  federator_outgoing: 50
+config :pleroma, Oban,
+  repo: Pleroma.Repo,
+  verbose: false,
+  prune: {:maxlen, 1500},
+  queues: [
+    federator_incoming: 50,
+    federator_outgoing: 50
+  ]
 ```
 
-This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the `max_jobs` set to `50`.
+This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the number of max concurrent jobs set to `50`.
 
-## Pleroma.Web.Federator.RetryQueue
+### Migrating `pleroma_job_queue` settings
 
-* `enabled`: If set to `true`, failed federation jobs will be retried
-* `max_jobs`: The maximum amount of parallel federation jobs running at the same time.
-* `initial_timeout`: The initial timeout in seconds
-* `max_retries`: The maximum number of times a federation job is retried
+`config :pleroma_job_queue, :queues` is replaced by `config :pleroma, Oban, :queues` and uses the same format (keys are queues' names, values are max concurrent jobs numbers).
+
+### Note on running with PostgreSQL in silent mode
+
+If you are running PostgreSQL in [`silent_mode`](https://postgresqlco.nf/en/doc/param/silent_mode?version=9.1), it's advised to set [`log_destination`](https://postgresqlco.nf/en/doc/param/log_destination?version=9.1) to `syslog`, 
+otherwise `postmaster.log` file may grow because of "you don't own a lock of type ShareLock" warnings (see https://github.com/sorentwo/oban/issues/52). 
+
+## :workers
+
+Includes custom worker options not interpretable directly by `Oban`.
+
+* `retries` — keyword lists where keys are `Oban` queues (see above) and values are numbers of max attempts for failed jobs.
+
+Example:
+
+```elixir
+config :pleroma, :workers,
+  retries: [
+    federator_incoming: 5,
+    federator_outgoing: 5
+  ]
+```
+
+### Migrating `Pleroma.Web.Federator.RetryQueue` settings
+
+* `max_retries` is replaced with `config :pleroma, :workers, retries: [federator_outgoing: 5]`
+* `enabled: false` corresponds to `config :pleroma, :workers, retries: [federator_outgoing: 1]`
+* deprecated options: `max_jobs`, `initial_timeout`
 
 ## Pleroma.Web.Metadata
 * `providers`: a list of metadata providers to enable. Providers available:
@@ -488,6 +524,24 @@ config :auto_linker,
     rel: false
   ]
 ```
+
+## Pleroma.Scheduler
+
+Configuration for [Quantum](https://github.com/quantum-elixir/quantum-core) jobs scheduler.
+
+See [Quantum readme](https://github.com/quantum-elixir/quantum-core#usage) for the list of supported options. 
+
+Example:
+
+```elixir
+config :pleroma, Pleroma.Scheduler,
+  global: true,
+  overlap: true,
+  timezone: :utc,
+  jobs: [{"0 */6 * * * *", {Pleroma.Web.Websub, :refresh_subscriptions, []}}]
+```
+
+The above example defines a single job which invokes `Pleroma.Web.Websub.refresh_subscriptions()` every 6 hours ("0 */6 * * * *", [crontab format](https://en.wikipedia.org/wiki/Cron)).
 
 ## Pleroma.ScheduledActivity
 

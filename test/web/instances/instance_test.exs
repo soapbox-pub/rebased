@@ -16,7 +16,8 @@ defmodule Pleroma.Instances.InstanceTest do
 
   describe "set_reachable/1" do
     test "clears `unreachable_since` of existing matching Instance record having non-nil `unreachable_since`" do
-      instance = insert(:instance, unreachable_since: NaiveDateTime.utc_now())
+      unreachable_since = NaiveDateTime.to_iso8601(NaiveDateTime.utc_now())
+      instance = insert(:instance, unreachable_since: unreachable_since)
 
       assert {:ok, instance} = Instance.set_reachable(instance.host)
       refute instance.unreachable_since

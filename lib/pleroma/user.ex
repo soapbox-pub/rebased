@@ -27,6 +27,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.RelMe
   alias Pleroma.Web.Websub
+  alias Pleroma.Workers.BackgroundWorker
 
   require Logger
 
@@ -647,8 +648,9 @@ defmodule Pleroma.User do
   end
 
   @doc "Fetch some posts when the user has just been federated with"
-  def fetch_initial_posts(user),
-    do: PleromaJobQueue.enqueue(:background, __MODULE__, [:fetch_initial_posts, user])
+  def fetch_initial_posts(user) do
+    BackgroundWorker.enqueue("fetch_initial_posts", %{"user_id" => user.id})
+  end
 
   @spec get_followers_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
   def get_followers_query(%User{} = user, nil) do
@@ -1078,7 +1080,7 @@ defmodule Pleroma.User do
   end
 
   def deactivate_async(user, status \\ true) do
-    PleromaJobQueue.enqueue(:background, __MODULE__, [:deactivate_async, user, status])
+    BackgroundWorker.enqueue("deactivate_user", %{"user_id" => user.id, "status" => status})
   end
 
   def deactivate(%User{} = user, status \\ true) do
@@ -1106,9 +1108,9 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  @spec delete(User.t()) :: :ok
-  def delete(%User{} = user),
-    do: PleromaJobQueue.enqueue(:background, __MODULE__, [:delete, user])
+  def delete(%User{} = user) do
+    BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
+  end
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
   def perform(:delete, %User{} = user) do
@@ -1215,21 +1217,20 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers),
-    do:
-      PleromaJobQueue.enqueue(:background, __MODULE__, [
-        :blocks_import,
-        blocker,
-        blocked_identifiers
-      ])
+  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
+    BackgroundWorker.enqueue("blocks_import", %{
+      "blocker_id" => blocker.id,
+      "blocked_identifiers" => blocked_identifiers
+    })
+  end
 
-  def follow_import(%User{} = follower, followed_identifiers) when is_list(followed_identifiers),
-    do:
-      PleromaJobQueue.enqueue(:background, __MODULE__, [
-        :follow_import,
-        follower,
-        followed_identifiers
-      ])
+  def follow_import(%User{} = follower, followed_identifiers)
+      when is_list(followed_identifiers) do
+    BackgroundWorker.enqueue("follow_import", %{
+      "follower_id" => follower.id,
+      "followed_identifiers" => followed_identifiers
+    })
+  end
 
   def delete_user_activities(%User{ap_id: ap_id} = user) do
     ap_id

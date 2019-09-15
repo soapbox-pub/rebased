@@ -99,7 +99,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
       assert activity.data["object"] == obj.data["id"]
-      assert called(Pleroma.Web.Federator.publish(activity, 5))
+      assert called(Pleroma.Web.Federator.publish(activity))
     end
 
     test_with_mock "returns announce activity and not publish to federate",
@@ -113,7 +113,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
       assert activity.data["object"] == obj.data["id"]
-      refute called(Pleroma.Web.Federator.publish(activity, 5))
+      refute called(Pleroma.Web.Federator.publish(activity))
     end
   end
 end

@@ -2,7 +2,7 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.ScheduledActivityWorker do
+defmodule Pleroma.Daemons.ScheduledActivityDaemon do
   @moduledoc """
   Sends scheduled activities to the job queue.
   """
@@ -11,6 +11,7 @@ defmodule Pleroma.ScheduledActivityWorker do
   alias Pleroma.ScheduledActivity
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+
   use GenServer
   require Logger
 
@@ -45,7 +46,10 @@ defmodule Pleroma.ScheduledActivityWorker do
   def handle_info(:perform, state) do
     ScheduledActivity.due_activities(@schedule_interval)
     |> Enum.each(fn scheduled_activity ->
-      PleromaJobQueue.enqueue(:scheduled_activities, __MODULE__, [:execute, scheduled_activity.id])
+      Pleroma.Workers.ScheduledActivityWorker.enqueue(
+        "execute",
+        %{"activity_id" => scheduled_activity.id}
+      )
     end)
 
     schedule_next()

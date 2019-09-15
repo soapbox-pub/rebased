@@ -2096,7 +2096,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         post(conn, "/api/pleroma/admin/config", %{
           configs: [
             %{
-              "group" => "pleroma_job_queue",
+              "group" => "oban",
               "key" => ":queues",
               "value" => [
                 %{"tuple" => [":federator_incoming", 50]},
@@ -2114,7 +2114,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert json_response(conn, 200) == %{
                "configs" => [
                  %{
-                   "group" => "pleroma_job_queue",
+                   "group" => "oban",
                    "key" => ":queues",
                    "value" => [
                      %{"tuple" => [":federator_incoming", 50]},
