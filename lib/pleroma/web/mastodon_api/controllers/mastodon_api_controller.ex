@@ -53,6 +53,123 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   require Logger
   require Pleroma.Constants
 
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action != :index)
+
+  @unauthenticated_access %{fallback: :proceed_unauthenticated, scopes: []}
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read"], skip_instance_privacy_check: true} when action == :index
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read"]} when action in [:suggestions, :verify_app_credentials]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:accounts"]}
+    # Note: the following actions are not permission-secured in Mastodon:
+    when action in [
+           :put_settings,
+           :update_avatar,
+           :update_banner,
+           :update_background,
+           :set_mascot
+         ]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:accounts"]}
+    when action in [:pin_status, :unpin_status, :update_credentials]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:statuses"]}
+    when action in [
+           :conversations,
+           :scheduled_statuses,
+           :show_scheduled_status,
+           :home_timeline,
+           :dm_timeline
+         ]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{@unauthenticated_access | scopes: ["read:statuses"]}
+    when action in [:user_statuses, :get_status, :get_context, :status_card, :get_poll]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:statuses"]}
+    when action in [
+           :update_scheduled_status,
+           :delete_scheduled_status,
+           :post_status,
+           :delete_status,
+           :reblog_status,
+           :unreblog_status,
+           :poll_vote
+         ]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["write:conversations"]} when action == :conversation_read)
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:accounts"]}
+    when action in [:endorsements, :verify_credentials, :followers, :following, :get_mascot]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{@unauthenticated_access | scopes: ["read:accounts"]}
+    when action in [:user, :favourited_by, :reblogged_by]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:favourites"]} when action in [:favourites, :user_favourites]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:favourites"]} when action in [:fav_status, :unfav_status]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["read:filters"]} when action in [:get_filters, :get_filter])
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:filters"]} when action in [:create_filter, :update_filter, :delete_filter]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action in [:account_lists, :list_timeline])
+
+  plug(OAuthScopesPlug, %{scopes: ["write:media"]} when action in [:upload, :update_media])
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:notifications"]} when action in [:notifications, :get_notification]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:notifications"]}
+    when action in [:clear_notifications, :dismiss_notification, :destroy_multiple_notifications]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:reports"]}
+    when action in [:create_report, :report_update_state, :report_respond]
+  )
+
   plug(
     OAuthScopesPlug,
     %{scopes: ["follow", "read:blocks"]} when action in [:blocks, :domain_blocks]
@@ -64,6 +181,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     when action in [:block, :unblock, :block_domain, :unblock_domain]
   )
 
+  plug(OAuthScopesPlug, %{scopes: ["read:follows"]} when action == :relationships)
   plug(OAuthScopesPlug, %{scopes: ["follow", "read:follows"]} when action == :follow_requests)
 
   plug(
@@ -84,8 +202,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:mutes"]}
-    when action in [:mute_conversation, :unmute_conversation]
+    %{scopes: ["write:mutes"]} when action in [:mute_conversation, :unmute_conversation]
+  )
+
+  # Note: scopes not present in Mastodon: read:bookmarks, write:bookmarks
+  plug(OAuthScopesPlug, %{scopes: ["read:bookmarks"]} when action == :bookmarks)
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:bookmarks"]} when action in [:bookmark_status, :unbookmark_status]
   )
 
   @rate_limited_relations_actions ~w(follow unfollow)a
@@ -776,7 +901,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def destroy_multiple(%{assigns: %{user: user}} = conn, %{"ids" => ids} = _params) do
+  def destroy_multiple_notifications(%{assigns: %{user: user}} = conn, %{"ids" => ids} = _params) do
     Notification.destroy_multiple(user, ids)
     json(conn, %{})
   end
@@ -1488,6 +1613,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, %{})
   end
 
+  def endorsements(conn, params), do: empty_array(conn, params)
+
   def get_filters(%{assigns: %{user: user}} = conn, _) do
     filters = Filter.get_filters(user)
     res = FilterView.render("filters.json", filters: filters)
@@ -1610,7 +1737,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def reports(%{assigns: %{user: user}} = conn, params) do
+  def create_report(%{assigns: %{user: user}} = conn, params) do
     case CommonAPI.report(user, params) do
       {:ok, activity} ->
         conn

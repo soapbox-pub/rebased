@@ -556,7 +556,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "password" => "test",
             "client_id" => app.client_id,
             "redirect_uri" => redirect_uri,
-            "scope" => "read write",
+            "scope" => "read:subscope write",
             "state" => "statepassed"
           }
         })
@@ -569,7 +569,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert %{"state" => "statepassed", "code" => code} = query
       auth = Repo.get_by(Authorization, token: code)
       assert auth
-      assert auth.scopes == ["read", "write"]
+      assert auth.scopes == ["read:subscope", "write"]
     end
 
     test "returns 401 for wrong credentials", %{conn: conn} do
@@ -626,7 +626,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert result =~ "This action is outside the authorized scopes"
     end
 
-    test "returns 401 for scopes beyond app scopes", %{conn: conn} do
+    test "returns 401 for scopes beyond app scopes hierarchy", %{conn: conn} do
       user = insert(:user)
       app = insert(:oauth_app, scopes: ["read", "write"])
       redirect_uri = OAuthController.default_redirect_uri(app)

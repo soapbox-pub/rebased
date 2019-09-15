@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Activity
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.User
@@ -15,6 +16,10 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   alias Pleroma.Web.MastodonAPI.StatusView
 
   require Logger
+
+  # Note: Mastodon doesn't allow unauthenticated access (requires read:accounts / read:search)
+  plug(OAuthScopesPlug, %{scopes: ["read:search"], fallback: :proceed_unauthenticated})
+
   plug(RateLimiter, :search when action in [:search, :search2, :account_search])
 
   def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do

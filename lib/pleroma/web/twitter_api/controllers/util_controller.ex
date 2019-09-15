@@ -27,6 +27,17 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks_import)
 
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:accounts"]}
+    when action in [
+           :change_password,
+           :delete_account,
+           :update_notificaton_settings,
+           :disable_account
+         ]
+  )
+
   plug(Pleroma.Plugs.SetFormatPlug when action in [:config, :version])
 
   def help_test(conn, _params) do

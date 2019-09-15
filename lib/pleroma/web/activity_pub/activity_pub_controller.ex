@@ -23,6 +23,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   action_fallback(:errors)
 
+  plug(
+    Pleroma.Plugs.OAuthScopesPlug,
+    %{scopes: ["read:accounts"]} when action in [:followers, :following]
+  )
+
   plug(Pleroma.Web.FederatingPlug when action in [:inbox, :relay])
   plug(:set_requester_reachable when action in [:inbox])
   plug(:relay_active? when action in [:relay])

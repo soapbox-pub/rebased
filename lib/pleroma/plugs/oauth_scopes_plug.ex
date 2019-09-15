@@ -6,6 +6,8 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
   import Plug.Conn
   import Pleroma.Web.Gettext
 
+  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+
   @behaviour Plug
 
   def init(%{scopes: _} = options), do: options
@@ -17,7 +19,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
 
     cond do
       is_nil(token) ->
-        conn
+        maybe_perform_instance_privacy_check(conn, options)
 
       op == :| && Enum.any?(matched_scopes) ->
         conn
@@ -29,6 +31,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
         conn
         |> assign(:user, nil)
         |> assign(:token, nil)
+        |> maybe_perform_instance_privacy_check(options)
 
       true ->
         missing_scopes = scopes -- matched_scopes
@@ -55,5 +58,12 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
         )
       end
     )
+  end
+
+  defp maybe_perform_instance_privacy_check(%Plug.Conn{} = conn, options) do
+    case options[:skip_instance_privacy_check] do
+      true -> conn
+      _ -> EnsurePublicOrAuthenticatedPlug.call(conn, [])
+    end
   end
 end

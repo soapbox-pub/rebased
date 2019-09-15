@@ -87,27 +87,6 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end
 
-  pipeline :oauth_read_or_public do
-    plug(Pleroma.Plugs.OAuthScopesPlug, %{
-      scopes: ["read"],
-      fallback: :proceed_unauthenticated
-    })
-
-    plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-  end
-
-  pipeline :oauth_read do
-    plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["read"]})
-  end
-
-  pipeline :oauth_write do
-    plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["write"]})
-  end
-
-  pipeline :oauth_push do
-    plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["push"]})
-  end
-
   pipeline :well_known do
     plug(:accepts, ["json", "jrd+json", "xml", "xrd+xml"])
   end
@@ -149,7 +128,12 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
-    pipe_through([:admin_api, :oauth_write])
+    pipe_through(:admin_api)
+
+    get("/reports", AdminAPIController, :list_reports)
+    get("/reports/:id", AdminAPIController, :report_show)
+    put("/reports/:id", AdminAPIController, :report_update_state)
+    post("/reports/:id/respond", AdminAPIController, :report_respond)
 
     post("/users/follow", AdminAPIController, :user_follow)
     post("/users/unfollow", AdminAPIController, :user_unfollow)
@@ -184,15 +168,6 @@ defmodule Pleroma.Web.Router do
 
     get("/users", AdminAPIController, :list_users)
     get("/users/:nickname", AdminAPIController, :user_show)
-    get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
-
-    get("/reports", AdminAPIController, :list_reports)
-    get("/reports/:id", AdminAPIController, :report_show)
-    put("/reports/:id", AdminAPIController, :report_update_state)
-    post("/reports/:id/respond", AdminAPIController, :report_respond)
-
-    put("/statuses/:id", AdminAPIController, :status_update)
-    delete("/statuses/:id", AdminAPIController, :status_delete)
 
     get("/config", AdminAPIController, :config_show)
     post("/config", AdminAPIController, :config_update)
@@ -200,6 +175,10 @@ defmodule Pleroma.Web.Router do
     get("/config/migrate_from_db", AdminAPIController, :migrate_from_db)
 
     get("/moderation_log", AdminAPIController, :list_log)
+
+    get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
+    put("/statuses/:id", AdminAPIController, :status_update)
+    delete("/statuses/:id", AdminAPIController, :status_delete)
   end
 
   scope "/", Pleroma.Web.TwitterAPI do
@@ -213,19 +192,13 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:authenticated_api)
 
-    scope [] do
-      pipe_through(:oauth_write)
+    post("/change_password", UtilController, :change_password)
+    post("/delete_account", UtilController, :delete_account)
+    put("/notification_settings", UtilController, :update_notificaton_settings)
+    post("/disable_account", UtilController, :disable_account)
 
-      post("/change_password", UtilController, :change_password)
-      post("/delete_account", UtilController, :delete_account)
-      put("/notification_settings", UtilController, :update_notificaton_settings)
-      post("/disable_account", UtilController, :disable_account)
-    end
-
-    scope [] do
-      post("/blocks_import", UtilController, :blocks_import)
-      post("/follow_import", UtilController, :follow_import)
-    end
+    post("/blocks_import", UtilController, :blocks_import)
+    post("/follow_import", UtilController, :follow_import)
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
@@ -252,148 +225,134 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:authenticated_api)
 
-    scope [] do
-      pipe_through(:oauth_read)
-      get("/conversations/:id/statuses", PleromaAPIController, :conversation_statuses)
-      get("/conversations/:id", PleromaAPIController, :conversation)
-    end
-
-    scope [] do
-      pipe_through(:oauth_write)
-      patch("/conversations/:id", PleromaAPIController, :update_conversation)
-      post("/notifications/read", PleromaAPIController, :read_notification)
-    end
+    get("/conversations/:id/statuses", PleromaAPIController, :conversation_statuses)
+    get("/conversations/:id", PleromaAPIController, :conversation)
+    patch("/conversations/:id", PleromaAPIController, :update_conversation)
+    post("/notifications/read", PleromaAPIController, :read_notification)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:authenticated_api)
 
-    scope [] do
-      pipe_through(:oauth_read)
+    get("/blocks", MastodonAPIController, :blocks)
+    get("/mutes", MastodonAPIController, :mutes)
+    get("/domain_blocks", MastodonAPIController, :domain_blocks)
 
-      get("/accounts/verify_credentials", MastodonAPIController, :verify_credentials)
+    get("/accounts/:id/lists", MastodonAPIController, :account_lists)
+    get("/lists", ListController, :index)
+    get("/lists/:id", ListController, :show)
+    get("/lists/:id/accounts", ListController, :list_accounts)
 
-      get("/accounts/relationships", MastodonAPIController, :relationships)
+    post("/notifications/clear", MastodonAPIController, :clear_notifications)
+    post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
+    get("/notifications", MastodonAPIController, :notifications)
+    get("/notifications/:id", MastodonAPIController, :get_notification)
 
-      get("/accounts/:id/lists", MastodonAPIController, :account_lists)
-      get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
+    delete(
+      "/notifications/destroy_multiple",
+      MastodonAPIController,
+      :destroy_multiple_notifications
+    )
 
-      get("/follow_requests", MastodonAPIController, :follow_requests)
-      get("/blocks", MastodonAPIController, :blocks)
-      get("/mutes", MastodonAPIController, :mutes)
+    # Note: not present in Mastodon
+    get("/bookmarks", MastodonAPIController, :bookmarks)
 
-      get("/timelines/home", MastodonAPIController, :home_timeline)
-      get("/timelines/direct", MastodonAPIController, :dm_timeline)
+    get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
 
-      get("/favourites", MastodonAPIController, :favourites)
-      get("/bookmarks", MastodonAPIController, :bookmarks)
+    get("/favourites", MastodonAPIController, :favourites)
 
-      post("/notifications/clear", MastodonAPIController, :clear_notifications)
-      post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
-      get("/notifications", MastodonAPIController, :notifications)
-      get("/notifications/:id", MastodonAPIController, :get_notification)
-      delete("/notifications/destroy_multiple", MastodonAPIController, :destroy_multiple)
+    get("/accounts/relationships", MastodonAPIController, :relationships)
 
-      get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
-      get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)
+    get("/accounts/verify_credentials", MastodonAPIController, :verify_credentials)
 
-      get("/lists", ListController, :index)
-      get("/lists/:id", ListController, :show)
-      get("/lists/:id/accounts", ListController, :list_accounts)
+    get("/timelines/home", MastodonAPIController, :home_timeline)
+    get("/timelines/direct", MastodonAPIController, :dm_timeline)
 
-      get("/domain_blocks", MastodonAPIController, :domain_blocks)
+    get("/suggestions", MastodonAPIController, :suggestions)
+    get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
+    get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)
+    get("/follow_requests", MastodonAPIController, :follow_requests)
+    get("/filters", MastodonAPIController, :get_filters)
+    get("/endorsements", MastodonAPIController, :endorsements)
+    get("/conversations", MastodonAPIController, :conversations)
+    post("/conversations/:id/read", MastodonAPIController, :conversation_read)
 
-      get("/filters", MastodonAPIController, :get_filters)
+    delete("/lists/:id", ListController, :delete)
+    post("/lists", ListController, :create)
+    put("/lists/:id", ListController, :update)
 
-      get("/suggestions", MastodonAPIController, :suggestions)
+    post("/lists/:id/accounts", ListController, :add_to_list)
+    delete("/lists/:id/accounts", ListController, :remove_from_list)
 
-      get("/conversations", MastodonAPIController, :conversations)
-      post("/conversations/:id/read", MastodonAPIController, :conversation_read)
+    post("/reports", MastodonAPIController, :create_report)
 
-      get("/endorsements", MastodonAPIController, :empty_array)
-    end
+    patch("/pleroma/accounts/update_avatar", MastodonAPIController, :update_avatar)
+    patch("/pleroma/accounts/update_banner", MastodonAPIController, :update_banner)
+    patch("/pleroma/accounts/update_background", MastodonAPIController, :update_background)
 
-    scope [] do
-      pipe_through(:oauth_write)
+    get("/pleroma/mascot", MastodonAPIController, :get_mascot)
+    put("/pleroma/mascot", MastodonAPIController, :set_mascot)
 
-      patch("/accounts/update_credentials", MastodonAPIController, :update_credentials)
+    post("/media", MastodonAPIController, :upload)
+    put("/media/:id", MastodonAPIController, :update_media)
 
-      post("/statuses", MastodonAPIController, :post_status)
-      delete("/statuses/:id", MastodonAPIController, :delete_status)
+    patch("/accounts/update_credentials", MastodonAPIController, :update_credentials)
 
-      post("/statuses/:id/reblog", MastodonAPIController, :reblog_status)
-      post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
-      post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
-      post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
-      post("/statuses/:id/pin", MastodonAPIController, :pin_status)
-      post("/statuses/:id/unpin", MastodonAPIController, :unpin_status)
-      post("/statuses/:id/bookmark", MastodonAPIController, :bookmark_status)
-      post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
-      post("/statuses/:id/mute", MastodonAPIController, :mute_conversation)
-      post("/statuses/:id/unmute", MastodonAPIController, :unmute_conversation)
+    post("/polls/:id/votes", MastodonAPIController, :poll_vote)
 
-      put("/scheduled_statuses/:id", MastodonAPIController, :update_scheduled_status)
-      delete("/scheduled_statuses/:id", MastodonAPIController, :delete_scheduled_status)
+    post("/statuses/:id/reblog", MastodonAPIController, :reblog_status)
+    post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
 
-      post("/polls/:id/votes", MastodonAPIController, :poll_vote)
+    post("/statuses/:id/pin", MastodonAPIController, :pin_status)
+    post("/statuses/:id/unpin", MastodonAPIController, :unpin_status)
 
-      post("/media", MastodonAPIController, :upload)
-      put("/media/:id", MastodonAPIController, :update_media)
+    post("/statuses/:id/mute", MastodonAPIController, :mute_conversation)
+    post("/statuses/:id/unmute", MastodonAPIController, :unmute_conversation)
 
-      delete("/lists/:id", ListController, :delete)
-      post("/lists", ListController, :create)
-      put("/lists/:id", ListController, :update)
+    post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
+    post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
 
-      post("/lists/:id/accounts", ListController, :add_to_list)
-      delete("/lists/:id/accounts", ListController, :remove_from_list)
+    post("/statuses", MastodonAPIController, :post_status)
+    delete("/statuses/:id", MastodonAPIController, :delete_status)
 
-      post("/filters", MastodonAPIController, :create_filter)
-      get("/filters/:id", MastodonAPIController, :get_filter)
-      put("/filters/:id", MastodonAPIController, :update_filter)
-      delete("/filters/:id", MastodonAPIController, :delete_filter)
+    put("/scheduled_statuses/:id", MastodonAPIController, :update_scheduled_status)
+    delete("/scheduled_statuses/:id", MastodonAPIController, :delete_scheduled_status)
 
-      patch("/pleroma/accounts/update_avatar", MastodonAPIController, :update_avatar)
-      patch("/pleroma/accounts/update_banner", MastodonAPIController, :update_banner)
-      patch("/pleroma/accounts/update_background", MastodonAPIController, :update_background)
+    post("/filters", MastodonAPIController, :create_filter)
+    get("/filters/:id", MastodonAPIController, :get_filter)
+    put("/filters/:id", MastodonAPIController, :update_filter)
+    delete("/filters/:id", MastodonAPIController, :delete_filter)
 
-      get("/pleroma/mascot", MastodonAPIController, :get_mascot)
-      put("/pleroma/mascot", MastodonAPIController, :set_mascot)
+    post("/follows", MastodonAPIController, :follow)
+    post("/accounts/:id/follow", MastodonAPIController, :follow)
 
-      post("/reports", MastodonAPIController, :reports)
-    end
+    post("/accounts/:id/unfollow", MastodonAPIController, :unfollow)
+    post("/accounts/:id/block", MastodonAPIController, :block)
+    post("/accounts/:id/unblock", MastodonAPIController, :unblock)
+    post("/accounts/:id/mute", MastodonAPIController, :mute)
+    post("/accounts/:id/unmute", MastodonAPIController, :unmute)
 
-    scope [] do
-      post("/follows", MastodonAPIController, :follow)
-      post("/accounts/:id/follow", MastodonAPIController, :follow)
+    post("/follow_requests/:id/authorize", MastodonAPIController, :authorize_follow_request)
+    post("/follow_requests/:id/reject", MastodonAPIController, :reject_follow_request)
 
-      post("/accounts/:id/unfollow", MastodonAPIController, :unfollow)
-      post("/accounts/:id/block", MastodonAPIController, :block)
-      post("/accounts/:id/unblock", MastodonAPIController, :unblock)
-      post("/accounts/:id/mute", MastodonAPIController, :mute)
-      post("/accounts/:id/unmute", MastodonAPIController, :unmute)
+    post("/domain_blocks", MastodonAPIController, :block_domain)
+    delete("/domain_blocks", MastodonAPIController, :unblock_domain)
 
-      post("/follow_requests/:id/authorize", MastodonAPIController, :authorize_follow_request)
-      post("/follow_requests/:id/reject", MastodonAPIController, :reject_follow_request)
+    post("/pleroma/accounts/:id/subscribe", MastodonAPIController, :subscribe)
+    post("/pleroma/accounts/:id/unsubscribe", MastodonAPIController, :unsubscribe)
 
-      post("/domain_blocks", MastodonAPIController, :block_domain)
-      delete("/domain_blocks", MastodonAPIController, :unblock_domain)
+    post("/push/subscription", SubscriptionController, :create)
+    get("/push/subscription", SubscriptionController, :get)
+    put("/push/subscription", SubscriptionController, :update)
+    delete("/push/subscription", SubscriptionController, :delete)
 
-      post("/pleroma/accounts/:id/subscribe", MastodonAPIController, :subscribe)
-      post("/pleroma/accounts/:id/unsubscribe", MastodonAPIController, :unsubscribe)
-    end
-
-    scope [] do
-      pipe_through(:oauth_push)
-
-      post("/push/subscription", SubscriptionController, :create)
-      get("/push/subscription", SubscriptionController, :get)
-      put("/push/subscription", SubscriptionController, :update)
-      delete("/push/subscription", SubscriptionController, :delete)
-    end
+    # Note: not present in Mastodon: bookmark, unbookmark
+    post("/statuses/:id/bookmark", MastodonAPIController, :bookmark_status)
+    post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
   end
 
   scope "/api/web", Pleroma.Web.MastodonAPI do
-    pipe_through([:authenticated_api, :oauth_write])
+    pipe_through(:authenticated_api)
 
     put("/settings", MastodonAPIController, :put_settings)
   end
@@ -424,31 +383,29 @@ defmodule Pleroma.Web.Router do
       :account_confirmation_resend
     )
 
-    scope [] do
-      pipe_through(:oauth_read_or_public)
+    get("/timelines/public", MastodonAPIController, :public_timeline)
+    get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
 
-      get("/timelines/public", MastodonAPIController, :public_timeline)
-      get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
-      get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
+    get("/pleroma/accounts/:id/favourites", MastodonAPIController, :user_favourites)
 
-      get("/statuses/:id", MastodonAPIController, :get_status)
-      get("/statuses/:id/context", MastodonAPIController, :get_context)
+    get("/search", SearchController, :search)
 
-      get("/polls/:id", MastodonAPIController, :get_poll)
+    get("/polls/:id", MastodonAPIController, :get_poll)
 
-      get("/accounts/:id/statuses", MastodonAPIController, :user_statuses)
-      get("/accounts/:id/followers", MastodonAPIController, :followers)
-      get("/accounts/:id/following", MastodonAPIController, :following)
-      get("/accounts/:id", MastodonAPIController, :user)
+    get("/accounts/:id/followers", MastodonAPIController, :followers)
+    get("/accounts/:id/following", MastodonAPIController, :following)
 
-      get("/search", SearchController, :search)
+    get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
 
-      get("/pleroma/accounts/:id/favourites", MastodonAPIController, :user_favourites)
-    end
+    get("/accounts/:id", MastodonAPIController, :user)
+
+    get("/accounts/:id/statuses", MastodonAPIController, :user_statuses)
+    get("/statuses/:id", MastodonAPIController, :get_status)
+    get("/statuses/:id/context", MastodonAPIController, :get_context)
   end
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do
-    pipe_through([:api, :oauth_read_or_public])
+    pipe_through(:api)
     get("/search", SearchController, :search2)
   end
 
@@ -478,12 +435,7 @@ defmodule Pleroma.Web.Router do
 
     get("/oauth_tokens", TwitterAPI.Controller, :oauth_tokens)
     delete("/oauth_tokens/:id", TwitterAPI.Controller, :revoke_token)
-
-    scope [] do
-      pipe_through(:oauth_read)
-
-      post("/qvitter/statuses/notifications/read", TwitterAPI.Controller, :notifications_read)
-    end
+    post("/qvitter/statuses/notifications/read", TwitterAPI.Controller, :notifications_read)
   end
 
   pipeline :ap_service_actor do
@@ -547,26 +499,16 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through([:activitypub_client])
 
-    scope [] do
-      pipe_through(:oauth_read)
-      get("/api/ap/whoami", ActivityPubController, :whoami)
-      get("/users/:nickname/inbox", ActivityPubController, :read_inbox)
-    end
-
-    scope [] do
-      pipe_through(:oauth_write)
-      post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
-    end
-
-    scope [] do
-      pipe_through(:oauth_read_or_public)
-      get("/users/:nickname/followers", ActivityPubController, :followers)
-      get("/users/:nickname/following", ActivityPubController, :following)
-    end
+    get("/api/ap/whoami", ActivityPubController, :whoami)
+    get("/users/:nickname/inbox", ActivityPubController, :read_inbox)
+    post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
+    get("/users/:nickname/followers", ActivityPubController, :followers)
+    get("/users/:nickname/following", ActivityPubController, :following)
   end
 
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through(:activitypub)
+
     post("/inbox", ActivityPubController, :inbox)
     post("/users/:nickname/inbox", ActivityPubController, :inbox)
   end
@@ -612,10 +554,7 @@ defmodule Pleroma.Web.Router do
 
     post("/auth/password", MastodonAPIController, :password_reset)
 
-    scope [] do
-      pipe_through(:oauth_read)
-      get("/web/*path", MastodonAPIController, :index)
-    end
+    get("/web/*path", MastodonAPIController, :index)
   end
 
   pipeline :remote_media do

@@ -7,11 +7,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   alias Ecto.Changeset
   alias Pleroma.Notification
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TokenView
 
   require Logger
+
+  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :notifications_read)
 
   action_fallback(:errors)
 

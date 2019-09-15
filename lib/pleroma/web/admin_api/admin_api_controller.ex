@@ -6,6 +6,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.Activity
   alias Pleroma.ModerationLog
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -22,6 +23,56 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   require Logger
+
+  plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action == :list_user_statuses)
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:statuses"]} when action in [:status_update, :status_delete]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read"]}
+    when action in [
+           :list_reports,
+           :report_show,
+           :right_get,
+           :get_invite_token,
+           :invites,
+           :get_password_reset,
+           :list_users,
+           :user_show,
+           :config_show,
+           :migrate_to_db,
+           :migrate_from_db,
+           :list_log
+         ]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write"]}
+    when action in [
+           :report_update_state,
+           :report_respond,
+           :user_follow,
+           :user_unfollow,
+           :user_delete,
+           :users_create,
+           :user_toggle_activation,
+           :tag_users,
+           :untag_users,
+           :right_add,
+           :right_delete,
+           :set_activation_status,
+           :relay_follow,
+           :relay_unfollow,
+           :revoke_invite,
+           :email_invite,
+           :config_update
+         ]
+  )
 
   @users_page_size 50
 
