@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 7]
+  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
@@ -40,31 +40,22 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
         %{assigns: %{user: user}} = conn,
         %{"id" => participation_id} = params
       ) do
-    params =
-      params
-      |> Map.put("blocking_user", user)
-      |> Map.put("muting_user", user)
-      |> Map.put("user", user)
-
-    participation =
-      participation_id
-      |> Participation.get(preload: [:conversation])
+    participation = Participation.get(participation_id, preload: [:conversation])
 
     if user.id == participation.user_id do
+      params =
+        params
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+
       activities =
         participation.conversation.ap_id
         |> ActivityPub.fetch_activities_for_context(params)
         |> Enum.reverse()
 
       conn
-      |> add_link_headers(
-        :conversation_statuses,
-        activities,
-        participation_id,
-        params,
-        nil,
-        &pleroma_api_url/4
-      )
+      |> add_link_headers(activities)
       |> put_view(StatusView)
       |> render("index.json", %{activities: activities, for: user, as: :activity})
     end

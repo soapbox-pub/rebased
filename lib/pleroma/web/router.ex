@@ -192,6 +192,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:authenticated_api)
 
+    post("/change_email", UtilController, :change_email)
     post("/change_password", UtilController, :change_password)
     post("/delete_account", UtilController, :delete_account)
     put("/notification_settings", UtilController, :update_notificaton_settings)
@@ -360,48 +361,46 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
 
-    post("/accounts", MastodonAPIController, :account_register)
-
     get("/instance", MastodonAPIController, :masto_instance)
     get("/instance/peers", MastodonAPIController, :peers)
+
     post("/apps", MastodonAPIController, :create_app)
     get("/apps/verify_credentials", MastodonAPIController, :verify_app_credentials)
+
     get("/custom_emojis", MastodonAPIController, :custom_emojis)
-
-    get("/statuses/:id/card", MastodonAPIController, :status_card)
-
-    get("/statuses/:id/favourited_by", MastodonAPIController, :favourited_by)
-    get("/statuses/:id/reblogged_by", MastodonAPIController, :reblogged_by)
 
     get("/trends", MastodonAPIController, :empty_array)
 
     get("/accounts/search", SearchController, :account_search)
+
+    get("/timelines/public", MastodonAPIController, :public_timeline)
+    get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
+    get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
+
+    get("/polls/:id", MastodonAPIController, :get_poll)
+
+    post("/accounts", MastodonAPIController, :account_register)
+    get("/accounts/:id", MastodonAPIController, :user)
+    get("/accounts/:id/followers", MastodonAPIController, :followers)
+    get("/accounts/:id/following", MastodonAPIController, :following)
+    get("/accounts/:id/statuses", MastodonAPIController, :user_statuses)
+
+    get("/search", SearchController, :search)
+
+    get("/statuses", MastodonAPIController, :get_statuses)
+    get("/statuses/:id", MastodonAPIController, :get_status)
+    get("/statuses/:id/context", MastodonAPIController, :get_context)
+    get("/statuses/:id/card", MastodonAPIController, :status_card)
+    get("/statuses/:id/favourited_by", MastodonAPIController, :favourited_by)
+    get("/statuses/:id/reblogged_by", MastodonAPIController, :reblogged_by)
+
+    get("/pleroma/accounts/:id/favourites", MastodonAPIController, :user_favourites)
 
     post(
       "/pleroma/accounts/confirmation_resend",
       MastodonAPIController,
       :account_confirmation_resend
     )
-
-    get("/timelines/public", MastodonAPIController, :public_timeline)
-    get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
-
-    get("/pleroma/accounts/:id/favourites", MastodonAPIController, :user_favourites)
-
-    get("/search", SearchController, :search)
-
-    get("/polls/:id", MastodonAPIController, :get_poll)
-
-    get("/accounts/:id/followers", MastodonAPIController, :followers)
-    get("/accounts/:id/following", MastodonAPIController, :following)
-
-    get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
-
-    get("/accounts/:id", MastodonAPIController, :user)
-
-    get("/accounts/:id/statuses", MastodonAPIController, :user_statuses)
-    get("/statuses/:id", MastodonAPIController, :get_status)
-    get("/statuses/:id/context", MastodonAPIController, :get_context)
   end
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do

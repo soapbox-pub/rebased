@@ -53,9 +53,12 @@ defmodule Pleroma.ObjectTest do
 
       assert object == cached_object
 
+      Cachex.put(:web_resp_cache, URI.parse(object.data["id"]).path, "cofe")
+
       Object.delete(cached_object)
 
       {:ok, nil} = Cachex.get(:object_cache, "object:#{object.data["id"]}")
+      {:ok, nil} = Cachex.get(:web_resp_cache, URI.parse(object.data["id"]).path)
 
       cached_object = Object.get_cached_by_ap_id(object.data["id"])
 

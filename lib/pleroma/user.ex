@@ -174,11 +174,25 @@ defmodule Pleroma.User do
     |> Repo.aggregate(:count, :id)
   end
 
+  defp truncate_if_exists(params, key, max_length) do
+    if Map.has_key?(params, key) and is_binary(params[key]) do
+      {value, _chopped} = String.split_at(params[key], max_length)
+      Map.put(params, key, value)
+    else
+      params
+    end
+  end
+
   def remote_user_creation(params) do
     bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
-    params = Map.put(params, :info, params[:info] || %{})
+    params =
+      params
+      |> Map.put(:info, params[:info] || %{})
+      |> truncate_if_exists(:name, name_limit)
+      |> truncate_if_exists(:bio, bio_limit)
+
     info_cng = User.Info.remote_user_creation(%User.Info{}, params[:info])
 
     changes =
@@ -1219,7 +1233,7 @@ defmodule Pleroma.User do
 
   def delete_user_activities(%User{ap_id: ap_id} = user) do
     ap_id
-    |> Activity.query_by_actor()
+    |> Activity.Queries.by_actor()
     |> RepoStreamer.chunk_stream(50)
     |> Stream.each(fn activities ->
       Enum.each(activities, &delete_activity(&1))
@@ -1624,4 +1638,13 @@ defmodule Pleroma.User do
   def is_internal_user?(%User{nickname: nil}), do: true
   def is_internal_user?(%User{local: true, nickname: "internal." <> _}), do: true
   def is_internal_user?(_), do: false
+
+  def change_email(user, email) do
+    user
+    |> cast(%{email: email}, [:email])
+    |> validate_required([:email])
+    |> unique_constraint(:email)
+    |> validate_format(:email, @email_regex)
+    |> update_and_set_cache()
+  end
 end
