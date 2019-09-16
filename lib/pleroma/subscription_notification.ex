@@ -56,7 +56,8 @@ defmodule Pleroma.SubscriptionNotification do
     if opts[:with_muted] do
       query
     else
-      where(query, [n, a], a.actor not in ^user.info.muted_notifications)
+      query
+      |> where([n, a], a.actor not in ^user.info.muted_notifications)
       |> where([n, a], a.actor not in ^user.info.blocks)
       |> where(
         [n, a],
@@ -88,9 +89,9 @@ defmodule Pleroma.SubscriptionNotification do
   """
   @spec for_user_since(Pleroma.User.t(), NaiveDateTime.t()) :: [t()]
   def for_user_since(user, date) do
-    from(n in for_user_query(user),
-      where: n.updated_at > ^date
-    )
+    user
+    |> for_user_query()
+    |> where([n], n.updated_at > ^date)
     |> Repo.all()
   end
 
@@ -112,10 +113,8 @@ defmodule Pleroma.SubscriptionNotification do
         preload: [activity: activity]
       )
 
-    notification = Repo.one(query)
-
-    case notification do
-      %{user_id: ^user_id} ->
+    case Repo.one(query) do
+      %{user_id: ^user_id} = notification ->
         {:ok, notification}
 
       _ ->
@@ -137,10 +136,8 @@ defmodule Pleroma.SubscriptionNotification do
   end
 
   def dismiss(%{id: user_id} = _user, id) do
-    notification = Repo.get(SubscriptionNotification, id)
-
-    case notification do
-      %{user_id: ^user_id} ->
+    case Repo.get(SubscriptionNotification, id) do
+      %{user_id: ^user_id} = notification ->
         Repo.delete(notification)
 
       _ ->
@@ -149,21 +146,24 @@ defmodule Pleroma.SubscriptionNotification do
   end
 
   def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity) do
-    object = Object.normalize(activity)
+    case Object.normalize(activity) do
+      %{data: %{"type" => "Answer"}} ->
+        {:ok, []}
 
-    unless object && object.data["type"] == "Answer" do
-      users = get_notified_from_activity(activity)
-      notifications = Enum.map(users, fn user -> create_notification(activity, user) end)
-      {:ok, notifications}
-    else
-      {:ok, []}
+      _ ->
+        users = get_notified_from_activity(activity)
+        notifications = Enum.map(users, fn user -> create_notification(activity, user) end)
+        {:ok, notifications}
     end
   end
 
   def create_notifications(%Activity{data: %{"to" => _, "type" => type}} = activity)
       when type in ["Like", "Announce", "Follow"] do
-    users = get_notified_from_activity(activity)
-    notifications = Enum.map(users, fn user -> create_notification(activity, user) end)
+    notifications =
+      activity
+      |> get_notified_from_activity()
+      |> Enum.map(&create_notification(activity, &1))
+
     {:ok, notifications}
   end
 
@@ -188,12 +188,10 @@ defmodule Pleroma.SubscriptionNotification do
         local_only
       )
       when type in ["Create", "Like", "Announce", "Follow"] do
-    recipients =
-      []
-      |> Utils.maybe_notify_subscribers(activity)
-      |> Enum.uniq()
-
-    User.get_users_from_set(recipients, local_only)
+    []
+    |> Utils.maybe_notify_subscribers(activity)
+    |> Enum.uniq()
+    |> User.get_users_from_set(local_only)
   end
 
   def get_notified_from_activity(_, _local_only), do: []
@@ -218,12 +216,12 @@ defmodule Pleroma.SubscriptionNotification do
 
   def skip?(
         :followers,
-        activity,
+        %{data: %{"actor" => actor}},
         %{info: %{notification_settings: %{"followers" => false}}} = user
       ) do
-    actor = activity.data["actor"]
-    follower = User.get_cached_by_ap_id(actor)
-    User.following?(follower, user)
+    actor
+    |> User.get_cached_by_ap_id()
+    |> User.following?(user)
   end
 
   def skip?(
@@ -252,14 +250,10 @@ defmodule Pleroma.SubscriptionNotification do
     !User.following?(user, followed)
   end
 
-  def skip?(:recently_followed, %{data: %{"type" => "Follow"}} = activity, user) do
-    actor = activity.data["actor"]
-
-    SubscriptionNotification.for_user(user)
-    |> Enum.any?(fn
-      %{activity: %{data: %{"type" => "Follow", "actor" => ^actor}}} -> true
-      _ -> false
-    end)
+  def skip?(:recently_followed, %{data: %{"type" => "Follow", "actor" => actor}}, user) do
+    user
+    |> SubscriptionNotification.for_user()
+    |> Enum.any?(&match?(%{activity: %{data: %{"type" => "Follow", "actor" => ^actor}}}, &1))
   end
 
   def skip?(_, _, _), do: false

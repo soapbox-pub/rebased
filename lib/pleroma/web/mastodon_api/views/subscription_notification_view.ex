@@ -6,7 +6,6 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionNotificationView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
-  # alias Pleroma.SubscriptionNotification
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
