@@ -5,8 +5,10 @@
 defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.Delivery
   alias Pleroma.HTTP
   alias Pleroma.Instances
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -116,7 +118,18 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         {:ok, []}
       end
 
-    Pleroma.Web.Salmon.remote_users(actor, activity) ++ followers
+    fetchers =
+      with %Activity{data: %{"type" => "Delete"}} <- activity,
+           %Object{id: object_id} <- Object.normalize(activity),
+           fetchers <- User.get_delivered_users_by_object_id(object_id),
+           _ <- Delivery.delete_all_by_object_id(object_id) do
+        fetchers
+      else
+        _ ->
+          []
+      end
+
+    Pleroma.Web.Salmon.remote_users(actor, activity) ++ followers ++ fetchers
   end
 
   defp get_cc_ap_ids(ap_id, recipients) do

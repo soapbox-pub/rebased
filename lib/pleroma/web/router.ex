@@ -135,6 +135,7 @@ defmodule Pleroma.Web.Router do
 
   pipeline :http_signature do
     plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
+    plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
@@ -514,6 +515,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web do
     pipe_through(:ostatus)
+    pipe_through(:http_signature)
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
