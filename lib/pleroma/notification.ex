@@ -210,10 +210,8 @@ defmodule Pleroma.Notification do
     unless skip?(activity, user) do
       notification = %Notification{user_id: user.id, activity: activity}
       {:ok, notification} = Repo.insert(notification)
-
-      ["user", "user:notification"]
-      |> Streamer.stream(notification)
-
+      Streamer.stream("user", notification)
+      Streamer.stream("user:notification", notification)
       Push.send(notification)
       notification
     end
