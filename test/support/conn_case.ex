@@ -40,10 +40,6 @@ defmodule Pleroma.Web.ConnCase do
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
     end
 
-    if tags[:needs_streamer] do
-      start_supervised(Pleroma.Web.Streamer.supervisor())
-    end
-
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end

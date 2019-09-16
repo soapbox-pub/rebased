@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
-  alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Config
   alias Pleroma.Conversation
   alias Pleroma.Notification
@@ -17,7 +16,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.Transmogrifier
-  alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
   alias Pleroma.Workers.BackgroundWorker
 
@@ -189,7 +187,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       participations
       |> Repo.preload(:user)
 
-    Streamer.stream("participation", participations)
+    Enum.each(participations, fn participation ->
+      Pleroma.Web.Streamer.stream("participation", participation)
+    end)
   end
 
   def stream_out_participations(%Object{data: %{"context" => context}}, user) do
@@ -208,15 +208,41 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def stream_out_participations(_, _), do: :noop
 
-  def stream_out(%Activity{data: %{"type" => data_type}} = activity)
-      when data_type in ["Create", "Announce", "Delete"] do
-    activity
-    |> Topics.get_activity_topics()
-    |> Streamer.stream(activity)
-  end
+  def stream_out(activity) do
+    if activity.data["type"] in ["Create", "Announce", "Delete"] do
+      object = Object.normalize(activity)
+      # Do not stream out poll replies
+      unless object.data["type"] == "Answer" do
+        Pleroma.Web.Streamer.stream("user", activity)
+        Pleroma.Web.Streamer.stream("list", activity)
 
-  def stream_out(_activity) do
-    :noop
+        if get_visibility(activity) == "public" do
+          Pleroma.Web.Streamer.stream("public", activity)
+
+          if activity.local do
+            Pleroma.Web.Streamer.stream("public:local", activity)
+          end
+
+          if activity.data["type"] in ["Create"] do
+            object.data
+            |> Map.get("tag", [])
+            |> Enum.filter(fn tag -> is_bitstring(tag) end)
+            |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
+
+            if object.data["attachment"] != [] do
+              Pleroma.Web.Streamer.stream("public:media", activity)
+
+              if activity.local do
+                Pleroma.Web.Streamer.stream("public:local:media", activity)
+              end
+            end
+          end
+        else
+          if get_visibility(activity) == "direct",
+            do: Pleroma.Web.Streamer.stream("direct", activity)
+        end
+      end
+    end
   end
 
   def create(%{to: to, actor: actor, context: context, object: object} = params, fake \\ false) do

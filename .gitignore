@@ -43,7 +43,3 @@ docs/generated_config.md
 # Code test coverage
 /cover
 /Elixir.*.coverdata
-
-.idea
-pleroma.iml
-

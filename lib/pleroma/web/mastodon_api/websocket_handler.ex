@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Web.Streamer
 
   @behaviour :cowboy_websocket
 
@@ -25,7 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   ]
   @anonymous_streams ["public", "public:local", "hashtag"]
 
-  # Handled by periodic keepalive in Pleroma.Web.Streamer.Ping.
+  # Handled by periodic keepalive in Pleroma.Web.Streamer.
   @timeout :infinity
 
   def init(%{qs: qs} = req, state) do
@@ -66,7 +65,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
       }, topic #{state.topic}"
     )
 
-    Streamer.add_socket(state.topic, streamer_socket(state))
+    Pleroma.Web.Streamer.add_socket(state.topic, streamer_socket(state))
     {:ok, state}
   end
 
@@ -81,7 +80,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
       }, topic #{state.topic || "?"}: #{inspect(reason)}"
     )
 
-    Streamer.remove_socket(state.topic, streamer_socket(state))
+    Pleroma.Web.Streamer.remove_socket(state.topic, streamer_socket(state))
     :ok
   end
 

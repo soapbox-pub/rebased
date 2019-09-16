@@ -39,10 +39,6 @@ defmodule Pleroma.DataCase do
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
     end
 
-    if tags[:needs_streamer] do
-      start_supervised(Pleroma.Web.Streamer.supervisor())
-    end
-
     :ok
   end
 
