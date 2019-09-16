@@ -31,18 +31,19 @@ defmodule Pleroma.Application do
     children =
       [
         Pleroma.Repo,
+        Pleroma.Scheduler,
         Pleroma.Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,
         Pleroma.FlakeId,
-        Pleroma.ScheduledActivityWorker,
-        Pleroma.ActivityExpirationWorker
+        Pleroma.Daemons.ScheduledActivityDaemon,
+        Pleroma.Daemons.ActivityExpirationDaemon
       ] ++
         cachex_children() ++
         hackney_pool_children() ++
         [
-          Pleroma.Web.Federator.RetryQueue,
           Pleroma.Stats,
+          {Oban, Pleroma.Config.get(Oban)},
           %{
             id: :web_push_init,
             start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
@@ -70,9 +71,7 @@ defmodule Pleroma.Application do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
-    result = Supervisor.start_link(children, opts)
-    :ok = after_supervisor_start()
-    result
+    Supervisor.start_link(children, opts)
   end
 
   defp setup_instrumenters do
@@ -116,7 +115,8 @@ defmodule Pleroma.Application do
       build_cachex("object", default_ttl: 25_000, ttl_interval: 1000, limit: 2500),
       build_cachex("rich_media", default_ttl: :timer.minutes(120), limit: 5000),
       build_cachex("scrubber", limit: 2500),
-      build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500)
+      build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500),
+      build_cachex("web_resp", limit: 2500)
     ]
   end
 
@@ -141,7 +141,7 @@ defmodule Pleroma.Application do
   defp streamer_child(:test), do: []
 
   defp streamer_child(_) do
-    [Pleroma.Web.Streamer]
+    [Pleroma.Web.Streamer.supervisor()]
   end
 
   defp oauth_cleanup_child(true),
@@ -162,18 +162,5 @@ defmodule Pleroma.Application do
       options = Pleroma.Config.get([:hackney_pools, pool])
       :hackney_pool.child_spec(pool, options)
     end
-  end
-
-  defp after_supervisor_start do
-    with digest_config <- Application.get_env(:pleroma, :email_notifications)[:digest],
-         true <- digest_config[:active] do
-      PleromaJobQueue.schedule(
-        digest_config[:schedule],
-        :digest_emails,
-        Pleroma.DigestEmailWorker
-      )
-    end
-
-    :ok
   end
 end

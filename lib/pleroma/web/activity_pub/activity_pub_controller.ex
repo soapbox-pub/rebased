@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Activity
+  alias Pleroma.Delivery
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
   alias Pleroma.User
@@ -22,6 +23,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   require Logger
 
   action_fallback(:errors)
+
+  plug(
+    Pleroma.Plugs.Cache,
+    [query_params: false, tracking_fun: &__MODULE__.track_object_fetch/2]
+    when action in [:activity, :object]
+  )
 
   plug(Pleroma.Web.FederatingPlug when action in [:inbox, :relay])
   plug(:set_requester_reachable when action in [:inbox])
@@ -53,12 +60,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(object)} do
       conn
+      |> assign(:tracking_fun_data, object.id)
+      |> set_cache_ttl_for(object)
       |> put_resp_content_type("application/activity+json")
-      |> json(ObjectView.render("object.json", %{object: object}))
+      |> put_view(ObjectView)
+      |> render("object.json", object: object)
     else
       {:public?, false} ->
         {:error, :not_found}
     end
+  end
+
+  def track_object_fetch(conn, nil), do: conn
+
+  def track_object_fetch(conn, object_id) do
+    with %{assigns: %{user: %User{id: user_id}}} <- conn do
+      Delivery.create(object_id, user_id)
+    end
+
+    conn
   end
 
   def object_likes(conn, %{"uuid" => uuid, "page" => page}) do
@@ -96,12 +116,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          %Activity{} = activity <- Activity.normalize(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
       conn
+      |> maybe_set_tracking_data(activity)
+      |> set_cache_ttl_for(activity)
       |> put_resp_content_type("application/activity+json")
-      |> json(ObjectView.render("object.json", %{object: activity}))
+      |> put_view(ObjectView)
+      |> render("object.json", object: activity)
     else
-      {:public?, false} ->
-        {:error, :not_found}
+      {:public?, false} -> {:error, :not_found}
+      nil -> {:error, :not_found}
     end
+  end
+
+  defp maybe_set_tracking_data(conn, %Activity{data: %{"type" => "Create"}} = activity) do
+    object_id = Object.normalize(activity).id
+    assign(conn, :tracking_fun_data, object_id)
+  end
+
+  defp maybe_set_tracking_data(conn, _activity), do: conn
+
+  defp set_cache_ttl_for(conn, %Activity{object: object}) do
+    set_cache_ttl_for(conn, object)
+  end
+
+  defp set_cache_ttl_for(conn, entity) do
+    ttl =
+      case entity do
+        %Object{data: %{"type" => "Question"}} ->
+          Pleroma.Config.get([:web_cache_ttl, :activity_pub_question])
+
+        %Object{} ->
+          Pleroma.Config.get([:web_cache_ttl, :activity_pub])
+
+        _ ->
+          nil
+      end
+
+    assign(conn, :cache_ttl, ttl)
   end
 
   # GET /relay/following
@@ -251,22 +301,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def whoami(_conn, _params), do: {:error, :not_found}
 
-  def read_inbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
-    if nickname == user.nickname do
-      conn
-      |> put_resp_content_type("application/activity+json")
-      |> json(UserView.render("inbox.json", %{user: user, max_id: params["max_id"]}))
-    else
-      err =
-        dgettext("errors", "can't read inbox of %{nickname} as %{as_nickname}",
-          nickname: nickname,
-          as_nickname: user.nickname
-        )
+  def read_inbox(
+        %{assigns: %{user: %{nickname: nickname} = user}} = conn,
+        %{"nickname" => nickname} = params
+      ) do
+    conn
+    |> put_resp_content_type("application/activity+json")
+    |> put_view(UserView)
+    |> render("inbox.json", user: user, max_id: params["max_id"])
+  end
 
-      conn
-      |> put_status(:forbidden)
-      |> json(err)
-    end
+  def read_inbox(%{assigns: %{user: nil}} = conn, %{"nickname" => nickname}) do
+    err = dgettext("errors", "can't read inbox of %{nickname}", nickname: nickname)
+
+    conn
+    |> put_status(:forbidden)
+    |> json(err)
+  end
+
+  def read_inbox(%{assigns: %{user: %{nickname: as_nickname}}} = conn, %{
+        "nickname" => nickname
+      }) do
+    err =
+      dgettext("errors", "can't read inbox of %{nickname} as %{as_nickname}",
+        nickname: nickname,
+        as_nickname: as_nickname
+      )
+
+    conn
+    |> put_status(:forbidden)
+    |> json(err)
   end
 
   def handle_user_activity(user, %{"type" => "Create"} = params) do

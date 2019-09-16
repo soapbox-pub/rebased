@@ -13,6 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
@@ -21,7 +22,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Push
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
   import Pleroma.Factory
   import ExUnit.CaptureLog
   import Tesla.Mock
@@ -743,6 +743,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => id} = json_response(conn, 200)
     assert id == to_string(activity.id)
+  end
+
+  test "get statuses by IDs", %{conn: conn} do
+    %{id: id1} = insert(:note_activity)
+    %{id: id2} = insert(:note_activity)
+
+    query_string = "ids[]=#{id1}&ids[]=#{id2}"
+    conn = get(conn, "/api/v1/statuses/?#{query_string}")
+
+    assert [%{"id" => ^id1}, %{"id" => ^id2}] = Enum.sort_by(json_response(conn, :ok), & &1["id"])
   end
 
   describe "deleting a status" do
@@ -1484,12 +1494,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         filename: "an_image.jpg"
       }
 
-      media =
-        TwitterAPI.upload(file, user, "json")
-        |> Jason.decode!()
+      {:ok, %{id: media_id}} = ActivityPub.upload(file, actor: user.ap_id)
 
-      {:ok, image_post} =
-        CommonAPI.post(user, %{"status" => "cofe", "media_ids" => [media["media_id"]]})
+      {:ok, image_post} = CommonAPI.post(user, %{"status" => "cofe", "media_ids" => [media_id]})
 
       conn =
         conn
@@ -1675,32 +1682,85 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
-  test "account fetching", %{conn: conn} do
-    user = insert(:user)
+  describe "account fetching" do
+    test "works by id" do
+      user = insert(:user)
 
-    conn =
-      conn
-      |> get("/api/v1/accounts/#{user.id}")
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/#{user.id}")
 
-    assert %{"id" => id} = json_response(conn, 200)
-    assert id == to_string(user.id)
+      assert %{"id" => id} = json_response(conn, 200)
+      assert id == to_string(user.id)
 
-    conn =
-      build_conn()
-      |> get("/api/v1/accounts/-1")
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/-1")
 
-    assert %{"error" => "Can't find user"} = json_response(conn, 404)
-  end
+      assert %{"error" => "Can't find user"} = json_response(conn, 404)
+    end
 
-  test "account fetching also works nickname", %{conn: conn} do
-    user = insert(:user)
+    test "works by nickname" do
+      user = insert(:user)
 
-    conn =
-      conn
-      |> get("/api/v1/accounts/#{user.nickname}")
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/#{user.nickname}")
 
-    assert %{"id" => id} = json_response(conn, 200)
-    assert id == user.id
+      assert %{"id" => id} = json_response(conn, 200)
+      assert id == user.id
+    end
+
+    test "works by nickname for remote users" do
+      limit_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
+      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      user = insert(:user, nickname: "user@example.com", local: false)
+
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/#{user.nickname}")
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local)
+      assert %{"id" => id} = json_response(conn, 200)
+      assert id == user.id
+    end
+
+    test "respects limit_to_local_content == :all for remote user nicknames" do
+      limit_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
+      Pleroma.Config.put([:instance, :limit_to_local_content], :all)
+
+      user = insert(:user, nickname: "user@example.com", local: false)
+
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/#{user.nickname}")
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local)
+      assert json_response(conn, 404)
+    end
+
+    test "respects limit_to_local_content == :unauthenticated for remote user nicknames" do
+      limit_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
+      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
+
+      user = insert(:user, nickname: "user@example.com", local: false)
+      reading_user = insert(:user)
+
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/#{user.nickname}")
+
+      assert json_response(conn, 404)
+
+      conn =
+        build_conn()
+        |> assign(:user, reading_user)
+        |> get("/api/v1/accounts/#{user.nickname}")
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local)
+      assert %{"id" => id} = json_response(conn, 200)
+      assert id == user.id
+    end
   end
 
   test "mascot upload", %{conn: conn} do
@@ -3639,7 +3699,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         build_conn()
         |> assign(:user, user)
 
-      [conn: conn, activity: activity]
+      [conn: conn, activity: activity, user: user]
     end
 
     test "returns users who have favorited the status", %{conn: conn, activity: activity} do
@@ -3699,6 +3759,32 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       [%{"id" => id}] = response
       assert id == other_user.id
     end
+
+    test "requires authentification for private posts", %{conn: conn, user: user} do
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "@#{other_user.nickname} wanna get some #cofe together?",
+          "visibility" => "direct"
+        })
+
+      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+
+      conn
+      |> assign(:user, nil)
+      |> get("/api/v1/statuses/#{activity.id}/favourited_by")
+      |> json_response(404)
+
+      response =
+        build_conn()
+        |> assign(:user, other_user)
+        |> get("/api/v1/statuses/#{activity.id}/favourited_by")
+        |> json_response(200)
+
+      [%{"id" => id}] = response
+      assert id == other_user.id
+    end
   end
 
   describe "GET /api/v1/statuses/:id/reblogged_by" do
@@ -3710,7 +3796,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         build_conn()
         |> assign(:user, user)
 
-      [conn: conn, activity: activity]
+      [conn: conn, activity: activity, user: user]
     end
 
     test "returns users who have reblogged the status", %{conn: conn, activity: activity} do
@@ -3770,6 +3856,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       [%{"id" => id}] = response
       assert id == other_user.id
     end
+
+    test "requires authentification for private posts", %{conn: conn, user: user} do
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "@#{other_user.nickname} wanna get some #cofe together?",
+          "visibility" => "direct"
+        })
+
+      conn
+      |> assign(:user, nil)
+      |> get("/api/v1/statuses/#{activity.id}/reblogged_by")
+      |> json_response(404)
+
+      response =
+        build_conn()
+        |> assign(:user, other_user)
+        |> get("/api/v1/statuses/#{activity.id}/reblogged_by")
+        |> json_response(200)
+
+      assert [] == response
+    end
   end
 
   describe "POST /auth/password, with valid parameters" do
@@ -3789,6 +3898,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "it sends an email to user", %{user: user} do
+      ObanHelpers.perform_all()
       token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
 
       email = Pleroma.Emails.UserEmail.password_reset_email(user, token_record.token)
@@ -3849,6 +3959,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/pleroma/accounts/confirmation_resend?email=#{user.email}")
       |> json_response(:no_content)
 
+      ObanHelpers.perform_all()
+
       email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
       notify_email = Config.get([:instance, :notify_email])
       instance_name = Config.get([:instance, :name])
@@ -3904,13 +4016,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       Config.put([:suggestions, :enabled], true)
       Config.put([:suggestions, :third_party_engine], "http://test500?{{host}}&{{user}}")
 
-      res =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/suggestions")
-        |> json_response(500)
+      assert capture_log(fn ->
+               res =
+                 conn
+                 |> assign(:user, user)
+                 |> get("/api/v1/suggestions")
+                 |> json_response(500)
 
-      assert res == "Something went wrong"
+               assert res == "Something went wrong"
+             end) =~ "Could not retrieve suggestions"
     end
 
     test "returns suggestions", %{conn: conn, user: user, other_user: other_user} do

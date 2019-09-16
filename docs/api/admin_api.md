@@ -60,9 +60,13 @@ Authentication is required and the user must be an admin.
 
 - Method: `POST`
 - Params:
-  - `nickname`
-  - `email`
-  - `password`
+  `users`: [
+    {
+      `nickname`,
+      `email`,
+      `password`
+    }
+  ]
 - Response: User’s nickname
 
 ## `/api/pleroma/admin/users/follow`

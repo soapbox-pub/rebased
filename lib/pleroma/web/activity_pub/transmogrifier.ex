@@ -15,6 +15,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
+  alias Pleroma.Workers.TransmogrifierWorker
 
   import Ecto.Query
 
@@ -185,12 +186,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
             |> Map.put("context", replied_object.data["context"] || object["conversation"])
           else
             e ->
-              Logger.error("Couldn't fetch \"#{inspect(in_reply_to_id)}\", error: #{inspect(e)}")
+              Logger.error("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
               object
           end
 
         e ->
-          Logger.error("Couldn't fetch \"#{inspect(in_reply_to_id)}\", error: #{inspect(e)}")
+          Logger.error("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
           object
       end
     else
@@ -1051,7 +1052,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          already_ap <- User.ap_enabled?(user),
          {:ok, user} <- user |> User.upgrade_changeset(data) |> User.update_and_set_cache() do
       unless already_ap do
-        PleromaJobQueue.enqueue(:transmogrifier, __MODULE__, [:user_upgrade, user])
+        TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
       end
 
       {:ok, user}

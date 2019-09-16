@@ -73,14 +73,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render("index.json", opts) do
     replied_to_activities = get_replied_to_activities(opts.activities)
-    parallel = unless is_nil(opts[:parallel]), do: opts[:parallel], else: true
 
     opts.activities
     |> safe_render_many(
       StatusView,
       "status.json",
-      Map.put(opts, :replied_to_activities, replied_to_activities),
-      parallel
+      Map.put(opts, :replied_to_activities, replied_to_activities)
     )
   end
 
@@ -385,16 +383,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end
 
     if options do
-      end_time =
-        (object.data["closed"] || object.data["endTime"])
-        |> NaiveDateTime.from_iso8601!()
+      {end_time, expired} =
+        case object.data["closed"] || object.data["endTime"] do
+          end_time when is_binary(end_time) ->
+            end_time =
+              (object.data["closed"] || object.data["endTime"])
+              |> NaiveDateTime.from_iso8601!()
 
-      expired =
-        end_time
-        |> NaiveDateTime.compare(NaiveDateTime.utc_now())
-        |> case do
-          :lt -> true
-          _ -> false
+            expired =
+              end_time
+              |> NaiveDateTime.compare(NaiveDateTime.utc_now())
+              |> case do
+                :lt -> true
+                _ -> false
+              end
+
+            end_time = Utils.to_masto_date(end_time)
+
+            {end_time, expired}
+
+          _ ->
+            {nil, false}
         end
 
       voted =
@@ -421,7 +430,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         # Mastodon uses separate ids for polls, but an object can't have
         # more than one poll embedded so object id is fine
         id: to_string(object.id),
-        expires_at: Utils.to_masto_date(end_time),
+        expires_at: end_time,
         expired: expired,
         multiple: multiple,
         votes_count: votes_count,
@@ -488,7 +497,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     object_tags = for tag when is_binary(tag) <- object_tags, do: tag
 
     Enum.reduce(object_tags, [], fn tag, tags ->
-      tags ++ [%{name: tag, url: "/tag/#{tag}"}]
+      tags ++ [%{name: tag, url: "/tag/#{URI.encode(tag)}"}]
     end)
   end
 
