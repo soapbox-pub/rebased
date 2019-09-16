@@ -321,7 +321,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert called(
                Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
                  inbox: "https://domain.com/users/nick1/inbox",
-                 actor: actor,
+                 actor_id: actor.id,
                  id: delete.data["id"]
                })
              )
@@ -329,7 +329,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert called(
                Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
                  inbox: "https://domain2.com/users/nick1/inbox",
-                 actor: actor,
+                 actor_id: actor.id,
                  id: delete.data["id"]
                })
              )
