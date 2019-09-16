@@ -10,7 +10,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   alias Pleroma.Notification
   alias Pleroma.Pagination
   alias Pleroma.ScheduledActivity
-  alias Pleroma.SubscriptionNotification
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
@@ -59,15 +58,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
 
     user
     |> Notification.for_user_query(options)
-    |> restrict(:exclude_types, options)
-    |> Pagination.fetch_paginated(params)
-  end
-
-  def get_subscription_notifications(user, params \\ %{}) do
-    options = cast_params(params)
-
-    user
-    |> SubscriptionNotification.for_user_query(options)
     |> restrict(:exclude_types, options)
     |> Pagination.fetch_paginated(params)
   end

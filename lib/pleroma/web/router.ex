@@ -268,6 +268,14 @@ defmodule Pleroma.Web.Router do
       pipe_through(:oauth_read)
       get("/conversations/:id/statuses", PleromaAPIController, :conversation_statuses)
       get("/conversations/:id", PleromaAPIController, :conversation)
+
+      scope "/subscription_notifications" do
+        post("/clear", SubscriptionNotificationController, :clear)
+        post("/dismiss", SubscriptionNotificationController, :dismiss)
+        delete("/destroy_multiple", SubscriptionNotificationController, :destroy_multiple)
+        get("/", SubscriptionNotificationController, :list)
+        get("/id", SubscriptionNotificationController, :get)
+      end
     end
 
     scope [] do
@@ -302,37 +310,12 @@ defmodule Pleroma.Web.Router do
 
       post("/notifications/clear", MastodonAPIController, :clear_notifications)
 
-      post(
-        "/notifications/subscription/clear",
-        MastodonAPIController,
-        :clear_subscription_notifications
-      )
-
       post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
 
-      post(
-        "/notifications/subscription/dismiss",
-        MastodonAPIController,
-        :dismiss_subscription_notification
-      )
-
       get("/notifications", MastodonAPIController, :notifications)
-      get("/notifications/subscription", MastodonAPIController, :subscription_notifications)
       get("/notifications/:id", MastodonAPIController, :get_notification)
 
-      get(
-        "/notifications/subscription/:id",
-        MastodonAPIController,
-        :get_subscription_notification
-      )
-
       delete("/notifications/destroy_multiple", MastodonAPIController, :destroy_multiple)
-
-      delete(
-        "/notifications/subscription/destroy_multiple",
-        MastodonAPIController,
-        :destroy_multiple_subscription_notifications
-      )
 
       get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
       get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)

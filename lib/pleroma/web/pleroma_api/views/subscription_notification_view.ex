@@ -2,15 +2,15 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.MastodonAPI.SubscriptionNotificationView do
+defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
-  alias Pleroma.Web.MastodonAPI.SubscriptionNotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.PleromaAPI.SubscriptionNotificationView
 
   def render("index.json", %{notifications: notifications, for: user}) do
     safe_render_many(notifications, SubscriptionNotificationView, "show.json", %{for: user})
