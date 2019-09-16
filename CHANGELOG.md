@@ -30,6 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - AdminAPI: Add "godmode" while fetching user statuses (i.e. admin can see private statuses)
 - Improve digest email template
 – Pagination: (optional) return `total` alongside with `items` when paginating
+- Replaced [pleroma_job_queue](https://git.pleroma.social/pleroma/pleroma_job_queue) and `Pleroma.Web.Federator.RetryQueue` with [Oban](https://github.com/sorentwo/oban) (see [`docs/config.md`](docs/config.md) on migrating customized worker / retry settings)
+- Introduced [quantum](https://github.com/quantum-elixir/quantum-core) job scheduler
 
 ### Fixed
 - Following from Osada

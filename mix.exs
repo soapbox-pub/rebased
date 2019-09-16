@@ -101,6 +101,8 @@ defmodule Pleroma.Mixfile do
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_sql, "~> 3.1"},
       {:postgrex, ">= 0.13.5"},
+      {:oban, "~> 0.7"},
+      {:quantum, "~> 2.3"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
@@ -131,7 +133,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_swoosh, "~> 0.2"},
       {:gen_smtp, "~> 0.13"},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
-      {:floki, "~> 0.20.0"},
+      {:floki, "~> 0.23.0"},
       {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
       {:timex, "~> 3.5"},
       {:ueberauth, "~> 0.4"},
@@ -141,8 +143,8 @@ defmodule Pleroma.Mixfile do
       {:http_signatures,
        git: "https://git.pleroma.social/pleroma/http_signatures.git",
        ref: "293d77bb6f4a67ac8bde1428735c3b42f22cbb30"},
-      {:pleroma_job_queue, "~> 0.3"},
       {:telemetry, "~> 0.3"},
+      {:poolboy, "~> 1.5"},
       {:prometheus_ex, "~> 3.0"},
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
@@ -172,8 +174,7 @@ defmodule Pleroma.Mixfile do
       "ecto.rollback": ["pleroma.ecto.rollback"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"],
-      docs: ["pleroma.docs", "docs"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"]
     ]
   end
 
