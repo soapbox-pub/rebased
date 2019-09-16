@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
 
+  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Mock
 
@@ -20,7 +21,9 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
 
   describe "follow/1" do
     test "returns errors when user not found" do
-      assert Relay.follow("test-ap-id") == {:error, "Could not fetch by AP id"}
+      assert capture_log(fn ->
+               assert Relay.follow("test-ap-id") == {:error, "Could not fetch by AP id"}
+             end) =~ "Could not fetch by AP id"
     end
 
     test "returns activity" do
@@ -37,7 +40,9 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
 
   describe "unfollow/1" do
     test "returns errors when user not found" do
-      assert Relay.unfollow("test-ap-id") == {:error, "Could not fetch by AP id"}
+      assert capture_log(fn ->
+               assert Relay.unfollow("test-ap-id") == {:error, "Could not fetch by AP id"}
+             end) =~ "Could not fetch by AP id"
     end
 
     test "returns activity" do
@@ -78,7 +83,9 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
           }
         )
 
-      assert Relay.publish(activity) == {:error, nil}
+      assert capture_log(fn ->
+               assert Relay.publish(activity) == {:error, nil}
+             end) =~ "[error] error: nil"
     end
 
     test_with_mock "returns announce activity and publish to federate",
@@ -92,7 +99,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
       assert activity.data["object"] == obj.data["id"]
-      assert called(Pleroma.Web.Federator.publish(activity, 5))
+      assert called(Pleroma.Web.Federator.publish(activity))
     end
 
     test_with_mock "returns announce activity and not publish to federate",
@@ -106,7 +113,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
       assert activity.data["object"] == obj.data["id"]
-      refute called(Pleroma.Web.Federator.publish(activity, 5))
+      refute called(Pleroma.Web.Federator.publish(activity))
     end
   end
 end

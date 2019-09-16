@@ -10,7 +10,7 @@ defmodule Pleroma.ActivityExpirationWorkerTest do
   test "deletes an activity" do
     activity = insert(:note_activity)
     expiration = insert(:expiration_in_the_past, %{activity_id: activity.id})
-    Pleroma.ActivityExpirationWorker.perform(:execute, expiration.id)
+    Pleroma.Daemons.ActivityExpirationDaemon.perform(:execute, expiration.id)
 
     refute Repo.get(Activity, activity.id)
   end

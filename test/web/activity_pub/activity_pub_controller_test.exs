@@ -4,16 +4,21 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   import Pleroma.Factory
   alias Pleroma.Activity
+  alias Pleroma.Delivery
   alias Pleroma.Instances
   alias Pleroma.Object
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.ReceiverWorker
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -365,7 +370,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      :timer.sleep(500)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
       assert Activity.get_by_ap_id(data["id"])
     end
 
@@ -407,7 +413,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{user.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      :timer.sleep(500)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
       assert Activity.get_by_ap_id(data["id"])
     end
 
@@ -436,7 +442,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{recipient.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      :timer.sleep(500)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
       assert Activity.get_by_ap_id(data["id"])
     end
 
@@ -526,6 +532,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> post("/users/#{recipient.nickname}/inbox", data)
       |> json_response(200)
 
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+
       activity = Activity.get_by_ap_id(data["id"])
 
       assert activity.id
@@ -601,6 +609,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{user.nickname}/outbox", data)
 
       result = json_response(conn, 201)
+
       assert Activity.get_by_ap_id(result["id"])
     end
 
@@ -883,6 +892,88 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert length(result["orderedItems"]) == 5
       assert result["totalItems"] == 15
+    end
+  end
+
+  describe "delivery tracking" do
+    test "it tracks a signed object fetch", %{conn: conn} do
+      user = insert(:user, local: false)
+      activity = insert(:note_activity)
+      object = Object.normalize(activity)
+
+      object_path = String.trim_leading(object.data["id"], Pleroma.Web.Endpoint.url())
+
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, user)
+      |> get(object_path)
+      |> json_response(200)
+
+      assert Delivery.get(object.id, user.id)
+    end
+
+    test "it tracks a signed activity fetch", %{conn: conn} do
+      user = insert(:user, local: false)
+      activity = insert(:note_activity)
+      object = Object.normalize(activity)
+
+      activity_path = String.trim_leading(activity.data["id"], Pleroma.Web.Endpoint.url())
+
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, user)
+      |> get(activity_path)
+      |> json_response(200)
+
+      assert Delivery.get(object.id, user.id)
+    end
+
+    test "it tracks a signed object fetch when the json is cached", %{conn: conn} do
+      user = insert(:user, local: false)
+      other_user = insert(:user, local: false)
+      activity = insert(:note_activity)
+      object = Object.normalize(activity)
+
+      object_path = String.trim_leading(object.data["id"], Pleroma.Web.Endpoint.url())
+
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, user)
+      |> get(object_path)
+      |> json_response(200)
+
+      build_conn()
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, other_user)
+      |> get(object_path)
+      |> json_response(200)
+
+      assert Delivery.get(object.id, user.id)
+      assert Delivery.get(object.id, other_user.id)
+    end
+
+    test "it tracks a signed activity fetch when the json is cached", %{conn: conn} do
+      user = insert(:user, local: false)
+      other_user = insert(:user, local: false)
+      activity = insert(:note_activity)
+      object = Object.normalize(activity)
+
+      activity_path = String.trim_leading(activity.data["id"], Pleroma.Web.Endpoint.url())
+
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, user)
+      |> get(activity_path)
+      |> json_response(200)
+
+      build_conn()
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, other_user)
+      |> get(activity_path)
+      |> json_response(200)
+
+      assert Delivery.get(object.id, user.id)
+      assert Delivery.get(object.id, other_user.id)
     end
   end
 end

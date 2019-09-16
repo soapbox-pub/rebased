@@ -73,14 +73,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render("index.json", opts) do
     replied_to_activities = get_replied_to_activities(opts.activities)
-    parallel = unless is_nil(opts[:parallel]), do: opts[:parallel], else: true
 
     opts.activities
     |> safe_render_many(
       StatusView,
       "status.json",
-      Map.put(opts, :replied_to_activities, replied_to_activities),
-      parallel
+      Map.put(opts, :replied_to_activities, replied_to_activities)
     )
   end
 
@@ -499,7 +497,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     object_tags = for tag when is_binary(tag) <- object_tags, do: tag
 
     Enum.reduce(object_tags, [], fn tag, tags ->
-      tags ++ [%{name: tag, url: "/tag/#{tag}"}]
+      tags ++ [%{name: tag, url: "/tag/#{URI.encode(tag)}"}]
     end)
   end
 
