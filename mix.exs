@@ -143,6 +143,7 @@ defmodule Pleroma.Mixfile do
        ref: "293d77bb6f4a67ac8bde1428735c3b42f22cbb30"},
       {:pleroma_job_queue, "~> 0.3"},
       {:telemetry, "~> 0.3"},
+      {:poolboy, "~> 1.5"},
       {:prometheus_ex, "~> 3.0"},
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
