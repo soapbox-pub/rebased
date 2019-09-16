@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicyTest do
   use Pleroma.DataCase
 
   alias Pleroma.HTTP
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy
 
   import Mock
@@ -24,6 +25,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicyTest do
   test "it prefetches media proxy URIs" do
     with_mock HTTP, get: fn _, _, _ -> {:ok, []} end do
       MediaProxyWarmingPolicy.filter(@message)
+
+      ObanHelpers.perform_all()
+      # Performing jobs which has been just enqueued
+      ObanHelpers.perform_all()
+
       assert called(HTTP.get(:_, :_, :_))
     end
   end

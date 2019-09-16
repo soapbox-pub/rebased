@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.PublisherTest do
   use Pleroma.DataCase
 
+  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
   import Mock
@@ -188,7 +189,10 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user)
       inbox = "http://connrefused.site/users/nick1/inbox"
 
-      assert {:error, _} = Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+      assert capture_log(fn ->
+               assert {:error, _} =
+                        Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+             end) =~ "connrefused"
 
       assert called(Instances.set_unreachable(inbox))
     end
@@ -212,14 +216,16 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user)
       inbox = "http://connrefused.site/users/nick1/inbox"
 
-      assert {:error, _} =
-               Publisher.publish_one(%{
-                 inbox: inbox,
-                 json: "{}",
-                 actor: actor,
-                 id: 1,
-                 unreachable_since: NaiveDateTime.utc_now()
-               })
+      assert capture_log(fn ->
+               assert {:error, _} =
+                        Publisher.publish_one(%{
+                          inbox: inbox,
+                          json: "{}",
+                          actor: actor,
+                          id: 1,
+                          unreachable_since: NaiveDateTime.utc_now()
+                        })
+             end) =~ "connrefused"
 
       refute called(Instances.set_unreachable(inbox))
     end
@@ -257,7 +263,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert called(
                Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
                  inbox: "https://domain.com/users/nick1/inbox",
-                 actor: actor,
+                 actor_id: actor.id,
                  id: note_activity.data["id"]
                })
              )

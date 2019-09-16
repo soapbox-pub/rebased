@@ -96,6 +96,6 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
 
     Salmon.publish(user, activity)
 
-    assert called(Publisher.enqueue_one(Salmon, %{recipient: mentioned_user}))
+    assert called(Publisher.enqueue_one(Salmon, %{recipient_id: mentioned_user.id}))
   end
 end

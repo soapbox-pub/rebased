@@ -17,6 +17,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.WebFinger
+  alias Pleroma.Workers.BackgroundWorker
 
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
@@ -145,7 +146,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity
         end
 
-      PleromaJobQueue.enqueue(:background, Pleroma.Web.RichMedia.Helpers, [:fetch, activity])
+      BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
 
       Notification.create_notifications(activity)
 

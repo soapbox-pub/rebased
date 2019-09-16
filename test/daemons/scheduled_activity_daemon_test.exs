@@ -2,7 +2,7 @@
 # Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.ScheduledActivityWorkerTest do
+defmodule Pleroma.ScheduledActivityDaemonTest do
   use Pleroma.DataCase
   alias Pleroma.ScheduledActivity
   import Pleroma.Factory
@@ -10,7 +10,7 @@ defmodule Pleroma.ScheduledActivityWorkerTest do
   test "creates a status from the scheduled activity" do
     user = insert(:user)
     scheduled_activity = insert(:scheduled_activity, user: user, params: %{status: "hi"})
-    Pleroma.ScheduledActivityWorker.perform(:execute, scheduled_activity.id)
+    Pleroma.Daemons.ScheduledActivityDaemon.perform(:execute, scheduled_activity.id)
 
     refute Repo.get(ScheduledActivity, scheduled_activity.id)
     activity = Repo.all(Pleroma.Activity) |> Enum.find(&(&1.actor == user.ap_id))

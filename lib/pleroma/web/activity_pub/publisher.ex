@@ -84,6 +84,15 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     end
   end
 
+  def publish_one(%{actor_id: actor_id} = params) do
+    actor = User.get_cached_by_id(actor_id)
+
+    params
+    |> Map.delete(:actor_id)
+    |> Map.put(:actor, actor)
+    |> publish_one()
+  end
+
   defp should_federate?(inbox, public) do
     if public do
       true
@@ -159,7 +168,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   Publishes an activity with BCC to all relevant peers.
   """
 
-  def publish(actor, %{data: %{"bcc" => bcc}} = activity) when is_list(bcc) and bcc != [] do
+  def publish(%User{} = actor, %{data: %{"bcc" => bcc}} = activity)
+      when is_list(bcc) and bcc != [] do
     public = is_public?(activity)
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
 
@@ -186,7 +196,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       Pleroma.Web.Federator.Publisher.enqueue_one(__MODULE__, %{
         inbox: inbox,
         json: json,
-        actor: actor,
+        actor_id: actor.id,
         id: activity.data["id"],
         unreachable_since: unreachable_since
       })
@@ -221,7 +231,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         %{
           inbox: inbox,
           json: json,
-          actor: actor,
+          actor_id: actor.id,
           id: activity.data["id"],
           unreachable_since: unreachable_since
         }
