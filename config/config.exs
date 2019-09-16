@@ -276,7 +276,7 @@ config :pleroma, :instance,
   max_account_fields: 10,
   max_remote_account_fields: 20,
   account_field_name_length: 512,
-  account_field_value_length: 512,
+  account_field_value_length: 2048,
   external_user_synchronization: true
 
 config :pleroma, :markup,
