@@ -15,7 +15,6 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationController do
 
     conn
     |> add_link_headers(notifications)
-    |> put_view(SubscriptionNotificationView)
     |> render("index.json", %{notifications: notifications, for: user})
   end
 
