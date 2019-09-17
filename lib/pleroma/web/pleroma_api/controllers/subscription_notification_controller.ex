@@ -7,11 +7,16 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationController do
 
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
+  alias Pleroma.Activity
   alias Pleroma.SubscriptionNotification
+  alias Pleroma.User
   alias Pleroma.Web.PleromaAPI.PleromaAPI
 
   def index(%{assigns: %{user: user}} = conn, params) do
-    notifications = PleromaAPI.get_subscription_notifications(user, params)
+    notifications =
+      user
+      |> PleromaAPI.get_subscription_notifications(params)
+      |> Enum.map(&build_notification_data/1)
 
     conn
     |> add_link_headers(notifications)
@@ -20,7 +25,10 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationController do
 
   def show(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
     with {:ok, notification} <- SubscriptionNotification.get(user, id) do
-      render(conn, "show.json", %{subscription_notification: notification, for: user})
+      render(conn, "show.json", %{
+        subscription_notification: build_notification_data(notification),
+        for: user
+      })
     else
       {:error, reason} ->
         conn
@@ -51,5 +59,13 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationController do
       ) do
     SubscriptionNotification.destroy_multiple(user, ids)
     json(conn, %{})
+  end
+
+  defp build_notification_data(%{activity: %{data: data}} = notification) do
+    %{
+      notification: notification,
+      actor: User.get_cached_by_ap_id(data["actor"]),
+      parent_activity: Activity.get_create_by_object_ap_id(data["object"])
+    }
   end
 end

@@ -6,7 +6,6 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
-  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
@@ -17,11 +16,13 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationView do
   end
 
   def render("show.json", %{
-        subscription_notification: %{activity: activity} = notification,
+        subscription_notification: %{
+          notification: %{activity: activity} = notification,
+          actor: actor,
+          parent_activity: parent_activity
+        },
         for: user
       }) do
-    actor = User.get_cached_by_ap_id(activity.data["actor"])
-    parent_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
     mastodon_type = Activity.mastodon_notification_type(activity)
 
     response = %{
