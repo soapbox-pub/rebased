@@ -5,8 +5,8 @@
 defmodule Pleroma.Plugs.OAuthScopesPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
 
   import Mock
