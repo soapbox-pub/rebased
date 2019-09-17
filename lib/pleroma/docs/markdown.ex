@@ -73,13 +73,15 @@ defmodule Pleroma.Docs.Markdown do
   defp print_suggestions(_file, ""), do: nil
 
   defp print_suggestions(file, suggestions) do
-    IO.write(file, "Suggestions:\n")
-
     if length(suggestions) > 1 do
+      IO.write(file, "Suggestions:\n")
+
       for suggestion <- suggestions do
         print_suggestion(file, suggestion, true)
       end
     else
+      IO.write(file, "Suggestion:\n")
+
       print_suggestion(file, List.first(suggestions))
     end
   end
