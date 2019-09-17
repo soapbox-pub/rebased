@@ -111,7 +111,7 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
       {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.2"},
+      {:tesla, "~> 1.3", override: true},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
       {:ex_aws, "~> 2.1"},
