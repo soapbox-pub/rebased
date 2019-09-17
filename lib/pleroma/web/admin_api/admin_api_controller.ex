@@ -432,9 +432,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def get_password_reset(conn, %{"nickname" => nickname}) do
     (%User{local: true} = user) = User.get_cached_by_nickname(nickname)
     {:ok, token} = Pleroma.PasswordResetToken.create_token(user)
+    host = Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host])
+    protocol = Pleroma.Config.get([Pleroma.Web.Endpoint, :protocol])
 
     conn
-    |> json(token.token)
+    |> json(%{
+      token: token.token,
+      link: "#{protocol}://#{host}/api/pleroma/password_reset/#{token}"
+    })
   end
 
   def list_reports(conn, params) do
