@@ -109,8 +109,7 @@ config :pleroma, :config_description, [
         type: :string,
         description:
           "If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or \"\" etc." <>
-            " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in public_endpoint.",
-        suggestions: [""]
+            " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in public_endpoint."
       }
     ]
   },
@@ -360,22 +359,19 @@ config :pleroma, :config_description, [
         group: {:subgroup, Swoosh.Adapters.SocketLabs},
         key: :server_id,
         type: :string,
-        description: "`Swoosh.Adapters.SocketLabs` adapter specific setting",
-        suggestions: [""]
+        description: "`Swoosh.Adapters.SocketLabs` adapter specific setting"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.SocketLabs},
         key: :api_key,
         type: :string,
-        description: "`Swoosh.Adapters.SocketLabs` adapter specific setting",
-        suggestions: [""]
+        description: "`Swoosh.Adapters.SocketLabs` adapter specific setting"
       },
       %{
         group: {:subgroup, Swoosh.Adapters.Gmail},
         key: :access_token,
         type: :string,
-        description: "`Swoosh.Adapters.Gmail` adapter specific setting",
-        suggestions: [""]
+        description: "`Swoosh.Adapters.Gmail` adapter specific setting"
       }
     ]
   },
@@ -1682,8 +1678,7 @@ config :pleroma, :config_description, [
     group: :pleroma_job_queue,
     key: :queues,
     type: :group,
-    description: "[Deprecated] Replaced with `Oban`/`:queues` (keeping the same format)",
-    children: []
+    description: "[Deprecated] Replaced with `Oban`/`:queues` (keeping the same format)"
   },
   %{
     group: :pleroma,
@@ -1694,8 +1689,7 @@ config :pleroma, :config_description, [
       %{
         key: :max_retries,
         type: :integer,
-        description: "[Deprecated] Replaced as `Oban`/`:queues`/`:outgoing_federation` value",
-        suggestions: []
+        description: "[Deprecated] Replaced as `Oban`/`:queues`/`:outgoing_federation` value"
       }
     ]
   },
@@ -2041,8 +2035,7 @@ config :pleroma, :config_description, [
       %{
         key: :sslopts,
         type: :keyword,
-        description: "additional SSL options",
-        suggestions: []
+        description: "additional SSL options"
       },
       %{
         key: :tls,
@@ -2052,8 +2045,7 @@ config :pleroma, :config_description, [
       %{
         key: :tlsopts,
         type: :keyword,
-        description: "additional TLS options",
-        suggestions: []
+        description: "additional TLS options"
       },
       %{
         key: :base,
