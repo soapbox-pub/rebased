@@ -857,7 +857,6 @@ config :pleroma, :config_description, [
       %{
         key: :metadata,
         type: {:list, :atom},
-        description: "",
         suggestions: [[:request_id]]
       }
     ]
@@ -883,7 +882,6 @@ config :pleroma, :config_description, [
       %{
         key: :metadata,
         type: {:list, :atom},
-        description: "",
         suggestions: [[:request_id]]
       }
     ]
@@ -1177,7 +1175,6 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :mrf_rejectnonpublic,
     type: :group,
-    description: "",
     children: [
       %{
         key: :allow_followersonly,
@@ -1444,43 +1441,36 @@ config :pleroma, :config_description, [
       %{
         key: :instrumenters,
         type: {:list, :module},
-        description: "",
         suggestions: [Pleroma.Web.Endpoint.Instrumenter]
       },
       %{
         key: :protocol,
         type: :string,
-        description: "",
         suggestions: ["https"]
       },
       %{
         key: :secret_key_base,
         type: :string,
-        description: "",
         suggestions: ["aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl"]
       },
       %{
         key: :signing_salt,
         type: :string,
-        description: "",
         suggestions: ["CqaoopA2"]
       },
       %{
         key: :render_errors,
         type: :keyword,
-        description: "",
         suggestions: [[view: Pleroma.Web.ErrorView, accepts: ~w(json)]],
         children: [
           %{
             key: :view,
             type: :module,
-            description: "",
             suggestions: [Pleroma.Web.ErrorView]
           },
           %{
             key: :accepts,
             type: {:list, :string},
-            description: "",
             suggestions: ["json"]
           }
         ]
@@ -1488,32 +1478,27 @@ config :pleroma, :config_description, [
       %{
         key: :pubsub,
         type: :keyword,
-        description: "",
         suggestions: [[name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]],
         children: [
           %{
             key: :name,
             type: :module,
-            description: "",
             suggestions: [Pleroma.PubSub]
           },
           %{
             key: :adapter,
             type: :module,
-            description: "",
             suggestions: [Phoenix.PubSub.PG2]
           }
         ]
       },
       %{
         key: :secure_cookie_flag,
-        type: :boolean,
-        description: ""
+        type: :boolean
       },
       %{
         key: :extra_cookie_attrs,
         type: {:list, :string},
-        description: "",
         suggestions: ["SameSite=Lax"]
       }
     ]
@@ -1842,7 +1827,6 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :rich_media,
     type: :group,
-    description: "",
     children: [
       %{
         key: :enabled,
@@ -1995,7 +1979,6 @@ config :pleroma, :config_description, [
       %{
         key: Pleroma.Web.Auth.Authenticator,
         type: :module,
-        description: "",
         suggestions: [Pleroma.Web.Auth.PleromaAuthenticator, Pleroma.Web.Auth.LDAPAuthenticator]
       }
     ]
@@ -2172,37 +2155,31 @@ config :pleroma, :config_description, [
           %{
             key: :link_color,
             type: :string,
-            description: "",
             suggestions: ["#d8a070"]
           },
           %{
             key: :background_color,
             type: :string,
-            description: "",
             suggestions: ["#2C3645"]
           },
           %{
             key: :content_background_color,
             type: :string,
-            description: "",
             suggestions: ["#1B2635"]
           },
           %{
             key: :header_color,
             type: :string,
-            description: "",
             suggestions: ["#d8a070"]
           },
           %{
             key: :text_color,
             type: :string,
-            description: "",
             suggestions: ["#b9b9ba"]
           },
           %{
             key: :text_muted_color,
             type: :string,
-            description: "",
             suggestions: ["#b9b9ba"]
           }
         ]
@@ -2245,7 +2222,6 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :emoji,
     type: :group,
-    description: "",
     children: [
       %{
         key: :shortcode_globs,
@@ -2387,7 +2363,6 @@ config :pleroma, :config_description, [
       %{
         key: :types,
         type: :map,
-        description: "",
         suggestions: [
           %{
             "application/xml" => ["xml"],
@@ -2401,31 +2376,26 @@ config :pleroma, :config_description, [
           %{
             key: "application/xml",
             type: {:list, :string},
-            description: "",
             suggestions: [["xml"]]
           },
           %{
             key: "application/xrd+xml",
             type: {:list, :string},
-            description: "",
             suggestions: [["xrd+xml"]]
           },
           %{
             key: "application/jrd+json",
             type: {:list, :string},
-            description: "",
             suggestions: [["jrd+json"]]
           },
           %{
             key: "application/activity+json",
             type: {:list, :string},
-            description: "",
             suggestions: [["activity+json"]]
           },
           %{
             key: "application/ld+json",
             type: {:list, :string},
-            description: "",
             suggestions: [["activity+json"]]
           }
         ]
@@ -2453,8 +2423,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :enabled,
-        type: :boolean,
-        description: ""
+        type: :boolean
       }
     ]
   },
@@ -2462,7 +2431,6 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :suggestions,
     type: :group,
-    description: "",
     children: [
       %{
         key: :enabled,
@@ -2492,7 +2460,6 @@ config :pleroma, :config_description, [
       %{
         key: :web,
         type: :string,
-        description: "",
         suggestions: ["https://vinayaka.distsn.org"]
       }
     ]
@@ -2519,7 +2486,6 @@ config :pleroma, :config_description, [
       %{
         key: :adapter,
         type: :module,
-        description: "",
         suggestions: [Pleroma.Signature]
       }
     ]
@@ -2528,18 +2494,15 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: Pleroma.Uploaders.MDII,
     type: :group,
-    description: "",
     children: [
       %{
         key: :cgi,
         type: :string,
-        description: "",
         suggestions: ["https://mdii.sakura.ne.jp/mdii-post.cgi"]
       },
       %{
         key: :files,
         type: :string,
-        description: "",
         suggestions: ["https://mdii.sakura.ne.jp"]
       }
     ]
@@ -2553,18 +2516,15 @@ config :pleroma, :config_description, [
       %{
         key: :proxy_url,
         type: [:string, :atom, nil],
-        description: "",
         suggestions: ["localhost:9020", {:socks5, :localhost, 3090}, nil]
       },
       %{
         key: :send_user_agent,
-        type: :boolean,
-        description: ""
+        type: :boolean
       },
       %{
         key: :adapter,
         type: :keyword,
-        description: "",
         suggestions: [
           [
             ssl_options: [
@@ -2582,32 +2542,26 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :markup,
     type: :group,
-    description: "",
     children: [
       %{
         key: :allow_inline_images,
-        type: :boolean,
-        description: ""
+        type: :boolean
       },
       %{
         key: :allow_headings,
-        type: :boolean,
-        description: ""
+        type: :boolean
       },
       %{
         key: :allow_tables,
-        type: :boolean,
-        description: ""
+        type: :boolean
       },
       %{
         key: :allow_fonts,
-        type: :boolean,
-        description: ""
+        type: :boolean
       },
       %{
         key: :scrub_policy,
         type: {:list, :module},
-        description: "",
         suggestions: [[Pleroma.HTML.Transform.MediaProxy, Pleroma.HTML.Scrubber.Default]]
       }
     ]
@@ -2616,12 +2570,10 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :user,
     type: :group,
-    description: "",
     children: [
       %{
         key: :deny_follow_blocked,
-        type: :boolean,
-        description: ""
+        type: :boolean
       }
     ]
   },
@@ -2629,12 +2581,10 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :mrf_normalize_markup,
     type: :group,
-    description: "",
     children: [
       %{
         key: :scrub_policy,
         type: :module,
-        description: "",
         suggestions: [Pleroma.HTML.Scrubber.Default]
       }
     ]
@@ -2643,12 +2593,10 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: Pleroma.User,
     type: :group,
-    description: "",
     children: [
       %{
         key: :restricted_nicknames,
         type: {:list, :string},
-        description: "",
         suggestions: [
           [
             ".well-known",
@@ -2689,24 +2637,20 @@ config :pleroma, :config_description, [
   %{
     group: :cors_plug,
     type: :group,
-    description: "",
     children: [
       %{
         key: :max_age,
         type: :integer,
-        description: "",
         suggestions: [86_400]
       },
       %{
         key: :methods,
         type: {:list, :string},
-        description: "",
         suggestions: [["POST", "PUT", "DELETE", "GET", "PATCH", "OPTIONS"]]
       },
       %{
         key: :expose,
         type: :string,
-        description: "",
         suggestions: [
           [
             "Link",
@@ -2720,13 +2664,11 @@ config :pleroma, :config_description, [
       },
       %{
         key: :credentials,
-        type: :boolean,
-        description: ""
+        type: :boolean
       },
       %{
         key: :headers,
         type: {:list, :string},
-        description: "",
         suggestions: [["Authorization", "Content-Type", "Idempotency-Key"]]
       }
     ]
