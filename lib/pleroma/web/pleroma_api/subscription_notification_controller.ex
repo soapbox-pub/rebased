@@ -9,7 +9,6 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationController do
 
   alias Pleroma.SubscriptionNotification
   alias Pleroma.Web.PleromaAPI.PleromaAPI
-  alias Pleroma.Web.PleromaAPI.SubscriptionNotificationView
 
   def list(%{assigns: %{user: user}} = conn, params) do
     notifications = PleromaAPI.get_subscription_notifications(user, params)
