@@ -66,6 +66,8 @@ defmodule Pleroma.Docs.Markdown do
 
   defp print_suggestions(_file, nil), do: nil
 
+  defp print_suggestions(_file, ""), do: nil
+
   defp print_suggestions(file, suggestions) do
     IO.write(file, "Suggestions:\n")
 
