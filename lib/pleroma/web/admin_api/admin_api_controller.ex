@@ -24,38 +24,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   require Logger
 
-  plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action == :list_user_statuses)
-
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:statuses"]} when action in [:status_update, :status_delete]
+    %{scopes: ["admin:read:accounts", "read:accounts"]}
+    when action in [:list_users, :user_show, :right_get, :invites]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read"]}
+    %{scopes: ["admin:write", "write:accounts"]}
     when action in [
-           :list_reports,
-           :report_show,
-           :right_get,
            :get_invite_token,
-           :invites,
+           :revoke_invite,
+           :email_invite,
            :get_password_reset,
-           :list_users,
-           :user_show,
-           :config_show,
-           :migrate_to_db,
-           :migrate_from_db,
-           :list_log
-         ]
-  )
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write"]}
-    when action in [
-           :report_update_state,
-           :report_respond,
            :user_follow,
            :user_unfollow,
            :user_delete,
@@ -65,13 +47,42 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :untag_users,
            :right_add,
            :right_delete,
-           :set_activation_status,
-           :relay_follow,
-           :relay_unfollow,
-           :revoke_invite,
-           :email_invite,
-           :config_update
+           :set_activation_status
          ]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["admin:read:reports", "read:reports"]} when action in [:list_reports, :report_show]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["admin:write:reports", "write:reports"]}
+    when action in [:report_update_state, :report_respond]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["admin:read:statuses", "read:statuses"]} when action == :list_user_statuses
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["admin:write:statuses", "write:statuses"]}
+    when action in [:status_update, :status_delete]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["admin:read", "read"]}
+    when action in [:config_show, :migrate_to_db, :migrate_from_db, :list_log]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["admin:write", "write"]}
+    when action in [:relay_follow, :relay_unfollow, :config_update]
   )
 
   @users_page_size 50
@@ -451,7 +462,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  @doc "Get a account registeration invite token (base64 string)"
+  @doc "Get a account registration invite token (base64 string)"
   def get_invite_token(conn, params) do
     options = params["invite"] || %{}
     {:ok, invite} = UserInviteToken.create_invite(options)

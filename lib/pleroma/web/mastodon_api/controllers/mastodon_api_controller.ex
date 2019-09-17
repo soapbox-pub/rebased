@@ -53,13 +53,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   require Logger
   require Pleroma.Constants
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action != :index)
-
   @unauthenticated_access %{fallback: :proceed_unauthenticated, scopes: []}
 
+  # Note: :index action handles attempt of unauthenticated access to private instance with redirect
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read"], skip_instance_privacy_check: true} when action == :index
+    Map.merge(@unauthenticated_access, %{scopes: ["read"], skip_instance_privacy_check: true})
+    when action == :index
   )
 
   plug(
@@ -218,6 +218,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:bookmarks"]} when action in [:bookmark_status, :unbookmark_status]
+  )
+
+  # An extra safety measure for possible actions not guarded by OAuth permissions specification
+  plug(
+    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+    when action not in [
+           :account_register,
+           :create_app,
+           :index,
+           :login,
+           :logout,
+           :password_reset,
+           :account_confirmation_resend,
+           :masto_instance,
+           :peers,
+           :custom_emojis
+         ]
   )
 
   @rate_limited_relations_actions ~w(follow unfollow)a
