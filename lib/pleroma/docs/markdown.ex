@@ -23,7 +23,7 @@ defmodule Pleroma.Docs.Markdown do
 
       IO.write(file, "#{group[:description]}\n")
 
-      for child <- group[:children] do
+      for child <- group[:children] || [] do
         print_child_header(file, child)
 
         print_suggestions(file, child[:suggestions])
