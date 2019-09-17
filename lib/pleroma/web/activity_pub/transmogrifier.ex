@@ -15,6 +15,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
+  alias Pleroma.Workers.TransmogrifierWorker
 
   import Ecto.Query
 
@@ -1049,9 +1050,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
          {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
          already_ap <- User.ap_enabled?(user),
-         {:ok, user} <- user |> User.upgrade_changeset(data) |> User.update_and_set_cache() do
+         {:ok, user} <- user |> User.upgrade_changeset(data, true) |> User.update_and_set_cache() do
       unless already_ap do
-        PleromaJobQueue.enqueue(:transmogrifier, __MODULE__, [:user_upgrade, user])
+        TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
       end
 
       {:ok, user}

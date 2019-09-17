@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
 
   alias Pleroma.HTTP
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Workers.BackgroundWorker
 
   require Logger
 
@@ -30,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
         url
         |> Enum.each(fn
           %{"href" => href} ->
-            PleromaJobQueue.enqueue(:background, __MODULE__, [:prefetch, href])
+            BackgroundWorker.enqueue("media_proxy_prefetch", %{"url" => href})
 
           x ->
             Logger.debug("Unhandled attachment URL object #{inspect(x)}")
@@ -46,7 +47,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
         %{"type" => "Create", "object" => %{"attachment" => attachments} = _object} = message
       )
       when is_list(attachments) and length(attachments) > 0 do
-    PleromaJobQueue.enqueue(:background, __MODULE__, [:preload, message])
+    BackgroundWorker.enqueue("media_proxy_preload", %{"message" => message})
 
     {:ok, message}
   end

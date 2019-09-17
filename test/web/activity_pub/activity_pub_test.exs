@@ -38,9 +38,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         stream: fn _, _ -> nil end do
         ActivityPub.stream_out_participations(conversation.participations)
 
-        Enum.each(participations, fn participation ->
-          assert called(Pleroma.Web.Streamer.stream("participation", participation))
-        end)
+        assert called(Pleroma.Web.Streamer.stream("participation", participations))
       end
     end
   end
@@ -686,7 +684,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user)
 
       {:ok, like_activity, _object} = ActivityPub.like(user, object_activity)
-      assert called(Pleroma.Web.Federator.publish(like_activity, 5))
+      assert called(Pleroma.Web.Federator.publish(like_activity))
     end
 
     test "returns exist activity if object already liked" do
@@ -747,7 +745,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
       assert object.data["like_count"] == 0
 
-      assert called(Pleroma.Web.Federator.publish(unlike_activity, 5))
+      assert called(Pleroma.Web.Federator.publish(unlike_activity))
     end
 
     test "unliking a previously liked object" do

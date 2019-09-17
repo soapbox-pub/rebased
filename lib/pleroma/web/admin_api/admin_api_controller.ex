@@ -504,11 +504,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       params
       |> Map.put("type", "Flag")
       |> Map.put("skip_preload", true)
+      |> Map.put("total", true)
 
-    reports =
-      []
-      |> ActivityPub.fetch_activities(params)
-      |> Enum.reverse()
+    reports = ActivityPub.fetch_activities([], params)
 
     conn
     |> put_view(ReportView)

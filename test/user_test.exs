@@ -7,14 +7,16 @@ defmodule Pleroma.UserTest do
   alias Pleroma.Builders.UserBuilder
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
 
-  import Pleroma.Factory
   import Mock
+  import Pleroma.Factory
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -709,7 +711,9 @@ defmodule Pleroma.UserTest do
         user3.nickname
       ]
 
-      result = User.follow_import(user1, identifiers)
+      {:ok, job} = User.follow_import(user1, identifiers)
+      result = ObanHelpers.perform(job)
+
       assert is_list(result)
       assert result == [user2, user3]
     end
@@ -920,7 +924,9 @@ defmodule Pleroma.UserTest do
         user3.nickname
       ]
 
-      result = User.blocks_import(user1, identifiers)
+      {:ok, job} = User.blocks_import(user1, identifiers)
+      result = ObanHelpers.perform(job)
+
       assert is_list(result)
       assert result == [user2, user3]
     end
@@ -1037,7 +1043,9 @@ defmodule Pleroma.UserTest do
     test "it deletes deactivated user" do
       {:ok, user} = insert(:user, info: %{deactivated: true}) |> User.set_cache()
 
-      assert {:ok, _} = User.delete(user)
+      {:ok, job} = User.delete(user)
+      {:ok, _user} = ObanHelpers.perform(job)
+
       refute User.get_by_id(user.id)
     end
 
@@ -1055,7 +1063,8 @@ defmodule Pleroma.UserTest do
       {:ok, like_two, _} = CommonAPI.favorite(activity.id, follower)
       {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
 
-      {:ok, _} = User.delete(user)
+      {:ok, job} = User.delete(user)
+      {:ok, _user} = ObanHelpers.perform(job)
 
       follower = User.get_cached_by_id(follower.id)
 
@@ -1087,12 +1096,18 @@ defmodule Pleroma.UserTest do
       {:ok, follower} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
       {:ok, _} = User.follow(follower, user)
 
-      {:ok, _user} = User.delete(user)
+      {:ok, job} = User.delete(user)
+      {:ok, _user} = ObanHelpers.perform(job)
 
-      assert called(
-               Pleroma.Web.ActivityPub.Publisher.publish_one(%{
-                 inbox: "http://mastodon.example.org/inbox"
-               })
+      assert ObanHelpers.member?(
+               %{
+                 "op" => "publish_one",
+                 "params" => %{
+                   "inbox" => "http://mastodon.example.org/inbox",
+                   "id" => "pleroma:fakeid"
+                 }
+               },
+               all_enqueued(worker: Pleroma.Workers.PublisherWorker)
              )
     end
   end
@@ -1186,7 +1201,8 @@ defmodule Pleroma.UserTest do
     test "User.delete() plugs any possible zombie objects" do
       user = insert(:user)
 
-      {:ok, _} = User.delete(user)
+      {:ok, job} = User.delete(user)
+      {:ok, _} = ObanHelpers.perform(job)
 
       {:ok, cached_user} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
 

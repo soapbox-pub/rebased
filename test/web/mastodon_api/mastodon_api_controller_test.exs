@@ -13,6 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
@@ -751,7 +752,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     query_string = "ids[]=#{id1}&ids[]=#{id2}"
     conn = get(conn, "/api/v1/statuses/?#{query_string}")
 
-    assert [%{"id" => ^id1}, %{"id" => ^id2}] = json_response(conn, :ok)
+    assert [%{"id" => ^id1}, %{"id" => ^id2}] = Enum.sort_by(json_response(conn, :ok), & &1["id"])
   end
 
   describe "deleting a status" do
@@ -3897,6 +3898,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "it sends an email to user", %{user: user} do
+      ObanHelpers.perform_all()
       token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
 
       email = Pleroma.Emails.UserEmail.password_reset_email(user, token_record.token)
@@ -3956,6 +3958,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> post("/api/v1/pleroma/accounts/confirmation_resend?email=#{user.email}")
       |> json_response(:no_content)
+
+      ObanHelpers.perform_all()
 
       email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
       notify_email = Config.get([:instance, :notify_email])

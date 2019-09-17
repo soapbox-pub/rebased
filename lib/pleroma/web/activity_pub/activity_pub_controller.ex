@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Activity
+  alias Pleroma.Delivery
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
   alias Pleroma.User
@@ -23,7 +24,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   action_fallback(:errors)
 
-  plug(Pleroma.Plugs.Cache, [query_params: false] when action in [:activity, :object])
+  plug(
+    Pleroma.Plugs.Cache,
+    [query_params: false, tracking_fun: &__MODULE__.track_object_fetch/2]
+    when action in [:activity, :object]
+  )
 
   plug(
     Pleroma.Plugs.OAuthScopesPlug,
@@ -60,6 +65,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(object)} do
       conn
+      |> assign(:tracking_fun_data, object.id)
       |> set_cache_ttl_for(object)
       |> put_resp_content_type("application/activity+json")
       |> put_view(ObjectView)
@@ -68,6 +74,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       {:public?, false} ->
         {:error, :not_found}
     end
+  end
+
+  def track_object_fetch(conn, nil), do: conn
+
+  def track_object_fetch(conn, object_id) do
+    with %{assigns: %{user: %User{id: user_id}}} <- conn do
+      Delivery.create(object_id, user_id)
+    end
+
+    conn
   end
 
   def object_likes(conn, %{"uuid" => uuid, "page" => page}) do
@@ -105,6 +121,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          %Activity{} = activity <- Activity.normalize(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
       conn
+      |> maybe_set_tracking_data(activity)
       |> set_cache_ttl_for(activity)
       |> put_resp_content_type("application/activity+json")
       |> put_view(ObjectView)
@@ -114,6 +131,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       nil -> {:error, :not_found}
     end
   end
+
+  defp maybe_set_tracking_data(conn, %Activity{data: %{"type" => "Create"}} = activity) do
+    object_id = Object.normalize(activity).id
+    assign(conn, :tracking_fun_data, object_id)
+  end
+
+  defp maybe_set_tracking_data(conn, _activity), do: conn
 
   defp set_cache_ttl_for(conn, %Activity{object: object}) do
     set_cache_ttl_for(conn, object)

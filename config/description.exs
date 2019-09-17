@@ -878,9 +878,9 @@ config :pleroma, :config_description, [
       %{
         key: :account_field_value_length,
         type: :integer,
-        description: "An account field value maximum length (default: 512)",
+        description: "An account field value maximum length (default: 2048)",
         suggestions: [
-          512
+          2048
         ]
       },
       %{
@@ -1778,87 +1778,141 @@ config :pleroma, :config_description, [
     group: :pleroma_job_queue,
     key: :queues,
     type: :group,
-    description: "Pleroma Job Queue configuration: a list of queues with maximum concurrent jobs",
-    children: [
-      %{
-        key: :federator_outgoing,
-        type: :integer,
-        description: "Outgoing federation queue",
-        suggestions: [50]
-      },
-      %{
-        key: :federator_incoming,
-        type: :integer,
-        description: "Incoming federation queue",
-        suggestions: [50]
-      },
-      %{
-        key: :mailer,
-        type: :integer,
-        description: "Email sender queue, see Pleroma.Emails.Mailer",
-        suggestions: [10]
-      },
-      %{
-        key: :web_push,
-        type: :integer,
-        description: "Web push notifications queue",
-        suggestions: [50]
-      },
-      %{
-        key: :transmogrifier,
-        type: :integer,
-        description: "Transmogrifier queue",
-        suggestions: [20]
-      },
-      %{
-        key: :scheduled_activities,
-        type: :integer,
-        description: "Scheduled activities queue, see Pleroma.ScheduledActivities",
-        suggestions: [10]
-      },
-      %{
-        key: :activity_expiration,
-        type: :integer,
-        description: "Activity expiration queue",
-        suggestions: [10]
-      },
-      %{
-        key: :background,
-        type: :integer,
-        description: "Background queue",
-        suggestions: [5]
-      }
-    ]
+    description: "[Deprecated] Replaced with `Oban`/`:queues` (keeping the same format)",
+    children: []
   },
   %{
     group: :pleroma,
     key: Pleroma.Web.Federator.RetryQueue,
     type: :group,
-    description: "",
+    description: "[Deprecated] See `Oban` and `:workers` sections for configuration notes",
     children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "If set to true, failed federation jobs will be retried",
-        suggestions: [true, false]
-      },
-      %{
-        key: :max_jobs,
-        type: :integer,
-        description: "The maximum amount of parallel federation jobs running at the same time",
-        suggestions: [20]
-      },
-      %{
-        key: :initial_timeout,
-        type: :integer,
-        description: "The initial timeout in seconds",
-        suggestions: [30]
-      },
       %{
         key: :max_retries,
         type: :integer,
-        description: "The maximum number of times a federation job is retried",
-        suggestions: [5]
+        description: "[Deprecated] Replaced as `Oban`/`:queues`/`:outgoing_federation` value",
+        suggestions: []
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Oban,
+    type: :group,
+    description: """
+    [Oban](https://github.com/sorentwo/oban) asynchronous job processor configuration.
+
+    Note: if you are running PostgreSQL in [`silent_mode`](https://postgresqlco.nf/en/doc/param/silent_mode?version=9.1),
+      it's advised to set [`log_destination`](https://postgresqlco.nf/en/doc/param/log_destination?version=9.1) to `syslog`,
+      otherwise `postmaster.log` file may grow because of "you don't own a lock of type ShareLock" warnings
+      (see https://github.com/sorentwo/oban/issues/52).
+    """,
+    children: [
+      %{
+        key: :repo,
+        type: :module,
+        description: "Application's Ecto repo",
+        suggestions: [Pleroma.Repo]
+      },
+      %{
+        key: :verbose,
+        type: :boolean,
+        description: "Logs verbose mode",
+        suggestions: [false, true]
+      },
+      %{
+        key: :prune,
+        type: [:atom, :tuple],
+        description:
+          "Non-retryable jobs [pruning settings](https://github.com/sorentwo/oban#pruning)",
+        suggestions: [:disabled, {:maxlen, 1500}, {:maxage, 60 * 60}]
+      },
+      %{
+        key: :queues,
+        type: :keyword,
+        description:
+          "Background jobs queues (keys: queues, values: max numbers of concurrent jobs)",
+        suggestions: [
+          [
+            activity_expiration: 10,
+            background: 5,
+            federator_incoming: 50,
+            federator_outgoing: 50,
+            mailer: 10,
+            scheduled_activities: 10,
+            transmogrifier: 20,
+            web_push: 50
+          ]
+        ],
+        children: [
+          %{
+            key: :activity_expiration,
+            type: :integer,
+            description: "Activity expiration queue",
+            suggestions: [10]
+          },
+          %{
+            key: :background,
+            type: :integer,
+            description: "Background queue",
+            suggestions: [5]
+          },
+          %{
+            key: :federator_incoming,
+            type: :integer,
+            description: "Incoming federation queue",
+            suggestions: [50]
+          },
+          %{
+            key: :federator_outgoing,
+            type: :integer,
+            description: "Outgoing federation queue",
+            suggestions: [50]
+          },
+          %{
+            key: :mailer,
+            type: :integer,
+            description: "Email sender queue, see Pleroma.Emails.Mailer",
+            suggestions: [10]
+          },
+          %{
+            key: :scheduled_activities,
+            type: :integer,
+            description: "Scheduled activities queue, see Pleroma.ScheduledActivities",
+            suggestions: [10]
+          },
+          %{
+            key: :transmogrifier,
+            type: :integer,
+            description: "Transmogrifier queue",
+            suggestions: [20]
+          },
+          %{
+            key: :web_push,
+            type: :integer,
+            description: "Web push notifications queue",
+            suggestions: [50]
+          }
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :workers,
+    type: :group,
+    description: "Includes custom worker options not interpretable directly by `Oban`",
+    children: [
+      %{
+        key: :retries,
+        type: :keyword,
+        description: "Max retry attempts for failed jobs, per `Oban` queue",
+        suggestions: [
+          [
+            federator_incoming: 5,
+            federator_outgoing: 5
+          ]
+        ]
       }
     ]
   },
