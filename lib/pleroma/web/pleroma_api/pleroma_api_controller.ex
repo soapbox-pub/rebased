@@ -9,7 +9,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
-  alias Pleroma.SubscriptionNotification
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.NotificationView
@@ -80,31 +79,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   def read_notification(%{assigns: %{user: user}} = conn, %{"max_id" => max_id}) do
     with notifications <- Notification.set_read_up_to(user, max_id) do
-      notifications = Enum.take(notifications, 80)
-
-      conn
-      |> put_view(NotificationView)
-      |> render("index.json", %{notifications: notifications, for: user})
-    end
-  end
-
-  def delete_subscription_notification(%{assigns: %{user: user}} = conn, %{
-        "id" => notification_id
-      }) do
-    with {:ok, notification} <- SubscriptionNotification.dismiss(user, notification_id) do
-      conn
-      |> put_view(NotificationView)
-      |> render("show.json", %{notification: notification, for: user})
-    else
-      {:error, message} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{"error" => message})
-    end
-  end
-
-  def read_subscription_notification(%{assigns: %{user: user}} = conn, %{"max_id" => max_id}) do
-    with notifications <- SubscriptionNotification.clear_up_to(user, max_id) do
       notifications = Enum.take(notifications, 80)
 
       conn
