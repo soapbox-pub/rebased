@@ -50,7 +50,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationControllerTest do
       {:ok, _activity} = CommonAPI.post(user, %{"status" => status_text})
       [notification] = Repo.all(SubscriptionNotification)
 
-      path = subscription_notification_path(conn, :get, id: notification.id)
+      path = subscription_notification_path(conn, :get, notification)
 
       conn =
         conn
