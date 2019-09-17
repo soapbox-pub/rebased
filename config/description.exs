@@ -878,9 +878,9 @@ config :pleroma, :config_description, [
       %{
         key: :account_field_value_length,
         type: :integer,
-        description: "An account field value maximum length (default: 512)",
+        description: "An account field value maximum length (default: 2048)",
         suggestions: [
-          512
+          2048
         ]
       },
       %{

@@ -11,6 +11,7 @@ defmodule Pleroma.User do
   alias Comeonin.Pbkdf2
   alias Ecto.Multi
   alias Pleroma.Activity
+  alias Pleroma.Delivery
   alias Pleroma.Keys
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -62,6 +63,7 @@ defmodule Pleroma.User do
     field(:last_digest_emailed_at, :naive_datetime)
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
+    has_many(:deliveries, Delivery)
     embeds_one(:info, User.Info)
 
     timestamps()
@@ -148,6 +150,7 @@ defmodule Pleroma.User do
     Cachex.fetch!(:user_cache, key, fn _ -> {:commit, follow_state(user, target)} end)
   end
 
+  @spec set_follow_state_cache(String.t(), String.t(), String.t()) :: {:ok | :error, boolean()}
   def set_follow_state_cache(user_ap_id, target_ap_id, state) do
     Cachex.put(
       :user_cache,
@@ -1639,6 +1642,18 @@ defmodule Pleroma.User do
   def is_internal_user?(%User{nickname: nil}), do: true
   def is_internal_user?(%User{local: true, nickname: "internal." <> _}), do: true
   def is_internal_user?(_), do: false
+
+  # A hack because user delete activities have a fake id for whatever reason
+  # TODO: Get rid of this
+  def get_delivered_users_by_object_id("pleroma:fake_object_id"), do: []
+
+  def get_delivered_users_by_object_id(object_id) do
+    from(u in User,
+      inner_join: delivery in assoc(u, :deliveries),
+      where: delivery.object_id == ^object_id
+    )
+    |> Repo.all()
+  end
 
   def change_email(user, email) do
     user

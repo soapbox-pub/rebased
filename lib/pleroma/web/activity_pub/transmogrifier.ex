@@ -1064,7 +1064,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp upgrade_user(user, data) do
     user
-    |> User.upgrade_changeset(data)
+    |> User.upgrade_changeset(data, true)
     |> User.update_and_set_cache()
   end
 

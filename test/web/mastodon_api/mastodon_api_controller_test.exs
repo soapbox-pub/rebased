@@ -752,7 +752,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     query_string = "ids[]=#{id1}&ids[]=#{id2}"
     conn = get(conn, "/api/v1/statuses/?#{query_string}")
 
-    assert [%{"id" => ^id1}, %{"id" => ^id2}] = json_response(conn, :ok)
+    assert [%{"id" => ^id1}, %{"id" => ^id2}] = Enum.sort_by(json_response(conn, :ok), & &1["id"])
   end
 
   describe "deleting a status" do

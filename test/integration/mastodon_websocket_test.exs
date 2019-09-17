@@ -11,7 +11,6 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
   alias Pleroma.Integration.WebsocketClient
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth
-  alias Pleroma.Web.Streamer
 
   @path Pleroma.Web.Endpoint.url()
         |> URI.parse()
@@ -19,14 +18,9 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
         |> Map.put(:path, "/api/v1/streaming")
         |> URI.to_string()
 
-  setup do
-    GenServer.start(Streamer, %{}, name: Streamer)
-
-    on_exit(fn ->
-      if pid = Process.whereis(Streamer) do
-        Process.exit(pid, :kill)
-      end
-    end)
+  setup_all do
+    start_supervised(Pleroma.Web.Streamer.supervisor())
+    :ok
   end
 
   def start_socket(qs \\ nil, headers \\ []) do
@@ -43,6 +37,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
     capture_log(fn ->
       assert {:error, {400, _}} = start_socket()
       assert {:error, {404, _}} = start_socket("?stream=ncjdk")
+      Process.sleep(30)
     end)
   end
 
@@ -50,6 +45,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
     capture_log(fn ->
       assert {:error, {403, _}} = start_socket("?stream=user&access_token=aaaaaaaaaaaa")
       assert {:error, {403, _}} = start_socket("?stream=user")
+      Process.sleep(30)
     end)
   end
 
@@ -108,6 +104,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert capture_log(fn ->
                assert {:error, {403, "Forbidden"}} = start_socket("?stream=user")
+               Process.sleep(30)
              end) =~ ":badarg"
     end
 
@@ -116,6 +113,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
       assert capture_log(fn ->
                assert {:error, {403, "Forbidden"}} = start_socket("?stream=user:notification")
+               Process.sleep(30)
              end) =~ ":badarg"
     end
 
@@ -125,6 +123,8 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert capture_log(fn ->
                assert {:error, {403, "Forbidden"}} =
                         start_socket("?stream=user", [{"Sec-WebSocket-Protocol", "I am a friend"}])
+
+               Process.sleep(30)
              end) =~ ":badarg"
     end
   end
