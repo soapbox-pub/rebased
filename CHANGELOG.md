@@ -131,7 +131,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 - Federation: Remove `likes` from objects.
-- ActivityPub: The `accept_blocks` configuration setting.
+- **Breaking:** ActivityPub: The `accept_blocks` configuration setting.
 
 ## [1.0.4] - 2019-08-01
 ### Fixed
