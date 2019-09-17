@@ -20,9 +20,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationController do
 
   def get(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
     with {:ok, notification} <- SubscriptionNotification.get(user, id) do
-      conn
-      |> put_view(SubscriptionNotificationView)
-      |> render("show.json", %{subscription_notification: notification, for: user})
+      render(conn, "show.json", %{subscription_notification: notification, for: user})
     else
       {:error, reason} ->
         conn
