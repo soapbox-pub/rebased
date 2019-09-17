@@ -79,6 +79,8 @@ defmodule Pleroma.Docs.Markdown do
       for suggestion <- suggestions do
         print_suggestion(file, suggestion, true)
       end
+
+      IO.write(file, "\n")
     else
       IO.write(file, "  Suggestion: ")
 
