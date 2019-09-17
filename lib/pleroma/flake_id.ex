@@ -14,7 +14,7 @@ defmodule Pleroma.FlakeId do
 
   @type t :: binary
 
-  @behaviour Ecto.Type
+  use Ecto.Type
   use GenServer
   require Logger
   alias __MODULE__
