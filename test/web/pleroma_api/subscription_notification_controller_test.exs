@@ -33,7 +33,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationControllerTest do
     test "list of notifications", %{conn: conn, user: user, subscriber: subscriber} do
       status_text = "Hello"
       {:ok, _activity} = CommonAPI.post(user, %{"status" => status_text})
-      path = subscription_notification_path(conn, :list)
+      path = subscription_notification_path(conn, :index)
 
       conn =
         conn
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationControllerTest do
       {:ok, _activity} = CommonAPI.post(user, %{"status" => status_text})
       [notification] = Repo.all(SubscriptionNotification)
 
-      path = subscription_notification_path(conn, :get, notification)
+      path = subscription_notification_path(conn, :show, notification)
 
       conn =
         conn
@@ -101,7 +101,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationControllerTest do
       conn =
         build_conn()
         |> assign(:user, subscriber)
-        |> get(subscription_notification_path(conn, :list))
+        |> get(subscription_notification_path(conn, :index))
 
       assert json_response(conn, 200) == []
 
@@ -136,7 +136,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationControllerTest do
       conn_res =
         get(
           conn,
-          subscription_notification_path(conn, :list, %{
+          subscription_notification_path(conn, :index, %{
             "limit" => 2,
             "min_id" => notification1_id
           })
@@ -149,7 +149,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationControllerTest do
       conn_res =
         get(
           conn,
-          subscription_notification_path(conn, :list, %{
+          subscription_notification_path(conn, :index, %{
             "limit" => 2,
             "since_id" => notification1_id
           })
@@ -162,7 +162,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationControllerTest do
       conn_res =
         get(
           conn,
-          subscription_notification_path(conn, :list, %{
+          subscription_notification_path(conn, :index, %{
             "limit" => 2,
             "max_id" => notification4_id
           })
@@ -195,7 +195,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationControllerTest do
 
       conn = assign(conn, :user, user1)
 
-      conn_res = get(conn, subscription_notification_path(conn, :list))
+      conn_res = get(conn, subscription_notification_path(conn, :index))
 
       result = json_response(conn_res, 200)
 
@@ -205,7 +205,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationControllerTest do
 
       conn2 = assign(conn, :user, user2)
 
-      conn_res = get(conn2, subscription_notification_path(conn, :list))
+      conn_res = get(conn2, subscription_notification_path(conn, :index))
 
       result = json_response(conn_res, 200)
 
@@ -220,7 +220,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationControllerTest do
 
       assert json_response(conn_destroy, 200) == %{}
 
-      conn_res = get(conn2, subscription_notification_path(conn, :list))
+      conn_res = get(conn2, subscription_notification_path(conn, :index))
 
       result = json_response(conn_res, 200)
 

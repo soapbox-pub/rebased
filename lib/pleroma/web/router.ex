@@ -273,8 +273,8 @@ defmodule Pleroma.Web.Router do
         post("/clear", SubscriptionNotificationController, :clear)
         post("/dismiss", SubscriptionNotificationController, :dismiss)
         delete("/destroy_multiple", SubscriptionNotificationController, :destroy_multiple)
-        get("/", SubscriptionNotificationController, :list)
-        get("/:id", SubscriptionNotificationController, :get)
+        get("/", SubscriptionNotificationController, :index)
+        get("/:id", SubscriptionNotificationController, :show)
       end
     end
 

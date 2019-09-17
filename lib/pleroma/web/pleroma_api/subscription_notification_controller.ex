@@ -10,7 +10,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationController do
   alias Pleroma.SubscriptionNotification
   alias Pleroma.Web.PleromaAPI.PleromaAPI
 
-  def list(%{assigns: %{user: user}} = conn, params) do
+  def index(%{assigns: %{user: user}} = conn, params) do
     notifications = PleromaAPI.get_subscription_notifications(user, params)
 
     conn
@@ -18,7 +18,7 @@ defmodule Pleroma.Web.PleromaAPI.SubscriptionNotificationController do
     |> render("index.json", %{notifications: notifications, for: user})
   end
 
-  def get(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
+  def show(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
     with {:ok, notification} <- SubscriptionNotification.get(user, id) do
       render(conn, "show.json", %{subscription_notification: notification, for: user})
     else
