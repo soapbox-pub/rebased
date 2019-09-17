@@ -2133,7 +2133,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :logo,
-        # type: [:string, nil],
+        type: [:string, nil],
         description: "a path to a custom logo. Set it to nil to use the default Pleroma logo",
         suggestions: ["some/path/logo.png", nil]
       },
