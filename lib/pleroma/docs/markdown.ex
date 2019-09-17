@@ -44,6 +44,13 @@ defmodule Pleroma.Docs.Markdown do
     {:ok, config_path}
   end
 
+  defp print_child_header(file, child) do
+    IO.write(
+      file,
+      "- `#{inspect(child[:key])}` (`#{inspect(child[:type])}`): #{child[:description]}\n"
+    )
+  end
+
   defp print_suggestion(file, suggestion) when is_list(suggestion) do
     IO.write(file, "  `#{inspect(suggestion)}`\n")
   end
@@ -69,10 +76,5 @@ defmodule Pleroma.Docs.Markdown do
     else
       print_suggestion(file, List.first(suggestions))
     end
-  end
-
-  defp print_child_header(file, child) do
-    IO.write(file, "- `#{inspect(child[:key])}` -`#{inspect(child[:type])}`  \n")
-    IO.write(file, "#{child[:description]}  \n")
   end
 end
