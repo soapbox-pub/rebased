@@ -2424,7 +2424,8 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :rate_limit,
     type: :group,
-    description: "Rate limit settings. This is an advanced feature and disabled by default.",
+    description:
+      "Rate limit settings. This is an advanced feature enabled only for :authentication by default.",
     children: [
       %{
         key: :search,
@@ -2463,6 +2464,12 @@ config :pleroma, :config_description, [
         description:
           "for fav / unfav or reblog / unreblog actions on the same status by the same user",
         suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
+      },
+      %{
+        key: :authentication,
+        type: [:tuple, {:list, :tuple}],
+        description: "for authentication create / password check / user existence check requests",
+        suggestions: [{60_000, 15}]
       }
     ]
   },
