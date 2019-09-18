@@ -7,3 +7,8 @@ ExUnit.start(exclude: os_exclude)
 Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, :manual)
 Mox.defmock(Pleroma.ReverseProxy.ClientMock, for: Pleroma.ReverseProxy.Client)
 {:ok, _} = Application.ensure_all_started(:ex_machina)
+
+ExUnit.after_suite(fn _results ->
+  uploads = Pleroma.Config.get([Pleroma.Uploaders.Local, :uploads], "test/uploads")
+  File.rm_rf!(uploads)
+end)
