@@ -42,7 +42,7 @@ defmodule Pleroma.Object do
     %{updated_at: updated_at} = object = get_by_id(id)
 
     if opts[:interval] &&
-         NaiveDateTime.diff(updated_at, NaiveDateTime.utc_now()) > opts[:interval] do
+         NaiveDateTime.diff(NaiveDateTime.utc_now(), updated_at) > opts[:interval] do
       case Fetcher.refetch_object(object) do
         {:ok, %Object{} = object} ->
           object
