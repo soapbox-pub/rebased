@@ -34,7 +34,7 @@ defmodule Pleroma.User do
 
   @type t :: %__MODULE__{}
 
-  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
+  @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
@@ -591,7 +591,7 @@ defmodule Pleroma.User do
     restrict_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
 
     cond do
-      is_integer(nickname_or_id) or Pleroma.FlakeId.is_flake_id?(nickname_or_id) ->
+      is_integer(nickname_or_id) or FlakeId.flake_id?(nickname_or_id) ->
         get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id)
 
       restrict_to_local == false ->

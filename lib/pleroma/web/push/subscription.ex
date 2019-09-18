@@ -15,7 +15,7 @@ defmodule Pleroma.Web.Push.Subscription do
   @type t :: %__MODULE__{}
 
   schema "push_subscriptions" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:token, Token)
     field(:endpoint, :string)
     field(:key_p256dh, :string)

@@ -35,7 +35,6 @@ defmodule Pleroma.Application do
         Pleroma.Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,
-        Pleroma.FlakeId,
         Pleroma.Daemons.ScheduledActivityDaemon,
         Pleroma.Daemons.ActivityExpirationDaemon
       ] ++

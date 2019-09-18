@@ -6,7 +6,6 @@ defmodule Pleroma.Delivery do
   use Ecto.Schema
 
   alias Pleroma.Delivery
-  alias Pleroma.FlakeId
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -16,7 +15,7 @@ defmodule Pleroma.Delivery do
   import Ecto.Query
 
   schema "deliveries" do
-    belongs_to(:user, User, type: FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:object, Object)
   end
 

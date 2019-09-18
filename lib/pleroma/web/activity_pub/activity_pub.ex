@@ -510,7 +510,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   @spec fetch_latest_activity_id_for_context(String.t(), keyword() | map()) ::
-          Pleroma.FlakeId.t() | nil
+          FlakeId.Ecto.CompatType.t() | nil
   def fetch_latest_activity_id_for_context(context, opts \\ %{}) do
     context
     |> fetch_activities_for_context_query(Map.merge(%{"skip_preload" => true}, opts))

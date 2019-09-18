@@ -1,6 +1,7 @@
 %{
   "accept": {:hex, :accept, "0.3.5", "b33b127abca7cc948bbe6caa4c263369abf1347cfa9d8e699c6d214660f10cd1", [:rebar3], [], "hexpm"},
   "auto_linker": {:git, "https://git.pleroma.social/pleroma/auto_linker.git", "95e8188490e97505c56636c1379ffdf036c1fdde", [ref: "95e8188490e97505c56636c1379ffdf036c1fdde"]},
+  "base62": {:hex, :base62, "1.2.1", "4866763e08555a7b3917064e9eef9194c41667276c51b59de2bc42c6ea65f806", [:mix], [{:custom_base, "~> 0.2.1", [hex: :custom_base, repo: "hexpm", optional: false]}], "hexpm"},
   "base64url": {:hex, :base64url, "0.0.1", "36a90125f5948e3afd7be97662a1504b934dd5dac78451ca6e9abf85a10286be", [:rebar], [], "hexpm"},
   "bbcode": {:hex, :bbcode, "0.1.1", "0023e2c7814119b2e620b7add67182e3f6019f92bfec9a22da7e99821aceba70", [:mix], [{:nimble_parsec, "~> 0.5", [hex: :nimble_parsec, repo: "hexpm", optional: false]}], "hexpm"},
   "benchee": {:hex, :benchee, "1.0.1", "66b211f9bfd84bd97e6d1beaddf8fc2312aaabe192f776e8931cb0c16f53a521", [:mix], [{:deep_merge, "~> 1.0", [hex: :deep_merge, repo: "hexpm", optional: false]}], "hexpm"},
@@ -17,6 +18,7 @@
   "credo": {:hex, :credo, "0.9.3", "76fa3e9e497ab282e0cf64b98a624aa11da702854c52c82db1bf24e54ab7c97a", [:mix], [{:bunt, "~> 0.2.0", [hex: :bunt, repo: "hexpm", optional: false]}, {:poison, ">= 0.0.0", [hex: :poison, repo: "hexpm", optional: false]}], "hexpm"},
   "crontab": {:hex, :crontab, "1.1.7", "b9219f0bdc8678b94143655a8f229716c5810c0636a4489f98c0956137e53985", [:mix], [{:ecto, "~> 1.0 or ~> 2.0 or ~> 3.0", [hex: :ecto, repo: "hexpm", optional: true]}], "hexpm"},
   "crypt": {:git, "https://github.com/msantos/crypt", "1f2b58927ab57e72910191a7ebaeff984382a1d3", [ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"]},
+  "custom_base": {:hex, :custom_base, "0.2.1", "4a832a42ea0552299d81652aa0b1f775d462175293e99dfbe4d7dbaab785a706", [:mix], [], "hexpm"},
   "db_connection": {:hex, :db_connection, "2.1.1", "a51e8a2ee54ef2ae6ec41a668c85787ed40cb8944928c191280fe34c15b76ae5", [:mix], [{:connection, "~> 1.0.2", [hex: :connection, repo: "hexpm", optional: false]}], "hexpm"},
   "decimal": {:hex, :decimal, "1.8.0", "ca462e0d885f09a1c5a342dbd7c1dcf27ea63548c65a65e67334f4b61803822e", [:mix], [], "hexpm"},
   "deep_merge": {:hex, :deep_merge, "1.0.0", "b4aa1a0d1acac393bdf38b2291af38cb1d4a52806cf7a4906f718e1feb5ee961", [:mix], [], "hexpm"},
@@ -34,6 +36,7 @@
   "ex_rated": {:hex, :ex_rated, "1.3.3", "30ecbdabe91f7eaa9d37fa4e81c85ba420f371babeb9d1910adbcd79ec798d27", [:mix], [{:ex2ms, "~> 1.5", [hex: :ex2ms, repo: "hexpm", optional: false]}], "hexpm"},
   "ex_syslogger": {:git, "https://github.com/slashmili/ex_syslogger.git", "f3963399047af17e038897c69e20d552e6899e1d", [tag: "1.4.0"]},
   "excoveralls": {:hex, :excoveralls, "0.11.1", "dd677fbdd49114fdbdbf445540ec735808250d56b011077798316505064edb2c", [:mix], [{:hackney, "~> 1.0", [hex: :hackney, repo: "hexpm", optional: false]}, {:jason, "~> 1.0", [hex: :jason, repo: "hexpm", optional: false]}], "hexpm"},
+  "flake_id": {:hex, :flake_id, "0.1.0", "7716b086d2e405d09b647121a166498a0d93d1a623bead243e1f74216079ccb3", [:mix], [{:base62, "~> 1.2", [hex: :base62, repo: "hexpm", optional: false]}, {:ecto, ">= 2.0.0", [hex: :ecto, repo: "hexpm", optional: true]}], "hexpm"},
   "floki": {:hex, :floki, "0.23.0", "956ab6dba828c96e732454809fb0bd8d43ce0979b75f34de6322e73d4c917829", [:mix], [{:html_entities, "~> 0.4.0", [hex: :html_entities, repo: "hexpm", optional: false]}], "hexpm"},
   "gen_smtp": {:hex, :gen_smtp, "0.14.0", "39846a03522456077c6429b4badfd1d55e5e7d0fdfb65e935b7c5e38549d9202", [:rebar3], [], "hexpm"},
   "gen_stage": {:hex, :gen_stage, "0.14.2", "6a2a578a510c5bfca8a45e6b27552f613b41cf584b58210f017088d3d17d0b14", [:mix], [], "hexpm"},
