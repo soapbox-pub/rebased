@@ -997,15 +997,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp strip_internal_fields(object) do
     object
-    |> Map.drop([
-      "likes",
-      "like_count",
-      "announcements",
-      "announcement_count",
-      "emoji",
-      "context_id",
-      "deleted_activity_id"
-    ])
+    |> Map.drop(Pleroma.Constants.object_internal_fields())
   end
 
   defp strip_internal_tags(%{"tag" => tags} = object) do
