@@ -147,6 +147,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       [
         :no_rich_text,
         :locked,
+        :hide_followers_count,
+        :hide_follows_count,
         :hide_followers,
         :hide_follows,
         :hide_favorites,
