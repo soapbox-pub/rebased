@@ -7,22 +7,33 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Signature
+  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.OStatus
 
   require Logger
 
-  defp reinject_object(data) do
+  defp reinject_object(struct, data) do
     Logger.debug("Reinjecting object #{data["id"]}")
 
     with data <- Transmogrifier.fix_object(data),
-         {:ok, object} <- Object.create(data) do
+         changeset <- Object.change(struct, %{data: data}),
+         {:ok, object} <- Repo.insert_or_update(changeset) do
       {:ok, object}
     else
       e ->
         Logger.error("Error while processing object: #{inspect(e)}")
         {:error, e}
+    end
+  end
+
+  def refetch_object(%Object{data: %{"id" => id}} = object) do
+    with {:ok, data} <- fetch_and_contain_remote_object_from_id(id),
+         {:ok, object} <- reinject_object(object, data) do
+      {:ok, object}
+    else
+      e -> {:error, e}
     end
   end
 
@@ -57,7 +68,7 @@ defmodule Pleroma.Object.Fetcher do
           {:reject, nil}
 
         {:object, data, nil} ->
-          reinject_object(data)
+          reinject_object(%Object{}, data)
 
         {:normalize, object = %Object{}} ->
           {:ok, object}
