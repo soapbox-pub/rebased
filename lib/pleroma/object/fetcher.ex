@@ -14,11 +14,20 @@ defmodule Pleroma.Object.Fetcher do
 
   require Logger
 
+  defp touch_changeset(changeset) do
+    updated_at =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.truncate(:second)
+
+    Ecto.Changeset.put_change(changeset, :updated_at, updated_at)
+  end
+
   defp reinject_object(struct, data) do
     Logger.debug("Reinjecting object #{data["id"]}")
 
     with data <- Transmogrifier.fix_object(data),
          changeset <- Object.change(struct, %{data: data}),
+         changeset <- touch_changeset(changeset),
          {:ok, object} <- Repo.insert_or_update(changeset) do
       {:ok, object}
     else
