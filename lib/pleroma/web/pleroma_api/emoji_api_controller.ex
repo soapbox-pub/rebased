@@ -152,7 +152,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       |> Tesla.get!()
       |> Map.get(:body)
       |> Jason.decode!()
-      |> Map.get("features")
+      |> get_in(["metadata", "features"])
       |> Enum.member?("shareable_emoji_packs")
 
     if shareable_packs_available do
