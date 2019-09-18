@@ -4,6 +4,7 @@
 
 defmodule Pleroma.ObjectTest do
   use Pleroma.DataCase
+  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
   alias Pleroma.Object
@@ -134,17 +135,23 @@ defmodule Pleroma.ObjectTest do
       assert Enum.at(object.data["oneOf"], 0)["replies"]["totalItems"] == 4
       assert Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 0
 
-      mock(fn
-        %{method: :get, url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"} ->
-          %Tesla.Env{status: 404, body: ""}
+      assert capture_log(fn ->
+               mock(fn
+                 %{
+                   method: :get,
+                   url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"
+                 } ->
+                   %Tesla.Env{status: 404, body: ""}
 
-        env ->
-          apply(HttpRequestMock, :request, [env])
-      end)
+                 env ->
+                   apply(HttpRequestMock, :request, [env])
+               end)
 
-      updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
-      assert Enum.at(updated_object.data["oneOf"], 0)["replies"]["totalItems"] == 4
-      assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 0
+               updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
+               assert Enum.at(updated_object.data["oneOf"], 0)["replies"]["totalItems"] == 4
+               assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 0
+             end) =~
+               "[error] Couldn't refresh https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"
     end
 
     test "does not refetch if the time since the last refetch is greater than the interval" do
