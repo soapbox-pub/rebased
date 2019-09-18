@@ -150,6 +150,7 @@ defmodule Pleroma.User do
     Cachex.fetch!(:user_cache, key, fn _ -> {:commit, follow_state(user, target)} end)
   end
 
+  @spec set_follow_state_cache(String.t(), String.t(), String.t()) :: {:ok | :error, boolean()}
   def set_follow_state_cache(user_ap_id, target_ap_id, state) do
     Cachex.put(
       :user_cache,

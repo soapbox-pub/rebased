@@ -410,6 +410,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  @spec block(User.t(), User.t(), String.t() | nil, boolean) :: {:ok, Activity.t() | nil}
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do
     outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
     unfollow_blocked = Config.get([:activitypub, :unfollow_blocked])
@@ -438,10 +439,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  @spec flag(map()) :: {:ok, Activity.t()} | any
   def flag(
         %{
           actor: actor,
-          context: context,
+          context: _context,
           account: account,
           statuses: statuses,
           content: content
@@ -452,14 +454,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     forward = !(params[:forward] == false)
 
     additional = params[:additional] || %{}
-
-    params = %{
-      actor: actor,
-      context: context,
-      account: account,
-      statuses: statuses,
-      content: content
-    }
 
     additional =
       if forward do

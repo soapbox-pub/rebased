@@ -4,14 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Changed
+- **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
+- Replaced [pleroma_job_queue](https://git.pleroma.social/pleroma/pleroma_job_queue) and `Pleroma.Web.Federator.RetryQueue` with [Oban](https://github.com/sorentwo/oban) (see [`docs/config.md`](docs/config.md) on migrating customized worker / retry settings)
+- Introduced [quantum](https://github.com/quantum-elixir/quantum-core) job scheduler
+- Admin API: Return `total` when querying for reports
+
+## [1.1.0] - 2019-??-??
 ### Security
-- OStatus: eliminate the possibility of a protocol downgrade attack.
-- OStatus: prevent following locked accounts, bypassing the approval process.
 - Mastodon API: respect post privacy in `/api/v1/statuses/:id/{favourited,reblogged}_by`
 
 ### Removed
 - **Breaking:** GNU Social API with Qvitter extensions support
-- **Breaking:** ActivityPub: The `accept_blocks` configuration setting.
 - Emoji: Remove longfox emojis.
 - Remove `Reply-To` header from report emails for admins.
 
@@ -19,8 +23,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
 - **Breaking:** Configuration: `/media/` is now removed when `base_url` is configured, append `/media/` to your `base_url` config to keep the old behaviour if desired
 - **Breaking:** `/api/pleroma/notifications/read` is moved to `/api/v1/pleroma/notifications/read` and now supports `max_id` and responds with Mastodon API entities.
-- Configuration: OpenGraph and TwitterCard providers enabled by default
-- Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
 - Configuration: added `config/description.exs`, from which `docs/config.md` is generated
 - Federation: Return 403 errors when trying to request pages from a user's follower/following collections if they have `hide_followers`/`hide_follows` set
 - NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
@@ -30,23 +32,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - AdminAPI: Add "godmode" while fetching user statuses (i.e. admin can see private statuses)
 - Improve digest email template
 – Pagination: (optional) return `total` alongside with `items` when paginating
-- Replaced [pleroma_job_queue](https://git.pleroma.social/pleroma/pleroma_job_queue) and `Pleroma.Web.Federator.RetryQueue` with [Oban](https://github.com/sorentwo/oban) (see [`docs/config.md`](docs/config.md) on migrating customized worker / retry settings)
-- Introduced [quantum](https://github.com/quantum-elixir/quantum-core) job scheduler
 
 ### Fixed
 - Following from Osada
-- Not being able to pin unlisted posts
-- Objects being re-embedded to activities after being updated (e.g faved/reposted). Running 'mix pleroma.database prune_objects' again is advised.
 - Favorites timeline doing database-intensive queries
 - Metadata rendering errors resulting in the entire page being inaccessible
 - `federation_incoming_replies_max_depth` option being ignored in certain cases
-- Federation/MediaProxy not working with instances that have wrong certificate order
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API: Misskey's endless polls being unable to render
 - Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
 - Mastodon API: Notifications endpoint crashing if one notification failed to render
-- Mastodon API: follower/following counters not being nullified, when `hide_follows`/`hide_followers` is set
-- Mastodon API: `muted` in the Status entity, using author's account to determine if the tread was muted
 - Mastodon API: Add `account_id`, `type`, `offset`, and `limit` to search API (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API, streaming: Fix filtering of notifications based on blocks/mutes/thread mutes
 - ActivityPub C2S: follower/following collection pages being inaccessible even when authentifucated if `hide_followers`/ `hide_follows` was set
@@ -54,15 +49,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rich Media: Parser failing when no TTL can be found by image TTL setters
 - Rich Media: The crawled URL is now spliced into the rich media data.
 - ActivityPub S2S: sharedInbox usage has been mostly aligned with the rules in the AP specification.
-- ActivityPub S2S: remote user deletions now work the same as local user deletions.
-- ActivityPub S2S: POST requests are now signed with `(request-target)` pseudo-header.
-- Not being able to access the Mastodon FE login page on private instances
-- Invalid SemVer version generation, when the current branch does not have commits ahead of tag/checked out on a tag
 - Pleroma.Upload base_url was not automatically whitelisted by MediaProxy. Now your custom CDN or file hosting will be accessed directly as expected.
 - Report email not being sent to admins when the reporter is a remote user
-- MRF: ensure that subdomain_match calls are case-insensitive
 - Reverse Proxy limiting `max_body_length` was incorrectly defined and only checked `Content-Length` headers which may not be sufficient in some circumstances
-- MRF: fix use of unserializable keyword lists in describe() implementations
 - ActivityPub: Deactivated user deletion
 - ActivityPub: Fix `/users/:nickname/inbox` crashing without an authenticated user
 - MRF: fix ability to follow a relay when AntiFollowbotPolicy was enabled
@@ -73,16 +62,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: all status JSON responses contain a `pleroma.expires_at` item which states when an activity will expire. The value is only shown to the user who created the activity. To everyone else it's empty.
 - Configuration: `ActivityExpiration.enabled` controls whether expired activites will get deleted at the appropriate time. Enabled by default.
 - Conversations: Add Pleroma-specific conversation endpoints and status posting extensions. Run the `bump_all_conversations` task again to create the necessary data.
-- **Breaking:** MRF describe API, which adds support for exposing configuration information about MRF policies to NodeInfo.
-  Custom modules will need to be updated by adding, at the very least, `def describe, do: {:ok, %{}}` to the MRF policy modules.
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
 - MRF: Support for excluding specific domains from Transparency.
 - MRF: Support for filtering posts based on who they mention (`Pleroma.Web.ActivityPub.MRF.MentionPolicy`)
-- MRF: Support for filtering posts based on ActivityStreams vocabulary (`Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`)
-- MRF (Simple Policy): Support for wildcard domains.
-- Support for wildcard domains in user domain blocks setting.
-- Configuration: `quarantined_instances` support wildcard domains.
-- Configuration: `federation_incoming_replies_max_depth` option
 - Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
 - Mastodon API, streaming: Add support for passing the token in the `Sec-WebSocket-Protocol` header
 - Mastodon API, extension: Ability to reset avatar, profile banner, and background
@@ -110,9 +92,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Endpoint for fetching latest user's statuses
 - Pleroma API: Add `/api/v1/pleroma/accounts/confirmation_resend?email=<email>` for resending account confirmation.
 - Pleroma API: Email change endpoint.
-- Relays: Added a task to list relay subscriptions.
-- Mix Tasks: `mix pleroma.database fix_likes_collections`
-- Federation: Remove `likes` from objects.
 - Admin API: Added moderation log
 - Web response cache (currently, enabled for ActivityPub)
 - Mastodon API: Added an endpoint to get multiple statuses by IDs (`GET /api/v1/statuses/?ids[]=1&ids[]=2`)
@@ -124,6 +103,61 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - RichMedia: parsers and their order are configured in `rich_media` config.
 - RichMedia: add the rich media ttl based on image expiration time.
 
+## [1.0.6] - 2019-08-14
+### Fixed
+- MRF: fix use of unserializable keyword lists in describe() implementations
+- ActivityPub S2S: POST requests are now signed with `(request-target)` pseudo-header.
+
+## [1.0.5] - 2019-08-13
+### Fixed
+- Mastodon API: follower/following counters not being nullified, when `hide_follows`/`hide_followers` is set
+- Mastodon API: `muted` in the Status entity, using author's account to determine if the thread was muted
+- Mastodon API: return the actual profile URL in the Account entity's `url` property when appropriate
+- Templates: properly style anchor tags
+- Objects being re-embedded to activities after being updated (e.g faved/reposted). Running 'mix pleroma.database prune_objects' again is advised.
+- Not being able to access the Mastodon FE login page on private instances
+- MRF: ensure that subdomain_match calls are case-insensitive
+- Fix internal server error when using the healthcheck API.
+
+### Added
+- **Breaking:** MRF describe API, which adds support for exposing configuration information about MRF policies to NodeInfo.
+  Custom modules will need to be updated by adding, at the very least, `def describe, do: {:ok, %{}}` to the MRF policy modules.
+- Relays: Added a task to list relay subscriptions.
+- MRF: Support for filtering posts based on ActivityStreams vocabulary (`Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`)
+- MRF (Simple Policy): Support for wildcard domains.
+- Support for wildcard domains in user domain blocks setting.
+- Configuration: `quarantined_instances` support wildcard domains.
+- Mix Tasks: `mix pleroma.database fix_likes_collections`
+- Configuration: `federation_incoming_replies_max_depth` option
+
+### Removed
+- Federation: Remove `likes` from objects.
+- **Breaking:** ActivityPub: The `accept_blocks` configuration setting.
+
+## [1.0.4] - 2019-08-01
+### Fixed
+- Invalid SemVer version generation, when the current branch does not have commits ahead of tag/checked out on a tag
+
+## [1.0.3] - 2019-07-31
+### Security
+- OStatus: eliminate the possibility of a protocol downgrade attack.
+- OStatus: prevent following locked accounts, bypassing the approval process.
+- TwitterAPI: use CommonAPI to handle remote follows instead of OStatus.
+
+## [1.0.2] - 2019-07-28
+### Fixed
+- Not being able to pin unlisted posts
+- Mastodon API: represent poll IDs as strings
+- MediaProxy: fix matching filenames
+- MediaProxy: fix filename encoding
+- Migrations: fix a sporadic migration failure
+- Metadata rendering errors resulting in the entire page being inaccessible
+- Federation/MediaProxy not working with instances that have wrong certificate order
+- ActivityPub S2S: remote user deletions now work the same as local user deletions.
+
+### Changed
+- Configuration: OpenGraph and TwitterCard providers enabled by default
+- Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
 
 ## [1.0.1] - 2019-07-14
 ### Security

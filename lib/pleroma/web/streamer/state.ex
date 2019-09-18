@@ -4,16 +4,18 @@ defmodule Pleroma.Web.Streamer.State do
 
   alias Pleroma.Web.Streamer.StreamerSocket
 
+  @env Mix.env()
+
   def start_link(_) do
     GenServer.start_link(__MODULE__, %{sockets: %{}}, name: __MODULE__)
   end
 
   def add_socket(topic, socket) do
-    GenServer.call(__MODULE__, {:add, socket, topic})
+    GenServer.call(__MODULE__, {:add, topic, socket})
   end
 
   def remove_socket(topic, socket) do
-    GenServer.call(__MODULE__, {:remove, socket, topic})
+    do_remove_socket(@env, topic, socket)
   end
 
   def get_sockets do
@@ -29,7 +31,7 @@ defmodule Pleroma.Web.Streamer.State do
     {:reply, state, state}
   end
 
-  def handle_call({:add, socket, topic}, _from, %{sockets: sockets} = state) do
+  def handle_call({:add, topic, socket}, _from, %{sockets: sockets} = state) do
     internal_topic = internal_topic(topic, socket)
     stream_socket = StreamerSocket.from_socket(socket)
 
@@ -44,7 +46,7 @@ defmodule Pleroma.Web.Streamer.State do
     {:reply, state, state}
   end
 
-  def handle_call({:remove, socket, topic}, _from, %{sockets: sockets} = state) do
+  def handle_call({:remove, topic, socket}, _from, %{sockets: sockets} = state) do
     internal_topic = internal_topic(topic, socket)
     stream_socket = StreamerSocket.from_socket(socket)
 
@@ -55,6 +57,14 @@ defmodule Pleroma.Web.Streamer.State do
 
     state = Kernel.put_in(state, [:sockets, internal_topic], sockets_for_topic)
     {:reply, state, state}
+  end
+
+  defp do_remove_socket(:test, _, _) do
+    :ok
+  end
+
+  defp do_remove_socket(_env, topic, socket) do
+    GenServer.call(__MODULE__, {:remove, topic, socket})
   end
 
   defp internal_topic(topic, socket)

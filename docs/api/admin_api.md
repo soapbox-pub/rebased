@@ -317,6 +317,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ```json
 {
+  "total" : 1,
   "reports": [
     {
       "account": {
