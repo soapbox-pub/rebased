@@ -54,8 +54,14 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     end)
 
     mock(fn
+      %{method: :get, url: "https://old-instance/.well-known/nodeinfo"} ->
+        json([%{href: "https://old-instance/nodeinfo/2.1.json"}])
+
       %{method: :get, url: "https://old-instance/nodeinfo/2.1.json"} ->
         json(%{metadata: %{features: []}})
+
+      %{method: :get, url: "https://example.com/.well-known/nodeinfo"} ->
+        json([%{href: "https://example.com/nodeinfo/2.1.json"}])
 
       %{method: :get, url: "https://example.com/nodeinfo/2.1.json"} ->
         json(%{metadata: %{features: ["shareable_emoji_packs"]}})

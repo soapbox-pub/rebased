@@ -148,7 +148,13 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   """
   def download_from(conn, %{"instance_address" => address, "pack_name" => name} = data) do
     shareable_packs_available =
-      "#{address}/nodeinfo/2.1.json"
+      "#{address}/.well-known/nodeinfo"
+      |> Tesla.get!()
+      |> Map.get(:body)
+      |> Jason.decode!()
+      |> List.last()
+      |> Map.get("href")
+      # Get the actual nodeinfo address and fetch it
       |> Tesla.get!()
       |> Map.get(:body)
       |> Jason.decode!()
