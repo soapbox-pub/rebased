@@ -180,7 +180,7 @@ defmodule Pleroma.Web.Router do
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
-    get("/users/invite_token", AdminAPIController, :get_invite_token)
+    post("/users/invite_token", AdminAPIController, :create_invite_token)
     get("/users/invites", AdminAPIController, :invites)
     post("/users/revoke_invite", AdminAPIController, :revoke_invite)
     post("/users/email_invite", AdminAPIController, :email_invite)
