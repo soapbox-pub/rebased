@@ -438,7 +438,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> json(%{
       token: token.token,
-      link: "#{protocol}://#{host}/api/pleroma/password_reset/#{token}"
+      link: "#{protocol}://#{host}/api/pleroma/password_reset/#{token.token}"
     })
   end
 
