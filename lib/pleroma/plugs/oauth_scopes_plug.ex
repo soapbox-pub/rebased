@@ -61,9 +61,10 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
   end
 
   defp maybe_perform_instance_privacy_check(%Plug.Conn{} = conn, options) do
-    case options[:skip_instance_privacy_check] do
-      true -> conn
-      _ -> EnsurePublicOrAuthenticatedPlug.call(conn, [])
+    if options[:skip_instance_privacy_check] do
+      conn
+    else
+      EnsurePublicOrAuthenticatedPlug.call(conn, [])
     end
   end
 end
