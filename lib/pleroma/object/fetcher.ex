@@ -13,6 +13,7 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.Web.OStatus
 
   require Logger
+  require Pleroma.Constants
 
   defp touch_changeset(changeset) do
     updated_at =
@@ -22,10 +23,19 @@ defmodule Pleroma.Object.Fetcher do
     Ecto.Changeset.put_change(changeset, :updated_at, updated_at)
   end
 
+  defp maybe_reinject_internal_fields(data, %{data: %{} = old_data}) do
+    internal_fields = Map.take(old_data, Pleroma.Constants.object_internal_fields())
+
+    Map.merge(data, internal_fields)
+  end
+
+  defp maybe_reinject_internal_fields(data, _), do: data
+
   defp reinject_object(struct, data) do
     Logger.debug("Reinjecting object #{data["id"]}")
 
     with data <- Transmogrifier.fix_object(data),
+         data <- maybe_reinject_internal_fields(data, struct),
          changeset <- Object.change(struct, %{data: data}),
          changeset <- touch_changeset(changeset),
          {:ok, object} <- Repo.insert_or_update(changeset) do

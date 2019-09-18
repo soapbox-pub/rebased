@@ -7,8 +7,10 @@ defmodule Pleroma.ObjectTest do
   import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
+  alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Web.CommonAPI
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -92,7 +94,7 @@ defmodule Pleroma.ObjectTest do
   end
 
   describe "get_by_id_and_maybe_refetch" do
-    test "refetches if the time since the last refetch is greater than the interval" do
+    setup do
       mock(fn
         %{method: :get, url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"} ->
           %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/poll_original.json")}
@@ -101,34 +103,41 @@ defmodule Pleroma.ObjectTest do
           apply(HttpRequestMock, :request, [env])
       end)
 
+      mock_modified = fn resp ->
+        mock(fn
+          %{method: :get, url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"} ->
+            resp
+
+          env ->
+            apply(HttpRequestMock, :request, [env])
+        end)
+      end
+
+      on_exit(fn -> mock(fn env -> apply(HttpRequestMock, :request, [env]) end) end)
+
+      [mock_modified: mock_modified]
+    end
+
+    test "refetches if the time since the last refetch is greater than the interval", %{
+      mock_modified: mock_modified
+    } do
       %Object{} =
         object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
 
       assert Enum.at(object.data["oneOf"], 0)["replies"]["totalItems"] == 4
       assert Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 0
 
-      mock(fn
-        %{method: :get, url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"} ->
-          %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/poll_modified.json")}
-
-        env ->
-          apply(HttpRequestMock, :request, [env])
-      end)
+      mock_modified.(%Tesla.Env{
+        status: 200,
+        body: File.read!("test/fixtures/tesla_mock/poll_modified.json")
+      })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
       assert Enum.at(updated_object.data["oneOf"], 0)["replies"]["totalItems"] == 8
       assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 3
     end
 
-    test "returns the old object if refetch fails" do
-      mock(fn
-        %{method: :get, url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"} ->
-          %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/poll_original.json")}
-
-        env ->
-          apply(HttpRequestMock, :request, [env])
-      end)
-
+    test "returns the old object if refetch fails", %{mock_modified: mock_modified} do
       %Object{} =
         object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
 
@@ -136,16 +145,7 @@ defmodule Pleroma.ObjectTest do
       assert Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 0
 
       assert capture_log(fn ->
-               mock(fn
-                 %{
-                   method: :get,
-                   url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"
-                 } ->
-                   %Tesla.Env{status: 404, body: ""}
-
-                 env ->
-                   apply(HttpRequestMock, :request, [env])
-               end)
+               mock_modified.(%Tesla.Env{status: 404, body: ""})
 
                updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
                assert Enum.at(updated_object.data["oneOf"], 0)["replies"]["totalItems"] == 4
@@ -154,32 +154,48 @@ defmodule Pleroma.ObjectTest do
                "[error] Couldn't refresh https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"
     end
 
-    test "does not refetch if the time since the last refetch is greater than the interval" do
-      mock(fn
-        %{method: :get, url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"} ->
-          %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/poll_original.json")}
-
-        env ->
-          apply(HttpRequestMock, :request, [env])
-      end)
-
+    test "does not refetch if the time since the last refetch is greater than the interval", %{
+      mock_modified: mock_modified
+    } do
       %Object{} =
         object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
 
       assert Enum.at(object.data["oneOf"], 0)["replies"]["totalItems"] == 4
       assert Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 0
 
-      mock(fn
-        %{method: :get, url: "https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d"} ->
-          %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/poll_modified.json")}
-
-        env ->
-          apply(HttpRequestMock, :request, [env])
-      end)
+      mock_modified.(%Tesla.Env{
+        status: 200,
+        body: File.read!("test/fixtures/tesla_mock/poll_modified.json")
+      })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: 100)
       assert Enum.at(updated_object.data["oneOf"], 0)["replies"]["totalItems"] == 4
       assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 0
+    end
+
+    test "preserves internal fields on refetch", %{mock_modified: mock_modified} do
+      %Object{} =
+        object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
+
+      assert Enum.at(object.data["oneOf"], 0)["replies"]["totalItems"] == 4
+      assert Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 0
+
+      user = insert(:user)
+      activity = Activity.get_create_by_object_ap_id(object.data["id"])
+      {:ok, _activity, object} = CommonAPI.favorite(activity.id, user)
+
+      assert object.data["like_count"] == 1
+
+      mock_modified.(%Tesla.Env{
+        status: 200,
+        body: File.read!("test/fixtures/tesla_mock/poll_modified.json")
+      })
+
+      updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
+      assert Enum.at(updated_object.data["oneOf"], 0)["replies"]["totalItems"] == 8
+      assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 3
+
+      assert updated_object.data["like_count"] == 1
     end
   end
 end
