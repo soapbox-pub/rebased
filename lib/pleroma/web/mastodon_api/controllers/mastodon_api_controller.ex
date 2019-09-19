@@ -611,7 +611,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         {:ok, activity} ->
           conn
           |> put_view(StatusView)
-          |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+          |> try_render("status.json", %{
+            activity: activity,
+            for: user,
+            as: :activity,
+            with_direct_conversation_id: true
+          })
       end
     end
   end
