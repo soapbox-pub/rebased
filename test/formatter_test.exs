@@ -19,7 +19,7 @@ defmodule Pleroma.FormatterTest do
       text = "I love #cofe and #2hu"
 
       expected_text =
-        "I love <a class='hashtag' data-tag='cofe' href='http://localhost:4001/tag/cofe' rel='tag'>#cofe</a> and <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a>"
+        ~s(I love <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe" rel="tag ugc">#cofe</a> and <a class="hashtag" data-tag="2hu" href="http://localhost:4001/tag/2hu" rel="tag ugc">#2hu</a>)
 
       assert {^expected_text, [], _tags} = Formatter.linkify(text)
     end
@@ -28,7 +28,7 @@ defmodule Pleroma.FormatterTest do
       text = "#fact_3: pleroma does what mastodon't"
 
       expected_text =
-        "<a class='hashtag' data-tag='fact_3' href='http://localhost:4001/tag/fact_3' rel='tag'>#fact_3</a>: pleroma does what mastodon't"
+        ~s(<a class="hashtag" data-tag="fact_3" href="http://localhost:4001/tag/fact_3" rel="tag ugc">#fact_3</a>: pleroma does what mastodon't)
 
       assert {^expected_text, [], _tags} = Formatter.linkify(text)
     end
@@ -137,13 +137,13 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 3
 
       expected_text =
-        "<span class='h-card'><a data-user='#{gsimg.id}' class='u-url mention' href='#{
+        ~s(<span class="h-card"><a data-user="#{gsimg.id}" class="u-url mention" href="#{
           gsimg.ap_id
-        }'>@<span>gsimg</span></a></span> According to <span class='h-card'><a data-user='#{
+        }" rel="ugc">@<span>gsimg</span></a></span> According to <span class="h-card"><a data-user="#{
           archaeme.id
-        }' class='u-url mention' href='#{"https://archeme/@archa_eme_"}'>@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class='h-card'><a data-user='#{
+        }" class="u-url mention" href="#{"https://archeme/@archa_eme_"}" rel="ugc">@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class="h-card"><a data-user="#{
           archaeme_remote.id
-        }' class='u-url mention' href='#{archaeme_remote.ap_id}'>@<span>archaeme</span></a></span>"
+        }" class="u-url mention" href="#{archaeme_remote.ap_id}" rel="ugc">@<span>archaeme</span></a></span>)
 
       assert expected_text == text
     end
@@ -158,7 +158,9 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 1
 
       expected_text =
-        "<span class='h-card'><a data-user='#{mike.id}' class='u-url mention' href='#{mike.ap_id}'>@<span>mike</span></a></span> test"
+        ~s(<span class="h-card"><a data-user="#{mike.id}" class="u-url mention" href="#{
+          mike.ap_id
+        }" rel="ugc">@<span>mike</span></a></span> test)
 
       assert expected_text == text
     end
@@ -172,7 +174,7 @@ defmodule Pleroma.FormatterTest do
       assert length(mentions) == 1
 
       expected_text =
-        "<span class='h-card'><a data-user='#{o.id}' class='u-url mention' href='#{o.ap_id}'>@<span>o</span></a></span> hi"
+        ~s(<span class="h-card"><a data-user="#{o.id}" class="u-url mention" href="#{o.ap_id}" rel="ugc">@<span>o</span></a></span> hi)
 
       assert expected_text == text
     end
@@ -194,13 +196,17 @@ defmodule Pleroma.FormatterTest do
       assert mentions == [{"@#{user.nickname}", user}, {"@#{other_user.nickname}", other_user}]
 
       assert expected_text ==
-               "<span class='h-card'><a data-user='#{user.id}' class='u-url mention' href='#{
+               ~s(<span class="h-card"><a data-user="#{user.id}" class="u-url mention" href="#{
                  user.ap_id
-               }'>@<span>#{user.nickname}</span></a></span> <span class='h-card'><a data-user='#{
+               }" rel="ugc">@<span>#{user.nickname}</span></a></span> <span class="h-card"><a data-user="#{
                  other_user.id
-               }' class='u-url mention' href='#{other_user.ap_id}'>@<span>#{other_user.nickname}</span></a></span> hey dudes i hate <span class='h-card'><a data-user='#{
+               }" class="u-url mention" href="#{other_user.ap_id}" rel="ugc">@<span>#{
+                 other_user.nickname
+               }</span></a></span> hey dudes i hate <span class="h-card"><a data-user="#{
                  third_user.id
-               }' class='u-url mention' href='#{third_user.ap_id}'>@<span>#{third_user.nickname}</span></a></span>"
+               }" class="u-url mention" href="#{third_user.ap_id}" rel="ugc">@<span>#{
+                 third_user.nickname
+               }</span></a></span>)
     end
 
     test "given the 'safe_mention' option, it will still work without any mention" do

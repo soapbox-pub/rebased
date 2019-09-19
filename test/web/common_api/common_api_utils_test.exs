@@ -159,9 +159,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       expected =
         ~s(<p><strong>hello world</strong></p>\n<p><em>another <span class="h-card"><a data-user="#{
           user.id
-        }" class="u-url mention" href="http://foo.com/user__test">@<span>user__test</span></a></span> and <span class="h-card"><a data-user="#{
+        }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a data-user="#{
           user.id
-        }" class="u-url mention" href="http://foo.com/user__test">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>\n)
+        }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>\n)
 
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
