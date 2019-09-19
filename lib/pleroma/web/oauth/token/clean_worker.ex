@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.Token.CleanWorker do
@@ -17,6 +17,7 @@ defmodule Pleroma.Web.OAuth.Token.CleanWorker do
             )
 
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Workers.BackgroundWorker
 
   def start_link(_), do: GenServer.start_link(__MODULE__, %{})
 
@@ -27,9 +28,11 @@ defmodule Pleroma.Web.OAuth.Token.CleanWorker do
 
   @doc false
   def handle_info(:perform, state) do
-    Token.delete_expired_tokens()
+    BackgroundWorker.enqueue("clean_expired_tokens", %{})
 
     Process.send_after(self(), :perform, @interval)
     {:noreply, state}
   end
+
+  def perform(:clean), do: Token.delete_expired_tokens()
 end

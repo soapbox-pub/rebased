@@ -121,9 +121,19 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
       other_user = insert(:user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
       assert %{"totalItems" => 1} = UserView.render("followers.json", %{user: user})
-      info = Map.put(user.info, :hide_followers, true)
+      info = Map.merge(user.info, %{hide_followers_count: true, hide_followers: true})
       user = Map.put(user, :info, info)
       assert %{"totalItems" => 0} = UserView.render("followers.json", %{user: user})
+    end
+
+    test "sets correct totalItems when followers are hidden but the follower counter is not" do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      assert %{"totalItems" => 1} = UserView.render("followers.json", %{user: user})
+      info = Map.merge(user.info, %{hide_followers_count: false, hide_followers: true})
+      user = Map.put(user, :info, info)
+      assert %{"totalItems" => 1} = UserView.render("followers.json", %{user: user})
     end
   end
 
@@ -133,9 +143,19 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
       other_user = insert(:user)
       {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
       assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
-      info = Map.put(user.info, :hide_follows, true)
+      info = Map.merge(user.info, %{hide_follows_count: true, hide_follows: true})
       user = Map.put(user, :info, info)
       assert %{"totalItems" => 0} = UserView.render("following.json", %{user: user})
+    end
+
+    test "sets correct totalItems when follows are hidden but the follow counter is not" do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
+      assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
+      info = Map.merge(user.info, %{hide_follows_count: false, hide_follows: true})
+      user = Map.put(user, :info, info)
+      assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
     end
   end
 end

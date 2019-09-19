@@ -135,6 +135,7 @@ defmodule Pleroma.Web.Router do
 
   pipeline :http_signature do
     plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
+    plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
@@ -179,7 +180,7 @@ defmodule Pleroma.Web.Router do
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
-    get("/users/invite_token", AdminAPIController, :get_invite_token)
+    post("/users/invite_token", AdminAPIController, :create_invite_token)
     get("/users/invites", AdminAPIController, :invites)
     post("/users/revoke_invite", AdminAPIController, :revoke_invite)
     post("/users/email_invite", AdminAPIController, :email_invite)
@@ -224,6 +225,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
 
+      post("/change_email", UtilController, :change_email)
       post("/change_password", UtilController, :change_password)
       post("/delete_account", UtilController, :delete_account)
       put("/notification_settings", UtilController, :update_notificaton_settings)
@@ -513,6 +515,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web do
     pipe_through(:ostatus)
+    pipe_through(:http_signature)
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)

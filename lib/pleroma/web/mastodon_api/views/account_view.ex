@@ -74,10 +74,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     user_info = User.get_cached_user_info(user)
 
     following_count =
-      ((!user.info.hide_follows or opts[:for] == user) && user_info.following_count) || 0
+      if !user.info.hide_follows_count or !user.info.hide_follows or opts[:for] == user do
+        user_info.following_count
+      else
+        0
+      end
 
     followers_count =
-      ((!user.info.hide_followers or opts[:for] == user) && user_info.follower_count) || 0
+      if !user.info.hide_followers_count or !user.info.hide_followers or opts[:for] == user do
+        user_info.follower_count
+      else
+        0
+      end
 
     bot = (user.info.source_data["type"] || "Person") in ["Application", "Service"]
 
@@ -138,6 +146,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       pleroma: %{
         confirmation_pending: user_info.confirmation_pending,
         tags: user.tags,
+        hide_followers_count: user.info.hide_followers_count,
+        hide_follows_count: user.info.hide_follows_count,
         hide_followers: user.info.hide_followers,
         hide_follows: user.info.hide_follows,
         hide_favorites: user.info.hide_favorites,

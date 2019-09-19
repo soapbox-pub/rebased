@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ActivityTest do
@@ -7,6 +7,7 @@ defmodule Pleroma.ActivityTest do
   alias Pleroma.Activity
   alias Pleroma.Bookmark
   alias Pleroma.Object
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.ThreadMute
   import Pleroma.Factory
 
@@ -125,7 +126,8 @@ defmodule Pleroma.ActivityTest do
       }
 
       {:ok, local_activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "find me!"})
-      {:ok, remote_activity} = Pleroma.Web.Federator.incoming_ap_doc(params)
+      {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
+      {:ok, remote_activity} = ObanHelpers.perform(job)
       %{local_activity: local_activity, remote_activity: remote_activity, user: user}
     end
 
@@ -184,5 +186,40 @@ defmodule Pleroma.ActivityTest do
       |> Enum.sort(&(&1.id < &2.id))
 
     assert [%{id: ^id1, object: %Object{}}, %{id: ^id2, object: %Object{}}] = activities
+  end
+
+  test "get_by_id_with_object/1" do
+    %{id: id} = insert(:note_activity)
+
+    assert %Activity{id: ^id, object: %Object{}} = Activity.get_by_id_with_object(id)
+  end
+
+  test "get_by_ap_id_with_object/1" do
+    %{data: %{"id" => ap_id}} = insert(:note_activity)
+
+    assert %Activity{data: %{"id" => ^ap_id}, object: %Object{}} =
+             Activity.get_by_ap_id_with_object(ap_id)
+  end
+
+  test "get_by_id/1" do
+    %{id: id} = insert(:note_activity)
+
+    assert %Activity{id: ^id} = Activity.get_by_id(id)
+  end
+
+  test "all_by_actor_and_id/2" do
+    user = insert(:user)
+
+    {:ok, %{id: id1}} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofe"})
+    {:ok, %{id: id2}} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofefe"})
+
+    assert [] == Activity.all_by_actor_and_id(user, [])
+
+    activities =
+      user.ap_id
+      |> Activity.all_by_actor_and_id([id1, id2])
+      |> Enum.sort(&(&1.id < &2.id))
+
+    assert [%Activity{id: ^id1}, %Activity{id: ^id2}] = activities
   end
 end

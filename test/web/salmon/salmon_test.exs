@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Salmon.SalmonTest do
@@ -96,6 +96,6 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
 
     Salmon.publish(user, activity)
 
-    assert called(Publisher.enqueue_one(Salmon, %{recipient: mentioned_user}))
+    assert called(Publisher.enqueue_one(Salmon, %{recipient_id: mentioned_user.id}))
   end
 end

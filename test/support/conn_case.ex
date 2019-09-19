@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ConnCase do
@@ -38,6 +38,10 @@ defmodule Pleroma.Web.ConnCase do
 
     unless tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
+    end
+
+    if tags[:needs_streamer] do
+      start_supervised(Pleroma.Web.Streamer.supervisor())
     end
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}

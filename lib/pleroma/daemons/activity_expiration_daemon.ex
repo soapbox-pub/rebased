@@ -2,13 +2,14 @@
 # Copyright © 2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.ActivityExpirationWorker do
+defmodule Pleroma.Daemons.ActivityExpirationDaemon do
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
   alias Pleroma.Config
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+
   require Logger
   use GenServer
   import Ecto.Query
@@ -49,7 +50,10 @@ defmodule Pleroma.ActivityExpirationWorker do
   def handle_info(:perform, state) do
     ActivityExpiration.due_expirations(@schedule_interval)
     |> Enum.each(fn expiration ->
-      PleromaJobQueue.enqueue(:activity_expiration, __MODULE__, [:execute, expiration.id])
+      Pleroma.Workers.ActivityExpirationWorker.enqueue(
+        "activity_expiration",
+        %{"activity_expiration_id" => expiration.id}
+      )
     end)
 
     schedule_next()
