@@ -8,8 +8,8 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
   @shortdoc "Factory for generation data"
   @moduledoc """
   Generates data like:
-  - users
-  - activities with notifications
+  - local/remote users
+  - local/remote activities with notifications
   - direct messages
   - long thread
   - non visible posts
