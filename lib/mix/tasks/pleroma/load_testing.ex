@@ -53,31 +53,52 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
     generate_users(opts)
 
     # main user for queries
-    IO.puts("Fetching main user...")
+    IO.puts("Fetching local main user...")
 
     {time, user} =
       :timer.tc(fn ->
-        Repo.one(from(u in User, order_by: fragment("RANDOM()"), limit: 1))
+        Repo.one(
+          from(u in User, where: u.local == true, order_by: fragment("RANDOM()"), limit: 1)
+        )
       end)
 
     IO.puts("Fetching main user take #{to_sec(time)} sec.\n")
 
-    IO.puts("Fetching users...")
+    IO.puts("Fetching local users...")
 
     {time, users} =
       :timer.tc(fn ->
         Repo.all(
           from(u in User,
             where: u.id != ^user.id,
+            where: u.local == true,
             order_by: fragment("RANDOM()"),
             limit: 10
           )
         )
       end)
 
-    IO.puts("Fetching users take #{to_sec(time)} sec.\n")
+    IO.puts("Fetching local users take #{to_sec(time)} sec.\n")
+
+    IO.puts("Fetching remote users...")
+
+    {time, remote_users} =
+      :timer.tc(fn ->
+        Repo.all(
+          from(u in User,
+            where: u.id != ^user.id,
+            where: u.local == false,
+            order_by: fragment("RANDOM()"),
+            limit: 10
+          )
+        )
+      end)
+
+    IO.puts("Fetching remote users take #{to_sec(time)} sec.\n")
 
     generate_activities(user, users)
+
+    generate_remote_activities(user, remote_users)
 
     generate_dms(user, users, opts)
 

@@ -28,7 +28,8 @@ defmodule Pleroma.LoadTesting.Generator do
       name: "Test テスト User #{i}",
       email: "user#{i}@example.com",
       nickname: "nick#{i}",
-      password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
+      password_hash:
+        "$pbkdf2-sha512$160000$bU.OSFI7H/yqWb5DPEqyjw$uKp/2rmXw12QqnRRTqTtuk2DTwZfF8VR4MYW2xMeIlqPR/UX1nT1CEKVUx2CowFMZ5JON8aDvURrZpJjSgqXrg",
       bio: "Tester Number #{i}",
       info: %{},
       local: remote
@@ -163,6 +164,81 @@ defmodule Pleroma.LoadTesting.Generator do
 
       CommonAPI.post(user, post)
     end)
+  end
+
+  def generate_remote_activities(user, users) do
+    do_generate_remote_activities(user, users)
+  end
+
+  defp do_generate_remote_activities(user, users) do
+    IO.puts("Starting generating 10000 remote activities...")
+
+    {time, _} =
+      :timer.tc(fn ->
+        Task.async_stream(
+          1..10_000,
+          fn i ->
+            do_generate_remote_activity(i, user, users)
+          end,
+          max_concurrency: 10,
+          timeout: 30_000
+        )
+        |> Stream.run()
+      end)
+
+    IO.puts("Inserting remote activities take #{to_sec(time)} sec.\n")
+  end
+
+  defp do_generate_remote_activity(i, user, users) do
+    actor = Enum.random(users)
+    %{host: host} = URI.parse(actor.ap_id)
+    date = Date.utc_today()
+    datetime = DateTime.utc_now()
+
+    map = %{
+      "actor" => actor.ap_id,
+      "cc" => [actor.follower_address, user.ap_id],
+      "context" => "tag:mastodon.example.org,#{date}:objectId=#{i}:objectType=Conversation",
+      "id" => actor.ap_id <> "/statuses/#{i}/activity",
+      "object" => %{
+        "actor" => actor.ap_id,
+        "atomUri" => actor.ap_id <> "/statuses/#{i}",
+        "attachment" => [],
+        "attributedTo" => actor.ap_id,
+        "bcc" => [],
+        "bto" => [],
+        "cc" => [actor.follower_address, user.ap_id],
+        "content" =>
+          "<p><span class=\"h-card\"><a href=\"" <>
+            user.ap_id <>
+            "\" class=\"u-url mention\">@<span>" <> user.nickname <> "</span></a></span></p>",
+        "context" => "tag:mastodon.example.org,#{date}:objectId=#{i}:objectType=Conversation",
+        "conversation" =>
+          "tag:mastodon.example.org,#{date}:objectId=#{i}:objectType=Conversation",
+        "emoji" => %{},
+        "id" => actor.ap_id <> "/statuses/#{i}",
+        "inReplyTo" => nil,
+        "inReplyToAtomUri" => nil,
+        "published" => datetime,
+        "sensitive" => true,
+        "summary" => "cw",
+        "tag" => [
+          %{
+            "href" => user.ap_id,
+            "name" => "@#{user.nickname}@#{host}",
+            "type" => "Mention"
+          }
+        ],
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "type" => "Note",
+        "url" => "http://#{host}/@#{actor.nickname}/#{i}"
+      },
+      "published" => datetime,
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "type" => "Create"
+    }
+
+    Pleroma.Web.ActivityPub.ActivityPub.insert(map, false)
   end
 
   def generate_dms(user, users, opts) do
