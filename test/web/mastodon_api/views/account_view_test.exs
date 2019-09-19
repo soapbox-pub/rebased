@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
@@ -79,6 +79,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
+        hide_followers_count: false,
+        hide_follows_count: false,
         relationship: %{},
         skip_thread_containment: false
       }
@@ -147,6 +149,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
+        hide_followers_count: false,
+        hide_follows_count: false,
         relationship: %{},
         skip_thread_containment: false
       }
@@ -318,6 +322,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
+        hide_followers_count: false,
+        hide_follows_count: false,
         relationship: %{
           id: to_string(user.id),
           following: false,
@@ -361,8 +367,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   end
 
   describe "hiding follows/following" do
-    test "shows when follows/following are hidden and sets follower/following count to 0" do
-      user = insert(:user, info: %{hide_followers: true, hide_follows: true})
+    test "shows when follows/followers stats are hidden and sets follow/follower count to 0" do
+      info = %{
+        hide_followers: true,
+        hide_followers_count: true,
+        hide_follows: true,
+        hide_follows_count: true
+      }
+
+      user = insert(:user, info: info)
+
       other_user = insert(:user)
       {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
@@ -370,6 +384,19 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{
                followers_count: 0,
                following_count: 0,
+               pleroma: %{hide_follows_count: true, hide_followers_count: true}
+             } = AccountView.render("account.json", %{user: user})
+    end
+
+    test "shows when follows/followers are hidden" do
+      user = insert(:user, info: %{hide_followers: true, hide_follows: true})
+      other_user = insert(:user)
+      {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+
+      assert %{
+               followers_count: 1,
+               following_count: 1,
                pleroma: %{hide_follows: true, hide_followers: true}
              } = AccountView.render("account.json", %{user: user})
     end

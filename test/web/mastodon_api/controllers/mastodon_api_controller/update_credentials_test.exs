@@ -128,6 +128,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user["pleroma"]["hide_followers"] == true
     end
 
+    test "updates the user's hide_followers_count and hide_follows_count", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{
+          hide_followers_count: "true",
+          hide_follows_count: "true"
+        })
+
+      assert user = json_response(conn, 200)
+      assert user["pleroma"]["hide_followers_count"] == true
+      assert user["pleroma"]["hide_follows_count"] == true
+    end
+
     test "updates the user's skip_thread_containment option", %{conn: conn} do
       user = insert(:user)
 

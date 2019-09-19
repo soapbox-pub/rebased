@@ -50,6 +50,8 @@ Has these additional fields under the `pleroma` object:
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
 - `hide_followers`: boolean, true when the user has follower hiding enabled
 - `hide_follows`: boolean, true when the user has follow hiding enabled
+- `hide_followers_count`: boolean, true when the user has follower stat hiding enabled
+- `hide_follows_count`: boolean, true when the user has follow stat hiding enabled
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
 - `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
 - `deactivated`: boolean, true when the user is deactivated
@@ -112,6 +114,8 @@ Additional parameters can be added to the JSON body/Form data:
 - `no_rich_text` - if true, html tags are stripped from all statuses requested from the API
 - `hide_followers` - if true, user's followers will be hidden
 - `hide_follows` - if true, user's follows will be hidden
+- `hide_followers_count` - if true, user's follower count will be hidden
+- `hide_follows_count` - if true, user's follow count will be hidden
 - `hide_favorites` - if true, user's favorites timeline will be hidden
 - `show_role` - if true, user's role (e.g admin, moderator) will be exposed to anyone in the API
 - `default_scope` - the scope returned under `privacy` key in Source subentity
