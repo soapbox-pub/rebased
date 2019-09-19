@@ -1900,7 +1900,7 @@ config :pleroma, :config_description, [
         key: :rel,
         type: [:string, false],
         description: "override the rel attribute. false to clear",
-        suggestions: ["ugc", false]
+        suggestions: ["ugc", "noopener noreferrer", false]
       },
       %{
         key: :new_window,
