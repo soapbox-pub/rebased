@@ -310,6 +310,14 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params: none
 - Response: password reset token (base64 string)
 
+## `/api/pleroma/admin/users/:nickname/force_password_reset`
+
+### Force passord reset for a user with a given nickname
+
+- Methods: `PATCH`
+- Params: none
+- Response: none (code `204`)
+
 ## `/api/pleroma/admin/reports`
 ### Get a list of reports
 - Method `GET`
