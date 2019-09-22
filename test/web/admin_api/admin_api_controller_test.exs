@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
@@ -574,18 +574,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  test "/api/pleroma/admin/users/invite_token" do
-    admin = insert(:user, info: %{is_admin: true})
-
-    conn =
-      build_conn()
-      |> assign(:user, admin)
-      |> put_req_header("accept", "application/json")
-      |> get("/api/pleroma/admin/users/invite_token")
-
-    assert conn.status == 200
-  end
-
   test "/api/pleroma/admin/users/:nickname/password_reset" do
     admin = insert(:user, info: %{is_admin: true})
     user = insert(:user)
@@ -1066,7 +1054,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              "@#{admin.nickname} deactivated user @#{user.nickname}"
   end
 
-  describe "GET /api/pleroma/admin/users/invite_token" do
+  describe "POST /api/pleroma/admin/users/invite_token" do
     setup do
       admin = insert(:user, info: %{is_admin: true})
 
@@ -1078,10 +1066,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "without options", %{conn: conn} do
-      conn = get(conn, "/api/pleroma/admin/users/invite_token")
+      conn = post(conn, "/api/pleroma/admin/users/invite_token")
 
-      token = json_response(conn, 200)
-      invite = UserInviteToken.find_by_token!(token)
+      invite_json = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(invite_json["token"])
       refute invite.used
       refute invite.expires_at
       refute invite.max_use
@@ -1090,12 +1078,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "with expires_at", %{conn: conn} do
       conn =
-        get(conn, "/api/pleroma/admin/users/invite_token", %{
-          "invite" => %{"expires_at" => Date.to_string(Date.utc_today())}
+        post(conn, "/api/pleroma/admin/users/invite_token", %{
+          "expires_at" => Date.to_string(Date.utc_today())
         })
 
-      token = json_response(conn, 200)
-      invite = UserInviteToken.find_by_token!(token)
+      invite_json = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(invite_json["token"])
 
       refute invite.used
       assert invite.expires_at == Date.utc_today()
@@ -1104,13 +1092,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "with max_use", %{conn: conn} do
-      conn =
-        get(conn, "/api/pleroma/admin/users/invite_token", %{
-          "invite" => %{"max_use" => 150}
-        })
+      conn = post(conn, "/api/pleroma/admin/users/invite_token", %{"max_use" => 150})
 
-      token = json_response(conn, 200)
-      invite = UserInviteToken.find_by_token!(token)
+      invite_json = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(invite_json["token"])
       refute invite.used
       refute invite.expires_at
       assert invite.max_use == 150
@@ -1119,12 +1104,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "with max use and expires_at", %{conn: conn} do
       conn =
-        get(conn, "/api/pleroma/admin/users/invite_token", %{
-          "invite" => %{"max_use" => 150, "expires_at" => Date.to_string(Date.utc_today())}
+        post(conn, "/api/pleroma/admin/users/invite_token", %{
+          "max_use" => 150,
+          "expires_at" => Date.to_string(Date.utc_today())
         })
 
-      token = json_response(conn, 200)
-      invite = UserInviteToken.find_by_token!(token)
+      invite_json = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(invite_json["token"])
       refute invite.used
       assert invite.expires_at == Date.utc_today()
       assert invite.max_use == 150

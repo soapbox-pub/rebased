@@ -147,6 +147,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       [
         :no_rich_text,
         :locked,
+        :hide_followers_count,
+        :hide_follows_count,
         :hide_followers,
         :hide_follows,
         :hide_favorites,
@@ -485,7 +487,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def get_poll(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Object{} = object <- Object.get_by_id(id),
+    with %Object{} = object <- Object.get_by_id_and_maybe_refetch(id, interval: 60),
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user) do
       conn
@@ -609,7 +611,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         {:ok, activity} ->
           conn
           |> put_view(StatusView)
-          |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+          |> try_render("status.json", %{
+            activity: activity,
+            for: user,
+            as: :activity,
+            with_direct_conversation_id: true
+          })
       end
     end
   end

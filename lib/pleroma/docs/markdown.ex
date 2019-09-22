@@ -23,7 +23,7 @@ defmodule Pleroma.Docs.Markdown do
 
       IO.write(file, "#{group[:description]}\n")
 
-      for child <- group[:children] do
+      for child <- group[:children] || [] do
         print_child_header(file, child)
 
         print_suggestions(file, child[:suggestions])
@@ -44,6 +44,17 @@ defmodule Pleroma.Docs.Markdown do
     {:ok, config_path}
   end
 
+  defp print_child_header(file, %{key: key, type: type, description: description} = _child) do
+    IO.write(
+      file,
+      "- `#{inspect(key)}` (`#{inspect(type)}`): #{description}  \n"
+    )
+  end
+
+  defp print_child_header(file, %{key: key, type: type} = _child) do
+    IO.write(file, "- `#{inspect(key)}` (`#{inspect(type)}`)  \n")
+  end
+
   defp print_suggestion(file, suggestion) when is_list(suggestion) do
     IO.write(file, "  `#{inspect(suggestion)}`\n")
   end
@@ -59,20 +70,19 @@ defmodule Pleroma.Docs.Markdown do
 
   defp print_suggestions(_file, nil), do: nil
 
-  defp print_suggestions(file, suggestions) do
-    IO.write(file, "Suggestions:\n")
+  defp print_suggestions(_file, ""), do: nil
 
+  defp print_suggestions(file, suggestions) do
     if length(suggestions) > 1 do
+      IO.write(file, "Suggestions:\n")
+
       for suggestion <- suggestions do
         print_suggestion(file, suggestion, true)
       end
     else
+      IO.write(file, "  Suggestion: ")
+
       print_suggestion(file, List.first(suggestions))
     end
-  end
-
-  defp print_child_header(file, child) do
-    IO.write(file, "- `#{inspect(child[:key])}` -`#{inspect(child[:type])}`  \n")
-    IO.write(file, "#{child[:description]}  \n")
   end
 end

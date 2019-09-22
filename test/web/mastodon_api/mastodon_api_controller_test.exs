@@ -296,7 +296,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         conn
         |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
 
-      assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
+      assert %{"id" => id} = response = json_response(conn, 200)
+      assert response["visibility"] == "direct"
+      assert response["pleroma"]["direct_conversation_id"]
       assert activity = Activity.get_by_id(id)
       assert activity.recipients == [user2.ap_id, conn.assigns[:user].ap_id]
       assert activity.data["to"] == [user2.ap_id]
