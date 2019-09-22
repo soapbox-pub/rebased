@@ -596,7 +596,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       |> put_req_header("accept", "application/json")
       |> get("/api/pleroma/admin/users/#{user.nickname}/password_reset")
 
-    assert conn.status == 200
+    resp = json_response(conn, 200)
+
+    assert Regex.match?(~r/(http:\/\/|https:\/\/)/, resp["link"])
   end
 
   describe "GET /api/pleroma/admin/users" do
