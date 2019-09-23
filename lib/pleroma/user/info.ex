@@ -20,6 +20,7 @@ defmodule Pleroma.User.Info do
     field(:following_count, :integer, default: nil)
     field(:locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
+    field(:password_reset_pending, :boolean, default: false)
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:blocks, {:array, :string}, default: [])
@@ -80,6 +81,14 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:deactivated])
     |> validate_required([:deactivated])
+  end
+
+  def set_password_reset_pending(info, pending) do
+    params = %{password_reset_pending: pending}
+
+    info
+    |> cast(params, [:password_reset_pending])
+    |> validate_required([:password_reset_pending])
   end
 
   def update_notification_settings(info, settings) do

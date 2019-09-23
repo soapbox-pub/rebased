@@ -453,6 +453,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(token.token)
   end
 
+  @doc "Force password reset for a given user"
+  def force_password_reset(conn, %{"nickname" => nickname}) do
+    (%User{local: true} = user) = User.get_cached_by_nickname(nickname)
+
+    User.force_password_reset_async(user)
+
+    json_response(conn, :no_content, "")
+  end
+
   def list_reports(conn, params) do
     params =
       params

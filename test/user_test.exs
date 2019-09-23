@@ -1690,4 +1690,21 @@ defmodule Pleroma.UserTest do
       assert {:ok, %User{email: "cofe@cofe.party"}} = User.change_email(user, "cofe@cofe.party")
     end
   end
+
+  describe "set_password_reset_pending/2" do
+    setup do
+      [user: insert(:user)]
+    end
+
+    test "sets password_reset_pending to true", %{user: user} do
+      %{password_reset_pending: password_reset_pending} = user.info
+
+      refute password_reset_pending
+
+      {:ok, %{info: %{password_reset_pending: password_reset_pending}}} =
+        User.force_password_reset(user)
+
+      assert password_reset_pending
+    end
+  end
 end

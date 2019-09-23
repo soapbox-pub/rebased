@@ -26,6 +26,11 @@ defmodule Pleroma.Workers.BackgroundWorker do
     User.perform(:delete, user)
   end
 
+  def perform(%{"op" => "force_password_reset", "user_id" => user_id}, _job) do
+    user = User.get_cached_by_id(user_id)
+    User.perform(:force_password_reset, user)
+  end
+
   def perform(
         %{
           "op" => "blocks_import",
