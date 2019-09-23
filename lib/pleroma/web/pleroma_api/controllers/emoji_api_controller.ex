@@ -242,7 +242,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
 
       File.write!(
         pack_file_p,
-        Jason.encode!(%{pack: %{}, files: %{}})
+        Jason.encode!(%{pack: %{}, files: %{}}, pretty: true)
       )
 
       conn |> json("ok")
