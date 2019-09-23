@@ -216,7 +216,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
     conn
     |> put_resp_header("content-type", "application/activity+json")
-    |> json(ObjectView.render("object.json", %{object: object}))
+    |> put_view(ObjectView)
+    |> render("object.json", %{object: object})
   end
 
   defp represent_activity(_conn, "activity+json", _, _) do
