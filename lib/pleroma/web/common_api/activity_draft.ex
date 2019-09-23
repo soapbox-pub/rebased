@@ -40,20 +40,20 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     |> put_params(params)
     |> status()
     |> summary()
-    |> attachments()
     |> full_payload()
-    |> in_reply_to()
-    |> in_reply_to_conversation()
-    |> visibility()
     |> expires_at()
     |> poll()
+    |> with_valid(&in_reply_to/1)
+    |> with_valid(&attachments/1)
+    |> with_valid(&in_reply_to_conversation/1)
+    |> with_valid(&visibility/1)
     |> content()
-    |> to_and_cc()
-    |> context()
+    |> with_valid(&to_and_cc/1)
+    |> with_valid(&context/1)
     |> sensitive()
-    |> object()
+    |> with_valid(&object/1)
     |> preview?()
-    |> changes()
+    |> with_valid(&changes/1)
     |> validate()
   end
 
@@ -136,8 +136,6 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | content_html: content_html, mentions: mentions, tags: tags}
   end
 
-  defp to_and_cc(%{valid?: false} = draft), do: draft
-
   defp to_and_cc(draft) do
     addressed_users =
       draft.mentions
@@ -166,8 +164,6 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | sensitive: sensitive}
   end
 
-  defp object(%{valid?: false} = draft), do: draft
-
   defp object(draft) do
     emoji = Map.merge(Pleroma.Emoji.Formatter.get_emoji_map(draft.full_payload), draft.emoji)
 
@@ -195,8 +191,6 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | preview?: preview?}
   end
 
-  defp changes(%{valid?: false} = draft), do: draft
-
   defp changes(draft) do
     direct? = draft.visibility == "direct"
 
@@ -212,6 +206,9 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
     %__MODULE__{draft | changes: changes}
   end
+
+  defp with_valid(%{valid?: true} = draft, func), do: func.(draft)
+  defp with_valid(draft, _func), do: draft
 
   defp add_error(draft, message) do
     %__MODULE__{draft | valid?: false, errors: [message | draft.errors]}
