@@ -400,7 +400,8 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
                "oauthAuthorizationEndpoint" => "#{Pleroma.Web.base_url()}/oauth/authorize",
                "oauthRegistrationEndpoint" => "#{Pleroma.Web.base_url()}/api/v1/apps",
                "oauthTokenEndpoint" => "#{Pleroma.Web.base_url()}/oauth/token",
-               "sharedInbox" => "#{Pleroma.Web.base_url()}/inbox"
+               "sharedInbox" => "#{Pleroma.Web.base_url()}/inbox",
+               "uploadMedia" => "#{Pleroma.Web.base_url()}/api/ap/uploadMedia"
              }
 
       assert response["@context"] == [
@@ -462,7 +463,8 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
                "oauthAuthorizationEndpoint" => "#{Pleroma.Web.base_url()}/oauth/authorize",
                "oauthRegistrationEndpoint" => "#{Pleroma.Web.base_url()}/api/v1/apps",
                "oauthTokenEndpoint" => "#{Pleroma.Web.base_url()}/oauth/token",
-               "sharedInbox" => "#{Pleroma.Web.base_url()}/inbox"
+               "sharedInbox" => "#{Pleroma.Web.base_url()}/inbox",
+               "uploadMedia" => "#{Pleroma.Web.base_url()}/api/ap/uploadMedia"
              }
 
       assert response["@context"] == [

@@ -990,5 +990,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert UserView.render("user.json", %{user: user}) == json_response(conn, 200)
     end
+
+    clear_config([:media_proxy])
+    clear_config([Pleroma.Upload])
+
+    test "uploadMedia", %{conn: conn} do
+      user = insert(:user)
+
+      desc = "Description of the image"
+
+      image = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/ap/uploadMedia", %{"file" => image, "description" => desc})
+
+      assert object = json_response(conn, :created)
+      assert object["name"] == desc
+      assert object["type"] == "Document"
+      assert object["actor"] == user.ap_id
+    end
   end
 end
