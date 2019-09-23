@@ -55,12 +55,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   def feed(conn, %{"nickname" => nickname} = params) do
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
-      query_params =
-        Map.take(params, ["max_id"])
-        |> Map.merge(%{"whole_db" => true, "actor_id" => user.ap_id})
-
       activities =
-        ActivityPub.fetch_public_activities(query_params)
+        params
+        |> Map.take(["max_id"])
+        |> Map.merge(%{"whole_db" => true, "actor_id" => user.ap_id})
+        |> ActivityPub.fetch_public_activities()
         |> Enum.reverse()
 
       response =
@@ -98,8 +97,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
     Federator.incoming_doc(doc)
 
-    conn
-    |> send_resp(200, "")
+    send_resp(conn, 200, "")
   end
 
   def object(%{assigns: %{format: format}} = conn, %{"uuid" => _uuid})

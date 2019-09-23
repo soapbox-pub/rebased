@@ -2,10 +2,11 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.DigestEmailWorker do
-  import Ecto.Query
+defmodule Pleroma.Daemons.DigestEmailDaemon do
+  alias Pleroma.Repo
+  alias Pleroma.Workers.DigestEmailsWorker
 
-  @queue_name :digest_emails
+  import Ecto.Query
 
   def perform do
     config = Pleroma.Config.get([:email_notifications, :digest])
@@ -20,8 +21,10 @@ defmodule Pleroma.DigestEmailWorker do
       where: u.last_digest_emailed_at < datetime_add(^now, ^negative_interval, "day"),
       select: u
     )
-    |> Pleroma.Repo.all()
-    |> Enum.each(&PleromaJobQueue.enqueue(@queue_name, __MODULE__, [&1]))
+    |> Repo.all()
+    |> Enum.each(fn user ->
+      DigestEmailsWorker.enqueue("digest_email", %{"user_id" => user.id})
+    end)
   end
 
   @doc """

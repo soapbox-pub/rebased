@@ -38,6 +38,24 @@ defmodule Pleroma.Object do
   def get_by_id(nil), do: nil
   def get_by_id(id), do: Repo.get(Object, id)
 
+  def get_by_id_and_maybe_refetch(id, opts \\ []) do
+    %{updated_at: updated_at} = object = get_by_id(id)
+
+    if opts[:interval] &&
+         NaiveDateTime.diff(NaiveDateTime.utc_now(), updated_at) > opts[:interval] do
+      case Fetcher.refetch_object(object) do
+        {:ok, %Object{} = object} ->
+          object
+
+        e ->
+          Logger.error("Couldn't refresh #{object.data["id"]}:\n#{inspect(e)}")
+          object
+      end
+    else
+      object
+    end
+  end
+
   def get_by_ap_id(nil), do: nil
 
   def get_by_ap_id(ap_id) do
@@ -130,14 +148,16 @@ defmodule Pleroma.Object do
   def delete(%Object{data: %{"id" => id}} = object) do
     with {:ok, _obj} = swap_object_with_tombstone(object),
          deleted_activity = Activity.delete_by_ap_id(id),
-         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
+         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}"),
+         {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path) do
       {:ok, object, deleted_activity}
     end
   end
 
   def prune(%Object{data: %{"id" => id}} = object) do
     with {:ok, object} <- Repo.delete(object),
-         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
+         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}"),
+         {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path) do
       {:ok, object}
     end
   end

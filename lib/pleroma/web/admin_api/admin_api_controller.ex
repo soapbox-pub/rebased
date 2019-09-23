@@ -400,13 +400,23 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  @doc "Get a account registeration invite token (base64 string)"
-  def get_invite_token(conn, params) do
-    options = params["invite"] || %{}
-    {:ok, invite} = UserInviteToken.create_invite(options)
+  @doc "Create an account registration invite token"
+  def create_invite_token(conn, params) do
+    opts = %{}
 
-    conn
-    |> json(invite.token)
+    opts =
+      if params["max_use"],
+        do: Map.put(opts, :max_use, params["max_use"]),
+        else: opts
+
+    opts =
+      if params["expires_at"],
+        do: Map.put(opts, :expires_at, params["expires_at"]),
+        else: opts
+
+    {:ok, invite} = UserInviteToken.create_invite(opts)
+
+    json(conn, AccountView.render("invite.json", %{invite: invite}))
   end
 
   @doc "Get list of created invites"
@@ -442,11 +452,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       params
       |> Map.put("type", "Flag")
       |> Map.put("skip_preload", true)
+      |> Map.put("total", true)
 
-    reports =
-      []
-      |> ActivityPub.fetch_activities(params)
-      |> Enum.reverse()
+    reports = ActivityPub.fetch_activities([], params)
 
     conn
     |> put_view(ReportView)
@@ -589,6 +597,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> put_view(ConfigView)
     |> render("index.json", %{configs: updated})
+  end
+
+  def reload_emoji(conn, _params) do
+    Pleroma.Emoji.reload()
+
+    conn |> json("ok")
   end
 
   def errors(conn, {:error, :not_found}) do

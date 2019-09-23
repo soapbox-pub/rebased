@@ -135,6 +135,7 @@ defmodule Pleroma.Web.Router do
 
   pipeline :http_signature do
     plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
+    plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
@@ -179,7 +180,7 @@ defmodule Pleroma.Web.Router do
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
-    get("/users/invite_token", AdminAPIController, :get_invite_token)
+    post("/users/invite_token", AdminAPIController, :create_invite_token)
     get("/users/invites", AdminAPIController, :invites)
     post("/users/revoke_invite", AdminAPIController, :revoke_invite)
     post("/users/email_invite", AdminAPIController, :email_invite)
@@ -204,6 +205,29 @@ defmodule Pleroma.Web.Router do
     get("/config/migrate_from_db", AdminAPIController, :migrate_from_db)
 
     get("/moderation_log", AdminAPIController, :list_log)
+
+    post("/reload_emoji", AdminAPIController, :reload_emoji)
+  end
+
+  scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
+    scope "/packs" do
+      # Modifying packs
+      pipe_through([:admin_api, :oauth_write])
+
+      post("/import_from_fs", EmojiAPIController, :import_from_fs)
+
+      post("/:pack_name/update_file", EmojiAPIController, :update_file)
+      post("/:pack_name/update_metadata", EmojiAPIController, :update_metadata)
+      put("/:name", EmojiAPIController, :create)
+      delete("/:name", EmojiAPIController, :delete)
+      post("/download_from", EmojiAPIController, :download_from)
+    end
+
+    scope "/packs" do
+      # Pack info / downloading
+      get("/", EmojiAPIController, :list_packs)
+      get("/:name/download_shared/", EmojiAPIController, :download_shared)
+    end
   end
 
   scope "/", Pleroma.Web.TwitterAPI do
@@ -224,6 +248,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
 
+      post("/change_email", UtilController, :change_email)
       post("/change_password", UtilController, :change_password)
       post("/delete_account", UtilController, :delete_account)
       put("/notification_settings", UtilController, :update_notificaton_settings)
@@ -443,6 +468,7 @@ defmodule Pleroma.Web.Router do
       get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
       get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
 
+      get("/statuses", MastodonAPIController, :get_statuses)
       get("/statuses/:id", MastodonAPIController, :get_status)
       get("/statuses/:id/context", MastodonAPIController, :get_context)
 
@@ -512,6 +538,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web do
     pipe_through(:ostatus)
+    pipe_through(:http_signature)
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
