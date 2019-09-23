@@ -2256,6 +2256,14 @@ config :pleroma, :config_description, [
           "Location of the JSON-manifest. This manifest contains information about the emoji-packs you can download." <>
             " Currently only one manifest can be added (no arrays)",
         suggestions: ["https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json"]
+      },
+      %{
+        key: :shared_pack_cache_seconds_per_file,
+        type: :integer,
+        descpiption:
+          "When an emoji pack is shared, the archive is created and cached in memory" <>
+            " for this amount of seconds multiplied by the number of files.",
+        suggestions: [60]
       }
     ]
   },

@@ -733,3 +733,10 @@ Compile time settings (need instance reboot):
   }
 ]
 ```
+
+## `POST /api/pleroma/admin/reload_emoji`
+### Reload the instance's custom emoji
+* Method `POST`
+* Authentication: required
+* Params: None
+* Response: JSON, "ok" and 200 status
