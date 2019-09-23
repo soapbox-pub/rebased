@@ -976,4 +976,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Delivery.get(object.id, other_user.id)
     end
   end
+
+  describe "Additionnal ActivityPub C2S endpoints" do
+    test "/api/ap/whoami", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/ap/whoami")
+
+      user = User.get_cached_by_id(user.id)
+
+      assert UserView.render("user.json", %{user: user}) == json_response(conn, 200)
+    end
+  end
 end

@@ -293,6 +293,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> represent_service_actor(conn)
   end
 
+  @doc "Returns the authenticated user's ActivityPub User object or a 404 Not Found if non-authenticated"
   def whoami(%{assigns: %{user: %User{} = user}} = conn, _params) do
     conn
     |> put_resp_content_type("application/activity+json")
