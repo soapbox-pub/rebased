@@ -97,6 +97,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
            |> json_response(403) == %{"error" => "This resource requires authentication."}
   end
 
+  test "the public timeline includes only public statuses for an authenticated user" do
+    user = insert(:user)
+
+    conn =
+      build_conn()
+      |> assign(:user, user)
+
+    {:ok, _activity} = CommonAPI.post(user, %{"status" => "test"})
+    {:ok, _activity} = CommonAPI.post(user, %{"status" => "test", "visibility" => "private"})
+    {:ok, _activity} = CommonAPI.post(user, %{"status" => "test", "visibility" => "unlisted"})
+    {:ok, _activity} = CommonAPI.post(user, %{"status" => "test", "visibility" => "direct"})
+
+    res_conn = get(conn, "/api/v1/timelines/public")
+    assert length(json_response(res_conn, 200)) == 1
+  end
+
   describe "posting statuses" do
     setup do
       user = insert(:user)
