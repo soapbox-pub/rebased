@@ -1014,9 +1014,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/notifications")
 
       expected_response =
-        "hi <span class=\"h-card\"><a data-user=\"#{user.id}\" class=\"u-url mention\" href=\"#{
+        ~s(hi <span class="h-card"><a data-user="#{user.id}" class="u-url mention" href="#{
           user.ap_id
-        }\">@<span>#{user.nickname}</span></a></span>"
+        }" rel="ugc">@<span>#{user.nickname}</span></a></span>)
 
       assert [%{"status" => %{"content" => response}} | _rest] = json_response(conn, 200)
       assert response == expected_response
@@ -1036,9 +1036,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/notifications/#{notification.id}")
 
       expected_response =
-        "hi <span class=\"h-card\"><a data-user=\"#{user.id}\" class=\"u-url mention\" href=\"#{
+        ~s(hi <span class="h-card"><a data-user="#{user.id}" class="u-url mention" href="#{
           user.ap_id
-        }\">@<span>#{user.nickname}</span></a></span>"
+        }" rel="ugc">@<span>#{user.nickname}</span></a></span>)
 
       assert %{"status" => %{"content" => response}} = json_response(conn, 200)
       assert response == expected_response
