@@ -2798,6 +2798,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       %{user: user}
     end
 
+    test "returns empty result when rich_media disabled", %{conn: conn, user: user} do
+      Config.put([:rich_media, :enabled], false)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "https://example.com/ogp"})
+
+      response =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}/card")
+        |> json_response(200)
+
+      assert response == nil
+    end
+
     test "returns rich-media card", %{conn: conn, user: user} do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "https://example.com/ogp"})
 
@@ -2869,22 +2881,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
              }
     end
 
-    test "returns empty object when id invalid", %{conn: conn} do
-      response =
-        conn
-        |> get("/api/v1/statuses/9eoozpwTul5mjSEDRI/card")
-        |> json_response(200)
-
-      assert response == %{}
+    test "returns 404 response when id invalid", %{conn: conn} do
+      assert %{"error" => "Record not found"} =
+               conn
+               |> get("/api/v1/statuses/9eoozpwTul5mjSEDRI/card")
+               |> json_response(404)
     end
 
-    test "returns empty object when id isn't FlakeID", %{conn: conn} do
-      response =
-        conn
-        |> get("/api/v1/statuses/3ebbadd1-eb14-4e20-8118/card")
-        |> json_response(200)
+    test "returns 404 response when id isn't FlakeID", %{conn: conn} do
+      assert %{"error" => "Record not found"} =
+               conn
+               |> get("/api/v1/statuses/3ebbadd1-eb14-4e20-8118/card")
+               |> json_response(404)
 
-      assert response == %{}
+      assert %{"error" => "Record not found"} =
+               conn
+               |> get("/api/v1/statuses/8118/card")
+               |> json_response(404)
     end
   end
 

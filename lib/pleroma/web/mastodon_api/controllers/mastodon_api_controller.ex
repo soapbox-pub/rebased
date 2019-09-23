@@ -44,6 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.RichMedia
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   alias Pleroma.Web.ControllerHelper
@@ -1530,19 +1531,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def status_card(%{assigns: %{user: user}} = conn, %{"id" => status_id}) do
-    with %Activity{} = activity <- Activity.get_by_id(status_id),
+  def status_card(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %Activity{} = activity <- Activity.get_by_id(id),
          true <- Visibility.visible_for_user?(activity, user) do
-      data =
-        StatusView.render(
-          "card.json",
-          Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-        )
+      data = RichMedia.Helpers.fetch_data_for_activity(activity)
 
-      json(conn, data)
+      conn
+      |> put_view(StatusView)
+      |> render("card.json", data)
     else
-      _e ->
-        json(conn, %{})
+      _e -> {:error, :not_found}
     end
   end
 
