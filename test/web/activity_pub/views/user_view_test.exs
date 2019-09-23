@@ -158,4 +158,27 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
       assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
     end
   end
+
+  test "outbox paginates correctly" do
+    user = insert(:user)
+
+    posts =
+      for i <- 0..25 do
+        {:ok, activity} = CommonAPI.post(user, %{"status" => "post #{i}"})
+        activity
+      end
+
+    # outbox sorts chronologically, newest first, with ten per page
+    posts = Enum.reverse(posts)
+
+    %{"first" => %{"next" => next_url}} =
+      UserView.render("outbox.json", %{user: user, max_id: nil})
+
+    next_id = Enum.at(posts, 9).id
+    assert next_url =~ next_id
+
+    %{"next" => next_url} = UserView.render("outbox.json", %{user: user, max_id: next_id})
+    next_id = Enum.at(posts, 19).id
+    assert next_url =~ next_id
+  end
 end

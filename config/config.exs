@@ -122,7 +122,8 @@ config :pleroma, :emoji,
     # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
     Custom: ["/emoji/*.png", "/emoji/**/*.png"]
   ],
-  default_manifest: "https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json"
+  default_manifest: "https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json",
+  shared_pack_cache_seconds_per_file: 60
 
 config :pleroma, :uri_schemes,
   valid_schemes: [

@@ -599,6 +599,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> render("index.json", %{configs: updated})
   end
 
+  def reload_emoji(conn, _params) do
+    Pleroma.Emoji.reload()
+
+    conn |> json("ok")
+  end
+
   def errors(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
