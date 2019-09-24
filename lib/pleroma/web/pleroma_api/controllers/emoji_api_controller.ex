@@ -182,6 +182,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     |> Tesla.get!()
     |> Map.get(:body)
     |> Jason.decode!()
+    |> Map.get("links")
     |> List.last()
     |> Map.get("href")
     # Get the actual nodeinfo address and fetch it
