@@ -3,7 +3,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
 
   require Logger
 
-  def emoji_dir_path() do
+  def emoji_dir_path do
     Path.join(
       Pleroma.Config.get!([:instance, :static_dir]),
       "emoji"
