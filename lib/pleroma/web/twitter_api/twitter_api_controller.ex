@@ -15,14 +15,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   action_fallback(:errors)
 
   def confirm_email(conn, %{"user_id" => uid, "token" => token}) do
-         true <- user.local,
-         true <- user.info.confirmation_pending,
-         true <- user.info.confirmation_token == token,
-      conn
-      |> redirect(to: "/")
     with %User{info: info} = user <- User.get_cached_by_id(uid),
+         true <- user.local and info.confirmation_pending and info.confirmation_token == token,
          {:ok, _} <-
            User.update_info(user, &User.Info.confirmation_changeset(&1, need_confirmation: false)) do
+      redirect(conn, to: "/")
     end
   end
 

@@ -309,8 +309,7 @@ defmodule Pleroma.Web.CommonAPI do
       with {:ok, user} <- User.update_info(user, &User.Info.set_source_data(&1, source_data)) do
         user
       else
-        _e ->
-          user
+        _e -> user
       end
 
     ActivityPub.update(%{
@@ -338,11 +337,8 @@ defmodule Pleroma.Web.CommonAPI do
          {:ok, _user} <- User.update_info(user, &User.Info.add_pinnned_activity(&1, activity)) do
       {:ok, activity}
     else
-      %{errors: [pinned_activities: {err, _}]} ->
-        {:error, err}
-
-      _ ->
-        {:error, dgettext("errors", "Could not pin")}
+      {:error, %{changes: %{info: %{errors: [pinned_activities: {err, _}]}}}} -> {:error, err}
+      _ -> {:error, dgettext("errors", "Could not pin")}
     end
   end
 
@@ -351,11 +347,8 @@ defmodule Pleroma.Web.CommonAPI do
          {:ok, _user} <- User.update_info(user, &User.Info.remove_pinnned_activity(&1, activity)) do
       {:ok, activity}
     else
-      %{errors: [pinned_activities: {err, _}]} ->
-        {:error, err}
-
-      _ ->
-        {:error, dgettext("errors", "Could not unpin")}
+      %{errors: [pinned_activities: {err, _}]} -> {:error, err}
+      _ -> {:error, dgettext("errors", "Could not unpin")}
     end
   end
 
@@ -450,17 +443,13 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp set_visibility(activity, _), do: {:ok, activity}
 
-  def hide_reblogs(user, muted) do
-    ap_id = muted.ap_id
-
+  def hide_reblogs(user, %{ap_id: ap_id} = _muted) do
     if ap_id not in user.info.muted_reblogs do
       User.update_info(user, &User.Info.add_reblog_mute(&1, ap_id))
     end
   end
 
-  def show_reblogs(user, muted) do
-    ap_id = muted.ap_id
-
+  def show_reblogs(user, %{ap_id: ap_id} = _muted) do
     if ap_id in user.info.muted_reblogs do
       User.update_info(user, &User.Info.remove_reblog_mute(&1, ap_id))
     end
