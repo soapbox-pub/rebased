@@ -575,14 +575,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def post_status(%{assigns: %{user: user}} = conn, %{"status" => _} = params) do
-    params =
-      params
-      |> Map.put("in_reply_to_status_id", params["in_reply_to_id"])
-
-    scheduled_at = params["scheduled_at"]
-
-    if scheduled_at && ScheduledActivity.far_enough?(scheduled_at) do
+  def post_status(
+        %{assigns: %{user: user}} = conn,
+        %{"status" => _, "scheduled_at" => scheduled_at} = params
+      ) do
+    if ScheduledActivity.far_enough?(scheduled_at) do
       with {:ok, scheduled_activity} <-
              ScheduledActivity.create(user, %{"params" => params, "scheduled_at" => scheduled_at}) do
         conn
@@ -590,24 +587,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> render("show.json", %{scheduled_activity: scheduled_activity})
       end
     else
-      params = Map.drop(params, ["scheduled_at"])
+      post_status(conn, Map.drop(params, ["scheduled_at"]))
+    end
+  end
 
-      case CommonAPI.post(user, params) do
-        {:error, message} ->
-          conn
-          |> put_status(:unprocessable_entity)
-          |> json(%{error: message})
+  def post_status(%{assigns: %{user: user}} = conn, %{"status" => _} = params) do
+    case CommonAPI.post(user, params) do
+      {:ok, activity} ->
+        conn
+        |> put_view(StatusView)
+        |> try_render("status.json", %{
+          activity: activity,
+          for: user,
+          as: :activity,
+          with_direct_conversation_id: true
+        })
 
-        {:ok, activity} ->
-          conn
-          |> put_view(StatusView)
-          |> try_render("status.json", %{
-            activity: activity,
-            for: user,
-            as: :activity,
-            with_direct_conversation_id: true
-          })
-      end
+      {:error, message} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: message})
     end
   end
 

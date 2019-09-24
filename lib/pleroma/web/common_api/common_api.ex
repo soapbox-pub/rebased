@@ -6,7 +6,6 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
-  alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.ThreadMute
   alias Pleroma.User
@@ -173,9 +172,7 @@ defmodule Pleroma.Web.CommonAPI do
     end)
   end
 
-  def get_visibility(_, _, %Participation{}) do
-    {"direct", "direct"}
-  end
+  def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
 
   def get_visibility(%{"visibility" => visibility}, in_reply_to, _)
       when visibility in ~w{public unlisted private direct},
@@ -201,9 +198,9 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp check_expiry_date({:ok, nil} = res), do: res
+  def check_expiry_date({:ok, nil} = res), do: res
 
-  defp check_expiry_date({:ok, in_seconds}) do
+  def check_expiry_date({:ok, in_seconds}) do
     expiry = NaiveDateTime.utc_now() |> NaiveDateTime.add(in_seconds)
 
     if ActivityExpiration.expires_late_enough?(expiry) do
@@ -213,96 +210,26 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp check_expiry_date(expiry_str) do
+  def check_expiry_date(expiry_str) do
     Ecto.Type.cast(:integer, expiry_str)
     |> check_expiry_date()
   end
 
-  def post(user, %{"status" => status} = data) do
-    limit = Pleroma.Config.get([:instance, :limit])
-
-    with status <- String.trim(status),
-         attachments <- attachments_from_ids(data),
-         in_reply_to <- get_replied_to_activity(data["in_reply_to_status_id"]),
-         in_reply_to_conversation <- Participation.get(data["in_reply_to_conversation_id"]),
-         {visibility, in_reply_to_visibility} <-
-           get_visibility(data, in_reply_to, in_reply_to_conversation),
-         {_, false} <-
-           {:private_to_public, in_reply_to_visibility == "direct" && visibility != "direct"},
-         {content_html, mentions, tags} <-
-           make_content_html(
-             status,
-             attachments,
-             data,
-             visibility
-           ),
-         mentioned_users <- for({_, mentioned_user} <- mentions, do: mentioned_user.ap_id),
-         addressed_users <- get_addressed_users(mentioned_users, data["to"]),
-         {poll, poll_emoji} <- make_poll_data(data),
-         {to, cc} <-
-           get_to_and_cc(user, addressed_users, in_reply_to, visibility, in_reply_to_conversation),
-         context <- make_context(in_reply_to, in_reply_to_conversation),
-         cw <- data["spoiler_text"] || "",
-         sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),
-         {:ok, expires_at} <- check_expiry_date(data["expires_in"]),
-         full_payload <- String.trim(status <> cw),
-         :ok <- validate_character_limit(full_payload, attachments, limit),
-         object <-
-           make_note_data(
-             user.ap_id,
-             to,
-             context,
-             content_html,
-             attachments,
-             in_reply_to,
-             tags,
-             cw,
-             cc,
-             sensitive,
-             poll
-           ),
-         object <- put_emoji(object, full_payload, poll_emoji) do
-      preview? = Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
-      direct? = visibility == "direct"
-
-      result =
-        %{
-          to: to,
-          actor: user,
-          context: context,
-          object: object,
-          additional: %{"cc" => cc, "directMessage" => direct?}
-        }
-        |> maybe_add_list_data(user, visibility)
-        |> ActivityPub.create(preview?)
-
-      if expires_at do
-        with {:ok, activity} <- result do
-          {:ok, _} = ActivityExpiration.create(activity, expires_at)
-        end
-      end
-
-      result
-    else
-      {:private_to_public, true} ->
-        {:error, dgettext("errors", "The message visibility must be direct")}
-
-      {:error, _} = e ->
-        e
-
-      e ->
-        {:error, e}
+  def post(user, %{"status" => _} = data) do
+    with {:ok, draft} <- Pleroma.Web.CommonAPI.ActivityDraft.create(user, data) do
+      draft.changes
+      |> ActivityPub.create(draft.preview?)
+      |> maybe_create_activity_expiration(draft.expires_at)
     end
   end
 
-  # parse and put emoji to object data
-  defp put_emoji(map, text, emojis) do
-    Map.put(
-      map,
-      "emoji",
-      Map.merge(Emoji.Formatter.get_emoji_map(text), emojis)
-    )
+  defp maybe_create_activity_expiration({:ok, activity}, %NaiveDateTime{} = expires_at) do
+    with {:ok, _} <- ActivityExpiration.create(activity, expires_at) do
+      {:ok, activity}
+    end
   end
+
+  defp maybe_create_activity_expiration(result, _), do: result
 
   # Updates the emojis for a user based on their profile
   def update(user) do
