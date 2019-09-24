@@ -99,7 +99,7 @@ defmodule Pleroma.Emoji.Loader do
       contents["files"]
       |> Enum.map(fn {name, rel_file} ->
         filename = Path.join("/emoji/#{pack_name}", rel_file)
-        {name, filename, pack_name}
+        {name, filename, ["pack:#{pack_name}"]}
       end)
     else
       # Load from emoji.txt / all files
