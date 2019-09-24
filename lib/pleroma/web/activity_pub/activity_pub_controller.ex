@@ -49,7 +49,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_content_type("application/activity+json")
-      |> json(UserView.render("user.json", %{user: user}))
+      |> put_view(UserView)
+      |> render("user.json", %{user: user})
     else
       nil -> {:error, :not_found}
     end
@@ -90,7 +91,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
       conn
       |> put_resp_content_type("application/activity+json")
-      |> json(ObjectView.render("likes.json", ap_id, likes, page))
+      |> put_view(ObjectView)
+      |> render("likes.json", %{ap_id: ap_id, likes: likes, page: page})
     else
       {:public?, false} ->
         {:error, :not_found}
@@ -104,7 +106,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          likes <- Utils.get_object_likes(object) do
       conn
       |> put_resp_content_type("application/activity+json")
-      |> json(ObjectView.render("likes.json", ap_id, likes))
+      |> put_view(ObjectView)
+      |> render("likes.json", %{ap_id: ap_id, likes: likes})
     else
       {:public?, false} ->
         {:error, :not_found}
@@ -158,7 +161,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def following(%{assigns: %{relay: true}} = conn, _params) do
     conn
     |> put_resp_content_type("application/activity+json")
-    |> json(UserView.render("following.json", %{user: Relay.get_actor()}))
+    |> put_view(UserView)
+    |> render("following.json", %{user: Relay.get_actor()})
   end
 
   def following(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
@@ -170,7 +174,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
       conn
       |> put_resp_content_type("application/activity+json")
-      |> json(UserView.render("following.json", %{user: user, page: page, for: for_user}))
+      |> put_view(UserView)
+      |> render("following.json", %{user: user, page: page, for: for_user})
     else
       {:show_follows, _} ->
         conn
@@ -184,7 +189,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user) do
       conn
       |> put_resp_content_type("application/activity+json")
-      |> json(UserView.render("following.json", %{user: user, for: for_user}))
+      |> put_view(UserView)
+      |> render("following.json", %{user: user, for: for_user})
     end
   end
 
@@ -192,7 +198,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def followers(%{assigns: %{relay: true}} = conn, _params) do
     conn
     |> put_resp_content_type("application/activity+json")
-    |> json(UserView.render("followers.json", %{user: Relay.get_actor()}))
+    |> put_view(UserView)
+    |> render("followers.json", %{user: Relay.get_actor()})
   end
 
   def followers(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
@@ -204,7 +211,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
       conn
       |> put_resp_content_type("application/activity+json")
-      |> json(UserView.render("followers.json", %{user: user, page: page, for: for_user}))
+      |> put_view(UserView)
+      |> render("followers.json", %{user: user, page: page, for: for_user})
     else
       {:show_followers, _} ->
         conn
@@ -218,7 +226,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user) do
       conn
       |> put_resp_content_type("application/activity+json")
-      |> json(UserView.render("followers.json", %{user: user, for: for_user}))
+      |> put_view(UserView)
+      |> render("followers.json", %{user: user, for: for_user})
     end
   end
 
@@ -227,7 +236,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_content_type("application/activity+json")
-      |> json(UserView.render("outbox.json", %{user: user, max_id: params["max_id"]}))
+      |> put_view(UserView)
+      |> render("outbox.json", %{user: user, max_id: params["max_id"]})
     end
   end
 
@@ -275,7 +285,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_content_type("application/activity+json")
-      |> json(UserView.render("user.json", %{user: user}))
+      |> put_view(UserView)
+      |> render("user.json", %{user: user})
     else
       nil -> {:error, :not_found}
     end
@@ -296,7 +307,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def whoami(%{assigns: %{user: %User{} = user}} = conn, _params) do
     conn
     |> put_resp_content_type("application/activity+json")
-    |> json(UserView.render("user.json", %{user: user}))
+    |> put_view(UserView)
+    |> render("user.json", %{user: user})
   end
 
   def whoami(_conn, _params), do: {:error, :not_found}

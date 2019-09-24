@@ -109,6 +109,7 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
+  streaming_enabled: true,
   public_endpoint: "https://s3.amazonaws.com"
 
 config :pleroma, Pleroma.Uploaders.MDII,
@@ -508,7 +509,7 @@ config :auto_linker,
     class: false,
     strip_prefix: false,
     new_window: false,
-    rel: false
+    rel: "ugc"
   ]
 
 config :pleroma, :ldap,

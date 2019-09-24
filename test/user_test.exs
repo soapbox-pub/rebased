@@ -1294,9 +1294,9 @@ defmodule Pleroma.UserTest do
       bio = "A.k.a. @nick@domain.com"
 
       expected_text =
-        "A.k.a. <span class='h-card'><a data-user='#{remote_user.id}' class='u-url mention' href='#{
+        ~s(A.k.a. <span class="h-card"><a data-user="#{remote_user.id}" class="u-url mention" href="#{
           remote_user.ap_id
-        }'>@<span>nick@domain.com</span></a></span>"
+        }" rel="ugc">@<span>nick@domain.com</span></a></span>)
 
       assert expected_text == User.parse_bio(bio, user)
     end
@@ -1688,6 +1688,23 @@ defmodule Pleroma.UserTest do
 
     test "changes email", %{user: user} do
       assert {:ok, %User{email: "cofe@cofe.party"}} = User.change_email(user, "cofe@cofe.party")
+    end
+  end
+
+  describe "set_password_reset_pending/2" do
+    setup do
+      [user: insert(:user)]
+    end
+
+    test "sets password_reset_pending to true", %{user: user} do
+      %{password_reset_pending: password_reset_pending} = user.info
+
+      refute password_reset_pending
+
+      {:ok, %{info: %{password_reset_pending: password_reset_pending}}} =
+        User.force_password_reset(user)
+
+      assert password_reset_pending
     end
   end
 end

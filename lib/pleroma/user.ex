@@ -269,6 +269,7 @@ defmodule Pleroma.User do
     |> validate_required([:password, :password_confirmation])
     |> validate_confirmation(:password)
     |> put_password_hash
+    |> put_embed(:info, User.Info.set_password_reset_pending(struct.info, false))
   end
 
   @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
@@ -283,6 +284,20 @@ defmodule Pleroma.User do
       {:ok, %{user: user} = _} -> set_cache(user)
       {:error, _, changeset, _} -> {:error, changeset}
     end
+  end
+
+  def force_password_reset_async(user) do
+    BackgroundWorker.enqueue("force_password_reset", %{"user_id" => user.id})
+  end
+
+  @spec force_password_reset(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def force_password_reset(user) do
+    info_cng = User.Info.set_password_reset_pending(user.info, true)
+
+    user
+    |> change()
+    |> put_embed(:info, info_cng)
+    |> update_and_set_cache()
   end
 
   def register_changeset(struct, params \\ %{}, opts \\ []) do
@@ -1130,6 +1145,8 @@ defmodule Pleroma.User do
   def delete(%User{} = user) do
     BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
   end
+
+  def perform(:force_password_reset, user), do: force_password_reset(user)
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
   def perform(:delete, %User{} = user) do

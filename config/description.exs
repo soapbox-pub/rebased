@@ -110,6 +110,12 @@ config :pleroma, :config_description, [
         description:
           "If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or \"\" etc." <>
             " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in public_endpoint."
+      },
+      %{
+        key: :streaming_enabled,
+        type: :boolean,
+        description:
+          "Enable streaming uploads, when enabled the file will be sent to the server in chunks as it's being read. This may be unsupported by some providers, try disabling this if you have upload problems."
       }
     ]
   },
@@ -1900,7 +1906,7 @@ config :pleroma, :config_description, [
         key: :rel,
         type: [:string, false],
         description: "override the rel attribute. false to clear",
-        suggestions: ["noopener noreferrer", false]
+        suggestions: ["ugc", "noopener noreferrer", false]
       },
       %{
         key: :new_window,
