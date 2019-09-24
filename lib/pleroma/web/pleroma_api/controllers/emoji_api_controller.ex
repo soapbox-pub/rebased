@@ -3,12 +3,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
 
   require Logger
 
-  @emoji_dir_path Path.join(
-                    Pleroma.Config.get!([:instance, :static_dir]),
-                    "emoji"
-                  )
-
-  @cache_seconds_per_file Pleroma.Config.get!([:emoji, :shared_pack_cache_seconds_per_file])
+  def emoji_dir_path() do
+    Path.join(
+      Pleroma.Config.get!([:instance, :static_dir]),
+      "emoji"
+    )
+  end
 
   @doc """
   Lists the packs available on the instance as JSON.
@@ -19,8 +19,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
   def list_packs(conn, _params) do
     # Create the directory first if it does not exist. This is probably the first request made
     # with the API so it should be sufficient
-    with {:create_dir, :ok} <- {:create_dir, File.mkdir_p(@emoji_dir_path)},
-         {:ls, {:ok, results}} <- {:ls, File.ls(@emoji_dir_path)} do
+    with {:create_dir, :ok} <- {:create_dir, File.mkdir_p(emoji_dir_path())},
+         {:ls, {:ok, results}} <- {:ls, File.ls(emoji_dir_path())} do
       pack_infos =
         results
         |> Enum.filter(&has_pack_json?/1)
@@ -35,33 +35,33 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
       {:create_dir, {:error, e}} ->
         conn
         |> put_status(:internal_server_error)
-        |> json(%{error: "Failed to create the emoji pack directory at #{@emoji_dir_path}: #{e}"})
+        |> json(%{error: "Failed to create the emoji pack directory at #{emoji_dir_path()}: #{e}"})
 
       {:ls, {:error, e}} ->
         conn
         |> put_status(:internal_server_error)
         |> json(%{
           error:
-            "Failed to get the contents of the emoji pack directory at #{@emoji_dir_path}: #{e}"
+            "Failed to get the contents of the emoji pack directory at #{emoji_dir_path()}: #{e}"
         })
     end
   end
 
   defp has_pack_json?(file) do
-    dir_path = Path.join(@emoji_dir_path, file)
+    dir_path = Path.join(emoji_dir_path(), file)
     # Filter to only use the pack.json packs
     File.dir?(dir_path) and File.exists?(Path.join(dir_path, "pack.json"))
   end
 
   defp load_pack(pack_name) do
-    pack_path = Path.join(@emoji_dir_path, pack_name)
+    pack_path = Path.join(emoji_dir_path(), pack_name)
     pack_file = Path.join(pack_path, "pack.json")
 
     {pack_name, Jason.decode!(File.read!(pack_file))}
   end
 
   defp validate_pack({name, pack}) do
-    pack_path = Path.join(@emoji_dir_path, name)
+    pack_path = Path.join(emoji_dir_path(), name)
 
     if can_download?(pack, pack_path) do
       archive_for_sha = make_archive(name, pack, pack_path)
@@ -95,7 +95,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
 
     {:ok, {_, zip_result}} = :zip.zip('#{name}.zip', files, [:memory, cwd: to_charlist(pack_dir)])
 
-    cache_ms = :timer.seconds(@cache_seconds_per_file * Enum.count(files))
+    cache_seconds_per_file = Pleroma.Config.get!([:emoji, :shared_pack_cache_seconds_per_file])
+    cache_ms = :timer.seconds(cache_seconds_per_file * Enum.count(files))
 
     Cachex.put!(
       :emoji_packs_cache,
@@ -131,7 +132,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   to download packs that the instance shares.
   """
   def download_shared(conn, %{"name" => name}) do
-    pack_dir = Path.join(@emoji_dir_path, name)
+    pack_dir = Path.join(emoji_dir_path(), name)
     pack_file = Path.join(pack_dir, "pack.json")
 
     with {_, true} <- {:exists?, File.exists?(pack_file)},
@@ -211,7 +212,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
            %{body: emoji_archive} <- Tesla.get!(uri),
            {_, true} <- {:checksum, Base.decode16!(sha) == :crypto.hash(:sha256, emoji_archive)} do
         local_name = data["as"] || name
-        pack_dir = Path.join(@emoji_dir_path, local_name)
+        pack_dir = Path.join(emoji_dir_path(), local_name)
         File.mkdir_p!(pack_dir)
 
         files = Enum.map(full_pack["files"], fn {_, path} -> to_charlist(path) end)
@@ -249,7 +250,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   Creates an empty pack named `name` which then can be updated via the admin UI.
   """
   def create(conn, %{"name" => name}) do
-    pack_dir = Path.join(@emoji_dir_path, name)
+    pack_dir = Path.join(emoji_dir_path(), name)
 
     if not File.exists?(pack_dir) do
       File.mkdir_p!(pack_dir)
@@ -273,7 +274,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   Deletes the pack `name` and all it's files.
   """
   def delete(conn, %{"name" => name}) do
-    pack_dir = Path.join(@emoji_dir_path, name)
+    pack_dir = Path.join(emoji_dir_path(), name)
 
     case File.rm_rf(pack_dir) do
       {:ok, _} ->
@@ -292,7 +293,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   `new_data` is the new metadata for the pack, that will replace the old metadata.
   """
   def update_metadata(conn, %{"pack_name" => name, "new_data" => new_data}) do
-    pack_file_p = Path.join([@emoji_dir_path, name, "pack.json"])
+    pack_file_p = Path.join([emoji_dir_path(), name, "pack.json"])
 
     full_pack = Jason.decode!(File.read!(pack_file_p))
 
@@ -376,7 +377,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         conn,
         %{"pack_name" => pack_name, "action" => "add", "shortcode" => shortcode} = params
       ) do
-    pack_dir = Path.join(@emoji_dir_path, pack_name)
+    pack_dir = Path.join(emoji_dir_path(), pack_name)
     pack_file_p = Path.join(pack_dir, "pack.json")
 
     full_pack = Jason.decode!(File.read!(pack_file_p))
@@ -424,7 +425,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         "action" => "remove",
         "shortcode" => shortcode
       }) do
-    pack_dir = Path.join(@emoji_dir_path, pack_name)
+    pack_dir = Path.join(emoji_dir_path(), pack_name)
     pack_file_p = Path.join(pack_dir, "pack.json")
 
     full_pack = Jason.decode!(File.read!(pack_file_p))
@@ -459,7 +460,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         conn,
         %{"pack_name" => pack_name, "action" => "update", "shortcode" => shortcode} = params
       ) do
-    pack_dir = Path.join(@emoji_dir_path, pack_name)
+    pack_dir = Path.join(emoji_dir_path(), pack_name)
     pack_file_p = Path.join(pack_dir, "pack.json")
 
     full_pack = Jason.decode!(File.read!(pack_file_p))
@@ -529,11 +530,11 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   assumed to be emojis and stored in the new `pack.json` file.
   """
   def import_from_fs(conn, _params) do
-    with {:ok, results} <- File.ls(@emoji_dir_path) do
+    with {:ok, results} <- File.ls(emoji_dir_path()) do
       imported_pack_names =
         results
         |> Enum.filter(fn file ->
-          dir_path = Path.join(@emoji_dir_path, file)
+          dir_path = Path.join(emoji_dir_path(), file)
           # Find the directories that do NOT have pack.json
           File.dir?(dir_path) and not File.exists?(Path.join(dir_path, "pack.json"))
         end)
@@ -549,7 +550,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   end
 
   defp write_pack_json_contents(dir) do
-    dir_path = Path.join(@emoji_dir_path, dir)
+    dir_path = Path.join(emoji_dir_path(), dir)
     emoji_txt_path = Path.join(dir_path, "emoji.txt")
 
     files_for_pack = files_for_pack(emoji_txt_path, dir_path)
