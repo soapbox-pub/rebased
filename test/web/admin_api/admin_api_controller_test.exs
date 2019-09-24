@@ -4,11 +4,13 @@
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
+  use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
   alias Pleroma.HTML
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.CommonAPI
@@ -2351,6 +2353,30 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert second_entry["message"] ==
                "@#{admin.nickname} followed relay: https://example.org/relay"
+    end
+  end
+
+  describe "PATCH /users/:nickname/force_password_reset" do
+    setup %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+
+      %{conn: assign(conn, :user, admin), admin: admin, user: user}
+    end
+
+    test "sets password_reset_pending to true", %{admin: admin, user: user} do
+      assert user.info.password_reset_pending == false
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> patch("/api/pleroma/admin/users/#{user.nickname}/force_password_reset")
+
+      assert json_response(conn, 204) == ""
+
+      ObanHelpers.perform_all()
+
+      assert User.get_by_id(user.id).info.password_reset_pending == true
     end
   end
 end
