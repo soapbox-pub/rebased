@@ -685,9 +685,9 @@ defmodule Pleroma.User do
 
   @spec get_followers(User.t(), pos_integer()) :: {:ok, list(User.t())}
   def get_followers(user, page \\ nil) do
-    q = get_followers_query(user, page)
-
-    {:ok, Repo.all(q)}
+    user
+    |> get_followers_query(page)
+    |> Repo.all()
   end
 
   @spec get_external_followers(User.t(), pos_integer()) :: {:ok, list(User.t())}
@@ -720,9 +720,9 @@ defmodule Pleroma.User do
   def get_friends_query(user), do: get_friends_query(user, nil)
 
   def get_friends(user, page \\ nil) do
-    q = get_friends_query(user, page)
-
-    {:ok, Repo.all(q)}
+    user
+    |> get_friends_query(page)
+    |> Repo.all()
   end
 
   def get_friends_ids(user, page \\ nil) do
@@ -733,15 +733,13 @@ defmodule Pleroma.User do
 
   @spec get_follow_requests(User.t()) :: {:ok, [User.t()]}
   def get_follow_requests(%User{} = user) do
-    users =
-      Activity.follow_requests_for_actor(user)
-      |> join(:inner, [a], u in User, on: a.actor == u.ap_id)
-      |> where([a, u], not fragment("? @> ?", u.following, ^[user.follower_address]))
-      |> group_by([a, u], u.id)
-      |> select([a, u], u)
-      |> Repo.all()
-
-    {:ok, users}
+    user
+    |> Activity.follow_requests_for_actor()
+    |> join(:inner, [a], u in User, on: a.actor == u.ap_id)
+    |> where([a, u], not fragment("? @> ?", u.following, ^[user.follower_address]))
+    |> group_by([a, u], u.id)
+    |> select([a, u], u)
+    |> Repo.all()
   end
 
   def increase_note_count(%User{} = user) do
@@ -1104,15 +1102,13 @@ defmodule Pleroma.User do
   def deactivate(%User{} = user, status \\ true) do
     info_cng = User.Info.set_activation_status(user.info, status)
 
-    with {:ok, friends} <- User.get_friends(user),
-         {:ok, followers} <- User.get_followers(user),
-         {:ok, user} <-
+    with {:ok, user} <-
            user
            |> change()
            |> put_embed(:info, info_cng)
            |> update_and_set_cache() do
-      Enum.each(followers, &invalidate_cache(&1))
-      Enum.each(friends, &update_follower_count(&1))
+      Enum.each(get_followers(user), &invalidate_cache/1)
+      Enum.each(get_friends(user), &update_follower_count/1)
 
       {:ok, user}
     end
@@ -1137,18 +1133,18 @@ defmodule Pleroma.User do
     {:ok, _user} = ActivityPub.delete(user)
 
     # Remove all relationships
-    {:ok, followers} = User.get_followers(user)
-
-    Enum.each(followers, fn follower ->
+    user
+    |> get_followers()
+    |> Enum.each(fn follower ->
       ActivityPub.unfollow(follower, user)
-      User.unfollow(follower, user)
+      unfollow(follower, user)
     end)
 
-    {:ok, friends} = User.get_friends(user)
-
-    Enum.each(friends, fn followed ->
+    user
+    |> get_friends()
+    |> Enum.each(fn followed ->
       ActivityPub.unfollow(user, followed)
-      User.unfollow(user, followed)
+      unfollow(user, followed)
     end)
 
     delete_user_activities(user)
@@ -1160,13 +1156,11 @@ defmodule Pleroma.User do
   def perform(:fetch_initial_posts, %User{} = user) do
     pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
 
-    Enum.each(
-      # Insert all the posts in reverse order, so they're in the right order on the timeline
-      Enum.reverse(Utils.fetch_ordered_collection(user.info.source_data["outbox"], pages)),
-      &Pleroma.Web.Federator.incoming_ap_doc/1
-    )
-
-    {:ok, user}
+    # Insert all the posts in reverse order, so they're in the right order on the timeline
+    user.info.source_data["outbox"]
+    |> Utils.fetch_ordered_collection(pages)
+    |> Enum.reverse()
+    |> Enum.each(&Pleroma.Web.Federator.incoming_ap_doc/1)
   end
 
   def perform(:deactivate_async, user, status), do: deactivate(user, status)
@@ -1252,16 +1246,12 @@ defmodule Pleroma.User do
     })
   end
 
-  def delete_user_activities(%User{ap_id: ap_id} = user) do
+  def delete_user_activities(%User{ap_id: ap_id}) do
     ap_id
     |> Activity.Queries.by_actor()
     |> RepoStreamer.chunk_stream(50)
-    |> Stream.each(fn activities ->
-      Enum.each(activities, &delete_activity(&1))
-    end)
+    |> Stream.each(fn activities -> Enum.each(activities, &delete_activity/1) end)
     |> Stream.run()
-
-    {:ok, user}
   end
 
   defp delete_activity(%{data: %{"type" => "Create"}} = activity) do

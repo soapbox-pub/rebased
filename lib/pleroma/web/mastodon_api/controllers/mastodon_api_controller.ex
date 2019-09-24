@@ -958,11 +958,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def follow_requests(%{assigns: %{user: followed}} = conn, _params) do
-    with {:ok, follow_requests} <- User.get_follow_requests(followed) do
-      conn
-      |> put_view(AccountView)
-      |> render("accounts.json", %{for: followed, users: follow_requests, as: :user})
-    end
+    follow_requests = User.get_follow_requests(followed)
+
+    conn
+    |> put_view(AccountView)
+    |> render("accounts.json", %{for: followed, users: follow_requests, as: :user})
   end
 
   def authorize_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do

@@ -74,8 +74,8 @@ defmodule Pleroma.UserTest do
     CommonAPI.follow(follower, unlocked)
     CommonAPI.follow(follower, locked)
 
-    assert {:ok, []} = User.get_follow_requests(unlocked)
-    assert {:ok, [activity]} = User.get_follow_requests(locked)
+    assert [] = User.get_follow_requests(unlocked)
+    assert [activity] = User.get_follow_requests(locked)
 
     assert activity
   end
@@ -90,7 +90,7 @@ defmodule Pleroma.UserTest do
     CommonAPI.follow(accepted_follower, locked)
     User.follow(accepted_follower, locked)
 
-    assert {:ok, [activity]} = User.get_follow_requests(locked)
+    assert [activity] = User.get_follow_requests(locked)
     assert activity
   end
 
@@ -99,10 +99,10 @@ defmodule Pleroma.UserTest do
     follower = insert(:user)
 
     CommonAPI.follow(follower, followed)
-    assert {:ok, [_activity]} = User.get_follow_requests(followed)
+    assert [_activity] = User.get_follow_requests(followed)
 
     {:ok, _follower} = User.block(followed, follower)
-    assert {:ok, []} = User.get_follow_requests(followed)
+    assert [] = User.get_follow_requests(followed)
   end
 
   test "follow_all follows mutliple users" do
@@ -560,7 +560,7 @@ defmodule Pleroma.UserTest do
 
     test "it enforces the fqn format for nicknames" do
       cs = User.remote_user_creation(%{@valid_remote | nickname: "bla"})
-      assert cs.changes.local == false
+      assert Ecto.Changeset.get_field(cs, :local) == false
       assert cs.changes.avatar
       refute cs.valid?
     end
@@ -584,7 +584,7 @@ defmodule Pleroma.UserTest do
       {:ok, follower_one} = User.follow(follower_one, user)
       {:ok, follower_two} = User.follow(follower_two, user)
 
-      {:ok, res} = User.get_followers(user)
+      res = User.get_followers(user)
 
       assert Enum.member?(res, follower_one)
       assert Enum.member?(res, follower_two)
@@ -600,7 +600,7 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.follow(user, followed_one)
       {:ok, user} = User.follow(user, followed_two)
 
-      {:ok, res} = User.get_friends(user)
+      res = User.get_friends(user)
 
       followed_one = User.get_cached_by_ap_id(followed_one.ap_id)
       followed_two = User.get_cached_by_ap_id(followed_two.ap_id)
@@ -975,7 +975,7 @@ defmodule Pleroma.UserTest do
       info = User.get_cached_user_info(user2)
 
       assert info.follower_count == 0
-      assert {:ok, []} = User.get_followers(user2)
+      assert [] = User.get_followers(user2)
     end
 
     test "hide a user from friends" do
@@ -991,7 +991,7 @@ defmodule Pleroma.UserTest do
 
       assert info.following_count == 0
       assert User.following_count(user2) == 0
-      assert {:ok, []} = User.get_friends(user2)
+      assert [] = User.get_friends(user2)
     end
 
     test "hide a user's statuses from timelines and notifications" do
@@ -1034,7 +1034,7 @@ defmodule Pleroma.UserTest do
     test ".delete_user_activities deletes all create activities", %{user: user} do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
 
-      {:ok, _} = User.delete_user_activities(user)
+      User.delete_user_activities(user)
 
       # TODO: Remove favorites, repeats, delete activities.
       refute Activity.get_by_id(activity.id)

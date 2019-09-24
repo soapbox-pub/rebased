@@ -228,9 +228,9 @@ defmodule Mix.Tasks.Pleroma.User do
       shell_info("Deactivating #{user.nickname}")
       User.deactivate(user)
 
-      {:ok, friends} = User.get_friends(user)
-
-      Enum.each(friends, fn friend ->
+      user
+      |> User.get_friends()
+      |> Enum.each(fn friend ->
         user = User.get_cached_by_id(user.id)
 
         shell_info("Unsubscribing #{friend.nickname} from #{user.nickname}")
@@ -405,7 +405,7 @@ defmodule Mix.Tasks.Pleroma.User do
     start_pleroma()
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      {:ok, _} = User.delete_user_activities(user)
+      User.delete_user_activities(user)
       shell_info("User #{nickname} statuses deleted.")
     else
       _ ->
