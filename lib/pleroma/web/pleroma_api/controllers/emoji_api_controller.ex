@@ -11,6 +11,27 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
   end
 
   @doc """
+  Lists packs from the remote instance.
+
+  Since JS cannot ask remote instances for their packs due to CPS, it has to
+  be done by the server
+  """
+  def list_from(conn, %{"instance_address" => address}) do
+    address = String.trim(address)
+
+    if shareable_packs_available(address) do
+      list_resp =
+        "#{address}/api/pleroma/emoji/packs" |> Tesla.get!() |> Map.get(:body) |> Jason.decode!()
+
+      json(conn, list_resp)
+    else
+      conn
+      |> put_status(:internal_server_error)
+      |> json(%{error: "The requested instance does not support sharing emoji packs"})
+    end
+  end
+
+  @doc """
   Lists the packs available on the instance as JSON.
 
   The information is public and does not require authentification. The format is
@@ -156,6 +177,21 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     end
   end
 
+  defp shareable_packs_available(address) do
+    "#{address}/.well-known/nodeinfo"
+    |> Tesla.get!()
+    |> Map.get(:body)
+    |> Jason.decode!()
+    |> List.last()
+    |> Map.get("href")
+    # Get the actual nodeinfo address and fetch it
+    |> Tesla.get!()
+    |> Map.get(:body)
+    |> Jason.decode!()
+    |> get_in(["metadata", "features"])
+    |> Enum.member?("shareable_emoji_packs")
+  end
+
   @doc """
   An admin endpoint to request downloading a pack named `pack_name` from the instance
   `instance_address`.
@@ -164,21 +200,9 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   from that instance, otherwise it will be downloaded from the fallback source, if there is one.
   """
   def download_from(conn, %{"instance_address" => address, "pack_name" => name} = data) do
-    shareable_packs_available =
-      "#{address}/.well-known/nodeinfo"
-      |> Tesla.get!()
-      |> Map.get(:body)
-      |> Jason.decode!()
-      |> List.last()
-      |> Map.get("href")
-      # Get the actual nodeinfo address and fetch it
-      |> Tesla.get!()
-      |> Map.get(:body)
-      |> Jason.decode!()
-      |> get_in(["metadata", "features"])
-      |> Enum.member?("shareable_emoji_packs")
+    address = String.trim(address)
 
-    if shareable_packs_available do
+    if shareable_packs_available(address) do
       full_pack =
         "#{address}/api/pleroma/emoji/packs/list"
         |> Tesla.get!()
