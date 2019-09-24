@@ -17,7 +17,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
   a map of "pack directory name" to pack.json contents.
   """
   def list_packs(conn, _params) do
-    with {:ok, results} <- File.ls(@emoji_dir_path) do
+    # Create the directory first if it does not exist. This is probably the first request made
+    # with the API so it should be sufficient
+    with {:create_dir, :ok} <- {:create_dir, File.mkdir_p(@emoji_dir_path)},
+         {:ls, {:ok, results}} <- {:ls, File.ls(@emoji_dir_path)} do
       pack_infos =
         results
         |> Enum.filter(&has_pack_json?/1)
@@ -28,6 +31,19 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
         |> Enum.into(%{})
 
       json(conn, pack_infos)
+    else
+      {:create_dir, {:error, e}} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: "Failed to create the emoji pack directory at #{@emoji_dir_path}: #{e}"})
+
+      {:ls, {:error, e}} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{
+          error:
+            "Failed to get the contents of the emoji pack directory at #{@emoji_dir_path}: #{e}"
+        })
     end
   end
 
