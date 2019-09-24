@@ -1008,7 +1008,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       conn =
         conn
         |> assign(:user, user)
-        |> post("/api/ap/uploadMedia", %{"file" => image, "description" => desc})
+        |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
 
       assert object = json_response(conn, :created)
       assert object["name"] == desc

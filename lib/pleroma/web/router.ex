@@ -572,7 +572,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
       post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
-      post("/api/ap/uploadMedia", ActivityPubController, :upload_media)
+      post("/api/ap/upload_media", ActivityPubController, :upload_media)
     end
 
     scope [] do
