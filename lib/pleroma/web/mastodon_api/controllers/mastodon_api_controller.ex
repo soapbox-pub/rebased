@@ -16,7 +16,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Filter
   alias Pleroma.Formatter
   alias Pleroma.HTTP
-  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Pagination
   alias Pleroma.Plugs.RateLimiter
@@ -35,7 +34,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.MastodonAPI.MastodonView
-  alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.ReportView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
   alias Pleroma.Web.MastodonAPI.StatusView
@@ -720,49 +718,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user, as: :activity})
     end
-  end
-
-  def notifications(%{assigns: %{user: user}} = conn, params) do
-    notifications = MastodonAPI.get_notifications(user, params)
-
-    conn
-    |> add_link_headers(notifications)
-    |> put_view(NotificationView)
-    |> render("index.json", %{notifications: notifications, for: user})
-  end
-
-  def get_notification(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
-    with {:ok, notification} <- Notification.get(user, id) do
-      conn
-      |> put_view(NotificationView)
-      |> render("show.json", %{notification: notification, for: user})
-    else
-      {:error, reason} ->
-        conn
-        |> put_status(:forbidden)
-        |> json(%{"error" => reason})
-    end
-  end
-
-  def clear_notifications(%{assigns: %{user: user}} = conn, _params) do
-    Notification.clear(user)
-    json(conn, %{})
-  end
-
-  def dismiss_notification(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
-    with {:ok, _notif} <- Notification.dismiss(user, id) do
-      json(conn, %{})
-    else
-      {:error, reason} ->
-        conn
-        |> put_status(:forbidden)
-        |> json(%{"error" => reason})
-    end
-  end
-
-  def destroy_multiple(%{assigns: %{user: user}} = conn, %{"ids" => ids} = _params) do
-    Notification.destroy_multiple(user, ids)
-    json(conn, %{})
   end
 
   def relationships(%{assigns: %{user: user}} = conn, %{"id" => id}) do
