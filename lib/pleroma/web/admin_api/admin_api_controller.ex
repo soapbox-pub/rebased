@@ -463,13 +463,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def list_reports(conn, params) do
+    {page, page_size} = page_params(params)
+
     params =
       params
       |> Map.put("type", "Flag")
       |> Map.put("skip_preload", true)
       |> Map.put("total", true)
+      |> Map.put("limit", page_size)
+      |> Map.put("offset", (page - 1) * page_size)
 
-    reports = ActivityPub.fetch_activities([], params)
+    reports = ActivityPub.fetch_activities([], params, :offset)
 
     conn
     |> put_view(ReportView)
