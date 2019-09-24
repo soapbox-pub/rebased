@@ -302,12 +302,11 @@ defmodule Pleroma.Web.CommonAPI do
 
   # Updates the emojis for a user based on their profile
   def update(user) do
+    emoji = emoji_from_profile(user)
+    source_data = user.info |> Map.get(:source_data, {}) |> Map.put("tag", emoji)
+
     user =
-      with emoji <- emoji_from_profile(user),
-           source_data <- (user.info.source_data || %{}) |> Map.put("tag", emoji),
-           info_cng <- User.Info.set_source_data(user.info, source_data),
-           change <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
-           {:ok, user} <- User.update_and_set_cache(change) do
+      with {:ok, user} <- User.update_info(user, &User.Info.set_source_data(&1, source_data)) do
         user
       else
         _e ->
@@ -336,10 +335,7 @@ defmodule Pleroma.Web.CommonAPI do
            }
          } = activity <- get_by_id_or_ap_id(id_or_ap_id),
          true <- Visibility.is_public?(activity),
-         %{valid?: true} = info_changeset <- User.Info.add_pinnned_activity(user.info, activity),
-         changeset <-
-           Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
-         {:ok, _user} <- User.update_and_set_cache(changeset) do
+         {:ok, _user} <- User.update_info(user, &User.Info.add_pinnned_activity(&1, activity)) do
       {:ok, activity}
     else
       %{errors: [pinned_activities: {err, _}]} ->
@@ -352,11 +348,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unpin(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         %{valid?: true} = info_changeset <-
-           User.Info.remove_pinnned_activity(user.info, activity),
-         changeset <-
-           Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
-         {:ok, _user} <- User.update_and_set_cache(changeset) do
+         {:ok, _user} <- User.update_info(user, &User.Info.remove_pinnned_activity(&1, activity)) do
       {:ok, activity}
     else
       %{errors: [pinned_activities: {err, _}]} ->
@@ -462,9 +454,7 @@ defmodule Pleroma.Web.CommonAPI do
     ap_id = muted.ap_id
 
     if ap_id not in user.info.muted_reblogs do
-      info_changeset = User.Info.add_reblog_mute(user.info, ap_id)
-      changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
-      User.update_and_set_cache(changeset)
+      User.update_info(user, &User.Info.add_reblog_mute(&1, ap_id))
     end
   end
 
@@ -472,9 +462,7 @@ defmodule Pleroma.Web.CommonAPI do
     ap_id = muted.ap_id
 
     if ap_id in user.info.muted_reblogs do
-      info_changeset = User.Info.remove_reblog_mute(user.info, ap_id)
-      changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
-      User.update_and_set_cache(changeset)
+      User.update_info(user, &User.Info.remove_reblog_mute(&1, ap_id))
     end
   end
 end

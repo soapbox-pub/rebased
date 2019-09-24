@@ -2613,14 +2613,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     {:ok, _} = CommonAPI.post(user, %{"status" => "cofe"})
 
     # Stats should count users with missing or nil `info.deactivated` value
-    user = User.get_cached_by_id(user.id)
-    info_change = Changeset.change(user.info, %{deactivated: nil})
 
     {:ok, _user} =
-      user
-      |> Changeset.change()
-      |> Changeset.put_embed(:info, info_change)
-      |> User.update_and_set_cache()
+      user.id
+      |> User.get_cached_by_id()
+      |> User.update_info(&Changeset.change(&1, %{deactivated: nil}))
 
     Pleroma.Stats.force_update()
 
@@ -3953,13 +3950,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   describe "POST /api/v1/pleroma/accounts/confirmation_resend" do
     setup do
-      user = insert(:user)
-      info_change = User.Info.confirmation_changeset(user.info, need_confirmation: true)
-
       {:ok, user} =
-        user
-        |> Changeset.change()
-        |> Changeset.put_embed(:info, info_change)
+        insert(:user)
+        |> User.change_info(&User.Info.confirmation_changeset(&1, need_confirmation: true))
         |> Repo.update()
 
       assert user.info.confirmation_pending

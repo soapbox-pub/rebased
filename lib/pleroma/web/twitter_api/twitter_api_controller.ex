@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
 
-  alias Ecto.Changeset
   alias Pleroma.Notification
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
@@ -16,15 +15,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   action_fallback(:errors)
 
   def confirm_email(conn, %{"user_id" => uid, "token" => token}) do
-    with %User{} = user <- User.get_cached_by_id(uid),
          true <- user.local,
          true <- user.info.confirmation_pending,
          true <- user.info.confirmation_token == token,
-         info_change <- User.Info.confirmation_changeset(user.info, need_confirmation: false),
-         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_change),
-         {:ok, _} <- User.update_and_set_cache(changeset) do
       conn
       |> redirect(to: "/")
+    with %User{info: info} = user <- User.get_cached_by_id(uid),
+         {:ok, _} <-
+           User.update_info(user, &User.Info.confirmation_changeset(&1, need_confirmation: false)) do
     end
   end
 

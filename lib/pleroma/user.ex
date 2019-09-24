@@ -197,8 +197,6 @@ defmodule Pleroma.User do
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
 
-    info_cng = User.Info.remote_user_creation(%User.Info{}, params[:info])
-
     changes =
       %User{}
       |> cast(params, [:bio, :name, :ap_id, :nickname, :avatar])
@@ -208,7 +206,7 @@ defmodule Pleroma.User do
       |> validate_length(:bio, max: bio_limit)
       |> validate_length(:name, max: name_limit)
       |> put_change(:local, false)
-      |> put_embed(:info, info_cng)
+      |> change_info(&User.Info.remote_user_creation(&1, params[:info]))
 
     if changes.valid? do
       case info_cng.changes[:source_data] do
@@ -245,7 +243,6 @@ defmodule Pleroma.User do
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
     params = Map.put(params, :last_refreshed_at, NaiveDateTime.utc_now())
-    info_cng = User.Info.user_upgrade(struct.info, params[:info], remote?)
 
     struct
     |> cast(params, [
@@ -260,7 +257,7 @@ defmodule Pleroma.User do
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, max: name_limit)
-    |> put_embed(:info, info_cng)
+    |> change_info(&User.Info.user_upgrade(&1, params[:info], remote?))
   end
 
   def password_update_changeset(struct, params) do
@@ -785,21 +782,15 @@ defmodule Pleroma.User do
   end
 
   def update_note_count(%User{} = user) do
-    note_count_query =
+    note_count =
       from(
         a in Object,
         where: fragment("?->>'actor' = ? and ?->>'type' = 'Note'", a.data, ^user.ap_id, a.data),
         select: count(a.id)
       )
+      |> Repo.one()
 
-    note_count = Repo.one(note_count_query)
-
-    info_cng = User.Info.set_note_count(user.info, note_count)
-
-    user
-    |> change()
-    |> put_embed(:info, info_cng)
-    |> update_and_set_cache()
+    update_info(user, &User.Info.set_note_count(&1, note_count))
   end
 
   @spec maybe_fetch_follow_information(User.t()) :: User.t()
@@ -816,17 +807,7 @@ defmodule Pleroma.User do
 
   def fetch_follow_information(user) do
     with {:ok, info} <- ActivityPub.fetch_follow_information_for_user(user) do
-      info_cng = User.Info.follow_information_update(user.info, info)
-
-      changeset =
-        user
-        |> change()
-        |> put_embed(:info, info_cng)
-
-      update_and_set_cache(changeset)
-    else
-      {:error, _} = e -> e
-      e -> {:error, e}
+      update_info(user, &User.Info.follow_information_update(&1, info))
     end
   end
 
@@ -900,31 +881,11 @@ defmodule Pleroma.User do
 
   @spec mute(User.t(), User.t(), boolean()) :: {:ok, User.t()} | {:error, String.t()}
   def mute(muter, %User{ap_id: ap_id}, notifications? \\ true) do
-    info = muter.info
-
-    info_cng =
-      User.Info.add_to_mutes(info, ap_id)
-      |> User.Info.add_to_muted_notifications(info, ap_id, notifications?)
-
-    cng =
-      change(muter)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    update_info(muter, &User.Info.add_to_mutes(&1, ap_id, notifications?))
   end
 
   def unmute(muter, %{ap_id: ap_id}) do
-    info = muter.info
-
-    info_cng =
-      User.Info.remove_from_mutes(info, ap_id)
-      |> User.Info.remove_from_muted_notifications(info, ap_id)
-
-    cng =
-      change(muter)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    update_info(muter, &User.Info.remove_from_mutes(&1, ap_id))
   end
 
   def subscribe(subscriber, %{ap_id: ap_id}) do
@@ -936,26 +897,14 @@ defmodule Pleroma.User do
       if blocked do
         {:error, "Could not subscribe: #{subscribed.nickname} is blocking you"}
       else
-        info_cng =
-          subscribed.info
-          |> User.Info.add_to_subscribers(subscriber.ap_id)
-
-        change(subscribed)
-        |> put_embed(:info, info_cng)
-        |> update_and_set_cache()
+        update_info(subscribed, &User.Info.add_to_subscribers(&1, subscriber.ap_id))
       end
     end
   end
 
   def unsubscribe(unsubscriber, %{ap_id: ap_id}) do
     with %User{} = user <- get_cached_by_ap_id(ap_id) do
-      info_cng =
-        user.info
-        |> User.Info.remove_from_subscribers(unsubscriber.ap_id)
-
-      change(user)
-      |> put_embed(:info, info_cng)
-      |> update_and_set_cache()
+      update_info(user, &User.Info.remove_from_subscribers(&1, unsubscriber.ap_id))
     end
   end
 
@@ -990,15 +939,7 @@ defmodule Pleroma.User do
 
     {:ok, blocker} = update_follower_count(blocker)
 
-    info_cng =
-      blocker.info
-      |> User.Info.add_to_block(ap_id)
-
-    cng =
-      change(blocker)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    update_info(blocker, &User.Info.add_to_block(&1, ap_id))
   end
 
   # helper to handle the block given only an actor's AP id
@@ -1007,15 +948,7 @@ defmodule Pleroma.User do
   end
 
   def unblock(blocker, %{ap_id: ap_id}) do
-    info_cng =
-      blocker.info
-      |> User.Info.remove_from_block(ap_id)
-
-    cng =
-      change(blocker)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    update_info(blocker, &User.Info.remove_from_block(&1, ap_id))
   end
 
   def mutes?(nil, _), do: false
@@ -1072,27 +1005,11 @@ defmodule Pleroma.User do
   end
 
   def block_domain(user, domain) do
-    info_cng =
-      user.info
-      |> User.Info.add_to_domain_block(domain)
-
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    update_info(user, &User.Info.add_to_domain_block(&1, domain))
   end
 
   def unblock_domain(user, domain) do
-    info_cng =
-      user.info
-      |> User.Info.remove_from_domain_block(domain)
-
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    update_info(user, &User.Info.remove_from_domain_block(&1, domain))
   end
 
   def deactivate_async(user, status \\ true) do
@@ -1100,13 +1017,7 @@ defmodule Pleroma.User do
   end
 
   def deactivate(%User{} = user, status \\ true) do
-    info_cng = User.Info.set_activation_status(user.info, status)
-
-    with {:ok, user} <-
-           user
-           |> change()
-           |> put_embed(:info, info_cng)
-           |> update_and_set_cache() do
+    with {:ok, user} <- update_info(user, &User.Info.set_activation_status(&1, status)) do
       Enum.each(get_followers(user), &invalidate_cache/1)
       Enum.each(get_friends(user), &update_follower_count/1)
 
@@ -1115,11 +1026,7 @@ defmodule Pleroma.User do
   end
 
   def update_notification_settings(%User{} = user, settings \\ %{}) do
-    info_changeset = User.Info.update_notification_settings(user.info, settings)
-
-    change(user)
-    |> put_embed(:info, info_changeset)
-    |> update_and_set_cache()
+    update_info(user, &User.Info.update_notification_settings(&1, settings))
   end
 
   def delete(%User{} = user) do
@@ -1560,11 +1467,7 @@ defmodule Pleroma.User do
   @spec switch_email_notifications(t(), String.t(), boolean()) ::
           {:ok, t()} | {:error, Ecto.Changeset.t()}
   def switch_email_notifications(user, type, status) do
-    info = Pleroma.User.Info.update_email_notifications(user.info, %{type => status})
-
-    change(user)
-    |> put_embed(:info, info)
-    |> update_and_set_cache()
+    update_info(user, &User.Info.update_email_notifications(&1, %{type => status}))
   end
 
   @doc """
@@ -1586,13 +1489,8 @@ defmodule Pleroma.User do
   def toggle_confirmation(%User{} = user) do
     need_confirmation? = !user.info.confirmation_pending
 
-    info_changeset =
-      User.Info.confirmation_changeset(user.info, need_confirmation: need_confirmation?)
-
     user
-    |> change()
-    |> put_embed(:info, info_changeset)
-    |> update_and_set_cache()
+    |> update_info(&User.Info.confirmation_changeset(&1, need_confirmation: need_confirmation?))
   end
 
   def get_mascot(%{info: %{mascot: %{} = mascot}}) when not is_nil(mascot) do
@@ -1615,16 +1513,11 @@ defmodule Pleroma.User do
     }
   end
 
-  def ensure_keys_present(%User{info: info} = user) do
-    if info.keys do
-      {:ok, user}
-    else
-      {:ok, pem} = Keys.generate_rsa_pem()
+  def ensure_keys_present(%{info: %{keys: keys}} = user) when not is_nil(keys), do: {:ok, user}
 
-      user
-      |> Ecto.Changeset.change()
-      |> Ecto.Changeset.put_embed(:info, User.Info.set_keys(info, pem))
-      |> update_and_set_cache()
+  def ensure_keys_present(%User{} = user) do
+    with {:ok, pem} <- Keys.generate_rsa_pem() do
+      update_info(user, &User.Info.set_keys(&1, pem))
     end
   end
 
@@ -1668,6 +1561,28 @@ defmodule Pleroma.User do
     |> validate_required([:email])
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
+    |> update_and_set_cache()
+  end
+
+  @doc """
+  Changes `user.info` and returns the user changeset.
+
+  `fun` is called with the `user.info`.
+  """
+  def change_info(user, fun) do
+    changeset = change(user)
+    info = get_field(changeset, :info) || %User.Info{}
+    put_embed(changeset, :info, fun.(info))
+  end
+
+  @doc """
+  Updates `user.info` and sets cache.
+
+  `fun` is called with the `user.info`.
+  """
+  def update_info(user, fun) do
+    user
+    |> change_info(fun)
     |> update_and_set_cache()
   end
 end

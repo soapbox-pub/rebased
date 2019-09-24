@@ -4,7 +4,6 @@
 
 defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
-  import Ecto.Changeset
   import Mix.Pleroma
   alias Pleroma.User
   alias Pleroma.UserInviteToken
@@ -443,39 +442,21 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   defp set_moderator(user, value) do
-    info_cng = User.Info.admin_api_update(user.info, %{is_moderator: value})
-
-    user_cng =
-      Ecto.Changeset.change(user)
-      |> put_embed(:info, info_cng)
-
-    {:ok, user} = User.update_and_set_cache(user_cng)
+    {:ok, user} = User.update_info(user, &User.Info.admin_api_update(&1, %{is_moderator: value}))
 
     shell_info("Moderator status of #{user.nickname}: #{user.info.is_moderator}")
     user
   end
 
   defp set_admin(user, value) do
-    info_cng = User.Info.admin_api_update(user.info, %{is_admin: value})
-
-    user_cng =
-      Ecto.Changeset.change(user)
-      |> put_embed(:info, info_cng)
-
-    {:ok, user} = User.update_and_set_cache(user_cng)
+    {:ok, user} = User.update_info(user, &User.Info.admin_api_update(&1, %{is_admin: value}))
 
     shell_info("Admin status of #{user.nickname}: #{user.info.is_admin}")
     user
   end
 
   defp set_locked(user, value) do
-    info_cng = User.Info.user_upgrade(user.info, %{locked: value})
-
-    user_cng =
-      Ecto.Changeset.change(user)
-      |> put_embed(:info, info_cng)
-
-    {:ok, user} = User.update_and_set_cache(user_cng)
+    {:ok, user} = User.update_info(user, &User.Info.user_upgrade(&1, %{locked: value}))
 
     shell_info("Locked status of #{user.nickname}: #{user.info.locked}")
     user

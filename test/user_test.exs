@@ -1707,4 +1707,22 @@ defmodule Pleroma.UserTest do
       assert password_reset_pending
     end
   end
+
+  test "change_info/2" do
+    user = insert(:user)
+    assert user.info.hide_follows == false
+
+    changeset = User.change_info(user, &User.Info.profile_update(&1, %{hide_follows: true}))
+    assert changeset.changes.info.changes.hide_follows == true
+  end
+
+  test "update_info/2" do
+    user = insert(:user)
+    assert user.info.hide_follows == false
+
+    assert {:ok, _} = User.update_info(user, &User.Info.profile_update(&1, %{hide_follows: true}))
+
+    assert %{info: %{hide_follows: true}} = Repo.get(User, user.id)
+    assert {:ok, %{info: %{hide_follows: true}}} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
+  end
 end
