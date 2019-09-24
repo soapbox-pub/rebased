@@ -231,7 +231,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     no_attachment_links =
       data
       |> Map.get("no_attachment_links", Config.get([:instance, :no_attachment_links]))
-      |> Kernel.in([true, "true"])
+      |> truthy_param?()
 
     content_type = get_content_type(data["content_type"])
 
@@ -431,12 +431,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def emoji_from_profile(%{info: _info} = user) do
-    (Emoji.Formatter.get_emoji(user.bio) ++ Emoji.Formatter.get_emoji(user.name))
-    |> Enum.map(fn {shortcode, %Emoji{file: url}} ->
+  def emoji_from_profile(%User{bio: bio, name: name}) do
+    [bio, name]
+    |> Enum.map(&Emoji.Formatter.get_emoji/1)
+    |> Enum.concat()
+    |> Enum.map(fn {shortcode, %Emoji{file: path}} ->
       %{
         "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{url}"},
+        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{path}"},
         "name" => ":#{shortcode}:"
       }
     end)
