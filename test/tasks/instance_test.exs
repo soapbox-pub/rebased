@@ -10,7 +10,7 @@ defmodule Pleroma.InstanceTest do
 
     on_exit(fn ->
       File.rm_rf(tmp_path())
-      static_dir = Pleroma.Config.get([:instance, :static_dir], "instance/static/")
+      static_dir = Pleroma.Config.get([:instance, :static_dir], "test/instance_static/")
 
       if File.exists?(static_dir) do
         File.rm_rf(Path.join(static_dir, "robots.txt"))
