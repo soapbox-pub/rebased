@@ -239,11 +239,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def emoji(conn, _params) do
     emoji =
-      Emoji.get_all()
-      |> Enum.map(fn {short_code, path, tags} ->
-        {short_code, %{image_url: path, tags: tags}}
+      Enum.reduce(Emoji.get_all(), %{}, fn {code, %Emoji{file: file, tags: tags}}, acc ->
+        Map.put(acc, code, %{image_url: file, tags: tags})
       end)
-      |> Enum.into(%{})
 
     json(conn, emoji)
   end

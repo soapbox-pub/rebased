@@ -9,6 +9,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Emoji
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.Plugs.AuthenticationPlug
@@ -184,7 +185,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
              "name" => option,
              "type" => "Note",
              "replies" => %{"type" => "Collection", "totalItems" => 0}
-           }, Map.merge(emoji, Formatter.get_emoji_map(option))}
+           }, Map.merge(emoji, Emoji.Formatter.get_emoji_map(option))}
         end)
 
       case expires_in do
@@ -434,8 +435,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def emoji_from_profile(%{info: _info} = user) do
-    (Formatter.get_emoji(user.bio) ++ Formatter.get_emoji(user.name))
-    |> Enum.map(fn {shortcode, url, _} ->
+    (Emoji.Formatter.get_emoji(user.bio) ++ Emoji.Formatter.get_emoji(user.name))
+    |> Enum.map(fn {shortcode, %Emoji{file: url}} ->
       %{
         "type" => "Emoji",
         "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{url}"},

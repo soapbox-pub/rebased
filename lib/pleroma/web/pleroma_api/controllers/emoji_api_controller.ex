@@ -569,7 +569,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       # If there's no emoji.txt, assume all files
       # that are of certain extensions from the config are emojis and import them all
       pack_extensions = Pleroma.Config.get!([:emoji, :pack_extensions])
-      Pleroma.Emoji.make_shortcode_to_file_map(dir_path, pack_extensions)
+      Pleroma.Emoji.Loader.make_shortcode_to_file_map(dir_path, pack_extensions)
     end
   end
 end

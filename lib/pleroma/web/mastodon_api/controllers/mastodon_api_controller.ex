@@ -13,8 +13,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Bookmark
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Emoji
   alias Pleroma.Filter
-  alias Pleroma.Formatter
   alias Pleroma.HTTP
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -140,7 +140,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     user_info_emojis =
       user.info
       |> Map.get(:emoji, [])
-      |> Enum.concat(Formatter.get_emoji_map(emojis_text))
+      |> Enum.concat(Emoji.Formatter.get_emoji_map(emojis_text))
       |> Enum.dedup()
 
     info_params =
@@ -333,7 +333,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   defp mastodonized_emoji do
     Pleroma.Emoji.get_all()
-    |> Enum.map(fn {shortcode, relative_url, tags} ->
+    |> Enum.map(fn {shortcode, %Pleroma.Emoji{file: relative_url, tags: tags}} ->
       url = to_string(URI.merge(Web.base_url(), relative_url))
 
       %{
