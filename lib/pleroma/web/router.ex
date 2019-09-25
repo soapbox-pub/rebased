@@ -222,6 +222,7 @@ defmodule Pleroma.Web.Router do
       put("/:name", EmojiAPIController, :create)
       delete("/:name", EmojiAPIController, :delete)
       post("/download_from", EmojiAPIController, :download_from)
+      post("/list_from", EmojiAPIController, :list_from)
     end
 
     scope "/packs" do
