@@ -348,23 +348,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         %{"nickname" => nickname, "page" => page?} = params
       )
       when page? in [true, "true"] do
-    with activities <-
-           (if params["max_id"] do
-              ActivityPub.fetch_activities([user.ap_id | user.following], %{
-                "max_id" => params["max_id"],
-                "limit" => 10
-              })
-            else
-              ActivityPub.fetch_activities([user.ap_id | user.following], %{"limit" => 10})
-            end) do
-      conn
-      |> put_resp_content_type("application/activity+json")
-      |> put_view(UserView)
-      |> render("activity_collection_page.json", %{
-        activities: activities,
-        iri: "#{user.ap_id}/inbox"
-      })
-    end
+    activities =
+      if params["max_id"] do
+        ActivityPub.fetch_activities([user.ap_id | user.following], %{
+          "max_id" => params["max_id"],
+          "limit" => 10
+        })
+      else
+        ActivityPub.fetch_activities([user.ap_id | user.following], %{"limit" => 10})
+      end
+
+    conn
+    |> put_resp_content_type("application/activity+json")
+    |> put_view(UserView)
+    |> render("activity_collection_page.json", %{
+      activities: activities,
+      iri: "#{user.ap_id}/inbox"
+    })
   end
 
   def read_inbox(%{assigns: %{user: %{nickname: nickname} = user}} = conn, %{
