@@ -205,8 +205,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         if params["max_id"] do
           ActivityPub.fetch_user_activities(user, nil, %{
             "max_id" => params["max_id"],
-            # This is a hack because postgres generates inefficient queries when filtering by 'Answer',
-            # poll votes will be hidden by the visibility filter in this case anyway
+            # This is a hack because postgres generates inefficient queries when filtering by
+            # 'Answer', poll votes will be hidden by the visibility filter in this case anyway
             "include_poll_votes" => true,
             "limit" => 10
           })
