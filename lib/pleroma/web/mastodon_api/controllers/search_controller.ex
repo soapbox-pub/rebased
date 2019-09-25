@@ -19,9 +19,10 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = User.search(query, search_options(params, user))
-    res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
 
-    json(conn, res)
+    conn
+    |> put_view(AccountView)
+    |> render("accounts.json", users: accounts, for: user, as: :user)
   end
 
   def search2(conn, params), do: do_search(:v2, conn, params)

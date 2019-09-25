@@ -34,9 +34,9 @@ defmodule Pleroma.Formatter do
         nickname_text = get_nickname_text(nickname, opts)
 
         link =
-          "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>@<span>#{
+          ~s(<span class="h-card"><a data-user="#{id}" class="u-url mention" href="#{ap_id}" rel="ugc">@<span>#{
             nickname_text
-          }</span></a></span>"
+          }</span></a></span>)
 
         {link, %{acc | mentions: MapSet.put(acc.mentions, {"@" <> nickname, user})}}
 
@@ -48,7 +48,7 @@ defmodule Pleroma.Formatter do
   def hashtag_handler("#" <> tag = tag_text, _buffer, _opts, acc) do
     tag = String.downcase(tag)
     url = "#{Pleroma.Web.base_url()}/tag/#{tag}"
-    link = "<a class='hashtag' data-tag='#{tag}' href='#{url}' rel='tag'>#{tag_text}</a>"
+    link = ~s(<a class="hashtag" data-tag="#{tag}" href="#{url}" rel="tag ugc">#{tag_text}</a>)
 
     {link, %{acc | tags: MapSet.put(acc.tags, {tag_text, tag})}}
   end

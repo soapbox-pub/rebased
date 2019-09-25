@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.OAuthControllerTest do
@@ -828,6 +828,33 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       assert resp = json_response(conn, 403)
       assert %{"error" => _} = resp
+      refute Map.has_key?(resp, "access_token")
+    end
+
+    test "rejects token exchange for user with password_reset_pending set to true" do
+      password = "testpassword"
+
+      user =
+        insert(:user,
+          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          info: %{password_reset_pending: true}
+        )
+
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      conn =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "password",
+          "username" => user.nickname,
+          "password" => password,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+
+      assert resp = json_response(conn, 403)
+
+      assert resp["error"] == "Password reset is required"
       refute Map.has_key?(resp, "access_token")
     end
 

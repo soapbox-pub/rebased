@@ -14,6 +14,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.Config
   alias Pleroma.Web.AdminAPI.ConfigView
   alias Pleroma.Web.AdminAPI.ModerationLogView
+  alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.CommonAPI
@@ -139,7 +140,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def user_show(conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
       conn
-      |> json(AccountView.render("show.json", %{user: user}))
+      |> put_view(AccountView)
+      |> render("show.json", %{user: user})
     else
       _ -> {:error, :not_found}
     end
@@ -158,7 +160,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         })
 
       conn
-      |> json(StatusView.render("index.json", %{activities: activities, as: :activity}))
+      |> put_view(StatusView)
+      |> render("index.json", %{activities: activities, as: :activity})
     else
       _ -> {:error, :not_found}
     end
@@ -178,7 +181,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     })
 
     conn
-    |> json(AccountView.render("show.json", %{user: updated_user}))
+    |> put_view(AccountView)
+    |> render("show.json", %{user: updated_user})
   end
 
   def tag_users(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames, "tags" => tags}) do
@@ -400,13 +404,23 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  @doc "Get a account registeration invite token (base64 string)"
-  def get_invite_token(conn, params) do
-    options = params["invite"] || %{}
-    {:ok, invite} = UserInviteToken.create_invite(options)
+  @doc "Create an account registration invite token"
+  def create_invite_token(conn, params) do
+    opts = %{}
 
-    conn
-    |> json(invite.token)
+    opts =
+      if params["max_use"],
+        do: Map.put(opts, :max_use, params["max_use"]),
+        else: opts
+
+    opts =
+      if params["expires_at"],
+        do: Map.put(opts, :expires_at, params["expires_at"]),
+        else: opts
+
+    {:ok, invite} = UserInviteToken.create_invite(opts)
+
+    json(conn, AccountView.render("invite.json", %{invite: invite}))
   end
 
   @doc "Get list of created invites"
@@ -414,7 +428,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     invites = UserInviteToken.list_invites()
 
     conn
-    |> json(AccountView.render("invites.json", %{invites: invites}))
+    |> put_view(AccountView)
+    |> render("invites.json", %{invites: invites})
   end
 
   @doc "Revokes invite by token"
@@ -422,7 +437,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with {:ok, invite} <- UserInviteToken.find_by_token(token),
          {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true}) do
       conn
-      |> json(AccountView.render("invite.json", %{invite: updated_invite}))
+      |> put_view(AccountView)
+      |> render("invite.json", %{invite: updated_invite})
     else
       nil -> {:error, :not_found}
     end
@@ -437,16 +453,23 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(token.token)
   end
 
+  @doc "Force password reset for a given user"
+  def force_password_reset(conn, %{"nickname" => nickname}) do
+    (%User{local: true} = user) = User.get_cached_by_nickname(nickname)
+
+    User.force_password_reset_async(user)
+
+    json_response(conn, :no_content, "")
+  end
+
   def list_reports(conn, params) do
     params =
       params
       |> Map.put("type", "Flag")
       |> Map.put("skip_preload", true)
+      |> Map.put("total", true)
 
-    reports =
-      []
-      |> ActivityPub.fetch_activities(params)
-      |> Enum.reverse()
+    reports = ActivityPub.fetch_activities([], params)
 
     conn
     |> put_view(ReportView)
@@ -457,7 +480,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with %Activity{} = report <- Activity.get_by_id(id) do
       conn
       |> put_view(ReportView)
-      |> render("show.json", %{report: report})
+      |> render("show.json", Report.extract_report_info(report))
     else
       _ -> {:error, :not_found}
     end
@@ -473,7 +496,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       conn
       |> put_view(ReportView)
-      |> render("show.json", %{report: report})
+      |> render("show.json", Report.extract_report_info(report))
     end
   end
 
@@ -589,6 +612,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> put_view(ConfigView)
     |> render("index.json", %{configs: updated})
+  end
+
+  def reload_emoji(conn, _params) do
+    Pleroma.Emoji.reload()
+
+    conn |> json("ok")
   end
 
   def errors(conn, {:error, :not_found}) do

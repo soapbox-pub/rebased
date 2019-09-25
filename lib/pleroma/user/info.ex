@@ -20,6 +20,7 @@ defmodule Pleroma.User.Info do
     field(:following_count, :integer, default: nil)
     field(:locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
+    field(:password_reset_pending, :boolean, default: false)
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:blocks, {:array, :string}, default: [])
@@ -41,6 +42,8 @@ defmodule Pleroma.User.Info do
     field(:topic, :string, default: nil)
     field(:hub, :string, default: nil)
     field(:salmon, :string, default: nil)
+    field(:hide_followers_count, :boolean, default: false)
+    field(:hide_follows_count, :boolean, default: false)
     field(:hide_followers, :boolean, default: false)
     field(:hide_follows, :boolean, default: false)
     field(:hide_favorites, :boolean, default: true)
@@ -78,6 +81,14 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:deactivated])
     |> validate_required([:deactivated])
+  end
+
+  def set_password_reset_pending(info, pending) do
+    params = %{password_reset_pending: pending}
+
+    info
+    |> cast(params, [:password_reset_pending])
+    |> validate_required([:password_reset_pending])
   end
 
   def update_notification_settings(info, settings) do
@@ -242,6 +253,13 @@ defmodule Pleroma.User.Info do
   end
 
   def remote_user_creation(info, params) do
+    params =
+      if Map.has_key?(params, :fields) do
+        Map.put(params, :fields, Enum.map(params[:fields], &truncate_field/1))
+      else
+        params
+      end
+
     info
     |> cast(params, [
       :ap_enabled,
@@ -255,6 +273,8 @@ defmodule Pleroma.User.Info do
       :salmon,
       :hide_followers,
       :hide_follows,
+      :hide_followers_count,
+      :hide_follows_count,
       :follower_count,
       :fields,
       :following_count
@@ -274,7 +294,9 @@ defmodule Pleroma.User.Info do
       :following_count,
       :hide_follows,
       :fields,
-      :hide_followers
+      :hide_followers,
+      :hide_followers_count,
+      :hide_follows_count
     ])
     |> validate_fields(remote?)
   end
@@ -288,6 +310,8 @@ defmodule Pleroma.User.Info do
       :banner,
       :hide_follows,
       :hide_followers,
+      :hide_followers_count,
+      :hide_follows_count,
       :hide_favorites,
       :background,
       :show_role,
@@ -325,6 +349,16 @@ defmodule Pleroma.User.Info do
   end
 
   defp valid_field?(_), do: false
+
+  defp truncate_field(%{"name" => name, "value" => value}) do
+    {name, _chopped} =
+      String.split_at(name, Pleroma.Config.get([:instance, :account_field_name_length], 255))
+
+    {value, _chopped} =
+      String.split_at(value, Pleroma.Config.get([:instance, :account_field_value_length], 255))
+
+    %{"name" => name, "value" => value}
+  end
 
   @spec confirmation_changeset(Info.t(), keyword()) :: Changeset.t()
   def confirmation_changeset(info, opts) do
@@ -441,7 +475,9 @@ defmodule Pleroma.User.Info do
       :hide_followers,
       :hide_follows,
       :follower_count,
-      :following_count
+      :following_count,
+      :hide_followers_count,
+      :hide_follows_count
     ])
   end
 end

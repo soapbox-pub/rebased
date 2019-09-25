@@ -170,6 +170,15 @@ defmodule Pleroma.Web.Salmon do
     end
   end
 
+  def publish_one(%{recipient_id: recipient_id} = params) do
+    recipient = User.get_cached_by_id(recipient_id)
+
+    params
+    |> Map.delete(:recipient_id)
+    |> Map.put(:recipient, recipient)
+    |> publish_one()
+  end
+
   def publish_one(_), do: :noop
 
   @supported_activities [
@@ -218,7 +227,7 @@ defmodule Pleroma.Web.Salmon do
         Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
 
         Publisher.enqueue_one(__MODULE__, %{
-          recipient: remote_user,
+          recipient_id: remote_user.id,
           feed: feed,
           unreachable_since: reachable_urls_metadata[remote_user.info.salmon]
         })

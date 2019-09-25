@@ -31,34 +31,21 @@ defmodule Pleroma.Application do
     children =
       [
         Pleroma.Repo,
+        Pleroma.Scheduler,
         Pleroma.Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,
         Pleroma.FlakeId,
-        Pleroma.ScheduledActivityWorker,
-        Pleroma.ActivityExpirationWorker
+        Pleroma.Daemons.ScheduledActivityDaemon,
+        Pleroma.Daemons.ActivityExpirationDaemon
       ] ++
         cachex_children() ++
         hackney_pool_children() ++
         [
-          Pleroma.Web.Federator.RetryQueue,
           Pleroma.Stats,
-          %{
-            id: :web_push_init,
-            start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
-            restart: :temporary
-          },
-          %{
-            id: :federator_init,
-            start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
-            restart: :temporary
-          },
-          %{
-            id: :internal_fetch_init,
-            start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
-            restart: :temporary
-          }
+          {Oban, Pleroma.Config.get(Oban)}
         ] ++
+        task_children(@env) ++
         oauth_cleanup_child(oauth_cleanup_enabled?()) ++
         streamer_child(@env) ++
         chat_child(@env, chat_enabled?()) ++
@@ -70,9 +57,7 @@ defmodule Pleroma.Application do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
-    result = Supervisor.start_link(children, opts)
-    :ok = after_supervisor_start()
-    result
+    Supervisor.start_link(children, opts)
   end
 
   defp setup_instrumenters do
@@ -116,9 +101,14 @@ defmodule Pleroma.Application do
       build_cachex("object", default_ttl: 25_000, ttl_interval: 1000, limit: 2500),
       build_cachex("rich_media", default_ttl: :timer.minutes(120), limit: 5000),
       build_cachex("scrubber", limit: 2500),
-      build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500)
+      build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500),
+      build_cachex("web_resp", limit: 2500),
+      build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10)
     ]
   end
+
+  defp emoji_packs_expiration,
+    do: expiration(default: :timer.seconds(5 * 60), interval: :timer.seconds(60))
 
   defp idempotency_expiration,
     do: expiration(default: :timer.seconds(6 * 60 * 60), interval: :timer.seconds(60))
@@ -141,7 +131,7 @@ defmodule Pleroma.Application do
   defp streamer_child(:test), do: []
 
   defp streamer_child(_) do
-    [Pleroma.Web.Streamer]
+    [Pleroma.Web.Streamer.supervisor()]
   end
 
   defp oauth_cleanup_child(true),
@@ -164,16 +154,38 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp after_supervisor_start do
-    with digest_config <- Application.get_env(:pleroma, :email_notifications)[:digest],
-         true <- digest_config[:active] do
-      PleromaJobQueue.schedule(
-        digest_config[:schedule],
-        :digest_emails,
-        Pleroma.DigestEmailWorker
-      )
-    end
+  defp task_children(:test) do
+    [
+      %{
+        id: :web_push_init,
+        start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
+        restart: :temporary
+      },
+      %{
+        id: :federator_init,
+        start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
+        restart: :temporary
+      }
+    ]
+  end
 
-    :ok
+  defp task_children(_) do
+    [
+      %{
+        id: :web_push_init,
+        start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
+        restart: :temporary
+      },
+      %{
+        id: :federator_init,
+        start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
+        restart: :temporary
+      },
+      %{
+        id: :internal_fetch_init,
+        start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
+        restart: :temporary
+      }
+    ]
   end
 end

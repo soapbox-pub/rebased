@@ -10,16 +10,17 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Federator.Publisher
-  alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Websub
+  alias Pleroma.Workers.PublisherWorker
+  alias Pleroma.Workers.ReceiverWorker
+  alias Pleroma.Workers.SubscriberWorker
 
   require Logger
 
   def init do
-    # 1 minute
-    Process.sleep(1000 * 60)
-    refresh_subscriptions()
+    # To do: consider removing this call in favor of scheduled execution (`quantum`-based)
+    refresh_subscriptions(schedule_in: 60)
   end
 
   @doc "Addresses [memory leaks on recursive replies fetching](https://git.pleroma.social/pleroma/pleroma/issues/161)"
@@ -37,50 +38,38 @@ defmodule Pleroma.Web.Federator do
   # Client API
 
   def incoming_doc(doc) do
-    PleromaJobQueue.enqueue(:federator_incoming, __MODULE__, [:incoming_doc, doc])
+    ReceiverWorker.enqueue("incoming_doc", %{"body" => doc})
   end
 
   def incoming_ap_doc(params) do
-    PleromaJobQueue.enqueue(:federator_incoming, __MODULE__, [:incoming_ap_doc, params])
+    ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params})
   end
 
-  def publish(activity, priority \\ 1) do
-    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish, activity], priority)
+  def publish(%{id: "pleroma:fakeid"} = activity) do
+    perform(:publish, activity)
+  end
+
+  def publish(activity) do
+    PublisherWorker.enqueue("publish", %{"activity_id" => activity.id})
   end
 
   def verify_websub(websub) do
-    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:verify_websub, websub])
+    SubscriberWorker.enqueue("verify_websub", %{"websub_id" => websub.id})
   end
 
-  def request_subscription(sub) do
-    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:request_subscription, sub])
+  def request_subscription(websub) do
+    SubscriberWorker.enqueue("request_subscription", %{"websub_id" => websub.id})
   end
 
-  def refresh_subscriptions do
-    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:refresh_subscriptions])
+  def refresh_subscriptions(worker_args \\ []) do
+    SubscriberWorker.enqueue("refresh_subscriptions", %{}, worker_args ++ [max_attempts: 1])
   end
 
   # Job Worker Callbacks
 
-  def perform(:refresh_subscriptions) do
-    Logger.debug("Federator running refresh subscriptions")
-    Websub.refresh_subscriptions()
-
-    spawn(fn ->
-      # 6 hours
-      Process.sleep(1000 * 60 * 60 * 6)
-      refresh_subscriptions()
-    end)
-  end
-
-  def perform(:request_subscription, websub) do
-    Logger.debug("Refreshing #{websub.topic}")
-
-    with {:ok, websub} <- Websub.request_subscription(websub) do
-      Logger.debug("Successfully refreshed #{websub.topic}")
-    else
-      _e -> Logger.debug("Couldn't refresh #{websub.topic}")
-    end
+  @spec perform(atom(), module(), any()) :: {:ok, any()} | {:error, any()}
+  def perform(:publish_one, module, params) do
+    apply(module, :publish_one, [params])
   end
 
   def perform(:publish, activity) do
@@ -90,14 +79,6 @@ defmodule Pleroma.Web.Federator do
          {:ok, actor} <- User.ensure_keys_present(actor) do
       Publisher.publish(actor, activity)
     end
-  end
-
-  def perform(:verify_websub, websub) do
-    Logger.debug(fn ->
-      "Running WebSub verification for #{websub.id} (#{websub.topic}, #{websub.callback})"
-    end)
-
-    Websub.verify(websub)
   end
 
   def perform(:incoming_doc, doc) do
@@ -130,22 +111,27 @@ defmodule Pleroma.Web.Federator do
     end
   end
 
-  def perform(
-        :publish_single_websub,
-        %{xml: _xml, topic: _topic, callback: _callback, secret: _secret} = params
-      ) do
-    case Websub.publish_one(params) do
-      {:ok, _} ->
-        :ok
+  def perform(:request_subscription, websub) do
+    Logger.debug("Refreshing #{websub.topic}")
 
-      {:error, _} ->
-        RetryQueue.enqueue(params, Websub)
+    with {:ok, websub} <- Websub.request_subscription(websub) do
+      Logger.debug("Successfully refreshed #{websub.topic}")
+    else
+      _e -> Logger.debug("Couldn't refresh #{websub.topic}")
     end
   end
 
-  def perform(type, _) do
-    Logger.debug(fn -> "Unknown task: #{type}" end)
-    {:error, "Don't know what to do with this"}
+  def perform(:verify_websub, websub) do
+    Logger.debug(fn ->
+      "Running WebSub verification for #{websub.id} (#{websub.topic}, #{websub.callback})"
+    end)
+
+    Websub.verify(websub)
+  end
+
+  def perform(:refresh_subscriptions) do
+    Logger.debug("Federator running refresh subscriptions")
+    Websub.refresh_subscriptions()
   end
 
   def ap_enabled_actor(id) do

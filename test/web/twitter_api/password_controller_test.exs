@@ -6,6 +6,7 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.PasswordResetToken
+  alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
   import Pleroma.Factory
 
@@ -55,6 +56,26 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
       user = refresh_record(user)
       assert Comeonin.Pbkdf2.checkpw("test", user.password_hash)
       assert length(Token.get_user_tokens(user)) == 0
+    end
+
+    test "it sets password_reset_pending to false", %{conn: conn} do
+      user = insert(:user, info: %{password_reset_pending: true})
+
+      {:ok, token} = PasswordResetToken.create_token(user)
+      {:ok, _access_token} = Token.create_token(insert(:oauth_app), user, %{})
+
+      params = %{
+        "password" => "test",
+        password_confirmation: "test",
+        token: token.token
+      }
+
+      conn
+      |> assign(:user, user)
+      |> post("/api/pleroma/password_reset", %{data: params})
+      |> html_response(:ok)
+
+      assert User.get_by_id(user.id).info.password_reset_pending == false
     end
   end
 end
