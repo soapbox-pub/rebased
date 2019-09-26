@@ -556,7 +556,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def list_log(conn, params) do
     {page, page_size} = page_params(params)
 
-    log = ModerationLog.get_all(page, page_size)
+    log =
+      ModerationLog.get_all(%{
+        page: page,
+        page_size: page_size,
+        start_date: params["start_date"],
+        end_date: params["end_date"],
+        user_id: params["user_id"],
+        search: params["search"]
+      })
 
     conn
     |> put_view(ModerationLogView)
