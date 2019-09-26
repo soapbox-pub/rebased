@@ -224,15 +224,25 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ## `/api/pleroma/admin/users/invite_token`
 
-### Get an account registration invite token
+### Create an account registration invite token
 
-- Methods: `GET`
+- Methods: `POST`
 - Params:
-  - *optional* `invite` => [
-    - *optional* `max_use` (integer)
-    - *optional* `expires_at` (date string e.g. "2019-04-07")
-  ]
-- Response: invite token (base64 string)
+  - *optional* `max_use` (integer)
+  - *optional* `expires_at` (date string e.g. "2019-04-07")
+- Response:
+
+```json
+{
+  "id": integer,
+  "token": string,
+  "used": boolean,
+  "expires_at": date,
+  "uses": integer,
+  "max_use": integer,
+  "invite_type": string (possible values: `one_time`, `reusable`, `date_limited`, `reusable_date_limited`)
+}
+```
 
 ## `/api/pleroma/admin/users/invites`
 
@@ -298,7 +308,23 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 - Methods: `GET`
 - Params: none
-- Response: password reset token (base64 string)
+- Response:
+
+```json
+{
+  "token": "U13DX6muOvpRsj35_ij9wLxUbkU-eFvfKttxs6gIajo=", // password reset token (base64 string)
+  "link": "https://pleroma.social/api/pleroma/password_reset/U13DX6muOvpRsj35_ij9wLxUbkU-eFvfKttxs6gIajo%3D"
+}
+```
+
+
+## `/api/pleroma/admin/users/:nickname/force_password_reset`
+
+### Force passord reset for a user with a given nickname
+
+- Methods: `PATCH`
+- Params: none
+- Response: none (code `204`)
 
 ## `/api/pleroma/admin/reports`
 ### Get a list of reports
@@ -317,6 +343,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ```json
 {
+  "total" : 1,
   "reports": [
     {
       "account": {
@@ -722,3 +749,10 @@ Compile time settings (need instance reboot):
   }
 ]
 ```
+
+## `POST /api/pleroma/admin/reload_emoji`
+### Reload the instance's custom emoji
+* Method `POST`
+* Authentication: required
+* Params: None
+* Response: JSON, "ok" and 200 status

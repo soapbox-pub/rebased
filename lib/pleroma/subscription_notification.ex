@@ -21,8 +21,8 @@ defmodule Pleroma.SubscriptionNotification do
   @type t :: %__MODULE__{}
 
   schema "subscription_notifications" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
-    belongs_to(:activity, Activity, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
+    belongs_to(:activity, Activity, type: FlakeId.Ecto.CompatType)
 
     timestamps()
   end

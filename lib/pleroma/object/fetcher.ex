@@ -6,18 +6,40 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.HTTP
   alias Pleroma.Object
   alias Pleroma.Object.Containment
+  alias Pleroma.Repo
   alias Pleroma.Signature
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.OStatus
 
   require Logger
+  require Pleroma.Constants
 
-  defp reinject_object(data) do
+  defp touch_changeset(changeset) do
+    updated_at =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.truncate(:second)
+
+    Ecto.Changeset.put_change(changeset, :updated_at, updated_at)
+  end
+
+  defp maybe_reinject_internal_fields(data, %{data: %{} = old_data}) do
+    internal_fields = Map.take(old_data, Pleroma.Constants.object_internal_fields())
+
+    Map.merge(data, internal_fields)
+  end
+
+  defp maybe_reinject_internal_fields(data, _), do: data
+
+  @spec reinject_object(struct(), map()) :: {:ok, Object.t()} | {:error, any()}
+  defp reinject_object(struct, data) do
     Logger.debug("Reinjecting object #{data["id"]}")
 
     with data <- Transmogrifier.fix_object(data),
-         {:ok, object} <- Object.create(data) do
+         data <- maybe_reinject_internal_fields(data, struct),
+         changeset <- Object.change(struct, %{data: data}),
+         changeset <- touch_changeset(changeset),
+         {:ok, object} <- Repo.insert_or_update(changeset) do
       {:ok, object}
     else
       e ->
@@ -26,53 +48,66 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
+  def refetch_object(%Object{data: %{"id" => id}} = object) do
+    with {:local, false} <- {:local, String.starts_with?(id, Pleroma.Web.base_url() <> "/")},
+         {:ok, data} <- fetch_and_contain_remote_object_from_id(id),
+         {:ok, object} <- reinject_object(object, data) do
+      {:ok, object}
+    else
+      {:local, true} -> object
+      e -> {:error, e}
+    end
+  end
+
   # TODO:
   # This will create a Create activity, which we need internally at the moment.
   def fetch_object_from_id(id, options \\ []) do
-    if object = Object.get_cached_by_ap_id(id) do
+    with {:fetch_object, nil} <- {:fetch_object, Object.get_cached_by_ap_id(id)},
+         {:fetch, {:ok, data}} <- {:fetch, fetch_and_contain_remote_object_from_id(id)},
+         {:normalize, nil} <- {:normalize, Object.normalize(data, false)},
+         params <- prepare_activity_params(data),
+         {:containment, :ok} <- {:containment, Containment.contain_origin(id, params)},
+         {:ok, activity} <- Transmogrifier.handle_incoming(params, options),
+         {:object, _data, %Object{} = object} <-
+           {:object, data, Object.normalize(activity, false)} do
       {:ok, object}
     else
-      Logger.info("Fetching #{id} via AP")
+      {:containment, _} ->
+        {:error, "Object containment failed."}
 
-      with {:fetch, {:ok, data}} <- {:fetch, fetch_and_contain_remote_object_from_id(id)},
-           {:normalize, nil} <- {:normalize, Object.normalize(data, false)},
-           params <- %{
-             "type" => "Create",
-             "to" => data["to"],
-             "cc" => data["cc"],
-             # Should we seriously keep this attributedTo thing?
-             "actor" => data["actor"] || data["attributedTo"],
-             "object" => data
-           },
-           {:containment, :ok} <- {:containment, Containment.contain_origin(id, params)},
-           {:ok, activity} <- Transmogrifier.handle_incoming(params, options),
-           {:object, _data, %Object{} = object} <-
-             {:object, data, Object.normalize(activity, false)} do
+      {:error, {:reject, nil}} ->
+        {:reject, nil}
+
+      {:object, data, nil} ->
+        reinject_object(%Object{}, data)
+
+      {:normalize, object = %Object{}} ->
         {:ok, object}
-      else
-        {:containment, _} ->
-          {:error, "Object containment failed."}
 
-        {:error, {:reject, nil}} ->
-          {:reject, nil}
+      {:fetch_object, %Object{} = object} ->
+        {:ok, object}
 
-        {:object, data, nil} ->
-          reinject_object(data)
+      _e ->
+        # Only fallback when receiving a fetch/normalization error with ActivityPub
+        Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
 
-        {:normalize, object = %Object{}} ->
-          {:ok, object}
-
-        _e ->
-          # Only fallback when receiving a fetch/normalization error with ActivityPub
-          Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
-
-          # FIXME: OStatus Object Containment?
-          case OStatus.fetch_activity_from_url(id) do
-            {:ok, [activity | _]} -> {:ok, Object.normalize(activity, false)}
-            e -> e
-          end
-      end
+        # FIXME: OStatus Object Containment?
+        case OStatus.fetch_activity_from_url(id) do
+          {:ok, [activity | _]} -> {:ok, Object.normalize(activity, false)}
+          e -> e
+        end
     end
+  end
+
+  defp prepare_activity_params(data) do
+    %{
+      "type" => "Create",
+      "to" => data["to"],
+      "cc" => data["cc"],
+      # Should we seriously keep this attributedTo thing?
+      "actor" => data["actor"] || data["attributedTo"],
+      "object" => data
+    }
   end
 
   def fetch_object_from_id!(id, options \\ []) do

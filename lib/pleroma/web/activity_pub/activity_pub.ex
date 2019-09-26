@@ -412,6 +412,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  @spec block(User.t(), User.t(), String.t() | nil, boolean) :: {:ok, Activity.t() | nil}
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do
     outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
     unfollow_blocked = Config.get([:activitypub, :unfollow_blocked])
@@ -440,10 +441,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  @spec flag(map()) :: {:ok, Activity.t()} | any
   def flag(
         %{
           actor: actor,
-          context: context,
+          context: _context,
           account: account,
           statuses: statuses,
           content: content
@@ -454,14 +456,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     forward = !(params[:forward] == false)
 
     additional = params[:additional] || %{}
-
-    params = %{
-      actor: actor,
-      context: context,
-      account: account,
-      statuses: statuses,
-      content: content
-    }
 
     additional =
       if forward do
@@ -518,7 +512,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   @spec fetch_latest_activity_id_for_context(String.t(), keyword() | map()) ::
-          Pleroma.FlakeId.t() | nil
+          FlakeId.Ecto.CompatType.t() | nil
   def fetch_latest_activity_id_for_context(context, opts \\ %{}) do
     context
     |> fetch_activities_for_context_query(Map.merge(%{"skip_preload" => true}, opts))
@@ -527,12 +521,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Repo.one()
   end
 
-  def fetch_public_activities(opts \\ %{}) do
-    q = fetch_activities_query([Pleroma.Constants.as_public()], opts)
+  def fetch_public_activities(opts \\ %{}, pagination \\ :keyset) do
+    opts = Map.drop(opts, ["user"])
 
-    q
+    [Pleroma.Constants.as_public()]
+    |> fetch_activities_query(opts)
     |> restrict_unlisted()
-    |> Pagination.fetch_paginated(opts)
+    |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
   end
 
@@ -841,7 +836,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
-  defp exclude_poll_votes(query, %{"include_poll_votes" => "true"}), do: query
+  defp exclude_poll_votes(query, %{"include_poll_votes" => true}), do: query
 
   defp exclude_poll_votes(query, _) do
     if has_named_binding?(query, :object) do
@@ -925,11 +920,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> exclude_poll_votes(opts)
   end
 
-  def fetch_activities(recipients, opts \\ %{}) do
+  def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do
     list_memberships = Pleroma.List.memberships(opts["user"])
 
     fetch_activities_query(recipients ++ list_memberships, opts)
-    |> Pagination.fetch_paginated(opts)
+    |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
     |> maybe_update_cc(list_memberships, opts["user"])
   end
@@ -960,10 +955,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
-  def fetch_activities_bounded(recipients, recipients_with_public, opts \\ %{}) do
+  def fetch_activities_bounded(
+        recipients,
+        recipients_with_public,
+        opts \\ %{},
+        pagination \\ :keyset
+      ) do
     fetch_activities_query([], opts)
     |> fetch_activities_bounded_query(recipients, recipients_with_public)
-    |> Pagination.fetch_paginated(opts)
+    |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
   end
 
@@ -1003,6 +1003,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
+    discoverable = data["discoverable"] || false
 
     user_data = %{
       ap_id: data["id"],
@@ -1011,7 +1012,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         source_data: data,
         banner: banner,
         fields: fields,
-        locked: locked
+        locked: locked,
+        discoverable: discoverable
       },
       avatar: avatar,
       name: data["name"],

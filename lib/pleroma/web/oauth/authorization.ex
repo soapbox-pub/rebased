@@ -20,7 +20,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
     field(:scopes, {:array, :string}, default: [])
     field(:valid_until, :naive_datetime_usec)
     field(:used, :boolean, default: false)
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:app, App)
 
     timestamps()

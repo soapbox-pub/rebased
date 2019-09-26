@@ -5,7 +5,7 @@ defmodule Pleroma.Mixfile do
     [
       app: :pleroma,
       version: version("1.0.0"),
-      elixir: "~> 1.7",
+      elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       elixirc_options: [warnings_as_errors: true],
@@ -99,9 +99,9 @@ defmodule Pleroma.Mixfile do
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
-      {:ecto_sql, "~> 3.1"},
+      {:ecto_sql, "~> 3.2"},
       {:postgrex, ">= 0.13.5"},
-      {:oban, "~> 0.7"},
+      {:oban, "~> 0.8.1"},
       {:quantum, "~> 2.3"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
@@ -113,7 +113,7 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
       {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.2"},
+      {:tesla, "~> 1.3", override: true},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
       {:ex_aws, "~> 2.1"},
@@ -158,6 +158,7 @@ defmodule Pleroma.Mixfile do
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.11.1", only: :test},
+      {:flake_id, "~> 0.1.0"},
       {:mox, "~> 0.5", only: :test}
     ] ++ oauth_deps()
   end
@@ -174,7 +175,8 @@ defmodule Pleroma.Mixfile do
       "ecto.rollback": ["pleroma.ecto.rollback"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"],
+      docs: ["pleroma.docs", "docs"]
     ]
   end
 

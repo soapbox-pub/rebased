@@ -6,7 +6,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
-  alias Pleroma.Formatter
+  alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.ThreadMute
   alias Pleroma.User
@@ -261,12 +261,7 @@ defmodule Pleroma.Web.CommonAPI do
              sensitive,
              poll
            ),
-         object <-
-           Map.put(
-             object,
-             "emoji",
-             Map.merge(Formatter.get_emoji_map(full_payload), poll_emoji)
-           ) do
+         object <- put_emoji(object, full_payload, poll_emoji) do
       preview? = Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
       direct? = visibility == "direct"
 
@@ -300,18 +295,25 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  # parse and put emoji to object data
+  defp put_emoji(map, text, emojis) do
+    Map.put(
+      map,
+      "emoji",
+      Map.merge(Emoji.Formatter.get_emoji_map(text), emojis)
+    )
+  end
+
   # Updates the emojis for a user based on their profile
   def update(user) do
+    emoji = emoji_from_profile(user)
+    source_data = user.info |> Map.get(:source_data, {}) |> Map.put("tag", emoji)
+
     user =
-      with emoji <- emoji_from_profile(user),
-           source_data <- (user.info.source_data || %{}) |> Map.put("tag", emoji),
-           info_cng <- User.Info.set_source_data(user.info, source_data),
-           change <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
-           {:ok, user} <- User.update_and_set_cache(change) do
+      with {:ok, user} <- User.update_info(user, &User.Info.set_source_data(&1, source_data)) do
         user
       else
-        _e ->
-          user
+        _e -> user
       end
 
     ActivityPub.update(%{
@@ -336,34 +338,21 @@ defmodule Pleroma.Web.CommonAPI do
            }
          } = activity <- get_by_id_or_ap_id(id_or_ap_id),
          true <- Visibility.is_public?(activity),
-         %{valid?: true} = info_changeset <- User.Info.add_pinnned_activity(user.info, activity),
-         changeset <-
-           Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
-         {:ok, _user} <- User.update_and_set_cache(changeset) do
+         {:ok, _user} <- User.update_info(user, &User.Info.add_pinnned_activity(&1, activity)) do
       {:ok, activity}
     else
-      %{errors: [pinned_activities: {err, _}]} ->
-        {:error, err}
-
-      _ ->
-        {:error, dgettext("errors", "Could not pin")}
+      {:error, %{changes: %{info: %{errors: [pinned_activities: {err, _}]}}}} -> {:error, err}
+      _ -> {:error, dgettext("errors", "Could not pin")}
     end
   end
 
   def unpin(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         %{valid?: true} = info_changeset <-
-           User.Info.remove_pinnned_activity(user.info, activity),
-         changeset <-
-           Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
-         {:ok, _user} <- User.update_and_set_cache(changeset) do
+         {:ok, _user} <- User.update_info(user, &User.Info.remove_pinnned_activity(&1, activity)) do
       {:ok, activity}
     else
-      %{errors: [pinned_activities: {err, _}]} ->
-        {:error, err}
-
-      _ ->
-        {:error, dgettext("errors", "Could not unpin")}
+      %{errors: [pinned_activities: {err, _}]} -> {:error, err}
+      _ -> {:error, dgettext("errors", "Could not unpin")}
     end
   end
 
@@ -458,23 +447,15 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp set_visibility(activity, _), do: {:ok, activity}
 
-  def hide_reblogs(user, muted) do
-    ap_id = muted.ap_id
-
+  def hide_reblogs(user, %{ap_id: ap_id} = _muted) do
     if ap_id not in user.info.muted_reblogs do
-      info_changeset = User.Info.add_reblog_mute(user.info, ap_id)
-      changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
-      User.update_and_set_cache(changeset)
+      User.update_info(user, &User.Info.add_reblog_mute(&1, ap_id))
     end
   end
 
-  def show_reblogs(user, muted) do
-    ap_id = muted.ap_id
-
+  def show_reblogs(user, %{ap_id: ap_id} = _muted) do
     if ap_id in user.info.muted_reblogs do
-      info_changeset = User.Info.remove_reblog_mute(user.info, ap_id)
-      changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
-      User.update_and_set_cache(changeset)
+      User.update_info(user, &User.Info.remove_reblog_mute(&1, ap_id))
     end
   end
 end

@@ -647,6 +647,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert last == last_expected
     end
 
+    test "paginates via offset/limit" do
+      _first_activities = ActivityBuilder.insert_list(10)
+      activities = ActivityBuilder.insert_list(10)
+      _later_activities = ActivityBuilder.insert_list(10)
+      first_expected = List.first(activities)
+
+      activities =
+        ActivityPub.fetch_public_activities(%{"page" => "2", "page_size" => "20"}, :offset)
+
+      first = List.first(activities)
+
+      assert length(activities) == 20
+      assert first == first_expected
+    end
+
     test "doesn't return reblogs for users for whom reblogs have been muted" do
       activity = insert(:note_activity)
       user = insert(:user)
