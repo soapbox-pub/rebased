@@ -439,6 +439,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
+  def render("context.json", %{activity: activity, activities: activities, user: user}) do
+    %{ancestors: ancestors, descendants: descendants} =
+      activities
+      |> Enum.reverse()
+      |> Enum.group_by(fn %{id: id} -> if id < activity.id, do: :ancestors, else: :descendants end)
+      |> Map.put_new(:ancestors, [])
+      |> Map.put_new(:descendants, [])
+
+    %{
+      ancestors: render("index.json", for: user, activities: ancestors, as: :activity),
+      descendants: render("index.json", for: user, activities: descendants, as: :activity)
+    }
+  end
+
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
     object = Object.normalize(activity)
 

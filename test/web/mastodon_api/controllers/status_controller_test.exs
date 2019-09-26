@@ -1053,4 +1053,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert [] == response
     end
   end
+
+  test "context" do
+    user = insert(:user)
+
+    {:ok, %{id: id1}} = CommonAPI.post(user, %{"status" => "1"})
+    {:ok, %{id: id2}} = CommonAPI.post(user, %{"status" => "2", "in_reply_to_status_id" => id1})
+    {:ok, %{id: id3}} = CommonAPI.post(user, %{"status" => "3", "in_reply_to_status_id" => id2})
+    {:ok, %{id: id4}} = CommonAPI.post(user, %{"status" => "4", "in_reply_to_status_id" => id3})
+    {:ok, %{id: id5}} = CommonAPI.post(user, %{"status" => "5", "in_reply_to_status_id" => id4})
+
+    response =
+      build_conn()
+      |> assign(:user, nil)
+      |> get("/api/v1/statuses/#{id3}/context")
+      |> json_response(:ok)
+
+    assert %{
+             "ancestors" => [%{"id" => ^id1}, %{"id" => ^id2}],
+             "descendants" => [%{"id" => ^id4}, %{"id" => ^id5}]
+           } = response
+  end
 end

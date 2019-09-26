@@ -21,7 +21,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
-  alias Pleroma.Web.MastodonAPI.StatusView
 
   @rate_limited_status_actions ~w(reblog unreblog favourite unfavourite create delete)a
 
@@ -264,31 +263,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
           "exclude_id" => activity.id
         })
 
-      # TODO: Move to view
-      grouped_activities = Enum.group_by(activities, fn %{id: id} -> id < activity.id end)
-
-      result = %{
-        ancestors:
-          StatusView.render(
-            "index.json",
-            for: user,
-            activities: grouped_activities[true] || [],
-            as: :activity
-          )
-          |> Enum.reverse(),
-        # credo:disable-for-previous-line Credo.Check.Refactor.PipeChainStart
-        descendants:
-          StatusView.render(
-            "index.json",
-            for: user,
-            activities: grouped_activities[false] || [],
-            as: :activity
-          )
-          |> Enum.reverse()
-        # credo:disable-for-previous-line Credo.Check.Refactor.PipeChainStart
-      }
-
-      json(conn, result)
+      render(conn, "context.json", activity: activity, activities: activities, user: user)
     end
   end
 end
