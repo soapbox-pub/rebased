@@ -153,7 +153,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         :hide_follows,
         :hide_favorites,
         :show_role,
-        :skip_thread_containment
+        :skip_thread_containment,
+        :discoverable
       ]
       |> Enum.reduce(%{}, fn key, acc ->
         add_if_present(acc, params, to_string(key), key, fn value ->
