@@ -519,13 +519,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Repo.one()
   end
 
-  def fetch_public_activities(opts \\ %{}) do
+  def fetch_public_activities(opts \\ %{}, pagination \\ :keyset) do
     opts = Map.drop(opts, ["user"])
 
     [Pleroma.Constants.as_public()]
     |> fetch_activities_query(opts)
     |> restrict_unlisted()
-    |> Pagination.fetch_paginated(opts)
+    |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
   end
 
@@ -918,11 +918,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> exclude_poll_votes(opts)
   end
 
-  def fetch_activities(recipients, opts \\ %{}) do
+  def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do
     list_memberships = Pleroma.List.memberships(opts["user"])
 
     fetch_activities_query(recipients ++ list_memberships, opts)
-    |> Pagination.fetch_paginated(opts)
+    |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
     |> maybe_update_cc(list_memberships, opts["user"])
   end
@@ -953,10 +953,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
-  def fetch_activities_bounded(recipients, recipients_with_public, opts \\ %{}) do
+  def fetch_activities_bounded(
+        recipients,
+        recipients_with_public,
+        opts \\ %{},
+        pagination \\ :keyset
+      ) do
     fetch_activities_query([], opts)
     |> fetch_activities_bounded_query(recipients, recipients_with_public)
-    |> Pagination.fetch_paginated(opts)
+    |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
   end
 
