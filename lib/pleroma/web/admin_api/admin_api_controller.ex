@@ -18,7 +18,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.Router
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
@@ -435,7 +437,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     {:ok, token} = Pleroma.PasswordResetToken.create_token(user)
 
     conn
-    |> json(token.token)
+    |> json(%{
+      token: token.token,
+      link: Router.Helpers.reset_password_url(Endpoint, :reset, token.token)
+    })
   end
 
   @doc "Force password reset for a given user"
