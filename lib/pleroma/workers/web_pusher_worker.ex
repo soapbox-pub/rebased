@@ -10,7 +10,11 @@ defmodule Pleroma.Workers.WebPusherWorker do
 
   @impl Oban.Worker
   def perform(%{"op" => "web_push", "notification_id" => notification_id}, _job) do
-    notification = Repo.get(Notification, notification_id)
+    notification =
+      Notification
+      |> Repo.get(notification_id)
+      |> Repo.preload([:activity])
+
     Pleroma.Web.Push.Impl.perform(notification)
   end
 end

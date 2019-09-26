@@ -86,10 +86,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user = json_response(conn, 200)
 
       assert user["note"] ==
-               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe" rel="tag">#cofe</a> with <span class="h-card"><a data-user=") <>
-                 user2.id <>
-                 ~s(" class="u-url mention" href=") <>
-                 user2.ap_id <> ~s(">@<span>) <> user2.nickname <> ~s(</span></a></span>)
+               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a data-user="#{
+                 user2.id
+               }" class="u-url mention" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span>)
     end
 
     test "updates the user's locking status", %{conn: conn} do
@@ -126,6 +125,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       assert user = json_response(conn, 200)
       assert user["pleroma"]["hide_followers"] == true
+    end
+
+    test "updates the user's hide_followers_count and hide_follows_count", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{
+          hide_followers_count: "true",
+          hide_follows_count: "true"
+        })
+
+      assert user = json_response(conn, 200)
+      assert user["pleroma"]["hide_followers_count"] == true
+      assert user["pleroma"]["hide_follows_count"] == true
     end
 
     test "updates the user's skip_thread_containment option", %{conn: conn} do
@@ -318,7 +333,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       assert account["fields"] == [
                %{"name" => "foo", "value" => "bar"},
-               %{"name" => "link", "value" => "<a href=\"http://cofe.io\">cofe.io</a>"}
+               %{"name" => "link", "value" => ~S(<a href="http://cofe.io" rel="ugc">cofe.io</a>)}
              ]
 
       assert account["source"]["fields"] == [

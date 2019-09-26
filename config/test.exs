@@ -30,7 +30,8 @@ config :pleroma, :instance,
   notify_email: "noreply@example.com",
   skip_thread_containment: false,
   federating: false,
-  external_user_synchronization: false
+  external_user_synchronization: false,
+  static_dir: "test/instance_static/"
 
 config :pleroma, :activitypub, sign_object_fetches: false
 

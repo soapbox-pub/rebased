@@ -97,6 +97,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
            |> json_response(403) == %{"error" => "This resource requires authentication."}
   end
 
+  test "the public timeline includes only public statuses for an authenticated user" do
+    user = insert(:user)
+
+    conn =
+      build_conn()
+      |> assign(:user, user)
+
+    {:ok, _activity} = CommonAPI.post(user, %{"status" => "test"})
+    {:ok, _activity} = CommonAPI.post(user, %{"status" => "test", "visibility" => "private"})
+    {:ok, _activity} = CommonAPI.post(user, %{"status" => "test", "visibility" => "unlisted"})
+    {:ok, _activity} = CommonAPI.post(user, %{"status" => "test", "visibility" => "direct"})
+
+    res_conn = get(conn, "/api/v1/timelines/public")
+    assert length(json_response(res_conn, 200)) == 1
+  end
+
   describe "posting statuses" do
     setup do
       user = insert(:user)
@@ -296,7 +312,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         conn
         |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
 
-      assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
+      assert %{"id" => id} = response = json_response(conn, 200)
+      assert response["visibility"] == "direct"
+      assert response["pleroma"]["direct_conversation_id"]
       assert activity = Activity.get_by_id(id)
       assert activity.recipients == [user2.ap_id, conn.assigns[:user].ap_id]
       assert activity.data["to"] == [user2.ap_id]
@@ -978,299 +996,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert [%{"id" => id}] = json_response(conn, 200)
 
       assert id == to_string(activity_one.id)
-    end
-  end
-
-  describe "notifications" do
-    test "list of notifications", %{conn: conn} do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-
-      {:ok, [_notification]} = Notification.create_notifications(activity)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/notifications")
-
-      expected_response =
-        "hi <span class=\"h-card\"><a data-user=\"#{user.id}\" class=\"u-url mention\" href=\"#{
-          user.ap_id
-        }\">@<span>#{user.nickname}</span></a></span>"
-
-      assert [%{"status" => %{"content" => response}} | _rest] = json_response(conn, 200)
-      assert response == expected_response
-    end
-
-    test "getting a single notification", %{conn: conn} do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-
-      {:ok, [notification]} = Notification.create_notifications(activity)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/notifications/#{notification.id}")
-
-      expected_response =
-        "hi <span class=\"h-card\"><a data-user=\"#{user.id}\" class=\"u-url mention\" href=\"#{
-          user.ap_id
-        }\">@<span>#{user.nickname}</span></a></span>"
-
-      assert %{"status" => %{"content" => response}} = json_response(conn, 200)
-      assert response == expected_response
-    end
-
-    test "dismissing a single notification", %{conn: conn} do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-
-      {:ok, [notification]} = Notification.create_notifications(activity)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/notifications/dismiss", %{"id" => notification.id})
-
-      assert %{} = json_response(conn, 200)
-    end
-
-    test "clearing all notifications", %{conn: conn} do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-
-      {:ok, [_notification]} = Notification.create_notifications(activity)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/notifications/clear")
-
-      assert %{} = json_response(conn, 200)
-
-      conn =
-        build_conn()
-        |> assign(:user, user)
-        |> get("/api/v1/notifications")
-
-      assert all = json_response(conn, 200)
-      assert all == []
-    end
-
-    test "paginates notifications using min_id, since_id, max_id, and limit", %{conn: conn} do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, activity1} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-      {:ok, activity2} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-      {:ok, activity3} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-      {:ok, activity4} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-
-      notification1_id = Repo.get_by(Notification, activity_id: activity1.id).id |> to_string()
-      notification2_id = Repo.get_by(Notification, activity_id: activity2.id).id |> to_string()
-      notification3_id = Repo.get_by(Notification, activity_id: activity3.id).id |> to_string()
-      notification4_id = Repo.get_by(Notification, activity_id: activity4.id).id |> to_string()
-
-      conn =
-        conn
-        |> assign(:user, user)
-
-      # min_id
-      conn_res =
-        conn
-        |> get("/api/v1/notifications?limit=2&min_id=#{notification1_id}")
-
-      result = json_response(conn_res, 200)
-      assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
-
-      # since_id
-      conn_res =
-        conn
-        |> get("/api/v1/notifications?limit=2&since_id=#{notification1_id}")
-
-      result = json_response(conn_res, 200)
-      assert [%{"id" => ^notification4_id}, %{"id" => ^notification3_id}] = result
-
-      # max_id
-      conn_res =
-        conn
-        |> get("/api/v1/notifications?limit=2&max_id=#{notification4_id}")
-
-      result = json_response(conn_res, 200)
-      assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
-    end
-
-    test "filters notifications using exclude_types", %{conn: conn} do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, mention_activity} = CommonAPI.post(other_user, %{"status" => "hey @#{user.nickname}"})
-      {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
-      {:ok, favorite_activity, _} = CommonAPI.favorite(create_activity.id, other_user)
-      {:ok, reblog_activity, _} = CommonAPI.repeat(create_activity.id, other_user)
-      {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
-
-      mention_notification_id =
-        Repo.get_by(Notification, activity_id: mention_activity.id).id |> to_string()
-
-      favorite_notification_id =
-        Repo.get_by(Notification, activity_id: favorite_activity.id).id |> to_string()
-
-      reblog_notification_id =
-        Repo.get_by(Notification, activity_id: reblog_activity.id).id |> to_string()
-
-      follow_notification_id =
-        Repo.get_by(Notification, activity_id: follow_activity.id).id |> to_string()
-
-      conn =
-        conn
-        |> assign(:user, user)
-
-      conn_res =
-        get(conn, "/api/v1/notifications", %{exclude_types: ["mention", "favourite", "reblog"]})
-
-      assert [%{"id" => ^follow_notification_id}] = json_response(conn_res, 200)
-
-      conn_res =
-        get(conn, "/api/v1/notifications", %{exclude_types: ["favourite", "reblog", "follow"]})
-
-      assert [%{"id" => ^mention_notification_id}] = json_response(conn_res, 200)
-
-      conn_res =
-        get(conn, "/api/v1/notifications", %{exclude_types: ["reblog", "follow", "mention"]})
-
-      assert [%{"id" => ^favorite_notification_id}] = json_response(conn_res, 200)
-
-      conn_res =
-        get(conn, "/api/v1/notifications", %{exclude_types: ["follow", "mention", "favourite"]})
-
-      assert [%{"id" => ^reblog_notification_id}] = json_response(conn_res, 200)
-    end
-
-    test "destroy multiple", %{conn: conn} do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, activity1} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-      {:ok, activity2} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-      {:ok, activity3} = CommonAPI.post(user, %{"status" => "hi @#{other_user.nickname}"})
-      {:ok, activity4} = CommonAPI.post(user, %{"status" => "hi @#{other_user.nickname}"})
-
-      notification1_id = Repo.get_by(Notification, activity_id: activity1.id).id |> to_string()
-      notification2_id = Repo.get_by(Notification, activity_id: activity2.id).id |> to_string()
-      notification3_id = Repo.get_by(Notification, activity_id: activity3.id).id |> to_string()
-      notification4_id = Repo.get_by(Notification, activity_id: activity4.id).id |> to_string()
-
-      conn =
-        conn
-        |> assign(:user, user)
-
-      conn_res =
-        conn
-        |> get("/api/v1/notifications")
-
-      result = json_response(conn_res, 200)
-      assert [%{"id" => ^notification2_id}, %{"id" => ^notification1_id}] = result
-
-      conn2 =
-        conn
-        |> assign(:user, other_user)
-
-      conn_res =
-        conn2
-        |> get("/api/v1/notifications")
-
-      result = json_response(conn_res, 200)
-      assert [%{"id" => ^notification4_id}, %{"id" => ^notification3_id}] = result
-
-      conn_destroy =
-        conn
-        |> delete("/api/v1/notifications/destroy_multiple", %{
-          "ids" => [notification1_id, notification2_id]
-        })
-
-      assert json_response(conn_destroy, 200) == %{}
-
-      conn_res =
-        conn2
-        |> get("/api/v1/notifications")
-
-      result = json_response(conn_res, 200)
-      assert [%{"id" => ^notification4_id}, %{"id" => ^notification3_id}] = result
-    end
-
-    test "doesn't see notifications after muting user with notifications", %{conn: conn} do
-      user = insert(:user)
-      user2 = insert(:user)
-
-      {:ok, _, _, _} = CommonAPI.follow(user, user2)
-      {:ok, _} = CommonAPI.post(user2, %{"status" => "hey @#{user.nickname}"})
-
-      conn = assign(conn, :user, user)
-
-      conn = get(conn, "/api/v1/notifications")
-
-      assert length(json_response(conn, 200)) == 1
-
-      {:ok, user} = User.mute(user, user2)
-
-      conn = assign(build_conn(), :user, user)
-      conn = get(conn, "/api/v1/notifications")
-
-      assert json_response(conn, 200) == []
-    end
-
-    test "see notifications after muting user without notifications", %{conn: conn} do
-      user = insert(:user)
-      user2 = insert(:user)
-
-      {:ok, _, _, _} = CommonAPI.follow(user, user2)
-      {:ok, _} = CommonAPI.post(user2, %{"status" => "hey @#{user.nickname}"})
-
-      conn = assign(conn, :user, user)
-
-      conn = get(conn, "/api/v1/notifications")
-
-      assert length(json_response(conn, 200)) == 1
-
-      {:ok, user} = User.mute(user, user2, false)
-
-      conn = assign(build_conn(), :user, user)
-      conn = get(conn, "/api/v1/notifications")
-
-      assert length(json_response(conn, 200)) == 1
-    end
-
-    test "see notifications after muting user with notifications and with_muted parameter", %{
-      conn: conn
-    } do
-      user = insert(:user)
-      user2 = insert(:user)
-
-      {:ok, _, _, _} = CommonAPI.follow(user, user2)
-      {:ok, _} = CommonAPI.post(user2, %{"status" => "hey @#{user.nickname}"})
-
-      conn = assign(conn, :user, user)
-
-      conn = get(conn, "/api/v1/notifications")
-
-      assert length(json_response(conn, 200)) == 1
-
-      {:ok, user} = User.mute(user, user2)
-
-      conn = assign(build_conn(), :user, user)
-      conn = get(conn, "/api/v1/notifications", %{"with_muted" => "true"})
-
-      assert length(json_response(conn, 200)) == 1
     end
   end
 
@@ -2595,14 +2320,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     {:ok, _} = CommonAPI.post(user, %{"status" => "cofe"})
 
     # Stats should count users with missing or nil `info.deactivated` value
-    user = User.get_cached_by_id(user.id)
-    info_change = Changeset.change(user.info, %{deactivated: nil})
 
     {:ok, _user} =
-      user
-      |> Changeset.change()
-      |> Changeset.put_embed(:info, info_change)
-      |> User.update_and_set_cache()
+      user.id
+      |> User.get_cached_by_id()
+      |> User.update_info(&Changeset.change(&1, %{deactivated: nil}))
 
     Pleroma.Stats.force_update()
 
@@ -3935,13 +3657,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   describe "POST /api/v1/pleroma/accounts/confirmation_resend" do
     setup do
-      user = insert(:user)
-      info_change = User.Info.confirmation_changeset(user.info, need_confirmation: true)
-
       {:ok, user} =
-        user
-        |> Changeset.change()
-        |> Changeset.put_embed(:info, info_change)
+        insert(:user)
+        |> User.change_info(&User.Info.confirmation_changeset(&1, need_confirmation: true))
         |> Repo.update()
 
       assert user.info.confirmation_pending

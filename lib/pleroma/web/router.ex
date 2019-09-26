@@ -180,12 +180,13 @@ defmodule Pleroma.Web.Router do
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
-    get("/users/invite_token", AdminAPIController, :get_invite_token)
+    post("/users/invite_token", AdminAPIController, :create_invite_token)
     get("/users/invites", AdminAPIController, :invites)
     post("/users/revoke_invite", AdminAPIController, :revoke_invite)
     post("/users/email_invite", AdminAPIController, :email_invite)
 
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
+    patch("/users/:nickname/force_password_reset", AdminAPIController, :force_password_reset)
 
     get("/users", AdminAPIController, :list_users)
     get("/users/:nickname", AdminAPIController, :user_show)
@@ -205,6 +206,30 @@ defmodule Pleroma.Web.Router do
     get("/config/migrate_from_db", AdminAPIController, :migrate_from_db)
 
     get("/moderation_log", AdminAPIController, :list_log)
+
+    post("/reload_emoji", AdminAPIController, :reload_emoji)
+  end
+
+  scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
+    scope "/packs" do
+      # Modifying packs
+      pipe_through([:admin_api, :oauth_write])
+
+      post("/import_from_fs", EmojiAPIController, :import_from_fs)
+
+      post("/:pack_name/update_file", EmojiAPIController, :update_file)
+      post("/:pack_name/update_metadata", EmojiAPIController, :update_metadata)
+      put("/:name", EmojiAPIController, :create)
+      delete("/:name", EmojiAPIController, :delete)
+      post("/download_from", EmojiAPIController, :download_from)
+      post("/list_from", EmojiAPIController, :list_from)
+    end
+
+    scope "/packs" do
+      # Pack info / downloading
+      get("/", EmojiAPIController, :list_packs)
+      get("/:name/download_shared/", EmojiAPIController, :download_shared)
+    end
   end
 
   scope "/", Pleroma.Web.TwitterAPI do
@@ -300,11 +325,11 @@ defmodule Pleroma.Web.Router do
       get("/favourites", MastodonAPIController, :favourites)
       get("/bookmarks", MastodonAPIController, :bookmarks)
 
-      post("/notifications/clear", MastodonAPIController, :clear_notifications)
-      post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
-      get("/notifications", MastodonAPIController, :notifications)
-      get("/notifications/:id", MastodonAPIController, :get_notification)
-      delete("/notifications/destroy_multiple", MastodonAPIController, :destroy_multiple)
+      get("/notifications", NotificationController, :index)
+      get("/notifications/:id", NotificationController, :show)
+      post("/notifications/clear", NotificationController, :clear)
+      post("/notifications/dismiss", NotificationController, :dismiss)
+      delete("/notifications/destroy_multiple", NotificationController, :destroy_multiple)
 
       get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
       get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)

@@ -57,6 +57,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         "mastodon_api_streaming",
         "polls",
         "pleroma_explicit_addressing",
+        "shareable_emoji_packs",
         if Config.get([:media_proxy, :enabled]) do
           "media_proxy"
         end,

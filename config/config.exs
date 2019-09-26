@@ -109,6 +109,7 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
+  streaming_enabled: true,
   public_endpoint: "https://s3.amazonaws.com"
 
 config :pleroma, Pleroma.Uploaders.MDII,
@@ -122,7 +123,8 @@ config :pleroma, :emoji,
     # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
     Custom: ["/emoji/*.png", "/emoji/**/*.png"]
   ],
-  default_manifest: "https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json"
+  default_manifest: "https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json",
+  shared_pack_cache_seconds_per_file: 60
 
 config :pleroma, :uri_schemes,
   valid_schemes: [
@@ -507,7 +509,7 @@ config :auto_linker,
     class: false,
     strip_prefix: false,
     new_window: false,
-    rel: false
+    rel: "ugc"
   ]
 
 config :pleroma, :ldap,

@@ -3,14 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OStatus do
-  import Ecto.Query
   import Pleroma.Web.XML
   require Logger
 
   alias Pleroma.Activity
   alias Pleroma.HTTP
   alias Pleroma.Object
-  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -38,21 +36,13 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
-  def feed_path(user) do
-    "#{user.ap_id}/feed.atom"
-  end
+  def feed_path(user), do: "#{user.ap_id}/feed.atom"
 
-  def pubsub_path(user) do
-    "#{Web.base_url()}/push/hub/#{user.nickname}"
-  end
+  def pubsub_path(user), do: "#{Web.base_url()}/push/hub/#{user.nickname}"
 
-  def salmon_path(user) do
-    "#{user.ap_id}/salmon"
-  end
+  def salmon_path(user), do: "#{user.ap_id}/salmon"
 
-  def remote_follow_path do
-    "#{Web.base_url()}/ostatus_subscribe?acct={uri}"
-  end
+  def remote_follow_path, do: "#{Web.base_url()}/ostatus_subscribe?acct={uri}"
 
   def handle_incoming(xml_string, options \\ []) do
     with doc when doc != :error <- parse_document(xml_string) do
@@ -217,10 +207,9 @@ defmodule Pleroma.Web.OStatus do
     Get the cw that mastodon uses.
   """
   def get_cw(entry) do
-    with cw when not is_nil(cw) <- string_from_xpath("/*/summary", entry) do
-      cw
-    else
-      _e -> nil
+    case string_from_xpath("/*/summary", entry) do
+      cw when not is_nil(cw) -> cw
+      _ -> nil
     end
   end
 
@@ -232,19 +221,17 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def maybe_update(doc, user) do
-    if "true" == string_from_xpath("//author[1]/ap_enabled", doc) do
-      Transmogrifier.upgrade_user_from_ap_id(user.ap_id)
-    else
-      maybe_update_ostatus(doc, user)
+    case string_from_xpath("//author[1]/ap_enabled", doc) do
+      "true" ->
+        Transmogrifier.upgrade_user_from_ap_id(user.ap_id)
+
+      _ ->
+        maybe_update_ostatus(doc, user)
     end
   end
 
   def maybe_update_ostatus(doc, user) do
-    old_data = %{
-      avatar: user.avatar,
-      bio: user.bio,
-      name: user.name
-    }
+    old_data = Map.take(user, [:bio, :avatar, :name])
 
     with false <- user.local,
          avatar <- make_avatar_object(doc),
@@ -279,36 +266,35 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
+  @spec find_or_make_user(String.t()) :: {:ok, User.t()}
   def find_or_make_user(uri) do
-    query = from(user in User, where: user.ap_id == ^uri)
-
-    user = Repo.one(query)
-
-    if is_nil(user) do
-      make_user(uri)
-    else
-      {:ok, user}
+    case User.get_by_ap_id(uri) do
+      %User{} = user -> {:ok, user}
+      _ -> make_user(uri)
     end
   end
 
+  @spec make_user(String.t(), boolean()) :: {:ok, User.t()} | {:error, any()}
   def make_user(uri, update \\ false) do
     with {:ok, info} <- gather_user_info(uri) do
-      data = %{
-        name: info["name"],
-        nickname: info["nickname"] <> "@" <> info["host"],
-        ap_id: info["uri"],
-        info: info,
-        avatar: info["avatar"],
-        bio: info["bio"]
-      }
-
       with false <- update,
-           %User{} = user <- User.get_cached_by_ap_id(data.ap_id) do
+           %User{} = user <- User.get_cached_by_ap_id(info["uri"]) do
         {:ok, user}
       else
-        _e -> User.insert_or_update_user(data)
+        _e -> User.insert_or_update_user(build_user_data(info))
       end
     end
+  end
+
+  defp build_user_data(info) do
+    %{
+      name: info["name"],
+      nickname: info["nickname"] <> "@" <> info["host"],
+      ap_id: info["uri"],
+      info: info,
+      avatar: info["avatar"],
+      bio: info["bio"]
+    }
   end
 
   # TODO: Just takes the first one for now.
@@ -319,23 +305,23 @@ defmodule Pleroma.Web.OStatus do
     if href do
       %{
         "type" => "Image",
-        "url" => [
-          %{
-            "type" => "Link",
-            "mediaType" => type,
-            "href" => href
-          }
-        ]
+        "url" => [%{"type" => "Link", "mediaType" => type, "href" => href}]
       }
     else
       nil
     end
   end
 
+  @spec gather_user_info(String.t()) :: {:ok, map()} | {:error, any()}
   def gather_user_info(username) do
     with {:ok, webfinger_data} <- WebFinger.finger(username),
          {:ok, feed_data} <- Websub.gather_feed_data(webfinger_data["topic"]) do
-      {:ok, Map.merge(webfinger_data, feed_data) |> Map.put("fqn", username)}
+      data =
+        webfinger_data
+        |> Map.merge(feed_data)
+        |> Map.put("fqn", username)
+
+      {:ok, data}
     else
       e ->
         Logger.debug(fn -> "Couldn't gather info for #{username}" end)
@@ -371,10 +357,7 @@ defmodule Pleroma.Web.OStatus do
   def fetch_activity_from_atom_url(url, options \\ []) do
     with true <- String.starts_with?(url, "http"),
          {:ok, %{body: body, status: code}} when code in 200..299 <-
-           HTTP.get(
-             url,
-             [{:Accept, "application/atom+xml"}]
-           ) do
+           HTTP.get(url, [{:Accept, "application/atom+xml"}]) do
       Logger.debug("Got document from #{url}, handling...")
       handle_incoming(body, options)
     else

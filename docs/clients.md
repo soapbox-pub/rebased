@@ -39,7 +39,7 @@ Feel free to contact us to be added to this list!
 
 ### Nekonium
 - Homepage: [F-Droid Repository](https://repo.gdgd.jp.net/), [Google Play](https://play.google.com/store/apps/details?id=com.apps.nekonium), [Amazon](https://www.amazon.co.jp/dp/B076FXPRBC/)
-- Source: <https://git.gdgd.jp.net/lin/nekonium/>
+- Source: <https://gogs.gdgd.jp.net/lin/nekonium>
 - Contact: [@lin@pleroma.gdgd.jp.net](https://pleroma.gdgd.jp.net/users/lin)
 - Platforms: Android
 - Features: Streaming Ready
@@ -67,7 +67,7 @@ Feel free to contact us to be added to this list!
 ## Alternative Web Interfaces
 ### Brutaldon
 - Homepage: <https://jfm.carcosa.net/projects/software/brutaldon/>
-- Source Code: <https://github.com/jfmcbrayer/brutaldon>
+- Source Code: <https://git.carcosa.net/jmcbray/brutaldon>
 - Contact: [@gcupc@glitch.social](https://glitch.social/users/gcupc)
 - Features: No Streaming
 

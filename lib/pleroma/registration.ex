@@ -11,10 +11,10 @@ defmodule Pleroma.Registration do
   alias Pleroma.Repo
   alias Pleroma.User
 
-  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
+  @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   schema "registrations" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     field(:provider, :string)
     field(:uid, :string)
     field(:info, :map, default: %{})

@@ -13,10 +13,10 @@ defmodule Pleroma.Conversation.Participation do
   import Ecto.Query
 
   schema "conversation_participations" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:conversation, Conversation)
     field(:read, :boolean, default: false)
-    field(:last_activity_id, Pleroma.FlakeId, virtual: true)
+    field(:last_activity_id, FlakeId.Ecto.CompatType, virtual: true)
 
     has_many(:recipient_ships, RecipientShip)
     has_many(:recipients, through: [:recipient_ships, :user])

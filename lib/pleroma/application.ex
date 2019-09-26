@@ -35,7 +35,6 @@ defmodule Pleroma.Application do
         Pleroma.Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,
-        Pleroma.FlakeId,
         Pleroma.Daemons.ScheduledActivityDaemon,
         Pleroma.Daemons.ActivityExpirationDaemon
       ] ++
@@ -43,23 +42,9 @@ defmodule Pleroma.Application do
         hackney_pool_children() ++
         [
           Pleroma.Stats,
-          {Oban, Pleroma.Config.get(Oban)},
-          %{
-            id: :web_push_init,
-            start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
-            restart: :temporary
-          },
-          %{
-            id: :federator_init,
-            start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
-            restart: :temporary
-          },
-          %{
-            id: :internal_fetch_init,
-            start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
-            restart: :temporary
-          }
+          {Oban, Pleroma.Config.get(Oban)}
         ] ++
+        task_children(@env) ++
         oauth_cleanup_child(oauth_cleanup_enabled?()) ++
         streamer_child(@env) ++
         chat_child(@env, chat_enabled?()) ++
@@ -116,9 +101,13 @@ defmodule Pleroma.Application do
       build_cachex("rich_media", default_ttl: :timer.minutes(120), limit: 5000),
       build_cachex("scrubber", limit: 2500),
       build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500),
-      build_cachex("web_resp", limit: 2500)
+      build_cachex("web_resp", limit: 2500),
+      build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10)
     ]
   end
+
+  defp emoji_packs_expiration,
+    do: expiration(default: :timer.seconds(5 * 60), interval: :timer.seconds(60))
 
   defp idempotency_expiration,
     do: expiration(default: :timer.seconds(6 * 60 * 60), interval: :timer.seconds(60))
@@ -162,5 +151,40 @@ defmodule Pleroma.Application do
       options = Pleroma.Config.get([:hackney_pools, pool])
       :hackney_pool.child_spec(pool, options)
     end
+  end
+
+  defp task_children(:test) do
+    [
+      %{
+        id: :web_push_init,
+        start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
+        restart: :temporary
+      },
+      %{
+        id: :federator_init,
+        start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
+        restart: :temporary
+      }
+    ]
+  end
+
+  defp task_children(_) do
+    [
+      %{
+        id: :web_push_init,
+        start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
+        restart: :temporary
+      },
+      %{
+        id: :federator_init,
+        start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
+        restart: :temporary
+      },
+      %{
+        id: :internal_fetch_init,
+        start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
+        restart: :temporary
+      }
+    ]
   end
 end
