@@ -17,7 +17,7 @@ defmodule Pleroma.ScheduledActivity do
   @min_offset :timer.minutes(5)
 
   schema "scheduled_activities" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     field(:scheduled_at, :naive_datetime)
     field(:params, :map)
 

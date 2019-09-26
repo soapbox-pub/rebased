@@ -7,6 +7,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   import Pleroma.Factory
 
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.OAuthController
   alias Pleroma.Web.OAuth.Token
@@ -775,15 +776,11 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
     test "rejects token exchange for valid credentials belonging to unconfirmed user and confirmation is required" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
-
       password = "testpassword"
-      user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
-      info_change = Pleroma.User.Info.confirmation_changeset(user.info, need_confirmation: true)
 
       {:ok, user} =
-        user
-        |> Ecto.Changeset.change()
-        |> Ecto.Changeset.put_embed(:info, info_change)
+        insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
+        |> User.change_info(&User.Info.confirmation_changeset(&1, need_confirmation: true))
         |> Repo.update()
 
       refute Pleroma.User.auth_active?(user)

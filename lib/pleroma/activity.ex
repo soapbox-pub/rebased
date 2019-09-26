@@ -21,7 +21,7 @@ defmodule Pleroma.Activity do
   @type t :: %__MODULE__{}
   @type actor :: String.t()
 
-  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
+  @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
   @mastodon_notification_types %{
@@ -139,7 +139,7 @@ defmodule Pleroma.Activity do
 
   @spec get_by_id(String.t()) :: Activity.t() | nil
   def get_by_id(id) do
-    case Pleroma.FlakeId.is_flake_id?(id) do
+    case FlakeId.flake_id?(id) do
       true ->
         Activity
         |> where([a], a.id == ^id)

@@ -116,6 +116,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     bio = HTML.filter_tags(user.bio, User.html_filter_policy(opts[:for]))
     relationship = render("relationship.json", %{user: opts[:for], target: user})
 
+    discoverable = user.info.discoverable
+
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -139,7 +141,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         note: HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
         sensitive: false,
         fields: raw_fields,
-        pleroma: %{}
+        pleroma: %{
+          discoverable: discoverable
+        }
       },
 
       # Pleroma extension

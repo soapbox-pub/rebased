@@ -235,7 +235,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         cwd: tmp_pack_dir
       )
 
-    emoji_map = Pleroma.Emoji.make_shortcode_to_file_map(tmp_pack_dir, exts)
+    emoji_map = Pleroma.Emoji.Loader.make_shortcode_to_file_map(tmp_pack_dir, exts)
 
     File.write!(files_name, Jason.encode!(emoji_map, pretty: true))
 

@@ -222,6 +222,7 @@ defmodule Pleroma.Web.Router do
       put("/:name", EmojiAPIController, :create)
       delete("/:name", EmojiAPIController, :delete)
       post("/download_from", EmojiAPIController, :download_from)
+      post("/list_from", EmojiAPIController, :list_from)
     end
 
     scope "/packs" do
@@ -324,11 +325,11 @@ defmodule Pleroma.Web.Router do
       get("/favourites", MastodonAPIController, :favourites)
       get("/bookmarks", MastodonAPIController, :bookmarks)
 
-      post("/notifications/clear", MastodonAPIController, :clear_notifications)
-      post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
-      get("/notifications", MastodonAPIController, :notifications)
-      get("/notifications/:id", MastodonAPIController, :get_notification)
-      delete("/notifications/destroy_multiple", MastodonAPIController, :destroy_multiple)
+      get("/notifications", NotificationController, :index)
+      get("/notifications/:id", NotificationController, :show)
+      post("/notifications/clear", NotificationController, :clear)
+      post("/notifications/dismiss", NotificationController, :dismiss)
+      delete("/notifications/destroy_multiple", NotificationController, :destroy_multiple)
 
       get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
       get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)

@@ -18,7 +18,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.Router
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
@@ -254,18 +256,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         "nickname" => nickname
       })
       when permission_group in ["moderator", "admin"] do
-    user = User.get_cached_by_nickname(nickname)
+    info = Map.put(%{}, "is_" <> permission_group, true)
 
-    info =
-      %{}
-      |> Map.put("is_" <> permission_group, true)
-
-    info_cng = User.Info.admin_api_update(user.info, info)
-
-    cng =
-      user
-      |> Ecto.Changeset.change()
-      |> Ecto.Changeset.put_embed(:info, info_cng)
+    {:ok, user} =
+      nickname
+      |> User.get_cached_by_nickname()
+      |> User.update_info(&User.Info.admin_api_update(&1, info))
 
     ModerationLog.insert_log(%{
       action: "grant",
@@ -273,8 +269,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       subject: user,
       permission: permission_group
     })
-
-    {:ok, _user} = User.update_and_set_cache(cng)
 
     json(conn, info)
   end
@@ -293,40 +287,33 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     })
   end
 
+  def right_delete(%{assigns: %{user: %{nickname: nickname}}} = conn, %{"nickname" => nickname}) do
+    render_error(conn, :forbidden, "You can't revoke your own admin status.")
+  end
+
   def right_delete(
-        %{assigns: %{user: %User{:nickname => admin_nickname} = admin}} = conn,
+        %{assigns: %{user: admin}} = conn,
         %{
           "permission_group" => permission_group,
           "nickname" => nickname
         }
       )
       when permission_group in ["moderator", "admin"] do
-    if admin_nickname == nickname do
-      render_error(conn, :forbidden, "You can't revoke your own admin status.")
-    else
-      user = User.get_cached_by_nickname(nickname)
+    info = Map.put(%{}, "is_" <> permission_group, false)
 
-      info =
-        %{}
-        |> Map.put("is_" <> permission_group, false)
+    {:ok, user} =
+      nickname
+      |> User.get_cached_by_nickname()
+      |> User.update_info(&User.Info.admin_api_update(&1, info))
 
-      info_cng = User.Info.admin_api_update(user.info, info)
+    ModerationLog.insert_log(%{
+      action: "revoke",
+      actor: admin,
+      subject: user,
+      permission: permission_group
+    })
 
-      cng =
-        Ecto.Changeset.change(user)
-        |> Ecto.Changeset.put_embed(:info, info_cng)
-
-      {:ok, _user} = User.update_and_set_cache(cng)
-
-      ModerationLog.insert_log(%{
-        action: "revoke",
-        actor: admin,
-        subject: user,
-        permission: permission_group
-      })
-
-      json(conn, info)
-    end
+    json(conn, info)
   end
 
   def right_delete(conn, _) do
@@ -450,7 +437,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     {:ok, token} = Pleroma.PasswordResetToken.create_token(user)
 
     conn
-    |> json(token.token)
+    |> json(%{
+      token: token.token,
+      link: Router.Helpers.reset_password_url(Endpoint, :reset, token.token)
+    })
   end
 
   @doc "Force password reset for a given user"
@@ -463,13 +453,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def list_reports(conn, params) do
+    {page, page_size} = page_params(params)
+
     params =
       params
       |> Map.put("type", "Flag")
       |> Map.put("skip_preload", true)
       |> Map.put("total", true)
+      |> Map.put("limit", page_size)
+      |> Map.put("offset", (page - 1) * page_size)
 
-    reports = ActivityPub.fetch_activities([], params)
+    reports = ActivityPub.fetch_activities([], params, :offset)
 
     conn
     |> put_view(ReportView)

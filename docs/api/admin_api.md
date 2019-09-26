@@ -308,7 +308,15 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 - Methods: `GET`
 - Params: none
-- Response: password reset token (base64 string)
+- Response:
+
+```json
+{
+  "token": "U13DX6muOvpRsj35_ij9wLxUbkU-eFvfKttxs6gIajo=", // password reset token (base64 string)
+  "link": "https://pleroma.social/api/pleroma/password_reset/U13DX6muOvpRsj35_ij9wLxUbkU-eFvfKttxs6gIajo%3D"
+}
+```
+
 
 ## `/api/pleroma/admin/users/:nickname/force_password_reset`
 

@@ -33,6 +33,28 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     refute pack["pack"]["can-download"]
   end
 
+  test "listing remote packs" do
+    admin = insert(:user, info: %{is_admin: true})
+    conn = build_conn() |> assign(:user, admin)
+
+    resp = conn |> get(emoji_api_path(conn, :list_packs)) |> json_response(200)
+
+    mock(fn
+      %{method: :get, url: "https://example.com/.well-known/nodeinfo"} ->
+        json(%{links: [%{href: "https://example.com/nodeinfo/2.1.json"}]})
+
+      %{method: :get, url: "https://example.com/nodeinfo/2.1.json"} ->
+        json(%{metadata: %{features: ["shareable_emoji_packs"]}})
+
+      %{method: :get, url: "https://example.com/api/pleroma/emoji/packs"} ->
+        json(resp)
+    end)
+
+    assert conn
+           |> post(emoji_api_path(conn, :list_from), %{instance_address: "https://example.com"})
+           |> json_response(200) == resp
+  end
+
   test "downloading a shared pack from download_shared" do
     conn = build_conn()
 
@@ -55,13 +77,13 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
 
     mock(fn
       %{method: :get, url: "https://old-instance/.well-known/nodeinfo"} ->
-        json([%{href: "https://old-instance/nodeinfo/2.1.json"}])
+        json(%{links: [%{href: "https://old-instance/nodeinfo/2.1.json"}]})
 
       %{method: :get, url: "https://old-instance/nodeinfo/2.1.json"} ->
         json(%{metadata: %{features: []}})
 
       %{method: :get, url: "https://example.com/.well-known/nodeinfo"} ->
-        json([%{href: "https://example.com/nodeinfo/2.1.json"}])
+        json(%{links: [%{href: "https://example.com/nodeinfo/2.1.json"}]})
 
       %{method: :get, url: "https://example.com/nodeinfo/2.1.json"} ->
         json(%{metadata: %{features: ["shareable_emoji_packs"]}})

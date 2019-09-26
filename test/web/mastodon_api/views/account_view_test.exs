@@ -67,7 +67,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       source: %{
         note: "valid html",
         sensitive: false,
-        pleroma: %{},
+        pleroma: %{
+          discoverable: false
+        },
         fields: []
       },
       pleroma: %{
@@ -137,7 +139,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       source: %{
         note: user.bio,
         sensitive: false,
-        pleroma: %{},
+        pleroma: %{
+          discoverable: false
+        },
         fields: []
       },
       pleroma: %{
@@ -310,7 +314,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       source: %{
         note: user.bio,
         sensitive: false,
-        pleroma: %{},
+        pleroma: %{
+          discoverable: false
+        },
         fields: []
       },
       pleroma: %{
