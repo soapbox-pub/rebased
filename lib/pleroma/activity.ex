@@ -21,7 +21,7 @@ defmodule Pleroma.Activity do
   @type t :: %__MODULE__{}
   @type actor :: String.t()
 
-  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
+  @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
   @mastodon_notification_types %{
