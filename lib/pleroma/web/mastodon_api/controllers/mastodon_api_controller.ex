@@ -1474,6 +1474,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  @doc false
+  @deprecated "https://github.com/tootsuite/mastodon/pull/11213"
   def status_card(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id(id),
          true <- Visibility.visible_for_user?(activity, user) do
