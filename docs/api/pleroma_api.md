@@ -423,6 +423,15 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Response: JSON, "ok" and 200 status if the pack was downloaded, or 500 if there were
   errors downloading the pack
 
+## `POST /api/pleroma/emoji/packs/list_from`
+### Requests the instance to list the packs from another instance
+* Method `POST`
+* Authentication: required
+* Params:
+  * `instance_address`: the address of the instance to download from
+* Response: JSON with the pack list, same as if the request was made to that instance's
+  list endpoint directly + 200 status
+
 ## `GET /api/pleroma/emoji/packs/:name/download_shared`
 ### Requests a local pack from the instance
 * Method `GET`
