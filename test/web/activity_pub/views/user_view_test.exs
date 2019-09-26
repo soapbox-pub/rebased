@@ -159,7 +159,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     end
   end
 
-  test "outbox paginates correctly" do
+  test "activity collection page aginates correctly" do
     user = insert(:user)
 
     posts =
@@ -171,13 +171,21 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     # outbox sorts chronologically, newest first, with ten per page
     posts = Enum.reverse(posts)
 
-    %{"first" => %{"next" => next_url}} =
-      UserView.render("outbox.json", %{user: user, max_id: nil})
+    %{"next" => next_url} =
+      UserView.render("activity_collection_page.json", %{
+        iri: "#{user.ap_id}/outbox",
+        activities: Enum.take(posts, 10)
+      })
 
     next_id = Enum.at(posts, 9).id
     assert next_url =~ next_id
 
-    %{"next" => next_url} = UserView.render("outbox.json", %{user: user, max_id: next_id})
+    %{"next" => next_url} =
+      UserView.render("activity_collection_page.json", %{
+        iri: "#{user.ap_id}/outbox",
+        activities: Enum.take(Enum.drop(posts, 10), 10)
+      })
+
     next_id = Enum.at(posts, 19).id
     assert next_url =~ next_id
   end

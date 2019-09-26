@@ -479,7 +479,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         conn
         |> assign(:user, user)
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/inbox")
+        |> get("/users/#{user.nickname}/inbox?page=true")
 
       assert response(conn, 200) =~ note_object.data["content"]
     end
@@ -567,7 +567,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/outbox")
+        |> get("/users/#{user.nickname}/outbox?page=true")
 
       assert response(conn, 200) =~ note_object.data["content"]
     end
@@ -579,7 +579,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/outbox")
+        |> get("/users/#{user.nickname}/outbox?page=true")
 
       assert response(conn, 200) =~ announce_activity.data["object"]
     end

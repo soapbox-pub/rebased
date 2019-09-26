@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve digest email template
 – Pagination: (optional) return `total` alongside with `items` when paginating
 - Add `rel="ugc"` to all links in statuses, to prevent SEO spam
+- ActivityPub: The first page in inboxes/outboxes is no longer embedded.
 
 ### Fixed
 - Following from Osada
