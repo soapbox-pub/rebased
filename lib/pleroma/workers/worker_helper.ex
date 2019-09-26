@@ -40,6 +40,7 @@ defmodule Pleroma.Workers.WorkerHelper do
         unquote(caller_module)
         |> apply(:new, [params, worker_args])
         |> Pleroma.Repo.insert()
+        |> Pleroma.JobQueueMonitor.enqueue()
       end
     end
   end
