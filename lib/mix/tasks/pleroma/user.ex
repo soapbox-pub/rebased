@@ -4,7 +4,6 @@
 
 defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
-  import Ecto.Changeset
   import Mix.Pleroma
   alias Pleroma.User
   alias Pleroma.UserInviteToken
@@ -228,9 +227,9 @@ defmodule Mix.Tasks.Pleroma.User do
       shell_info("Deactivating #{user.nickname}")
       User.deactivate(user)
 
-      {:ok, friends} = User.get_friends(user)
-
-      Enum.each(friends, fn friend ->
+      user
+      |> User.get_friends()
+      |> Enum.each(fn friend ->
         user = User.get_cached_by_id(user.id)
 
         shell_info("Unsubscribing #{friend.nickname} from #{user.nickname}")
@@ -405,7 +404,7 @@ defmodule Mix.Tasks.Pleroma.User do
     start_pleroma()
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      {:ok, _} = User.delete_user_activities(user)
+      User.delete_user_activities(user)
       shell_info("User #{nickname} statuses deleted.")
     else
       _ ->
@@ -443,39 +442,21 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   defp set_moderator(user, value) do
-    info_cng = User.Info.admin_api_update(user.info, %{is_moderator: value})
-
-    user_cng =
-      Ecto.Changeset.change(user)
-      |> put_embed(:info, info_cng)
-
-    {:ok, user} = User.update_and_set_cache(user_cng)
+    {:ok, user} = User.update_info(user, &User.Info.admin_api_update(&1, %{is_moderator: value}))
 
     shell_info("Moderator status of #{user.nickname}: #{user.info.is_moderator}")
     user
   end
 
   defp set_admin(user, value) do
-    info_cng = User.Info.admin_api_update(user.info, %{is_admin: value})
-
-    user_cng =
-      Ecto.Changeset.change(user)
-      |> put_embed(:info, info_cng)
-
-    {:ok, user} = User.update_and_set_cache(user_cng)
+    {:ok, user} = User.update_info(user, &User.Info.admin_api_update(&1, %{is_admin: value}))
 
     shell_info("Admin status of #{user.nickname}: #{user.info.is_admin}")
     user
   end
 
   defp set_locked(user, value) do
-    info_cng = User.Info.user_upgrade(user.info, %{locked: value})
-
-    user_cng =
-      Ecto.Changeset.change(user)
-      |> put_embed(:info, info_cng)
-
-    {:ok, user} = User.update_and_set_cache(user_cng)
+    {:ok, user} = User.update_info(user, &User.Info.user_upgrade(&1, %{locked: value}))
 
     shell_info("Locked status of #{user.nickname}: #{user.info.locked}")
     user

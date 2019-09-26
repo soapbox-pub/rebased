@@ -188,16 +188,11 @@ defmodule Pleroma.User.Info do
     |> validate_required([:subscribers])
   end
 
-  @spec add_to_mutes(Info.t(), String.t()) :: Changeset.t()
-  def add_to_mutes(info, muted) do
-    set_mutes(info, Enum.uniq([muted | info.mutes]))
-  end
-
-  @spec add_to_muted_notifications(Changeset.t(), Info.t(), String.t(), boolean()) ::
-          Changeset.t()
-  def add_to_muted_notifications(changeset, info, muted, notifications?) do
-    set_notification_mutes(
-      changeset,
+  @spec add_to_mutes(Info.t(), String.t(), boolean()) :: Changeset.t()
+  def add_to_mutes(info, muted, notifications?) do
+    info
+    |> set_mutes(Enum.uniq([muted | info.mutes]))
+    |> set_notification_mutes(
       Enum.uniq([muted | info.muted_notifications]),
       notifications?
     )
@@ -205,12 +200,9 @@ defmodule Pleroma.User.Info do
 
   @spec remove_from_mutes(Info.t(), String.t()) :: Changeset.t()
   def remove_from_mutes(info, muted) do
-    set_mutes(info, List.delete(info.mutes, muted))
-  end
-
-  @spec remove_from_muted_notifications(Changeset.t(), Info.t(), String.t()) :: Changeset.t()
-  def remove_from_muted_notifications(changeset, info, muted) do
-    set_notification_mutes(changeset, List.delete(info.muted_notifications, muted), true)
+    info
+    |> set_mutes(List.delete(info.mutes, muted))
+    |> set_notification_mutes(List.delete(info.muted_notifications, muted), true)
   end
 
   def add_to_block(info, blocked) do

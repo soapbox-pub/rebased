@@ -189,14 +189,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       end)
       |> Map.put(:emoji, user_info_emojis)
 
-    info_cng = User.Info.profile_update(user.info, info_params)
+    changeset =
+      user
+      |> User.update_changeset(user_params)
+      |> User.change_info(&User.Info.profile_update(&1, info_params))
 
-    with changeset <- User.update_changeset(user, user_params),
-         changeset <- Changeset.put_embed(changeset, :info, info_cng),
-         {:ok, user} <- User.update_and_set_cache(changeset) do
-      if original_user != user do
-        CommonAPI.update(user)
-      end
+    with {:ok, user} <- User.update_and_set_cache(changeset) do
+      if original_user != user, do: CommonAPI.update(user)
 
       json(
         conn,
@@ -226,12 +225,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
-    with new_info <- %{"banner" => %{}},
-         info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
-         {:ok, user} <- User.update_and_set_cache(changeset) do
-      CommonAPI.update(user)
+    new_info = %{"banner" => %{}}
 
+    with {:ok, user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
+      CommonAPI.update(user)
       json(conn, %{url: nil})
     end
   end
@@ -239,9 +236,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def update_banner(%{assigns: %{user: user}} = conn, params) do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
          new_info <- %{"banner" => object.data},
-         info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
-         {:ok, user} <- User.update_and_set_cache(changeset) do
+         {:ok, user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
       CommonAPI.update(user)
       %{"url" => [%{"href" => href} | _]} = object.data
 
@@ -250,10 +245,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def update_background(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
-    with new_info <- %{"background" => %{}},
-         info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
-         {:ok, _user} <- User.update_and_set_cache(changeset) do
+    new_info = %{"background" => %{}}
+
+    with {:ok, _user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
       json(conn, %{url: nil})
     end
   end
@@ -261,9 +255,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def update_background(%{assigns: %{user: user}} = conn, params) do
     with {:ok, object} <- ActivityPub.upload(params, type: :background),
          new_info <- %{"background" => object.data},
-         info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
-         {:ok, _user} <- User.update_and_set_cache(changeset) do
+         {:ok, _user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
       %{"url" => [%{"href" => href} | _]} = object.data
 
       json(conn, %{url: href})
@@ -817,26 +809,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def set_mascot(%{assigns: %{user: user}} = conn, %{"file" => file}) do
     with {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)),
          %{} = attachment_data <- Map.put(object.data, "id", object.id),
-         %{type: type} = rendered <-
+         # Reject if not an image
+         %{type: "image"} = rendered <-
            StatusView.render("attachment.json", %{attachment: attachment_data}) do
-      # Reject if not an image
-      if type == "image" do
-        # Sure!
-        # Save to the user's info
-        info_changeset = User.Info.mascot_update(user.info, rendered)
+      # Sure!
+      # Save to the user's info
+      {:ok, _user} = User.update_info(user, &User.Info.mascot_update(&1, rendered))
 
-        user_changeset =
-          user
-          |> Changeset.change()
-          |> Changeset.put_embed(:info, info_changeset)
-
-        {:ok, _user} = User.update_and_set_cache(user_changeset)
-
-        conn
-        |> json(rendered)
-      else
-        render_error(conn, :unsupported_media_type, "mascots can only be images")
-      end
+      json(conn, rendered)
+    else
+      %{type: _} -> render_error(conn, :unsupported_media_type, "mascots can only be images")
     end
   end
 
@@ -959,11 +941,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def follow_requests(%{assigns: %{user: followed}} = conn, _params) do
-    with {:ok, follow_requests} <- User.get_follow_requests(followed) do
-      conn
-      |> put_view(AccountView)
-      |> render("accounts.json", %{for: followed, users: follow_requests, as: :user})
-    end
+    follow_requests = User.get_follow_requests(followed)
+
+    conn
+    |> put_view(AccountView)
+    |> render("accounts.json", %{for: followed, users: follow_requests, as: :user})
   end
 
   def authorize_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
@@ -1367,11 +1349,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
-    info_cng = User.Info.mastodon_settings_update(user.info, settings)
-
-    with changeset <- Changeset.change(user),
-         changeset <- Changeset.put_embed(changeset, :info, info_cng),
-         {:ok, _user} <- User.update_and_set_cache(changeset) do
+    with {:ok, _} <- User.update_info(user, &User.Info.mastodon_settings_update(&1, settings)) do
       json(conn, %{})
     else
       e ->
