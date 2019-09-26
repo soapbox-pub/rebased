@@ -197,12 +197,43 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def outbox(conn, %{"nickname" => nickname} = params) do
+  def outbox(conn, %{"nickname" => nickname, "page" => page?} = params)
+      when page? in [true, "true"] do
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         {:ok, user} <- User.ensure_keys_present(user) do
+      activities =
+        if params["max_id"] do
+          ActivityPub.fetch_user_activities(user, nil, %{
+            "max_id" => params["max_id"],
+            # This is a hack because postgres generates inefficient queries when filtering by
+            # 'Answer', poll votes will be hidden by the visibility filter in this case anyway
+            "include_poll_votes" => true,
+            "limit" => 10
+          })
+        else
+          ActivityPub.fetch_user_activities(user, nil, %{
+            "limit" => 10,
+            "include_poll_votes" => true
+          })
+        end
+
+      conn
+      |> put_resp_content_type("application/activity+json")
+      |> put_view(UserView)
+      |> render("activity_collection_page.json", %{
+        activities: activities,
+        iri: "#{user.ap_id}/outbox"
+      })
+    end
+  end
+
+  def outbox(conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_content_type("application/activity+json")
-      |> json(UserView.render("outbox.json", %{user: user, max_id: params["max_id"]}))
+      |> put_view(UserView)
+      |> render("activity_collection.json", %{iri: "#{user.ap_id}/outbox"})
     end
   end
 
@@ -278,12 +309,37 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def read_inbox(
         %{assigns: %{user: %{nickname: nickname} = user}} = conn,
-        %{"nickname" => nickname} = params
-      ) do
+        %{"nickname" => nickname, "page" => page?} = params
+      )
+      when page? in [true, "true"] do
+    activities =
+      if params["max_id"] do
+        ActivityPub.fetch_activities([user.ap_id | user.following], %{
+          "max_id" => params["max_id"],
+          "limit" => 10
+        })
+      else
+        ActivityPub.fetch_activities([user.ap_id | user.following], %{"limit" => 10})
+      end
+
     conn
     |> put_resp_content_type("application/activity+json")
     |> put_view(UserView)
-    |> render("inbox.json", user: user, max_id: params["max_id"])
+    |> render("activity_collection_page.json", %{
+      activities: activities,
+      iri: "#{user.ap_id}/inbox"
+    })
+  end
+
+  def read_inbox(%{assigns: %{user: %{nickname: nickname} = user}} = conn, %{
+        "nickname" => nickname
+      }) do
+    with {:ok, user} <- User.ensure_keys_present(user) do
+      conn
+      |> put_resp_content_type("application/activity+json")
+      |> put_view(UserView)
+      |> render("activity_collection.json", %{iri: "#{user.ap_id}/inbox"})
+    end
   end
 
   def read_inbox(%{assigns: %{user: nil}} = conn, %{"nickname" => nickname}) do
