@@ -513,7 +513,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       conn
       |> put_view(StatusView)
-      |> render("status.json", %{activity: activity})
+      |> render("show.json", %{activity: activity})
     else
       true ->
         {:param_cast, nil}
@@ -537,7 +537,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       conn
       |> put_view(StatusView)
-      |> render("status.json", %{activity: activity})
+      |> render("show.json", %{activity: activity})
     end
   end
 

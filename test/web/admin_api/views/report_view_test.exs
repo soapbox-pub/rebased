@@ -61,7 +61,7 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
           AccountView.render("account.json", %{user: other_user}),
           Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: other_user})
         ),
-      statuses: [StatusView.render("status.json", %{activity: activity})],
+      statuses: [StatusView.render("show.json", %{activity: activity})],
       state: "open",
       id: report_activity.id
     }

@@ -68,7 +68,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
     assert {:ok, json} = Jason.decode(json["payload"])
 
     view_json =
-      Pleroma.Web.MastodonAPI.StatusView.render("status.json", activity: activity, for: nil)
+      Pleroma.Web.MastodonAPI.StatusView.render("show.json", activity: activity, for: nil)
       |> Jason.encode!()
       |> Jason.decode!()
 
