@@ -730,6 +730,8 @@ This will probably take a long time.
 
 This is an advanced feature and disabled by default.
 
+If your instance is behind a reverse proxy you must enable and configure [`Pleroma.Plugs.RemoteIp`](#pleroma-plugs-remoteip).
+
 A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
 
 * The first element: `scale` (Integer). The time scale in milliseconds.
@@ -756,3 +758,16 @@ Available caches:
 
 * `:activity_pub` - activity pub routes (except question activities). Defaults to `nil` (no expiration).
 * `:activity_pub_question` - activity pub routes (question activities). Defaults to `30_000` (30 seconds).
+
+## Pleroma.Plugs.RemoteIp
+
+**If your instance is not behind at least one reverse proxy, you should not enable this plug.**
+
+`Pleroma.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
+
+Available options:
+
+* `enabled` - Enable/disable the plug. Defaults to `false`.
+* `headers` - A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`.
+* `proxies` - A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Defaults to `[]`.
+* `reserved` - Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network).
