@@ -348,7 +348,7 @@ defmodule Pleroma.Web.Router do
 
       get("/domain_blocks", MastodonAPIController, :domain_blocks)
 
-      get("/filters", MastodonAPIController, :get_filters)
+      get("/filters", FilterController, :index)
 
       get("/suggestions", MastodonAPIController, :suggestions)
 
@@ -392,10 +392,10 @@ defmodule Pleroma.Web.Router do
       post("/lists/:id/accounts", ListController, :add_to_list)
       delete("/lists/:id/accounts", ListController, :remove_from_list)
 
-      post("/filters", MastodonAPIController, :create_filter)
-      get("/filters/:id", MastodonAPIController, :get_filter)
-      put("/filters/:id", MastodonAPIController, :update_filter)
-      delete("/filters/:id", MastodonAPIController, :delete_filter)
+      post("/filters", FilterController, :create)
+      get("/filters/:id", FilterController, :show)
+      put("/filters/:id", FilterController, :update)
+      delete("/filters/:id", FilterController, :delete)
 
       patch("/pleroma/accounts/update_avatar", MastodonAPIController, :update_avatar)
       patch("/pleroma/accounts/update_banner", MastodonAPIController, :update_banner)

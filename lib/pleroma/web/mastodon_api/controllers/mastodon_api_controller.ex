@@ -14,7 +14,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Emoji
-  alias Pleroma.Filter
   alias Pleroma.HTTP
   alias Pleroma.Object
   alias Pleroma.Pagination
@@ -30,7 +29,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.AppView
   alias Pleroma.Web.MastodonAPI.ConversationView
-  alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.MastodonAPI.MastodonView
@@ -1037,65 +1035,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def empty_object(conn, _) do
     Logger.debug("Unimplemented, returning an empty object")
-    json(conn, %{})
-  end
-
-  def get_filters(%{assigns: %{user: user}} = conn, _) do
-    filters = Filter.get_filters(user)
-    res = FilterView.render("filters.json", filters: filters)
-    json(conn, res)
-  end
-
-  def create_filter(
-        %{assigns: %{user: user}} = conn,
-        %{"phrase" => phrase, "context" => context} = params
-      ) do
-    query = %Filter{
-      user_id: user.id,
-      phrase: phrase,
-      context: context,
-      hide: Map.get(params, "irreversible", false),
-      whole_word: Map.get(params, "boolean", true)
-      # expires_at
-    }
-
-    {:ok, response} = Filter.create(query)
-    res = FilterView.render("filter.json", filter: response)
-    json(conn, res)
-  end
-
-  def get_filter(%{assigns: %{user: user}} = conn, %{"id" => filter_id}) do
-    filter = Filter.get(filter_id, user)
-    res = FilterView.render("filter.json", filter: filter)
-    json(conn, res)
-  end
-
-  def update_filter(
-        %{assigns: %{user: user}} = conn,
-        %{"phrase" => phrase, "context" => context, "id" => filter_id} = params
-      ) do
-    query = %Filter{
-      user_id: user.id,
-      filter_id: filter_id,
-      phrase: phrase,
-      context: context,
-      hide: Map.get(params, "irreversible", nil),
-      whole_word: Map.get(params, "boolean", true)
-      # expires_at
-    }
-
-    {:ok, response} = Filter.update(query)
-    res = FilterView.render("filter.json", filter: response)
-    json(conn, res)
-  end
-
-  def delete_filter(%{assigns: %{user: user}} = conn, %{"id" => filter_id}) do
-    query = %Filter{
-      user_id: user.id,
-      filter_id: filter_id
-    }
-
-    {:ok, _} = Filter.delete(query)
     json(conn, %{})
   end
 
