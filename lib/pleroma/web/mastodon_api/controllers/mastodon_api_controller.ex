@@ -662,20 +662,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def domain_blocks(%{assigns: %{user: %{info: info}}} = conn, _) do
-    json(conn, info.domain_blocks || [])
-  end
-
-  def block_domain(%{assigns: %{user: blocker}} = conn, %{"domain" => domain}) do
-    User.block_domain(blocker, domain)
-    json(conn, %{})
-  end
-
-  def unblock_domain(%{assigns: %{user: blocker}} = conn, %{"domain" => domain}) do
-    User.unblock_domain(blocker, domain)
-    json(conn, %{})
-  end
-
   def subscribe(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %User{} = subscription_target <- User.get_cached_by_id(id),
          {:ok, subscription_target} = User.subscribe(user, subscription_target) do
