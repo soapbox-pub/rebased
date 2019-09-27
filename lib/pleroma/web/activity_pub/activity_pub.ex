@@ -248,6 +248,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def listen(%{to: to, actor: actor, context: context, object: object} = params) do
+    additional = params[:additional] || %{}
+    # only accept false as false value
+    local = !(params[:local] == false)
+    published = params[:published]
+
+    with listen_data <-
+           make_listen_data(
+             %{to: to, actor: actor, published: published, context: context, object: object},
+             additional
+           ),
+         {:ok, activity} <- insert(listen_data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    else
+      {:error, message} ->
+        {:error, message}
+    end
+  end
+
   def accept(%{to: to, actor: actor, object: object} = params) do
     # only accept false as false value
     local = !(params[:local] == false)
