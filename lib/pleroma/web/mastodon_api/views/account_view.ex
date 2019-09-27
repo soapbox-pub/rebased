@@ -166,6 +166,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_settings_store(user, opts[:for], opts)
     |> maybe_put_chat_token(user, opts[:for], opts)
     |> maybe_put_activation_status(user, opts[:for])
+    |> maybe_put_follow_requests_count(user, opts[:for])
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -173,6 +174,21 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp username_from_nickname(_), do: nil
+
+  defp maybe_put_follow_requests_count(
+         data,
+         %User{id: user_id} = user,
+         %User{id: user_id}
+       ) do
+    count =
+      User.get_follow_requests(user)
+      |> length()
+
+    data
+    |> Kernel.put_in([:follow_requests_count], count)
+  end
+
+  defp maybe_put_follow_requests_count(data, _, _), do: data
 
   defp maybe_put_settings(
          data,
