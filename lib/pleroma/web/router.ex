@@ -339,8 +339,8 @@ defmodule Pleroma.Web.Router do
       post("/notifications/dismiss", NotificationController, :dismiss)
       delete("/notifications/destroy_multiple", NotificationController, :destroy_multiple)
 
-      get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
-      get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)
+      get("/scheduled_statuses", ScheduledActivityController, :index)
+      get("/scheduled_statuses/:id", ScheduledActivityController, :show)
 
       get("/lists", ListController, :index)
       get("/lists/:id", ListController, :show)
@@ -377,8 +377,8 @@ defmodule Pleroma.Web.Router do
       post("/statuses/:id/mute", StatusController, :mute_conversation)
       post("/statuses/:id/unmute", StatusController, :unmute_conversation)
 
-      put("/scheduled_statuses/:id", MastodonAPIController, :update_scheduled_status)
-      delete("/scheduled_statuses/:id", MastodonAPIController, :delete_scheduled_status)
+      put("/scheduled_statuses/:id", ScheduledActivityController, :update)
+      delete("/scheduled_statuses/:id", ScheduledActivityController, :delete)
 
       post("/polls/:id/votes", MastodonAPIController, :poll_vote)
 
