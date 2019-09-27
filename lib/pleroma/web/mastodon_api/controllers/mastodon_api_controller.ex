@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [json_response: 3, add_link_headers: 2, add_link_headers: 3]
+    only: [json_response: 3, add_link_headers: 2, truthy_param?: 1]
 
   alias Ecto.Changeset
   alias Pleroma.Activity
@@ -44,7 +44,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
-  alias Pleroma.Web.ControllerHelper
   import Ecto.Query
 
   require Logger
@@ -156,7 +155,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       ]
       |> Enum.reduce(%{}, fn key, acc ->
         add_if_present(acc, params, to_string(key), key, fn value ->
-          {:ok, ControllerHelper.truthy_param?(value)}
+          {:ok, truthy_param?(value)}
         end)
       end)
       |> add_if_present(params, "default_scope", :default_scope)
@@ -344,43 +343,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, mastodon_emoji)
   end
 
-  def home_timeline(%{assigns: %{user: user}} = conn, params) do
-    params =
-      params
-      |> Map.put("type", ["Create", "Announce"])
-      |> Map.put("blocking_user", user)
-      |> Map.put("muting_user", user)
-      |> Map.put("user", user)
-
-    activities =
-      [user.ap_id | user.following]
-      |> ActivityPub.fetch_activities(params)
-      |> Enum.reverse()
-
-    conn
-    |> add_link_headers(activities)
-    |> put_view(StatusView)
-    |> render("index.json", %{activities: activities, for: user, as: :activity})
-  end
-
-  def public_timeline(%{assigns: %{user: user}} = conn, params) do
-    local_only = params["local"] in [true, "True", "true", "1"]
-
-    activities =
-      params
-      |> Map.put("type", ["Create", "Announce"])
-      |> Map.put("local_only", local_only)
-      |> Map.put("blocking_user", user)
-      |> Map.put("muting_user", user)
-      |> ActivityPub.fetch_public_activities()
-      |> Enum.reverse()
-
-    conn
-    |> add_link_headers(activities, %{"local" => local_only})
-    |> put_view(StatusView)
-    |> render("index.json", %{activities: activities, for: user, as: :activity})
-  end
-
   def user_statuses(%{assigns: %{user: reading_user}} = conn, params) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user) do
       params =
@@ -398,25 +360,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         as: :activity
       })
     end
-  end
-
-  def dm_timeline(%{assigns: %{user: user}} = conn, params) do
-    params =
-      params
-      |> Map.put("type", "Create")
-      |> Map.put("blocking_user", user)
-      |> Map.put("user", user)
-      |> Map.put(:visibility, "direct")
-
-    activities =
-      [user.ap_id]
-      |> ActivityPub.fetch_activities_query(params)
-      |> Pagination.fetch_paginated(params)
-
-    conn
-    |> add_link_headers(activities)
-    |> put_view(StatusView)
-    |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
 
   def get_statuses(%{assigns: %{user: user}} = conn, %{"ids" => ids}) do
@@ -822,45 +765,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def hashtag_timeline(%{assigns: %{user: user}} = conn, params) do
-    local_only = params["local"] in [true, "True", "true", "1"]
-
-    tags =
-      [params["tag"], params["any"]]
-      |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.filter(& &1)
-      |> Enum.map(&String.downcase(&1))
-
-    tag_all =
-      params["all"] ||
-        []
-        |> Enum.map(&String.downcase(&1))
-
-    tag_reject =
-      params["none"] ||
-        []
-        |> Enum.map(&String.downcase(&1))
-
-    activities =
-      params
-      |> Map.put("type", "Create")
-      |> Map.put("local_only", local_only)
-      |> Map.put("blocking_user", user)
-      |> Map.put("muting_user", user)
-      |> Map.put("user", user)
-      |> Map.put("tag", tags)
-      |> Map.put("tag_all", tag_all)
-      |> Map.put("tag_reject", tag_reject)
-      |> ActivityPub.fetch_public_activities()
-      |> Enum.reverse()
-
-    conn
-    |> add_link_headers(activities, %{"local" => local_only})
-    |> put_view(StatusView)
-    |> render("index.json", %{activities: activities, for: user, as: :activity})
-  end
-
   def followers(%{assigns: %{user: for_user}} = conn, %{"id" => id} = params) do
     with %User{} = user <- User.get_cached_by_id(id),
          followers <- MastodonAPI.get_followers(user, params) do
@@ -1171,31 +1075,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     lists = Pleroma.List.get_lists_account_belongs(user, account_id)
     res = ListView.render("lists.json", lists: lists)
     json(conn, res)
-  end
-
-  def list_timeline(%{assigns: %{user: user}} = conn, %{"list_id" => id} = params) do
-    with %Pleroma.List{title: _title, following: following} <- Pleroma.List.get(id, user) do
-      params =
-        params
-        |> Map.put("type", "Create")
-        |> Map.put("blocking_user", user)
-        |> Map.put("user", user)
-        |> Map.put("muting_user", user)
-
-      # we must filter the following list for the user to avoid leaking statuses the user
-      # does not actually have permission to see (for more info, peruse security issue #270).
-      activities =
-        following
-        |> Enum.filter(fn x -> x in user.following end)
-        |> ActivityPub.fetch_activities_bounded(following, params)
-        |> Enum.reverse()
-
-      conn
-      |> put_view(StatusView)
-      |> render("index.json", %{activities: activities, for: user, as: :activity})
-    else
-      _e -> render_error(conn, :forbidden, "Error.")
-    end
   end
 
   def index(%{assigns: %{user: user}} = conn, _params) do

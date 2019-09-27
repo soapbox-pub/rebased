@@ -319,8 +319,8 @@ defmodule Pleroma.Web.Router do
       get("/blocks", MastodonAPIController, :blocks)
       get("/mutes", MastodonAPIController, :mutes)
 
-      get("/timelines/home", MastodonAPIController, :home_timeline)
-      get("/timelines/direct", MastodonAPIController, :dm_timeline)
+      get("/timelines/home", TimelineController, :home)
+      get("/timelines/direct", TimelineController, :direct)
 
       get("/favourites", MastodonAPIController, :favourites)
       get("/bookmarks", MastodonAPIController, :bookmarks)
@@ -466,9 +466,9 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_read_or_public)
 
-      get("/timelines/public", MastodonAPIController, :public_timeline)
-      get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
-      get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
+      get("/timelines/public", TimelineController, :public)
+      get("/timelines/tag/:tag", TimelineController, :hashtag)
+      get("/timelines/list/:list_id", TimelineController, :list)
 
       get("/statuses", MastodonAPIController, :get_statuses)
       get("/statuses/:id", MastodonAPIController, :get_status)
