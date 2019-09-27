@@ -323,7 +323,7 @@ defmodule Pleroma.Web.Router do
       get("/accounts/:id/lists", MastodonAPIController, :account_lists)
       get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
 
-      get("/follow_requests", MastodonAPIController, :follow_requests)
+      get("/follow_requests", FollowRequestController, :index)
       get("/blocks", MastodonAPIController, :blocks)
       get("/mutes", MastodonAPIController, :mutes)
 
@@ -419,8 +419,8 @@ defmodule Pleroma.Web.Router do
       post("/accounts/:id/mute", MastodonAPIController, :mute)
       post("/accounts/:id/unmute", MastodonAPIController, :unmute)
 
-      post("/follow_requests/:id/authorize", MastodonAPIController, :authorize_follow_request)
-      post("/follow_requests/:id/reject", MastodonAPIController, :reject_follow_request)
+      post("/follow_requests/:id/authorize", FollowRequestController, :authorize)
+      post("/follow_requests/:id/reject", FollowRequestController, :reject)
 
       post("/domain_blocks", DomainBlockController, :create)
       delete("/domain_blocks", DomainBlockController, :delete)
