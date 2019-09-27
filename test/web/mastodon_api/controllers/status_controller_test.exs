@@ -99,6 +99,28 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                NaiveDateTime.to_iso8601(expiration.scheduled_at)
     end
 
+    test "posting an empty status with an attachment", %{conn: conn} do
+      user = insert(:user)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "media_ids" => [to_string(upload.id)],
+          "status" => ""
+        })
+
+      assert json_response(conn, 200)
+    end
+
     test "replying to a status", %{conn: conn} do
       user = insert(:user)
       {:ok, replied_to} = CommonAPI.post(user, %{"status" => "cofe"})
