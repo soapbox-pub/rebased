@@ -9,7 +9,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.ActivityExpiration
   alias Pleroma.Config
   alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.ScheduledActivity
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -221,6 +224,115 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert activity.recipients == [user2.ap_id, conn.assigns[:user].ap_id]
       assert activity.data["to"] == [user2.ap_id]
       assert activity.data["cc"] == []
+    end
+  end
+
+  describe "posting scheduled statuses" do
+    test "creates a scheduled activity", %{conn: conn} do
+      user = insert(:user)
+      scheduled_at = NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(120), :millisecond)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "scheduled",
+          "scheduled_at" => scheduled_at
+        })
+
+      assert %{"scheduled_at" => expected_scheduled_at} = json_response(conn, 200)
+      assert expected_scheduled_at == CommonAPI.Utils.to_masto_date(scheduled_at)
+      assert [] == Repo.all(Activity)
+    end
+
+    test "creates a scheduled activity with a media attachment", %{conn: conn} do
+      user = insert(:user)
+      scheduled_at = NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(120), :millisecond)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "media_ids" => [to_string(upload.id)],
+          "status" => "scheduled",
+          "scheduled_at" => scheduled_at
+        })
+
+      assert %{"media_attachments" => [media_attachment]} = json_response(conn, 200)
+      assert %{"type" => "image"} = media_attachment
+    end
+
+    test "skips the scheduling and creates the activity if scheduled_at is earlier than 5 minutes from now",
+         %{conn: conn} do
+      user = insert(:user)
+
+      scheduled_at =
+        NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(5) - 1, :millisecond)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "not scheduled",
+          "scheduled_at" => scheduled_at
+        })
+
+      assert %{"content" => "not scheduled"} = json_response(conn, 200)
+      assert [] == Repo.all(ScheduledActivity)
+    end
+
+    test "returns error when daily user limit is exceeded", %{conn: conn} do
+      user = insert(:user)
+
+      today =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      attrs = %{params: %{}, scheduled_at: today}
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{"status" => "scheduled", "scheduled_at" => today})
+
+      assert %{"error" => "daily limit exceeded"} == json_response(conn, 422)
+    end
+
+    test "returns error when total user limit is exceeded", %{conn: conn} do
+      user = insert(:user)
+
+      today =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      tomorrow =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.hours(36), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      attrs = %{params: %{}, scheduled_at: today}
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+      {:ok, _} = ScheduledActivity.create(user, %{params: %{}, scheduled_at: tomorrow})
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{"status" => "scheduled", "scheduled_at" => tomorrow})
+
+      assert %{"error" => "total limit exceeded"} == json_response(conn, 422)
     end
   end
 
