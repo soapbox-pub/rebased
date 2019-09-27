@@ -550,42 +550,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def follow_requests(%{assigns: %{user: followed}} = conn, _params) do
-    follow_requests = User.get_follow_requests(followed)
-
-    conn
-    |> put_view(AccountView)
-    |> render("accounts.json", %{for: followed, users: follow_requests, as: :user})
-  end
-
-  def authorize_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
-    with %User{} = follower <- User.get_cached_by_id(id),
-         {:ok, follower} <- CommonAPI.accept_follow_request(follower, followed) do
-      conn
-      |> put_view(AccountView)
-      |> render("relationship.json", %{user: followed, target: follower})
-    else
-      {:error, message} ->
-        conn
-        |> put_status(:forbidden)
-        |> json(%{error: message})
-    end
-  end
-
-  def reject_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
-    with %User{} = follower <- User.get_cached_by_id(id),
-         {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
-      conn
-      |> put_view(AccountView)
-      |> render("relationship.json", %{user: followed, target: follower})
-    else
-      {:error, message} ->
-        conn
-        |> put_status(:forbidden)
-        |> json(%{error: message})
-    end
-  end
-
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with {_, %User{} = followed} <- {:followed, User.get_cached_by_id(id)},
          {_, true} <- {:followed, follower.id != followed.id},
