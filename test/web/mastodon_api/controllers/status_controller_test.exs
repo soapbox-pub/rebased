@@ -99,7 +99,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                NaiveDateTime.to_iso8601(expiration.scheduled_at)
     end
 
-    test "posting an empty status with an attachment", %{conn: conn} do
+    test "posting an undefined status with an attachment", %{conn: conn} do
       user = insert(:user)
 
       file = %Plug.Upload{
@@ -114,8 +114,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         conn
         |> assign(:user, user)
         |> post("/api/v1/statuses", %{
-          "media_ids" => [to_string(upload.id)],
-          "status" => ""
+          "media_ids" => [to_string(upload.id)]
         })
 
       assert json_response(conn, 200)

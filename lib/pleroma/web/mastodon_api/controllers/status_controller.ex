@@ -103,6 +103,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     end
   end
 
+  def create(%{assigns: %{user: _user}} = conn, %{"media_ids" => _} = params) do
+    create(conn, Map.put(params, "status", ""))
+  end
+
   @doc "GET /api/v1/statuses/:id"
   def show(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
