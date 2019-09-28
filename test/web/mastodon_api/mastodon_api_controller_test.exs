@@ -399,6 +399,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert to_string(other_user.id) == relationship["id"]
     end
+
+    test "returns an empty list on a bad request", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/accounts/relationships", %{})
+
+      assert [] = json_response(conn, 200)
+    end
   end
 
   describe "media upload" do
@@ -533,70 +544,72 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
-  test "mascot upload", %{conn: conn} do
-    user = insert(:user)
+  describe "/api/v1/pleroma/mascot" do
+    test "mascot upload", %{conn: conn} do
+      user = insert(:user)
 
-    non_image_file = %Plug.Upload{
-      content_type: "audio/mpeg",
-      path: Path.absname("test/fixtures/sound.mp3"),
-      filename: "sound.mp3"
-    }
+      non_image_file = %Plug.Upload{
+        content_type: "audio/mpeg",
+        path: Path.absname("test/fixtures/sound.mp3"),
+        filename: "sound.mp3"
+      }
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> put("/api/v1/pleroma/mascot", %{"file" => non_image_file})
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put("/api/v1/pleroma/mascot", %{"file" => non_image_file})
 
-    assert json_response(conn, 415)
+      assert json_response(conn, 415)
 
-    file = %Plug.Upload{
-      content_type: "image/jpg",
-      path: Path.absname("test/fixtures/image.jpg"),
-      filename: "an_image.jpg"
-    }
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
 
-    conn =
-      build_conn()
-      |> assign(:user, user)
-      |> put("/api/v1/pleroma/mascot", %{"file" => file})
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> put("/api/v1/pleroma/mascot", %{"file" => file})
 
-    assert %{"id" => _, "type" => image} = json_response(conn, 200)
-  end
+      assert %{"id" => _, "type" => image} = json_response(conn, 200)
+    end
 
-  test "mascot retrieving", %{conn: conn} do
-    user = insert(:user)
-    # When user hasn't set a mascot, we should just get pleroma tan back
-    conn =
-      conn
-      |> assign(:user, user)
-      |> get("/api/v1/pleroma/mascot")
+    test "mascot retrieving", %{conn: conn} do
+      user = insert(:user)
+      # When user hasn't set a mascot, we should just get pleroma tan back
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/pleroma/mascot")
 
-    assert %{"url" => url} = json_response(conn, 200)
-    assert url =~ "pleroma-fox-tan-smol"
+      assert %{"url" => url} = json_response(conn, 200)
+      assert url =~ "pleroma-fox-tan-smol"
 
-    # When a user sets their mascot, we should get that back
-    file = %Plug.Upload{
-      content_type: "image/jpg",
-      path: Path.absname("test/fixtures/image.jpg"),
-      filename: "an_image.jpg"
-    }
+      # When a user sets their mascot, we should get that back
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
 
-    conn =
-      build_conn()
-      |> assign(:user, user)
-      |> put("/api/v1/pleroma/mascot", %{"file" => file})
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> put("/api/v1/pleroma/mascot", %{"file" => file})
 
-    assert json_response(conn, 200)
+      assert json_response(conn, 200)
 
-    user = User.get_cached_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
 
-    conn =
-      build_conn()
-      |> assign(:user, user)
-      |> get("/api/v1/pleroma/mascot")
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> get("/api/v1/pleroma/mascot")
 
-    assert %{"url" => url, "type" => "image"} = json_response(conn, 200)
-    assert url =~ "an_image"
+      assert %{"url" => url, "type" => "image"} = json_response(conn, 200)
+      assert url =~ "an_image"
+    end
   end
 
   test "getting followers", %{conn: conn} do
@@ -908,23 +921,51 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
-  test "subscribing / unsubscribing to a user", %{conn: conn} do
-    user = insert(:user)
-    subscription_target = insert(:user)
+  describe "subscribing / unsubscribing" do
+    test "subscribing / unsubscribing to a user", %{conn: conn} do
+      user = insert(:user)
+      subscription_target = insert(:user)
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/subscribe")
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/subscribe")
 
-    assert %{"id" => _id, "subscribing" => true} = json_response(conn, 200)
+      assert %{"id" => _id, "subscribing" => true} = json_response(conn, 200)
 
-    conn =
-      build_conn()
-      |> assign(:user, user)
-      |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/unsubscribe")
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/unsubscribe")
 
-    assert %{"id" => _id, "subscribing" => false} = json_response(conn, 200)
+      assert %{"id" => _id, "subscribing" => false} = json_response(conn, 200)
+    end
+  end
+
+  describe "subscribing" do
+    test "returns 404 when subscription_target not found", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/pleroma/accounts/target_id/subscribe")
+
+      assert %{"error" => "Record not found"} = json_response(conn, 404)
+    end
+  end
+
+  describe "unsubscribing" do
+    test "returns 404 when subscription_target not found", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/pleroma/accounts/target_id/unsubscribe")
+
+      assert %{"error" => "Record not found"} = json_response(conn, 404)
+    end
   end
 
   test "getting a list of mutes", %{conn: conn} do
@@ -1573,6 +1614,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   describe "create account by app" do
+    setup do
+      valid_params = %{
+        username: "lain",
+        email: "lain@example.org",
+        password: "PlzDontHackLain",
+        agreement: true
+      }
+
+      [valid_params: valid_params]
+    end
+
     test "Account registration via Application", %{conn: conn} do
       conn =
         conn
@@ -1616,6 +1668,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           username: "lain",
           email: "lain@example.org",
           password: "PlzDontHackLain",
+          bio: "Test Bio",
           agreement: true
         })
 
@@ -1632,6 +1685,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert token_from_db.user
 
       assert token_from_db.user.info.confirmation_pending
+    end
+
+    test "returns error when user already registred", %{conn: conn, valid_params: valid_params} do
+      _user = insert(:user, email: "lain@example.org")
+      app_token = insert(:oauth_token, user: nil)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer " <> app_token.token)
+
+      res = post(conn, "/api/v1/accounts", valid_params)
+      assert json_response(res, 400) == %{"error" => "{\"email\":[\"has already been taken\"]}"}
     end
 
     test "rate limit", %{conn: conn} do
@@ -1676,6 +1741,41 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         })
 
       assert json_response(conn, :too_many_requests) == %{"error" => "Throttled"}
+    end
+
+    test "returns bad_request if missing required params", %{
+      conn: conn,
+      valid_params: valid_params
+    } do
+      app_token = insert(:oauth_token, user: nil)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer " <> app_token.token)
+
+      res = post(conn, "/api/v1/accounts", valid_params)
+      assert json_response(res, 200)
+
+      [{127, 0, 0, 1}, {127, 0, 0, 2}, {127, 0, 0, 3}, {127, 0, 0, 4}]
+      |> Stream.zip(valid_params)
+      |> Enum.each(fn {ip, {attr, _}} ->
+        res =
+          conn
+          |> Map.put(:remote_ip, ip)
+          |> post("/api/v1/accounts", Map.delete(valid_params, attr))
+          |> json_response(400)
+
+        assert res == %{"error" => "Missing parameters"}
+      end)
+    end
+
+    test "returns forbidden if token is invalid", %{conn: conn, valid_params: valid_params} do
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer " <> "invalid-token")
+
+      res = post(conn, "/api/v1/accounts", valid_params)
+      assert json_response(res, 403) == %{"error" => "Invalid credentials"}
     end
   end
 
@@ -2017,6 +2117,117 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                  "id" => other_user.id
                }
              ]
+    end
+  end
+
+  describe "PUT /api/v1/media/:id" do
+    setup do
+      actor = insert(:user)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, %Object{} = object} =
+        ActivityPub.upload(
+          file,
+          actor: User.ap_id(actor),
+          description: "test-m"
+        )
+
+      [actor: actor, object: object]
+    end
+
+    test "updates name of media", %{conn: conn, actor: actor, object: object} do
+      media =
+        conn
+        |> assign(:user, actor)
+        |> put("/api/v1/media/#{object.id}", %{"description" => "test-media"})
+        |> json_response(:ok)
+
+      assert media["description"] == "test-media"
+      assert refresh_record(object).data["name"] == "test-media"
+    end
+
+    test "returns error wheb request is bad", %{conn: conn, actor: actor, object: object} do
+      media =
+        conn
+        |> assign(:user, actor)
+        |> put("/api/v1/media/#{object.id}", %{})
+        |> json_response(400)
+
+      assert media == %{"error" => "bad_request"}
+    end
+  end
+
+  describe "DELETE /auth/sign_out" do
+    test "redirect to root page", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> delete("/auth/sign_out")
+
+      assert conn.status == 302
+      assert redirected_to(conn) == "/"
+    end
+  end
+
+  describe "GET /api/v1/accounts/:id/lists - account_lists" do
+    test "returns lists to which the account belongs", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+      assert {:ok, %Pleroma.List{} = list} = Pleroma.List.create("Test List", user)
+      {:ok, %{following: _following}} = Pleroma.List.follow(list, other_user)
+
+      res =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/accounts/#{other_user.id}/lists")
+        |> json_response(200)
+
+      assert res == [%{"id" => to_string(list.id), "title" => "Test List"}]
+    end
+  end
+
+  describe "empty_array, stubs for mastodon api" do
+    test "GET /api/v1/accounts/:id/identity_proofs", %{conn: conn} do
+      user = insert(:user)
+
+      res =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/accounts/#{user.id}/identity_proofs")
+        |> json_response(200)
+
+      assert res == []
+    end
+
+    test "GET /api/v1/endorsements", %{conn: conn} do
+      user = insert(:user)
+
+      res =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/endorsements")
+        |> json_response(200)
+
+      assert res == []
+    end
+
+    test "GET /api/v1/trends", %{conn: conn} do
+      user = insert(:user)
+
+      res =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/trends")
+        |> json_response(200)
+
+      assert res == []
     end
   end
 end

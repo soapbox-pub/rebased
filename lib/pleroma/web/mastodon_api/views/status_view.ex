@@ -339,9 +339,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("card.json", _) do
-    nil
-  end
+  def render("card.json", _), do: nil
 
   def render("attachment.json", %{attachment: attachment}) do
     [attachment_url | _] = attachment["url"]

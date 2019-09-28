@@ -29,7 +29,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     captcha_enabled = Pleroma.Config.get([Pleroma.Captcha, :enabled])
     # true if captcha is disabled or enabled and valid, false otherwise
     captcha_ok =
-      if !captcha_enabled do
+      if not captcha_enabled do
         :ok
       else
         Pleroma.Captcha.validate(

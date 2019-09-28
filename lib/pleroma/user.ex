@@ -505,6 +505,11 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
+  def get_all_by_ids(ids) do
+    from(u in __MODULE__, where: u.id in ^ids)
+    |> Repo.all()
+  end
+
   # This is mostly an SPC migration fix. This guesses the user nickname by taking the last part
   # of the ap_id and the domain and tries to get that user
   def get_by_guessed_nickname(ap_id) do
@@ -763,6 +768,19 @@ defmodule Pleroma.User do
       |> Repo.one()
 
     update_info(user, &User.Info.set_note_count(&1, note_count))
+  end
+
+  def update_mascot(user, url) do
+    info_changeset =
+      User.Info.mascot_update(
+        user.info,
+        url
+      )
+
+    user
+    |> change()
+    |> put_embed(:info, info_changeset)
+    |> update_and_set_cache()
   end
 
   @spec maybe_fetch_follow_information(User.t()) :: User.t()

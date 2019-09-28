@@ -137,11 +137,18 @@ defmodule Pleroma.Activity do
     |> Repo.one()
   end
 
+  @spec get_by_id(String.t()) :: Activity.t() | nil
   def get_by_id(id) do
-    Activity
-    |> where([a], a.id == ^id)
-    |> restrict_deactivated_users()
-    |> Repo.one()
+    case FlakeId.flake_id?(id) do
+      true ->
+        Activity
+        |> where([a], a.id == ^id)
+        |> restrict_deactivated_users()
+        |> Repo.one()
+
+      _ ->
+        nil
+    end
   end
 
   def get_by_id_with_object(id) do
