@@ -16,7 +16,7 @@ defmodule Pleroma.Web.StreamerView do
       event: "update",
       payload:
         Pleroma.Web.MastodonAPI.StatusView.render(
-          "status.json",
+          "show.json",
           activity: activity,
           for: user
         )
@@ -43,7 +43,7 @@ defmodule Pleroma.Web.StreamerView do
       event: "update",
       payload:
         Pleroma.Web.MastodonAPI.StatusView.render(
-          "status.json",
+          "show.json",
           activity: activity
         )
         |> Jason.encode!()

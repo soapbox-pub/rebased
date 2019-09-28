@@ -2689,6 +2689,42 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: Pleroma.Plugs.RemoteIp,
+    type: :group,
+    description: """
+    **If your instance is not behind at least one reverse proxy, you should not enable this plug.**
+
+    `Pleroma.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
+    """,
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "Enable/disable the plug. Defaults to `false`.",
+        suggestions: [true, false]
+      },
+      %{
+        key: :headers,
+        type: {:list, :string},
+        description:
+          "A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`."
+      },
+      %{
+        key: :proxies,
+        type: {:list, :string},
+        description:
+          "A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Defaults to `[]`."
+      },
+      %{
+        key: :reserved,
+        type: {:list, :string},
+        description:
+          "Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :web_cache_ttl,
     type: :group,
     description:

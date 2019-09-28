@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Refreshing poll results for remote polls
 - Admin API: Add ability to require password reset
+- Pleroma API: `GET /api/v1/pleroma/subscription_notifications/` to get list of subscription notifications
+- Pleroma API: `GET /api/v1/pleroma/subscription_notifications/:id` to get a subscription notification
+- Pleroma API: `POST /api/v1/pleroma/subscription_notifications/clear` to clear all subscription notifications
+- Pleroma API: `POST /api/v1/pleroma/subscription_notifications/dismiss` to clear a subscription notification
+- Pleroma API: `DELETE /api/v1/pleroma/subscription_notifications/destroy_multiple` to clear multiple subscription notifications
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
@@ -15,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Return `total` when querying for reports
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
 - Admin API: Return link alongside with token on password reset
+- Mastodon API: notifications no longer include subscription notifications - they are now served from new endpoints in Pleroma API
 ### Fixed
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
 
@@ -45,7 +51,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve digest email template
 – Pagination: (optional) return `total` alongside with `items` when paginating
 - Add `rel="ugc"` to all links in statuses, to prevent SEO spam
-- ActivityPub: The first page in inboxes/outboxes is no longer embedded.
 
 ### Fixed
 - Following from Osada
@@ -108,6 +113,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Add `/api/v1/pleroma/accounts/confirmation_resend?email=<email>` for resending account confirmation.
 - Pleroma API: Email change endpoint.
 - Admin API: Added moderation log
+- Support for `X-Forwarded-For` and similar HTTP headers which used by reverse proxies to pass a real user IP address to the backend. Must not be enabled unless your instance is behind at least one reverse proxy (such as Nginx, Apache HTTPD or Varnish Cache).
 - Web response cache (currently, enabled for ActivityPub)
 - Mastodon API: Added an endpoint to get multiple statuses by IDs (`GET /api/v1/statuses/?ids[]=1&ids[]=2`)
 - ActivityPub: Add ActivityPub actor's `discoverable` parameter.
@@ -118,6 +124,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: changed json structure for saving config settings.
 - RichMedia: parsers and their order are configured in `rich_media` config.
 - RichMedia: add the rich media ttl based on image expiration time.
+
+## [1.0.7] - 2019-09-26
+### Fixed
+- Broken federation on Erlang 22 (previous versions of hackney http client were using an option that got deprecated)
+### Changed
+- ActivityPub: The first page in inboxes/outboxes is no longer embedded.
 
 ## [1.0.6] - 2019-08-14
 ### Fixed

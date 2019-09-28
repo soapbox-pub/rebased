@@ -24,7 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
 
     activity = Activity.get_by_id_with_object(last_activity_id)
 
-    last_status = StatusView.render("status.json", %{activity: activity, for: user})
+    last_status = StatusView.render("show.json", %{activity: activity, for: user})
 
     # Conversations return all users except the current user.
     users =
