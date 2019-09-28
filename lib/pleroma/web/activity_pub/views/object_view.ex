@@ -15,7 +15,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
     Map.merge(base, additional)
   end
 
-  def render("object.json", %{object: %Activity{data: %{"type" => "Create"}} = activity}) do
+  def render("object.json", %{object: %Activity{data: %{"type" => activity_type}} = activity})
+      when activity_type in ["Create", "Listen"] do
     base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
     object = Object.normalize(activity)
 
