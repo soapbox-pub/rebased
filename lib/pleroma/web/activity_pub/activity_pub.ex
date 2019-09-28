@@ -608,6 +608,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_thread_visibility(query, _, _), do: query
 
+  def fetch_user_abstract_activities(user, reading_user, params \\ %{}) do
+    params =
+      params
+      |> Map.put("user", reading_user)
+      |> Map.put("actor_id", user.ap_id)
+      |> Map.put("whole_db", true)
+
+    recipients =
+      user_activities_recipients(%{
+        "godmode" => params["godmode"],
+        "reading_user" => reading_user
+      })
+
+    fetch_activities(recipients, params)
+    |> Enum.reverse()
+  end
+
   def fetch_user_activities(user, reading_user, params \\ %{}) do
     params =
       params

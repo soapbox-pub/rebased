@@ -385,6 +385,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
+  def render("listens.json", opts) do
+    safe_render_many(opts.activities, StatusView, "listen.json", opts)
+  end
+
   def render("poll.json", %{object: object} = opts) do
     {multiple, options} =
       case object.data do
