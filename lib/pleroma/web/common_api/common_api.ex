@@ -217,14 +217,16 @@ defmodule Pleroma.Web.CommonAPI do
          {to, cc} <- get_to_and_cc(user, [], nil, visibility, nil),
          listen_data <-
            Map.take(data, ["album", "artist", "title", "length"])
-           |> Map.put("type", "Audio"),
+           |> Map.put("type", "Audio")
+           |> Map.put("to", to)
+           |> Map.put("cc", cc),
          {:ok, activity} <-
            ActivityPub.listen(%{
              actor: user,
              to: to,
              object: listen_data,
              context: Utils.generate_context_id(),
-             additional: %{cc: cc}
+             additional: %{"cc" => cc}
            }) do
       {:ok, activity}
     end

@@ -1226,6 +1226,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, modified} = Transmogrifier.prepare_outgoing(listen_activity.data)
 
       assert modified["type"] == "Listen"
+
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.listen(user, %{"title" => "lain radio episode 1"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
     end
   end
 
