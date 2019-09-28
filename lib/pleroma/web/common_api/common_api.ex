@@ -219,7 +219,8 @@ defmodule Pleroma.Web.CommonAPI do
            Map.take(data, ["album", "artist", "title", "length"])
            |> Map.put("type", "Audio")
            |> Map.put("to", to)
-           |> Map.put("cc", cc),
+           |> Map.put("cc", cc)
+           |> Map.put("actor", user.ap_id),
          {:ok, activity} <-
            ActivityPub.listen(%{
              actor: user,
