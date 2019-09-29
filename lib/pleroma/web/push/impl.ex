@@ -9,7 +9,6 @@ defmodule Pleroma.Web.Push.Impl do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
-  alias Pleroma.SubscriptionNotification
   alias Pleroma.User
   alias Pleroma.Web.Metadata.Utils
   alias Pleroma.Web.Push.Subscription
@@ -20,7 +19,7 @@ defmodule Pleroma.Web.Push.Impl do
   @types ["Create", "Follow", "Announce", "Like"]
 
   @doc "Performs sending notifications for user subscriptions"
-  @spec perform(Notification.t() | SubscriptionNotification.t()) :: list(any) | :error
+  @spec perform(Notification.t()) :: list(any) | :error
   def perform(
         %{
           activity: %{data: %{"type" => activity_type}, id: activity_id} = activity,

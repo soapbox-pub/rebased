@@ -293,14 +293,6 @@ defmodule Pleroma.Web.Router do
       pipe_through(:oauth_read)
       get("/conversations/:id/statuses", PleromaAPIController, :conversation_statuses)
       get("/conversations/:id", PleromaAPIController, :conversation)
-
-      scope "/subscription_notifications" do
-        post("/clear", SubscriptionNotificationController, :clear)
-        post("/dismiss", SubscriptionNotificationController, :dismiss)
-        delete("/destroy_multiple", SubscriptionNotificationController, :destroy_multiple)
-        get("/", SubscriptionNotificationController, :index)
-        get("/:id", SubscriptionNotificationController, :show)
-      end
     end
 
     scope [] do
