@@ -33,16 +33,16 @@ defmodule Pleroma.NotificationTest do
       assert other_notification.activity_id == activity.id
     end
 
-    test "it does not create a notification for subscribed users" do
+    test "it creates a notification for subscribed users" do
       user = insert(:user)
       subscriber = insert(:user)
 
       User.subscribe(subscriber, user)
 
       {:ok, status} = CommonAPI.post(user, %{"status" => "Akariiiin"})
-      {:ok, notifications} = Notification.create_notifications(status)
+      {:ok, [notification]} = Notification.create_notifications(status)
 
-      assert notifications == []
+      assert notification.user_id == subscriber.id
     end
 
     test "does not create a notification for subscribed users if status is a reply" do
@@ -182,16 +182,14 @@ defmodule Pleroma.NotificationTest do
       refute Notification.create_notification(activity_dupe, followed_user)
     end
 
-    test "it doesn't create notifications for follow+subscribed users" do
+    test "it doesn't create duplicate notifications for follow+subscribed users" do
       user = insert(:user)
       subscriber = insert(:user)
 
       {:ok, _, _, _} = CommonAPI.follow(subscriber, user)
       User.subscribe(subscriber, user)
       {:ok, status} = CommonAPI.post(user, %{"status" => "Akariiiin"})
-      {:ok, notifications} = Notification.create_notifications(status)
-
-      assert notifications == []
+      {:ok, [_notif]} = Notification.create_notifications(status)
     end
 
     test "it doesn't create subscription notifications if the recipient cannot see the status" do

@@ -230,6 +230,7 @@ defmodule Pleroma.Notification do
       []
       |> Utils.maybe_notify_to_recipients(activity)
       |> Utils.maybe_notify_mentioned_recipients(activity)
+      |> Utils.maybe_notify_subscribers(activity)
       |> Enum.uniq()
 
     User.get_users_from_set(recipients, local_only)
