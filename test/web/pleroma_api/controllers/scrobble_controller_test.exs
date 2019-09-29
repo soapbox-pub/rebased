@@ -26,7 +26,7 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleControllerTest do
     end
   end
 
-  describe "GET /api/v1/pleroma/accounts/:id/now-playing" do
+  describe "GET /api/v1/pleroma/accounts/:id/scrobbles" do
     test "works correctly", %{conn: conn} do
       user = insert(:user)
 
@@ -53,7 +53,7 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleControllerTest do
 
       conn =
         conn
-        |> get("/api/v1/pleroma/accounts/#{user.id}/now-playing")
+        |> get("/api/v1/pleroma/accounts/#{user.id}/scrobbles")
 
       result = json_response(conn, 200)
 
