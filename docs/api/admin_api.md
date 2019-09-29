@@ -312,8 +312,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ```json
 {
-  "token": "U13DX6muOvpRsj35_ij9wLxUbkU-eFvfKttxs6gIajo=", // password reset token (base64 string)
-  "link": "https://pleroma.social/api/pleroma/password_reset/U13DX6muOvpRsj35_ij9wLxUbkU-eFvfKttxs6gIajo%3D"
+  "token": "base64 reset token",
+  "link": "https://pleroma.social/api/pleroma/password_reset/url-encoded-base64-token"
 }
 ```
 
