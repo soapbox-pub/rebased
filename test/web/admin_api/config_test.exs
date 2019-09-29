@@ -91,14 +91,26 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
       assert Config.from_binary(binary) == Pleroma.Bookmark
     end
 
+    test "pleroma string" do
+      binary = Config.transform("Pleroma")
+      assert binary == :erlang.term_to_binary("Pleroma")
+      assert Config.from_binary(binary) == "Pleroma"
+    end
+
     test "phoenix module" do
       binary = Config.transform("Phoenix.Socket.V1.JSONSerializer")
       assert binary == :erlang.term_to_binary(Phoenix.Socket.V1.JSONSerializer)
       assert Config.from_binary(binary) == Phoenix.Socket.V1.JSONSerializer
     end
 
+    test "tesla module" do
+      binary = Config.transform("Tesla.Adapter.Hackney")
+      assert binary == :erlang.term_to_binary(Tesla.Adapter.Hackney)
+      assert Config.from_binary(binary) == Tesla.Adapter.Hackney
+    end
+
     test "sigil" do
-      binary = Config.transform("~r/comp[lL][aA][iI][nN]er/")
+      binary = Config.transform("~r[comp[lL][aA][iI][nN]er]")
       assert binary == :erlang.term_to_binary(~r/comp[lL][aA][iI][nN]er/)
       assert Config.from_binary(binary) == ~r/comp[lL][aA][iI][nN]er/
     end
@@ -109,10 +121,10 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
       assert Config.from_binary(binary) == ~r/https:\/\/example.com/
     end
 
-    test "link sigil with u modifier" do
-      binary = Config.transform("~r/https:\/\/example.com/u")
-      assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/u)
-      assert Config.from_binary(binary) == ~r/https:\/\/example.com/u
+    test "link sigil with um modifiers" do
+      binary = Config.transform("~r/https:\/\/example.com/um")
+      assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/um)
+      assert Config.from_binary(binary) == ~r/https:\/\/example.com/um
     end
 
     test "link sigil with i modifier" do
@@ -125,6 +137,12 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
       binary = Config.transform("~r/https:\/\/example.com/s")
       assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/s)
       assert Config.from_binary(binary) == ~r/https:\/\/example.com/s
+    end
+
+    test "raise if valid delimiter not found" do
+      assert_raise ArgumentError, "valid delimiter for Regex expression not found", fn ->
+        Config.transform("~r/https://[]{}<>\"'()|example.com/s")
+      end
     end
 
     test "2 child tuple" do

@@ -9,16 +9,14 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
 
   setup_all do
     Mix.shell(Mix.Shell.Process)
-    temp_file = "config/temp.exported_from_db.secret.exs"
 
     on_exit(fn ->
       Mix.shell(Mix.Shell.IO)
       Application.delete_env(:pleroma, :first_setting)
       Application.delete_env(:pleroma, :second_setting)
-      :ok = File.rm(temp_file)
     end)
 
-    {:ok, temp_file: temp_file}
+    :ok
   end
 
   clear_config_all([:instance, :dynamic_configuration]) do
@@ -28,38 +26,44 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
   test "settings are migrated to db" do
     assert Repo.all(Config) == []
 
-    Application.put_env(:pleroma, :first_setting, key: "value", key2: [Pleroma.Repo])
-    Application.put_env(:pleroma, :second_setting, key: "value2", key2: [Pleroma.Activity])
+    Application.put_env(:pleroma, :first_setting, key: "value", key2: [Repo])
+    Application.put_env(:pleroma, :second_setting, key: "value2", key2: ["Activity"])
 
     Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
 
-    first_db = Config.get_by_params(%{group: "pleroma", key: ":first_setting"})
-    second_db = Config.get_by_params(%{group: "pleroma", key: ":second_setting"})
-    refute Config.get_by_params(%{group: "pleroma", key: "Pleroma.Repo"})
+    config1 = Config.get_by_params(%{group: ":pleroma", key: ":first_setting"})
+    config2 = Config.get_by_params(%{group: ":pleroma", key: ":second_setting"})
+    refute Config.get_by_params(%{group: ":pleroma", key: "Pleroma.Repo"})
 
-    assert Config.from_binary(first_db.value) == [key: "value", key2: [Pleroma.Repo]]
-    assert Config.from_binary(second_db.value) == [key: "value2", key2: [Pleroma.Activity]]
+    assert Config.from_binary(config1.value) == [key: "value", key2: [Repo]]
+    assert Config.from_binary(config2.value) == [key: "value2", key2: ["Activity"]]
   end
 
-  test "settings are migrated to file and deleted from db", %{temp_file: temp_file} do
+  test "settings are migrated to file and deleted from db" do
+    env = "temp"
+    config_file = "config/#{env}.exported_from_db.secret.exs"
+
+    on_exit(fn ->
+      :ok = File.rm(config_file)
+    end)
+
     Config.create(%{
-      group: "pleroma",
+      group: ":pleroma",
       key: ":setting_first",
-      value: [key: "value", key2: [Pleroma.Activity]]
+      value: [key: "value", key2: ["Activity"]]
     })
 
     Config.create(%{
-      group: "pleroma",
+      group: ":pleroma",
       key: ":setting_second",
-      value: [key: "valu2", key2: [Pleroma.Repo]]
+      value: [key: "value2", key2: [Repo]]
     })
 
-    Mix.Tasks.Pleroma.Config.run(["migrate_from_db", "temp", "true"])
+    Mix.Tasks.Pleroma.Config.run(["migrate_from_db", "--env", env, "-d"])
 
     assert Repo.all(Config) == []
-    assert File.exists?(temp_file)
-    {:ok, file} = File.read(temp_file)
 
+    file = File.read!(config_file)
     assert file =~ "config :pleroma, :setting_first,"
     assert file =~ "config :pleroma, :setting_second,"
   end

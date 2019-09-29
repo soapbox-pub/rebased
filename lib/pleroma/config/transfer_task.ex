@@ -4,56 +4,59 @@
 
 defmodule Pleroma.Config.TransferTask do
   use Task
+
+  require Logger
+
+  alias Pleroma.Repo
   alias Pleroma.Web.AdminAPI.Config
 
   def start_link(_) do
     load_and_update_env()
-    if Pleroma.Config.get(:env) == :test, do: Ecto.Adapters.SQL.Sandbox.checkin(Pleroma.Repo)
+    if Pleroma.Config.get(:env) == :test, do: Ecto.Adapters.SQL.Sandbox.checkin(Repo)
     :ignore
   end
 
   def load_and_update_env do
-    if Pleroma.Config.get([:instance, :dynamic_configuration]) and
-         Ecto.Adapters.SQL.table_exists?(Pleroma.Repo, "config") do
-      for_restart =
-        Pleroma.Repo.all(Config)
-        |> Enum.map(&update_env(&1))
-
+    with true <- Pleroma.Config.get([:instance, :dynamic_configuration]),
+         true <- Ecto.Adapters.SQL.table_exists?(Repo, "config"),
+         started_applications <- Application.started_applications() do
       # We need to restart applications for loaded settings take effect
-      for_restart
-      |> Enum.reject(&(&1 in [:pleroma, :ok]))
-      |> Enum.each(fn app ->
-        Application.stop(app)
-        :ok = Application.start(app)
-      end)
+      Config
+      |> Repo.all()
+      |> Enum.map(&update_env(&1))
+      |> Enum.uniq()
+      # TODO: some problem with prometheus after restart!
+      |> Enum.reject(&(&1 in [:pleroma, nil, :prometheus]))
+      |> Enum.each(&restart(started_applications, &1))
     end
   end
 
   defp update_env(setting) do
     try do
-      key =
-        if String.starts_with?(setting.key, "Pleroma.") do
-          "Elixir." <> setting.key
-        else
-          String.trim_leading(setting.key, ":")
-        end
+      key = Config.from_string(setting.key)
+      group = Config.from_string(setting.group)
+      value = Config.from_binary(setting.value)
 
-      group = String.to_existing_atom(setting.group)
-
-      Application.put_env(
-        group,
-        String.to_existing_atom(key),
-        Config.from_binary(setting.value)
-      )
+      :ok = Application.put_env(group, key, value)
 
       group
     rescue
       e ->
-        require Logger
-
         Logger.warn(
           "updating env causes error, key: #{inspect(setting.key)}, error: #{inspect(e)}"
         )
+
+        nil
+    end
+  end
+
+  defp restart(started_applications, app) do
+    with {^app, _, _} <- List.keyfind(started_applications, app, 0),
+         :ok <- Application.stop(app) do
+      :ok = Application.start(app)
+    else
+      nil -> Logger.warn("#{app} is not started.")
+      error -> Logger.warn(inspect(error))
     end
   end
 end

@@ -14,14 +14,14 @@ defmodule Pleroma.Config.TransferTaskTest do
     refute Application.get_env(:idna, :test_key)
 
     Pleroma.Web.AdminAPI.Config.create(%{
-      group: "pleroma",
-      key: "test_key",
+      group: ":pleroma",
+      key: ":test_key",
       value: [live: 2, com: 3]
     })
 
     Pleroma.Web.AdminAPI.Config.create(%{
-      group: "idna",
-      key: "test_key",
+      group: ":idna",
+      key: ":test_key",
       value: [live: 15, com: 35]
     })
 
@@ -38,14 +38,14 @@ defmodule Pleroma.Config.TransferTaskTest do
 
   test "non existing atom" do
     Pleroma.Web.AdminAPI.Config.create(%{
-      group: "pleroma",
-      key: "undefined_atom_key",
+      group: ":pleroma",
+      key: ":undefined_atom_key",
       value: [live: 2, com: 3]
     })
 
     assert ExUnit.CaptureLog.capture_log(fn ->
              Pleroma.Config.TransferTask.start_link([])
            end) =~
-             "updating env causes error, key: \"undefined_atom_key\", error: %ArgumentError{message: \"argument error\"}"
+             "updating env causes error, key: \":undefined_atom_key\", error: %ArgumentError{message: \"argument error\"}"
   end
 end

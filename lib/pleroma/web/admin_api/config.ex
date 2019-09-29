@@ -24,6 +24,8 @@ defmodule Pleroma.Web.AdminAPI.Config do
 
   @spec changeset(Config.t(), map()) :: Changeset.t()
   def changeset(config, params \\ %{}) do
+    params = Map.put(params, :value, transform(params[:value]))
+
     config
     |> cast(params, [:key, :group, :value])
     |> validate_required([:key, :group, :value])
@@ -33,42 +35,43 @@ defmodule Pleroma.Web.AdminAPI.Config do
   @spec create(map()) :: {:ok, Config.t()} | {:error, Changeset.t()}
   def create(params) do
     %Config{}
-    |> changeset(Map.put(params, :value, transform(params[:value])))
+    |> changeset(params)
     |> Repo.insert()
   end
 
   @spec update(Config.t(), map()) :: {:ok, Config} | {:error, Changeset.t()}
   def update(%Config{} = config, %{value: value}) do
     config
-    |> change(value: transform(value))
+    |> changeset(%{value: value})
     |> Repo.update()
   end
 
   @spec update_or_create(map()) :: {:ok, Config.t()} | {:error, Changeset.t()}
   def update_or_create(params) do
-    with %Config{} = config <- Config.get_by_params(Map.take(params, [:group, :key])) do
+    search_opts = Map.take(params, [:group, :key])
+
+    with %Config{} = config <- Config.get_by_params(search_opts) do
       Config.update(config, params)
     else
       nil -> Config.create(params)
     end
   end
 
-  @spec delete(map()) :: {:ok, Config.t()} | {:error, Changeset.t()}
+  @spec delete(map()) :: {:ok, Config.t()} | {:error, Changeset.t()} | {:ok, nil}
   def delete(params) do
-    with %Config{} = config <- Config.get_by_params(Map.delete(params, :subkeys)) do
-      if params[:subkeys] do
-        updated_value =
-          Keyword.drop(
-            :erlang.binary_to_term(config.value),
-            Enum.map(params[:subkeys], &do_transform_string(&1))
-          )
+    search_opts = Map.delete(params, :subkeys)
 
-        Config.update(config, %{value: updated_value})
-      else
+    with %Config{} = config <- Config.get_by_params(search_opts),
+         {config, sub_keys} when is_list(sub_keys) <- {config, params[:subkeys]},
+         old_value <- :erlang.binary_to_term(config.value),
+         keys <- Enum.map(sub_keys, &do_transform_string(&1)),
+         new_value <- Keyword.drop(old_value, keys) do
+      Config.update(config, %{value: new_value})
+    else
+      {config, nil} ->
         Repo.delete(config)
         {:ok, nil}
-      end
-    else
+
       nil ->
         err =
           dgettext("errors", "Config with params %{params} not found", params: inspect(params))
@@ -82,8 +85,20 @@ defmodule Pleroma.Web.AdminAPI.Config do
 
   @spec from_binary_with_convert(binary()) :: any()
   def from_binary_with_convert(binary) do
-    from_binary(binary)
+    binary
+    |> from_binary()
     |> do_convert()
+  end
+
+  @spec from_string(String.t()) :: atom() | no_return()
+  def from_string(":" <> entity), do: String.to_existing_atom(entity)
+
+  def from_string(entity) when is_binary(entity) do
+    if is_module_name?(entity) do
+      String.to_existing_atom("Elixir.#{entity}")
+    else
+      entity
+    end
   end
 
   defp do_convert(entity) when is_list(entity) do
@@ -97,6 +112,7 @@ defmodule Pleroma.Web.AdminAPI.Config do
   end
 
   defp do_convert({:dispatch, [entity]}), do: %{"tuple" => [":dispatch", [inspect(entity)]]}
+  # TODO: will become useless after removing hackney
   defp do_convert({:partial_chain, entity}), do: %{"tuple" => [":partial_chain", inspect(entity)]}
 
   defp do_convert(entity) when is_tuple(entity),
@@ -105,21 +121,15 @@ defmodule Pleroma.Web.AdminAPI.Config do
   defp do_convert(entity) when is_boolean(entity) or is_number(entity) or is_nil(entity),
     do: entity
 
-  defp do_convert(entity) when is_atom(entity) do
-    string = to_string(entity)
-
-    if String.starts_with?(string, "Elixir."),
-      do: do_convert(string),
-      else: ":" <> string
-  end
-
-  defp do_convert("Elixir." <> module_name), do: module_name
+  defp do_convert(entity) when is_atom(entity), do: inspect(entity)
 
   defp do_convert(entity) when is_binary(entity), do: entity
 
-  @spec transform(any()) :: binary()
+  @spec transform(any()) :: binary() | no_return()
   def transform(entity) when is_binary(entity) or is_map(entity) or is_list(entity) do
-    :erlang.term_to_binary(do_transform(entity))
+    entity
+    |> do_transform()
+    |> :erlang.term_to_binary()
   end
 
   def transform(entity), do: :erlang.term_to_binary(entity)
@@ -131,6 +141,7 @@ defmodule Pleroma.Web.AdminAPI.Config do
     {:dispatch, [dispatch_settings]}
   end
 
+  # TODO: will become useless after removing hackney
   defp do_transform(%{"tuple" => [":partial_chain", entity]}) do
     {partial_chain, []} = do_eval(entity)
     {:partial_chain, partial_chain}
@@ -149,34 +160,63 @@ defmodule Pleroma.Web.AdminAPI.Config do
   end
 
   defp do_transform(entity) when is_binary(entity) do
-    String.trim(entity)
+    entity
+    |> String.trim()
     |> do_transform_string()
   end
 
   defp do_transform(entity), do: entity
 
-  defp do_transform_string("~r/" <> pattern) do
-    modificator = String.split(pattern, "/") |> List.last()
-    pattern = String.trim_trailing(pattern, "/" <> modificator)
+  @delimiters ["/", "|", "\"", "'", {"(", ")"}, {"[", "]"}, {"{", "}"}, {"<", ">"}]
 
-    case modificator do
-      "" -> ~r/#{pattern}/
-      "i" -> ~r/#{pattern}/i
-      "u" -> ~r/#{pattern}/u
-      "s" -> ~r/#{pattern}/s
+  defp find_valid_delimiter([], _string, _),
+    do: raise(ArgumentError, message: "valid delimiter for Regex expression not found")
+
+  defp find_valid_delimiter([{leading, closing} = delimiter | others], pattern, regex_delimiter)
+       when is_tuple(delimiter) do
+    if String.contains?(pattern, closing) do
+      find_valid_delimiter(others, pattern, regex_delimiter)
+    else
+      {:ok, {leading, closing}}
+    end
+  end
+
+  defp find_valid_delimiter([delimiter | others], pattern, regex_delimiter) do
+    if String.contains?(pattern, delimiter) do
+      find_valid_delimiter(others, pattern, regex_delimiter)
+    else
+      {:ok, {delimiter, delimiter}}
+    end
+  end
+
+  @regex_parts ~r/^~r(?'delimiter'[\/|"'([{<]{1})(?'pattern'.+)[\/|"')\]}>]{1}(?'modifier'[uismxfU]*)/u
+
+  defp do_transform_string("~r" <> _pattern = regex) do
+    with %{"modifier" => modifier, "pattern" => pattern, "delimiter" => regex_delimiter} <-
+           Regex.named_captures(@regex_parts, regex),
+         {:ok, {leading, closing}} <- find_valid_delimiter(@delimiters, pattern, regex_delimiter),
+         {result, _} <- Code.eval_string("~r#{leading}#{pattern}#{closing}#{modifier}") do
+      result
     end
   end
 
   defp do_transform_string(":" <> atom), do: String.to_atom(atom)
 
   defp do_transform_string(value) do
-    if String.starts_with?(value, "Pleroma") or String.starts_with?(value, "Phoenix"),
-      do: String.to_existing_atom("Elixir." <> value),
-      else: value
+    if is_module_name?(value) do
+      String.to_existing_atom("Elixir." <> value)
+    else
+      value
+    end
+  end
+
+  @spec is_module_name?(String.t()) :: boolean()
+  def is_module_name?(string) do
+    Regex.match?(~r/^(Pleroma|Phoenix|Tesla)\./, string) or string in ["Oban", "Ueberauth"]
   end
 
   defp do_eval(entity) do
     cleaned_string = String.replace(entity, ~r/[^\w|^{:,[|^,|^[|^\]^}|^\/|^\.|^"]^\s/, "")
-    Code.eval_string(cleaned_string, [], requires: [], macros: [])
+    Code.eval_string(cleaned_string)
   end
 end

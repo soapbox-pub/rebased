@@ -4,6 +4,9 @@
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
+
+  import Pleroma.Web.ControllerHelper, only: [json_response: 3]
+
   alias Pleroma.Activity
   alias Pleroma.ModerationLog
   alias Pleroma.Plugs.OAuthScopesPlug
@@ -25,9 +28,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.Router
 
-  import Pleroma.Web.ControllerHelper, only: [json_response: 3]
-
   require Logger
+
+  @descriptions_json Pleroma.Docs.JSON.compile()
+  @users_page_size 50
 
   plug(
     OAuthScopesPlug,
@@ -92,8 +96,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     %{scopes: ["write"], admin: true}
     when action in [:relay_follow, :relay_unfollow, :config_update]
   )
-
-  @users_page_size 50
 
   action_fallback(:errors)
 
@@ -782,8 +784,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def migrate_from_db(conn, _params) do
-    Mix.Tasks.Pleroma.Config.run(["migrate_from_db", Pleroma.Config.get(:env), "true"])
+    Mix.Tasks.Pleroma.Config.run([
+      "migrate_from_db",
+      "--env",
+      to_string(Pleroma.Config.get(:env)),
+      "-d"
+    ])
+
     json(conn, %{})
+  end
+
+  def config_descriptions(conn, _params) do
+    conn
+    |> Plug.Conn.put_resp_content_type("application/json")
+    |> Plug.Conn.send_resp(200, @descriptions_json)
   end
 
   def config_show(conn, _params) do
@@ -800,17 +814,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         updated =
           Enum.map(configs, fn
             %{"group" => group, "key" => key, "delete" => "true"} = params ->
-              {:ok, config} = Config.delete(%{group: group, key: key, subkeys: params["subkeys"]})
-              config
+              with {:ok, config} <-
+                     Config.delete(%{group: group, key: key, subkeys: params["subkeys"]}) do
+                config
+              end
 
             %{"group" => group, "key" => key, "value" => value} ->
-              {:ok, config} = Config.update_or_create(%{group: group, key: key, value: value})
-              config
+              with {:ok, config} <-
+                     Config.update_or_create(%{group: group, key: key, value: value}) do
+                config
+              end
           end)
           |> Enum.reject(&is_nil(&1))
 
         Pleroma.Config.TransferTask.load_and_update_env()
-        Mix.Tasks.Pleroma.Config.run(["migrate_from_db", Pleroma.Config.get(:env), "false"])
+
+        Mix.Tasks.Pleroma.Config.run([
+          "migrate_from_db",
+          "--env",
+          to_string(Pleroma.Config.get(:env))
+        ])
+
         updated
       else
         []
