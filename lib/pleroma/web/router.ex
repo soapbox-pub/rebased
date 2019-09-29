@@ -310,7 +310,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through([:api, :oauth_read_or_public])
 
-    get("/accounts/:id/now-playing", PleromaAPIController, :user_now_playing)
+    get("/accounts/:id/scrobbles", PleromaAPIController, :user_scrobbles)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

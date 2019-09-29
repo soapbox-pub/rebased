@@ -110,7 +110,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def user_now_playing(%{assigns: %{user: reading_user}} = conn, params) do
+  def user_scrobbles(%{assigns: %{user: reading_user}} = conn, params) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user) do
       params = Map.put(params, "type", ["Listen"])
 

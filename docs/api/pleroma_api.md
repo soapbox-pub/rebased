@@ -440,7 +440,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Response: the archive of the pack with a 200 status code, 403 if the pack is not set as shared,
   404 if the pack does not exist
 
-## `GET /api/v1/pleroma/accounts/:uid/now-playing`
+## `GET /api/v1/pleroma/accounts/:id/scrobbles`
 ### Requests a list of current and recent Listen activities for an account
 * Method `GET`
 * Authentication: not required
@@ -450,11 +450,13 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 ```json
 [
    {
+       "account": {...},
        "id": "1234",
        "title": "Some Title",
        "artist": "Some Artist",
        "album": "Some Album",
-       "length": 180000
+       "length": 180000,
+       "created_at": "2019-09-28T12:40:45.000Z"
    }
 ]
 ```
