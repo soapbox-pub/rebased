@@ -13,7 +13,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Object.Fetcher
   alias Pleroma.Pagination
   alias Pleroma.Repo
-  alias Pleroma.SubscriptionNotification
   alias Pleroma.Upload
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
@@ -152,7 +151,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
 
       Notification.create_notifications(activity)
-      SubscriptionNotification.create_notifications(activity)
 
       participations =
         activity
