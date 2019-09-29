@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: `POST /api/v1/pleroma/subscription_notifications/clear` to clear all subscription notifications
 - Pleroma API: `POST /api/v1/pleroma/subscription_notifications/dismiss` to clear a subscription notification
 - Pleroma API: `DELETE /api/v1/pleroma/subscription_notifications/destroy_multiple` to clear multiple subscription notifications
+- Mastodon API: Account entities now include `follow_requests_count` (planned Mastodon 3.x addition)
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
