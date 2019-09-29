@@ -5,13 +5,11 @@
 defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2, fetch_integer_param: 2]
+  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
-  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
@@ -86,44 +84,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
       conn
       |> put_view(NotificationView)
       |> render("index.json", %{notifications: notifications, for: user})
-    end
-  end
-
-  def update_now_playing(%{assigns: %{user: user}} = conn, %{"title" => _} = params) do
-    params =
-      if !params["length"] do
-        params
-      else
-        params
-        |> Map.put("length", fetch_integer_param(params, "length"))
-      end
-
-    with {:ok, activity} <- CommonAPI.listen(user, params) do
-      conn
-      |> put_view(StatusView)
-      |> render("listen.json", %{activity: activity, for: user})
-    else
-      {:error, message} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{"error" => message})
-    end
-  end
-
-  def user_scrobbles(%{assigns: %{user: reading_user}} = conn, params) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user) do
-      params = Map.put(params, "type", ["Listen"])
-
-      activities = ActivityPub.fetch_user_abstract_activities(user, reading_user, params)
-
-      conn
-      |> add_link_headers(activities)
-      |> put_view(StatusView)
-      |> render("listens.json", %{
-        activities: activities,
-        for: reading_user,
-        as: :activity
-      })
     end
   end
 end

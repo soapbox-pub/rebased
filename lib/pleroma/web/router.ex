@@ -303,14 +303,14 @@ defmodule Pleroma.Web.Router do
 
     scope [] do
       pipe_through(:oauth_write)
-      post("/now-playing", PleromaAPIController, :update_now_playing)
+      post("/now-playing", ScrobbleController, :update_now_playing)
     end
   end
 
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through([:api, :oauth_read_or_public])
 
-    get("/accounts/:id/scrobbles", PleromaAPIController, :user_scrobbles)
+    get("/accounts/:id/scrobbles", ScrobbleController, :user_scrobbles)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
