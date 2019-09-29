@@ -303,7 +303,7 @@ defmodule Pleroma.Web.Router do
 
     scope [] do
       pipe_through(:oauth_write)
-      post("/now-playing", ScrobbleController, :update_now_playing)
+      post("/scrobble", ScrobbleController, :new_scrobble)
     end
   end
 

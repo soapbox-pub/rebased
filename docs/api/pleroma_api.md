@@ -461,7 +461,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 ]
 ```
 
-## `POST /api/v1/pleroma/now-playing`
+## `POST /api/v1/pleroma/scrobble`
 ### Creates a new Listen activity for an account
 * Method `POST`
 * Authentication: required

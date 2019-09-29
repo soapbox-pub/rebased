@@ -8,14 +8,14 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleControllerTest do
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
-  describe "POST /api/v1/pleroma/now-playing" do
+  describe "POST /api/v1/pleroma/scrobble" do
     test "works correctly", %{conn: conn} do
       user = insert(:user)
 
       conn =
         conn
         |> assign(:user, user)
-        |> post("/api/v1/pleroma/now-playing", %{
+        |> post("/api/v1/pleroma/scrobble", %{
           "title" => "lain radio episode 1",
           "artist" => "lain",
           "album" => "lain radio",

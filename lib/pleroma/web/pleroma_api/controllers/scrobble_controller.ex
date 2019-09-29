@@ -12,7 +12,7 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
 
-  def update_now_playing(%{assigns: %{user: user}} = conn, %{"title" => _} = params) do
+  def new_scrobble(%{assigns: %{user: user}} = conn, %{"title" => _} = params) do
     params =
       if !params["length"] do
         params
