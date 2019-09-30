@@ -4,11 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Added
+- Refreshing poll results for remote polls
+- Admin API: Add ability to require password reset
+- Mastodon API: Account entities now include `follow_requests_count` (planned Mastodon 3.x addition)
+- Pleroma API: `GET /api/v1/pleroma/accounts/:id/scrobbles` to get a list of recently scrobbled items
+- Pleroma API: `POST /api/v1/pleroma/scrobble` to scrobble a media item
+
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
+- **Breaking:** Admin API: Return link alongside with token on password reset
 - Replaced [pleroma_job_queue](https://git.pleroma.social/pleroma/pleroma_job_queue) and `Pleroma.Web.Federator.RetryQueue` with [Oban](https://github.com/sorentwo/oban) (see [`docs/config.md`](docs/config.md) on migrating customized worker / retry settings)
 - Introduced [quantum](https://github.com/quantum-elixir/quantum-core) job scheduler
 - Admin API: Return `total` when querying for reports
+- Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
+- Admin API: Return link alongside with token on password reset
+
+### Fixed
+- Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
 
 ## [1.1.0] - 2019-??-??
 ### Security
@@ -23,7 +36,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
 - **Breaking:** Configuration: `/media/` is now removed when `base_url` is configured, append `/media/` to your `base_url` config to keep the old behaviour if desired
 - **Breaking:** `/api/pleroma/notifications/read` is moved to `/api/v1/pleroma/notifications/read` and now supports `max_id` and responds with Mastodon API entities.
+- **Breaking:** `/api/pleroma/admin/users/invite_token` now uses `POST`, changed accepted params and returns full invite in json instead of only token string.
 - Configuration: added `config/description.exs`, from which `docs/config.md` is generated
+- Configuration: OpenGraph and TwitterCard providers enabled by default
+- Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
+- Mastodon API: `pleroma.thread_muted` key in the Status entity
 - Federation: Return 403 errors when trying to request pages from a user's follower/following collections if they have `hide_followers`/`hide_follows` set
 - NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
 - NodeInfo: Return `mailerEnabled` in `metadata`
@@ -32,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - AdminAPI: Add "godmode" while fetching user statuses (i.e. admin can see private statuses)
 - Improve digest email template
 – Pagination: (optional) return `total` alongside with `items` when paginating
+- Add `rel="ugc"` to all links in statuses, to prevent SEO spam
 
 ### Fixed
 - Following from Osada
@@ -76,6 +94,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: added `/auth/password` endpoint for password reset with rate limit.
 - Mastodon API: /api/v1/accounts/:id/statuses now supports nicknames or user id
 - Mastodon API: Improve support for the user profile custom fields
+- Mastodon API: follower/following counters are nullified when `hide_follows`/`hide_followers` and `hide_follows_count`/`hide_followers_count` are set
 - Admin API: Return users' tags when querying reports
 - Admin API: Return avatar and display name when querying users
 - Admin API: Allow querying user by ID
@@ -93,8 +112,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Add `/api/v1/pleroma/accounts/confirmation_resend?email=<email>` for resending account confirmation.
 - Pleroma API: Email change endpoint.
 - Admin API: Added moderation log
+- Support for `X-Forwarded-For` and similar HTTP headers which used by reverse proxies to pass a real user IP address to the backend. Must not be enabled unless your instance is behind at least one reverse proxy (such as Nginx, Apache HTTPD or Varnish Cache).
 - Web response cache (currently, enabled for ActivityPub)
 - Mastodon API: Added an endpoint to get multiple statuses by IDs (`GET /api/v1/statuses/?ids[]=1&ids[]=2`)
+- ActivityPub: Add ActivityPub actor's `discoverable` parameter.
+- Admin API: Added moderation log filters (user/start date/end date/search/pagination)
 - Authentication: Added rate limit for password-authorized actions / login existence checks. 
 
 ### Changed
@@ -102,6 +124,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: changed json structure for saving config settings.
 - RichMedia: parsers and their order are configured in `rich_media` config.
 - RichMedia: add the rich media ttl based on image expiration time.
+
+## [1.0.7] - 2019-09-26
+### Fixed
+- Broken federation on Erlang 22 (previous versions of hackney http client were using an option that got deprecated)
+### Changed
+- ActivityPub: The first page in inboxes/outboxes is no longer embedded.
 
 ## [1.0.6] - 2019-08-14
 ### Fixed

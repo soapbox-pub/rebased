@@ -29,7 +29,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       id: to_string(notification.id),
       type: mastodon_type,
       created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
-      account: AccountView.render("account.json", %{user: actor, for: user}),
+      account: AccountView.render("show.json", %{user: actor, for: user}),
       pleroma: %{
         is_seen: notification.seen
       }
@@ -39,19 +39,19 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "mention" ->
         response
         |> Map.merge(%{
-          status: StatusView.render("status.json", %{activity: activity, for: user})
+          status: StatusView.render("show.json", %{activity: activity, for: user})
         })
 
       "favourite" ->
         response
         |> Map.merge(%{
-          status: StatusView.render("status.json", %{activity: parent_activity, for: user})
+          status: StatusView.render("show.json", %{activity: parent_activity, for: user})
         })
 
       "reblog" ->
         response
         |> Map.merge(%{
-          status: StatusView.render("status.json", %{activity: parent_activity, for: user})
+          status: StatusView.render("show.json", %{activity: parent_activity, for: user})
         })
 
       "follow" ->

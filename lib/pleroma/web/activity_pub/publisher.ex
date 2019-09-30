@@ -111,11 +111,11 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
   @spec recipients(User.t(), Activity.t()) :: list(User.t()) | []
   defp recipients(actor, activity) do
-    {:ok, followers} =
+    followers =
       if actor.follower_address in activity.recipients do
         User.get_external_followers(actor)
       else
-        {:ok, []}
+        []
       end
 
     fetchers =

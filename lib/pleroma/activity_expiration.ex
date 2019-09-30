@@ -7,7 +7,6 @@ defmodule Pleroma.ActivityExpiration do
 
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
-  alias Pleroma.FlakeId
   alias Pleroma.Repo
 
   import Ecto.Changeset
@@ -17,7 +16,7 @@ defmodule Pleroma.ActivityExpiration do
   @min_activity_lifetime :timer.hours(1)
 
   schema "activity_expirations" do
-    belongs_to(:activity, Activity, type: FlakeId)
+    belongs_to(:activity, Activity, type: FlakeId.Ecto.CompatType)
     field(:scheduled_at, :naive_datetime)
   end
 

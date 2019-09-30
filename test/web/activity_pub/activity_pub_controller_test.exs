@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
@@ -479,7 +479,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         conn
         |> assign(:user, user)
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/inbox")
+        |> get("/users/#{user.nickname}/inbox?page=true")
 
       assert response(conn, 200) =~ note_object.data["content"]
     end
@@ -567,7 +567,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/outbox")
+        |> get("/users/#{user.nickname}/outbox?page=true")
 
       assert response(conn, 200) =~ note_object.data["content"]
     end
@@ -579,7 +579,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/outbox")
+        |> get("/users/#{user.nickname}/outbox?page=true")
 
       assert response(conn, 200) =~ announce_activity.data["object"]
     end
@@ -974,6 +974,46 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert Delivery.get(object.id, user.id)
       assert Delivery.get(object.id, other_user.id)
+    end
+  end
+
+  describe "Additionnal ActivityPub C2S endpoints" do
+    test "/api/ap/whoami", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/ap/whoami")
+
+      user = User.get_cached_by_id(user.id)
+
+      assert UserView.render("user.json", %{user: user}) == json_response(conn, 200)
+    end
+
+    clear_config([:media_proxy])
+    clear_config([Pleroma.Upload])
+
+    test "uploadMedia", %{conn: conn} do
+      user = insert(:user)
+
+      desc = "Description of the image"
+
+      image = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
+
+      assert object = json_response(conn, :created)
+      assert object["name"] == desc
+      assert object["type"] == "Document"
+      assert object["actor"] == user.ap_id
     end
   end
 end

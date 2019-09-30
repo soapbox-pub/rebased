@@ -77,12 +77,10 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
       assert length(following) == 2
       assert info.follower_count == 0
 
-      info_cng = Ecto.Changeset.change(info, %{follower_count: 3})
-
       {:ok, user} =
         user
         |> Ecto.Changeset.change(%{following: following ++ following})
-        |> Ecto.Changeset.put_embed(:info, info_cng)
+        |> User.change_info(&Ecto.Changeset.change(&1, %{follower_count: 3}))
         |> Repo.update()
 
       assert length(user.following) == 4

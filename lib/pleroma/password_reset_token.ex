@@ -12,7 +12,7 @@ defmodule Pleroma.PasswordResetToken do
   alias Pleroma.User
 
   schema "password_reset_tokens" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     field(:token, :string)
     field(:used, :boolean, default: false)
 

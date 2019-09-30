@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
@@ -157,11 +157,11 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       text = "**hello world**\n\n*another @user__test and @user__test google.com paragraph*"
 
       expected =
-        "<p><strong>hello world</strong></p>\n<p><em>another <span class=\"h-card\"><a data-user=\"#{
+        ~s(<p><strong>hello world</strong></p>\n<p><em>another <span class="h-card"><a data-user="#{
           user.id
-        }\" class=\"u-url mention\" href=\"http://foo.com/user__test\">@<span>user__test</span></a></span> and <span class=\"h-card\"><a data-user=\"#{
+        }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a data-user="#{
           user.id
-        }\" class=\"u-url mention\" href=\"http://foo.com/user__test\">@<span>user__test</span></a></span> <a href=\"http://google.com\">google.com</a> paragraph</em></p>\n"
+        }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>\n)
 
       {output, _, _} = Utils.format_input(text, "text/markdown")
 

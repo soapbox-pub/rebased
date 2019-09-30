@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   require Logger
   require Pleroma.Constants
 
-  @supported_object_types ["Article", "Note", "Video", "Page", "Question", "Answer"]
+  @supported_object_types ["Article", "Note", "Video", "Page", "Question", "Answer", "Audio"]
   @supported_report_states ~w(open closed resolved)
   @valid_visibilities ~w(public unlisted private direct)
 
@@ -572,6 +572,21 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     %{
       "type" => "Create",
+      "to" => params.to |> Enum.uniq(),
+      "actor" => params.actor.ap_id,
+      "object" => params.object,
+      "published" => published,
+      "context" => params.context
+    }
+    |> Map.merge(additional)
+  end
+
+  #### Listen-related helpers
+  def make_listen_data(params, additional) do
+    published = params.published || make_date()
+
+    %{
+      "type" => "Listen",
       "to" => params.to |> Enum.uniq(),
       "actor" => params.actor.ap_id,
       "object" => params.object,

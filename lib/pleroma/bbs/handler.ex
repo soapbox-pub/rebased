@@ -42,7 +42,7 @@ defmodule Pleroma.BBS.Handler do
   end
 
   def puts_activity(activity) do
-    status = Pleroma.Web.MastodonAPI.StatusView.render("status.json", %{activity: activity})
+    status = Pleroma.Web.MastodonAPI.StatusView.render("show.json", %{activity: activity})
     IO.puts("-- #{status.id} by #{status.account.display_name} (#{status.account.acct})")
     IO.puts(HtmlSanitizeEx.strip_tags(status.content))
     IO.puts("")

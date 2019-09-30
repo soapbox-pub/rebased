@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ControllerHelper do
   use Pleroma.Web, :controller
 
   # As in MastoAPI, per https://api.rubyonrails.org/classes/ActiveModel/Type/Boolean.html
-  @falsy_param_values [false, 0, "0", "f", "F", "false", "FALSE", "off", "OFF"]
+  @falsy_param_values [false, 0, "0", "f", "F", "false", "False", "FALSE", "off", "OFF"]
   def truthy_param?(blank_value) when blank_value in [nil, ""], do: nil
   def truthy_param?(value), do: value not in @falsy_param_values
 
@@ -66,6 +66,13 @@ defmodule Pleroma.Web.ControllerHelper do
 
       _ ->
         conn
+    end
+  end
+
+  def assign_account_by_id(%{params: %{"id" => id}} = conn, _) do
+    case Pleroma.User.get_cached_by_id(id) do
+      %Pleroma.User{} = account -> assign(conn, :account, account)
+      nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
     end
   end
 end

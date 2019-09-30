@@ -203,6 +203,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:ok, app} <- Token.Utils.fetch_app(conn),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          {:user_active, true} <- {:user_active, !user.info.deactivated},
+         {:password_reset_pending, false} <-
+           {:password_reset_pending, user.info.password_reset_pending},
          {:ok, scopes} <- validate_scopes(app, params),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:ok, token} <- Token.exchange_token(app, auth) do
@@ -215,6 +217,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
       {:user_active, false} ->
         render_error(conn, :forbidden, "Your account is currently disabled")
+
+      {:password_reset_pending, true} ->
+        render_error(conn, :forbidden, "Password reset is required")
 
       _error ->
         render_invalid_credentials_error(conn)
