@@ -151,6 +151,7 @@ amd64:
   only: &release-only
   - master@pleroma/pleroma
   - develop@pleroma/pleroma
+  - /^maint/.*$/@pleroma/pleroma
   artifacts: &release-artifacts
     name: "pleroma-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-$CI_JOB_NAME"
     paths:
