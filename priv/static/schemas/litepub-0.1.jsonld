@@ -32,7 +32,8 @@
             "uploadMedia": {
                 "@id": "litepub:uploadMedia",
                 "@type": "@id"
-            }
+            },
+            "EmojiReaction": "litepub:EmojiReaction"
         }
     ]
 }
