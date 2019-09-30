@@ -11,15 +11,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MediaProxy
 
-  def render("accounts.json", %{users: users} = opts) do
+  def render("index.json", %{users: users} = opts) do
     users
-    |> render_many(AccountView, "account.json", opts)
+    |> render_many(AccountView, "show.json", opts)
     |> Enum.filter(&Enum.any?/1)
   end
 
-  def render("account.json", %{user: user} = opts) do
+  def render("show.json", %{user: user} = opts) do
     if User.visible_for?(user, opts[:for]),
-      do: do_render("account.json", opts),
+      do: do_render("show.json", opts),
       else: %{}
   end
 
@@ -66,7 +66,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     render_many(targets, AccountView, "relationship.json", user: user, as: :target)
   end
 
-  defp do_render("account.json", %{user: user} = opts) do
+  defp do_render("show.json", %{user: user} = opts) do
     display_name = HTML.strip_tags(user.name || user.nickname)
 
     image = User.avatar_url(user) |> MediaProxy.url()

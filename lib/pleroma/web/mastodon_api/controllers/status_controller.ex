@@ -231,7 +231,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
       conn
       |> put_view(AccountView)
-      |> render("accounts.json", for: user, users: users, as: :user)
+      |> render("index.json", for: user, users: users, as: :user)
     else
       {:visible, false} -> {:error, :not_found}
       _ -> json(conn, [])
@@ -251,7 +251,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
       conn
       |> put_view(AccountView)
-      |> render("accounts.json", for: user, users: users, as: :user)
+      |> render("index.json", for: user, users: users, as: :user)
     else
       {:visible, false} -> {:error, :not_found}
       _ -> json(conn, [])

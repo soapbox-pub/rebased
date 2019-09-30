@@ -49,7 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
     with {:ok, users} <- Pleroma.List.get_following(list) do
       conn
       |> put_view(AccountView)
-      |> render("accounts.json", for: user, users: users, as: :user)
+      |> render("index.json", for: user, users: users, as: :user)
     end
   end
 
