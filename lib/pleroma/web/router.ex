@@ -414,7 +414,7 @@ defmodule Pleroma.Web.Router do
       get("/pleroma/mascot", MastodonAPIController, :get_mascot)
       put("/pleroma/mascot", MastodonAPIController, :set_mascot)
 
-      post("/reports", MastodonAPIController, :reports)
+      post("/reports", ReportController, :create)
     end
 
     scope [] do
@@ -615,6 +615,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
       post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
+      post("/api/ap/upload_media", ActivityPubController, :upload_media)
     end
 
     scope [] do
