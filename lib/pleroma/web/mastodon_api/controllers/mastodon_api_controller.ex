@@ -200,28 +200,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def set_mascot(%{assigns: %{user: user}} = conn, %{"file" => file}) do
-    with {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)),
-         %{} = attachment_data <- Map.put(object.data, "id", object.id),
-         # Reject if not an image
-         %{type: "image"} = rendered <-
-           StatusView.render("attachment.json", %{attachment: attachment_data}) do
-      # Sure!
-      # Save to the user's info
-      {:ok, _user} = User.update_info(user, &User.Info.mascot_update(&1, rendered))
-
-      json(conn, rendered)
-    else
-      %{type: _} -> render_error(conn, :unsupported_media_type, "mascots can only be images")
-    end
-  end
-
-  def get_mascot(%{assigns: %{user: user}} = conn, _params) do
-    mascot = User.get_mascot(user)
-
-    json(conn, mascot)
-  end
-
   def follows(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
     with {_, %User{} = followed} <- {:followed, User.get_cached_by_nickname(uri)},
          {_, true} <- {:followed, follower.id != followed.id},
