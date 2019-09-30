@@ -396,7 +396,7 @@ defmodule Pleroma.Web.Router do
       get("/pleroma/mascot", MastodonAPIController, :get_mascot)
       put("/pleroma/mascot", MastodonAPIController, :set_mascot)
 
-      post("/reports", MastodonAPIController, :reports)
+      post("/reports", ReportController, :create)
     end
 
     scope [] do
