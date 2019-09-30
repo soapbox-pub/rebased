@@ -8,6 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   import Pleroma.Web.ControllerHelper,
     only: [add_link_headers: 2, truthy_param?: 1, assign_account_by_id: 2, json_response: 3]
 
+  alias Pleroma.Emoji
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -79,6 +80,92 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       with_pleroma_settings: true,
       with_chat_token: chat_token
     )
+  end
+
+  @doc "PATCH /api/v1/accounts/update_credentials"
+  def update_credentials(%{assigns: %{user: original_user}} = conn, params) do
+    user = original_user
+
+    user_params =
+      %{}
+      |> add_if_present(params, "display_name", :name)
+      |> add_if_present(params, "note", :bio, fn value -> {:ok, User.parse_bio(value, user)} end)
+      |> add_if_present(params, "avatar", :avatar, fn value ->
+        with %Plug.Upload{} <- value,
+             {:ok, object} <- ActivityPub.upload(value, type: :avatar) do
+          {:ok, object.data}
+        end
+      end)
+
+    emojis_text = (user_params["display_name"] || "") <> (user_params["note"] || "")
+
+    user_info_emojis =
+      user.info
+      |> Map.get(:emoji, [])
+      |> Enum.concat(Emoji.Formatter.get_emoji_map(emojis_text))
+      |> Enum.dedup()
+
+    info_params =
+      [
+        :no_rich_text,
+        :locked,
+        :hide_followers_count,
+        :hide_follows_count,
+        :hide_followers,
+        :hide_follows,
+        :hide_favorites,
+        :show_role,
+        :skip_thread_containment,
+        :discoverable
+      ]
+      |> Enum.reduce(%{}, fn key, acc ->
+        add_if_present(acc, params, to_string(key), key, &{:ok, truthy_param?(&1)})
+      end)
+      |> add_if_present(params, "default_scope", :default_scope)
+      |> add_if_present(params, "fields", :fields, fn fields ->
+        fields = Enum.map(fields, fn f -> Map.update!(f, "value", &AutoLinker.link(&1)) end)
+
+        {:ok, fields}
+      end)
+      |> add_if_present(params, "fields", :raw_fields)
+      |> add_if_present(params, "pleroma_settings_store", :pleroma_settings_store, fn value ->
+        {:ok, Map.merge(user.info.pleroma_settings_store, value)}
+      end)
+      |> add_if_present(params, "header", :banner, fn value ->
+        with %Plug.Upload{} <- value,
+             {:ok, object} <- ActivityPub.upload(value, type: :banner) do
+          {:ok, object.data}
+        end
+      end)
+      |> add_if_present(params, "pleroma_background_image", :background, fn value ->
+        with %Plug.Upload{} <- value,
+             {:ok, object} <- ActivityPub.upload(value, type: :background) do
+          {:ok, object.data}
+        end
+      end)
+      |> Map.put(:emoji, user_info_emojis)
+
+    changeset =
+      user
+      |> User.update_changeset(user_params)
+      |> User.change_info(&User.Info.profile_update(&1, info_params))
+
+    with {:ok, user} <- User.update_and_set_cache(changeset) do
+      if original_user != user, do: CommonAPI.update(user)
+
+      render(conn, "show.json", user: user, for: user, with_pleroma_settings: true)
+    else
+      _e -> render_error(conn, :forbidden, "Invalid request")
+    end
+  end
+
+  defp add_if_present(map, params, params_field, map_field, value_function \\ &{:ok, &1}) do
+    with true <- Map.has_key?(params, params_field),
+         {:ok, new_value} <- value_function.(params[params_field]) do
+      Map.put(map, map_field, new_value)
+    else
+      _ -> map
+    end
   end
 
   @doc "GET /api/v1/accounts/relationships"

@@ -380,7 +380,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
 
-      patch("/accounts/update_credentials", MastodonAPIController, :update_credentials)
+      patch("/accounts/update_credentials", AccountController, :update_credentials)
 
       post("/statuses", StatusController, :create)
       delete("/statuses/:id", StatusController, :delete)
