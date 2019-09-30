@@ -753,6 +753,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  # For Undos that don't have the complete object attached, try to find it in our database.
+  def handle_incoming(
+        %{
+          "type" => "Undo",
+          "object" => object
+        } = activity,
+        options
+      )
+      when is_binary(object) do
+    with %Activity{data: data} <- Activity.get_by_ap_id(object) do
+      activity
+      |> Map.put("object", data)
+      |> handle_incoming(options)
+    else
+      _e -> :error
+    end
+  end
+
   def handle_incoming(_, _), do: :error
 
   def get_obj_helper(id, options \\ []) do
