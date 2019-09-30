@@ -17,7 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestController do
   def index(%{assigns: %{user: followed}} = conn, _params) do
     follow_requests = User.get_follow_requests(followed)
 
-    render(conn, "accounts.json", for: followed, users: follow_requests, as: :user)
+    render(conn, "index.json", for: followed, users: follow_requests, as: :user)
   end
 
   @doc "POST /api/v1/follow_requests/:id/authorize"

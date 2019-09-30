@@ -21,12 +21,12 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       content: nil,
       actor:
         Map.merge(
-          AccountView.render("account.json", %{user: user}),
+          AccountView.render("show.json", %{user: user}),
           Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user})
         ),
       account:
         Map.merge(
-          AccountView.render("account.json", %{user: other_user}),
+          AccountView.render("show.json", %{user: other_user}),
           Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: other_user})
         ),
       statuses: [],
@@ -53,12 +53,12 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       content: nil,
       actor:
         Map.merge(
-          AccountView.render("account.json", %{user: user}),
+          AccountView.render("show.json", %{user: user}),
           Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user})
         ),
       account:
         Map.merge(
-          AccountView.render("account.json", %{user: other_user}),
+          AccountView.render("show.json", %{user: other_user}),
           Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: other_user})
         ),
       statuses: [StatusView.render("show.json", %{activity: activity})],
