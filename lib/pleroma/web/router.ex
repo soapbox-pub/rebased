@@ -287,24 +287,40 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
-    pipe_through(:authenticated_api)
-
     scope [] do
+      pipe_through(:authenticated_api)
       pipe_through(:oauth_read)
       get("/conversations/:id/statuses", PleromaAPIController, :conversation_statuses)
       get("/conversations/:id", PleromaAPIController, :conversation)
     end
 
     scope [] do
+      pipe_through(:authenticated_api)
       pipe_through(:oauth_write)
       patch("/conversations/:id", PleromaAPIController, :update_conversation)
       post("/notifications/read", PleromaAPIController, :read_notification)
+
+      patch("/accounts/update_avatar", AccountController, :update_avatar)
+      patch("/accounts/update_banner", AccountController, :update_banner)
+      patch("/accounts/update_background", AccountController, :update_background)
+      post("/scrobble", ScrobbleController, :new_scrobble)
     end
 
     scope [] do
-      pipe_through(:oauth_write)
-      post("/scrobble", ScrobbleController, :new_scrobble)
+      pipe_through(:api)
+      pipe_through(:oauth_read_or_public)
+      get("/accounts/:id/favourites", AccountController, :favourites)
     end
+
+    scope [] do
+      pipe_through(:authenticated_api)
+      pipe_through(:oauth_follow)
+
+      post("/accounts/:id/subscribe", AccountController, :subscribe)
+      post("/accounts/:id/unsubscribe", AccountController, :unsubscribe)
+    end
+
+    post("/accounts/confirmation_resend", AccountController, :confirmation_resend)
   end
 
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
@@ -400,10 +416,6 @@ defmodule Pleroma.Web.Router do
       put("/filters/:id", FilterController, :update)
       delete("/filters/:id", FilterController, :delete)
 
-      patch("/pleroma/accounts/update_avatar", MastodonAPIController, :update_avatar)
-      patch("/pleroma/accounts/update_banner", MastodonAPIController, :update_banner)
-      patch("/pleroma/accounts/update_background", MastodonAPIController, :update_background)
-
       get("/pleroma/mascot", MastodonAPIController, :get_mascot)
       put("/pleroma/mascot", MastodonAPIController, :set_mascot)
 
@@ -426,9 +438,6 @@ defmodule Pleroma.Web.Router do
 
       post("/domain_blocks", DomainBlockController, :create)
       delete("/domain_blocks", DomainBlockController, :delete)
-
-      post("/pleroma/accounts/:id/subscribe", AccountController, :subscribe)
-      post("/pleroma/accounts/:id/unsubscribe", AccountController, :unsubscribe)
     end
 
     scope [] do
@@ -467,12 +476,6 @@ defmodule Pleroma.Web.Router do
 
     get("/accounts/search", SearchController, :account_search)
 
-    post(
-      "/pleroma/accounts/confirmation_resend",
-      MastodonAPIController,
-      :account_confirmation_resend
-    )
-
     scope [] do
       pipe_through(:oauth_read_or_public)
 
@@ -492,8 +495,6 @@ defmodule Pleroma.Web.Router do
       get("/accounts/:id", AccountController, :show)
 
       get("/search", SearchController, :search)
-
-      get("/pleroma/accounts/:id/favourites", AccountController, :favourites)
     end
   end
 

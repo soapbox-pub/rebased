@@ -23,8 +23,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   import Swoosh.TestAssertions
   import Tesla.Mock
 
-  @image "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
-
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
@@ -78,101 +76,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     }
 
     assert expected == json_response(conn, 200)
-  end
-
-  test "user avatar can be set", %{conn: conn} do
-    user = insert(:user)
-    avatar_image = File.read!("test/fixtures/avatar_data_uri")
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> patch("/api/v1/pleroma/accounts/update_avatar", %{img: avatar_image})
-
-    user = refresh_record(user)
-
-    assert %{
-             "name" => _,
-             "type" => _,
-             "url" => [
-               %{
-                 "href" => _,
-                 "mediaType" => _,
-                 "type" => _
-               }
-             ]
-           } = user.avatar
-
-    assert %{"url" => _} = json_response(conn, 200)
-  end
-
-  test "user avatar can be reset", %{conn: conn} do
-    user = insert(:user)
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> patch("/api/v1/pleroma/accounts/update_avatar", %{img: ""})
-
-    user = User.get_cached_by_id(user.id)
-
-    assert user.avatar == nil
-
-    assert %{"url" => nil} = json_response(conn, 200)
-  end
-
-  test "can set profile banner", %{conn: conn} do
-    user = insert(:user)
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => @image})
-
-    user = refresh_record(user)
-    assert user.info.banner["type"] == "Image"
-
-    assert %{"url" => _} = json_response(conn, 200)
-  end
-
-  test "can reset profile banner", %{conn: conn} do
-    user = insert(:user)
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => ""})
-
-    user = refresh_record(user)
-    assert user.info.banner == %{}
-
-    assert %{"url" => nil} = json_response(conn, 200)
-  end
-
-  test "background image can be set", %{conn: conn} do
-    user = insert(:user)
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => @image})
-
-    user = refresh_record(user)
-    assert user.info.background["type"] == "Image"
-    assert %{"url" => _} = json_response(conn, 200)
-  end
-
-  test "background image can be reset", %{conn: conn} do
-    user = insert(:user)
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => ""})
-
-    user = refresh_record(user)
-    assert user.info.background == %{}
-    assert %{"url" => nil} = json_response(conn, 200)
   end
 
   test "creates an oauth app", %{conn: conn} do
@@ -346,52 +249,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{"url" => url, "type" => "image"} = json_response(conn, 200)
       assert url =~ "an_image"
-    end
-  end
-  describe "subscribing / unsubscribing" do
-    test "subscribing / unsubscribing to a user", %{conn: conn} do
-      user = insert(:user)
-      subscription_target = insert(:user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/subscribe")
-
-      assert %{"id" => _id, "subscribing" => true} = json_response(conn, 200)
-
-      conn =
-        build_conn()
-        |> assign(:user, user)
-        |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/unsubscribe")
-
-      assert %{"id" => _id, "subscribing" => false} = json_response(conn, 200)
-    end
-  end
-
-  describe "subscribing" do
-    test "returns 404 when subscription_target not found", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/pleroma/accounts/target_id/subscribe")
-
-      assert %{"error" => "Record not found"} = json_response(conn, 404)
-    end
-  end
-
-  describe "unsubscribing" do
-    test "returns 404 when subscription_target not found", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/pleroma/accounts/target_id/unsubscribe")
-
-      assert %{"error" => "Record not found"} = json_response(conn, 404)
     end
   end
 
@@ -1085,42 +942,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       conn = post(conn, "/auth/password?email=#{user.email}")
       assert conn.status == 400
       assert conn.resp_body == ""
-    end
-  end
-
-  describe "POST /api/v1/pleroma/accounts/confirmation_resend" do
-    setup do
-      {:ok, user} =
-        insert(:user)
-        |> User.change_info(&User.Info.confirmation_changeset(&1, need_confirmation: true))
-        |> Repo.update()
-
-      assert user.info.confirmation_pending
-
-      [user: user]
-    end
-
-    clear_config([:instance, :account_activation_required]) do
-      Config.put([:instance, :account_activation_required], true)
-    end
-
-    test "resend account confirmation email", %{conn: conn, user: user} do
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/pleroma/accounts/confirmation_resend?email=#{user.email}")
-      |> json_response(:no_content)
-
-      ObanHelpers.perform_all()
-
-      email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
-      notify_email = Config.get([:instance, :notify_email])
-      instance_name = Config.get([:instance, :name])
-
-      assert_email_sent(
-        from: {instance_name, notify_email},
-        to: {user.name, user.email},
-        html_body: email.html_body
-      )
     end
   end
 

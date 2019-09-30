@@ -5,10 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper,
-    only: [json_response: 3, add_link_headers: 2, truthy_param?: 1]
+  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2, truthy_param?: 1]
 
-  alias Ecto.Changeset
   alias Pleroma.Activity
   alias Pleroma.Bookmark
   alias Pleroma.Config
@@ -40,7 +38,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   plug(RateLimiter, :app_account_creation when action == :account_register)
   plug(RateLimiter, :search when action in [:search, :search2, :account_search])
   plug(RateLimiter, :password_reset when action == :password_reset)
-  plug(RateLimiter, :account_confirmation_resend when action == :account_confirmation_resend)
 
   @local_mastodon_name "Mastodon-Local"
 
@@ -167,61 +164,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def update_avatar(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
-    change = Changeset.change(user, %{avatar: nil})
-    {:ok, user} = User.update_and_set_cache(change)
-    CommonAPI.update(user)
-
-    json(conn, %{url: nil})
-  end
-
-  def update_avatar(%{assigns: %{user: user}} = conn, params) do
-    {:ok, object} = ActivityPub.upload(params, type: :avatar)
-    change = Changeset.change(user, %{avatar: object.data})
-    {:ok, user} = User.update_and_set_cache(change)
-    CommonAPI.update(user)
-    %{"url" => [%{"href" => href} | _]} = object.data
-
-    json(conn, %{url: href})
-  end
-
-  def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
-    new_info = %{"banner" => %{}}
-
-    with {:ok, user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
-      CommonAPI.update(user)
-      json(conn, %{url: nil})
-    end
-  end
-
-  def update_banner(%{assigns: %{user: user}} = conn, params) do
-    with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
-         new_info <- %{"banner" => object.data},
-         {:ok, user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
-      CommonAPI.update(user)
-      %{"url" => [%{"href" => href} | _]} = object.data
-
-      json(conn, %{url: href})
-    end
-  end
-
-  def update_background(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
-    new_info = %{"background" => %{}}
-
-    with {:ok, _user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
-      json(conn, %{url: nil})
-    end
-  end
-
-  def update_background(%{assigns: %{user: user}} = conn, params) do
-    with {:ok, object} <- ActivityPub.upload(params, type: :background),
-         new_info <- %{"background" => object.data},
-         {:ok, _user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
-      %{"url" => [%{"href" => href} | _]} = object.data
-
-      json(conn, %{url: href})
-    end
-  end
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _) do
     chat_token = Phoenix.Token.sign(conn, "user socket", user.id)
@@ -236,7 +178,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     json(conn, account)
   end
-
   def verify_app_credentials(%{assigns: %{user: _user, token: token}} = conn, _) do
     with %Token{app: %App{} = app} <- Repo.preload(token, :app) do
       conn
@@ -764,16 +705,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       {:error, _} ->
         send_resp(conn, :bad_request, "")
-    end
-  end
-
-  def account_confirmation_resend(conn, params) do
-    nickname_or_email = params["email"] || params["nickname"]
-
-    with %User{} = user <- User.get_by_nickname_or_email(nickname_or_email),
-         {:ok, _} <- User.try_send_confirmation_email(user) do
-      conn
-      |> json_response(:no_content, "")
     end
   end
 
