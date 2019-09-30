@@ -439,3 +439,35 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params: None
 * Response: the archive of the pack with a 200 status code, 403 if the pack is not set as shared,
   404 if the pack does not exist
+
+## `GET /api/v1/pleroma/accounts/:id/scrobbles`
+### Requests a list of current and recent Listen activities for an account
+* Method `GET`
+* Authentication: not required
+* Params: None
+* Response: An array of media metadata entities.
+* Example response:
+```json
+[
+   {
+       "account": {...},
+       "id": "1234",
+       "title": "Some Title",
+       "artist": "Some Artist",
+       "album": "Some Album",
+       "length": 180000,
+       "created_at": "2019-09-28T12:40:45.000Z"
+   }
+]
+```
+
+## `POST /api/v1/pleroma/scrobble`
+### Creates a new Listen activity for an account
+* Method `POST`
+* Authentication: required
+* Params:
+  * `title`: the title of the media playing
+  * `album`: the album of the media playing [optional]
+  * `artist`: the artist of the media playing [optional]
+  * `length`: the length of the media playing [optional]
+* Response: the newly created media metadata entity representing the Listen activity

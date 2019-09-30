@@ -300,6 +300,17 @@ defmodule Pleroma.Web.Router do
       patch("/conversations/:id", PleromaAPIController, :update_conversation)
       post("/notifications/read", PleromaAPIController, :read_notification)
     end
+
+    scope [] do
+      pipe_through(:oauth_write)
+      post("/scrobble", ScrobbleController, :new_scrobble)
+    end
+  end
+
+  scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
+    pipe_through([:api, :oauth_read_or_public])
+
+    get("/accounts/:id/scrobbles", ScrobbleController, :user_scrobbles)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

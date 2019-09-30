@@ -212,6 +212,27 @@ defmodule Pleroma.Web.CommonAPI do
     |> check_expiry_date()
   end
 
+  def listen(user, %{"title" => _} = data) do
+    with visibility <- data["visibility"] || "public",
+         {to, cc} <- get_to_and_cc(user, [], nil, visibility, nil),
+         listen_data <-
+           Map.take(data, ["album", "artist", "title", "length"])
+           |> Map.put("type", "Audio")
+           |> Map.put("to", to)
+           |> Map.put("cc", cc)
+           |> Map.put("actor", user.ap_id),
+         {:ok, activity} <-
+           ActivityPub.listen(%{
+             actor: user,
+             to: to,
+             object: listen_data,
+             context: Utils.generate_context_id(),
+             additional: %{"cc" => cc}
+           }) do
+      {:ok, activity}
+    end
+  end
+
   def post(user, %{"status" => _} = data) do
     with {:ok, draft} <- Pleroma.Web.CommonAPI.ActivityDraft.create(user, data) do
       draft.changes

@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Refreshing poll results for remote polls
 - Admin API: Add ability to require password reset
+- Mastodon API: Account entities now include `follow_requests_count` (planned Mastodon 3.x addition)
+- Pleroma API: `GET /api/v1/pleroma/accounts/:id/scrobbles` to get a list of recently scrobbled items
+- Pleroma API: `POST /api/v1/pleroma/scrobble` to scrobble a media item
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)

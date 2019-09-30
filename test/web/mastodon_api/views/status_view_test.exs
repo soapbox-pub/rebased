@@ -608,4 +608,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert status.visibility == "list"
   end
+
+  test "successfully renders a Listen activity (pleroma extension)" do
+    listen_activity = insert(:listen)
+
+    status = StatusView.render("listen.json", activity: listen_activity)
+
+    assert status.length == listen_activity.data["object"]["length"]
+    assert status.title == listen_activity.data["object"]["title"]
+  end
 end
