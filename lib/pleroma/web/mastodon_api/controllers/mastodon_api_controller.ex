@@ -12,7 +12,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Activity
   alias Pleroma.Bookmark
   alias Pleroma.Config
-  alias Pleroma.Conversation.Participation
   alias Pleroma.Emoji
   alias Pleroma.HTTP
   alias Pleroma.Object
@@ -27,7 +26,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.AppView
-  alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.MastodonAPI.MastodonView
@@ -1001,31 +999,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def account_register(conn, _) do
     render_error(conn, :forbidden, "Invalid credentials")
-  end
-
-  def conversations(%{assigns: %{user: user}} = conn, params) do
-    participations = Participation.for_user_with_last_activity_id(user, params)
-
-    conversations =
-      Enum.map(participations, fn participation ->
-        ConversationView.render("participation.json", %{participation: participation, for: user})
-      end)
-
-    conn
-    |> add_link_headers(participations)
-    |> json(conversations)
-  end
-
-  def conversation_read(%{assigns: %{user: user}} = conn, %{"id" => participation_id}) do
-    with %Participation{} = participation <-
-           Repo.get_by(Participation, id: participation_id, user_id: user.id),
-         {:ok, participation} <- Participation.mark_as_read(participation) do
-      participation_view =
-        ConversationView.render("participation.json", %{participation: participation, for: user})
-
-      conn
-      |> json(participation_view)
-    end
   end
 
   def password_reset(conn, params) do
