@@ -362,7 +362,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       assert account["fields"] == [
                %{"name" => "foo", "value" => "bar"},
-               %{"name" => "link", "value" => "<a href=\"http://cofe.io\">cofe.io</a>"}
+               %{"name" => "link", "value" => ~S(<a href="http://cofe.io" rel="ugc">cofe.io</a>)}
              ]
 
       assert account["source"]["fields"] == [
