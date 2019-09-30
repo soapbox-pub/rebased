@@ -27,6 +27,22 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     assert to_string(activity.id) == id
   end
 
+  test "POST /api/v1/pleroma/statuses/:id/unreact_with_emoji", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+    {:ok, activity, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+
+    result =
+      conn
+      |> assign(:user, other_user)
+      |> post("/api/v1/pleroma/statuses/#{activity.id}/unreact_with_emoji", %{"emoji" => "☕"})
+
+    assert %{"id" => id} = json_response(result, 200)
+    assert to_string(activity.id) == id
+  end
+
   test "GET /api/v1/pleroma/statuses/:id/emoji_reactions_by", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)

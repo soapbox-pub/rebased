@@ -760,6 +760,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "unreacting to an object" do
+    test "adds an emoji reaction activity to the db" do
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+      {:ok, unreaction_activity} = ActivityPub.unreact_with_emoji(reactor, reaction_activity.id)
+
+      IO.inspect(object)
+    end
+  end
+
   describe "like an object" do
     test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
       Pleroma.Config.put([:instance, :federating], true)
