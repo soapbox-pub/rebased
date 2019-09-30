@@ -1082,23 +1082,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
-  describe "GET /api/v1/accounts/:id/lists - account_lists" do
-    test "returns lists to which the account belongs", %{conn: conn} do
-      user = insert(:user)
-      other_user = insert(:user)
-      assert {:ok, %Pleroma.List{} = list} = Pleroma.List.create("Test List", user)
-      {:ok, %{following: _following}} = Pleroma.List.follow(list, other_user)
-
-      res =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/accounts/#{other_user.id}/lists")
-        |> json_response(200)
-
-      assert res == [%{"id" => to_string(list.id), "title" => "Test List"}]
-    end
-  end
-
   describe "empty_array, stubs for mastodon api" do
     test "GET /api/v1/accounts/:id/identity_proofs", %{conn: conn} do
       user = insert(:user)
