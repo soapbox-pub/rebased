@@ -15,7 +15,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.App
-  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Push
 
   import ExUnit.CaptureLog
@@ -30,33 +29,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   clear_config([:instance, :public])
   clear_config([:rich_media, :enabled])
-
-  test "verify_credentials", %{conn: conn} do
-    user = insert(:user)
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> get("/api/v1/accounts/verify_credentials")
-
-    response = json_response(conn, 200)
-
-    assert %{"id" => id, "source" => %{"privacy" => "public"}} = response
-    assert response["pleroma"]["chat_token"]
-    assert id == to_string(user.id)
-  end
-
-  test "verify_credentials default scope unlisted", %{conn: conn} do
-    user = insert(:user, %{info: %User.Info{default_scope: "unlisted"}})
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> get("/api/v1/accounts/verify_credentials")
-
-    assert %{"id" => id, "source" => %{"privacy" => "unlisted"}} = json_response(conn, 200)
-    assert id == to_string(user.id)
-  end
 
   test "apps/verify_credentials", %{conn: conn} do
     token = insert(:oauth_token)
@@ -105,34 +77,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert expected == json_response(conn, 200)
   end
 
-  describe "user relationships" do
-    test "returns the relationships for the current user", %{conn: conn} do
-      user = insert(:user)
-      other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/accounts/relationships", %{"id" => [other_user.id]})
-
-      assert [relationship] = json_response(conn, 200)
-
-      assert to_string(other_user.id) == relationship["id"]
-    end
-
-    test "returns an empty list on a bad request", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/accounts/relationships", %{})
-
-      assert [] = json_response(conn, 200)
-    end
-  end
-
   describe "media upload" do
     setup do
       user = insert(:user)
@@ -167,20 +111,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       object = Repo.get(Object, media["id"])
       assert object.data["actor"] == User.ap_id(conn.assigns[:user])
-    end
-  end
-
-  describe "locked accounts" do
-    test "verify_credentials", %{conn: conn} do
-      user = insert(:user, %{info: %User.Info{default_scope: "private"}})
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/accounts/verify_credentials")
-
-      assert %{"id" => id, "source" => %{"privacy" => "private"}} = json_response(conn, 200)
-      assert id == to_string(user.id)
     end
   end
 
@@ -552,172 +482,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert conn.status == 302
       assert redirected_to(conn) == "/web/getting-started"
-    end
-  end
-
-  describe "create account by app" do
-    setup do
-      valid_params = %{
-        username: "lain",
-        email: "lain@example.org",
-        password: "PlzDontHackLain",
-        agreement: true
-      }
-
-      [valid_params: valid_params]
-    end
-
-    test "Account registration via Application", %{conn: conn} do
-      conn =
-        conn
-        |> post("/api/v1/apps", %{
-          client_name: "client_name",
-          redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
-          scopes: "read, write, follow"
-        })
-
-      %{
-        "client_id" => client_id,
-        "client_secret" => client_secret,
-        "id" => _,
-        "name" => "client_name",
-        "redirect_uri" => "urn:ietf:wg:oauth:2.0:oob",
-        "vapid_key" => _,
-        "website" => nil
-      } = json_response(conn, 200)
-
-      conn =
-        conn
-        |> post("/oauth/token", %{
-          grant_type: "client_credentials",
-          client_id: client_id,
-          client_secret: client_secret
-        })
-
-      assert %{"access_token" => token, "refresh_token" => refresh, "scope" => scope} =
-               json_response(conn, 200)
-
-      assert token
-      token_from_db = Repo.get_by(Token, token: token)
-      assert token_from_db
-      assert refresh
-      assert scope == "read write follow"
-
-      conn =
-        build_conn()
-        |> put_req_header("authorization", "Bearer " <> token)
-        |> post("/api/v1/accounts", %{
-          username: "lain",
-          email: "lain@example.org",
-          password: "PlzDontHackLain",
-          bio: "Test Bio",
-          agreement: true
-        })
-
-      %{
-        "access_token" => token,
-        "created_at" => _created_at,
-        "scope" => _scope,
-        "token_type" => "Bearer"
-      } = json_response(conn, 200)
-
-      token_from_db = Repo.get_by(Token, token: token)
-      assert token_from_db
-      token_from_db = Repo.preload(token_from_db, :user)
-      assert token_from_db.user
-
-      assert token_from_db.user.info.confirmation_pending
-    end
-
-    test "returns error when user already registred", %{conn: conn, valid_params: valid_params} do
-      _user = insert(:user, email: "lain@example.org")
-      app_token = insert(:oauth_token, user: nil)
-
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer " <> app_token.token)
-
-      res = post(conn, "/api/v1/accounts", valid_params)
-      assert json_response(res, 400) == %{"error" => "{\"email\":[\"has already been taken\"]}"}
-    end
-
-    test "rate limit", %{conn: conn} do
-      app_token = insert(:oauth_token, user: nil)
-
-      conn =
-        put_req_header(conn, "authorization", "Bearer " <> app_token.token)
-        |> Map.put(:remote_ip, {15, 15, 15, 15})
-
-      for i <- 1..5 do
-        conn =
-          conn
-          |> post("/api/v1/accounts", %{
-            username: "#{i}lain",
-            email: "#{i}lain@example.org",
-            password: "PlzDontHackLain",
-            agreement: true
-          })
-
-        %{
-          "access_token" => token,
-          "created_at" => _created_at,
-          "scope" => _scope,
-          "token_type" => "Bearer"
-        } = json_response(conn, 200)
-
-        token_from_db = Repo.get_by(Token, token: token)
-        assert token_from_db
-        token_from_db = Repo.preload(token_from_db, :user)
-        assert token_from_db.user
-
-        assert token_from_db.user.info.confirmation_pending
-      end
-
-      conn =
-        conn
-        |> post("/api/v1/accounts", %{
-          username: "6lain",
-          email: "6lain@example.org",
-          password: "PlzDontHackLain",
-          agreement: true
-        })
-
-      assert json_response(conn, :too_many_requests) == %{"error" => "Throttled"}
-    end
-
-    test "returns bad_request if missing required params", %{
-      conn: conn,
-      valid_params: valid_params
-    } do
-      app_token = insert(:oauth_token, user: nil)
-
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer " <> app_token.token)
-
-      res = post(conn, "/api/v1/accounts", valid_params)
-      assert json_response(res, 200)
-
-      [{127, 0, 0, 1}, {127, 0, 0, 2}, {127, 0, 0, 3}, {127, 0, 0, 4}]
-      |> Stream.zip(valid_params)
-      |> Enum.each(fn {ip, {attr, _}} ->
-        res =
-          conn
-          |> Map.put(:remote_ip, ip)
-          |> post("/api/v1/accounts", Map.delete(valid_params, attr))
-          |> json_response(400)
-
-        assert res == %{"error" => "Missing parameters"}
-      end)
-    end
-
-    test "returns forbidden if token is invalid", %{conn: conn, valid_params: valid_params} do
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer " <> "invalid-token")
-
-      res = post(conn, "/api/v1/accounts", valid_params)
-      assert json_response(res, 403) == %{"error" => "Invalid credentials"}
     end
   end
 

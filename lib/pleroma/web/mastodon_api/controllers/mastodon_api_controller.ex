@@ -35,8 +35,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
 
-  plug(RateLimiter, :app_account_creation when action == :account_register)
-  plug(RateLimiter, :search when action in [:search, :search2, :account_search])
   plug(RateLimiter, :password_reset when action == :password_reset)
 
   @local_mastodon_name "Mastodon-Local"
@@ -164,20 +162,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-
-  def verify_credentials(%{assigns: %{user: user}} = conn, _) do
-    chat_token = Phoenix.Token.sign(conn, "user socket", user.id)
-
-    account =
-      AccountView.render("show.json", %{
-        user: user,
-        for: user,
-        with_pleroma_settings: true,
-        with_chat_token: chat_token
-      })
-
-    json(conn, account)
-  end
   def verify_app_credentials(%{assigns: %{user: _user, token: token}} = conn, _) do
     with %Token{app: %App{} = app} <- Repo.preload(token, :app) do
       conn
@@ -287,17 +271,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> json(%{error: message})
     end
   end
-
-  def relationships(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    targets = User.get_all_by_ids(List.wrap(id))
-
-    conn
-    |> put_view(AccountView)
-    |> render("relationships.json", %{user: user, targets: targets})
-  end
-
-  # Instead of returning a 400 when no "id" params is present, Mastodon returns an empty array.
-  def relationships(%{assigns: %{user: _user}} = conn, _), do: json(conn, [])
 
   def update_media(
         %{assigns: %{user: user}} = conn,
@@ -647,49 +620,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       {:ok, %User{id: id}} -> id
       _ -> 0
     end
-  end
-
-  def account_register(
-        %{assigns: %{app: app}} = conn,
-        %{"username" => nickname, "email" => _, "password" => _, "agreement" => true} = params
-      ) do
-    params =
-      params
-      |> Map.take([
-        "email",
-        "captcha_solution",
-        "captcha_token",
-        "captcha_answer_data",
-        "token",
-        "password"
-      ])
-      |> Map.put("nickname", nickname)
-      |> Map.put("fullname", params["fullname"] || nickname)
-      |> Map.put("bio", params["bio"] || "")
-      |> Map.put("confirm", params["password"])
-
-    with {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
-         {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
-      json(conn, %{
-        token_type: "Bearer",
-        access_token: token.token,
-        scope: app.scopes,
-        created_at: Token.Utils.format_created_at(token)
-      })
-    else
-      {:error, errors} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(errors)
-    end
-  end
-
-  def account_register(%{assigns: %{app: _app}} = conn, _) do
-    render_error(conn, :bad_request, "Missing parameters")
-  end
-
-  def account_register(conn, _) do
-    render_error(conn, :forbidden, "Invalid credentials")
   end
 
   def password_reset(conn, params) do

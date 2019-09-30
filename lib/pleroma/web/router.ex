@@ -335,9 +335,9 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_read)
 
-      get("/accounts/verify_credentials", MastodonAPIController, :verify_credentials)
+      get("/accounts/verify_credentials", AccountController, :verify_credentials)
 
-      get("/accounts/relationships", MastodonAPIController, :relationships)
+      get("/accounts/relationships", AccountController, :relationships)
 
       get("/accounts/:id/lists", AccountController, :lists)
       get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
@@ -459,7 +459,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
 
-    post("/accounts", MastodonAPIController, :account_register)
+    post("/accounts", AccountController, :create)
 
     get("/instance", MastodonAPIController, :masto_instance)
     get("/instance/peers", MastodonAPIController, :peers)

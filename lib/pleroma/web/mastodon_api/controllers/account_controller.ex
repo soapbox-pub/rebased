@@ -8,21 +8,88 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   import Pleroma.Web.ControllerHelper,
     only: [add_link_headers: 2, truthy_param?: 1, assign_account_by_id: 2, json_response: 3]
 
-  alias Pleroma.User
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.MastodonAPI.MastodonAPI
-  alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Plugs.RateLimiter
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MastodonAPI.ListView
+  alias Pleroma.Web.MastodonAPI.MastodonAPI
+  alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
 
-  @relations ~w(follow unfollow)a
+  @relations [:follow, :unfollow]
+  @needs_account ~W(followers following lists follow unfollow mute unmute block unblock)a
 
   plug(RateLimiter, {:relations_id_action, params: ["id", "uri"]} when action in @relations)
   plug(RateLimiter, :relations_actions when action in @relations)
-  plug(:assign_account_by_id when action not in [:show, :statuses])
+  plug(RateLimiter, :app_account_creation when action == :create)
+  plug(:assign_account_by_id when action in @needs_account)
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
+
+  @doc "POST /api/v1/accounts"
+  def create(
+        %{assigns: %{app: app}} = conn,
+        %{"username" => nickname, "email" => _, "password" => _, "agreement" => true} = params
+      ) do
+    params =
+      params
+      |> Map.take([
+        "email",
+        "captcha_solution",
+        "captcha_token",
+        "captcha_answer_data",
+        "token",
+        "password"
+      ])
+      |> Map.put("nickname", nickname)
+      |> Map.put("fullname", params["fullname"] || nickname)
+      |> Map.put("bio", params["bio"] || "")
+      |> Map.put("confirm", params["password"])
+
+    with {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
+         {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
+      json(conn, %{
+        token_type: "Bearer",
+        access_token: token.token,
+        scope: app.scopes,
+        created_at: Token.Utils.format_created_at(token)
+      })
+    else
+      {:error, errors} -> json_response(conn, :bad_request, errors)
+    end
+  end
+
+  def create(%{assigns: %{app: _app}} = conn, _) do
+    render_error(conn, :bad_request, "Missing parameters")
+  end
+
+  def create(conn, _) do
+    render_error(conn, :forbidden, "Invalid credentials")
+  end
+
+  @doc "GET /api/v1/accounts/verify_credentials"
+  def verify_credentials(%{assigns: %{user: user}} = conn, _) do
+    chat_token = Phoenix.Token.sign(conn, "user socket", user.id)
+
+    render(conn, "show.json",
+      user: user,
+      for: user,
+      with_pleroma_settings: true,
+      with_chat_token: chat_token
+    )
+  end
+
+  @doc "GET /api/v1/accounts/relationships"
+  def relationships(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    targets = User.get_all_by_ids(List.wrap(id))
+
+    render(conn, "relationships.json", user: user, targets: targets)
+  end
+
+  # Instead of returning a 400 when no "id" params is present, Mastodon returns an empty array.
+  def relationships(%{assigns: %{user: _user}} = conn, _), do: json(conn, [])
 
   @doc "GET /api/v1/accounts/:id"
   def show(%{assigns: %{user: for_user}} = conn, %{"id" => nickname_or_id}) do
