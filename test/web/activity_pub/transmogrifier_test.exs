@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -174,6 +175,35 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                  "I can't even fit a funny"
                ]
              end)
+    end
+
+    test "it works for incoming listens" do
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
+        "type" => "Listen",
+        "id" => "http://mastodon.example.org/users/admin/listens/1234/activity",
+        "actor" => "http://mastodon.example.org/users/admin",
+        "object" => %{
+          "type" => "Audio",
+          "id" => "http://mastodon.example.org/users/admin/listens/1234",
+          "attributedTo" => "http://mastodon.example.org/users/admin",
+          "title" => "lain radio episode 1",
+          "artist" => "lain",
+          "album" => "lain radio",
+          "length" => 180_000
+        }
+      }
+
+      {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
+
+      object = Object.normalize(activity)
+
+      assert object.data["title"] == "lain radio episode 1"
+      assert object.data["artist"] == "lain"
+      assert object.data["album"] == "lain radio"
+      assert object.data["length"] == 180_000
     end
 
     test "it rewrites Note votes to Answers and increments vote counters on question activities" do
@@ -680,6 +710,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Poison.decode!()
 
       {:ok, _} = Transmogrifier.handle_incoming(data)
+      ObanHelpers.perform_all()
 
       refute User.get_cached_by_ap_id(ap_id)
     end
@@ -1220,6 +1251,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert is_nil(modified["bcc"])
     end
+
+    test "it can handle Listen activities" do
+      listen_activity = insert(:listen)
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(listen_activity.data)
+
+      assert modified["type"] == "Listen"
+
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.listen(user, %{"title" => "lain radio episode 1"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+    end
   end
 
   describe "user upgrade" do
@@ -1242,6 +1287,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.info.note_count == 1
 
       {:ok, user} = Transmogrifier.upgrade_user_from_ap_id("https://niu.moe/users/rye")
+      ObanHelpers.perform_all()
+
       assert user.info.ap_enabled
       assert user.info.note_count == 1
       assert user.follower_address == "https://niu.moe/users/rye/followers"
@@ -1481,6 +1528,273 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.follower_address in fixed_object["cc"]
       refute recipient.follower_address in fixed_object["cc"]
       refute recipient.follower_address in fixed_object["to"]
+    end
+  end
+
+  describe "fix_summary/1" do
+    test "returns fixed object" do
+      assert Transmogrifier.fix_summary(%{"summary" => nil}) == %{"summary" => ""}
+      assert Transmogrifier.fix_summary(%{"summary" => "ok"}) == %{"summary" => "ok"}
+      assert Transmogrifier.fix_summary(%{}) == %{"summary" => ""}
+    end
+  end
+
+  describe "fix_in_reply_to/2" do
+    clear_config([:instance, :federation_incoming_replies_max_depth])
+
+    setup do
+      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      [data: data]
+    end
+
+    test "returns not modified object when hasn't containts inReplyTo field", %{data: data} do
+      assert Transmogrifier.fix_in_reply_to(data) == data
+    end
+
+    test "returns object with inReplyToAtomUri when denied incoming reply", %{data: data} do
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+
+      object_with_reply =
+        Map.put(data["object"], "inReplyTo", "https://shitposter.club/notice/2827873")
+
+      modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
+      assert modified_object["inReplyTo"] == "https://shitposter.club/notice/2827873"
+      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+
+      object_with_reply =
+        Map.put(data["object"], "inReplyTo", %{"id" => "https://shitposter.club/notice/2827873"})
+
+      modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
+      assert modified_object["inReplyTo"] == %{"id" => "https://shitposter.club/notice/2827873"}
+      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+
+      object_with_reply =
+        Map.put(data["object"], "inReplyTo", ["https://shitposter.club/notice/2827873"])
+
+      modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
+      assert modified_object["inReplyTo"] == ["https://shitposter.club/notice/2827873"]
+      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+
+      object_with_reply = Map.put(data["object"], "inReplyTo", [])
+      modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
+      assert modified_object["inReplyTo"] == []
+      assert modified_object["inReplyToAtomUri"] == ""
+    end
+
+    test "returns modified object when allowed incoming reply", %{data: data} do
+      object_with_reply =
+        Map.put(
+          data["object"],
+          "inReplyTo",
+          "https://shitposter.club/notice/2827873"
+        )
+
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 5)
+      modified_object = Transmogrifier.fix_in_reply_to(object_with_reply)
+
+      assert modified_object["inReplyTo"] ==
+               "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+
+      assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+
+      assert modified_object["conversation"] ==
+               "tag:shitposter.club,2017-05-05:objectType=thread:nonce=3c16e9c2681f6d26"
+
+      assert modified_object["context"] ==
+               "tag:shitposter.club,2017-05-05:objectType=thread:nonce=3c16e9c2681f6d26"
+    end
+  end
+
+  describe "fix_url/1" do
+    test "fixes data for object when url is map" do
+      object = %{
+        "url" => %{
+          "type" => "Link",
+          "mimeType" => "video/mp4",
+          "href" => "https://peede8d-46fb-ad81-2d4c2d1630e3-480.mp4"
+        }
+      }
+
+      assert Transmogrifier.fix_url(object) == %{
+               "url" => "https://peede8d-46fb-ad81-2d4c2d1630e3-480.mp4"
+             }
+    end
+
+    test "fixes data for video object" do
+      object = %{
+        "type" => "Video",
+        "url" => [
+          %{
+            "type" => "Link",
+            "mimeType" => "video/mp4",
+            "href" => "https://peede8d-46fb-ad81-2d4c2d1630e3-480.mp4"
+          },
+          %{
+            "type" => "Link",
+            "mimeType" => "video/mp4",
+            "href" => "https://peertube46fb-ad81-2d4c2d1630e3-240.mp4"
+          },
+          %{
+            "type" => "Link",
+            "mimeType" => "text/html",
+            "href" => "https://peertube.-2d4c2d1630e3"
+          },
+          %{
+            "type" => "Link",
+            "mimeType" => "text/html",
+            "href" => "https://peertube.-2d4c2d16377-42"
+          }
+        ]
+      }
+
+      assert Transmogrifier.fix_url(object) == %{
+               "attachment" => [
+                 %{
+                   "href" => "https://peede8d-46fb-ad81-2d4c2d1630e3-480.mp4",
+                   "mimeType" => "video/mp4",
+                   "type" => "Link"
+                 }
+               ],
+               "type" => "Video",
+               "url" => "https://peertube.-2d4c2d1630e3"
+             }
+    end
+
+    test "fixes url for not Video object" do
+      object = %{
+        "type" => "Text",
+        "url" => [
+          %{
+            "type" => "Link",
+            "mimeType" => "text/html",
+            "href" => "https://peertube.-2d4c2d1630e3"
+          },
+          %{
+            "type" => "Link",
+            "mimeType" => "text/html",
+            "href" => "https://peertube.-2d4c2d16377-42"
+          }
+        ]
+      }
+
+      assert Transmogrifier.fix_url(object) == %{
+               "type" => "Text",
+               "url" => "https://peertube.-2d4c2d1630e3"
+             }
+
+      assert Transmogrifier.fix_url(%{"type" => "Text", "url" => []}) == %{
+               "type" => "Text",
+               "url" => ""
+             }
+    end
+
+    test "retunrs not modified object" do
+      assert Transmogrifier.fix_url(%{"type" => "Text"}) == %{"type" => "Text"}
+    end
+  end
+
+  describe "get_obj_helper/2" do
+    test "returns nil when cannot normalize object" do
+      refute Transmogrifier.get_obj_helper("test-obj-id")
+    end
+
+    test "returns {:ok, %Object{}} for success case" do
+      assert {:ok, %Object{}} =
+               Transmogrifier.get_obj_helper("https://shitposter.club/notice/2827873")
+    end
+  end
+
+  describe "fix_attachments/1" do
+    test "returns not modified object" do
+      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      assert Transmogrifier.fix_attachments(data) == data
+    end
+
+    test "returns modified object when attachment is map" do
+      assert Transmogrifier.fix_attachments(%{
+               "attachment" => %{
+                 "mediaType" => "video/mp4",
+                 "url" => "https://peertube.moe/stat-480.mp4"
+               }
+             }) == %{
+               "attachment" => [
+                 %{
+                   "mediaType" => "video/mp4",
+                   "url" => [
+                     %{
+                       "href" => "https://peertube.moe/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
+                   ]
+                 }
+               ]
+             }
+    end
+
+    test "returns modified object when attachment is list" do
+      assert Transmogrifier.fix_attachments(%{
+               "attachment" => [
+                 %{"mediaType" => "video/mp4", "url" => "https://pe.er/stat-480.mp4"},
+                 %{"mimeType" => "video/mp4", "href" => "https://pe.er/stat-480.mp4"}
+               ]
+             }) == %{
+               "attachment" => [
+                 %{
+                   "mediaType" => "video/mp4",
+                   "url" => [
+                     %{
+                       "href" => "https://pe.er/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
+                   ]
+                 },
+                 %{
+                   "href" => "https://pe.er/stat-480.mp4",
+                   "mediaType" => "video/mp4",
+                   "mimeType" => "video/mp4",
+                   "url" => [
+                     %{
+                       "href" => "https://pe.er/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
+                   ]
+                 }
+               ]
+             }
+    end
+  end
+
+  describe "fix_emoji/1" do
+    test "returns not modified object when object not contains tags" do
+      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      assert Transmogrifier.fix_emoji(data) == data
+    end
+
+    test "returns object with emoji when object contains list tags" do
+      assert Transmogrifier.fix_emoji(%{
+               "tag" => [
+                 %{"type" => "Emoji", "name" => ":bib:", "icon" => %{"url" => "/test"}},
+                 %{"type" => "Hashtag"}
+               ]
+             }) == %{
+               "emoji" => %{"bib" => "/test"},
+               "tag" => [
+                 %{"icon" => %{"url" => "/test"}, "name" => ":bib:", "type" => "Emoji"},
+                 %{"type" => "Hashtag"}
+               ]
+             }
+    end
+
+    test "returns object with emoji when object contains map tag" do
+      assert Transmogrifier.fix_emoji(%{
+               "tag" => %{"type" => "Emoji", "name" => ":bib:", "icon" => %{"url" => "/test"}}
+             }) == %{
+               "emoji" => %{"bib" => "/test"},
+               "tag" => %{"icon" => %{"url" => "/test"}, "name" => ":bib:", "type" => "Emoji"}
+             }
     end
   end
 end

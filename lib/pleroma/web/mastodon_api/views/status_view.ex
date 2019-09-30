@@ -73,17 +73,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render("index.json", opts) do
     replied_to_activities = get_replied_to_activities(opts.activities)
+    opts = Map.put(opts, :replied_to_activities, replied_to_activities)
 
-    opts.activities
-    |> safe_render_many(
-      StatusView,
-      "status.json",
-      Map.put(opts, :replied_to_activities, replied_to_activities)
-    )
+    safe_render_many(opts.activities, StatusView, "show.json", opts)
   end
 
   def render(
-        "status.json",
+        "show.json",
         %{activity: %{data: %{"type" => "Announce", "object" => _object}} = activity} = opts
       ) do
     user = get_user(activity.data["actor"])
@@ -96,7 +92,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Activity.with_set_thread_muted_field(opts[:for])
       |> Repo.one()
 
-    reblogged = render("status.json", Map.put(opts, :activity, reblogged_activity))
+    reblogged = render("show.json", Map.put(opts, :activity, reblogged_activity))
 
     favorited = opts[:for] && opts[:for].ap_id in (activity_object.data["likes"] || [])
 
@@ -144,7 +140,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("status.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
+  def render("show.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
     object = Object.normalize(activity)
 
     user = get_user(activity.data["actor"])
@@ -303,7 +299,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("status.json", _) do
+  def render("show.json", _) do
     nil
   end
 
@@ -343,9 +339,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("card.json", _) do
-    nil
-  end
+  def render("card.json", _), do: nil
 
   def render("attachment.json", %{attachment: attachment}) do
     [attachment_url | _] = attachment["url"]
@@ -372,6 +366,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       description: attachment["name"],
       pleroma: %{mime_type: media_type}
     }
+  end
+
+  def render("listen.json", %{activity: %Activity{data: %{"type" => "Listen"}} = activity} = opts) do
+    object = Object.normalize(activity)
+
+    user = get_user(activity.data["actor"])
+    created_at = Utils.to_masto_date(activity.data["published"])
+
+    %{
+      id: activity.id,
+      account: AccountView.render("account.json", %{user: user, for: opts[:for]}),
+      created_at: created_at,
+      title: object.data["title"] |> HTML.strip_tags(),
+      artist: object.data["artist"] |> HTML.strip_tags(),
+      album: object.data["album"] |> HTML.strip_tags(),
+      length: object.data["length"]
+    }
+  end
+
+  def render("listens.json", opts) do
+    safe_render_many(opts.activities, StatusView, "listen.json", opts)
   end
 
   def render("poll.json", %{object: object} = opts) do
@@ -441,6 +456,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     else
       nil
     end
+  end
+
+  def render("context.json", %{activity: activity, activities: activities, user: user}) do
+    %{ancestors: ancestors, descendants: descendants} =
+      activities
+      |> Enum.reverse()
+      |> Enum.group_by(fn %{id: id} -> if id < activity.id, do: :ancestors, else: :descendants end)
+      |> Map.put_new(:ancestors, [])
+      |> Map.put_new(:descendants, [])
+
+    %{
+      ancestors: render("index.json", for: user, activities: ancestors, as: :activity),
+      descendants: render("index.json", for: user, activities: descendants, as: :activity)
+    }
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do

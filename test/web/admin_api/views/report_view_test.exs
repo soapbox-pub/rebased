@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.AdminAPI.ReportViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
+  alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -34,7 +35,7 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
     }
 
     result =
-      ReportView.render("show.json", %{report: activity})
+      ReportView.render("show.json", Report.extract_report_info(activity))
       |> Map.delete(:created_at)
 
     assert result == expected
@@ -60,13 +61,13 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
           AccountView.render("account.json", %{user: other_user}),
           Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: other_user})
         ),
-      statuses: [StatusView.render("status.json", %{activity: activity})],
+      statuses: [StatusView.render("show.json", %{activity: activity})],
       state: "open",
       id: report_activity.id
     }
 
     result =
-      ReportView.render("show.json", %{report: report_activity})
+      ReportView.render("show.json", Report.extract_report_info(report_activity))
       |> Map.delete(:created_at)
 
     assert result == expected
@@ -78,7 +79,9 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
 
     {:ok, activity} = CommonAPI.report(user, %{"account_id" => other_user.id})
     {:ok, activity} = CommonAPI.update_report_state(activity.id, "closed")
-    assert %{state: "closed"} = ReportView.render("show.json", %{report: activity})
+
+    assert %{state: "closed"} =
+             ReportView.render("show.json", Report.extract_report_info(activity))
   end
 
   test "renders report description" do
@@ -92,7 +95,7 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       })
 
     assert %{content: "posts are too good for this instance"} =
-             ReportView.render("show.json", %{report: activity})
+             ReportView.render("show.json", Report.extract_report_info(activity))
   end
 
   test "sanitizes report description" do
@@ -109,7 +112,7 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
     activity = Map.put(activity, :data, data)
 
     refute "<script> alert('hecked :D:D:D:D:D:D:D') </script>" ==
-             ReportView.render("show.json", %{report: activity})[:content]
+             ReportView.render("show.json", Report.extract_report_info(activity))[:content]
   end
 
   test "doesn't error out when the user doesn't exists" do
@@ -125,6 +128,6 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
     Pleroma.User.delete(other_user)
     Pleroma.User.invalidate_cache(other_user)
 
-    assert %{} = ReportView.render("show.json", %{report: activity})
+    assert %{} = ReportView.render("show.json", Report.extract_report_info(activity))
   end
 end

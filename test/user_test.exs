@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UserTest do
@@ -7,14 +7,16 @@ defmodule Pleroma.UserTest do
   alias Pleroma.Builders.UserBuilder
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
 
-  import Pleroma.Factory
   import Mock
+  import Pleroma.Factory
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -72,8 +74,8 @@ defmodule Pleroma.UserTest do
     CommonAPI.follow(follower, unlocked)
     CommonAPI.follow(follower, locked)
 
-    assert {:ok, []} = User.get_follow_requests(unlocked)
-    assert {:ok, [activity]} = User.get_follow_requests(locked)
+    assert [] = User.get_follow_requests(unlocked)
+    assert [activity] = User.get_follow_requests(locked)
 
     assert activity
   end
@@ -88,7 +90,7 @@ defmodule Pleroma.UserTest do
     CommonAPI.follow(accepted_follower, locked)
     User.follow(accepted_follower, locked)
 
-    assert {:ok, [activity]} = User.get_follow_requests(locked)
+    assert [activity] = User.get_follow_requests(locked)
     assert activity
   end
 
@@ -97,10 +99,10 @@ defmodule Pleroma.UserTest do
     follower = insert(:user)
 
     CommonAPI.follow(follower, followed)
-    assert {:ok, [_activity]} = User.get_follow_requests(followed)
+    assert [_activity] = User.get_follow_requests(followed)
 
     {:ok, _follower} = User.block(followed, follower)
-    assert {:ok, []} = User.get_follow_requests(followed)
+    assert [] = User.get_follow_requests(followed)
   end
 
   test "follow_all follows mutliple users" do
@@ -558,7 +560,7 @@ defmodule Pleroma.UserTest do
 
     test "it enforces the fqn format for nicknames" do
       cs = User.remote_user_creation(%{@valid_remote | nickname: "bla"})
-      assert cs.changes.local == false
+      assert Ecto.Changeset.get_field(cs, :local) == false
       assert cs.changes.avatar
       refute cs.valid?
     end
@@ -567,22 +569,6 @@ defmodule Pleroma.UserTest do
       [:name, :ap_id]
       |> Enum.each(fn field ->
         cs = User.remote_user_creation(Map.delete(@valid_remote, field))
-        refute cs.valid?
-      end)
-    end
-
-    test "it restricts some sizes" do
-      bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
-      name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
-
-      [bio: bio_limit, name: name_limit]
-      |> Enum.each(fn {field, size} ->
-        string = String.pad_leading(".", size)
-        cs = User.remote_user_creation(Map.put(@valid_remote, field, string))
-        assert cs.valid?
-
-        string = String.pad_leading(".", size + 1)
-        cs = User.remote_user_creation(Map.put(@valid_remote, field, string))
         refute cs.valid?
       end)
     end
@@ -598,7 +584,7 @@ defmodule Pleroma.UserTest do
       {:ok, follower_one} = User.follow(follower_one, user)
       {:ok, follower_two} = User.follow(follower_two, user)
 
-      {:ok, res} = User.get_followers(user)
+      res = User.get_followers(user)
 
       assert Enum.member?(res, follower_one)
       assert Enum.member?(res, follower_two)
@@ -614,7 +600,7 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.follow(user, followed_one)
       {:ok, user} = User.follow(user, followed_two)
 
-      {:ok, res} = User.get_friends(user)
+      res = User.get_friends(user)
 
       followed_one = User.get_cached_by_ap_id(followed_one.ap_id)
       followed_two = User.get_cached_by_ap_id(followed_two.ap_id)
@@ -725,7 +711,9 @@ defmodule Pleroma.UserTest do
         user3.nickname
       ]
 
-      result = User.follow_import(user1, identifiers)
+      {:ok, job} = User.follow_import(user1, identifiers)
+      result = ObanHelpers.perform(job)
+
       assert is_list(result)
       assert result == [user2, user3]
     end
@@ -936,7 +924,9 @@ defmodule Pleroma.UserTest do
         user3.nickname
       ]
 
-      result = User.blocks_import(user1, identifiers)
+      {:ok, job} = User.blocks_import(user1, identifiers)
+      result = ObanHelpers.perform(job)
+
       assert is_list(result)
       assert result == [user2, user3]
     end
@@ -985,7 +975,7 @@ defmodule Pleroma.UserTest do
       info = User.get_cached_user_info(user2)
 
       assert info.follower_count == 0
-      assert {:ok, []} = User.get_followers(user2)
+      assert [] = User.get_followers(user2)
     end
 
     test "hide a user from friends" do
@@ -1001,7 +991,7 @@ defmodule Pleroma.UserTest do
 
       assert info.following_count == 0
       assert User.following_count(user2) == 0
-      assert {:ok, []} = User.get_friends(user2)
+      assert [] = User.get_friends(user2)
     end
 
     test "hide a user's statuses from timelines and notifications" do
@@ -1044,7 +1034,7 @@ defmodule Pleroma.UserTest do
     test ".delete_user_activities deletes all create activities", %{user: user} do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
 
-      {:ok, _} = User.delete_user_activities(user)
+      User.delete_user_activities(user)
 
       # TODO: Remove favorites, repeats, delete activities.
       refute Activity.get_by_id(activity.id)
@@ -1053,7 +1043,9 @@ defmodule Pleroma.UserTest do
     test "it deletes deactivated user" do
       {:ok, user} = insert(:user, info: %{deactivated: true}) |> User.set_cache()
 
-      assert {:ok, _} = User.delete(user)
+      {:ok, job} = User.delete(user)
+      {:ok, _user} = ObanHelpers.perform(job)
+
       refute User.get_by_id(user.id)
     end
 
@@ -1071,7 +1063,8 @@ defmodule Pleroma.UserTest do
       {:ok, like_two, _} = CommonAPI.favorite(activity.id, follower)
       {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
 
-      {:ok, _} = User.delete(user)
+      {:ok, job} = User.delete(user)
+      {:ok, _user} = ObanHelpers.perform(job)
 
       follower = User.get_cached_by_id(follower.id)
 
@@ -1081,7 +1074,7 @@ defmodule Pleroma.UserTest do
 
       user_activities =
         user.ap_id
-        |> Activity.query_by_actor()
+        |> Activity.Queries.by_actor()
         |> Repo.all()
         |> Enum.map(fn act -> act.data["type"] end)
 
@@ -1103,12 +1096,18 @@ defmodule Pleroma.UserTest do
       {:ok, follower} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
       {:ok, _} = User.follow(follower, user)
 
-      {:ok, _user} = User.delete(user)
+      {:ok, job} = User.delete(user)
+      {:ok, _user} = ObanHelpers.perform(job)
 
-      assert called(
-               Pleroma.Web.ActivityPub.Publisher.publish_one(%{
-                 inbox: "http://mastodon.example.org/inbox"
-               })
+      assert ObanHelpers.member?(
+               %{
+                 "op" => "publish_one",
+                 "params" => %{
+                   "inbox" => "http://mastodon.example.org/inbox",
+                   "id" => "pleroma:fakeid"
+                 }
+               },
+               all_enqueued(worker: Pleroma.Workers.PublisherWorker)
              )
     end
   end
@@ -1117,11 +1116,60 @@ defmodule Pleroma.UserTest do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
 
-  test "insert or update a user from given data" do
-    user = insert(:user, %{nickname: "nick@name.de"})
-    data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
+  describe "insert or update a user from given data" do
+    test "with normal data" do
+      user = insert(:user, %{nickname: "nick@name.de"})
+      data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
 
-    assert {:ok, %User{}} = User.insert_or_update_user(data)
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
+
+    test "with overly long fields" do
+      current_max_length = Pleroma.Config.get([:instance, :account_field_value_length], 255)
+      user = insert(:user, nickname: "nickname@supergood.domain")
+
+      data = %{
+        ap_id: user.ap_id,
+        name: user.name,
+        nickname: user.nickname,
+        info: %{
+          fields: [
+            %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
+          ]
+        }
+      }
+
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
+
+    test "with an overly long bio" do
+      current_max_length = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+      user = insert(:user, nickname: "nickname@supergood.domain")
+
+      data = %{
+        ap_id: user.ap_id,
+        name: user.name,
+        nickname: user.nickname,
+        bio: String.duplicate("h", current_max_length + 1),
+        info: %{}
+      }
+
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
+
+    test "with an overly long display name" do
+      current_max_length = Pleroma.Config.get([:instance, :user_name_length], 100)
+      user = insert(:user, nickname: "nickname@supergood.domain")
+
+      data = %{
+        ap_id: user.ap_id,
+        name: String.duplicate("h", current_max_length + 1),
+        nickname: user.nickname,
+        info: %{}
+      }
+
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
   end
 
   describe "per-user rich-text filtering" do
@@ -1153,7 +1201,8 @@ defmodule Pleroma.UserTest do
     test "User.delete() plugs any possible zombie objects" do
       user = insert(:user)
 
-      {:ok, _} = User.delete(user)
+      {:ok, job} = User.delete(user)
+      {:ok, _} = ObanHelpers.perform(job)
 
       {:ok, cached_user} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
 
@@ -1245,9 +1294,9 @@ defmodule Pleroma.UserTest do
       bio = "A.k.a. @nick@domain.com"
 
       expected_text =
-        "A.k.a. <span class='h-card'><a data-user='#{remote_user.id}' class='u-url mention' href='#{
+        ~s(A.k.a. <span class="h-card"><a data-user="#{remote_user.id}" class="u-url mention" href="#{
           remote_user.ap_id
-        }'>@<span>nick@domain.com</span></a></span>"
+        }" rel="ugc">@<span>nick@domain.com</span></a></span>)
 
       assert expected_text == User.parse_bio(bio, user)
     end
@@ -1640,5 +1689,40 @@ defmodule Pleroma.UserTest do
     test "changes email", %{user: user} do
       assert {:ok, %User{email: "cofe@cofe.party"}} = User.change_email(user, "cofe@cofe.party")
     end
+  end
+
+  describe "set_password_reset_pending/2" do
+    setup do
+      [user: insert(:user)]
+    end
+
+    test "sets password_reset_pending to true", %{user: user} do
+      %{password_reset_pending: password_reset_pending} = user.info
+
+      refute password_reset_pending
+
+      {:ok, %{info: %{password_reset_pending: password_reset_pending}}} =
+        User.force_password_reset(user)
+
+      assert password_reset_pending
+    end
+  end
+
+  test "change_info/2" do
+    user = insert(:user)
+    assert user.info.hide_follows == false
+
+    changeset = User.change_info(user, &User.Info.profile_update(&1, %{hide_follows: true}))
+    assert changeset.changes.info.changes.hide_follows == true
+  end
+
+  test "update_info/2" do
+    user = insert(:user)
+    assert user.info.hide_follows == false
+
+    assert {:ok, _} = User.update_info(user, &User.Info.profile_update(&1, %{hide_follows: true}))
+
+    assert %{info: %{hide_follows: true}} = Repo.get(User, user.id)
+    assert {:ok, %{info: %{hide_follows: true}}} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
   end
 end

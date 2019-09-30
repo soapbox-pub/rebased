@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.NotificationTest do
@@ -8,6 +8,7 @@ defmodule Pleroma.NotificationTest do
   import Pleroma.Factory
 
   alias Pleroma.Notification
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
@@ -68,16 +69,7 @@ defmodule Pleroma.NotificationTest do
   end
 
   describe "create_notification" do
-    setup do
-      GenServer.start(Streamer, %{}, name: Streamer)
-
-      on_exit(fn ->
-        if pid = Process.whereis(Streamer) do
-          Process.exit(pid, :kill)
-        end
-      end)
-    end
-
+    @tag needs_streamer: true
     test "it creates a notification for user and send to the 'user' and the 'user:notification' stream" do
       user = insert(:user)
       task = Task.async(fn -> assert_receive {:text, _}, 4_000 end)
@@ -588,7 +580,8 @@ defmodule Pleroma.NotificationTest do
 
       refute Enum.empty?(Notification.for_user(other_user))
 
-      User.delete(user)
+      {:ok, job} = User.delete(user)
+      ObanHelpers.perform(job)
 
       assert Enum.empty?(Notification.for_user(other_user))
     end
@@ -633,6 +626,7 @@ defmodule Pleroma.NotificationTest do
       }
 
       {:ok, _delete_activity} = Transmogrifier.handle_incoming(delete_user_message)
+      ObanHelpers.perform_all()
 
       assert Enum.empty?(Notification.for_user(local_user))
     end

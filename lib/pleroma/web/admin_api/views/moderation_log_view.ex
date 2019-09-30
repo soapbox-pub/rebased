@@ -8,7 +8,10 @@ defmodule Pleroma.Web.AdminAPI.ModerationLogView do
   alias Pleroma.ModerationLog
 
   def render("index.json", %{log: log}) do
-    render_many(log, __MODULE__, "show.json", as: :log_entry)
+    %{
+      items: render_many(log.items, __MODULE__, "show.json", as: :log_entry),
+      total: log.count
+    }
   end
 
   def render("show.json", %{log_entry: log_entry}) do

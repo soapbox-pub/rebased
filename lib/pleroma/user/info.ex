@@ -20,6 +20,7 @@ defmodule Pleroma.User.Info do
     field(:following_count, :integer, default: nil)
     field(:locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
+    field(:password_reset_pending, :boolean, default: false)
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:blocks, {:array, :string}, default: [])
@@ -41,6 +42,8 @@ defmodule Pleroma.User.Info do
     field(:topic, :string, default: nil)
     field(:hub, :string, default: nil)
     field(:salmon, :string, default: nil)
+    field(:hide_followers_count, :boolean, default: false)
+    field(:hide_follows_count, :boolean, default: false)
     field(:hide_followers, :boolean, default: false)
     field(:hide_follows, :boolean, default: false)
     field(:hide_favorites, :boolean, default: true)
@@ -51,6 +54,7 @@ defmodule Pleroma.User.Info do
     field(:pleroma_settings_store, :map, default: %{})
     field(:fields, {:array, :map}, default: nil)
     field(:raw_fields, {:array, :map}, default: [])
+    field(:discoverable, :boolean, default: false)
 
     field(:notification_settings, :map,
       default: %{
@@ -78,6 +82,14 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:deactivated])
     |> validate_required([:deactivated])
+  end
+
+  def set_password_reset_pending(info, pending) do
+    params = %{password_reset_pending: pending}
+
+    info
+    |> cast(params, [:password_reset_pending])
+    |> validate_required([:password_reset_pending])
   end
 
   def update_notification_settings(info, settings) do
@@ -176,16 +188,11 @@ defmodule Pleroma.User.Info do
     |> validate_required([:subscribers])
   end
 
-  @spec add_to_mutes(Info.t(), String.t()) :: Changeset.t()
-  def add_to_mutes(info, muted) do
-    set_mutes(info, Enum.uniq([muted | info.mutes]))
-  end
-
-  @spec add_to_muted_notifications(Changeset.t(), Info.t(), String.t(), boolean()) ::
-          Changeset.t()
-  def add_to_muted_notifications(changeset, info, muted, notifications?) do
-    set_notification_mutes(
-      changeset,
+  @spec add_to_mutes(Info.t(), String.t(), boolean()) :: Changeset.t()
+  def add_to_mutes(info, muted, notifications?) do
+    info
+    |> set_mutes(Enum.uniq([muted | info.mutes]))
+    |> set_notification_mutes(
       Enum.uniq([muted | info.muted_notifications]),
       notifications?
     )
@@ -193,12 +200,9 @@ defmodule Pleroma.User.Info do
 
   @spec remove_from_mutes(Info.t(), String.t()) :: Changeset.t()
   def remove_from_mutes(info, muted) do
-    set_mutes(info, List.delete(info.mutes, muted))
-  end
-
-  @spec remove_from_muted_notifications(Changeset.t(), Info.t(), String.t()) :: Changeset.t()
-  def remove_from_muted_notifications(changeset, info, muted) do
-    set_notification_mutes(changeset, List.delete(info.muted_notifications, muted), true)
+    info
+    |> set_mutes(List.delete(info.mutes, muted))
+    |> set_notification_mutes(List.delete(info.muted_notifications, muted), true)
   end
 
   def add_to_block(info, blocked) do
@@ -242,6 +246,13 @@ defmodule Pleroma.User.Info do
   end
 
   def remote_user_creation(info, params) do
+    params =
+      if Map.has_key?(params, :fields) do
+        Map.put(params, :fields, Enum.map(params[:fields], &truncate_field/1))
+      else
+        params
+      end
+
     info
     |> cast(params, [
       :ap_enabled,
@@ -255,9 +266,12 @@ defmodule Pleroma.User.Info do
       :salmon,
       :hide_followers,
       :hide_follows,
+      :hide_followers_count,
+      :hide_follows_count,
       :follower_count,
       :fields,
-      :following_count
+      :following_count,
+      :discoverable
     ])
     |> validate_fields(true)
   end
@@ -274,7 +288,10 @@ defmodule Pleroma.User.Info do
       :following_count,
       :hide_follows,
       :fields,
-      :hide_followers
+      :hide_followers,
+      :discoverable,
+      :hide_followers_count,
+      :hide_follows_count
     ])
     |> validate_fields(remote?)
   end
@@ -288,13 +305,16 @@ defmodule Pleroma.User.Info do
       :banner,
       :hide_follows,
       :hide_followers,
+      :hide_followers_count,
+      :hide_follows_count,
       :hide_favorites,
       :background,
       :show_role,
       :skip_thread_containment,
       :fields,
       :raw_fields,
-      :pleroma_settings_store
+      :pleroma_settings_store,
+      :discoverable
     ])
     |> validate_fields()
   end
@@ -318,13 +338,21 @@ defmodule Pleroma.User.Info do
     name_limit = Pleroma.Config.get([:instance, :account_field_name_length], 255)
     value_limit = Pleroma.Config.get([:instance, :account_field_value_length], 255)
 
-    is_binary(name) &&
-      is_binary(value) &&
-      String.length(name) <= name_limit &&
+    is_binary(name) && is_binary(value) && String.length(name) <= name_limit &&
       String.length(value) <= value_limit
   end
 
   defp valid_field?(_), do: false
+
+  defp truncate_field(%{"name" => name, "value" => value}) do
+    {name, _chopped} =
+      String.split_at(name, Pleroma.Config.get([:instance, :account_field_name_length], 255))
+
+    {value, _chopped} =
+      String.split_at(value, Pleroma.Config.get([:instance, :account_field_value_length], 255))
+
+    %{"name" => name, "value" => value}
+  end
 
   @spec confirmation_changeset(Info.t(), keyword()) :: Changeset.t()
   def confirmation_changeset(info, opts) do
@@ -441,7 +469,9 @@ defmodule Pleroma.User.Info do
       :hide_followers,
       :hide_follows,
       :follower_count,
-      :following_count
+      :following_count,
+      :hide_followers_count,
+      :hide_follows_count
     ])
   end
 end

@@ -6,4 +6,18 @@ defmodule Pleroma.Constants do
   use Const
 
   const(as_public, do: "https://www.w3.org/ns/activitystreams#Public")
+
+  const(object_internal_fields,
+    do: [
+      "reactions",
+      "reactions_count",
+      "likes",
+      "like_count",
+      "announcements",
+      "announcement_count",
+      "emoji",
+      "context_id",
+      "deleted_activity_id"
+    ]
+  )
 end

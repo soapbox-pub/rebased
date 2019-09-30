@@ -13,7 +13,7 @@ defmodule Pleroma.List do
   alias Pleroma.User
 
   schema "lists" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     field(:title, :string)
     field(:following, {:array, :string}, default: [])
     field(:ap_id, :string)

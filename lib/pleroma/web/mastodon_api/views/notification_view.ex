@@ -39,19 +39,19 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       "mention" ->
         response
         |> Map.merge(%{
-          status: StatusView.render("status.json", %{activity: activity, for: user})
+          status: StatusView.render("show.json", %{activity: activity, for: user})
         })
 
       "favourite" ->
         response
         |> Map.merge(%{
-          status: StatusView.render("status.json", %{activity: parent_activity, for: user})
+          status: StatusView.render("show.json", %{activity: parent_activity, for: user})
         })
 
       "reblog" ->
         response
         |> Map.merge(%{
-          status: StatusView.render("status.json", %{activity: parent_activity, for: user})
+          status: StatusView.render("show.json", %{activity: parent_activity, for: user})
         })
 
       "follow" ->

@@ -64,6 +64,7 @@ defmodule Pleroma.Pagination do
 
   def paginate(query, options, :offset) do
     query
+    |> restrict(:order, options)
     |> restrict(:offset, options)
     |> restrict(:limit, options)
   end
