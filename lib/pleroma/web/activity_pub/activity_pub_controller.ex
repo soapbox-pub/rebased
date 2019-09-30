@@ -334,6 +334,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> represent_service_actor(conn)
   end
 
+  @doc "Returns the authenticated user's ActivityPub User object or a 404 Not Found if non-authenticated"
   def whoami(%{assigns: %{user: %User{} = user}} = conn, _params) do
     conn
     |> put_resp_content_type("application/activity+json")
@@ -508,5 +509,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       end
 
     {new_user, for_user}
+  end
+
+  # TODO: Add support for "object" field
+  @doc """
+  Endpoint based on <https://www.w3.org/wiki/SocialCG/ActivityPub/MediaUpload>
+
+  Parameters:
+  - (required) `file`: data of the media
+  - (optionnal) `description`: description of the media, intended for accessibility
+
+  Response:
+  - HTTP Code: 201 Created
+  - HTTP Body: ActivityPub object to be inserted into another's `attachment` field
+  """
+  def upload_media(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
+    with {:ok, object} <-
+           ActivityPub.upload(
+             file,
+             actor: User.ap_id(user),
+             description: Map.get(data, "description")
+           ) do
+      Logger.debug(inspect(object))
+
+      conn
+      |> put_status(:created)
+      |> json(object.data)
+    end
   end
 end

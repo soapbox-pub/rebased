@@ -28,6 +28,10 @@
             "oauthRegistrationEndpoint": {
                 "@id": "litepub:oauthRegistrationEndpoint",
                 "@type": "@id"
+            },
+            "uploadMedia": {
+                "@id": "litepub:uploadMedia",
+                "@type": "@id"
             }
         }
     ]
