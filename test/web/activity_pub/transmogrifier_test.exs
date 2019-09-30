@@ -1263,7 +1263,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, activity} = CommonAPI.listen(user, %{"title" => "lain radio episode 1"})
 
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+      {:ok, _modified} = Transmogrifier.prepare_outgoing(activity.data)
     end
   end
 

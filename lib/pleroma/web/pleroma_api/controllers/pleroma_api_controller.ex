@@ -23,17 +23,12 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
          %Object{data: %{"reactions" => emoji_reactions}} <- Object.normalize(activity) do
       reactions =
-        Enum.reduce(emoji_reactions, %{}, fn {emoji, users}, res ->
-          users =
-            users
-            |> Enum.map(&User.get_cached_by_ap_id/1)
-
-          res
-          |> Map.put(
-            emoji,
-            AccountView.render("accounts.json", %{users: users, for: user, as: :user})
-          )
+        emoji_reactions
+        |> Enum.map(fn {emoji, users} ->
+          users = Enum.map(users, &User.get_cached_by_ap_id/1)
+          {emoji, AccountView.render("accounts.json", %{users: users, for: user, as: :user})}
         end)
+        |> Enum.into(%{})
 
       conn
       |> json(reactions)
@@ -49,7 +44,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
          activity = Activity.get_by_id(activity_id) do
       conn
       |> put_view(StatusView)
-      |> render("status.json", %{activity: activity, for: user, as: :activity})
+      |> render("show.json", %{activity: activity, for: user, as: :activity})
     end
   end
 
