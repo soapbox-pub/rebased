@@ -13,7 +13,7 @@ defmodule Pleroma.List do
   alias Pleroma.User
 
   schema "lists" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     field(:title, :string)
     field(:following, {:array, :string}, default: [])
     field(:ap_id, :string)
@@ -84,22 +84,11 @@ defmodule Pleroma.List do
   end
 
   # Get lists to which the account belongs.
-  def get_lists_account_belongs(%User{} = owner, account_id) do
-    user = User.get_cached_by_id(account_id)
-
-    query =
-      from(
-        l in Pleroma.List,
-        where:
-          l.user_id == ^owner.id and
-            fragment(
-              "? = ANY(?)",
-              ^user.follower_address,
-              l.following
-            )
-      )
-
-    Repo.all(query)
+  def get_lists_account_belongs(%User{} = owner, user) do
+    Pleroma.List
+    |> where([l], l.user_id == ^owner.id)
+    |> where([l], fragment("? = ANY(?)", ^user.follower_address, l.following))
+    |> Repo.all()
   end
 
   def rename(%Pleroma.List{} = list, title) do
@@ -109,15 +98,19 @@ defmodule Pleroma.List do
   end
 
   def create(title, %User{} = creator) do
-    list = %Pleroma.List{user_id: creator.id, title: title}
+    changeset = title_changeset(%Pleroma.List{user_id: creator.id}, %{title: title})
 
-    Repo.transaction(fn ->
-      list = Repo.insert!(list)
+    if changeset.valid? do
+      Repo.transaction(fn ->
+        list = Repo.insert!(changeset)
 
-      list
-      |> change(ap_id: "#{creator.ap_id}/lists/#{list.id}")
-      |> Repo.update!()
-    end)
+        list
+        |> change(ap_id: "#{creator.ap_id}/lists/#{list.id}")
+        |> Repo.update!()
+      end)
+    else
+      {:error, changeset}
+    end
   end
 
   def follow(%Pleroma.List{following: following} = list, %User{} = followed) do

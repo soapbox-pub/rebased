@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Factory do
@@ -68,6 +68,47 @@ defmodule Pleroma.Factory do
 
     %Pleroma.Object{
       data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
+  def audio_factory(attrs \\ %{}) do
+    text = sequence(:text, &"lain radio episode #{&1}")
+
+    user = attrs[:user] || insert(:user)
+
+    data = %{
+      "type" => "Audio",
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+      "artist" => "lain",
+      "title" => text,
+      "album" => "lain radio",
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "actor" => user.ap_id,
+      "length" => 180_000
+    }
+
+    %Pleroma.Object{
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
+  def listen_factory do
+    audio = insert(:audio)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+      "type" => "Listen",
+      "actor" => audio.data["actor"],
+      "to" => audio.data["to"],
+      "object" => audio.data,
+      "published" => audio.data["published"]
+    }
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
     }
   end
 
@@ -143,6 +184,25 @@ defmodule Pleroma.Factory do
     |> Map.merge(attrs)
   end
 
+  defp expiration_offset_by_minutes(attrs, minutes) do
+    scheduled_at =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(:timer.minutes(minutes), :millisecond)
+      |> NaiveDateTime.truncate(:second)
+
+    %Pleroma.ActivityExpiration{}
+    |> Map.merge(attrs)
+    |> Map.put(:scheduled_at, scheduled_at)
+  end
+
+  def expiration_in_the_past_factory(attrs \\ %{}) do
+    expiration_offset_by_minutes(attrs, -60)
+  end
+
+  def expiration_in_the_future_factory(attrs \\ %{}) do
+    expiration_offset_by_minutes(attrs, 61)
+  end
+
   def article_activity_factory do
     article = insert(:article)
 
@@ -188,13 +248,15 @@ defmodule Pleroma.Factory do
     object = Object.normalize(note_activity)
     user = insert(:user)
 
-    data = %{
-      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
-      "actor" => user.ap_id,
-      "type" => "Like",
-      "object" => object.data["id"],
-      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-    }
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "actor" => user.ap_id,
+        "type" => "Like",
+        "object" => object.data["id"],
+        "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+      }
+      |> Map.merge(attrs[:data_attrs] || %{})
 
     %Pleroma.Activity{
       data: data

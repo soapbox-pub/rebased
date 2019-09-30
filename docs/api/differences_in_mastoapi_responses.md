@@ -21,10 +21,13 @@ Adding the parameter `with_muted=true` to the timeline queries will also return 
 Has these additional fields under the `pleroma` object:
 
 - `local`: true if the post was made on the local instance
-- `conversation_id`: the ID of the conversation the status is associated with (if any)
+- `conversation_id`: the ID of the AP context the status is associated with (if any)
+- `direct_conversation_id`: the ID of the Mastodon direct message conversation the status is associated with (if any)
 - `in_reply_to_account_acct`: the `acct` property of User entity for replied user (if any)
 - `content`: a map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
 - `spoiler_text`: a map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
+- `expires_at`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
+- `thread_muted`: true if the thread the post belongs to is muted
 
 ## Attachments
 
@@ -48,6 +51,8 @@ Has these additional fields under the `pleroma` object:
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
 - `hide_followers`: boolean, true when the user has follower hiding enabled
 - `hide_follows`: boolean, true when the user has follow hiding enabled
+- `hide_followers_count`: boolean, true when the user has follower stat hiding enabled
+- `hide_follows_count`: boolean, true when the user has follow stat hiding enabled
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
 - `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
 - `deactivated`: boolean, true when the user is deactivated
@@ -86,7 +91,22 @@ Additional parameters can be added to the JSON body/Form data:
 - `content_type`: string, contain the MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint.
 - `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply.
 - `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
+- `expires_in`: The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour.
 - `in_reply_to_conversation_id`: Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`.
+
+## GET `/api/v1/statuses`
+
+An endpoint to get multiple statuses by IDs.
+
+Required parameters:
+
+- `ids`: array of activity ids
+
+Usage example: `GET /api/v1/statuses/?ids[]=1&ids[]=2`.
+
+Returns: array of Status.
+
+The maximum number of statuses is limited to 100 per request.
 
 ## PATCH `/api/v1/update_credentials`
 
@@ -95,6 +115,8 @@ Additional parameters can be added to the JSON body/Form data:
 - `no_rich_text` - if true, html tags are stripped from all statuses requested from the API
 - `hide_followers` - if true, user's followers will be hidden
 - `hide_follows` - if true, user's follows will be hidden
+- `hide_followers_count` - if true, user's follower count will be hidden
+- `hide_follows_count` - if true, user's follow count will be hidden
 - `hide_favorites` - if true, user's favorites timeline will be hidden
 - `show_role` - if true, user's role (e.g admin, moderator) will be exposed to anyone in the API
 - `default_scope` - the scope returned under `privacy` key in Source subentity

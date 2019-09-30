@@ -8,7 +8,7 @@ If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherw
 * `filters`: List of `Pleroma.Upload.Filter` to use.
 * `link_name`: When enabled Pleroma will add a `name` parameter to the url of the upload, for example `https://instance.tld/media/corndog.png?name=corndog.png`. This is needed to provide the correct filename in Content-Disposition headers when using filters like `Pleroma.Upload.Filter.Dedupe`
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
-* `proxy_remote`: If you\'re using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
+* `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
 
 Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
@@ -23,6 +23,7 @@ Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 * `truncated_namespace`: If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or "" etc.
 For example, when using CDN to S3 virtual host format, set "".
 At this time, write CNAME to CDN in public_endpoint.
+* `streaming_enabled`: Enable streaming uploads, when enabled the file will be sent to the server in chunks as it's being read. This may be unsupported by some providers, try disabling this if you have upload problems.
 
 ## Pleroma.Upload.Filter.Mogrify
 
@@ -135,7 +136,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `max_account_fields`: The maximum number of custom fields in the user profile (default: `10`)
 * `max_remote_account_fields`: The maximum number of custom fields in the remote user profile (default: `20`)
 * `account_field_name_length`: An account field name maximum length (default: `512`)
-* `account_field_value_length`: An account field value maximum length (default: `512`)
+* `account_field_value_length`: An account field value maximum length (default: `2048`)
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 
 
@@ -400,35 +401,71 @@ You can then do
 curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
 ```
 
-## :pleroma_job_queue
+## Oban
 
-[Pleroma Job Queue](https://git.pleroma.social/pleroma/pleroma_job_queue) configuration: a list of queues with maximum concurrent jobs.
+[Oban](https://github.com/sorentwo/oban) asynchronous job processor configuration.
+
+Configuration options described in [Oban readme](https://github.com/sorentwo/oban#usage):
+* `repo` - app's Ecto repo (`Pleroma.Repo`)
+* `verbose` - logs verbosity
+* `prune` - non-retryable jobs [pruning settings](https://github.com/sorentwo/oban#pruning) (`:disabled` / `{:maxlen, value}` / `{:maxage, value}`)
+* `queues` - job queues (see below)
 
 Pleroma has the following queues:
 
+* `activity_expiration` - Activity expiration
 * `federator_outgoing` - Outgoing federation
 * `federator_incoming` - Incoming federation
-* `mailer` - Email sender, see [`Pleroma.Emails.Mailer`](#pleroma-emails-mailer)
+* `mailer` - Email sender, see [`Pleroma.Emails.Mailer`](#pleromaemailsmailer)
 * `transmogrifier` - Transmogrifier
 * `web_push` - Web push notifications
-* `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivities`](#pleromascheduledactivity)
+* `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivity`](#pleromascheduledactivity)
 
 Example:
 
 ```elixir
-config :pleroma_job_queue, :queues,
-  federator_incoming: 50,
-  federator_outgoing: 50
+config :pleroma, Oban,
+  repo: Pleroma.Repo,
+  verbose: false,
+  prune: {:maxlen, 1500},
+  queues: [
+    federator_incoming: 50,
+    federator_outgoing: 50
+  ]
 ```
 
-This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the `max_jobs` set to `50`.
+This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the number of max concurrent jobs set to `50`.
 
-## Pleroma.Web.Federator.RetryQueue
+### Migrating `pleroma_job_queue` settings
 
-* `enabled`: If set to `true`, failed federation jobs will be retried
-* `max_jobs`: The maximum amount of parallel federation jobs running at the same time.
-* `initial_timeout`: The initial timeout in seconds
-* `max_retries`: The maximum number of times a federation job is retried
+`config :pleroma_job_queue, :queues` is replaced by `config :pleroma, Oban, :queues` and uses the same format (keys are queues' names, values are max concurrent jobs numbers).
+
+### Note on running with PostgreSQL in silent mode
+
+If you are running PostgreSQL in [`silent_mode`](https://postgresqlco.nf/en/doc/param/silent_mode?version=9.1), it's advised to set [`log_destination`](https://postgresqlco.nf/en/doc/param/log_destination?version=9.1) to `syslog`, 
+otherwise `postmaster.log` file may grow because of "you don't own a lock of type ShareLock" warnings (see https://github.com/sorentwo/oban/issues/52). 
+
+## :workers
+
+Includes custom worker options not interpretable directly by `Oban`.
+
+* `retries` — keyword lists where keys are `Oban` queues (see above) and values are numbers of max attempts for failed jobs.
+
+Example:
+
+```elixir
+config :pleroma, :workers,
+  retries: [
+    federator_incoming: 5,
+    federator_outgoing: 5
+  ]
+```
+
+### Migrating `Pleroma.Web.Federator.RetryQueue` settings
+
+* `max_retries` is replaced with `config :pleroma, :workers, retries: [federator_outgoing: 5]`
+* `enabled: false` corresponds to `config :pleroma, :workers, retries: [federator_outgoing: 1]`
+* deprecated options: `max_jobs`, `initial_timeout`
 
 ## Pleroma.Web.Metadata
 * `providers`: a list of metadata providers to enable. Providers available:
@@ -485,15 +522,37 @@ config :auto_linker,
     class: false,
     strip_prefix: false,
     new_window: false,
-    rel: false
+    rel: "ugc"
   ]
 ```
+
+## Pleroma.Scheduler
+
+Configuration for [Quantum](https://github.com/quantum-elixir/quantum-core) jobs scheduler.
+
+See [Quantum readme](https://github.com/quantum-elixir/quantum-core#usage) for the list of supported options. 
+
+Example:
+
+```elixir
+config :pleroma, Pleroma.Scheduler,
+  global: true,
+  overlap: true,
+  timezone: :utc,
+  jobs: [{"0 */6 * * * *", {Pleroma.Web.Websub, :refresh_subscriptions, []}}]
+```
+
+The above example defines a single job which invokes `Pleroma.Web.Websub.refresh_subscriptions()` every 6 hours ("0 */6 * * * *", [crontab format](https://en.wikipedia.org/wiki/Cron)).
 
 ## Pleroma.ScheduledActivity
 
 * `daily_user_limit`: the number of scheduled activities a user is allowed to create in a single day (Default: `25`)
 * `total_user_limit`: the number of scheduled activities a user is allowed to create in total (Default: `300`)
 * `enabled`: whether scheduled activities are sent to the job queue to be executed
+
+## Pleroma.ActivityExpiration
+
+# `enabled`: whether expired activities will be sent to the job queue to be deleted
 
 ## Pleroma.Web.Auth.Authenticator
 
@@ -649,6 +708,8 @@ Configure OAuth 2 provider capabilities:
 * `pack_extensions`: A list of file extensions for emojis, when no emoji.txt for a pack is present. Example `[".png", ".gif"]`
 * `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
 * `default_manifest`: Location of the JSON-manifest. This manifest contains information about the emoji-packs you can download. Currently only one manifest can be added (no arrays).
+* `shared_pack_cache_seconds_per_file`: When an emoji pack is shared, the archive is created and cached in
+  memory for this amount of seconds multiplied by the number of files.
 
 ## Database options
 
@@ -667,6 +728,10 @@ This will probably take a long time.
 
 ## :rate_limit
 
+This is an advanced feature and disabled by default.
+
+If your instance is behind a reverse proxy you must enable and configure [`Pleroma.Plugs.RemoteIp`](#pleroma-plugs-remoteip).
+
 A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
 
 * The first element: `scale` (Integer). The time scale in milliseconds.
@@ -684,3 +749,25 @@ Supported rate limiters:
 * `:relation_id_action` for actions on relation with a specific user (follow, unfollow)
 * `:statuses_actions` for create / delete / fav / unfav / reblog / unreblog actions on any statuses
 * `:status_id_action` for fav / unfav or reblog / unreblog actions on the same status by the same user
+
+## :web_cache_ttl
+
+The expiration time for the web responses cache. Values should be in milliseconds or `nil` to disable expiration.
+
+Available caches:
+
+* `:activity_pub` - activity pub routes (except question activities). Defaults to `nil` (no expiration).
+* `:activity_pub_question` - activity pub routes (question activities). Defaults to `30_000` (30 seconds).
+
+## Pleroma.Plugs.RemoteIp
+
+**If your instance is not behind at least one reverse proxy, you should not enable this plug.**
+
+`Pleroma.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
+
+Available options:
+
+* `enabled` - Enable/disable the plug. Defaults to `false`.
+* `headers` - A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`.
+* `proxies` - A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Defaults to `[]`.
+* `reserved` - Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network).

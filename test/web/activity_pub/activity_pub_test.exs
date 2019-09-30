@@ -21,6 +21,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     :ok
   end
 
+  clear_config([:instance, :federating])
+
   describe "streaming out participations" do
     test "it streams them out" do
       user = insert(:user)
@@ -36,9 +38,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         stream: fn _, _ -> nil end do
         ActivityPub.stream_out_participations(conversation.participations)
 
-        Enum.each(participations, fn participation ->
-          assert called(Pleroma.Web.Streamer.stream("participation", participation))
-        end)
+        assert called(Pleroma.Web.Streamer.stream("participation", participations))
       end
     end
   end
@@ -254,6 +254,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
       assert object = Object.normalize(activity)
       assert is_binary(object.data["id"])
+    end
+  end
+
+  describe "listen activities" do
+    test "does not increase user note count" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        ActivityPub.listen(%{
+          to: ["https://www.w3.org/ns/activitystreams#Public"],
+          actor: user,
+          context: "",
+          object: %{
+            "actor" => user.ap_id,
+            "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+            "artist" => "lain",
+            "title" => "lain radio episode 1",
+            "length" => 180_000,
+            "type" => "Audio"
+          }
+        })
+
+      assert activity.actor == user.ap_id
+
+      user = User.get_cached_by_id(user.id)
+      assert user.info.note_count == 0
+    end
+
+    test "can be fetched into a timeline" do
+      _listen_activity_1 = insert(:listen)
+      _listen_activity_2 = insert(:listen)
+      _listen_activity_3 = insert(:listen)
+
+      timeline = ActivityPub.fetch_activities([], %{"type" => ["Listen"]})
+
+      assert length(timeline) == 3
     end
   end
 
@@ -647,6 +683,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert last == last_expected
     end
 
+    test "paginates via offset/limit" do
+      _first_activities = ActivityBuilder.insert_list(10)
+      activities = ActivityBuilder.insert_list(10)
+      _later_activities = ActivityBuilder.insert_list(10)
+      first_expected = List.first(activities)
+
+      activities =
+        ActivityPub.fetch_public_activities(%{"page" => "2", "page_size" => "20"}, :offset)
+
+      first = List.first(activities)
+
+      assert length(activities) == 20
+      assert first == first_expected
+    end
+
     test "doesn't return reblogs for users for whom reblogs have been muted" do
       activity = insert(:note_activity)
       user = insert(:user)
@@ -676,6 +727,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "like an object" do
+    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
+      Pleroma.Config.put([:instance, :federating], true)
+      note_activity = insert(:note_activity)
+      assert object_activity = Object.normalize(note_activity)
+
+      user = insert(:user)
+
+      {:ok, like_activity, _object} = ActivityPub.like(user, object_activity)
+      assert called(Pleroma.Web.Federator.publish(like_activity))
+    end
+
+    test "returns exist activity if object already liked" do
+      note_activity = insert(:note_activity)
+      assert object_activity = Object.normalize(note_activity)
+
+      user = insert(:user)
+
+      {:ok, like_activity, _object} = ActivityPub.like(user, object_activity)
+
+      {:ok, like_activity_exist, _object} = ActivityPub.like(user, object_activity)
+      assert like_activity == like_activity_exist
+    end
+
     test "adds a like activity to the db" do
       note_activity = insert(:note_activity)
       assert object = Object.normalize(note_activity)
@@ -706,6 +780,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "unliking" do
+    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
+      Pleroma.Config.put([:instance, :federating], true)
+
+      note_activity = insert(:note_activity)
+      object = Object.normalize(note_activity)
+      user = insert(:user)
+
+      {:ok, object} = ActivityPub.unlike(user, object)
+      refute called(Pleroma.Web.Federator.publish())
+
+      {:ok, _like_activity, object} = ActivityPub.like(user, object)
+      assert object.data["like_count"] == 1
+
+      {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
+      assert object.data["like_count"] == 0
+
+      assert called(Pleroma.Web.Federator.publish(unlike_activity))
+    end
+
     test "unliking a previously liked object" do
       note_activity = insert(:note_activity)
       object = Object.normalize(note_activity)

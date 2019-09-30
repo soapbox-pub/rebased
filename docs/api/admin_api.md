@@ -60,9 +60,13 @@ Authentication is required and the user must be an admin.
 
 - Method: `POST`
 - Params:
-  - `nickname`
-  - `email`
-  - `password`
+  `users`: [
+    {
+      `nickname`,
+      `email`,
+      `password`
+    }
+  ]
 - Response: User’s nickname
 
 ## `/api/pleroma/admin/users/follow`
@@ -220,15 +224,25 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ## `/api/pleroma/admin/users/invite_token`
 
-### Get an account registration invite token
+### Create an account registration invite token
 
-- Methods: `GET`
+- Methods: `POST`
 - Params:
-  - *optional* `invite` => [
-    - *optional* `max_use` (integer)
-    - *optional* `expires_at` (date string e.g. "2019-04-07")
-  ]
-- Response: invite token (base64 string)
+  - *optional* `max_use` (integer)
+  - *optional* `expires_at` (date string e.g. "2019-04-07")
+- Response:
+
+```json
+{
+  "id": integer,
+  "token": string,
+  "used": boolean,
+  "expires_at": date,
+  "uses": integer,
+  "max_use": integer,
+  "invite_type": string (possible values: `one_time`, `reusable`, `date_limited`, `reusable_date_limited`)
+}
+```
 
 ## `/api/pleroma/admin/users/invites`
 
@@ -294,16 +308,32 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 - Methods: `GET`
 - Params: none
-- Response: password reset token (base64 string)
+- Response:
+
+```json
+{
+  "token": "base64 reset token",
+  "link": "https://pleroma.social/api/pleroma/password_reset/url-encoded-base64-token"
+}
+```
+
+
+## `/api/pleroma/admin/users/:nickname/force_password_reset`
+
+### Force passord reset for a user with a given nickname
+
+- Methods: `PATCH`
+- Params: none
+- Response: none (code `204`)
 
 ## `/api/pleroma/admin/reports`
 ### Get a list of reports
 - Method `GET`
 - Params:
-  - `state`: optional, the state of reports. Valid values are `open`, `closed` and `resolved`
-  - `limit`: optional, the number of records to retrieve
-  - `since_id`: optional, returns results that are more recent than the specified id
-  - `max_id`: optional, returns results that are older than the specified id
+  - *optional* `state`: **string** the state of reports. Valid values are `open`, `closed` and `resolved`
+  - *optional* `limit`: **integer** the number of records to retrieve
+  - *optional* `page`: **integer** page number
+  - *optional* `page_size`: **integer** number of log entries per page (default is `50`)
 - Response:
   - On failure: 403 Forbidden error `{"error": "error_msg"}` when requested by anonymous or non-admin
   - On success: JSON, returns a list of reports, where:
@@ -313,6 +343,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ```json
 {
+  "total" : 1,
   "reports": [
     {
       "account": {
@@ -680,6 +711,7 @@ Compile time settings (need instance reboot):
     }
   ]
 }
+```
 
 - Response:
 
@@ -694,3 +726,38 @@ Compile time settings (need instance reboot):
   ]
 }
 ```
+
+## `/api/pleroma/admin/moderation_log`
+### Get moderation log
+- Method `GET`
+- Params:
+  - *optional* `page`: **integer** page number
+  - *optional* `page_size`: **integer** number of log entries per page (default is `50`)
+  - *optional* `start_date`: **datetime (ISO 8601)** filter logs by creation date, start from `start_date`. Accepts datetime in ISO 8601 format (YYYY-MM-DDThh:mm:ss), e.g. `2005-08-09T18:31:42`
+  - *optional* `end_date`: **datetime (ISO 8601)** filter logs by creation date, end by from `end_date`. Accepts datetime in ISO 8601 format (YYYY-MM-DDThh:mm:ss), e.g. 2005-08-09T18:31:42
+  - *optional* `user_id`: **integer** filter logs by actor's id
+  - *optional* `search`: **string** search logs by the log message
+- Response:
+
+```json
+[
+  {
+    "data": {
+      "actor": {
+        "id": 1,
+        "nickname": "lain"
+      },
+      "action": "relay_follow"
+    },
+    "time": 1502812026, // timestamp
+    "message": "[2017-08-15 15:47:06] @nick0 followed relay: https://example.org/relay" // log message
+  }
+]
+```
+
+## `POST /api/pleroma/admin/reload_emoji`
+### Reload the instance's custom emoji
+* Method `POST`
+* Authentication: required
+* Params: None
+* Response: JSON, "ok" and 200 status

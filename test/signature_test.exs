@@ -8,6 +8,7 @@ defmodule Pleroma.SignatureTest do
   import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
+  import Mock
 
   alias Pleroma.Signature
 
@@ -112,6 +113,19 @@ defmodule Pleroma.SignatureTest do
     test "it properly deduces the actor id for mastodon and pleroma" do
       assert Signature.key_id_to_actor_id("https://example.com/users/1234#main-key") ==
                "https://example.com/users/1234"
+    end
+  end
+
+  describe "signed_date" do
+    test "it returns formatted current date" do
+      with_mock(NaiveDateTime, utc_now: fn -> ~N[2019-08-23 18:11:24.822233] end) do
+        assert Signature.signed_date() == "Fri, 23 Aug 2019 18:11:24 GMT"
+      end
+    end
+
+    test "it returns formatted date" do
+      assert Signature.signed_date(~N[2019-08-23 08:11:24.822233]) ==
+               "Fri, 23 Aug 2019 08:11:24 GMT"
     end
   end
 end

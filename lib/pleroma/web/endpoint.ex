@@ -57,7 +57,7 @@ defmodule Pleroma.Web.Endpoint do
     plug(Phoenix.CodeReloader)
   end
 
-  plug(TrailingFormatPlug)
+  plug(Pleroma.Plugs.TrailingFormatPlug)
   plug(Plug.RequestId)
   plug(Plug.Logger)
 
@@ -97,10 +97,7 @@ defmodule Pleroma.Web.Endpoint do
     extra: extra
   )
 
-  # Note: the plug and its configuration is compile-time this can't be upstreamed yet
-  if proxies = Pleroma.Config.get([__MODULE__, :reverse_proxies]) do
-    plug(RemoteIp, proxies: proxies)
-  end
+  plug(Pleroma.Plugs.RemoteIp)
 
   defmodule Instrumenter do
     use Prometheus.PhoenixInstrumenter

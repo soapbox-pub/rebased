@@ -22,8 +22,8 @@ defmodule Pleroma.Notification do
 
   schema "notifications" do
     field(:seen, :boolean, default: false)
-    belongs_to(:user, User, type: Pleroma.FlakeId)
-    belongs_to(:activity, Activity, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
+    belongs_to(:activity, Activity, type: FlakeId.Ecto.CompatType)
 
     timestamps()
   end
@@ -102,15 +102,33 @@ defmodule Pleroma.Notification do
         n in Notification,
         where: n.user_id == ^user_id,
         where: n.id <= ^id,
+        where: n.seen == false,
         update: [
           set: [
             seen: true,
             updated_at: ^NaiveDateTime.utc_now()
           ]
-        ]
+        ],
+        # Ideally we would preload object and activities here
+        # but Ecto does not support preloads in update_all
+        select: n.id
       )
 
-    Repo.update_all(query, [])
+    {_, notification_ids} = Repo.update_all(query, [])
+
+    Notification
+    |> where([n], n.id in ^notification_ids)
+    |> join(:inner, [n], activity in assoc(n, :activity))
+    |> join(:left, [n, a], object in Object,
+      on:
+        fragment(
+          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
+          object.data,
+          a.data
+        )
+    )
+    |> preload([n, a, o], activity: {a, object: o})
+    |> Repo.all()
   end
 
   def read_one(%User{} = user, notification_id) do
@@ -192,8 +210,10 @@ defmodule Pleroma.Notification do
     unless skip?(activity, user) do
       notification = %Notification{user_id: user.id, activity: activity}
       {:ok, notification} = Repo.insert(notification)
-      Streamer.stream("user", notification)
-      Streamer.stream("user:notification", notification)
+
+      ["user", "user:notification"]
+      |> Streamer.stream(notification)
+
       Push.send(notification)
       notification
     end

@@ -13,7 +13,7 @@ defmodule Pleroma.Web.Websub.WebsubClientSubscription do
     field(:state, :string)
     field(:subscribers, {:array, :string}, default: [])
     field(:hub, :string)
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
 
     timestamps()
   end

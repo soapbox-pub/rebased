@@ -70,27 +70,28 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
-	# this is explicitly IPv4 since Pleroma.Web.Endpoint binds on IPv4 only
-	# and `localhost.` resolves to [::0] on some systems: see issue #930
+        # this is explicitly IPv4 since Pleroma.Web.Endpoint binds on IPv4 only
+        # and `localhost.` resolves to [::0] on some systems: see issue #930
         proxy_pass http://127.0.0.1:4000;
 
         client_max_body_size 16m;
     }
 
     location ~ ^/(media|proxy) {
-        proxy_cache pleroma_media_cache;
+        proxy_cache        pleroma_media_cache;
         slice              1m;
         proxy_cache_key    $host$uri$is_args$args$slice_range;
         proxy_set_header   Range $slice_range;
         proxy_http_version 1.1;
         proxy_cache_valid  200 206 301 304 1h;
-        proxy_cache_lock on;
+        proxy_cache_lock   on;
         proxy_ignore_client_abort on;
-        proxy_buffering on;
+        proxy_buffering    on;
         chunked_transfer_encoding on;
         proxy_ignore_headers Cache-Control;
-        proxy_hide_header Cache-Control;
-        proxy_pass http://localhost:4000;
+        proxy_hide_header  Cache-Control;
+        proxy_pass         http://127.0.0.1:4000;
     }
 }

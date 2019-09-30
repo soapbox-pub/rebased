@@ -11,15 +11,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MediaProxy
 
-  def render("accounts.json", %{users: users} = opts) do
+  def render("index.json", %{users: users} = opts) do
     users
-    |> render_many(AccountView, "account.json", opts)
+    |> render_many(AccountView, "show.json", opts)
     |> Enum.filter(&Enum.any?/1)
   end
 
-  def render("account.json", %{user: user} = opts) do
+  def render("show.json", %{user: user} = opts) do
     if User.visible_for?(user, opts[:for]),
-      do: do_render("account.json", opts),
+      do: do_render("show.json", opts),
       else: %{}
   end
 
@@ -66,7 +66,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     render_many(targets, AccountView, "relationship.json", user: user, as: :target)
   end
 
-  defp do_render("account.json", %{user: user} = opts) do
+  defp do_render("show.json", %{user: user} = opts) do
     display_name = HTML.strip_tags(user.name || user.nickname)
 
     image = User.avatar_url(user) |> MediaProxy.url()
@@ -74,10 +74,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     user_info = User.get_cached_user_info(user)
 
     following_count =
-      ((!user.info.hide_follows or opts[:for] == user) && user_info.following_count) || 0
+      if !user.info.hide_follows_count or !user.info.hide_follows or opts[:for] == user do
+        user_info.following_count
+      else
+        0
+      end
 
     followers_count =
-      ((!user.info.hide_followers or opts[:for] == user) && user_info.follower_count) || 0
+      if !user.info.hide_followers_count or !user.info.hide_followers or opts[:for] == user do
+        user_info.follower_count
+      else
+        0
+      end
 
     bot = (user.info.source_data["type"] || "Person") in ["Application", "Service"]
 
@@ -108,6 +116,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     bio = HTML.filter_tags(user.bio, User.html_filter_policy(opts[:for]))
     relationship = render("relationship.json", %{user: opts[:for], target: user})
 
+    discoverable = user.info.discoverable
+
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -131,13 +141,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         note: HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
         sensitive: false,
         fields: raw_fields,
-        pleroma: %{}
+        pleroma: %{
+          discoverable: discoverable
+        }
       },
 
       # Pleroma extension
       pleroma: %{
         confirmation_pending: user_info.confirmation_pending,
         tags: user.tags,
+        hide_followers_count: user.info.hide_followers_count,
+        hide_follows_count: user.info.hide_follows_count,
         hide_followers: user.info.hide_followers,
         hide_follows: user.info.hide_follows,
         hide_favorites: user.info.hide_favorites,
@@ -152,6 +166,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_settings_store(user, opts[:for], opts)
     |> maybe_put_chat_token(user, opts[:for], opts)
     |> maybe_put_activation_status(user, opts[:for])
+    |> maybe_put_follow_requests_count(user, opts[:for])
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -159,6 +174,21 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp username_from_nickname(_), do: nil
+
+  defp maybe_put_follow_requests_count(
+         data,
+         %User{id: user_id} = user,
+         %User{id: user_id}
+       ) do
+    count =
+      User.get_follow_requests(user)
+      |> length()
+
+    data
+    |> Kernel.put_in([:follow_requests_count], count)
+  end
+
+  defp maybe_put_follow_requests_count(data, _, _), do: data
 
   defp maybe_put_settings(
          data,

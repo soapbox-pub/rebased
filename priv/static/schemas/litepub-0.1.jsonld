@@ -11,6 +11,7 @@
                 "@id": "ostatus:conversation",
                 "@type": "@id"
             },
+            "discoverable": "toot:discoverable",
             "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
             "ostatus": "http://ostatus.org#",
             "schema": "http://schema.org",
@@ -26,6 +27,10 @@
             },
             "oauthRegistrationEndpoint": {
                 "@id": "litepub:oauthRegistrationEndpoint",
+                "@type": "@id"
+            },
+            "uploadMedia": {
+                "@id": "litepub:uploadMedia",
                 "@type": "@id"
             }
         }

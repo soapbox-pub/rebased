@@ -239,11 +239,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def emoji(conn, _params) do
     emoji =
-      Emoji.get_all()
-      |> Enum.map(fn {short_code, path, tags} ->
-        {short_code, %{image_url: path, tags: tags}}
+      Enum.reduce(Emoji.get_all(), %{}, fn {code, %Emoji{file: file, tags: tags}}, acc ->
+        Map.put(acc, code, %{image_url: file, tags: tags})
       end)
-      |> Enum.into(%{})
 
     json(conn, emoji)
   end
@@ -265,12 +263,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
              String.split(line, ",") |> List.first()
            end)
            |> List.delete("Account address") do
-      PleromaJobQueue.enqueue(:background, User, [
-        :follow_import,
-        follower,
-        followed_identifiers
-      ])
-
+      User.follow_import(follower, followed_identifiers)
       json(conn, "job started")
     end
   end
@@ -281,12 +274,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
     with blocked_identifiers <- String.split(list) do
-      PleromaJobQueue.enqueue(:background, User, [
-        :blocks_import,
-        blocker,
-        blocked_identifiers
-      ])
-
+      User.blocks_import(blocker, blocked_identifiers)
       json(conn, "job started")
     end
   end
@@ -307,6 +295,25 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
           _ ->
             json(conn, %{error: "Unable to change password."})
+        end
+
+      {:error, msg} ->
+        json(conn, %{error: msg})
+    end
+  end
+
+  def change_email(%{assigns: %{user: user}} = conn, params) do
+    case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
+      {:ok, user} ->
+        with {:ok, _user} <- User.change_email(user, params["email"]) do
+          json(conn, %{status: "success"})
+        else
+          {:error, changeset} ->
+            {_, {error, _}} = Enum.at(changeset.errors, 0)
+            json(conn, %{error: "Email #{error}."})
+
+          _ ->
+            json(conn, %{error: "Unable to change email."})
         end
 
       {:error, msg} ->

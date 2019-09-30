@@ -5,8 +5,10 @@
 defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.Delivery
   alias Pleroma.HTTP
   alias Pleroma.Instances
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -50,9 +52,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
     digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
 
-    date =
-      NaiveDateTime.utc_now()
-      |> Timex.format!("{WDshort}, {0D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
+    date = Pleroma.Signature.signed_date()
 
     signature =
       Pleroma.Signature.sign(actor, %{
@@ -86,6 +86,15 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     end
   end
 
+  def publish_one(%{actor_id: actor_id} = params) do
+    actor = User.get_cached_by_id(actor_id)
+
+    params
+    |> Map.delete(:actor_id)
+    |> Map.put(:actor, actor)
+    |> publish_one()
+  end
+
   defp should_federate?(inbox, public) do
     if public do
       true
@@ -102,14 +111,25 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
   @spec recipients(User.t(), Activity.t()) :: list(User.t()) | []
   defp recipients(actor, activity) do
-    {:ok, followers} =
+    followers =
       if actor.follower_address in activity.recipients do
         User.get_external_followers(actor)
       else
-        {:ok, []}
+        []
       end
 
-    Pleroma.Web.Salmon.remote_users(actor, activity) ++ followers
+    fetchers =
+      with %Activity{data: %{"type" => "Delete"}} <- activity,
+           %Object{id: object_id} <- Object.normalize(activity),
+           fetchers <- User.get_delivered_users_by_object_id(object_id),
+           _ <- Delivery.delete_all_by_object_id(object_id) do
+        fetchers
+      else
+        _ ->
+          []
+      end
+
+    Pleroma.Web.Salmon.remote_users(actor, activity) ++ followers ++ fetchers
   end
 
   defp get_cc_ap_ids(ap_id, recipients) do
@@ -161,7 +181,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   Publishes an activity with BCC to all relevant peers.
   """
 
-  def publish(actor, %{data: %{"bcc" => bcc}} = activity) when is_list(bcc) and bcc != [] do
+  def publish(%User{} = actor, %{data: %{"bcc" => bcc}} = activity)
+      when is_list(bcc) and bcc != [] do
     public = is_public?(activity)
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
 
@@ -188,7 +209,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       Pleroma.Web.Federator.Publisher.enqueue_one(__MODULE__, %{
         inbox: inbox,
         json: json,
-        actor: actor,
+        actor_id: actor.id,
         id: activity.data["id"],
         unreachable_since: unreachable_since
       })
@@ -223,7 +244,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         %{
           inbox: inbox,
           json: json,
-          actor: actor,
+          actor_id: actor.id,
           id: activity.data["id"],
           unreachable_since: unreachable_since
         }

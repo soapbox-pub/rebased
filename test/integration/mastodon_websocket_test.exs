@@ -1,16 +1,16 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Integration.MastodonWebsocketTest do
   use Pleroma.DataCase
 
+  import ExUnit.CaptureLog
   import Pleroma.Factory
 
   alias Pleroma.Integration.WebsocketClient
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth
-  alias Pleroma.Web.Streamer
 
   @path Pleroma.Web.Endpoint.url()
         |> URI.parse()
@@ -18,14 +18,9 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
         |> Map.put(:path, "/api/v1/streaming")
         |> URI.to_string()
 
-  setup do
-    GenServer.start(Streamer, %{}, name: Streamer)
-
-    on_exit(fn ->
-      if pid = Process.whereis(Streamer) do
-        Process.exit(pid, :kill)
-      end
-    end)
+  setup_all do
+    start_supervised(Pleroma.Web.Streamer.supervisor())
+    :ok
   end
 
   def start_socket(qs \\ nil, headers \\ []) do
@@ -39,13 +34,19 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
   end
 
   test "refuses invalid requests" do
-    assert {:error, {400, _}} = start_socket()
-    assert {:error, {404, _}} = start_socket("?stream=ncjdk")
+    capture_log(fn ->
+      assert {:error, {400, _}} = start_socket()
+      assert {:error, {404, _}} = start_socket("?stream=ncjdk")
+      Process.sleep(30)
+    end)
   end
 
   test "requires authentication and a valid token for protected streams" do
-    assert {:error, {403, _}} = start_socket("?stream=user&access_token=aaaaaaaaaaaa")
-    assert {:error, {403, _}} = start_socket("?stream=user")
+    capture_log(fn ->
+      assert {:error, {403, _}} = start_socket("?stream=user&access_token=aaaaaaaaaaaa")
+      assert {:error, {403, _}} = start_socket("?stream=user")
+      Process.sleep(30)
+    end)
   end
 
   test "allows public streams without authentication" do
@@ -67,7 +68,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
     assert {:ok, json} = Jason.decode(json["payload"])
 
     view_json =
-      Pleroma.Web.MastodonAPI.StatusView.render("status.json", activity: activity, for: nil)
+      Pleroma.Web.MastodonAPI.StatusView.render("show.json", activity: activity, for: nil)
       |> Jason.encode!()
       |> Jason.decode!()
 
@@ -100,19 +101,31 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
     test "accepts the 'user' stream", %{token: token} = _state do
       assert {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
-      assert {:error, {403, "Forbidden"}} = start_socket("?stream=user")
+
+      assert capture_log(fn ->
+               assert {:error, {403, "Forbidden"}} = start_socket("?stream=user")
+               Process.sleep(30)
+             end) =~ ":badarg"
     end
 
     test "accepts the 'user:notification' stream", %{token: token} = _state do
       assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
-      assert {:error, {403, "Forbidden"}} = start_socket("?stream=user:notification")
+
+      assert capture_log(fn ->
+               assert {:error, {403, "Forbidden"}} = start_socket("?stream=user:notification")
+               Process.sleep(30)
+             end) =~ ":badarg"
     end
 
     test "accepts valid token on Sec-WebSocket-Protocol header", %{token: token} do
       assert {:ok, _} = start_socket("?stream=user", [{"Sec-WebSocket-Protocol", token.token}])
 
-      assert {:error, {403, "Forbidden"}} =
-               start_socket("?stream=user", [{"Sec-WebSocket-Protocol", "I am a friend"}])
+      assert capture_log(fn ->
+               assert {:error, {403, "Forbidden"}} =
+                        start_socket("?stream=user", [{"Sec-WebSocket-Protocol", "I am a friend"}])
+
+               Process.sleep(30)
+             end) =~ ":badarg"
     end
   end
 end

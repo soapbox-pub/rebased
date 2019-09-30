@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.RelayTest do
@@ -50,7 +50,8 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       %User{ap_id: follower_id} = local_user = Relay.get_actor()
       target_user = User.get_cached_by_ap_id(target_instance)
       follow_activity = Utils.fetch_latest_follow(local_user, target_user)
-
+      User.follow(local_user, target_user)
+      assert "#{target_instance}/followers" in refresh_record(local_user).following
       Mix.Tasks.Pleroma.Relay.run(["unfollow", target_instance])
 
       cancelled_activity = Activity.get_by_ap_id(follow_activity.data["id"])
@@ -67,6 +68,7 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       assert undo_activity.data["type"] == "Undo"
       assert undo_activity.data["actor"] == local_user.ap_id
       assert undo_activity.data["object"] == cancelled_activity.data
+      refute "#{target_instance}/followers" in refresh_record(local_user).following
     end
   end
 
