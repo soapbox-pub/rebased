@@ -313,7 +313,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          Pleroma.Emoji.is_unicode_emoji?(emoji),
          reaction_data <- make_emoji_reaction_data(user, object, emoji, activity_id),
          {:ok, activity} <- insert(reaction_data, local),
-         {:ok, object} <- add_emoji_reaction_to_object(activity, object) do
+         {:ok, object} <- add_emoji_reaction_to_object(activity, object),
+         :ok <- maybe_federate(activity) do
       {:ok, activity, object}
     end
   end
