@@ -303,6 +303,10 @@ defmodule Pleroma.Web.Router do
       patch("/accounts/update_avatar", AccountController, :update_avatar)
       patch("/accounts/update_banner", AccountController, :update_banner)
       patch("/accounts/update_background", AccountController, :update_background)
+
+      get("/mascot", MascotController, :show)
+      put("/mascot", MascotController, :update)
+
       post("/scrobble", ScrobbleController, :new_scrobble)
     end
 
@@ -415,9 +419,6 @@ defmodule Pleroma.Web.Router do
       get("/filters/:id", FilterController, :show)
       put("/filters/:id", FilterController, :update)
       delete("/filters/:id", FilterController, :delete)
-
-      get("/pleroma/mascot", MastodonAPIController, :get_mascot)
-      put("/pleroma/mascot", MastodonAPIController, :set_mascot)
 
       post("/reports", ReportController, :create)
     end
