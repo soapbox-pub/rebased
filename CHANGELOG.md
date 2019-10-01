@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Account entities now include `follow_requests_count` (planned Mastodon 3.x addition)
 - Pleroma API: `GET /api/v1/pleroma/accounts/:id/scrobbles` to get a list of recently scrobbled items
 - Pleroma API: `POST /api/v1/pleroma/scrobble` to scrobble a media item
+- Mastodon API: Add `upload_limit`, `avatar_upload_limit`, `background_upload_limit`, and `banner_upload_limit` to `/api/v1/instance`
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
