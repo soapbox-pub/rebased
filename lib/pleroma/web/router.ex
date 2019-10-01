@@ -403,7 +403,7 @@ defmodule Pleroma.Web.Router do
       put("/scheduled_statuses/:id", ScheduledActivityController, :update)
       delete("/scheduled_statuses/:id", ScheduledActivityController, :delete)
 
-      post("/polls/:id/votes", MastodonAPIController, :poll_vote)
+      post("/polls/:id/votes", PollController, :vote)
 
       post("/media", MastodonAPIController, :upload)
       put("/media/:id", MastodonAPIController, :update_media)
@@ -488,7 +488,7 @@ defmodule Pleroma.Web.Router do
       get("/statuses/:id", StatusController, :show)
       get("/statuses/:id/context", StatusController, :context)
 
-      get("/polls/:id", MastodonAPIController, :get_poll)
+      get("/polls/:id", PollController, :show)
 
       get("/accounts/:id/statuses", AccountController, :statuses)
       get("/accounts/:id/followers", AccountController, :followers)

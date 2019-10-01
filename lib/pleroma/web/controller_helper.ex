@@ -75,4 +75,16 @@ defmodule Pleroma.Web.ControllerHelper do
       nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
     end
   end
+
+  def try_render(conn, target, params)
+      when is_binary(target) do
+    case render(conn, target, params) do
+      nil -> render_error(conn, :not_implemented, "Can't display this activity")
+      res -> res
+    end
+  end
+
+  def try_render(conn, _, _) do
+    render_error(conn, :not_implemented, "Can't display this activity")
+  end
 end

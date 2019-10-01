@@ -18,6 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.PollView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
@@ -277,7 +278,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       spoiler_text: summary_html,
       visibility: get_visibility(object),
       media_attachments: attachments,
-      poll: render("poll.json", %{object: object, for: opts[:for]}),
+      poll: render(PollView, "show.json", object: object, for: opts[:for]),
       mentions: mentions,
       tags: build_tags(tags),
       application: %{
@@ -387,75 +388,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render("listens.json", opts) do
     safe_render_many(opts.activities, StatusView, "listen.json", opts)
-  end
-
-  def render("poll.json", %{object: object} = opts) do
-    {multiple, options} =
-      case object.data do
-        %{"anyOf" => options} when is_list(options) -> {true, options}
-        %{"oneOf" => options} when is_list(options) -> {false, options}
-        _ -> {nil, nil}
-      end
-
-    if options do
-      {end_time, expired} =
-        case object.data["closed"] || object.data["endTime"] do
-          end_time when is_binary(end_time) ->
-            end_time =
-              (object.data["closed"] || object.data["endTime"])
-              |> NaiveDateTime.from_iso8601!()
-
-            expired =
-              end_time
-              |> NaiveDateTime.compare(NaiveDateTime.utc_now())
-              |> case do
-                :lt -> true
-                _ -> false
-              end
-
-            end_time = Utils.to_masto_date(end_time)
-
-            {end_time, expired}
-
-          _ ->
-            {nil, false}
-        end
-
-      voted =
-        if opts[:for] do
-          existing_votes =
-            Pleroma.Web.ActivityPub.Utils.get_existing_votes(opts[:for].ap_id, object)
-
-          existing_votes != [] or opts[:for].ap_id == object.data["actor"]
-        else
-          false
-        end
-
-      {options, votes_count} =
-        Enum.map_reduce(options, 0, fn %{"name" => name} = option, count ->
-          current_count = option["replies"]["totalItems"] || 0
-
-          {%{
-             title: HTML.strip_tags(name),
-             votes_count: current_count
-           }, current_count + count}
-        end)
-
-      %{
-        # Mastodon uses separate ids for polls, but an object can't have
-        # more than one poll embedded so object id is fine
-        id: to_string(object.id),
-        expires_at: end_time,
-        expired: expired,
-        multiple: multiple,
-        votes_count: votes_count,
-        options: options,
-        voted: voted,
-        emojis: build_emojis(object.data["emoji"])
-      }
-    else
-      nil
-    end
   end
 
   def render("context.json", %{activity: activity, activities: activities, user: user}) do
