@@ -557,7 +557,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses/#{activity.id}/reblog", %{"visibility" => "private"})
 
       assert %{
-               "reblog" => %{"id" => id, "reblogged" => true, "reblogs_count" => 0},
+               "reblog" => %{"id" => id, "reblogged" => true, "reblogs_count" => 1},
                "reblogged" => true,
                "visibility" => "private"
              } = json_response(conn, 200)
@@ -1157,6 +1157,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       {:ok, user} = User.block(user, other_user)
 
       {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/statuses/#{activity.id}/reblogged_by")
+        |> json_response(:ok)
+
+      assert Enum.empty?(response)
+    end
+
+    test "does not return users who have reblogged the status privately", %{
+      conn: %{assigns: %{user: user}} = conn,
+      activity: activity
+    } do
+      other_user = insert(:user)
+
+      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user, %{"visibility" => "private"})
 
       response =
         conn
