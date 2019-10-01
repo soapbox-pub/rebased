@@ -373,7 +373,7 @@ defmodule Pleroma.Web.Router do
 
       get("/filters", FilterController, :index)
 
-      get("/suggestions", MastodonAPIController, :suggestions)
+      get("/suggestions", SuggestionController, :index)
 
       get("/conversations", ConversationController, :index)
       post("/conversations/:id/read", ConversationController, :read)
