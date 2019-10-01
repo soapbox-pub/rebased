@@ -51,7 +51,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       registrations: Pleroma.Config.get([:instance, :registrations_open]),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
-      poll_limits: Keyword.get(instance, :poll_limits)
+      poll_limits: Keyword.get(instance, :poll_limits),
+      upload_limit: Keyword.get(instance, :upload_limit),
+      avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
+      background_upload_limit: Keyword.get(instance, :background_upload_limit),
+      banner_upload_limit: Keyword.get(instance, :banner_upload_limit)
     }
 
     json(conn, response)
