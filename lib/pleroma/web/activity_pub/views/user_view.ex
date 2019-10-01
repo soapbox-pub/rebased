@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   def render("endpoints.json", %{user: %User{local: true} = _user}) do
     %{
       "oauthAuthorizationEndpoint" => Helpers.o_auth_url(Endpoint, :authorize),
-      "oauthRegistrationEndpoint" => Helpers.mastodon_api_url(Endpoint, :create_app),
+      "oauthRegistrationEndpoint" => Helpers.app_url(Endpoint, :create),
       "oauthTokenEndpoint" => Helpers.o_auth_url(Endpoint, :token_exchange),
       "sharedInbox" => Helpers.activity_pub_url(Endpoint, :inbox),
       "uploadMedia" => Helpers.activity_pub_url(Endpoint, :upload_media)
