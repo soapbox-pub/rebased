@@ -67,6 +67,8 @@ defmodule Pleroma.Conversation do
 
       participations =
         Enum.map(users, fn user ->
+          User.increment_unread_conversation_count(conversation, user)
+
           {:ok, participation} =
             Participation.create_for_user_and_conversation(user, conversation, opts)
 
