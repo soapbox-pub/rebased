@@ -547,6 +547,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert to_string(activity.id) == id
     end
 
+    test "reblogs privately and returns the reblogged status", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses/#{activity.id}/reblog", %{"visibility" => "private"})
+
+      assert %{
+               "reblog" => %{"id" => id, "reblogged" => true, "reblogs_count" => 0},
+               "reblogged" => true,
+               "visibility" => "private"
+             } = json_response(conn, 200)
+
+      assert to_string(activity.id) == id
+    end
+
     test "reblogged status for another user", %{conn: conn} do
       activity = insert(:note_activity)
       user1 = insert(:user)
