@@ -11,19 +11,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Config
   alias Pleroma.Pagination
   alias Pleroma.Plugs.RateLimiter
-  alias Pleroma.Repo
   alias Pleroma.Stats
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
-  alias Pleroma.Web.MastodonAPI.AppView
   alias Pleroma.Web.MastodonAPI.MastodonView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
-  alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
@@ -31,35 +28,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   plug(RateLimiter, :password_reset when action == :password_reset)
 
-  @local_mastodon_name "Mastodon-Local"
-
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
-  def create_app(conn, params) do
-    scopes = Scopes.fetch_scopes(params, ["read"])
-
-    app_attrs =
-      params
-      |> Map.drop(["scope", "scopes"])
-      |> Map.put("scopes", scopes)
-
-    with cs <- App.register_changeset(%App{}, app_attrs),
-         false <- cs.changes[:client_name] == @local_mastodon_name,
-         {:ok, app} <- Repo.insert(cs) do
-      conn
-      |> put_view(AppView)
-      |> render("show.json", %{app: app})
-    end
-  end
-
-  def verify_app_credentials(%{assigns: %{user: _user, token: token}} = conn, _) do
-    with %Token{app: %App{} = app} <- Repo.preload(token, :app) do
-      conn
-      |> put_view(AppView)
-      |> render("short.json", %{app: app})
-    end
-  end
-
+  @local_mastodon_name "Mastodon-Local"
   @mastodon_api_level "2.7.2"
 
   def masto_instance(conn, _params) do
