@@ -13,12 +13,17 @@ defmodule Pleroma.Web.TranslationHelpers do
     quote do
       require Pleroma.Web.Gettext
 
+      error_map =
+        %{
+          error: Pleroma.Web.Gettext.dgettext("errors", unquote(msgid), unquote(bindings)),
+          identifier: unquote(identifier)
+        }
+        |> Enum.reject(fn {_k, v} -> v == "" end)
+        |> Map.new()
+
       unquote(conn)
       |> Plug.Conn.put_status(unquote(status))
-      |> Phoenix.Controller.json(%{
-        error: Pleroma.Web.Gettext.dgettext("errors", unquote(msgid), unquote(bindings)),
-        identifier: unquote(identifier)
-      })
+      |> Phoenix.Controller.json(error_map)
     end
   end
 end
