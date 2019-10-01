@@ -125,7 +125,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       pinned: pinned?(activity, user),
       sensitive: false,
       spoiler_text: "",
-      visibility: "public",
+      visibility: get_visibility(activity),
       media_attachments: reblogged[:media_attachments] || [],
       mentions: mentions,
       tags: reblogged[:tags] || [],
