@@ -11,45 +11,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Pagination
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
 
   require Logger
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
-
-  def follows(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
-    with {_, %User{} = followed} <- {:followed, User.get_cached_by_nickname(uri)},
-         {_, true} <- {:followed, follower.id != followed.id},
-         {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
-      conn
-      |> put_view(AccountView)
-      |> render("show.json", %{user: followed, for: follower})
-    else
-      {:followed, _} ->
-        {:error, :not_found}
-
-      {:error, message} ->
-        conn
-        |> put_status(:forbidden)
-        |> json(%{error: message})
-    end
-  end
-
-  def mutes(%{assigns: %{user: user}} = conn, _) do
-    with muted_accounts <- User.muted_users(user) do
-      res = AccountView.render("index.json", users: muted_accounts, for: user, as: :user)
-      json(conn, res)
-    end
-  end
-
-  def blocks(%{assigns: %{user: user}} = conn, _) do
-    with blocked_accounts <- User.blocked_users(user) do
-      res = AccountView.render("index.json", users: blocked_accounts, for: user, as: :user)
-      json(conn, res)
-    end
-  end
 
   def favourites(%{assigns: %{user: user}} = conn, params) do
     params =

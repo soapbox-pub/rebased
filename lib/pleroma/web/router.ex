@@ -347,8 +347,8 @@ defmodule Pleroma.Web.Router do
       get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
 
       get("/follow_requests", FollowRequestController, :index)
-      get("/blocks", MastodonAPIController, :blocks)
-      get("/mutes", MastodonAPIController, :mutes)
+      get("/blocks", AccountController, :blocks)
+      get("/mutes", AccountController, :mutes)
 
       get("/timelines/home", TimelineController, :home)
       get("/timelines/direct", TimelineController, :direct)
@@ -426,7 +426,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_follow)
 
-      post("/follows", MastodonAPIController, :follows)
+      post("/follows", AccountController, :follows)
       post("/accounts/:id/follow", AccountController, :follow)
       post("/accounts/:id/unfollow", AccountController, :unfollow)
       post("/accounts/:id/block", AccountController, :block)
