@@ -405,8 +405,8 @@ defmodule Pleroma.Web.Router do
 
       post("/polls/:id/votes", PollController, :vote)
 
-      post("/media", MastodonAPIController, :upload)
-      put("/media/:id", MastodonAPIController, :update_media)
+      post("/media", MediaController, :create)
+      put("/media/:id", MediaController, :update)
 
       delete("/lists/:id", ListController, :delete)
       post("/lists", ListController, :create)
