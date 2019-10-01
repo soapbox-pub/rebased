@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.StatusController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.MastodonAPI.MastodonAPIController, only: [try_render: 3]
+  import Pleroma.Web.ControllerHelper, only: [try_render: 3]
 
   require Ecto.Query
 

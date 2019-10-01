@@ -7,7 +7,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
-  alias Pleroma.Activity
   alias Pleroma.Bookmark
   alias Pleroma.Config
   alias Pleroma.HTTP
@@ -19,7 +18,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.AppView
@@ -115,56 +113,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def custom_emojis(conn, _params) do
     mastodon_emoji = mastodonized_emoji()
     json(conn, mastodon_emoji)
-  end
-
-  def get_poll(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Object{} = object <- Object.get_by_id_and_maybe_refetch(id, interval: 60),
-         %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
-         true <- Visibility.visible_for_user?(activity, user) do
-      conn
-      |> put_view(StatusView)
-      |> try_render("poll.json", %{object: object, for: user})
-    else
-      error when is_nil(error) or error == false ->
-        render_error(conn, :not_found, "Record not found")
-    end
-  end
-
-  defp get_cached_vote_or_vote(user, object, choices) do
-    idempotency_key = "polls:#{user.id}:#{object.data["id"]}"
-
-    {_, res} =
-      Cachex.fetch(:idempotency_cache, idempotency_key, fn _ ->
-        case CommonAPI.vote(user, object, choices) do
-          {:error, _message} = res -> {:ignore, res}
-          res -> {:commit, res}
-        end
-      end)
-
-    res
-  end
-
-  def poll_vote(%{assigns: %{user: user}} = conn, %{"id" => id, "choices" => choices}) do
-    with %Object{} = object <- Object.get_by_id(id),
-         true <- object.data["type"] == "Question",
-         %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
-         true <- Visibility.visible_for_user?(activity, user),
-         {:ok, _activities, object} <- get_cached_vote_or_vote(user, object, choices) do
-      conn
-      |> put_view(StatusView)
-      |> try_render("poll.json", %{object: object, for: user})
-    else
-      nil ->
-        render_error(conn, :not_found, "Record not found")
-
-      false ->
-        render_error(conn, :not_found, "Record not found")
-
-      {:error, message} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{error: message})
-    end
   end
 
   def update_media(
@@ -509,18 +457,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       {:error, _} ->
         send_resp(conn, :bad_request, "")
     end
-  end
-
-  def try_render(conn, target, params)
-      when is_binary(target) do
-    case render(conn, target, params) do
-      nil -> render_error(conn, :not_implemented, "Can't display this activity")
-      res -> res
-    end
-  end
-
-  def try_render(conn, _, _) do
-    render_error(conn, :not_implemented, "Can't display this activity")
   end
 
   defp present?(nil), do: false
