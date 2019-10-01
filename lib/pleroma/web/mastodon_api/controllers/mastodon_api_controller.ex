@@ -10,7 +10,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Bookmark
   alias Pleroma.Config
   alias Pleroma.HTTP
-  alias Pleroma.Object
   alias Pleroma.Pagination
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
@@ -113,39 +112,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def custom_emojis(conn, _params) do
     mastodon_emoji = mastodonized_emoji()
     json(conn, mastodon_emoji)
-  end
-
-  def update_media(
-        %{assigns: %{user: user}} = conn,
-        %{"id" => id, "description" => description} = _
-      )
-      when is_binary(description) do
-    with %Object{} = object <- Repo.get(Object, id),
-         true <- Object.authorize_mutation(object, user),
-         {:ok, %Object{data: data}} <- Object.update_data(object, %{"name" => description}) do
-      attachment_data = Map.put(data, "id", object.id)
-
-      conn
-      |> put_view(StatusView)
-      |> render("attachment.json", %{attachment: attachment_data})
-    end
-  end
-
-  def update_media(_conn, _data), do: {:error, :bad_request}
-
-  def upload(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
-    with {:ok, object} <-
-           ActivityPub.upload(
-             file,
-             actor: User.ap_id(user),
-             description: Map.get(data, "description")
-           ) do
-      attachment_data = Map.put(object.data, "id", object.id)
-
-      conn
-      |> put_view(StatusView)
-      |> render("attachment.json", %{attachment: attachment_data})
-    end
   end
 
   def follows(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
