@@ -9,7 +9,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   alias Pleroma.Bookmark
   alias Pleroma.Config
-  alias Pleroma.HTTP
   alias Pleroma.Pagination
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
@@ -22,7 +21,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.AppView
   alias Pleroma.Web.MastodonAPI.MastodonView
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Scopes
@@ -360,53 +358,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def empty_object(conn, _) do
     Logger.debug("Unimplemented, returning an empty object")
     json(conn, %{})
-  end
-
-  def suggestions(%{assigns: %{user: user}} = conn, _) do
-    suggestions = Config.get(:suggestions)
-
-    if Keyword.get(suggestions, :enabled, false) do
-      api = Keyword.get(suggestions, :third_party_engine, "")
-      timeout = Keyword.get(suggestions, :timeout, 5000)
-      limit = Keyword.get(suggestions, :limit, 23)
-
-      host = Config.get([Pleroma.Web.Endpoint, :url, :host])
-
-      user = user.nickname
-
-      url =
-        api
-        |> String.replace("{{host}}", host)
-        |> String.replace("{{user}}", user)
-
-      with {:ok, %{status: 200, body: body}} <-
-             HTTP.get(url, [], adapter: [recv_timeout: timeout, pool: :default]),
-           {:ok, data} <- Jason.decode(body) do
-        data =
-          data
-          |> Enum.slice(0, limit)
-          |> Enum.map(fn x ->
-            x
-            |> Map.put("id", fetch_suggestion_id(x))
-            |> Map.put("avatar", MediaProxy.url(x["avatar"]))
-            |> Map.put("avatar_static", MediaProxy.url(x["avatar_static"]))
-          end)
-
-        json(conn, data)
-      else
-        e ->
-          Logger.error("Could not retrieve suggestions at fetch #{url}, #{inspect(e)}")
-      end
-    else
-      json(conn, [])
-    end
-  end
-
-  defp fetch_suggestion_id(attrs) do
-    case User.get_or_fetch(attrs["acct"]) do
-      {:ok, %User{id: id}} -> id
-      _ -> 0
-    end
   end
 
   def password_reset(conn, params) do
