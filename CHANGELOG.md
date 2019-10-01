@@ -117,6 +117,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Added an endpoint to get multiple statuses by IDs (`GET /api/v1/statuses/?ids[]=1&ids[]=2`)
 - ActivityPub: Add ActivityPub actor's `discoverable` parameter.
 - Admin API: Added moderation log filters (user/start date/end date/search/pagination)
+- Reverse Proxy: Do not retry failed requests to limit pressure on the peer
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
