@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 ### Added
 - Refreshing poll results for remote polls
+- Job queue stats to the healthcheck page
 - Admin API: Add ability to require password reset
 
 ### Changed
