@@ -661,10 +661,10 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web.MastodonAPI do
     pipe_through(:mastodon_html)
 
-    get("/web/login", MastodonAPIController, :login)
-    delete("/auth/sign_out", MastodonAPIController, :logout)
+    get("/web/login", AuthController, :login)
+    delete("/auth/sign_out", AuthController, :logout)
 
-    post("/auth/password", MastodonAPIController, :password_reset)
+    post("/auth/password", AuthController, :password_reset)
 
     scope [] do
       pipe_through(:oauth_read)

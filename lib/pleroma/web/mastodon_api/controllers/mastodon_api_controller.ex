@@ -10,7 +10,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Bookmark
   alias Pleroma.Config
   alias Pleroma.Pagination
-  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Stats
   alias Pleroma.User
   alias Pleroma.Web
@@ -19,18 +18,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.MastodonView
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.OAuth.App
-  alias Pleroma.Web.OAuth.Authorization
-  alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   require Logger
 
-  plug(RateLimiter, :password_reset when action == :password_reset)
-
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
-  @local_mastodon_name "Mastodon-Local"
   @mastodon_api_level "2.7.2"
 
   def masto_instance(conn, _params) do
@@ -268,61 +260,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def login(%{assigns: %{user: %User{}}} = conn, _params) do
-    redirect(conn, to: local_mastodon_root_path(conn))
-  end
-
-  @doc "Local Mastodon FE login init action"
-  def login(conn, %{"code" => auth_token}) do
-    with {:ok, app} <- get_or_make_app(),
-         {:ok, auth} <- Authorization.get_by_token(app, auth_token),
-         {:ok, token} <- Token.exchange_token(app, auth) do
-      conn
-      |> put_session(:oauth_token, token.token)
-      |> redirect(to: local_mastodon_root_path(conn))
-    end
-  end
-
-  @doc "Local Mastodon FE callback action"
-  def login(conn, _) do
-    with {:ok, app} <- get_or_make_app() do
-      path =
-        o_auth_path(conn, :authorize,
-          response_type: "code",
-          client_id: app.client_id,
-          redirect_uri: ".",
-          scope: Enum.join(app.scopes, " ")
-        )
-
-      redirect(conn, to: path)
-    end
-  end
-
-  defp local_mastodon_root_path(conn) do
-    case get_session(conn, :return_to) do
-      nil ->
-        mastodon_api_path(conn, :index, ["getting-started"])
-
-      return_to ->
-        delete_session(conn, :return_to)
-        return_to
-    end
-  end
-
-  @spec get_or_make_app() :: {:ok, App.t()} | {:error, Ecto.Changeset.t()}
-  defp get_or_make_app do
-    App.get_or_make(
-      %{client_name: @local_mastodon_name, redirect_uris: "."},
-      ["read", "write", "follow", "push"]
-    )
-  end
-
-  def logout(conn, _) do
-    conn
-    |> clear_session
-    |> redirect(to: "/")
-  end
-
   # Stubs for unimplemented mastodon api
   #
   def empty_array(conn, _) do
@@ -333,22 +270,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def empty_object(conn, _) do
     Logger.debug("Unimplemented, returning an empty object")
     json(conn, %{})
-  end
-
-  def password_reset(conn, params) do
-    nickname_or_email = params["email"] || params["nickname"]
-
-    with {:ok, _} <- TwitterAPI.password_reset(nickname_or_email) do
-      conn
-      |> put_status(:no_content)
-      |> json("")
-    else
-      {:error, "unknown user"} ->
-        send_resp(conn, :not_found, "")
-
-      {:error, _} ->
-        send_resp(conn, :bad_request, "")
-    end
   end
 
   defp present?(nil), do: false
