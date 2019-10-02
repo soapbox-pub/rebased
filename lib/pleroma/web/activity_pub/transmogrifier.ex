@@ -782,16 +782,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   @spec get_embedded_obj_helper(String.t() | Object.t(), User.t()) :: {:ok, Object.t()} | nil
-  def get_embedded_obj_helper(%{"attributedTo" => attributedTo, "id" => object_id} = data, %User{
+  def get_embedded_obj_helper(%{"attributedTo" => attributed_to, "id" => object_id} = data, %User{
         ap_id: ap_id
       })
-      when attributedTo == ap_id do
+      when attributed_to == ap_id do
     with {:ok, activity} <-
            handle_incoming(%{
              "type" => "Create",
              "to" => data["to"],
              "cc" => data["cc"],
-             "actor" => data["attributedTo"],
+             "actor" => attributed_to,
              "object" => data
            }) do
       {:ok, Object.normalize(activity)}
