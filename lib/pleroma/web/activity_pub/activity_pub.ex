@@ -346,7 +346,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         local \\ true,
         public \\ true
       ) do
-    with true <- is_public?(object),
+    with true <- is_announceable?(object, user, public),
          announce_data <- make_announce_data(user, object, activity_id, public),
          {:ok, activity} <- insert(announce_data, local),
          {:ok, object} <- add_announce_to_object(activity, object),

@@ -125,8 +125,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/reblog"
-  def reblog(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, announce, _activity} <- CommonAPI.repeat(ap_id_or_id, user),
+  def reblog(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id} = params) do
+    with {:ok, announce, _activity} <- CommonAPI.repeat(ap_id_or_id, user, params),
          %Activity{} = announce <- Activity.normalize(announce.data) do
       try_render(conn, "show.json", %{activity: announce, for: user, as: :activity})
     end
@@ -242,7 +242,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   def reblogged_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
-         %Object{data: %{"announcements" => announces}} <- Object.normalize(activity) do
+         %Object{data: %{"announcements" => announces, "id" => ap_id}} <-
+           Object.normalize(activity) do
+      announces =
+        "Announce"
+        |> Activity.Queries.by_type()
+        |> Ecto.Query.where([a], a.actor in ^announces)
+        # this is to use the index
+        |> Activity.Queries.by_object_id(ap_id)
+        |> Repo.all()
+        |> Enum.filter(&Visibility.visible_for_user?(&1, user))
+        |> Enum.map(& &1.actor)
+        |> Enum.uniq()
+
       users =
         User
         |> Ecto.Query.where([u], u.ap_id in ^announces)
