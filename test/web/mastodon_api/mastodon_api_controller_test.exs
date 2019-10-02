@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Ecto.Changeset
   alias Pleroma.Config
   alias Pleroma.Notification
   alias Pleroma.Repo
@@ -112,80 +111,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> get("/api/v1/favourites?limit=0")
 
     assert [] = json_response(third_conn, 200)
-  end
-
-  test "get instance information", %{conn: conn} do
-    conn = get(conn, "/api/v1/instance")
-    assert result = json_response(conn, 200)
-
-    email = Config.get([:instance, :email])
-    # Note: not checking for "max_toot_chars" since it's optional
-    assert %{
-             "uri" => _,
-             "title" => _,
-             "description" => _,
-             "version" => _,
-             "email" => from_config_email,
-             "urls" => %{
-               "streaming_api" => _
-             },
-             "stats" => _,
-             "thumbnail" => _,
-             "languages" => _,
-             "registrations" => _,
-             "poll_limits" => _,
-             "upload_limit" => _,
-             "avatar_upload_limit" => _,
-             "background_upload_limit" => _,
-             "banner_upload_limit" => _
-           } = result
-
-    assert email == from_config_email
-  end
-
-  test "get instance stats", %{conn: conn} do
-    user = insert(:user, %{local: true})
-
-    user2 = insert(:user, %{local: true})
-    {:ok, _user2} = User.deactivate(user2, !user2.info.deactivated)
-
-    insert(:user, %{local: false, nickname: "u@peer1.com"})
-    insert(:user, %{local: false, nickname: "u@peer2.com"})
-
-    {:ok, _} = CommonAPI.post(user, %{"status" => "cofe"})
-
-    # Stats should count users with missing or nil `info.deactivated` value
-
-    {:ok, _user} =
-      user.id
-      |> User.get_cached_by_id()
-      |> User.update_info(&Changeset.change(&1, %{deactivated: nil}))
-
-    Pleroma.Stats.force_update()
-
-    conn = get(conn, "/api/v1/instance")
-
-    assert result = json_response(conn, 200)
-
-    stats = result["stats"]
-
-    assert stats
-    assert stats["user_count"] == 1
-    assert stats["status_count"] == 1
-    assert stats["domain_count"] == 2
-  end
-
-  test "get peers", %{conn: conn} do
-    insert(:user, %{local: false, nickname: "u@peer1.com"})
-    insert(:user, %{local: false, nickname: "u@peer2.com"})
-
-    Pleroma.Stats.force_update()
-
-    conn = get(conn, "/api/v1/instance/peers")
-
-    assert result = json_response(conn, 200)
-
-    assert ["peer1.com", "peer2.com"] == Enum.sort(result)
   end
 
   test "put settings", %{conn: conn} do
