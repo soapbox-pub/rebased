@@ -5,8 +5,9 @@
 defmodule Pleroma.Web.MastodonAPI.MastoFEController do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.User
   alias Pleroma.Config
+  alias Pleroma.User
+
   import Pleroma.Factory
 
   clear_config([:instance, :public])
