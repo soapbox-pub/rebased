@@ -75,7 +75,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
   defp local_mastodon_root_path(conn) do
     case get_session(conn, :return_to) do
       nil ->
-        mastodon_api_path(conn, :index, ["getting-started"])
+        masto_fe_path(conn, :index, ["getting-started"])
 
       return_to ->
         delete_session(conn, :return_to)

@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
   alias Pleroma.Notification
   alias Pleroma.Repo
   alias Pleroma.User
@@ -19,7 +18,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     :ok
   end
 
-  clear_config([:instance, :public])
   clear_config([:rich_media, :enabled])
 
   test "getting a list of mutes", %{conn: conn} do
@@ -113,20 +111,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert [] = json_response(third_conn, 200)
   end
 
-  test "put settings", %{conn: conn} do
-    user = insert(:user)
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> put("/api/web/settings", %{"data" => %{"programming" => "socks"}})
-
-    assert _result = json_response(conn, 200)
-
-    user = User.get_cached_by_ap_id(user.ap_id)
-    assert user.info.settings == %{"programming" => "socks"}
-  end
-
   describe "link headers" do
     test "preserves parameters in link headers", %{conn: conn} do
       user = insert(:user)
@@ -156,62 +140,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert link_header =~ ~r/media_only=true/
       assert link_header =~ ~r/min_id=#{notification2.id}/
       assert link_header =~ ~r/max_id=#{notification1.id}/
-    end
-  end
-
-  describe "index/2 redirections" do
-    setup %{conn: conn} do
-      session_opts = [
-        store: :cookie,
-        key: "_test",
-        signing_salt: "cooldude"
-      ]
-
-      conn =
-        conn
-        |> Plug.Session.call(Plug.Session.init(session_opts))
-        |> fetch_session()
-
-      test_path = "/web/statuses/test"
-      %{conn: conn, path: test_path}
-    end
-
-    test "redirects not logged-in users to the login page", %{conn: conn, path: path} do
-      conn = get(conn, path)
-
-      assert conn.status == 302
-      assert redirected_to(conn) == "/web/login"
-    end
-
-    test "redirects not logged-in users to the login page on private instances", %{
-      conn: conn,
-      path: path
-    } do
-      Config.put([:instance, :public], false)
-
-      conn = get(conn, path)
-
-      assert conn.status == 302
-      assert redirected_to(conn) == "/web/login"
-    end
-
-    test "does not redirect logged in users to the login page", %{conn: conn, path: path} do
-      token = insert(:oauth_token)
-
-      conn =
-        conn
-        |> assign(:user, token.user)
-        |> put_session(:oauth_token, token.token)
-        |> get(path)
-
-      assert conn.status == 200
-    end
-
-    test "saves referer path to session", %{conn: conn, path: path} do
-      conn = get(conn, path)
-      return_to = Plug.Conn.get_session(conn, :return_to)
-
-      assert return_to == path
     end
   end
 

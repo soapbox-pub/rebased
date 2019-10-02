@@ -451,10 +451,10 @@ defmodule Pleroma.Web.Router do
     end
   end
 
-  scope "/api/web", Pleroma.Web.MastodonAPI do
+  scope "/api/web", Pleroma.Web do
     pipe_through([:authenticated_api, :oauth_write])
 
-    put("/settings", MastodonAPIController, :put_settings)
+    put("/settings", MastoFEController, :put_settings)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
@@ -658,17 +658,17 @@ defmodule Pleroma.Web.Router do
     get("/:version", Nodeinfo.NodeinfoController, :nodeinfo)
   end
 
-  scope "/", Pleroma.Web.MastodonAPI do
+  scope "/", Pleroma.Web do
     pipe_through(:mastodon_html)
 
-    get("/web/login", AuthController, :login)
-    delete("/auth/sign_out", AuthController, :logout)
+    get("/web/login", MastodonAPI.AuthController, :login)
+    delete("/auth/sign_out", MastodonAPI.AuthController, :logout)
 
-    post("/auth/password", AuthController, :password_reset)
+    post("/auth/password", MastodonAPI.AuthController, :password_reset)
 
     scope [] do
       pipe_through(:oauth_read)
-      get("/web/*path", MastodonAPIController, :index)
+      get("/web/*path", MastoFEController, :index)
     end
   end
 
