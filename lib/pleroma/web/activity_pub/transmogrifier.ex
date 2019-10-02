@@ -830,6 +830,27 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     {:ok, data}
   end
 
+  def prepare_outgoing(%{"type" => "Announce", "actor" => ap_id, "object" => object_id} = data) do
+    object =
+      object_id
+      |> Object.normalize()
+
+    data =
+      if Visibility.is_private?(object) && object.data["actor"] == ap_id do
+        data |> Map.put("object", object |> Map.get(:data) |> prepare_object)
+      else
+        data |> maybe_fix_object_url
+      end
+
+    data =
+      data
+      |> strip_internal_fields
+      |> Map.merge(Utils.make_json_ld_header())
+      |> Map.delete("bcc")
+
+    {:ok, data}
+  end
+
   # Mastodon Accept/Reject requires a non-normalized object containing the actor URIs,
   # because of course it does.
   def prepare_outgoing(%{"type" => "Accept"} = data) do
