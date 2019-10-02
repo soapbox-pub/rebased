@@ -1,7 +1,11 @@
-# Configuration
+# Configuration Cheat Sheet
 
-This file describe the configuration, it is recommended to edit the relevant *.secret.exs file instead of the others founds in the ``config`` directory.
-If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherwise it is ``dev.secret.exs``.
+This is a cheat sheet for Pleroma configuration file, any setting possible to configure should be listed here.
+
+Pleroma configuration works by first importing the base config (`config/config.exs` on source installs, compiled-in on OTP releases), then overriding it by the environment config (`config/$MIX_ENV.exs` on source installs, N/A to OTP releases) and then overriding it by user config (`config/$MIX_ENV.secret.exs` on source installs, typically `/etc/pleroma/config.exs` on OTP releases).
+
+You shouldn't edit the base config directly to avoid breakages and merge conflicts, but it can be used as a reference if you don't understand how an option is supposed to be formatted, the latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs).
+
 
 ## Pleroma.Upload
 * `uploader`: Select which `Pleroma.Uploaders` to use
