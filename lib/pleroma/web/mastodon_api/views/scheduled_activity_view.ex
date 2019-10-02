@@ -7,11 +7,10 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityView do
 
   alias Pleroma.ScheduledActivity
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.MastodonAPI.ScheduledActivityView
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", %{scheduled_activities: scheduled_activities}) do
-    render_many(scheduled_activities, ScheduledActivityView, "show.json")
+    render_many(scheduled_activities, __MODULE__, "show.json")
   end
 
   def render("show.json", %{scheduled_activity: %ScheduledActivity{} = scheduled_activity}) do
@@ -24,12 +23,8 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityView do
   end
 
   defp with_media_attachments(data, %{params: %{"media_attachments" => media_attachments}}) do
-    try do
-      attachments = render_many(media_attachments, StatusView, "attachment.json", as: :attachment)
-      Map.put(data, :media_attachments, attachments)
-    rescue
-      _ -> data
-    end
+    attachments = render_many(media_attachments, StatusView, "attachment.json", as: :attachment)
+    Map.put(data, :media_attachments, attachments)
   end
 
   defp with_media_attachments(data, _), do: data
@@ -45,13 +40,9 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityView do
       in_reply_to_id: params["in_reply_to_id"]
     }
 
-    data =
-      if media_ids = params["media_ids"] do
-        Map.put(data, :media_ids, media_ids)
-      else
-        data
-      end
-
-    data
+    case params["media_ids"] do
+      nil -> data
+      media_ids -> Map.put(data, :media_ids, media_ids)
+    end
   end
 end

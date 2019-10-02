@@ -23,6 +23,7 @@ Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 * `truncated_namespace`: If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or "" etc.
 For example, when using CDN to S3 virtual host format, set "".
 At this time, write CNAME to CDN in public_endpoint.
+* `streaming_enabled`: Enable streaming uploads, when enabled the file will be sent to the server in chunks as it's being read. This may be unsupported by some providers, try disabling this if you have upload problems.
 
 ## Pleroma.Upload.Filter.Mogrify
 
@@ -521,7 +522,7 @@ config :auto_linker,
     class: false,
     strip_prefix: false,
     new_window: false,
-    rel: false
+    rel: "ugc"
   ]
 ```
 
@@ -707,6 +708,8 @@ Configure OAuth 2 provider capabilities:
 * `pack_extensions`: A list of file extensions for emojis, when no emoji.txt for a pack is present. Example `[".png", ".gif"]`
 * `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
 * `default_manifest`: Location of the JSON-manifest. This manifest contains information about the emoji-packs you can download. Currently only one manifest can be added (no arrays).
+* `shared_pack_cache_seconds_per_file`: When an emoji pack is shared, the archive is created and cached in
+  memory for this amount of seconds multiplied by the number of files.
 
 ## Database options
 
@@ -726,6 +729,8 @@ This will probably take a long time.
 ## :rate_limit
 
 This is an advanced feature and disabled by default.
+
+If your instance is behind a reverse proxy you must enable and configure [`Pleroma.Plugs.RemoteIp`](#pleroma-plugs-remoteip).
 
 A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
 
@@ -753,3 +758,16 @@ Available caches:
 
 * `:activity_pub` - activity pub routes (except question activities). Defaults to `nil` (no expiration).
 * `:activity_pub_question` - activity pub routes (question activities). Defaults to `30_000` (30 seconds).
+
+## Pleroma.Plugs.RemoteIp
+
+**If your instance is not behind at least one reverse proxy, you should not enable this plug.**
+
+`Pleroma.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
+
+Available options:
+
+* `enabled` - Enable/disable the plug. Defaults to `false`.
+* `headers` - A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`.
+* `proxies` - A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Defaults to `[]`.
+* `reserved` - Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network).

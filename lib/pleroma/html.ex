@@ -184,7 +184,8 @@ defmodule Pleroma.HTML.Scrubber.Default do
     "tag",
     "nofollow",
     "noopener",
-    "noreferrer"
+    "noreferrer",
+    "ugc"
   ])
 
   Meta.allow_tag_with_these_attributes("a", ["name", "title"])
@@ -304,7 +305,8 @@ defmodule Pleroma.HTML.Scrubber.LinksOnly do
     "nofollow",
     "noopener",
     "noreferrer",
-    "me"
+    "me",
+    "ugc"
   ])
 
   Meta.allow_tag_with_these_attributes("a", ["name", "title"])

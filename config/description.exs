@@ -110,6 +110,12 @@ config :pleroma, :config_description, [
         description:
           "If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or \"\" etc." <>
             " For example, when using CDN to S3 virtual host format, set \"\". At this time, write CNAME to CDN in public_endpoint."
+      },
+      %{
+        key: :streaming_enabled,
+        type: :boolean,
+        description:
+          "Enable streaming uploads, when enabled the file will be sent to the server in chunks as it's being read. This may be unsupported by some providers, try disabling this if you have upload problems."
       }
     ]
   },
@@ -1900,7 +1906,7 @@ config :pleroma, :config_description, [
         key: :rel,
         type: [:string, false],
         description: "override the rel attribute. false to clear",
-        suggestions: ["noopener noreferrer", false]
+        suggestions: ["ugc", "noopener noreferrer", false]
       },
       %{
         key: :new_window,
@@ -2256,6 +2262,14 @@ config :pleroma, :config_description, [
           "Location of the JSON-manifest. This manifest contains information about the emoji-packs you can download." <>
             " Currently only one manifest can be added (no arrays)",
         suggestions: ["https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json"]
+      },
+      %{
+        key: :shared_pack_cache_seconds_per_file,
+        type: :integer,
+        descpiption:
+          "When an emoji pack is shared, the archive is created and cached in memory" <>
+            " for this amount of seconds multiplied by the number of files.",
+        suggestions: [60]
       }
     ]
   },
@@ -2670,6 +2684,42 @@ config :pleroma, :config_description, [
         key: :headers,
         type: {:list, :string},
         suggestions: [["Authorization", "Content-Type", "Idempotency-Key"]]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Plugs.RemoteIp,
+    type: :group,
+    description: """
+    **If your instance is not behind at least one reverse proxy, you should not enable this plug.**
+
+    `Pleroma.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
+    """,
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "Enable/disable the plug. Defaults to `false`.",
+        suggestions: [true, false]
+      },
+      %{
+        key: :headers,
+        type: {:list, :string},
+        description:
+          "A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`."
+      },
+      %{
+        key: :proxies,
+        type: {:list, :string},
+        description:
+          "A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Defaults to `[]`."
+      },
+      %{
+        key: :reserved,
+        type: {:list, :string},
+        description:
+          "Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network)."
       }
     ]
   },

@@ -19,6 +19,8 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
     when action in [:create, :update, :delete, :add_to_list, :remove_from_list]
   )
 
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   # GET /api/v1/lists
@@ -58,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
     with {:ok, users} <- Pleroma.List.get_following(list) do
       conn
       |> put_view(AccountView)
-      |> render("accounts.json", for: user, users: users, as: :user)
+      |> render("index.json", for: user, users: users, as: :user)
     end
   end
 

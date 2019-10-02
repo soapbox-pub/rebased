@@ -37,6 +37,22 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
            } = UserView.render("user.json", %{user: user})
   end
 
+  test "Renders with emoji tags" do
+    user = insert(:user, %{info: %{emoji: [%{"bib" => "/test"}]}})
+
+    assert %{
+             "tag" => [
+               %{
+                 "icon" => %{"type" => "Image", "url" => "/test"},
+                 "id" => "/test",
+                 "name" => ":bib:",
+                 "type" => "Emoji",
+                 "updated" => "1970-01-01T00:00:00Z"
+               }
+             ]
+           } = UserView.render("user.json", %{user: user})
+  end
+
   test "Does not add an avatar image if the user hasn't set one" do
     user = insert(:user)
     {:ok, user} = User.ensure_keys_present(user)
@@ -141,5 +157,36 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
       user = Map.put(user, :info, info)
       assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
     end
+  end
+
+  test "activity collection page aginates correctly" do
+    user = insert(:user)
+
+    posts =
+      for i <- 0..25 do
+        {:ok, activity} = CommonAPI.post(user, %{"status" => "post #{i}"})
+        activity
+      end
+
+    # outbox sorts chronologically, newest first, with ten per page
+    posts = Enum.reverse(posts)
+
+    %{"next" => next_url} =
+      UserView.render("activity_collection_page.json", %{
+        iri: "#{user.ap_id}/outbox",
+        activities: Enum.take(posts, 10)
+      })
+
+    next_id = Enum.at(posts, 9).id
+    assert next_url =~ next_id
+
+    %{"next" => next_url} =
+      UserView.render("activity_collection_page.json", %{
+        iri: "#{user.ap_id}/outbox",
+        activities: Enum.take(Enum.drop(posts, 10), 10)
+      })
+
+    next_id = Enum.at(posts, 19).id
+    assert next_url =~ next_id
   end
 end

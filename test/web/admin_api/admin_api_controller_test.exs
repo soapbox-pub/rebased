@@ -4,11 +4,13 @@
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
+  use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
   alias Pleroma.HTML
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.CommonAPI
@@ -584,7 +586,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       |> put_req_header("accept", "application/json")
       |> get("/api/pleroma/admin/users/#{user.nickname}/password_reset")
 
-    assert conn.status == 200
+    resp = json_response(conn, 200)
+
+    assert Regex.match?(~r/(http:\/\/|https:\/\/)/, resp["link"])
   end
 
   describe "GET /api/pleroma/admin/users" do
@@ -2253,8 +2257,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   describe "GET /api/pleroma/admin/moderation_log" do
     setup %{conn: conn} do
       admin = insert(:user, info: %{is_admin: true})
+      moderator = insert(:user, info: %{is_moderator: true})
 
-      %{conn: assign(conn, :user, admin), admin: admin}
+      %{conn: assign(conn, :user, admin), admin: admin, moderator: moderator}
     end
 
     test "returns the log", %{conn: conn, admin: admin} do
@@ -2287,9 +2292,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = get(conn, "/api/pleroma/admin/moderation_log")
 
       response = json_response(conn, 200)
-      [first_entry, second_entry] = response
+      [first_entry, second_entry] = response["items"]
 
-      assert response |> length() == 2
+      assert response["total"] == 2
       assert first_entry["data"]["action"] == "relay_unfollow"
 
       assert first_entry["message"] ==
@@ -2331,9 +2336,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn1 = get(conn, "/api/pleroma/admin/moderation_log?page_size=1&page=1")
 
       response1 = json_response(conn1, 200)
-      [first_entry] = response1
+      [first_entry] = response1["items"]
 
-      assert response1 |> length() == 1
+      assert response1["total"] == 2
+      assert response1["items"] |> length() == 1
       assert first_entry["data"]["action"] == "relay_unfollow"
 
       assert first_entry["message"] ==
@@ -2342,13 +2348,142 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn2 = get(conn, "/api/pleroma/admin/moderation_log?page_size=1&page=2")
 
       response2 = json_response(conn2, 200)
-      [second_entry] = response2
+      [second_entry] = response2["items"]
 
-      assert response2 |> length() == 1
+      assert response2["total"] == 2
+      assert response2["items"] |> length() == 1
       assert second_entry["data"]["action"] == "relay_follow"
 
       assert second_entry["message"] ==
                "@#{admin.nickname} followed relay: https://example.org/relay"
+    end
+
+    test "filters log by date", %{conn: conn, admin: admin} do
+      first_date = "2017-08-15T15:47:06Z"
+      second_date = "2017-08-20T15:47:06Z"
+
+      Repo.insert(%ModerationLog{
+        data: %{
+          actor: %{
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "type" => "user"
+          },
+          action: "relay_follow",
+          target: "https://example.org/relay"
+        },
+        inserted_at: NaiveDateTime.from_iso8601!(first_date)
+      })
+
+      Repo.insert(%ModerationLog{
+        data: %{
+          actor: %{
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "type" => "user"
+          },
+          action: "relay_unfollow",
+          target: "https://example.org/relay"
+        },
+        inserted_at: NaiveDateTime.from_iso8601!(second_date)
+      })
+
+      conn1 =
+        get(
+          conn,
+          "/api/pleroma/admin/moderation_log?start_date=#{second_date}"
+        )
+
+      response1 = json_response(conn1, 200)
+      [first_entry] = response1["items"]
+
+      assert response1["total"] == 1
+      assert first_entry["data"]["action"] == "relay_unfollow"
+
+      assert first_entry["message"] ==
+               "@#{admin.nickname} unfollowed relay: https://example.org/relay"
+    end
+
+    test "returns log filtered by user", %{conn: conn, admin: admin, moderator: moderator} do
+      Repo.insert(%ModerationLog{
+        data: %{
+          actor: %{
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "type" => "user"
+          },
+          action: "relay_follow",
+          target: "https://example.org/relay"
+        }
+      })
+
+      Repo.insert(%ModerationLog{
+        data: %{
+          actor: %{
+            "id" => moderator.id,
+            "nickname" => moderator.nickname,
+            "type" => "user"
+          },
+          action: "relay_unfollow",
+          target: "https://example.org/relay"
+        }
+      })
+
+      conn1 = get(conn, "/api/pleroma/admin/moderation_log?user_id=#{moderator.id}")
+
+      response1 = json_response(conn1, 200)
+      [first_entry] = response1["items"]
+
+      assert response1["total"] == 1
+      assert get_in(first_entry, ["data", "actor", "id"]) == moderator.id
+    end
+
+    test "returns log filtered by search", %{conn: conn, moderator: moderator} do
+      ModerationLog.insert_log(%{
+        actor: moderator,
+        action: "relay_follow",
+        target: "https://example.org/relay"
+      })
+
+      ModerationLog.insert_log(%{
+        actor: moderator,
+        action: "relay_unfollow",
+        target: "https://example.org/relay"
+      })
+
+      conn1 = get(conn, "/api/pleroma/admin/moderation_log?search=unfo")
+
+      response1 = json_response(conn1, 200)
+      [first_entry] = response1["items"]
+
+      assert response1["total"] == 1
+
+      assert get_in(first_entry, ["data", "message"]) ==
+               "@#{moderator.nickname} unfollowed relay: https://example.org/relay"
+    end
+  end
+
+  describe "PATCH /users/:nickname/force_password_reset" do
+    setup %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+
+      %{conn: assign(conn, :user, admin), admin: admin, user: user}
+    end
+
+    test "sets password_reset_pending to true", %{admin: admin, user: user} do
+      assert user.info.password_reset_pending == false
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> patch("/api/pleroma/admin/users/#{user.nickname}/force_password_reset")
+
+      assert json_response(conn, 204) == ""
+
+      ObanHelpers.perform_all()
+
+      assert User.get_by_id(user.id).info.password_reset_pending == true
     end
   end
 end

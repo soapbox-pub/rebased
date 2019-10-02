@@ -365,3 +365,109 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params:
     * `recipients`: A list of ids of users that should receive posts to this conversation. This will replace the current list of recipients, so submit the full list. The owner of owner of the conversation will always be part of the set of recipients, though.
 * Response: JSON, statuses (200 - healthy, 503 unhealthy)
+
+## `GET /api/pleroma/emoji/packs`
+### Lists the custom emoji packs on the server
+* Method `GET`
+* Authentication: not required
+* Params: None
+* Response: JSON, "ok" and 200 status and the JSON hashmap of "pack name" to "pack contents"
+
+## `PUT /api/pleroma/emoji/packs/:name`
+### Creates an empty custom emoji pack
+* Method `PUT`
+* Authentication: required
+* Params: None
+* Response: JSON, "ok" and 200 status or 409 if the pack with that name already exists
+
+## `DELETE /api/pleroma/emoji/packs/:name`
+### Delete a custom emoji pack
+* Method `DELETE`
+* Authentication: required
+* Params: None
+* Response: JSON, "ok" and 200 status or 500 if there was an error deleting the pack
+
+## `POST /api/pleroma/emoji/packs/:name/update_file`
+### Update a file in a custom emoji pack
+* Method `POST`
+* Authentication: required
+* Params: 
+    * if the `action` is `add`, adds an emoji named `shortcode` to the pack `pack_name`,
+      that means that the emoji file needs to be uploaded with the request
+      (thus requiring it to be a multipart request) and be named `file`.
+      There can also be an optional `filename` that will be the new emoji file name
+      (if it's not there, the name will be taken from the uploaded file).
+    * if the `action` is `update`, changes emoji shortcode
+      (from `shortcode` to `new_shortcode` or moves the file (from the current filename to `new_filename`)
+    * if the `action` is `remove`, removes the emoji named `shortcode` and it's associated file
+* Response: JSON, updated "files" section of the pack and 200 status, 409 if the trying to use a shortcode
+  that is already taken, 400 if there was an error with the shortcode, filename or file (additional info
+  in the "error" part of the response JSON)
+
+## `POST /api/pleroma/emoji/packs/:name/update_metadata`
+### Updates (replaces) pack metadata
+* Method `POST`
+* Authentication: required
+* Params: 
+  * `new_data`: new metadata to replace the old one
+* Response: JSON, updated "metadata" section of the pack and 200 status or 400 if there was a
+  problem with the new metadata (the error is specified in the "error" part of the response JSON)
+
+## `POST /api/pleroma/emoji/packs/download_from`
+### Requests the instance to download the pack from another instance
+* Method `POST`
+* Authentication: required
+* Params: 
+  * `instance_address`: the address of the instance to download from
+  * `pack_name`: the pack to download from that instance
+* Response: JSON, "ok" and 200 status if the pack was downloaded, or 500 if there were
+  errors downloading the pack
+
+## `POST /api/pleroma/emoji/packs/list_from`
+### Requests the instance to list the packs from another instance
+* Method `POST`
+* Authentication: required
+* Params:
+  * `instance_address`: the address of the instance to download from
+* Response: JSON with the pack list, same as if the request was made to that instance's
+  list endpoint directly + 200 status
+
+## `GET /api/pleroma/emoji/packs/:name/download_shared`
+### Requests a local pack from the instance
+* Method `GET`
+* Authentication: not required
+* Params: None
+* Response: the archive of the pack with a 200 status code, 403 if the pack is not set as shared,
+  404 if the pack does not exist
+
+## `GET /api/v1/pleroma/accounts/:id/scrobbles`
+### Requests a list of current and recent Listen activities for an account
+* Method `GET`
+* Authentication: not required
+* Params: None
+* Response: An array of media metadata entities.
+* Example response:
+```json
+[
+   {
+       "account": {...},
+       "id": "1234",
+       "title": "Some Title",
+       "artist": "Some Artist",
+       "album": "Some Album",
+       "length": 180000,
+       "created_at": "2019-09-28T12:40:45.000Z"
+   }
+]
+```
+
+## `POST /api/v1/pleroma/scrobble`
+### Creates a new Listen activity for an account
+* Method `POST`
+* Authentication: required
+* Params:
+  * `title`: the title of the media playing
+  * `album`: the album of the media playing [optional]
+  * `artist`: the artist of the media playing [optional]
+  * `length`: the length of the media playing [optional]
+* Response: the newly created media metadata entity representing the Listen activity

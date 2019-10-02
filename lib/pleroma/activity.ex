@@ -21,7 +21,7 @@ defmodule Pleroma.Activity do
   @type t :: %__MODULE__{}
   @type actor :: String.t()
 
-  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
+  @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
   @mastodon_notification_types %{
@@ -137,11 +137,18 @@ defmodule Pleroma.Activity do
     |> Repo.one()
   end
 
+  @spec get_by_id(String.t()) :: Activity.t() | nil
   def get_by_id(id) do
-    Activity
-    |> where([a], a.id == ^id)
-    |> restrict_deactivated_users()
-    |> Repo.one()
+    case FlakeId.flake_id?(id) do
+      true ->
+        Activity
+        |> where([a], a.id == ^id)
+        |> restrict_deactivated_users()
+        |> Repo.one()
+
+      _ ->
+        nil
+    end
   end
 
   def get_by_id_with_object(id) do

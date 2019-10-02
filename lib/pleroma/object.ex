@@ -248,4 +248,11 @@ defmodule Pleroma.Object do
       _ -> :noop
     end
   end
+
+  @doc "Updates data field of an object"
+  def update_data(%Object{data: data} = object, attrs \\ %{}) do
+    object
+    |> Object.change(%{data: Map.merge(data || %{}, attrs)})
+    |> Repo.update()
+  end
 end

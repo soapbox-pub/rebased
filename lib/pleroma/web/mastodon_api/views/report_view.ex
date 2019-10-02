@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.ReportView do
   use Pleroma.Web, :view
 
-  def render("report.json", %{activity: activity}) do
+  def render("show.json", %{activity: activity}) do
     %{
       id: to_string(activity.id),
       action_taken: false

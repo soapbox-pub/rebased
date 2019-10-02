@@ -35,7 +35,6 @@ defmodule Pleroma.Application do
         Pleroma.Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,
-        Pleroma.FlakeId,
         Pleroma.Daemons.ScheduledActivityDaemon,
         Pleroma.Daemons.ActivityExpirationDaemon
       ] ++
@@ -102,9 +101,13 @@ defmodule Pleroma.Application do
       build_cachex("rich_media", default_ttl: :timer.minutes(120), limit: 5000),
       build_cachex("scrubber", limit: 2500),
       build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500),
-      build_cachex("web_resp", limit: 2500)
+      build_cachex("web_resp", limit: 2500),
+      build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10)
     ]
   end
+
+  defp emoji_packs_expiration,
+    do: expiration(default: :timer.seconds(5 * 60), interval: :timer.seconds(60))
 
   defp idempotency_expiration,
     do: expiration(default: :timer.seconds(6 * 60 * 60), interval: :timer.seconds(60))

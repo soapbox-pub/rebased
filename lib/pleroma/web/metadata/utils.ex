@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Utils do
+  alias Pleroma.Emoji
   alias Pleroma.Formatter
   alias Pleroma.HTML
   alias Pleroma.Web.MediaProxy
@@ -13,7 +14,7 @@ defmodule Pleroma.Web.Metadata.Utils do
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.get_cached_stripped_html_for_activity(object, "metadata")
-    |> Formatter.demojify()
+    |> Emoji.Formatter.demojify()
     |> Formatter.truncate()
   end
 
@@ -23,7 +24,7 @@ defmodule Pleroma.Web.Metadata.Utils do
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.strip_tags()
-    |> Formatter.demojify()
+    |> Emoji.Formatter.demojify()
     |> Formatter.truncate(max_length)
   end
 

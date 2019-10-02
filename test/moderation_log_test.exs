@@ -30,8 +30,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
-               "@#{moderator.nickname} deleted user @#{subject1.nickname}"
+      assert log.data["message"] == "@#{moderator.nickname} deleted user @#{subject1.nickname}"
     end
 
     test "logging user creation by moderator", %{
@@ -48,7 +47,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{moderator.nickname} created users: @#{subject1.nickname}, @#{subject2.nickname}"
     end
 
@@ -63,7 +62,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{admin.nickname} made @#{subject2.nickname} follow @#{subject1.nickname}"
     end
 
@@ -78,7 +77,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{admin.nickname} made @#{subject2.nickname} unfollow @#{subject1.nickname}"
     end
 
@@ -100,8 +99,7 @@ defmodule Pleroma.ModerationLogTest do
 
       tags = ["foo", "bar"] |> Enum.join(", ")
 
-      assert ModerationLog.get_log_entry_message(log) ==
-               "@#{admin.nickname} added tags: #{tags} to users: #{users}"
+      assert log.data["message"] == "@#{admin.nickname} added tags: #{tags} to users: #{users}"
     end
 
     test "logging user untagged by admin", %{admin: admin, subject1: subject1, subject2: subject2} do
@@ -122,7 +120,7 @@ defmodule Pleroma.ModerationLogTest do
 
       tags = ["foo", "bar"] |> Enum.join(", ")
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{admin.nickname} removed tags: #{tags} from users: #{users}"
     end
 
@@ -137,8 +135,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
-               "@#{moderator.nickname} made @#{subject1.nickname} moderator"
+      assert log.data["message"] == "@#{moderator.nickname} made @#{subject1.nickname} moderator"
     end
 
     test "logging user revoke by moderator", %{moderator: moderator, subject1: subject1} do
@@ -152,7 +149,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{moderator.nickname} revoked moderator role from @#{subject1.nickname}"
     end
 
@@ -166,7 +163,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{moderator.nickname} followed relay: https://example.org/relay"
     end
 
@@ -180,7 +177,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{moderator.nickname} unfollowed relay: https://example.org/relay"
     end
 
@@ -202,7 +199,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{moderator.nickname} updated report ##{report.id} with 'resolved' state"
     end
 
@@ -224,7 +221,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{moderator.nickname} responded with 'look at this' to report ##{report.id}"
     end
 
@@ -242,7 +239,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{moderator.nickname} updated status ##{note.id}, set sensitive: 'true'"
     end
 
@@ -260,7 +257,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{moderator.nickname} updated status ##{note.id}, set visibility: 'private'"
     end
 
@@ -278,7 +275,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
+      assert log.data["message"] ==
                "@#{moderator.nickname} updated status ##{note.id}, set sensitive: 'true', visibility: 'private'"
     end
 
@@ -294,8 +291,7 @@ defmodule Pleroma.ModerationLogTest do
 
       log = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log) ==
-               "@#{moderator.nickname} deleted status ##{note.id}"
+      assert log.data["message"] == "@#{moderator.nickname} deleted status ##{note.id}"
     end
   end
 end

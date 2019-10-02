@@ -15,7 +15,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
     Map.merge(base, additional)
   end
 
-  def render("object.json", %{object: %Activity{data: %{"type" => "Create"}} = activity}) do
+  def render("object.json", %{object: %Activity{data: %{"type" => activity_type}} = activity})
+      when activity_type in ["Create", "Listen"] do
     base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
     object = Object.normalize(activity)
 
@@ -37,12 +38,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
     Map.merge(base, additional)
   end
 
-  def render("likes.json", ap_id, likes, page) do
+  def render("likes.json", %{ap_id: ap_id, likes: likes, page: page}) do
     collection(likes, "#{ap_id}/likes", page)
     |> Map.merge(Pleroma.Web.ActivityPub.Utils.make_json_ld_header())
   end
 
-  def render("likes.json", ap_id, likes) do
+  def render("likes.json", %{ap_id: ap_id, likes: likes}) do
     %{
       "id" => "#{ap_id}/likes",
       "type" => "OrderedCollection",

@@ -29,8 +29,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     fetched_user = User.get_cached_by_nickname("lain")
 
-    assert AccountView.render("account.json", %{user: user}) ==
-             AccountView.render("account.json", %{user: fetched_user})
+    assert AccountView.render("show.json", %{user: user}) ==
+             AccountView.render("show.json", %{user: fetched_user})
   end
 
   test "it registers a new user with empty string in bio and returns the user." do
@@ -47,8 +47,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     fetched_user = User.get_cached_by_nickname("lain")
 
-    assert AccountView.render("account.json", %{user: user}) ==
-             AccountView.render("account.json", %{user: fetched_user})
+    assert AccountView.render("show.json", %{user: user}) ==
+             AccountView.render("show.json", %{user: fetched_user})
   end
 
   test "it sends confirmation email if :account_activation_required is specified in instance config" do
@@ -109,7 +109,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user2} = TwitterAPI.register_user(data2)
 
     expected_text =
-      "<span class='h-card'><a data-user='#{user1.id}' class='u-url mention' href='#{user1.ap_id}'>@<span>john</span></a></span> test"
+      ~s(<span class="h-card"><a data-user="#{user1.id}" class="u-url mention" href="#{
+        user1.ap_id
+      }" rel="ugc">@<span>john</span></a></span> test)
 
     assert user2.bio == expected_text
   end
@@ -146,8 +148,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
       assert invite.used == true
 
-      assert AccountView.render("account.json", %{user: user}) ==
-               AccountView.render("account.json", %{user: fetched_user})
+      assert AccountView.render("show.json", %{user: user}) ==
+               AccountView.render("show.json", %{user: fetched_user})
     end
 
     test "returns error on invalid token" do
@@ -211,8 +213,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         {:ok, user} = TwitterAPI.register_user(data)
         fetched_user = User.get_cached_by_nickname("vinny")
 
-        assert AccountView.render("account.json", %{user: user}) ==
-                 AccountView.render("account.json", %{user: fetched_user})
+        assert AccountView.render("show.json", %{user: user}) ==
+                 AccountView.render("show.json", %{user: fetched_user})
       end
 
       {:ok, data: data, check_fn: check_fn}
@@ -286,8 +288,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
       assert invite.used == true
 
-      assert AccountView.render("account.json", %{user: user}) ==
-               AccountView.render("account.json", %{user: fetched_user})
+      assert AccountView.render("show.json", %{user: user}) ==
+               AccountView.render("show.json", %{user: fetched_user})
 
       data = %{
         "nickname" => "GrimReaper",
@@ -337,8 +339,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
       refute invite.used
 
-      assert AccountView.render("account.json", %{user: user}) ==
-               AccountView.render("account.json", %{user: fetched_user})
+      assert AccountView.render("show.json", %{user: user}) ==
+               AccountView.render("show.json", %{user: fetched_user})
     end
 
     test "error after max uses" do
@@ -361,8 +363,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       invite = Repo.get_by(UserInviteToken, token: invite.token)
       assert invite.used == true
 
-      assert AccountView.render("account.json", %{user: user}) ==
-               AccountView.render("account.json", %{user: fetched_user})
+      assert AccountView.render("show.json", %{user: user}) ==
+               AccountView.render("show.json", %{user: fetched_user})
 
       data = %{
         "nickname" => "GrimReaper",

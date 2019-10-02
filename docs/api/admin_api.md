@@ -308,16 +308,32 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 - Methods: `GET`
 - Params: none
-- Response: password reset token (base64 string)
+- Response:
+
+```json
+{
+  "token": "base64 reset token",
+  "link": "https://pleroma.social/api/pleroma/password_reset/url-encoded-base64-token"
+}
+```
+
+
+## `/api/pleroma/admin/users/:nickname/force_password_reset`
+
+### Force passord reset for a user with a given nickname
+
+- Methods: `PATCH`
+- Params: none
+- Response: none (code `204`)
 
 ## `/api/pleroma/admin/reports`
 ### Get a list of reports
 - Method `GET`
 - Params:
-  - `state`: optional, the state of reports. Valid values are `open`, `closed` and `resolved`
-  - `limit`: optional, the number of records to retrieve
-  - `since_id`: optional, returns results that are more recent than the specified id
-  - `max_id`: optional, returns results that are older than the specified id
+  - *optional* `state`: **string** the state of reports. Valid values are `open`, `closed` and `resolved`
+  - *optional* `limit`: **integer** the number of records to retrieve
+  - *optional* `page`: **integer** page number
+  - *optional* `page_size`: **integer** number of log entries per page (default is `50`)
 - Response:
   - On failure: 403 Forbidden error `{"error": "error_msg"}` when requested by anonymous or non-admin
   - On success: JSON, returns a list of reports, where:
@@ -695,6 +711,7 @@ Compile time settings (need instance reboot):
     }
   ]
 }
+```
 
 - Response:
 
@@ -715,7 +732,11 @@ Compile time settings (need instance reboot):
 - Method `GET`
 - Params:
   - *optional* `page`: **integer** page number
-  - *optional* `page_size`: **integer** number of users per page (default is `50`)
+  - *optional* `page_size`: **integer** number of log entries per page (default is `50`)
+  - *optional* `start_date`: **datetime (ISO 8601)** filter logs by creation date, start from `start_date`. Accepts datetime in ISO 8601 format (YYYY-MM-DDThh:mm:ss), e.g. `2005-08-09T18:31:42`
+  - *optional* `end_date`: **datetime (ISO 8601)** filter logs by creation date, end by from `end_date`. Accepts datetime in ISO 8601 format (YYYY-MM-DDThh:mm:ss), e.g. 2005-08-09T18:31:42
+  - *optional* `user_id`: **integer** filter logs by actor's id
+  - *optional* `search`: **string** search logs by the log message
 - Response:
 
 ```json
@@ -733,3 +754,10 @@ Compile time settings (need instance reboot):
   }
 ]
 ```
+
+## `POST /api/pleroma/admin/reload_emoji`
+### Reload the instance's custom emoji
+* Method `POST`
+* Authentication: required
+* Params: None
+* Response: JSON, "ok" and 200 status

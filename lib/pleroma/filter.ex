@@ -12,7 +12,7 @@ defmodule Pleroma.Filter do
   alias Pleroma.User
 
   schema "filters" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     field(:filter_id, :integer)
     field(:hide, :boolean, default: false)
     field(:whole_word, :boolean, default: true)
