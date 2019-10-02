@@ -337,6 +337,24 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     update_element_in_object("reaction", new_reactions, object)
   end
 
+  def remove_emoji_reaction_from_object(
+        %Activity{data: %{"content" => emoji, "actor" => actor}},
+        object
+      ) do
+    reactions = object.data["reactions"] || %{}
+    emoji_actors = reactions[emoji] || []
+    new_emoji_actors = List.delete(emoji_actors, actor)
+
+    new_reactions =
+      if new_emoji_actors == [] do
+        Map.delete(reactions, emoji)
+      else
+        Map.put(reactions, emoji, new_emoji_actors)
+      end
+
+    update_element_in_object("reaction", new_reactions, object)
+  end
+
   @spec add_like_to_object(Activity.t(), Object.t()) ::
           {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
   def add_like_to_object(%Activity{data: %{"actor" => actor}}, object) do
@@ -516,6 +534,25 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => ap_id,
       "object" => activity.data,
       "to" => [user.follower_address, activity.data["actor"]],
+      "cc" => [Pleroma.Constants.as_public()],
+      "context" => context
+    }
+    |> maybe_put("id", activity_id)
+  end
+
+  def make_undo_data(
+        %User{ap_id: actor, follower_address: follower_address},
+        %Activity{
+          data: %{"id" => undone_activity_id, "context" => context},
+          actor: undone_activity_actor
+        },
+        activity_id \\ nil
+      ) do
+    %{
+      "type" => "Undo",
+      "actor" => actor,
+      "object" => undone_activity_id,
+      "to" => [follower_address, undone_activity_actor],
       "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }

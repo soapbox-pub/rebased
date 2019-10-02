@@ -293,8 +293,6 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
-    pipe_through(:authenticated_api)
-
     scope [] do
       pipe_through(:authenticated_api)
       pipe_through(:oauth_read)

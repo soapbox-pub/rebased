@@ -319,11 +319,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def unreact_with_emoji(user, reaction_id, option \\ []) do
+  def unreact_with_emoji(user, reaction_id, options \\ []) do
     with local <- Keyword.get(options, :local, true),
          activity_id <- Keyword.get(options, :activity_id, nil),
-           %Activity{actor: ^user.ap_id} = reaction_activity <- Activity.get_by_ap_id(reaction_id),
-    unreact_data
+         user_ap_id <- user.ap_id,
+         %Activity{actor: ^user_ap_id} = reaction_activity <- Activity.get_by_ap_id(reaction_id),
+         object <- Object.normalize(reaction_activity),
+         unreact_data <- make_undo_data(user, reaction_activity, activity_id),
+         {:ok, activity} <- insert(unreact_data, local),
+         {:ok, object} <- remove_emoji_reaction_from_object(reaction_activity, object),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity, object}
+    end
   end
 
   # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
