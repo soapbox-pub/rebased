@@ -743,7 +743,7 @@ A keyword list of rate limiters where a key is a limiter name and value is the l
 
 It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
 
-See [`Pleroma.Plugs.RateLimiter`](Pleroma.Plugs.RateLimiter.html) documentation for examples.
+TODO: Add a list of available limiters
 
 Supported rate limiters:
 
