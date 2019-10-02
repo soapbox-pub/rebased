@@ -305,6 +305,7 @@ defmodule Pleroma.Web.Router do
       pipe_through(:oauth_write)
       patch("/conversations/:id", PleromaAPIController, :update_conversation)
       post("/statuses/:id/react_with_emoji", PleromaAPIController, :react_with_emoji)
+      post("/statuses/:id/unreact_with_emoji", PleromaAPIController, :unreact_with_emoji)
       post("/notifications/read", PleromaAPIController, :read_notification)
 
       patch("/accounts/update_avatar", AccountController, :update_avatar)

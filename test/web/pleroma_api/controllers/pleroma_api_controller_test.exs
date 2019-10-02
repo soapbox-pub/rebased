@@ -7,6 +7,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Web.CommonAPI
 
@@ -41,6 +42,10 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     assert %{"id" => id} = json_response(result, 200)
     assert to_string(activity.id) == id
+
+    object = Object.normalize(activity)
+
+    assert object.data["reaction_count"] == 0
   end
 
   test "GET /api/v1/pleroma/statuses/:id/emoji_reactions_by", %{conn: conn} do
