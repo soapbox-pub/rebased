@@ -76,11 +76,12 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def repeat(id_or_ap_id, user) do
+  def repeat(id_or_ap_id, user, params \\ %{}) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
          object <- Object.normalize(activity),
-         nil <- Utils.get_existing_announce(user.ap_id, object) do
-      ActivityPub.announce(user, object)
+         nil <- Utils.get_existing_announce(user.ap_id, object),
+         public <- public_announce?(object, params) do
+      ActivityPub.announce(user, object, nil, true, public)
     else
       _ -> {:error, dgettext("errors", "Could not repeat")}
     end
@@ -177,6 +178,14 @@ defmodule Pleroma.Web.CommonAPI do
       {:valid_choice, _} -> {:error, dgettext("errors", "Invalid indices")}
       {:count_check, _} -> {:error, dgettext("errors", "Too many choices")}
     end
+  end
+
+  def public_announce?(_, %{"visibility" => visibility})
+      when visibility in ~w{public unlisted private direct},
+      do: visibility in ~w(public unlisted)
+
+  def public_announce?(object, _) do
+    Visibility.is_public?(object)
   end
 
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}

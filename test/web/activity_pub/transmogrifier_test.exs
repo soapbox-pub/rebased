@@ -396,6 +396,31 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"]["id"] == "http://mastodon.example.org/users/admin#likes/2"
     end
 
+    test "it works for incoming unlikes with an existing like activity and a compact object" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
+
+      like_data =
+        File.read!("test/fixtures/mastodon-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+
+      {:ok, %Activity{data: like_data, local: false}} = Transmogrifier.handle_incoming(like_data)
+
+      data =
+        File.read!("test/fixtures/mastodon-undo-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", like_data["id"])
+        |> Map.put("actor", like_data["actor"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "Undo"
+      assert data["id"] == "http://mastodon.example.org/users/admin#likes/2/undo"
+      assert data["object"]["id"] == "http://mastodon.example.org/users/admin#likes/2"
+    end
+
     test "it works for incoming announces" do
       data = File.read!("test/fixtures/mastodon-announce.json") |> Poison.decode!()
 
@@ -1083,6 +1108,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "prepare outgoing" do
+    test "it inlines private announced objects" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey", "visibility" => "private"})
+
+      {:ok, announce_activity, _} = CommonAPI.repeat(activity.id, user)
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(announce_activity.data)
+      object = modified["object"]
+
+      assert modified["object"]["content"] == "hey"
+      assert modified["object"]["actor"] == modified["object"]["attributedTo"]
+    end
+
     test "it turns mentions into tags" do
       user = insert(:user)
       other_user = insert(:user)

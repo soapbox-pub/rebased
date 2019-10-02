@@ -525,7 +525,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @spec add_announce_to_object(Activity.t(), Object.t()) ::
           {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
   def add_announce_to_object(
-        %Activity{data: %{"actor" => actor, "cc" => [Pleroma.Constants.as_public()]}},
+        %Activity{data: %{"actor" => actor}},
         object
       ) do
     announcements = take_announcements(object)
