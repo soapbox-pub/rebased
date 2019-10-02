@@ -1084,7 +1084,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, announce_activity, _} = CommonAPI.repeat(activity.id, user)
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(announce_activity.data)
-      object = modified["object"]
 
       assert modified["object"]["content"] == "hey"
       assert modified["object"]["actor"] == modified["object"]["attributedTo"]

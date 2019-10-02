@@ -14,7 +14,7 @@
 <link rel='preload' as='script' crossorigin='anonymous' href='/packs/features/compose.js'>
 <link rel='preload' as='script' crossorigin='anonymous' href='/packs/features/home_timeline.js'>
 <link rel='preload' as='script' crossorigin='anonymous' href='/packs/features/notifications.js'>
-<script id='initial-state' type='application/json'><%= raw @initial_state %></script>
+<script id='initial-state' type='application/json'><%= initial_state(@token, @user, @custom_emojis) %></script>
 
 <script src="/packs/core/common.js"></script>
 <link rel="stylesheet" media="all" href="/packs/core/common.css" />
