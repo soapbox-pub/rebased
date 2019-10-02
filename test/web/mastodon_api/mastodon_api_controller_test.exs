@@ -7,7 +7,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   alias Pleroma.Notification
   alias Pleroma.Repo
-  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -32,53 +31,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert [] = json_response(conn, 200)
     end)
-  end
-
-  test "returns the favorites of a user", %{conn: conn} do
-    user = insert(:user)
-    other_user = insert(:user)
-
-    {:ok, _} = CommonAPI.post(other_user, %{"status" => "bla"})
-    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "traps are happy"})
-
-    {:ok, _, _} = CommonAPI.favorite(activity.id, user)
-
-    first_conn =
-      conn
-      |> assign(:user, user)
-      |> get("/api/v1/favourites")
-
-    assert [status] = json_response(first_conn, 200)
-    assert status["id"] == to_string(activity.id)
-
-    assert [{"link", _link_header}] =
-             Enum.filter(first_conn.resp_headers, fn element -> match?({"link", _}, element) end)
-
-    # Honours query params
-    {:ok, second_activity} =
-      CommonAPI.post(other_user, %{
-        "status" =>
-          "Trees Are Never Sad Look At Them Every Once In Awhile They're Quite Beautiful."
-      })
-
-    {:ok, _, _} = CommonAPI.favorite(second_activity.id, user)
-
-    last_like = status["id"]
-
-    second_conn =
-      conn
-      |> assign(:user, user)
-      |> get("/api/v1/favourites?since_id=#{last_like}")
-
-    assert [second_status] = json_response(second_conn, 200)
-    assert second_status["id"] == to_string(second_activity.id)
-
-    third_conn =
-      conn
-      |> assign(:user, user)
-      |> get("/api/v1/favourites?limit=0")
-
-    assert [] = json_response(third_conn, 200)
   end
 
   describe "link headers" do

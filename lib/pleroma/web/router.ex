@@ -353,8 +353,8 @@ defmodule Pleroma.Web.Router do
       get("/timelines/home", TimelineController, :home)
       get("/timelines/direct", TimelineController, :direct)
 
-      get("/favourites", MastodonAPIController, :favourites)
-      get("/bookmarks", MastodonAPIController, :bookmarks)
+      get("/favourites", StatusController, :favourites)
+      get("/bookmarks", StatusController, :bookmarks)
 
       get("/notifications", NotificationController, :index)
       get("/notifications/:id", NotificationController, :show)
