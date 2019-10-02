@@ -2,7 +2,7 @@
 
 Every command should be ran with a prefix, in case of OTP releases it is `./bin/pleroma_ctl emoji` and in case of source installs it's `mix pleroma.emoji`.
 
-## ls-packs
+## `ls-packs`
 
 ```sh
 $PREFIX ls-packs [OPTION...]
@@ -13,7 +13,7 @@ Lists the emoji packs and metadata specified in the manifest.
 ### Options
 - `-m, --manifest PATH/URL` - path to a custom manifest, it can either be an URL starting with `http`, in that case the manifest will be fetched from that address, or a local path
 
-## get-packs
+## `get-packs`
 ```sh
 $PREFIX get-packs [OPTION...] PACKS
 ```
@@ -22,7 +22,7 @@ Fetches, verifies and installs the specified PACKS from the manifest into the `S
 ### Options
 - `-m, --manifest PATH/URL` - same as [`ls-packs`](#ls-packs)
 
-## gen-pack
+## `gen-pack`
 ```sh
 $PREFIX gen-pack PACK-URL
 ```
