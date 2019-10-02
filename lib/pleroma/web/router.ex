@@ -461,6 +461,7 @@ defmodule Pleroma.Web.Router do
     pipe_through(:api)
 
     post("/accounts", AccountController, :create)
+    get("/accounts/search", SearchController, :account_search)
 
     get("/instance", InstanceController, :show)
     get("/instance/peers", InstanceController, :peers)
@@ -468,15 +469,13 @@ defmodule Pleroma.Web.Router do
     post("/apps", AppController, :create)
     get("/apps/verify_credentials", AppController, :verify_credentials)
 
-    get("/custom_emojis", MastodonAPIController, :custom_emojis)
-
     get("/statuses/:id/card", StatusController, :card)
     get("/statuses/:id/favourited_by", StatusController, :favourited_by)
     get("/statuses/:id/reblogged_by", StatusController, :reblogged_by)
 
-    get("/trends", MastodonAPIController, :empty_array)
+    get("/custom_emojis", CustomEmojiController, :index)
 
-    get("/accounts/search", SearchController, :account_search)
+    get("/trends", MastodonAPIController, :empty_array)
 
     scope [] do
       pipe_through(:oauth_read_or_public)

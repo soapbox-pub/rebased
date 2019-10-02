@@ -159,23 +159,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
-  describe "custom emoji" do
-    test "with tags", %{conn: conn} do
-      [emoji | _body] =
-        conn
-        |> get("/api/v1/custom_emojis")
-        |> json_response(200)
-
-      assert Map.has_key?(emoji, "shortcode")
-      assert Map.has_key?(emoji, "static_url")
-      assert Map.has_key?(emoji, "tags")
-      assert is_list(emoji["tags"])
-      assert Map.has_key?(emoji, "category")
-      assert Map.has_key?(emoji, "url")
-      assert Map.has_key?(emoji, "visible_in_picker")
-    end
-  end
-
   describe "index/2 redirections" do
     setup %{conn: conn} do
       session_opts = [

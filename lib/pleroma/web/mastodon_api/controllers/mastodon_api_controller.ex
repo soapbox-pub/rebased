@@ -11,7 +11,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Config
   alias Pleroma.Pagination
   alias Pleroma.User
-  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -21,28 +20,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   require Logger
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
-
-  defp mastodonized_emoji do
-    Pleroma.Emoji.get_all()
-    |> Enum.map(fn {shortcode, %Pleroma.Emoji{file: relative_url, tags: tags}} ->
-      url = to_string(URI.merge(Web.base_url(), relative_url))
-
-      %{
-        "shortcode" => shortcode,
-        "static_url" => url,
-        "visible_in_picker" => true,
-        "url" => url,
-        "tags" => tags,
-        # Assuming that a comma is authorized in the category name
-        "category" => (tags -- ["Custom"]) |> Enum.join(",")
-      }
-    end)
-  end
-
-  def custom_emojis(conn, _params) do
-    mastodon_emoji = mastodonized_emoji()
-    json(conn, mastodon_emoji)
-  end
 
   def follows(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
     with {_, %User{} = followed} <- {:followed, User.get_cached_by_nickname(uri)},
@@ -114,7 +91,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     token = get_session(conn, :oauth_token)
 
     if user && token do
-      mastodon_emoji = mastodonized_emoji()
+      mastodon_emoji =
+        Pleroma.Web.MastodonAPI.CustomEmojiView.render("index.json", %{
+          custom_emojis: Pleroma.Emoji.get_all()
+        })
 
       limit = Config.get([:instance, :limit])
 
