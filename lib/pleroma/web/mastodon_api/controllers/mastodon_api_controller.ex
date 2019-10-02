@@ -10,7 +10,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Bookmark
   alias Pleroma.Config
   alias Pleroma.Pagination
-  alias Pleroma.Stats
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -22,40 +21,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   require Logger
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
-
-  @mastodon_api_level "2.7.2"
-
-  def masto_instance(conn, _params) do
-    instance = Config.get(:instance)
-
-    response = %{
-      uri: Web.base_url(),
-      title: Keyword.get(instance, :name),
-      description: Keyword.get(instance, :description),
-      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
-      email: Keyword.get(instance, :email),
-      urls: %{
-        streaming_api: Pleroma.Web.Endpoint.websocket_url()
-      },
-      stats: Stats.get_stats(),
-      thumbnail: Web.base_url() <> "/instance/thumbnail.jpeg",
-      languages: ["en"],
-      registrations: Pleroma.Config.get([:instance, :registrations_open]),
-      # Extra (not present in Mastodon):
-      max_toot_chars: Keyword.get(instance, :limit),
-      poll_limits: Keyword.get(instance, :poll_limits),
-      upload_limit: Keyword.get(instance, :upload_limit),
-      avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
-      background_upload_limit: Keyword.get(instance, :background_upload_limit),
-      banner_upload_limit: Keyword.get(instance, :banner_upload_limit)
-    }
-
-    json(conn, response)
-  end
-
-  def peers(conn, _params) do
-    json(conn, Stats.get_peers())
-  end
 
   defp mastodonized_emoji do
     Pleroma.Emoji.get_all()
