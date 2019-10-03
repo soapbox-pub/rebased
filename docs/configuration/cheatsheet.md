@@ -551,7 +551,7 @@ The above example defines a single job which invokes `Pleroma.Web.Websub.refresh
 
 ## Pleroma.ActivityExpiration
 
-# `enabled`: whether expired activities will be sent to the job queue to be deleted
+* `enabled`: whether expired activities will be sent to the job queue to be deleted
 
 ## Pleroma.Web.Auth.Authenticator
 
