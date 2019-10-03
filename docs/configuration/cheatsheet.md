@@ -444,11 +444,6 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
 
 `config :pleroma_job_queue, :queues` is replaced by `config :pleroma, Oban, :queues` and uses the same format (keys are queues' names, values are max concurrent jobs numbers).
 
-### Note on running with PostgreSQL in silent mode
-
-If you are running PostgreSQL in [`silent_mode`](https://postgresqlco.nf/en/doc/param/silent_mode?version=9.1), it's advised to set [`log_destination`](https://postgresqlco.nf/en/doc/param/log_destination?version=9.1) to `syslog`, 
-otherwise `postmaster.log` file may grow because of "you don't own a lock of type ShareLock" warnings (see https://github.com/sorentwo/oban/issues/52). 
-
 ## :workers
 
 Includes custom worker options not interpretable directly by `Oban`.
