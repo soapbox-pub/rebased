@@ -35,7 +35,7 @@ $PREFIX revoke_invite <token_or_id>
 ```
 
 ## Delete a user
-```
+```sh
 $PREFIX rm <nickname>
 ```
 
