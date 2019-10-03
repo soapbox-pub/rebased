@@ -15,7 +15,8 @@ You shouldn't edit the base config directly to avoid breakages and merge conflic
 * `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
 
-Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
+!!! warning
+    `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 ## Pleroma.Uploaders.Local
 * `uploads`: Which directory to store the user-uploads in, relative to pleroma’s working directory
@@ -300,7 +301,10 @@ config :pleroma, :mrf_subchain,
 * `dstport`: Port advertised in urls (optional, defaults to `port`)
 
 ## Pleroma.Web.Endpoint
-`Phoenix` endpoint configuration, all configuration options can be viewed [here](https://hexdocs.pm/phoenix/Phoenix.Endpoint.html#module-dynamic-configuration), only common options are listed here
+
+!!! note
+    `Phoenix` endpoint configuration, all configuration options can be viewed [here](https://hexdocs.pm/phoenix/Phoenix.Endpoint.html#module-dynamic-configuration), only common options are listed here.
+
 * `http` - a list containing http protocol configuration, all configuration options can be viewed [here](https://hexdocs.pm/plug_cowboy/Plug.Cowboy.html#module-options), only common options are listed here. For deployment using docker, you need to set this to `[ip: {0,0,0,0}, port: 4000]` to make pleroma accessible from other containers (such as your nginx server).
   - `ip` - a tuple consisting of 4 integers
   - `port`
@@ -313,7 +317,8 @@ config :pleroma, :mrf_subchain,
 
 
 
-**Important note**: if you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
+!!! warning
+    If you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
 
 Example:
 ```elixir
@@ -627,13 +632,14 @@ Email notifications settings.
 OAuth consumer mode allows sign in / sign up via external OAuth providers (e.g. Twitter, Facebook, Google, Microsoft, etc.).
 Implementation is based on Ueberauth; see the list of [available strategies](https://github.com/ueberauth/ueberauth/wiki/List-of-Strategies).
 
-Note: each strategy is shipped as a separate dependency; in order to get the strategies, run `OAUTH_CONSUMER_STRATEGIES="..." mix deps.get`,
-e.g. `OAUTH_CONSUMER_STRATEGIES="twitter facebook google microsoft" mix deps.get`.
-The server should also be started with `OAUTH_CONSUMER_STRATEGIES="..." mix phx.server` in case you enable any strategies.
+!!! note
+    Each strategy is shipped as a separate dependency; in order to get the strategies, run `OAUTH_CONSUMER_STRATEGIES="..." mix deps.get`, e.g. `OAUTH_CONSUMER_STRATEGIES="twitter facebook google microsoft" mix deps.get`.  The server should also be started with `OAUTH_CONSUMER_STRATEGIES="..." mix phx.server` in case you enable any strategies.
 
-Note: each strategy requires separate setup (on external provider side and Pleroma side). Below are the guidelines on setting up most popular strategies.
+!!! note
+    Each strategy requires separate setup (on external provider side and Pleroma side). Below are the guidelines on setting up most popular strategies.
 
-Note: make sure that `"SameSite=Lax"` is set in `extra_cookie_attrs` when you have this feature enabled. OAuth consumer mode will not work with `"SameSite=Strict"`
+!!! note
+    Make sure that `"SameSite=Lax"` is set in `extra_cookie_attrs` when you have this feature enabled. OAuth consumer mode will not work with `"SameSite=Strict"`
 
 * For Twitter, [register an app](https://developer.twitter.com/en/apps), configure callback URL to https://<your_host>/oauth/twitter/callback
 
