@@ -28,23 +28,6 @@ build:
   - mix deps.get
   - mix compile --force
 
-docs-build:
-  stage: build
-  only:
-  - master@pleroma/pleroma
-  - develop@pleroma/pleroma
-  variables:
-    MIX_ENV: dev
-    PLEROMA_BUILD_ENV: prod
-  script:
-    - mix deps.get
-    - mix compile
-    - mix docs
-  artifacts:
-    paths:
-      - priv/static/doc
-
-
 unit-testing:
   stage: test
   services:
@@ -85,19 +68,15 @@ analysis:
 
 docs-deploy:
   stage: deploy
-  image: alpine:3.9
+  image: alpine:latest
   only:
+  - mkdocs-migration-prep@pleroma/pleroma
   - master@pleroma/pleroma
   - develop@pleroma/pleroma
   before_script:
-    - apk update && apk add openssh-client rsync
+  - apk add curl
   script:
-    - mkdir -p ~/.ssh
-    - echo "${SSH_HOST_KEY}" > ~/.ssh/known_hosts
-    - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - rsync -hrvz --delete -e "ssh -p ${SSH_PORT}" priv/static/doc/ "${SSH_USER_HOST_LOCATION}/${CI_COMMIT_REF_NAME}"
-
+  - curl -X POST -F"token=$DOCS_PIPELINE_TRIGGER" -F'ref=master' -F"variables[BRANCH]=$CI_COMMIT_REF_NAME" https://git.pleroma.social/api/v4/projects/673/trigger/pipeline
 review_app:
   image: alpine:3.9
   stage: deploy
