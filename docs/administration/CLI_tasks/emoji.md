@@ -2,7 +2,7 @@
 
 Every command should be ran with a prefix, in case of OTP releases it is `./bin/pleroma_ctl emoji` and in case of source installs it's `mix pleroma.emoji`.
 
-## Lists the emoji packs and metadata specified in the manifest.
+## Lists emoji packs and metadata specified in the manifest
 
 ```sh
 $PREFIX ls-packs [<options>]
