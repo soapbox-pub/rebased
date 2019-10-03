@@ -9,25 +9,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
   alias Pleroma.Web.ActivityPub.Relay
 
   @shortdoc "Manages remote relays"
-  @moduledoc """
-  Manages remote relays
 
-  ## Follow a remote relay
-
-  ``mix pleroma.relay follow <relay_url>``
-
-  Example: ``mix pleroma.relay follow  https://example.org/relay``
-
-  ## Unfollow a remote relay
-
-  ``mix pleroma.relay unfollow <relay_url>``
-
-  Example: ``mix pleroma.relay unfollow https://example.org/relay``
-
-  ## List relay subscriptions
-
-  ``mix pleroma.relay list``
-  """
   def run(["follow", target]) do
     start_pleroma()
 
