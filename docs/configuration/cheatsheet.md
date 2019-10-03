@@ -1,7 +1,11 @@
-# Configuration
+# Configuration Cheat Sheet
 
-This file describe the configuration, it is recommended to edit the relevant *.secret.exs file instead of the others founds in the ``config`` directory.
-If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherwise it is ``dev.secret.exs``.
+This is a cheat sheet for Pleroma configuration file, any setting possible to configure should be listed here.
+
+Pleroma configuration works by first importing the base config (`config/config.exs` on source installs, compiled-in on OTP releases), then overriding it by the environment config (`config/$MIX_ENV.exs` on source installs, N/A to OTP releases) and then overriding it by user config (`config/$MIX_ENV.secret.exs` on source installs, typically `/etc/pleroma/config.exs` on OTP releases).
+
+You shouldn't edit the base config directly to avoid breakages and merge conflicts, but it can be used as a reference if you don't understand how an option is supposed to be formatted, the latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs).
+
 
 ## Pleroma.Upload
 * `uploader`: Select which `Pleroma.Uploaders` to use
@@ -11,7 +15,8 @@ If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherw
 * `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
 
-Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
+!!! warning
+    `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 ## Pleroma.Uploaders.Local
 * `uploads`: Which directory to store the user-uploads in, relative to pleroma’s working directory
@@ -111,12 +116,6 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML)
 * `mrf_transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `mrf_transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
-* `scope_copy`: Copy the scope (private/unlisted/public) in replies to posts by default.
-* `subject_line_behavior`: Allows changing the default behaviour of subject lines in replies. Valid values:
-  * "email": Copy and preprend re:, as in email.
-  * "masto": Copy verbatim, as in Mastodon.
-  * "noop": Don't copy the subject.
-* `always_show_subject_input`: When set to false, auto-hide the subject field when it's empty.
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
 * `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
@@ -132,12 +131,16 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `user_name_length`: A user name maximum length (default: `100`)
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
-* `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
 * `max_account_fields`: The maximum number of custom fields in the user profile (default: `10`)
 * `max_remote_account_fields`: The maximum number of custom fields in the remote user profile (default: `20`)
 * `account_field_name_length`: An account field name maximum length (default: `512`)
 * `account_field_value_length`: An account field value maximum length (default: `2048`)
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
+
+!!! danger
+    This is a Work In Progress, not usable just yet
+
+* `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
 
 
 
@@ -208,14 +211,15 @@ These settings **need to be complete**, they will override the defaults.
 NOTE: for versions < 1.0, you need to set [`:fe`](#fe) to false, as shown a few lines below.
 
 ## :fe
-__THIS IS DEPRECATED__
+!!! warning
+    __THIS IS DEPRECATED__
 
-If you are using this method, please change it to the [`frontend_configurations`](#frontend_configurations) method.
-Please **set this option to false** in your config like this:
+    If you are using this method, please change it to the [`frontend_configurations`](#frontend_configurations) method.
+    Please **set this option to false** in your config like this:
 
-```elixir
-config :pleroma, :fe, false
-```
+    ```elixir
+    config :pleroma, :fe, false
+    ```
 
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
 
@@ -261,7 +265,7 @@ All criteria are configured as a map of regular expressions to lists of policy m
 
 Example:
 
-```
+```elixir
 config :pleroma, :mrf_subchain,
   match_actor: %{
     ~r/https:\/\/example.com/s => [Pleroma.Web.ActivityPub.MRF.DropPolicy]
@@ -301,7 +305,10 @@ config :pleroma, :mrf_subchain,
 * `dstport`: Port advertised in urls (optional, defaults to `port`)
 
 ## Pleroma.Web.Endpoint
-`Phoenix` endpoint configuration, all configuration options can be viewed [here](https://hexdocs.pm/phoenix/Phoenix.Endpoint.html#module-dynamic-configuration), only common options are listed here
+
+!!! note
+    `Phoenix` endpoint configuration, all configuration options can be viewed [here](https://hexdocs.pm/phoenix/Phoenix.Endpoint.html#module-dynamic-configuration), only common options are listed here.
+
 * `http` - a list containing http protocol configuration, all configuration options can be viewed [here](https://hexdocs.pm/plug_cowboy/Plug.Cowboy.html#module-options), only common options are listed here. For deployment using docker, you need to set this to `[ip: {0,0,0,0}, port: 4000]` to make pleroma accessible from other containers (such as your nginx server).
   - `ip` - a tuple consisting of 4 integers
   - `port`
@@ -314,7 +321,8 @@ config :pleroma, :mrf_subchain,
 
 
 
-**Important note**: if you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
+!!! warning
+    If you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
 
 Example:
 ```elixir
@@ -440,11 +448,6 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
 
 `config :pleroma_job_queue, :queues` is replaced by `config :pleroma, Oban, :queues` and uses the same format (keys are queues' names, values are max concurrent jobs numbers).
 
-### Note on running with PostgreSQL in silent mode
-
-If you are running PostgreSQL in [`silent_mode`](https://postgresqlco.nf/en/doc/param/silent_mode?version=9.1), it's advised to set [`log_destination`](https://postgresqlco.nf/en/doc/param/log_destination?version=9.1) to `syslog`, 
-otherwise `postmaster.log` file may grow because of "you don't own a lock of type ShareLock" warnings (see https://github.com/sorentwo/oban/issues/52). 
-
 ## :workers
 
 Includes custom worker options not interpretable directly by `Oban`.
@@ -552,7 +555,7 @@ The above example defines a single job which invokes `Pleroma.Web.Websub.refresh
 
 ## Pleroma.ActivityExpiration
 
-# `enabled`: whether expired activities will be sent to the job queue to be deleted
+* `enabled`: whether expired activities will be sent to the job queue to be deleted
 
 ## Pleroma.Web.Auth.Authenticator
 
@@ -628,13 +631,14 @@ Email notifications settings.
 OAuth consumer mode allows sign in / sign up via external OAuth providers (e.g. Twitter, Facebook, Google, Microsoft, etc.).
 Implementation is based on Ueberauth; see the list of [available strategies](https://github.com/ueberauth/ueberauth/wiki/List-of-Strategies).
 
-Note: each strategy is shipped as a separate dependency; in order to get the strategies, run `OAUTH_CONSUMER_STRATEGIES="..." mix deps.get`,
-e.g. `OAUTH_CONSUMER_STRATEGIES="twitter facebook google microsoft" mix deps.get`.
-The server should also be started with `OAUTH_CONSUMER_STRATEGIES="..." mix phx.server` in case you enable any strategies.
+!!! note
+    Each strategy is shipped as a separate dependency; in order to get the strategies, run `OAUTH_CONSUMER_STRATEGIES="..." mix deps.get`, e.g. `OAUTH_CONSUMER_STRATEGIES="twitter facebook google microsoft" mix deps.get`.  The server should also be started with `OAUTH_CONSUMER_STRATEGIES="..." mix phx.server` in case you enable any strategies.
 
-Note: each strategy requires separate setup (on external provider side and Pleroma side). Below are the guidelines on setting up most popular strategies.
+!!! note
+    Each strategy requires separate setup (on external provider side and Pleroma side). Below are the guidelines on setting up most popular strategies.
 
-Note: make sure that `"SameSite=Lax"` is set in `extra_cookie_attrs` when you have this feature enabled. OAuth consumer mode will not work with `"SameSite=Strict"`
+!!! note
+    Make sure that `"SameSite=Lax"` is set in `extra_cookie_attrs` when you have this feature enabled. OAuth consumer mode will not work with `"SameSite=Strict"`
 
 * For Twitter, [register an app](https://developer.twitter.com/en/apps), configure callback URL to https://<your_host>/oauth/twitter/callback
 
@@ -739,8 +743,6 @@ A keyword list of rate limiters where a key is a limiter name and value is the l
 
 It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
 
-See [`Pleroma.Plugs.RateLimiter`](Pleroma.Plugs.RateLimiter.html) documentation for examples.
-
 Supported rate limiters:
 
 * `:search` for the search requests (account & status search etc.)
@@ -761,7 +763,8 @@ Available caches:
 
 ## Pleroma.Plugs.RemoteIp
 
-**If your instance is not behind at least one reverse proxy, you should not enable this plug.**
+!!! warning
+    If your instance is not behind at least one reverse proxy, you should not enable this plug.
 
 `Pleroma.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
 

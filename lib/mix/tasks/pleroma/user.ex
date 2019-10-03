@@ -10,86 +10,8 @@ defmodule Mix.Tasks.Pleroma.User do
   alias Pleroma.Web.OAuth
 
   @shortdoc "Manages Pleroma users"
-  @moduledoc """
-  Manages Pleroma users.
+  @moduledoc File.read!("docs/administration/CLI_tasks/user.md")
 
-  ## Create a new user.
-
-      mix pleroma.user new NICKNAME EMAIL [OPTION...]
-
-  Options:
-  - `--name NAME` - the user's name (i.e., "Lain Iwakura")
-  - `--bio BIO` - the user's bio
-  - `--password PASSWORD` - the user's password
-  - `--moderator`/`--no-moderator` - whether the user is a moderator
-  - `--admin`/`--no-admin` - whether the user is an admin
-  - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions
-
-  ## Generate an invite link.
-
-      mix pleroma.user invite [OPTION...]
-
-    Options:
-    - `--expires-at DATE` - last day on which token is active (e.g. "2019-04-05")
-    - `--max-use NUMBER` - maximum numbers of token uses
-
-  ## List generated invites
-
-      mix pleroma.user invites
-
-  ## Revoke invite
-
-      mix pleroma.user revoke_invite TOKEN OR TOKEN_ID
-
-  ## Delete the user's account.
-
-      mix pleroma.user rm NICKNAME
-
-  ## Delete the user's activities.
-
-      mix pleroma.user delete_activities NICKNAME
-
-  ## Sign user out from all applications (delete user's OAuth tokens and authorizations).
-
-      mix pleroma.user sign_out NICKNAME
-
-  ## Deactivate or activate the user's account.
-
-      mix pleroma.user toggle_activated NICKNAME
-
-  ## Unsubscribe local users from user's account and deactivate it
-
-      mix pleroma.user unsubscribe NICKNAME
-
-  ## Unsubscribe local users from an entire instance and deactivate all accounts
-
-      mix pleroma.user unsubscribe_all_from_instance INSTANCE
-
-  ## Create a password reset link.
-
-      mix pleroma.user reset_password NICKNAME
-
-  ## Set the value of the given user's settings.
-
-      mix pleroma.user set NICKNAME [OPTION...]
-
-  Options:
-  - `--locked`/`--no-locked` - whether the user's account is locked
-  - `--moderator`/`--no-moderator` - whether the user is a moderator
-  - `--admin`/`--no-admin` - whether the user is an admin
-
-  ## Add tags to a user.
-
-      mix pleroma.user tag NICKNAME TAGS
-
-  ## Delete tags from a user.
-
-      mix pleroma.user untag NICKNAME TAGS
-
-  ## Toggle confirmation of the user's account.
-
-      mix pleroma.user toggle_confirmed NICKNAME
-  """
   def run(["new", nickname, email | rest]) do
     {options, [], []} =
       OptionParser.parse(

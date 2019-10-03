@@ -124,7 +124,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 ```
 
 ## `/api/pleroma/admin/`…
-See [Admin-API](Admin-API.md)
+See [Admin-API](admin_api.md)
 
 ## `/api/v1/pleroma/notifications/read`
 ### Mark notifications as read
