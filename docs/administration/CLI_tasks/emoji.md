@@ -2,31 +2,28 @@
 
 Every command should be ran with a prefix, in case of OTP releases it is `./bin/pleroma_ctl emoji` and in case of source installs it's `mix pleroma.emoji`.
 
-## `ls-packs`
+## Lists the emoji packs and metadata specified in the manifest.
 
 ```sh
-$PREFIX ls-packs [OPTION...]
+$PREFIX ls-packs [<options>]
 ```
-
-Lists the emoji packs and metadata specified in the manifest.
 
 ### Options
 - `-m, --manifest PATH/URL` - path to a custom manifest, it can either be an URL starting with `http`, in that case the manifest will be fetched from that address, or a local path
 
-## `get-packs`
+## Fetch, verify and install the specified packs from the manifest into `STATIC-DIR/emoji/PACK-NAME`
 ```sh
-$PREFIX get-packs [OPTION...] PACKS
+$PREFIX get-packs [<options>] <packs>
 ```
-Fetches, verifies and installs the specified PACKS from the manifest into the `STATIC-DIR/emoji/PACK-NAME`
 
 ### Options
 - `-m, --manifest PATH/URL` - same as [`ls-packs`](#ls-packs)
 
-## `gen-pack`
+## Create a new manifest entry and a file list from the specified remote pack file
 ```sh
 $PREFIX gen-pack PACK-URL
 ```
-Creates a new manifest entry and a file list from the specified remote pack file. Currently, only .zip archives are recognized as remote pack files and packs are therefore assumed to be zip archives. This command is intended to run interactively and will first ask you some basic questions about the pack, then download the remote file and generate an SHA256 checksum for it, then generate an emoji file list for you. 
+Currently, only .zip archives are recognized as remote pack files and packs are therefore assumed to be zip archives. This command is intended to run interactively and will first ask you some basic questions about the pack, then download the remote file and generate an SHA256 checksum for it, then generate an emoji file list for you. 
 
   The manifest entry will either be written to a newly created `index.json` file or appended to the existing one, *replacing* the old pack with the same name if it was in the file previously.
 
