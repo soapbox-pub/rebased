@@ -764,7 +764,8 @@ Available caches:
 
 ## Pleroma.Plugs.RemoteIp
 
-**If your instance is not behind at least one reverse proxy, you should not enable this plug.**
+!!! warning
+    If your instance is not behind at least one reverse proxy, you should not enable this plug.
 
 `Pleroma.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
 
