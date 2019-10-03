@@ -359,6 +359,25 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["content"] == "👌"
     end
 
+    test "it works for incoming emoji reaction undos" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+      {:ok, reaction_activity, _object} = CommonAPI.react_with_emoji(activity.id, user, "👌")
+
+      data =
+        File.read!("test/fixtures/mastodon-undo-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", reaction_activity.data["id"])
+        |> Map.put("actor", user.ap_id)
+
+      {:ok, activity} = Transmogrifier.handle_incoming(data)
+
+      assert activity.actor == user.ap_id
+      assert activity.data["id"] == data["id"]
+      assert activity.data["type"] == "Undo"
+    end
+
     test "it returns an error for incoming unlikes wihout a like activity" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
@@ -1116,7 +1135,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, announce_activity, _} = CommonAPI.repeat(activity.id, user)
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(announce_activity.data)
-      object = modified["object"]
 
       assert modified["object"]["content"] == "hey"
       assert modified["object"]["actor"] == modified["object"]["attributedTo"]

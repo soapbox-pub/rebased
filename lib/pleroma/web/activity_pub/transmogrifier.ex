@@ -724,6 +724,28 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{
           "type" => "Undo",
+          "object" => %{"type" => "EmojiReaction", "id" => reaction_activity_id},
+          "actor" => _actor,
+          "id" => id
+        } = data,
+        _options
+      ) do
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, activity, _} <-
+           ActivityPub.unreact_with_emoji(actor, reaction_activity_id,
+             activity_id: id,
+             local: false
+           ) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "Undo",
           "object" => %{"type" => "Block", "object" => blocked},
           "actor" => blocker,
           "id" => id
