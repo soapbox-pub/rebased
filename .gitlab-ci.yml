@@ -70,7 +70,6 @@ docs-deploy:
   stage: deploy
   image: alpine:latest
   only:
-  - mkdocs-migration-prep@pleroma/pleroma
   - master@pleroma/pleroma
   - develop@pleroma/pleroma
   before_script:
