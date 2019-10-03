@@ -9,7 +9,7 @@ $PREFIX gen [<options>]
 
 If any of the options are left unspecified, you will be prompted interactively.
 
-## Options
+### Options
 - `-f`, `--force` - overwrite any output files
 - `-o <path>`, `--output <path>` - the output file for the generated configuration
 - `--output-psql <path>` - the output file for the generated PostgreSQL setup

@@ -6,7 +6,7 @@ Every command should be ran with a prefix, in case of OTP releases it is `./bin/
 ```sh
 $PREFIX migrate_local TARGET_UPLOADER [OPTIONS...]
 ```
-## Options
+### Options
 - `--delete` - delete local uploads after migrating them to the target uploader
 
 A list of available uploaders can be seen in [Configuration Cheat Sheet](../../configuration/cheatsheet.md#pleromaupload)
