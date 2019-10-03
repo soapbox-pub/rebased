@@ -212,14 +212,15 @@ These settings **need to be complete**, they will override the defaults.
 NOTE: for versions < 1.0, you need to set [`:fe`](#fe) to false, as shown a few lines below.
 
 ## :fe
-__THIS IS DEPRECATED__
+!!! warning
+    __THIS IS DEPRECATED__
 
-If you are using this method, please change it to the [`frontend_configurations`](#frontend_configurations) method.
-Please **set this option to false** in your config like this:
+    If you are using this method, please change it to the [`frontend_configurations`](#frontend_configurations) method.
+    Please **set this option to false** in your config like this:
 
-```elixir
-config :pleroma, :fe, false
-```
+    ```elixir
+    config :pleroma, :fe, false
+    ```
 
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
 
