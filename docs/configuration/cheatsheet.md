@@ -266,7 +266,7 @@ All criteria are configured as a map of regular expressions to lists of policy m
 
 Example:
 
-```
+```elixir
 config :pleroma, :mrf_subchain,
   match_actor: %{
     ~r/https:\/\/example.com/s => [Pleroma.Web.ActivityPub.MRF.DropPolicy]
