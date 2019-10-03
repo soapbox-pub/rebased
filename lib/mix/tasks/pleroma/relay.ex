@@ -9,6 +9,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
   alias Pleroma.Web.ActivityPub.Relay
 
   @shortdoc "Manages remote relays"
+  @moduledoc File.read!("docs/administration/CLI_tasks/relay.md")
 
   def run(["follow", target]) do
     start_pleroma()

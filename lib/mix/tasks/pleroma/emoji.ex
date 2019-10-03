@@ -6,6 +6,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   use Mix.Task
 
   @shortdoc "Manages emoji packs"
+  @moduledoc File.read!("docs/administration/CLI_tasks/emoji.md")
 
   def run(["ls-packs" | args]) do
     Application.ensure_all_started(:hackney)

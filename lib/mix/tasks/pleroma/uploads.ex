@@ -12,6 +12,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
   @log_every 50
 
   @shortdoc "Migrates uploads from local to remote storage"
+  @moduledoc File.read!("docs/administration/CLI_tasks/uploads.md")
 
   def run(["migrate_local", target_uploader | args]) do
     delete? = Enum.member?(args, "--delete")

@@ -13,6 +13,7 @@ defmodule Mix.Tasks.Pleroma.Database do
   use Mix.Task
 
   @shortdoc "A collection of database related tasks"
+  @moduledoc File.read!("docs/administration/CLI_tasks/database.md")
 
   def run(["remove_embedded_objects" | args]) do
     {options, [], []} =
