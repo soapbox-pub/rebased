@@ -13,34 +13,7 @@ defmodule Mix.Tasks.Pleroma.Database do
   use Mix.Task
 
   @shortdoc "A collection of database related tasks"
-  @moduledoc """
-   A collection of database related tasks
 
-   ## Replace embedded objects with their references
-
-   Replaces embedded objects with references to them in the `objects` table. Only needs to be ran once. The reason why this is not a migration is because it could significantly increase the database size after being ran, however after this `VACUUM FULL` will be able to reclaim about 20% (really depends on what is in the database, your mileage may vary) of the db size before the migration.
-
-       mix pleroma.database remove_embedded_objects
-
-    Options:
-    - `--vacuum` - run `VACUUM FULL` after the embedded objects are replaced with their references
-
-  ## Prune old objects from the database
-
-      mix pleroma.database prune_objects
-
-  ## Create a conversation for all existing DMs. Can be safely re-run.
-
-      mix pleroma.database bump_all_conversations
-
-  ## Remove duplicated items from following and update followers count for all users
-
-      mix pleroma.database update_users_following_followers_counts
-
-  ## Fix the pre-existing "likes" collections for all objects
-
-      mix pleroma.database fix_likes_collections
-  """
   def run(["remove_embedded_objects" | args]) do
     {options, [], []} =
       OptionParser.parse(
