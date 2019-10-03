@@ -4,7 +4,7 @@ Every command should be ran with a prefix, in case of OTP releases it is `./bin/
 
 ## Migrate uploads from local to remote storage
 ```sh
-$PREFIX migrate_local TARGET_UPLOADER [OPTIONS...]
+$PREFIX migrate_local <target_uploader> [<options>]
 ```
 ### Options
 - `--delete` - delete local uploads after migrating them to the target uploader
