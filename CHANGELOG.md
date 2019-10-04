@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
 - Mastodon API: Blocks are now treated consistently between the Streaming API and the Timeline APIs
 - ActivityPub: Correct addressing of Undo.
+- Mastodon API: Ensure the `account` field is not empty when rendering Notification entities.
 
 ### Removed
 - ActivityPub: The `/objects/:uuid/likes` endpoint.
