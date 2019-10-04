@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.0.91] - 2019-??-??
 ### Fixed
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
+- Mastodon API: Blocks are now treated consistently between the Streaming API and the Timeline APIs
 
 ## [1.0.90] - 2019-09-30
 ### Security
