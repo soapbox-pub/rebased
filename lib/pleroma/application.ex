@@ -56,9 +56,7 @@ defmodule Pleroma.Application do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
-    result = Supervisor.start_link(children, opts)
-    :ok = after_supervisor_start()
-    result
+    Supervisor.start_link(children, opts)
   end
 
   defp setup_instrumenters do
