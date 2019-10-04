@@ -313,6 +313,10 @@ config :pleroma, :activitypub,
   follow_handshake_timeout: 500,
   sign_object_fetches: true
 
+config :pleroma, :streamer,
+  workers: 3,
+  overflow_workers: 2
+
 config :pleroma, :user, deny_follow_blocked: true
 
 config :pleroma, :mrf_normalize_markup, scrub_policy: Pleroma.HTML.Scrubber.Default
