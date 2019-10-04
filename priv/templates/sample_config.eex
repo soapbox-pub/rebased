@@ -20,8 +20,7 @@ config :pleroma, :instance,
   email: "<%= email %>",
   notify_email: "<%= notify_email %>",
   limit: 5000,
-  registrations_open: true,
-  dynamic_configuration: <%= db_configurable? %>
+  registrations_open: true
 
 config :pleroma, :media_proxy,
   enabled: false,

@@ -3,22 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Config do
+  @doc false
   use Mix.Task
   import Mix.Pleroma
   alias Pleroma.Repo
   alias Pleroma.Web.AdminAPI.Config
-  @shortdoc "Manages the location of the config"
-  @moduledoc """
-  Manages the location of the config.
-
-  ## Transfers config from file to DB.
-
-      mix pleroma.config migrate_to_db
-
-  ## Transfers config from DB to file `config/env.exported_from_db.secret.exs`
-
-      mix pleroma.config migrate_from_db ENV
-  """
 
   def run(["migrate_to_db"]) do
     start_pleroma()

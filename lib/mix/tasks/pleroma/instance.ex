@@ -31,7 +31,6 @@ defmodule Mix.Tasks.Pleroma.Instance do
   - `--dbpass DBPASS` - the password to use for the database connection
   - `--rum Y/N` - Whether to enable RUM indexes
   - `--indexable Y/N` - Allow/disallow indexing site by search engines
-  - `--db-configurable Y/N` - Allow/disallow configuring instance from admin part
   - `--uploads-dir` - the directory uploads go in when using a local uploader
   - `--static-dir` - the directory custom public files should be read from (custom emojis, frontend bundle overrides, robots.txt, etc.)
   - `--listen-ip` - the ip the app should listen to, defaults to 127.0.0.1
@@ -56,7 +55,6 @@ defmodule Mix.Tasks.Pleroma.Instance do
           dbpass: :string,
           rum: :string,
           indexable: :string,
-          db_configurable: :string,
           uploads_dir: :string,
           static_dir: :string,
           listen_ip: :string,
@@ -111,14 +109,6 @@ defmodule Mix.Tasks.Pleroma.Instance do
           :indexable,
           "Do you want search engines to index your site? (y/n)",
           "y"
-        ) === "y"
-
-      db_configurable? =
-        get_option(
-          options,
-          :db_configurable,
-          "Do you want to store the configuration in the database (allows controlling it from admin-fe)? (y/n)",
-          "n"
         ) === "y"
 
       dbhost = get_option(options, :dbhost, "What is the hostname of your database?", "localhost")
@@ -205,7 +195,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           signing_salt: signing_salt,
           web_push_public_key: Base.url_encode64(web_push_public_key, padding: false),
           web_push_private_key: Base.url_encode64(web_push_private_key, padding: false),
-          db_configurable?: db_configurable?,
+          db_configurable?: false,
           static_dir: static_dir,
           uploads_dir: uploads_dir,
           rum_enabled: rum_enabled,
