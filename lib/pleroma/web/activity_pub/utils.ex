@@ -472,14 +472,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def make_unannounce_data(
         %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context}} = activity,
+        %Activity{data: %{"context" => context, "object" => object}} = activity,
         activity_id
       ) do
+    object = Object.normalize(object)
+
     %{
       "type" => "Undo",
       "actor" => ap_id,
       "object" => activity.data,
-      "to" => [user.follower_address, activity.data["actor"]],
+      "to" => [user.follower_address, object.data["actor"]],
       "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
@@ -488,14 +490,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def make_unlike_data(
         %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context}} = activity,
+        %Activity{data: %{"context" => context, "object" => object}} = activity,
         activity_id
       ) do
+    object = Object.normalize(object)
+
     %{
       "type" => "Undo",
       "actor" => ap_id,
       "object" => activity.data,
-      "to" => [user.follower_address, activity.data["actor"]],
+      "to" => [user.follower_address, object.data["actor"]],
       "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
