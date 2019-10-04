@@ -42,6 +42,7 @@ defmodule Pleroma.Application do
         hackney_pool_children() ++
         [
           Pleroma.Stats,
+          Pleroma.JobQueueMonitor,
           {Oban, Pleroma.Config.get(Oban)}
         ] ++
         task_children(@env) ++

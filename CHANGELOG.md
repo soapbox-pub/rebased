@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 ### Added
 - Refreshing poll results for remote polls
+- Job queue stats to the healthcheck page
 - Admin API: Add ability to require password reset
 - Mastodon API: Account entities now include `follow_requests_count` (planned Mastodon 3.x addition)
 - Pleroma API: `GET /api/v1/pleroma/accounts/:id/scrobbles` to get a list of recently scrobbled items
