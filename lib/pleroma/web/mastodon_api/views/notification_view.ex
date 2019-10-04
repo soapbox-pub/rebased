@@ -25,40 +25,44 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
     parent_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
     mastodon_type = Activity.mastodon_notification_type(activity)
 
-    response = %{
-      id: to_string(notification.id),
-      type: mastodon_type,
-      created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
-      account: AccountView.render("show.json", %{user: actor, for: user}),
-      pleroma: %{
-        is_seen: notification.seen
+    with %{id: _} = account <- AccountView.render("show.json", %{user: actor, for: user}) do
+      response = %{
+        id: to_string(notification.id),
+        type: mastodon_type,
+        created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
+        account: account,
+        pleroma: %{
+          is_seen: notification.seen
+        }
       }
-    }
 
-    case mastodon_type do
-      "mention" ->
-        response
-        |> Map.merge(%{
-          status: StatusView.render("show.json", %{activity: activity, for: user})
-        })
+      case mastodon_type do
+        "mention" ->
+          response
+          |> Map.merge(%{
+            status: StatusView.render("show.json", %{activity: activity, for: user})
+          })
 
-      "favourite" ->
-        response
-        |> Map.merge(%{
-          status: StatusView.render("show.json", %{activity: parent_activity, for: user})
-        })
+        "favourite" ->
+          response
+          |> Map.merge(%{
+            status: StatusView.render("show.json", %{activity: parent_activity, for: user})
+          })
 
-      "reblog" ->
-        response
-        |> Map.merge(%{
-          status: StatusView.render("show.json", %{activity: parent_activity, for: user})
-        })
+        "reblog" ->
+          response
+          |> Map.merge(%{
+            status: StatusView.render("show.json", %{activity: parent_activity, for: user})
+          })
 
-      "follow" ->
-        response
+        "follow" ->
+          response
 
-      _ ->
-        nil
+        _ ->
+          nil
+      end
+    else
+      _ -> nil
     end
   end
 end

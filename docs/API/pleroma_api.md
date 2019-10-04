@@ -124,7 +124,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 ```
 
 ## `/api/pleroma/admin/`…
-See [Admin-API](Admin-API.md)
+See [Admin-API](admin_api.md)
 
 ## `/api/v1/pleroma/notifications/read`
 ### Mark notifications as read
@@ -317,7 +317,8 @@ See [Admin-API](Admin-API.md)
   "active": 0, # active processes
   "idle": 0, # idle processes
   "memory_used": 0.00, # Memory used
-  "healthy": true # Instance state
+  "healthy": true, # Instance state
+  "job_queue_stats": {} # Job queue stats
 }
 ```
 
@@ -391,7 +392,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 ### Update a file in a custom emoji pack
 * Method `POST`
 * Authentication: required
-* Params: 
+* Params:
     * if the `action` is `add`, adds an emoji named `shortcode` to the pack `pack_name`,
       that means that the emoji file needs to be uploaded with the request
       (thus requiring it to be a multipart request) and be named `file`.
@@ -408,7 +409,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 ### Updates (replaces) pack metadata
 * Method `POST`
 * Authentication: required
-* Params: 
+* Params:
   * `new_data`: new metadata to replace the old one
 * Response: JSON, updated "metadata" section of the pack and 200 status or 400 if there was a
   problem with the new metadata (the error is specified in the "error" part of the response JSON)
@@ -417,7 +418,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 ### Requests the instance to download the pack from another instance
 * Method `POST`
 * Authentication: required
-* Params: 
+* Params:
   * `instance_address`: the address of the instance to download from
   * `pack_name`: the pack to download from that instance
 * Response: JSON, "ok" and 200 status if the pack was downloaded, or 500 if there were

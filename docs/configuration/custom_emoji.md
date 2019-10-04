@@ -4,6 +4,7 @@ Before you add your own custom emoji, check if they are available in an existing
 See `Mix.Tasks.Pleroma.Emoji` for information about emoji packs.
 
 To add custom emoji:
+
 * Create the `STATIC-DIR/emoji/` directory if it doesn't exist
   (`STATIC-DIR` is configurable, `instance/static/` by default)
 * Create a directory with whatever name you want (custom is a good name to show the purpose of it).
