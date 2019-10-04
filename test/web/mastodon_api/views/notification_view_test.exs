@@ -100,5 +100,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       NotificationView.render("index.json", %{notifications: [notification], for: followed})
 
     assert [expected] == result
+
+    User.perform(:delete, follower)
+    notification = Notification |> Repo.one() |> Repo.preload(:activity)
+
+    assert [] ==
+             NotificationView.render("index.json", %{notifications: [notification], for: followed})
   end
 end
