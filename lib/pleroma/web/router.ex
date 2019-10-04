@@ -541,7 +541,6 @@ defmodule Pleroma.Web.Router do
     pipe_through(:ostatus)
 
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
-    get("/objects/:uuid/likes", ActivityPubController, :object_likes)
   end
 
   pipeline :activitypub_client do

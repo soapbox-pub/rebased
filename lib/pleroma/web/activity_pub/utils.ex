@@ -263,16 +263,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.one()
   end
 
-  @doc """
-  Returns like activities targeting an object
-  """
-  def get_object_likes(%{data: %{"id" => id}}) do
-    id
-    |> Activity.Queries.by_object_id()
-    |> Activity.Queries.by_type("Like")
-    |> Repo.all()
-  end
-
   @spec make_like_data(User.t(), map(), String.t()) :: map()
   def make_like_data(
         %User{ap_id: ap_id} = actor,

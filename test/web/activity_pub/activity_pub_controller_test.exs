@@ -220,69 +220,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
-  describe "/object/:uuid/likes" do
-    setup do
-      like = insert(:like_activity)
-      like_object_ap_id = Object.normalize(like).data["id"]
-
-      uuid =
-        like_object_ap_id
-        |> String.split("/")
-        |> List.last()
-
-      [id: like.data["id"], uuid: uuid]
-    end
-
-    test "it returns the like activities in a collection", %{conn: conn, id: id, uuid: uuid} do
-      result =
-        conn
-        |> put_req_header("accept", "application/activity+json")
-        |> get("/objects/#{uuid}/likes")
-        |> json_response(200)
-
-      assert List.first(result["first"]["orderedItems"])["id"] == id
-      assert result["type"] == "OrderedCollection"
-      assert result["totalItems"] == 1
-      refute result["first"]["next"]
-    end
-
-    test "it does not crash when page number is exceeded total pages", %{conn: conn, uuid: uuid} do
-      result =
-        conn
-        |> put_req_header("accept", "application/activity+json")
-        |> get("/objects/#{uuid}/likes?page=2")
-        |> json_response(200)
-
-      assert result["type"] == "OrderedCollectionPage"
-      assert result["totalItems"] == 1
-      refute result["next"]
-      assert Enum.empty?(result["orderedItems"])
-    end
-
-    test "it contains the next key when likes count is more than 10", %{conn: conn} do
-      note = insert(:note_activity)
-      insert_list(11, :like_activity, note_activity: note)
-
-      uuid =
-        note
-        |> Object.normalize()
-        |> Map.get(:data)
-        |> Map.get("id")
-        |> String.split("/")
-        |> List.last()
-
-      result =
-        conn
-        |> put_req_header("accept", "application/activity+json")
-        |> get("/objects/#{uuid}/likes?page=1")
-        |> json_response(200)
-
-      assert result["totalItems"] == 11
-      assert length(result["orderedItems"]) == 10
-      assert result["next"]
-    end
-  end
-
   describe "/activities/:uuid" do
     test "it returns a json representation of the activity", %{conn: conn} do
       activity = insert(:note_activity)
