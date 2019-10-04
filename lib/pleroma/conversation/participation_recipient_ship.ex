@@ -12,7 +12,7 @@ defmodule Pleroma.Conversation.Participation.RecipientShip do
   import Ecto.Changeset
 
   schema "conversation_participation_recipient_ships" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:participation, Participation)
   end
 
