@@ -5,6 +5,7 @@
 defmodule Pleroma.Integration.MastodonWebsocketTest do
   use Pleroma.DataCase
 
+  import ExUnit.CaptureLog
   import Pleroma.Factory
 
   alias Pleroma.Integration.WebsocketClient
