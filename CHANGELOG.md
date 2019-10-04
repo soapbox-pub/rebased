@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Blocks are now treated consistently between the Streaming API and the Timeline APIs
 - ActivityPub: Correct addressing of Undo.
 
+### Removed
+- ActivityPub: The `/objects/:uuid/likes` endpoint.
+
 ## [1.0.90] - 2019-09-30
 ### Security
 - Mastodon API: respect post privacy in `/api/v1/statuses/:id/{favourited,reblogged}_by`
