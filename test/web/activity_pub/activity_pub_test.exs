@@ -760,10 +760,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, like_activity, object} = ActivityPub.like(user, object)
       assert object.data["like_count"] == 1
 
-      {:ok, _, _, object} = ActivityPub.unlike(user, object)
+      {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
       assert object.data["like_count"] == 0
 
       assert Activity.get_by_id(like_activity.id) == nil
+      assert note_activity.actor in unlike_activity.recipients
     end
   end
 
@@ -806,7 +807,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert unannounce_activity.data["to"] == [
                User.ap_followers(user),
-               announce_activity.data["actor"]
+               object.data["actor"]
              ]
 
       assert unannounce_activity.data["type"] == "Undo"
