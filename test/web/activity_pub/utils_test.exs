@@ -94,11 +94,13 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user = insert(:user)
       like_activity = insert(:like_activity, data_attrs: %{"context" => "test context"})
 
+      object = Object.normalize(like_activity.data["object"])
+
       assert Utils.make_unlike_data(user, like_activity, nil) == %{
                "type" => "Undo",
                "actor" => user.ap_id,
                "object" => like_activity.data,
-               "to" => [user.follower_address, like_activity.data["actor"]],
+               "to" => [user.follower_address, object.data["actor"]],
                "cc" => [Pleroma.Constants.as_public()],
                "context" => like_activity.data["context"]
              }
@@ -107,7 +109,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
                "type" => "Undo",
                "actor" => user.ap_id,
                "object" => like_activity.data,
-               "to" => [user.follower_address, like_activity.data["actor"]],
+               "to" => [user.follower_address, object.data["actor"]],
                "cc" => [Pleroma.Constants.as_public()],
                "context" => like_activity.data["context"],
                "id" => "9mJEZK0tky1w2xD2vY"
