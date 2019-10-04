@@ -36,40 +36,4 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
 
     Map.merge(base, additional)
   end
-
-  def render("likes.json", ap_id, likes, page) do
-    collection(likes, "#{ap_id}/likes", page)
-    |> Map.merge(Pleroma.Web.ActivityPub.Utils.make_json_ld_header())
-  end
-
-  def render("likes.json", ap_id, likes) do
-    %{
-      "id" => "#{ap_id}/likes",
-      "type" => "OrderedCollection",
-      "totalItems" => length(likes),
-      "first" => collection(likes, "#{ap_id}/likes", 1)
-    }
-    |> Map.merge(Pleroma.Web.ActivityPub.Utils.make_json_ld_header())
-  end
-
-  def collection(collection, iri, page) do
-    offset = (page - 1) * 10
-    items = Enum.slice(collection, offset, 10)
-    items = Enum.map(items, fn object -> Transmogrifier.prepare_object(object.data) end)
-    total = length(collection)
-
-    map = %{
-      "id" => "#{iri}?page=#{page}",
-      "type" => "OrderedCollectionPage",
-      "partOf" => iri,
-      "totalItems" => total,
-      "orderedItems" => items
-    }
-
-    if offset + length(items) < total do
-      Map.put(map, "next", "#{iri}?page=#{page + 1}")
-    else
-      map
-    end
-  end
 end
