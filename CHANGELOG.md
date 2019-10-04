@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2019-??-??
+Fixed:
+- Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
+
 ## [1.0.90] - 2019-09-30
 ### Security
 - OStatus: eliminate the possibility of a protocol downgrade attack.

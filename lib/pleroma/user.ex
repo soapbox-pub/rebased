@@ -576,7 +576,7 @@ defmodule Pleroma.User do
       is_integer(nickname_or_id) or Pleroma.FlakeId.is_flake_id?(nickname_or_id) ->
         get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id)
 
-      restrict_to_local == false ->
+      restrict_to_local == false or not String.contains?(nickname_or_id, "@") ->
         get_cached_by_nickname(nickname_or_id)
 
       restrict_to_local == :unauthenticated and match?(%User{}, opts[:for]) ->
