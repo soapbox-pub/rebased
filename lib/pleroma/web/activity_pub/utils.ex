@@ -672,6 +672,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.update()
   end
 
+  def update_report_state(activity_ids, state) when state in @supported_report_states do
+    activities_num = length(activity_ids)
+
+    from(a in Activity, where: a.id in ^activity_ids)
+    |> update(set: [data: fragment("jsonb_set(data, '{state}', ?)", ^state)])
+    |> Repo.update_all([])
+    |> case do
+      {^activities_num, _} -> :ok
+      _ -> {:error, activity_ids}
+    end
+  end
+
   def update_report_state(_, _), do: {:error, "Unsupported state"}
 
   def update_activity_visibility(activity, visibility) when visibility in @valid_visibilities do

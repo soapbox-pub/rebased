@@ -480,17 +480,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def report_update_state(%{assigns: %{user: admin}} = conn, %{"id" => id, "state" => state}) do
-    with {:ok, report} <- CommonAPI.update_report_state(id, state) do
-      ModerationLog.insert_log(%{
-        action: "report_update",
-        actor: admin,
-        subject: report
-      })
+  def reports_update(%{assigns: %{user: admin}} = conn, %{"reports" => reports}) do
+    result =
+      reports
+      |> Enum.map(fn report ->
+        with {:ok, activity} <- CommonAPI.update_report_state(report["id"], report["state"]) do
+          ModerationLog.insert_log(%{
+            action: "report_update",
+            actor: admin,
+            subject: activity
+          })
 
-      conn
-      |> put_view(ReportView)
-      |> render("show.json", Report.extract_report_info(report))
+          activity
+        else
+          {:error, message} -> %{id: report["id"], error: message}
+        end
+      end)
+
+    case Enum.any?(result, &Map.has_key?(&1, :error)) do
+      true -> json_response(conn, :bad_request, result)
+      false -> json_response(conn, :no_content, "")
     end
   end
 

@@ -1224,7 +1224,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "PUT /api/pleroma/admin/reports/:id" do
+  describe "PATCH /api/pleroma/admin/reports" do
     setup %{conn: conn} do
       admin = insert(:user, info: %{is_admin: true})
       [reporter, target_user] = insert_pair(:user)
@@ -1237,16 +1237,32 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           "status_ids" => [activity.id]
         })
 
-      %{conn: assign(conn, :user, admin), id: report_id, admin: admin}
+      {:ok, %{id: second_report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel very offended",
+          "status_ids" => [activity.id]
+        })
+
+      %{
+        conn: assign(conn, :user, admin),
+        id: report_id,
+        admin: admin,
+        second_report_id: second_report_id
+      }
     end
 
     test "mark report as resolved", %{conn: conn, id: id, admin: admin} do
-      response =
-        conn
-        |> put("/api/pleroma/admin/reports/#{id}", %{"state" => "resolved"})
-        |> json_response(:ok)
+      conn
+      |> patch("/api/pleroma/admin/reports", %{
+        "reports" => [
+          %{"state" => "resolved", "id" => id}
+        ]
+      })
+      |> json_response(:no_content)
 
-      assert response["state"] == "resolved"
+      activity = Activity.get_by_id(id)
+      assert activity.data["state"] == "resolved"
 
       log_entry = Repo.one(ModerationLog)
 
@@ -1255,12 +1271,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "closes report", %{conn: conn, id: id, admin: admin} do
-      response =
-        conn
-        |> put("/api/pleroma/admin/reports/#{id}", %{"state" => "closed"})
-        |> json_response(:ok)
+      conn
+      |> patch("/api/pleroma/admin/reports", %{
+        "reports" => [
+          %{"state" => "closed", "id" => id}
+        ]
+      })
+      |> json_response(:no_content)
 
-      assert response["state"] == "closed"
+      activity = Activity.get_by_id(id)
+      assert activity.data["state"] == "closed"
 
       log_entry = Repo.one(ModerationLog)
 
@@ -1271,17 +1291,54 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "returns 400 when state is unknown", %{conn: conn, id: id} do
       conn =
         conn
-        |> put("/api/pleroma/admin/reports/#{id}", %{"state" => "test"})
+        |> patch("/api/pleroma/admin/reports", %{
+          "reports" => [
+            %{"state" => "test", "id" => id}
+          ]
+        })
 
-      assert json_response(conn, :bad_request) == "Unsupported state"
+      assert hd(json_response(conn, :bad_request))["error"] == "Unsupported state"
     end
 
     test "returns 404 when report is not exist", %{conn: conn} do
       conn =
         conn
-        |> put("/api/pleroma/admin/reports/test", %{"state" => "closed"})
+        |> patch("/api/pleroma/admin/reports", %{
+          "reports" => [
+            %{"state" => "closed", "id" => "test"}
+          ]
+        })
 
-      assert json_response(conn, :not_found) == "Not found"
+      assert hd(json_response(conn, :bad_request))["error"] == "not_found"
+    end
+
+    test "updates state of multiple reports", %{
+      conn: conn,
+      id: id,
+      admin: admin,
+      second_report_id: second_report_id
+    } do
+      conn
+      |> patch("/api/pleroma/admin/reports", %{
+        "reports" => [
+          %{"state" => "resolved", "id" => id},
+          %{"state" => "closed", "id" => second_report_id}
+        ]
+      })
+      |> json_response(:no_content)
+
+      activity = Activity.get_by_id(id)
+      second_activity = Activity.get_by_id(second_report_id)
+      assert activity.data["state"] == "resolved"
+      assert second_activity.data["state"] == "closed"
+
+      [first_log_entry, second_log_entry] = Repo.all(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(first_log_entry) ==
+               "@#{admin.nickname} updated report ##{id} with 'resolved' state"
+
+      assert ModerationLog.get_log_entry_message(second_log_entry) ==
+               "@#{admin.nickname} updated report ##{second_report_id} with 'closed' state"
     end
   end
 
