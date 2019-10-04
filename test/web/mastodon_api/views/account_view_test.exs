@@ -418,6 +418,27 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                following_count: 1
              } = AccountView.render("show.json", %{user: user, for: user})
     end
+
+    test "shows unread_conversation_count only to the account owner" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, _activity} =
+        CommonAPI.post(user, %{
+          "status" => "Hey @#{other_user.nickname}.",
+          "visibility" => "direct"
+        })
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert AccountView.render("show.json", %{user: user, for: other_user})[:pleroma][
+               :unread_conversation_count
+             ] == nil
+
+      assert AccountView.render("show.json", %{user: user, for: user})[:pleroma][
+               :unread_conversation_count
+             ] == 1
+    end
   end
 
   describe "follow requests counter" do

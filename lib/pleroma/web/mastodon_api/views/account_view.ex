@@ -167,6 +167,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_chat_token(user, opts[:for], opts)
     |> maybe_put_activation_status(user, opts[:for])
     |> maybe_put_follow_requests_count(user, opts[:for])
+    |> maybe_put_unread_conversation_count(user, opts[:for])
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -247,6 +248,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_activation_status(data, _, _), do: data
+
+  defp maybe_put_unread_conversation_count(data, %User{id: user_id} = user, %User{id: user_id}) do
+    data
+    |> Kernel.put_in(
+      [:pleroma, :unread_conversation_count],
+      user.info.unread_conversation_count
+    )
+  end
+
+  defp maybe_put_unread_conversation_count(data, _, _), do: data
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil
