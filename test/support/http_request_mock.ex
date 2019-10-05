@@ -348,6 +348,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("http://mastodon.example.org/users/relay", _, _, Accept: "application/activity+json") do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/relay@mastdon.example.org.json")
+     }}
+  end
+
   def get("http://mastodon.example.org/users/gargron", _, _, Accept: "application/activity+json") do
     {:error, :nxdomain}
   end

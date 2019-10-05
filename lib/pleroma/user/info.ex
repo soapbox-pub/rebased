@@ -267,7 +267,8 @@ defmodule Pleroma.User.Info do
       :follower_count,
       :fields,
       :following_count,
-      :discoverable
+      :discoverable,
+      :invisible
     ])
     |> validate_fields(true)
   end

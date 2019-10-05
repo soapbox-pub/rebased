@@ -179,6 +179,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert user.follower_address == "http://mastodon.example.org/users/admin/followers"
     end
 
+    test "it returns a user that is invisible" do
+      user_id = "http://mastodon.example.org/users/relay"
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+      assert user.info.invisible
+    end
+
     test "it fetches the appropriate tag-restricted posts" do
       user = insert(:user)
 
