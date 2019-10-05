@@ -6,7 +6,6 @@ defmodule Pleroma.Conversation.ParticipationTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   alias Pleroma.Conversation.Participation
-  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
   test "getting a participation will also preload things" do
@@ -31,8 +30,6 @@ defmodule Pleroma.Conversation.ParticipationTest do
     {:ok, activity} =
       CommonAPI.post(user, %{"status" => "Hey @#{other_user.nickname}.", "visibility" => "direct"})
 
-    user = User.get_cached_by_id(user.id)
-    other_user = User.get_cached_by_id(user.id)
     [participation] = Participation.for_user(user)
     participation = Pleroma.Repo.preload(participation, :recipients)
 
@@ -158,7 +155,6 @@ defmodule Pleroma.Conversation.ParticipationTest do
     [participation] = Participation.for_user_with_last_activity_id(user)
 
     participation = Repo.preload(participation, :recipients)
-    user = User.get_cached_by_id(user.id)
 
     assert participation.recipients |> length() == 1
     assert user in participation.recipients

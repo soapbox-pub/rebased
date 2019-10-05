@@ -56,7 +56,6 @@ Has these additional fields under the `pleroma` object:
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
 - `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
 - `deactivated`: boolean, true when the user is deactivated
-- `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
 
 ### Source
 

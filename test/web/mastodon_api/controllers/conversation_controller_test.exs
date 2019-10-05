@@ -10,22 +10,18 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
   import Pleroma.Factory
 
-  test "returns a list of conversations", %{conn: conn} do
+  test "Conversations", %{conn: conn} do
     user_one = insert(:user)
     user_two = insert(:user)
     user_three = insert(:user)
 
     {:ok, user_two} = User.follow(user_two, user_one)
 
-    assert User.get_cached_by_id(user_two.id).info.unread_conversation_count == 0
-
     {:ok, direct} =
       CommonAPI.post(user_one, %{
         "status" => "Hi @#{user_two.nickname}, @#{user_three.nickname}!",
         "visibility" => "direct"
       })
-
-    assert User.get_cached_by_id(user_two.id).info.unread_conversation_count == 1
 
     {:ok, _follower_only} =
       CommonAPI.post(user_one, %{
@@ -56,100 +52,23 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     assert is_binary(res_id)
     assert unread == true
     assert res_last_status["id"] == direct.id
-    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 1
-  end
 
-  test "updates the last_status on reply", %{conn: conn} do
-    user_one = insert(:user)
-    user_two = insert(:user)
-
-    {:ok, direct} =
-      CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}",
-        "visibility" => "direct"
-      })
-
-    {:ok, direct_reply} =
-      CommonAPI.post(user_two, %{
-        "status" => "reply",
-        "visibility" => "direct",
-        "in_reply_to_status_id" => direct.id
-      })
-
-    [%{"last_status" => res_last_status}] =
-      conn
-      |> assign(:user, user_one)
-      |> get("/api/v1/conversations")
-      |> json_response(200)
-
-    assert res_last_status["id"] == direct_reply.id
-  end
-
-  test "the user marks a conversation as read", %{conn: conn} do
-    user_one = insert(:user)
-    user_two = insert(:user)
-
-    {:ok, direct} =
-      CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}",
-        "visibility" => "direct"
-      })
-
-    [%{"id" => direct_conversation_id, "unread" => true}] =
-      conn
-      |> assign(:user, user_one)
-      |> get("/api/v1/conversations")
-      |> json_response(200)
-
-    %{"unread" => false} =
-      conn
-      |> assign(:user, user_one)
-      |> post("/api/v1/conversations/#{direct_conversation_id}/read")
-      |> json_response(200)
-
-    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 0
-
-    # The conversation is marked as unread on reply
-    {:ok, _} =
-      CommonAPI.post(user_two, %{
-        "status" => "reply",
-        "visibility" => "direct",
-        "in_reply_to_status_id" => direct.id
-      })
-
-    [%{"unread" => true}] =
-      conn
-      |> assign(:user, user_one)
-      |> get("/api/v1/conversations")
-      |> json_response(200)
-
-    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 1
-
-    # A reply doesn't increment the user's unread_conversation_count if the conversation is unread
-    {:ok, _} =
-      CommonAPI.post(user_two, %{
-        "status" => "reply",
-        "visibility" => "direct",
-        "in_reply_to_status_id" => direct.id
-      })
-
-    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 1
-  end
-
-  test "(vanilla) Mastodon frontend behaviour", %{conn: conn} do
-    user_one = insert(:user)
-    user_two = insert(:user)
-
-    {:ok, direct} =
-      CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}!",
-        "visibility" => "direct"
-      })
-
+    # Apparently undocumented API endpoint
     res_conn =
       conn
       |> assign(:user, user_one)
-      |> get("/api/v1/statuses/#{direct.id}/context")
+      |> post("/api/v1/conversations/#{res_id}/read")
+
+    assert response = json_response(res_conn, 200)
+    assert length(response["accounts"]) == 2
+    assert response["last_status"]["id"] == direct.id
+    assert response["unread"] == false
+
+    # (vanilla) Mastodon frontend behaviour
+    res_conn =
+      conn
+      |> assign(:user, user_one)
+      |> get("/api/v1/statuses/#{res_last_status["id"]}/context")
 
     assert %{"ancestors" => [], "descendants" => []} == json_response(res_conn, 200)
   end
