@@ -261,12 +261,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.all()
   end
 
-  def make_emoji_reaction_data(user, object, emoji, activity_id) do
-    make_like_data(user, object, activity_id)
-    |> Map.put("type", "EmojiReaction")
-    |> Map.put("content", emoji)
-  end
-
   @spec make_like_data(User.t(), map(), String.t()) :: map()
   def make_like_data(
         %User{ap_id: ap_id} = actor,
@@ -296,6 +290,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "context" => object.data["context"]
     }
     |> maybe_put("id", activity_id)
+  end
+
+  def make_emoji_reaction_data(user, object, emoji, activity_id) do
+    make_like_data(user, object, activity_id)
+    |> Map.put("type", "EmojiReaction")
+    |> Map.put("content", emoji)
   end
 
   @spec update_element_in_object(String.t(), list(any), Object.t()) ::
@@ -523,14 +523,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def make_unannounce_data(
         %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context}} = activity,
+        %Activity{data: %{"context" => context, "object" => object}} = activity,
         activity_id
       ) do
+    object = Object.normalize(object)
+
     %{
       "type" => "Undo",
       "actor" => ap_id,
       "object" => activity.data,
-      "to" => [user.follower_address, activity.data["actor"]],
+      "to" => [user.follower_address, object.data["actor"]],
       "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
@@ -539,14 +541,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def make_unlike_data(
         %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context}} = activity,
+        %Activity{data: %{"context" => context, "object" => object}} = activity,
         activity_id
       ) do
+    object = Object.normalize(object)
+
     %{
       "type" => "Undo",
       "actor" => ap_id,
       "object" => activity.data,
-      "to" => [user.follower_address, activity.data["actor"]],
+      "to" => [user.follower_address, object.data["actor"]],
       "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }

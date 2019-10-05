@@ -459,16 +459,17 @@ defmodule Pleroma.Web.Router do
     end
   end
 
-  scope "/api/web", Pleroma.Web.MastodonAPI do
+  scope "/api/web", Pleroma.Web do
     pipe_through([:authenticated_api, :oauth_write])
 
-    put("/settings", MastodonAPIController, :put_settings)
+    put("/settings", MastoFEController, :put_settings)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
 
     post("/accounts", AccountController, :create)
+    get("/accounts/search", SearchController, :account_search)
 
     get("/instance", InstanceController, :show)
     get("/instance/peers", InstanceController, :peers)
@@ -476,15 +477,13 @@ defmodule Pleroma.Web.Router do
     post("/apps", AppController, :create)
     get("/apps/verify_credentials", AppController, :verify_credentials)
 
-    get("/custom_emojis", MastodonAPIController, :custom_emojis)
-
     get("/statuses/:id/card", StatusController, :card)
     get("/statuses/:id/favourited_by", StatusController, :favourited_by)
     get("/statuses/:id/reblogged_by", StatusController, :reblogged_by)
 
-    get("/trends", MastodonAPIController, :empty_array)
+    get("/custom_emojis", CustomEmojiController, :index)
 
-    get("/accounts/search", SearchController, :account_search)
+    get("/trends", MastodonAPIController, :empty_array)
 
     scope [] do
       pipe_through(:oauth_read_or_public)
@@ -589,7 +588,6 @@ defmodule Pleroma.Web.Router do
     pipe_through(:ostatus)
 
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
-    get("/objects/:uuid/likes", ActivityPubController, :object_likes)
   end
 
   pipeline :activitypub_client do
@@ -667,17 +665,17 @@ defmodule Pleroma.Web.Router do
     get("/:version", Nodeinfo.NodeinfoController, :nodeinfo)
   end
 
-  scope "/", Pleroma.Web.MastodonAPI do
+  scope "/", Pleroma.Web do
     pipe_through(:mastodon_html)
 
-    get("/web/login", AuthController, :login)
-    delete("/auth/sign_out", AuthController, :logout)
+    get("/web/login", MastodonAPI.AuthController, :login)
+    delete("/auth/sign_out", MastodonAPI.AuthController, :logout)
 
-    post("/auth/password", AuthController, :password_reset)
+    post("/auth/password", MastodonAPI.AuthController, :password_reset)
 
     scope [] do
       pipe_through(:oauth_read)
-      get("/web/*path", MastodonAPIController, :index)
+      get("/web/*path", MastoFEController, :index)
     end
   end
 

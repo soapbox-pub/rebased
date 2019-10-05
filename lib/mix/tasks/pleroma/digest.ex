@@ -2,16 +2,8 @@ defmodule Mix.Tasks.Pleroma.Digest do
   use Mix.Task
 
   @shortdoc "Manages digest emails"
-  @moduledoc """
-  Manages digest emails
+  @moduledoc File.read!("docs/administration/CLI_tasks/digest.md")
 
-  ## Send digest email since given date (user registration date by default)
-  ignoring user activity status.
-
-  ``mix pleroma.digest test <nickname> <since_date>``
-
-  Example: ``mix pleroma.digest test donaldtheduck 2019-05-20``
-  """
   def run(["test", nickname | opts]) do
     Mix.Pleroma.start_pleroma()
 
