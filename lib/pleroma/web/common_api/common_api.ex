@@ -16,6 +16,8 @@ defmodule Pleroma.Web.CommonAPI do
   import Pleroma.Web.Gettext
   import Pleroma.Web.CommonAPI.Utils
 
+  require Pleroma.Constants
+
   def follow(follower, followed) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
 
@@ -271,7 +273,7 @@ defmodule Pleroma.Web.CommonAPI do
 
     ActivityPub.update(%{
       local: true,
-      to: [user.follower_address],
+      to: [Pleroma.Constants.as_public(), user.follower_address],
       cc: [],
       actor: user.ap_id,
       object: Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
