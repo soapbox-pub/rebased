@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.StatusController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [try_render: 3]
+  import Pleroma.Web.ControllerHelper, only: [try_render: 3, add_link_headers: 2]
 
   require Ecto.Query
 
@@ -282,5 +282,40 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
       render(conn, "context.json", activity: activity, activities: activities, user: user)
     end
+  end
+
+  @doc "GET /api/v1/favourites"
+  def favourites(%{assigns: %{user: user}} = conn, params) do
+    params =
+      params
+      |> Map.put("type", "Create")
+      |> Map.put("favorited_by", user.ap_id)
+      |> Map.put("blocking_user", user)
+
+    activities =
+      ActivityPub.fetch_activities([], params)
+      |> Enum.reverse()
+
+    conn
+    |> add_link_headers(activities)
+    |> render("index.json", activities: activities, for: user, as: :activity)
+  end
+
+  @doc "GET /api/v1/bookmarks"
+  def bookmarks(%{assigns: %{user: user}} = conn, params) do
+    user = User.get_cached_by_id(user.id)
+
+    bookmarks =
+      user.id
+      |> Bookmark.for_user_query()
+      |> Pleroma.Pagination.fetch_paginated(params)
+
+    activities =
+      bookmarks
+      |> Enum.map(fn b -> Map.put(b.activity, :bookmark, Map.delete(b, :activity)) end)
+
+    conn
+    |> add_link_headers(bookmarks)
+    |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
 end

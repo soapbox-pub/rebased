@@ -301,4 +301,26 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
     end
   end
+
+  @doc "POST /api/v1/follows"
+  def follows(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
+    with {_, %User{} = followed} <- {:followed, User.get_cached_by_nickname(uri)},
+         {_, true} <- {:followed, follower.id != followed.id},
+         {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
+      render(conn, "show.json", user: followed, for: follower)
+    else
+      {:followed, _} -> {:error, :not_found}
+      {:error, message} -> json_response(conn, :forbidden, %{error: message})
+    end
+  end
+
+  @doc "GET /api/v1/mutes"
+  def mutes(%{assigns: %{user: user}} = conn, _) do
+    render(conn, "index.json", users: User.muted_users(user), for: user, as: :user)
+  end
+
+  @doc "GET /api/v1/blocks"
+  def blocks(%{assigns: %{user: user}} = conn, _) do
+    render(conn, "index.json", users: User.blocked_users(user), for: user, as: :user)
+  end
 end
