@@ -17,6 +17,8 @@ defmodule Pleroma.Web.CommonAPI do
   import Pleroma.Web.Gettext
   import Pleroma.Web.CommonAPI.Utils
 
+  require Pleroma.Constants
+
   def follow(follower, followed) do
     with {:ok, follower} <- User.maybe_direct_follow(follower, followed),
          {:ok, activity} <- ActivityPub.follow(follower, followed),
@@ -316,7 +318,7 @@ defmodule Pleroma.Web.CommonAPI do
 
     ActivityPub.update(%{
       local: true,
-      to: [user.follower_address],
+      to: [Pleroma.Constants.as_public(), user.follower_address],
       cc: [],
       actor: user.ap_id,
       object: Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
