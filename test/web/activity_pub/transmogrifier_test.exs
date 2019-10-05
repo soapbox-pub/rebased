@@ -359,6 +359,25 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["content"] == "🍮"
     end
 
+    test "it works for incoming misskey likes that contain unicode emojis, turning them into EmojiReactions" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+
+      data =
+        File.read!("test/fixtures/misskey-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+        |> Map.put("_misskey_reaction", "⭐")
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == data["actor"]
+      assert data["type"] == "EmojiReaction"
+      assert data["id"] == data["id"]
+      assert data["object"] == activity.data["object"]
+      assert data["content"] == "⭐"
+    end
+
     test "it works for incoming emoji reactions" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})

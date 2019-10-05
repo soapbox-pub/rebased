@@ -570,7 +570,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     "angry" => "💢",
     "confused" => "😥",
     "rip" => "😇",
-    "pudding" => "🍮"
+    "pudding" => "🍮",
+    "star" => "⭐"
   }
 
   @doc "Rewrite misskey likes into EmojiReactions"
@@ -583,7 +584,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     data
     |> Map.put("type", "EmojiReaction")
-    |> Map.put("content", @misskey_reactions[reaction])
+    |> Map.put("content", @misskey_reactions[reaction] || reaction)
     |> handle_incoming(options)
   end
 
