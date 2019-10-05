@@ -516,6 +516,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(update_data)
 
+      assert data["id"] == update_data["id"]
+
       user = User.get_cached_by_ap_id(data["actor"])
       assert user.name == "gargle"
 

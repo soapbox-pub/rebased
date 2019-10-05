@@ -17,6 +17,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
 
@@ -270,8 +271,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def update(%{to: to, cc: cc, actor: actor, object: object} = params) do
-    # only accept false as false value
     local = !(params[:local] == false)
+    activity_id = params[:activity_id]
 
     with data <- %{
            "to" => to,
@@ -280,6 +281,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            "actor" => actor,
            "object" => object
          },
+         data <- Utils.maybe_put(data, "id", activity_id),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity) do
       {:ok, activity}

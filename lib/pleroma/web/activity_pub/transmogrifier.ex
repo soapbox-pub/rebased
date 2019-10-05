@@ -621,7 +621,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         to: data["to"] || [],
         cc: data["cc"] || [],
         object: object,
-        actor: actor_id
+        actor: actor_id,
+        activity_id: data["id"]
       })
     else
       e ->
