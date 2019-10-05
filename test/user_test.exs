@@ -1232,6 +1232,20 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "invisible?/1" do
+    test "returns true for an invisible user" do
+      user = insert(:user, local: true, info: %{invisible: true})
+
+      assert User.invisible?(user)
+    end
+
+    test "returns false for a non-invisible user" do
+      user = insert(:user, local: true)
+
+      refute User.invisible?(user)
+    end
+  end
+
   describe "visible_for?/2" do
     test "returns true when the account is itself" do
       user = insert(:user, local: true)
