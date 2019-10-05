@@ -53,6 +53,7 @@ defmodule Pleroma.User.Info do
     field(:fields, {:array, :map}, default: nil)
     field(:raw_fields, {:array, :map}, default: [])
     field(:discoverable, :boolean, default: false)
+    field(:invisible, :boolean, default: false)
 
     field(:notification_settings, :map,
       default: %{
@@ -391,6 +392,14 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:source_data])
     |> validate_required([:source_data])
+  end
+
+  def set_invisible(info, invisible) do
+    params = %{invisible: invisible}
+
+    info
+    |> cast(params, [:invisible])
+    |> validate_required([:invisible])
   end
 
   def admin_api_update(info, params) do
