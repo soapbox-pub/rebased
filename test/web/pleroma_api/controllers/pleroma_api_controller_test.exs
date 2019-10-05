@@ -8,7 +8,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Repo
-  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -74,7 +73,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     participation = Repo.preload(participation, :recipients)
 
-    user = User.get_cached_by_id(user.id)
     assert [user] == participation.recipients
     assert other_user not in participation.recipients
 
