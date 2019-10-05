@@ -461,6 +461,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert object.data["content"] == "this is a private toot"
     end
 
+    test "it rejects incoming announces with an inlined activity from another origin" do
+      data =
+        File.read!("test/fixtures/bogus-mastodon-announce.json")
+        |> Poison.decode!()
+
+      assert :error = Transmogrifier.handle_incoming(data)
+    end
+
     test "it does not clobber the addressing on announce activities" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
