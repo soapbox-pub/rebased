@@ -6,23 +6,55 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.HTTP
   alias Pleroma.Object
   alias Pleroma.Object.Containment
+  alias Pleroma.Repo
   alias Pleroma.Signature
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.OStatus
 
   require Logger
+  require Pleroma.Constants
 
-  defp reinject_object(data) do
+  defp touch_changeset(changeset) do
+    updated_at =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.truncate(:second)
+
+    Ecto.Changeset.put_change(changeset, :updated_at, updated_at)
+  end
+
+  defp maybe_reinject_internal_fields(data, %{data: %{} = old_data}) do
+    internal_fields = Map.take(old_data, Pleroma.Constants.object_internal_fields())
+
+    Map.merge(data, internal_fields)
+  end
+
+  defp maybe_reinject_internal_fields(data, _), do: data
+
+  defp reinject_object(struct, data) do
     Logger.debug("Reinjecting object #{data["id"]}")
 
     with data <- Transmogrifier.fix_object(data),
-         {:ok, object} <- Object.create(data) do
+         data <- maybe_reinject_internal_fields(data, struct),
+         changeset <- Object.change(struct, %{data: data}),
+         changeset <- touch_changeset(changeset),
+         {:ok, object} <- Repo.insert_or_update(changeset) do
       {:ok, object}
     else
       e ->
         Logger.error("Error while processing object: #{inspect(e)}")
         {:error, e}
+    end
+  end
+
+  def refetch_object(%Object{data: %{"id" => id}} = object) do
+    with {:local, false} <- {:local, String.starts_with?(id, Pleroma.Web.base_url() <> "/")},
+         {:ok, data} <- fetch_and_contain_remote_object_from_id(id),
+         {:ok, object} <- reinject_object(object, data) do
+      {:ok, object}
+    else
+      {:local, true} -> object
+      e -> {:error, e}
     end
   end
 
@@ -57,7 +89,7 @@ defmodule Pleroma.Object.Fetcher do
           {:reject, nil}
 
         {:object, data, nil} ->
-          reinject_object(data)
+          reinject_object(%Object{}, data)
 
         {:normalize, object = %Object{}} ->
           {:ok, object}
