@@ -80,7 +80,7 @@ defmodule Pleroma.SignatureTest do
       user =
         insert(:user, %{
           ap_id: "https://mastodon.social/users/lambadalambda",
-          info: %{keys: @private_key}
+          keys: @private_key
         })
 
       assert Signature.sign(
@@ -94,8 +94,7 @@ defmodule Pleroma.SignatureTest do
     end
 
     test "it returns error" do
-      user =
-        insert(:user, %{ap_id: "https://mastodon.social/users/lambadalambda", info: %{keys: ""}})
+      user = insert(:user, %{ap_id: "https://mastodon.social/users/lambadalambda", keys: ""})
 
       assert Signature.sign(
                user,
