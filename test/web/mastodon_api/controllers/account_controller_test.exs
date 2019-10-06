@@ -849,4 +849,34 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [] = json_response(conn, 200)
     end
   end
+
+  test "getting a list of mutes", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, user} = User.mute(user, other_user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/mutes")
+
+    other_user_id = to_string(other_user.id)
+    assert [%{"id" => ^other_user_id}] = json_response(conn, 200)
+  end
+
+  test "getting a list of blocks", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, user} = User.block(user, other_user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/blocks")
+
+    other_user_id = to_string(other_user.id)
+    assert [%{"id" => ^other_user_id}] = json_response(conn, 200)
+  end
 end

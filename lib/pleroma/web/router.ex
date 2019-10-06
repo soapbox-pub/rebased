@@ -347,14 +347,14 @@ defmodule Pleroma.Web.Router do
       get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
 
       get("/follow_requests", FollowRequestController, :index)
-      get("/blocks", MastodonAPIController, :blocks)
-      get("/mutes", MastodonAPIController, :mutes)
+      get("/blocks", AccountController, :blocks)
+      get("/mutes", AccountController, :mutes)
 
       get("/timelines/home", TimelineController, :home)
       get("/timelines/direct", TimelineController, :direct)
 
-      get("/favourites", MastodonAPIController, :favourites)
-      get("/bookmarks", MastodonAPIController, :bookmarks)
+      get("/favourites", StatusController, :favourites)
+      get("/bookmarks", StatusController, :bookmarks)
 
       get("/notifications", NotificationController, :index)
       get("/notifications/:id", NotificationController, :show)
@@ -373,7 +373,7 @@ defmodule Pleroma.Web.Router do
 
       get("/filters", FilterController, :index)
 
-      get("/suggestions", MastodonAPIController, :suggestions)
+      get("/suggestions", SuggestionController, :index)
 
       get("/conversations", ConversationController, :index)
       post("/conversations/:id/read", ConversationController, :read)
@@ -403,10 +403,10 @@ defmodule Pleroma.Web.Router do
       put("/scheduled_statuses/:id", ScheduledActivityController, :update)
       delete("/scheduled_statuses/:id", ScheduledActivityController, :delete)
 
-      post("/polls/:id/votes", MastodonAPIController, :poll_vote)
+      post("/polls/:id/votes", PollController, :vote)
 
-      post("/media", MastodonAPIController, :upload)
-      put("/media/:id", MastodonAPIController, :update_media)
+      post("/media", MediaController, :create)
+      put("/media/:id", MediaController, :update)
 
       delete("/lists/:id", ListController, :delete)
       post("/lists", ListController, :create)
@@ -426,7 +426,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_follow)
 
-      post("/follows", MastodonAPIController, :follows)
+      post("/follows", AccountController, :follows)
       post("/accounts/:id/follow", AccountController, :follow)
       post("/accounts/:id/unfollow", AccountController, :unfollow)
       post("/accounts/:id/block", AccountController, :block)
@@ -451,31 +451,31 @@ defmodule Pleroma.Web.Router do
     end
   end
 
-  scope "/api/web", Pleroma.Web.MastodonAPI do
+  scope "/api/web", Pleroma.Web do
     pipe_through([:authenticated_api, :oauth_write])
 
-    put("/settings", MastodonAPIController, :put_settings)
+    put("/settings", MastoFEController, :put_settings)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
 
     post("/accounts", AccountController, :create)
+    get("/accounts/search", SearchController, :account_search)
 
-    get("/instance", MastodonAPIController, :masto_instance)
-    get("/instance/peers", MastodonAPIController, :peers)
-    post("/apps", MastodonAPIController, :create_app)
-    get("/apps/verify_credentials", MastodonAPIController, :verify_app_credentials)
-    get("/custom_emojis", MastodonAPIController, :custom_emojis)
+    get("/instance", InstanceController, :show)
+    get("/instance/peers", InstanceController, :peers)
+
+    post("/apps", AppController, :create)
+    get("/apps/verify_credentials", AppController, :verify_credentials)
 
     get("/statuses/:id/card", StatusController, :card)
-
     get("/statuses/:id/favourited_by", StatusController, :favourited_by)
     get("/statuses/:id/reblogged_by", StatusController, :reblogged_by)
 
-    get("/trends", MastodonAPIController, :empty_array)
+    get("/custom_emojis", CustomEmojiController, :index)
 
-    get("/accounts/search", SearchController, :account_search)
+    get("/trends", MastodonAPIController, :empty_array)
 
     scope [] do
       pipe_through(:oauth_read_or_public)
@@ -488,7 +488,7 @@ defmodule Pleroma.Web.Router do
       get("/statuses/:id", StatusController, :show)
       get("/statuses/:id/context", StatusController, :context)
 
-      get("/polls/:id", MastodonAPIController, :get_poll)
+      get("/polls/:id", PollController, :show)
 
       get("/accounts/:id/statuses", AccountController, :statuses)
       get("/accounts/:id/followers", AccountController, :followers)
@@ -580,7 +580,6 @@ defmodule Pleroma.Web.Router do
     pipe_through(:ostatus)
 
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
-    get("/objects/:uuid/likes", ActivityPubController, :object_likes)
   end
 
   pipeline :activitypub_client do
@@ -658,17 +657,17 @@ defmodule Pleroma.Web.Router do
     get("/:version", Nodeinfo.NodeinfoController, :nodeinfo)
   end
 
-  scope "/", Pleroma.Web.MastodonAPI do
+  scope "/", Pleroma.Web do
     pipe_through(:mastodon_html)
 
-    get("/web/login", MastodonAPIController, :login)
-    delete("/auth/sign_out", MastodonAPIController, :logout)
+    get("/web/login", MastodonAPI.AuthController, :login)
+    delete("/auth/sign_out", MastodonAPI.AuthController, :logout)
 
-    post("/auth/password", MastodonAPIController, :password_reset)
+    post("/auth/password", MastodonAPI.AuthController, :password_reset)
 
     scope [] do
       pipe_through(:oauth_read)
-      get("/web/*path", MastodonAPIController, :index)
+      get("/web/*path", MastoFEController, :index)
     end
   end
 

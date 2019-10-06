@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.StatusController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.MastodonAPI.MastodonAPIController, only: [try_render: 3]
+  import Pleroma.Web.ControllerHelper, only: [try_render: 3, add_link_headers: 2]
 
   require Ecto.Query
 
@@ -125,8 +125,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/reblog"
-  def reblog(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, announce, _activity} <- CommonAPI.repeat(ap_id_or_id, user),
+  def reblog(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id} = params) do
+    with {:ok, announce, _activity} <- CommonAPI.repeat(ap_id_or_id, user, params),
          %Activity{} = announce <- Activity.normalize(announce.data) do
       try_render(conn, "show.json", %{activity: announce, for: user, as: :activity})
     end
@@ -242,7 +242,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   def reblogged_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
-         %Object{data: %{"announcements" => announces}} <- Object.normalize(activity) do
+         %Object{data: %{"announcements" => announces, "id" => ap_id}} <-
+           Object.normalize(activity) do
+      announces =
+        "Announce"
+        |> Activity.Queries.by_type()
+        |> Ecto.Query.where([a], a.actor in ^announces)
+        # this is to use the index
+        |> Activity.Queries.by_object_id(ap_id)
+        |> Repo.all()
+        |> Enum.filter(&Visibility.visible_for_user?(&1, user))
+        |> Enum.map(& &1.actor)
+        |> Enum.uniq()
+
       users =
         User
         |> Ecto.Query.where([u], u.ap_id in ^announces)
@@ -270,5 +282,40 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
       render(conn, "context.json", activity: activity, activities: activities, user: user)
     end
+  end
+
+  @doc "GET /api/v1/favourites"
+  def favourites(%{assigns: %{user: user}} = conn, params) do
+    params =
+      params
+      |> Map.put("type", "Create")
+      |> Map.put("favorited_by", user.ap_id)
+      |> Map.put("blocking_user", user)
+
+    activities =
+      ActivityPub.fetch_activities([], params)
+      |> Enum.reverse()
+
+    conn
+    |> add_link_headers(activities)
+    |> render("index.json", activities: activities, for: user, as: :activity)
+  end
+
+  @doc "GET /api/v1/bookmarks"
+  def bookmarks(%{assigns: %{user: user}} = conn, params) do
+    user = User.get_cached_by_id(user.id)
+
+    bookmarks =
+      user.id
+      |> Bookmark.for_user_query()
+      |> Pleroma.Pagination.fetch_paginated(params)
+
+    activities =
+      bookmarks
+      |> Enum.map(fn b -> Map.put(b.activity, :bookmark, Map.delete(b, :activity)) end)
+
+    conn
+    |> add_link_headers(bookmarks)
+    |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
 end

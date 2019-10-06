@@ -251,16 +251,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.one()
   end
 
-  @doc """
-  Returns like activities targeting an object
-  """
-  def get_object_likes(%{data: %{"id" => id}}) do
-    id
-    |> Activity.Queries.by_object_id()
-    |> Activity.Queries.by_type("Like")
-    |> Repo.all()
-  end
-
   @spec make_like_data(User.t(), map(), String.t()) :: map()
   def make_like_data(
         %User{ap_id: ap_id} = actor,
@@ -461,14 +451,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def make_unannounce_data(
         %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context}} = activity,
+        %Activity{data: %{"context" => context, "object" => object}} = activity,
         activity_id
       ) do
+    object = Object.normalize(object)
+
     %{
       "type" => "Undo",
       "actor" => ap_id,
       "object" => activity.data,
-      "to" => [user.follower_address, activity.data["actor"]],
+      "to" => [user.follower_address, object.data["actor"]],
       "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
@@ -477,14 +469,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def make_unlike_data(
         %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context}} = activity,
+        %Activity{data: %{"context" => context, "object" => object}} = activity,
         activity_id
       ) do
+    object = Object.normalize(object)
+
     %{
       "type" => "Undo",
       "actor" => ap_id,
       "object" => activity.data,
-      "to" => [user.follower_address, activity.data["actor"]],
+      "to" => [user.follower_address, object.data["actor"]],
       "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
@@ -494,7 +488,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @spec add_announce_to_object(Activity.t(), Object.t()) ::
           {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
   def add_announce_to_object(
-        %Activity{data: %{"actor" => actor, "cc" => [Pleroma.Constants.as_public()]}},
+        %Activity{data: %{"actor" => actor}},
         object
       ) do
     announcements = take_announcements(object)
@@ -745,6 +739,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.all()
   end
 
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
+  def maybe_put(map, _key, nil), do: map
+  def maybe_put(map, key, value), do: Map.put(map, key, value)
 end
