@@ -14,6 +14,8 @@ defmodule Pleroma.Web.CommonAPITest do
 
   import Pleroma.Factory
 
+  require Pleroma.Constants
+
   clear_config([:instance, :safe_dm_mentions])
   clear_config([:instance, :limit])
   clear_config([:instance, :max_pinned_statuses])
@@ -96,11 +98,13 @@ defmodule Pleroma.Web.CommonAPITest do
   test "it adds emoji when updating profiles" do
     user = insert(:user, %{name: ":firefox:"})
 
-    CommonAPI.update(user)
+    {:ok, activity} = CommonAPI.update(user)
     user = User.get_cached_by_ap_id(user.ap_id)
     [firefox] = user.info.source_data["tag"]
 
     assert firefox["name"] == ":firefox:"
+
+    assert Pleroma.Constants.as_public() in activity.recipients
   end
 
   describe "posting" do
@@ -229,6 +233,18 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
 
       {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, user)
+    end
+
+    test "repeating a status privately" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:ok, %Activity{} = announce_activity, _} =
+        CommonAPI.repeat(activity.id, user, %{"visibility" => "private"})
+
+      assert Visibility.is_private?(announce_activity)
     end
 
     test "favoriting a status" do

@@ -811,10 +811,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, like_activity, object} = ActivityPub.like(user, object)
       assert object.data["like_count"] == 1
 
-      {:ok, _, _, object} = ActivityPub.unlike(user, object)
+      {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
       assert object.data["like_count"] == 0
 
       assert Activity.get_by_id(like_activity.id) == nil
+      assert note_activity.actor in unlike_activity.recipients
     end
   end
 
@@ -839,6 +840,39 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "announcing a private object" do
+    test "adds an announce activity to the db if the audience is not widened" do
+      user = insert(:user)
+      {:ok, note_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      object = Object.normalize(note_activity)
+
+      {:ok, announce_activity, object} = ActivityPub.announce(user, object, nil, true, false)
+
+      assert announce_activity.data["to"] == [User.ap_followers(user)]
+
+      assert announce_activity.data["object"] == object.data["id"]
+      assert announce_activity.data["actor"] == user.ap_id
+      assert announce_activity.data["context"] == object.data["context"]
+    end
+
+    test "does not add an announce activity to the db if the audience is widened" do
+      user = insert(:user)
+      {:ok, note_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      object = Object.normalize(note_activity)
+
+      assert {:error, _} = ActivityPub.announce(user, object, nil, true, true)
+    end
+
+    test "does not add an announce activity to the db if the announcer is not the author" do
+      user = insert(:user)
+      announcer = insert(:user)
+      {:ok, note_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      object = Object.normalize(note_activity)
+
+      assert {:error, _} = ActivityPub.announce(announcer, object, nil, true, false)
+    end
+  end
+
   describe "unannouncing an object" do
     test "unannouncing a previously announced object" do
       note_activity = insert(:note_activity)
@@ -857,7 +891,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert unannounce_activity.data["to"] == [
                User.ap_followers(user),
-               announce_activity.data["actor"]
+               object.data["actor"]
              ]
 
       assert unannounce_activity.data["type"] == "Undo"

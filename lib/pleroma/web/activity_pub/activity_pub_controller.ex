@@ -87,38 +87,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
   end
 
-  def object_likes(conn, %{"uuid" => uuid, "page" => page}) do
-    with ap_id <- o_status_url(conn, :object, uuid),
-         %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(object)},
-         likes <- Utils.get_object_likes(object) do
-      {page, _} = Integer.parse(page)
-
-      conn
-      |> put_resp_content_type("application/activity+json")
-      |> put_view(ObjectView)
-      |> render("likes.json", %{ap_id: ap_id, likes: likes, page: page})
-    else
-      {:public?, false} ->
-        {:error, :not_found}
-    end
-  end
-
-  def object_likes(conn, %{"uuid" => uuid}) do
-    with ap_id <- o_status_url(conn, :object, uuid),
-         %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, Visibility.is_public?(object)},
-         likes <- Utils.get_object_likes(object) do
-      conn
-      |> put_resp_content_type("application/activity+json")
-      |> put_view(ObjectView)
-      |> render("likes.json", %{ap_id: ap_id, likes: likes})
-    else
-      {:public?, false} ->
-        {:error, :not_found}
-    end
-  end
-
   def activity(conn, %{"uuid" => uuid}) do
     with ap_id <- o_status_url(conn, :activity, uuid),
          %Activity{} = activity <- Activity.normalize(ap_id),

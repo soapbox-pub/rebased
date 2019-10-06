@@ -233,30 +233,68 @@ defmodule Pleroma.Web.StreamerTest do
     end
   end
 
-  test "it doesn't send to blocked users" do
-    user = insert(:user)
-    blocked_user = insert(:user)
-    {:ok, user} = User.block(user, blocked_user)
+  describe "blocks" do
+    test "it doesn't send messages involving blocked users" do
+      user = insert(:user)
+      blocked_user = insert(:user)
+      {:ok, user} = User.block(user, blocked_user)
 
-    task =
-      Task.async(fn ->
-        refute_receive {:text, _}, 1_000
-      end)
+      task =
+        Task.async(fn ->
+          refute_receive {:text, _}, 1_000
+        end)
 
-    fake_socket = %StreamerSocket{
-      transport_pid: task.pid,
-      user: user
-    }
+      fake_socket = %StreamerSocket{
+        transport_pid: task.pid,
+        user: user
+      }
 
-    {:ok, activity} = CommonAPI.post(blocked_user, %{"status" => "Test"})
+      {:ok, activity} = CommonAPI.post(blocked_user, %{"status" => "Test"})
 
-    topics = %{
-      "public" => [fake_socket]
-    }
+      topics = %{
+        "public" => [fake_socket]
+      }
 
-    Worker.push_to_socket(topics, "public", activity)
+      Worker.push_to_socket(topics, "public", activity)
 
-    Task.await(task)
+      Task.await(task)
+    end
+
+    test "it doesn't send messages transitively involving blocked users" do
+      blocker = insert(:user)
+      blockee = insert(:user)
+      friend = insert(:user)
+
+      task =
+        Task.async(fn ->
+          refute_receive {:text, _}, 1_000
+        end)
+
+      fake_socket = %StreamerSocket{
+        transport_pid: task.pid,
+        user: blocker
+      }
+
+      topics = %{
+        "public" => [fake_socket]
+      }
+
+      {:ok, blocker} = User.block(blocker, blockee)
+
+      {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey! @#{blockee.nickname}"})
+
+      Worker.push_to_socket(topics, "public", activity_one)
+
+      {:ok, activity_two} = CommonAPI.post(blockee, %{"status" => "hey! @#{friend.nickname}"})
+
+      Worker.push_to_socket(topics, "public", activity_two)
+
+      {:ok, activity_three} = CommonAPI.post(blockee, %{"status" => "hey! @#{blocker.nickname}"})
+
+      Worker.push_to_socket(topics, "public", activity_three)
+
+      Task.await(task)
+    end
   end
 
   test "it doesn't send unwanted DMs to list" do
