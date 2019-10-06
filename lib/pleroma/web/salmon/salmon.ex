@@ -193,7 +193,7 @@ defmodule Pleroma.Web.Salmon do
   @spec publish(User.t(), Pleroma.Activity.t()) :: none
   def publish(user, activity)
 
-  def publish(%{info: %{keys: keys}} = user, %{data: %{"type" => type}} = activity)
+  def publish(%{keys: keys} = user, %{data: %{"type" => type}} = activity)
       when type in @supported_activities do
     feed = ActivityRepresenter.to_simple_form(activity, user, true)
 
@@ -229,7 +229,7 @@ defmodule Pleroma.Web.Salmon do
   def publish(%{id: id}, _), do: Logger.debug(fn -> "Keys missing for user #{id}" end)
 
   def gather_webfinger_links(%User{} = user) do
-    {:ok, _private, public} = Keys.keys_from_pem(user.info.keys)
+    {:ok, _private, public} = Keys.keys_from_pem(user.keys)
     magic_key = encode_key(public)
 
     [
