@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub: Correct addressing of Undo.
 - ActivityPub: Correct addressing of profile update activities.
 - Mastodon API: Ensure the `account` field is not empty when rendering Notification entities.
+- Report emails now include functional links to profiles of remote user accounts
 
 ### Removed
 - ActivityPub: The `/objects/:uuid/likes` endpoint.
