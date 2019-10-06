@@ -1,15 +1,10 @@
 defmodule Pleroma.Repo.Migrations.CopyMutedToMutedNotifications do
   use Ecto.Migration
+  import Ecto.Query
   alias Pleroma.User
 
   def change do
-    query =
-      User.Query.build(%{
-        local: true,
-        active: true,
-        order_by: :id
-      })
-
+    query = from(u in "users", where: fragment("not (?->'deactivated' @> 'true')", u.info), select: %{info: u.info}, where: u.local == true, order_by: u.id)
     Pleroma.Repo.stream(query)
     |> Enum.each(fn
       %{info: %{mutes: mutes} = info} = user ->
