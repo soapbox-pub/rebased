@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Blocks are now treated consistently between the Streaming API and the Timeline APIs
 - ActivityPub: Correct addressing of Undo.
 - ActivityPub: Correct addressing of profile update activities.
+- ActivityPub: Polls are now refreshed when necessary.
 - Mastodon API: Ensure the `account` field is not empty when rendering Notification entities.
 
 ### Removed
