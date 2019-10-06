@@ -830,6 +830,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.all()
   end
 
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
+  def maybe_put(map, _key, nil), do: map
+  def maybe_put(map, key, value), do: Map.put(map, key, value)
 end

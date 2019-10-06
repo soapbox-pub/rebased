@@ -479,6 +479,33 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Activity.get_create_by_object_ap_id(data["object"]).id == activity.id
     end
 
+    test "it works for incoming announces with an inlined activity" do
+      data =
+        File.read!("test/fixtures/mastodon-announce-private.json")
+        |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "Announce"
+
+      assert data["id"] ==
+               "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
+
+      object = Object.normalize(data["object"])
+
+      assert object.data["id"] == "http://mastodon.example.org/@admin/99541947525187368"
+      assert object.data["content"] == "this is a private toot"
+    end
+
+    test "it rejects incoming announces with an inlined activity from another origin" do
+      data =
+        File.read!("test/fixtures/bogus-mastodon-announce.json")
+        |> Poison.decode!()
+
+      assert :error = Transmogrifier.handle_incoming(data)
+    end
+
     test "it does not clobber the addressing on announce activities" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
@@ -596,6 +623,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("object", object)
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(update_data)
+
+      assert data["id"] == update_data["id"]
 
       user = User.get_cached_by_ap_id(data["actor"])
       assert user.name == "gargle"

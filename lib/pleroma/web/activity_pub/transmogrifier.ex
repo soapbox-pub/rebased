@@ -601,7 +601,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
+         {:ok, object} <- get_embedded_obj_helper(object_id, actor),
          public <- Visibility.is_public?(data),
          {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false, public) do
       {:ok, activity}
@@ -642,7 +642,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         to: data["to"] || [],
         cc: data["cc"] || [],
         object: object,
-        actor: actor_id
+        actor: actor_id,
+        activity_id: data["id"]
       })
     else
       e ->
@@ -822,6 +823,29 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       %Object{} = object -> {:ok, object}
       _ -> nil
     end
+  end
+
+  @spec get_embedded_obj_helper(String.t() | Object.t(), User.t()) :: {:ok, Object.t()} | nil
+  def get_embedded_obj_helper(%{"attributedTo" => attributed_to, "id" => object_id} = data, %User{
+        ap_id: ap_id
+      })
+      when attributed_to == ap_id do
+    with {:ok, activity} <-
+           handle_incoming(%{
+             "type" => "Create",
+             "to" => data["to"],
+             "cc" => data["cc"],
+             "actor" => attributed_to,
+             "object" => data
+           }) do
+      {:ok, Object.normalize(activity)}
+    else
+      _ -> get_obj_helper(object_id)
+    end
+  end
+
+  def get_embedded_obj_helper(object_id, _) do
+    get_obj_helper(object_id)
   end
 
   def set_reply_to_uri(%{"inReplyTo" => in_reply_to} = object) when is_binary(in_reply_to) do

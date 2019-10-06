@@ -11,6 +11,7 @@ defmodule Pleroma.User do
   alias Comeonin.Pbkdf2
   alias Ecto.Multi
   alias Pleroma.Activity
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
   alias Pleroma.Keys
   alias Pleroma.Notification
@@ -841,6 +842,61 @@ defmodule Pleroma.User do
   end
 
   def maybe_update_following_count(user), do: user
+
+  def set_unread_conversation_count(%User{local: true} = user) do
+    unread_query = Participation.unread_conversation_count_for_user(user)
+
+    User
+    |> join(:inner, [u], p in subquery(unread_query))
+    |> update([u, p],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{unread_conversation_count}', ?::varchar::jsonb, true)",
+            u.info,
+            p.count
+          )
+      ]
+    )
+    |> where([u], u.id == ^user.id)
+    |> select([u], u)
+    |> Repo.update_all([])
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
+  end
+
+  def set_unread_conversation_count(_), do: :noop
+
+  def increment_unread_conversation_count(conversation, %User{local: true} = user) do
+    unread_query =
+      Participation.unread_conversation_count_for_user(user)
+      |> where([p], p.conversation_id == ^conversation.id)
+
+    User
+    |> join(:inner, [u], p in subquery(unread_query))
+    |> update([u, p],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{unread_conversation_count}', (coalesce((?->>'unread_conversation_count')::int, 0) + 1)::varchar::jsonb, true)",
+            u.info,
+            u.info
+          )
+      ]
+    )
+    |> where([u], u.id == ^user.id)
+    |> where([u, p], p.count == 0)
+    |> select([u], u)
+    |> Repo.update_all([])
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
+  end
+
+  def increment_unread_conversation_count(_, _), do: :noop
 
   def remove_duplicated_following(%User{following: following} = user) do
     uniq_following = Enum.uniq(following)
