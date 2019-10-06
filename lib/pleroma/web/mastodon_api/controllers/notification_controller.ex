@@ -20,6 +20,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
 
   plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action not in @oauth_read_actions)
 
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+
   # GET /api/v1/notifications
   def index(%{assigns: %{user: user}} = conn, params) do
     notifications = MastodonAPI.get_notifications(user, params)

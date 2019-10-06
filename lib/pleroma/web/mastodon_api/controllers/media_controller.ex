@@ -6,11 +6,16 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Object
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
   plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
+
+  plug(OAuthScopesPlug, %{scopes: ["write:media"]})
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   @doc "POST /api/v1/media"
   def create(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do

@@ -38,15 +38,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(
     OAuthScopesPlug,
+    %{scopes: ["follow", "read:blocks"]} when action == :blocks
+  )
+
+  plug(
+    OAuthScopesPlug,
     %{scopes: ["follow", "write:blocks"]} when action in [:block, :unblock]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["read:follows"]} when action == :relationships)
 
+  # Note: :follows (POST /api/v1/follows) is the same as :follow, consider removing :follows
   plug(
     OAuthScopesPlug,
-    %{scopes: ["follow", "write:follows"]} when action in [:follow, :unfollow]
+    %{scopes: ["follow", "write:follows"]} when action in [:follows, :follow, :unfollow]
   )
+
+  plug(OAuthScopesPlug, %{scopes: ["follow", "read:mutes"]} when action == :mutes)
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
 

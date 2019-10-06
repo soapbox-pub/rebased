@@ -14,6 +14,8 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionController do
 
   plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["push"]})
 
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+
   # Creates PushSubscription
   # POST /api/v1/push/subscription
   #

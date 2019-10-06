@@ -21,6 +21,8 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestController do
     %{scopes: ["follow", "write:follows"]} when action != :index
   )
 
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+
   @doc "GET /api/v1/follow_requests"
   def index(%{assigns: %{user: followed}} = conn, _params) do
     follow_requests = User.get_follow_requests(followed)

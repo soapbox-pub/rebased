@@ -39,6 +39,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
          ]
   )
 
+  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :notifications_read)
+
   plug(Pleroma.Plugs.SetFormatPlug when action in [:config, :version])
 
   def help_test(conn, _params) do
