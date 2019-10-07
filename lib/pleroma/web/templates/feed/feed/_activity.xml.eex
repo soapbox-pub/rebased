@@ -1,0 +1,48 @@
+<entry>
+  <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+  <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+  <id><%= @data["id"] %></id>
+  <title><%= "New note by #{@user.nickname}" %></title>
+  <content type="html"><%= activity_content(@activity) %></content>
+  <published><%= @data["published"] %></published>
+  <updated><%= @data["published"] %></updated>
+  <ostatus:conversation ref="<%= activity_context(@activity) %>"><%= activity_context(@activity) %></ostatus:conversation>
+  <link ref="<%= activity_context(@activity) %>" rel="ostatus:conversation"/>
+
+  <%= if @data["summary"] do %>
+    <summary><%= @data["summary"] %></summary>
+  <% end %>
+
+  <%= if @activity.local do %>
+    <link type="application/atom+xml" href='<%= @data["id"] %>' rel="self"/>
+    <link type="text/html" href='<%= @data["id"] %>' rel="alternate"/>
+  <% else %>
+    <link type="text/html" href='<%= @data["external_url"] %>' rel="alternate"/>
+  <% end %>
+
+  <%= for tag <- @data["tag"] || [] do %>
+    <category term="<%= tag %>"></category>
+  <% end %>
+
+  <%= for attachment <- @data["attachment"] || [] do %>
+    <link rel="enclosure" href="<%= attachment_href(attachment) %>" type="<%= attachment_type(attachment) %>"/>
+  <% end %>
+
+  <%= if @data["inReplyTo"] do %>
+    <thr:in-reply-to ref='<%= @data["inReplyTo"] %>' href='<%= get_href(@data["inReplyTo"]) %>'/>
+  <% end %>
+
+  <%= for id <- @activity.recipients do %>
+    <%= if id == Pleroma.Constants.as_public() do %>
+      <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+    <% else %>
+      <%= unless Regex.match?(~r/^#{Pleroma.Web.base_url()}.+followers$/, id) do %>
+        <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="<%= id %>"/>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <%= for {emoji, file} <- @data["emoji"] || %{} do %>
+    <link name="<%= emoji %>" rel="emoji" href="<%= file %>"/>
+  <% end %>
+</entry>
