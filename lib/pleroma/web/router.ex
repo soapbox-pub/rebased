@@ -495,8 +495,9 @@ defmodule Pleroma.Web.Router do
     get("/activities/:uuid", OStatus.OStatusController, :activity)
     get("/notice/:id", OStatus.OStatusController, :notice)
     get("/notice/:id/embed_player", OStatus.OStatusController, :notice_player)
-    get("/users/:nickname/feed", OStatus.OStatusController, :feed)
-    get("/users/:nickname", OStatus.OStatusController, :feed_redirect)
+
+    get("/users/:nickname/feed", Feed.FeedController, :feed)
+    get("/users/:nickname", Feed.FeedController, :feed_redirect)
 
     post("/users/:nickname/salmon", OStatus.OStatusController, :salmon_incoming)
     post("/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request)
