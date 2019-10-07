@@ -474,7 +474,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   defp validate_scopes(app, params) do
     params
     |> Scopes.fetch_scopes(app.scopes)
-    |> Scopes.validates(app.scopes)
+    |> Scopes.validate(app.scopes)
   end
 
   def default_redirect_uri(%App{} = app) do

@@ -8,7 +8,7 @@ defmodule Pleroma.Web.OAuth.Scopes do
   """
 
   @doc """
-  Fetch scopes from requiest params.
+  Fetch scopes from request params.
 
   Note: `scopes` is used by Mastodon — supporting it but sticking to
   OAuth's standard `scope` wherever we control it
@@ -53,14 +53,14 @@ defmodule Pleroma.Web.OAuth.Scopes do
   @doc """
   Validates scopes.
   """
-  @spec validates(list() | nil, list()) ::
+  @spec validate(list() | nil, list()) ::
           {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}
-  def validates([], _app_scopes), do: {:error, :missing_scopes}
-  def validates(nil, _app_scopes), do: {:error, :missing_scopes}
+  def validate([], _app_scopes), do: {:error, :missing_scopes}
+  def validate(nil, _app_scopes), do: {:error, :missing_scopes}
 
-  def validates(scopes, app_scopes) do
-    case scopes -- app_scopes do
-      [] -> {:ok, scopes}
+  def validate(scopes, app_scopes) do
+    case Pleroma.Plugs.OAuthScopesPlug.filter_descendants(scopes, app_scopes) do
+      ^scopes -> {:ok, scopes}
       _ -> {:error, :unsupported_scopes}
     end
   end

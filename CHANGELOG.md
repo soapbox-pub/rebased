@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: `POST /api/v1/pleroma/scrobble` to scrobble a media item
 - Mastodon API: Add `upload_limit`, `avatar_upload_limit`, `background_upload_limit`, and `banner_upload_limit` to `/api/v1/instance`
 - Mastodon API: Add `pleroma.unread_conversation_count` to the Account entity
+- OAuth: support for hierarchical permissions / [Mastodon 2.4.3 OAuth permissions](https://docs.joinmastodon.org/api/permissions/)
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)

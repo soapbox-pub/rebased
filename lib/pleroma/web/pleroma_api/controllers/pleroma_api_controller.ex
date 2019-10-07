@@ -9,10 +9,25 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:statuses"]} when action in [:conversation, :conversation_statuses]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:conversations"]} when action == :update_conversation
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :read_notification)
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   def conversation(%{assigns: %{user: user}} = conn, %{"id" => participation_id}) do
     with %Participation{} = participation <- Participation.get(participation_id),
