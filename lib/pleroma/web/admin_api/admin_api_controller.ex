@@ -10,6 +10,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.AdminAPI.Config
   alias Pleroma.Web.AdminAPI.ConfigView
@@ -455,19 +456,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def list_reports(conn, params) do
     {page, page_size} = page_params(params)
 
-    params =
-      params
-      |> Map.put("type", "Flag")
-      |> Map.put("skip_preload", true)
-      |> Map.put("total", true)
-      |> Map.put("limit", page_size)
-      |> Map.put("offset", (page - 1) * page_size)
-
-    reports = ActivityPub.fetch_activities([], params, :offset)
-
     conn
     |> put_view(ReportView)
-    |> render("index.json", %{reports: reports})
+    |> render("index.json", %{reports: Utils.get_reports(params, page, page_size)})
+  end
+
+  def list_grouped_reports(conn, _params) do
+    conn
+    |> put_view(ReportView)
+    |> render("index_grouped.json", Utils.get_reports_grouped_by_status())
   end
 
   def report_show(conn, %{"id" => id}) do

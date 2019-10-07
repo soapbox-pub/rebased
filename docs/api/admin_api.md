@@ -468,18 +468,32 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
         }
       ]
     }
-  ],
-  "totalGroupedReports": 1,
-  "groupedReports": [
+  ]
+}
+```
+
+## `GET /api/pleroma/admin/grouped_reports`
+
+### Get a list of reports, grouped by status
+
+- Params: none
+- On success: JSON, returns a list of reports, where:
+  - `date`: date of the latest report
+  - `account`: the user who has been reported (see `/api/pleroma/admin/reports` for reference)
+  - `status`: reported status (see `/api/pleroma/admin/reports` for reference)
+  - `actors`: users who had reported this status (see `/api/pleroma/admin/reports` for reference)
+  - `reports`: reports (see `/api/pleroma/admin/reports` for reference)
+
+```json
+  "reports": [
     {
-      "date": "2019-01-01", // date of the latest report
-      "account": { ... }, // author of the reported status
-      "status": { ... }, // reported status
-      "actors": [{ ... }, { ... }], // accounts that sent reports on the status
+      "date": "2019-10-07T12:31:39.615149Z",
+      "account": { ... },
+      "status": { ... },
+      "actors": [{ ... }, { ... }],
       "reports": [{ ... }]
     }
   ]
-}
 ```
 
 ## `GET /api/pleroma/admin/reports/:id`

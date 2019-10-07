@@ -1461,7 +1461,74 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  #
+  describe "GET /api/pleroma/admin/grouped_reports" do
+    setup %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+      [reporter, target_user] = insert_pair(:user)
+
+      date1 = (DateTime.to_unix(DateTime.utc_now()) + 1000) |> DateTime.from_unix!()
+      date2 = (DateTime.to_unix(DateTime.utc_now()) + 2000) |> DateTime.from_unix!()
+      date3 = (DateTime.to_unix(DateTime.utc_now()) + 3000) |> DateTime.from_unix!()
+
+      first_status =
+        insert(:note_activity, user: target_user, data_attrs: %{"published" => date1})
+
+      second_status =
+        insert(:note_activity, user: target_user, data_attrs: %{"published" => date2})
+
+      third_status =
+        insert(:note_activity, user: target_user, data_attrs: %{"published" => date3})
+
+      %{
+        conn: assign(conn, :user, admin),
+        reporter: reporter,
+        target_user: target_user,
+        first_status: first_status,
+        second_status: second_status,
+        third_status: third_status
+      }
+    end
+
+    test "returns reports grouped by status", %{
+      conn: conn,
+      reporter: reporter,
+      target_user: target_user,
+      first_status: first_status,
+      second_status: second_status,
+      third_status: third_status
+    } do
+      {:ok, %{id: _}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "status_ids" => [first_status.id, second_status.id, third_status.id]
+        })
+
+      {:ok, %{id: _}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "status_ids" => [first_status.id, second_status.id]
+        })
+
+      {:ok, %{id: _}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "status_ids" => [first_status.id]
+        })
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/grouped_reports")
+        |> json_response(:ok)
+
+      assert length(response["reports"]) == 3
+      [third_group, second_group, first_group] = response["reports"]
+
+      assert length(third_group["reports"]) == 3
+      assert length(second_group["reports"]) == 2
+      assert length(first_group["reports"]) == 1
+    end
+  end
+
   describe "POST /api/pleroma/admin/reports/:id/respond" do
     setup %{conn: conn} do
       admin = insert(:user, info: %{is_admin: true})

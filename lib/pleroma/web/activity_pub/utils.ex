@@ -6,11 +6,13 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.Changeset
   alias Ecto.UUID
   alias Pleroma.Activity
+  alias Pleroma.Activity.Queries
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router.Helpers
@@ -663,6 +665,93 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   #### Report-related helpers
+
+  def get_reports(params, page, page_size) do
+    params =
+      params
+      |> Map.put("type", "Flag")
+      |> Map.put("skip_preload", true)
+      |> Map.put("total", true)
+      |> Map.put("limit", page_size)
+      |> Map.put("offset", (page - 1) * page_size)
+
+    ActivityPub.fetch_activities([], params, :offset)
+  end
+
+  @spec get_reports_grouped_by_status() :: %{
+          required(:groups) => [
+            %{
+              required(:date) => String.t(),
+              required(:account) => %User{},
+              required(:status) => %Activity{},
+              required(:actors) => [%User{}],
+              required(:reports) => [%Activity{}]
+            }
+          ],
+          required(:total) => integer
+        }
+  def get_reports_grouped_by_status do
+    paginated_activities = get_reported_status_ids()
+
+    groups =
+      paginated_activities
+      |> Enum.map(fn entry ->
+        status =
+          Activity
+          |> Queries.by_ap_id(entry[:activity_id])
+          |> Activity.with_preloaded_object(:left)
+          |> Activity.with_preloaded_user_actor()
+          |> Repo.one()
+
+        reports = get_reports_by_status_id(status.data["id"])
+
+        max_date =
+          Enum.max_by(reports, &Pleroma.Web.CommonAPI.Utils.to_masto_date(&1.data["published"])).data[
+            "published"
+          ]
+
+        actors = Enum.map(reports, & &1.user_actor)
+
+        %{
+          date: max_date,
+          account: status.user_actor,
+          status: status,
+          actors: actors,
+          reports: reports
+        }
+      end)
+
+    %{
+      groups: groups
+    }
+  end
+
+  def get_reports_by_status_id(status_id) do
+    from(a in Activity,
+      where: fragment("(?)->>'type' = 'Flag'", a.data),
+      where: fragment("(?)->'object' \\? (?)", a.data, ^status_id)
+    )
+    |> Activity.with_preloaded_user_actor()
+    |> Repo.all()
+  end
+
+  @spec get_reported_status_ids() :: %{
+          required(:items) => [%Activity{}],
+          required(:total) => integer
+        }
+  def get_reported_status_ids do
+    from(a in Activity,
+      where: fragment("(?)->>'type' = 'Flag'", a.data),
+      select: %{
+        date: fragment("max(?->>'published') date", a.data),
+        activity_id:
+          fragment("jsonb_array_elements_text((? #- '{object,0}')->'object') activity_id", a.data)
+      },
+      group_by: fragment("activity_id"),
+      order_by: fragment("date DESC")
+    )
+    |> Repo.all()
+  end
 
   def update_report_state(%Activity{} = activity, state) when state in @supported_report_states do
     new_data = Map.put(activity.data, "state", state)
