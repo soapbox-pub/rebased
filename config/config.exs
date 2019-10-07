@@ -409,7 +409,8 @@ config :pleroma, Pleroma.Web.Metadata,
   providers: [
     Pleroma.Web.Metadata.Providers.OpenGraph,
     Pleroma.Web.Metadata.Providers.TwitterCard,
-    Pleroma.Web.Metadata.Providers.RelMe
+    Pleroma.Web.Metadata.Providers.RelMe,
+    Pleroma.Web.Metadata.Providers.Feed
   ],
   unfurl_nsfw: false
 

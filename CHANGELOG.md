@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `pleroma.unread_conversation_count` to the Account entity
 - OAuth: support for hierarchical permissions / [Mastodon 2.4.3 OAuth permissions](https://docs.joinmastodon.org/api/permissions/)
 - Authentication: Added rate limit for password-authorized actions / login existence checks
+- Metadata Link: Atom syndication Feed
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
@@ -25,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
 - Admin API: Return link alongside with token on password reset
 - MRF (Simple Policy): Also use `:accept`/`:reject` on the actors rather than only their activities
+- OStatus: Extract RSS functionality
 
 ### Fixed
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
