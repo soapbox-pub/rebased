@@ -527,9 +527,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_public_activities(opts \\ %{}) do
-    q = fetch_activities_query([Pleroma.Constants.as_public()], opts)
+    opts = Map.drop(opts, ["user"])
 
-    q
+    [Pleroma.Constants.as_public()]
+    |> fetch_activities_query(opts)
     |> restrict_unlisted()
     |> Pagination.fetch_paginated(opts)
     |> Enum.reverse()
