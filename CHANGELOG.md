@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `upload_limit`, `avatar_upload_limit`, `background_upload_limit`, and `banner_upload_limit` to `/api/v1/instance`
 - Mastodon API: Add `pleroma.unread_conversation_count` to the Account entity
 - OAuth: support for hierarchical permissions / [Mastodon 2.4.3 OAuth permissions](https://docs.joinmastodon.org/api/permissions/)
+- Authentication: Added rate limit for password-authorized actions / login existence checks
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)

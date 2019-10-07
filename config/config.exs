@@ -588,7 +588,7 @@ config :pleroma, :env, Mix.env()
 config :http_signatures,
   adapter: Pleroma.Signature
 
-config :pleroma, :rate_limit, nil
+config :pleroma, :rate_limit, authentication: {60_000, 15}
 
 config :pleroma, Pleroma.ActivityExpiration, enabled: true
 

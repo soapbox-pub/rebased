@@ -24,6 +24,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   plug(:fetch_session)
   plug(:fetch_flash)
+  plug(Pleroma.Plugs.RateLimiter, :authentication when action == :create_authorization)
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 
