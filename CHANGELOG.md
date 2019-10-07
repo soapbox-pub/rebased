@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.0.91] - 2019-??-??
+## [1.0.91] - 2019-10-06
 ### Added
 - Reverse Proxy: Do not retry failed requests to limit pressure on the peer
 - Mastodon API: Add support for `fields_attributes` API parameter (setting custom fields)
