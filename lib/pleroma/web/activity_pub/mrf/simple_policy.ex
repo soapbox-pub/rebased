@@ -168,7 +168,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       when obj_type in ["Application", "Group", "Organization", "Person", "Service"] do
     actor_info = URI.parse(actor)
 
-    with {:ok, object} <- check_avatar_removal(actor_info, object),
+    with {:ok, object} <- check_accept(actor_info, object),
+         {:ok, object} <- check_reject(actor_info, object),
+         {:ok, object} <- check_avatar_removal(actor_info, object),
          {:ok, object} <- check_banner_removal(actor_info, object) do
       {:ok, object}
     else
