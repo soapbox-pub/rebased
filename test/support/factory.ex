@@ -324,6 +324,7 @@ defmodule Pleroma.Factory do
 
     %Pleroma.Web.OAuth.Token{
       token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
+      scopes: ["read"],
       refresh_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
       user: build(:user),
       app_id: oauth_app.id,

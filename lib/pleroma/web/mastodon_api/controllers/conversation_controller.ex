@@ -8,9 +8,15 @@ defmodule Pleroma.Web.MastodonAPI.ConversationController do
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
+
+  plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action == :index)
+  plug(OAuthScopesPlug, %{scopes: ["write:conversations"]} when action == :read)
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   @doc "GET /api/v1/conversations"
   def index(%{assigns: %{user: user}} = conn, params) do

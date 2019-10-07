@@ -9,6 +9,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2]
 
   alias Ecto.Changeset
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -16,6 +17,30 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.StatusView
 
   require Pleroma.Constants
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "write:follows"]} when action in [:subscribe, :unsubscribe]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:accounts"]}
+    # Note: the following actions are not permission-secured in Mastodon:
+    when action in [
+           :update_avatar,
+           :update_banner,
+           :update_background
+         ]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["read:favourites"]} when action == :favourites)
+
+  # An extra safety measure for possible actions not guarded by OAuth permissions specification
+  plug(
+    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+    when action != :confirmation_resend
+  )
 
   plug(RateLimiter, :account_confirmation_resend when action == :confirmation_resend)
   plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])

@@ -6,6 +6,18 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Filter
+  alias Pleroma.Plugs.OAuthScopesPlug
+
+  @oauth_read_actions [:show, :index]
+
+  plug(OAuthScopesPlug, %{scopes: ["read:filters"]} when action in @oauth_read_actions)
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:filters"]} when action not in @oauth_read_actions
+  )
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   @doc "GET /api/v1/filters"
   def index(%{assigns: %{user: user}} = conn, _) do

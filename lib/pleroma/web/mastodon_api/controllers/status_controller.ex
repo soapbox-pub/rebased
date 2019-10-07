@@ -12,6 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Activity
   alias Pleroma.Bookmark
   alias Pleroma.Object
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -21,6 +22,61 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
+
+  @unauthenticated_access %{fallback: :proceed_unauthenticated, scopes: []}
+
+  plug(
+    OAuthScopesPlug,
+    %{@unauthenticated_access | scopes: ["read:statuses"]}
+    when action in [
+           :index,
+           :show,
+           :card,
+           :context
+         ]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:statuses"]}
+    when action in [
+           :create,
+           :delete,
+           :reblog,
+           :unreblog
+         ]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["read:favourites"]} when action == :favourites)
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:favourites"]} when action in [:favourite, :unfavourite]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:mutes"]} when action in [:mute_conversation, :unmute_conversation]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{@unauthenticated_access | scopes: ["read:accounts"]}
+    when action in [:favourited_by, :reblogged_by]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action in [:pin, :unpin])
+
+  # Note: scope not present in Mastodon: read:bookmarks
+  plug(OAuthScopesPlug, %{scopes: ["read:bookmarks"]} when action == :bookmarks)
+
+  # Note: scope not present in Mastodon: write:bookmarks
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:bookmarks"]} when action in [:bookmark, :unbookmark]
+  )
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   @rate_limited_status_actions ~w(reblog unreblog favourite unfavourite create delete)a
 

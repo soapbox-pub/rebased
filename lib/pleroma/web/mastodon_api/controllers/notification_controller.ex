@@ -8,7 +8,19 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
   alias Pleroma.Notification
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.MastodonAPI.MastodonAPI
+
+  @oauth_read_actions [:show, :index]
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:notifications"]} when action in @oauth_read_actions
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action not in @oauth_read_actions)
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   # GET /api/v1/notifications
   def index(%{assigns: %{user: user}} = conn, params) do

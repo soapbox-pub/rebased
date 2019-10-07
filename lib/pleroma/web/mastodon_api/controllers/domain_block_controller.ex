@@ -5,7 +5,20 @@
 defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "read:blocks"]} when action == :index
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "write:blocks"]} when action != :index
+  )
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   @doc "GET /api/v1/domain_blocks"
   def index(%{assigns: %{user: %{info: info}}} = conn, _) do
