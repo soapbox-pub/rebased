@@ -24,6 +24,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   plug(:fetch_session)
   plug(:fetch_flash)
+  plug(Pleroma.Plugs.RateLimiter, :authentication when action == :create_authorization)
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 
@@ -460,7 +461,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   # Special case: Local MastodonFE
-  defp redirect_uri(%Plug.Conn{} = conn, "."), do: mastodon_api_url(conn, :login)
+  defp redirect_uri(%Plug.Conn{} = conn, "."), do: auth_url(conn, :login)
 
   defp redirect_uri(%Plug.Conn{}, redirect_uri), do: redirect_uri
 
@@ -474,7 +475,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   defp validate_scopes(app, params) do
     params
     |> Scopes.fetch_scopes(app.scopes)
-    |> Scopes.validates(app.scopes)
+    |> Scopes.validate(app.scopes)
   end
 
   def default_redirect_uri(%App{} = app) do

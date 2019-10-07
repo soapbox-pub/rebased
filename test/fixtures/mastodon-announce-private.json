@@ -1,0 +1,35 @@
+{
+  "type": "Announce",
+  "to": [
+    "http://mastodon.example.org/users/admin/followers"
+  ],
+  "published": "2018-02-17T19:39:15Z",
+  "object": {
+    "type": "Note",
+    "id": "http://mastodon.example.org/@admin/99541947525187368",
+    "attributedTo": "http://mastodon.example.org/users/admin",
+    "content": "this is a private toot",
+    "to": [
+      "http://mastodon.example.org/users/admin/followers"
+    ]
+  },
+  "id": "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity",
+  "atomUri": "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity",
+  "actor": "http://mastodon.example.org/users/admin",
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "toot": "http://joinmastodon.org/ns#",
+      "sensitive": "as:sensitive",
+      "ostatus": "http://ostatus.org#",
+      "movedTo": "as:movedTo",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+      "conversation": "ostatus:conversation",
+      "atomUri": "ostatus:atomUri",
+      "Hashtag": "as:Hashtag",
+      "Emoji": "toot:Emoji"
+    }
+  ]
+}

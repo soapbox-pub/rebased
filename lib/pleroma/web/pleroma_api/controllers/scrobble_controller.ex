@@ -7,10 +7,16 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleController do
 
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2, fetch_integer_param: 2]
 
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
+
+  plug(OAuthScopesPlug, %{scopes: ["read"]} when action == :user_scrobbles)
+  plug(OAuthScopesPlug, %{scopes: ["write"]} when action != :user_scrobbles)
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   def new_scrobble(%{assigns: %{user: user}} = conn, %{"title" => _} = params) do
     params =

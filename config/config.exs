@@ -279,7 +279,8 @@ config :pleroma, :instance,
   max_remote_account_fields: 20,
   account_field_name_length: 512,
   account_field_value_length: 2048,
-  external_user_synchronization: true
+  external_user_synchronization: true,
+  extended_nickname_format: false
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -408,7 +409,8 @@ config :pleroma, Pleroma.Web.Metadata,
   providers: [
     Pleroma.Web.Metadata.Providers.OpenGraph,
     Pleroma.Web.Metadata.Providers.TwitterCard,
-    Pleroma.Web.Metadata.Providers.RelMe
+    Pleroma.Web.Metadata.Providers.RelMe,
+    Pleroma.Web.Metadata.Providers.Feed
   ],
   unfurl_nsfw: false
 
@@ -587,7 +589,7 @@ config :pleroma, :env, Mix.env()
 config :http_signatures,
   adapter: Pleroma.Signature
 
-config :pleroma, :rate_limit, nil
+config :pleroma, :rate_limit, authentication: {60_000, 15}
 
 config :pleroma, Pleroma.ActivityExpiration, enabled: true
 

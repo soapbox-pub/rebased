@@ -515,7 +515,7 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
 
     assert User.ap_id(user) ==
-             Pleroma.Web.Router.Helpers.o_status_url(
+             Pleroma.Web.Router.Helpers.feed_url(
                Pleroma.Web.Endpoint,
                :feed_redirect,
                user.nickname
@@ -526,7 +526,7 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
 
     assert User.ap_followers(user) ==
-             Pleroma.Web.Router.Helpers.o_status_url(
+             Pleroma.Web.Router.Helpers.feed_url(
                Pleroma.Web.Endpoint,
                :feed_redirect,
                user.nickname
@@ -1457,15 +1457,15 @@ defmodule Pleroma.UserTest do
   describe "ensure_keys_present" do
     test "it creates keys for a user and stores them in info" do
       user = insert(:user)
-      refute is_binary(user.info.keys)
+      refute is_binary(user.keys)
       {:ok, user} = User.ensure_keys_present(user)
-      assert is_binary(user.info.keys)
+      assert is_binary(user.keys)
     end
 
     test "it doesn't create keys if there already are some" do
-      user = insert(:user, %{info: %{keys: "xxx"}})
+      user = insert(:user, keys: "xxx")
       {:ok, user} = User.ensure_keys_present(user)
-      assert user.info.keys == "xxx"
+      assert user.keys == "xxx"
     end
   end
 
@@ -1724,5 +1724,62 @@ defmodule Pleroma.UserTest do
 
     assert %{info: %{hide_follows: true}} = Repo.get(User, user.id)
     assert {:ok, %{info: %{hide_follows: true}}} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
+  end
+
+  describe "get_cached_by_nickname_or_id" do
+    setup do
+      limit_to_local_content = Pleroma.Config.get([:instance, :limit_to_local_content])
+      local_user = insert(:user)
+      remote_user = insert(:user, nickname: "nickname@example.com", local: false)
+
+      on_exit(fn ->
+        Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local_content)
+      end)
+
+      [local_user: local_user, remote_user: remote_user]
+    end
+
+    test "allows getting remote users by id no matter what :limit_to_local_content is set to", %{
+      remote_user: remote_user
+    } do
+      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      assert %User{} = User.get_cached_by_nickname_or_id(remote_user.id)
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], true)
+      assert %User{} = User.get_cached_by_nickname_or_id(remote_user.id)
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
+      assert %User{} = User.get_cached_by_nickname_or_id(remote_user.id)
+    end
+
+    test "disallows getting remote users by nickname without authentication when :limit_to_local_content is set to :unauthenticated",
+         %{remote_user: remote_user} do
+      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
+      assert nil == User.get_cached_by_nickname_or_id(remote_user.nickname)
+    end
+
+    test "allows getting remote users by nickname with authentication when :limit_to_local_content is set to :unauthenticated",
+         %{remote_user: remote_user, local_user: local_user} do
+      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
+      assert %User{} = User.get_cached_by_nickname_or_id(remote_user.nickname, for: local_user)
+    end
+
+    test "disallows getting remote users by nickname when :limit_to_local_content is set to true",
+         %{remote_user: remote_user} do
+      Pleroma.Config.put([:instance, :limit_to_local_content], true)
+      assert nil == User.get_cached_by_nickname_or_id(remote_user.nickname)
+    end
+
+    test "allows getting local users by nickname no matter what :limit_to_local_content is set to",
+         %{local_user: local_user} do
+      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      assert %User{} = User.get_cached_by_nickname_or_id(local_user.nickname)
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], true)
+      assert %User{} = User.get_cached_by_nickname_or_id(local_user.nickname)
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
+      assert %User{} = User.get_cached_by_nickname_or_id(local_user.nickname)
+    end
   end
 end

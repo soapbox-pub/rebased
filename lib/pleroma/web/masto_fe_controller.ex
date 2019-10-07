@@ -5,7 +5,19 @@
 defmodule Pleroma.Web.MastoFEController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
+
+  plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :put_settings)
+
+  # Note: :index action handles attempt of unauthenticated access to private instance with redirect
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read"], fallback: :proceed_unauthenticated, skip_instance_privacy_check: true}
+    when action == :index
+  )
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action != :index)
 
   @doc "GET /web/*path"
   def index(%{assigns: %{user: user}} = conn, _params) do

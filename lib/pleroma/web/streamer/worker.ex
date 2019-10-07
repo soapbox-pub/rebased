@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.Streamer.Worker do
   use GenServer
 
@@ -128,11 +132,14 @@ defmodule Pleroma.Web.Streamer.Worker do
     blocks = user.info.blocks || []
     mutes = user.info.mutes || []
     reblog_mutes = user.info.muted_reblogs || []
+    recipient_blocks = MapSet.new(blocks ++ mutes)
+    recipients = MapSet.new(item.recipients)
     domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.info.domain_blocks)
 
     with parent when not is_nil(parent) <- Object.normalize(item),
          true <- Enum.all?([blocks, mutes, reblog_mutes], &(item.actor not in &1)),
          true <- Enum.all?([blocks, mutes], &(parent.data["actor"] not in &1)),
+         true <- MapSet.disjoint?(recipients, recipient_blocks),
          %{host: item_host} <- URI.parse(item.actor),
          %{host: parent_host} <- URI.parse(parent.data["actor"]),
          false <- Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, item_host),
@@ -194,11 +201,8 @@ defmodule Pleroma.Web.Streamer.Worker do
       # Get the current user so we have up-to-date blocks etc.
       if socket_user do
         user = User.get_cached_by_ap_id(socket_user.ap_id)
-        blocks = user.info.blocks || []
-        mutes = user.info.mutes || []
 
-        with true <- Enum.all?([blocks, mutes], &(item.actor not in &1)),
-             true <- thread_containment(item, user) do
+        if should_send?(user, item) do
           send(transport_pid, {:text, StreamerView.render("update.json", item, user)})
         end
       else

@@ -8,10 +8,15 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionController do
   require Logger
 
   alias Pleroma.Config
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
+
+  plug(OAuthScopesPlug, %{scopes: ["read"]} when action == :index)
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   @doc "GET /api/v1/suggestions"
   def index(%{assigns: %{user: user}} = conn, _) do
