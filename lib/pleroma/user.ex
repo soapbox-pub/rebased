@@ -51,6 +51,7 @@ defmodule Pleroma.User do
     field(:password_hash, :string)
     field(:password, :string, virtual: true)
     field(:password_confirmation, :string, virtual: true)
+    field(:keys, :string)
     field(:following, {:array, :string}, default: [])
     field(:ap_id, :string)
     field(:avatar, :map)
@@ -1554,11 +1555,14 @@ defmodule Pleroma.User do
     }
   end
 
-  def ensure_keys_present(%{info: %{keys: keys}} = user) when not is_nil(keys), do: {:ok, user}
+  def ensure_keys_present(%{keys: keys} = user) when not is_nil(keys), do: {:ok, user}
 
   def ensure_keys_present(%User{} = user) do
     with {:ok, pem} <- Keys.generate_rsa_pem() do
-      update_info(user, &User.Info.set_keys(&1, pem))
+      user
+      |> cast(%{keys: pem}, [:keys])
+      |> validate_required([:keys])
+      |> update_and_set_cache()
     end
   end
 

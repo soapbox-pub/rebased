@@ -9,7 +9,13 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     only: [add_link_headers: 2, add_link_headers: 3, truthy_param?: 1]
 
   alias Pleroma.Pagination
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.ActivityPub.ActivityPub
+
+  plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:home, :direct])
+  plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :list)
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
 

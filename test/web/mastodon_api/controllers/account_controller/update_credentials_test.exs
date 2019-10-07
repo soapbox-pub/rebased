@@ -272,7 +272,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user_response["pleroma"]["background_image"]
     end
 
-    test "requires 'write' permission", %{conn: conn} do
+    test "requires 'write:accounts' permission", %{conn: conn} do
       token1 = insert(:oauth_token, scopes: ["read"])
       token2 = insert(:oauth_token, scopes: ["write", "follow"])
 
@@ -283,7 +283,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
           |> patch("/api/v1/accounts/update_credentials", %{})
 
         if token == token1 do
-          assert %{"error" => "Insufficient permissions: write."} == json_response(conn, 403)
+          assert %{"error" => "Insufficient permissions: write:accounts."} ==
+                   json_response(conn, 403)
         else
           assert json_response(conn, 200)
         end

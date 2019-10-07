@@ -5,12 +5,15 @@
 defmodule Pleroma.Web.MastodonAPI.AppController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
+
+  plug(OAuthScopesPlug, %{scopes: ["read"]} when action == :verify_credentials)
 
   @local_mastodon_name "Mastodon-Local"
 

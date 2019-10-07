@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     only: [add_link_headers: 2, truthy_param?: 1, assign_account_by_id: 2, json_response: 3]
 
   alias Pleroma.Emoji
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -18,6 +19,49 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
+
+  plug(
+    OAuthScopesPlug,
+    %{fallback: :proceed_unauthenticated, scopes: ["read:accounts"]}
+    when action == :show
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:accounts"]}
+    when action in [:endorsements, :verify_credentials, :followers, :following]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :update_credentials)
+
+  plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :lists)
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "read:blocks"]} when action == :blocks
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "write:blocks"]} when action in [:block, :unblock]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["read:follows"]} when action == :relationships)
+
+  # Note: :follows (POST /api/v1/follows) is the same as :follow, consider removing :follows
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "write:follows"]} when action in [:follows, :follow, :unfollow]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["follow", "read:mutes"]} when action == :mutes)
+
+  plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
+
+  plug(
+    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+    when action != :create
+  )
 
   @relations [:follow, :unfollow]
   @needs_account ~W(followers following lists follow unfollow mute unmute block unblock)a
@@ -342,4 +386,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   def blocks(%{assigns: %{user: user}} = conn, _) do
     render(conn, "index.json", users: User.blocked_users(user), for: user, as: :user)
   end
+
+  @doc "GET /api/v1/endorsements"
+  def endorsements(conn, params),
+    do: Pleroma.Web.MastodonAPI.MastodonAPIController.empty_array(conn, params)
 end

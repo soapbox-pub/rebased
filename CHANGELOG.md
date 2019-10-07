@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: `POST /api/v1/pleroma/scrobble` to scrobble a media item
 - Mastodon API: Add `upload_limit`, `avatar_upload_limit`, `background_upload_limit`, and `banner_upload_limit` to `/api/v1/instance`
 - Mastodon API: Add `pleroma.unread_conversation_count` to the Account entity
+- OAuth: support for hierarchical permissions / [Mastodon 2.4.3 OAuth permissions](https://docs.joinmastodon.org/api/permissions/)
+- Authentication: Added rate limit for password-authorized actions / login existence checks
 - Pleroma API: Add Emoji reactions
 
 ### Changed
@@ -23,11 +25,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Return `total` when querying for reports
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
 - Admin API: Return link alongside with token on password reset
+- MRF (Simple Policy): Also use `:accept`/`:reject` on the actors rather than only their activities
 
 ### Fixed
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
 - Added `:instance, extended_nickname_format` setting to the default config
+- Report emails now include functional links to profiles of remote user accounts
 
 ## [1.1.0] - 2019-??-??
 ### Security

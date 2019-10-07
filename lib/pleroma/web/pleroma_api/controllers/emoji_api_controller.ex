@@ -1,7 +1,25 @@
 defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Plugs.OAuthScopesPlug
+
   require Logger
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write"]}
+    when action in [
+           :create,
+           :delete,
+           :download_from,
+           :list_from,
+           :import_from_fs,
+           :update_file,
+           :update_metadata
+         ]
+  )
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   def emoji_dir_path do
     Path.join(
