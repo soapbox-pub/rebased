@@ -14,9 +14,8 @@
             "discoverable": "toot:discoverable",
             "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
             "ostatus": "http://ostatus.org#",
-            "schema": "http://schema.org",
+            "schema": "http://schema.org#",
             "toot": "http://joinmastodon.org/ns#",
-            "totalItems": "as:totalItems",
             "value": "schema:value",
             "sensitive": "as:sensitive",
             "litepub": "http://litepub.social/ns#",
@@ -27,10 +26,6 @@
             },
             "oauthRegistrationEndpoint": {
                 "@id": "litepub:oauthRegistrationEndpoint",
-                "@type": "@id"
-            },
-            "uploadMedia": {
-                "@id": "litepub:uploadMedia",
                 "@type": "@id"
             },
             "EmojiReaction": "litepub:EmojiReaction"
