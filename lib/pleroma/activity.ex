@@ -42,7 +42,8 @@ defmodule Pleroma.Activity do
     field(:recipients, {:array, :string}, default: [])
     field(:thread_muted?, :boolean, virtual: true)
 
-    # This is a fake relation, do not use outside of with_preloaded_user_actor/with_joined_user_actor
+    # This is a fake relation,
+    # do not use outside of with_preloaded_user_actor/with_joined_user_actor
     has_one(:user_actor, User, on_delete: :nothing, foreign_key: :id)
     # This is a fake relation, do not use outside of with_preloaded_bookmark/get_bookmark
     has_one(:bookmark, Bookmark)
