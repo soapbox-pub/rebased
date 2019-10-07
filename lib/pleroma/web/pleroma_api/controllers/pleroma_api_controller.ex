@@ -11,8 +11,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
-  alias Pleroma.User
   alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
