@@ -18,7 +18,8 @@ defmodule Pleroma.Repo.Migrations.CreateFollowingRelationships do
     create_if_not_exists(index(:following_relationships, :follower_id))
     create_if_not_exists(unique_index(:following_relationships, [:follower_id, :following_id]))
 
-    execute(insert_following_relationships_rows(), restore_following_column())
+    execute(import_following_from_users(), "")
+    execute(import_following_from_activities(), restore_following_column())
 
     drop(index(:users, [:following], concurrently: true, using: :gin))
 
@@ -27,7 +28,33 @@ defmodule Pleroma.Repo.Migrations.CreateFollowingRelationships do
     end
   end
 
-  defp insert_following_relationships_rows do
+  defp import_following_from_users do
+    """
+    INSERT INTO following_relationships (follower_id, following_id, state, inserted_at, updated_at)
+    SELECT
+        relations.follower_id,
+        following.id,
+        'accept',
+        now(),
+        now()
+    FROM (
+        SELECT
+            users.id AS follower_id,
+            unnest(users.following) AS following_ap_id
+        FROM
+            users
+        WHERE
+            users.following != '{}'
+            AND users.local = false OR users.local = true AND users.email IS NOT NULL -- Exclude `internal/fetch` and `relay`
+    ) AS relations
+        JOIN users AS "following" ON "following".follower_address = relations.following_ap_id
+
+        WHERE relations.follower_id != following.id
+    ON CONFLICT DO NOTHING
+    """
+  end
+
+  defp import_following_from_activities do
     """
     INSERT INTO
         following_relationships (
@@ -49,7 +76,9 @@ defmodule Pleroma.Repo.Migrations.CreateFollowingRelationships do
         JOIN users AS following ON (activities.data ->> 'object' = following.ap_id)
     WHERE
         activities.data ->> 'type' = 'Follow'
-        AND activities.data ->> 'state' IN ('accept', 'pending', 'reject') ON CONFLICT DO NOTHING
+        AND activities.data ->> 'state' IN ('accept', 'pending', 'reject')
+    ORDER BY activities.updated_at DESC
+    ON CONFLICT DO NOTHING
     """
   end
 
@@ -58,35 +87,25 @@ defmodule Pleroma.Repo.Migrations.CreateFollowingRelationships do
     UPDATE
         users
     SET
-        following = following_query.following,
+        following = following_query.following_array,
         updated_at = now()
-    FROM
-        (
-            SELECT
-                followers.id AS follower_id,
-                array_prepend(
-                    followers.follower_address,
-                    array_agg(DISTINCT following.ap_id) FILTER (
-                        WHERE
-                            following.ap_id IS NOT NULL
-                    )
-                ) as following
-            FROM
-                users AS followers
-                LEFT OUTER JOIN activities ON (
-                    followers.ap_id = activities.actor
-                    AND activities.data ->> 'type' = 'Follow'
-                    AND activities.data ->> 'state' IN ('accept', 'pending', 'reject')
-                )
-                LEFT OUTER JOIN users AS following ON (activities.data ->> 'object' = following.ap_id)
-            WHERE
-                followers.email IS NOT NULL  -- Exclude `internal/fetch` and `relay`
-            GROUP BY
-                followers.id,
-                followers.ap_id
-        ) AS following_query
+    FROM (
+        SELECT
+            follwer.id AS follower_id,
+            CASE follwer.local
+            WHEN TRUE THEN
+                array_prepend(follwer.follower_address, array_agg(following.follower_address))
+            ELSE
+                array_agg(following.follower_address)
+            END AS following_array
+        FROM
+            following_relationships
+            JOIN users AS follwer ON follwer.id = following_relationships.follower_id
+            JOIN users AS FOLLOWING ON following.id = following_relationships.following_id
+        GROUP BY
+            follwer.id) AS following_query
     WHERE
-        following_query.follower_id = users.id;
+        following_query.follower_id = users.id
     """
   end
 end
