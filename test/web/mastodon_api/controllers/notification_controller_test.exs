@@ -137,6 +137,57 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
   end
 
+  test "filters notifications using exclude_visibilities", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, public_activity} =
+      CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "public"})
+
+    {:ok, direct_activity} =
+      CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "direct"})
+
+    {:ok, unlisted_activity} =
+      CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "unlisted"})
+
+    {:ok, private_activity} =
+      CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "private"})
+
+    conn = assign(conn, :user, user)
+
+    conn_res =
+      get(conn, "/api/v1/notifications", %{
+        exclude_visibilities: ["public", "unlisted", "private"]
+      })
+
+    assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+    assert id == direct_activity.id
+
+    conn_res =
+      get(conn, "/api/v1/notifications", %{
+        exclude_visibilities: ["public", "unlisted", "direct"]
+      })
+
+    assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+    assert id == private_activity.id
+
+    conn_res =
+      get(conn, "/api/v1/notifications", %{
+        exclude_visibilities: ["public", "private", "direct"]
+      })
+
+    assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+    assert id == unlisted_activity.id
+
+    conn_res =
+      get(conn, "/api/v1/notifications", %{
+        exclude_visibilities: ["unlisted", "private", "direct"]
+      })
+
+    assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+    assert id == public_activity.id
+  end
+
   test "filters notifications using exclude_types", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)

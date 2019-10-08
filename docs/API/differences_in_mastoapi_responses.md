@@ -13,6 +13,7 @@ Some apps operate under the assumption that no more than 4 attachments can be re
 ## Timelines
 
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
+Adding the parameter `exclude_visibilities` to the timeline queries will exclude the statuses with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`), e.g., `exclude_visibilities[]=direct&exclude_visibilities[]=private`.
 
 ## Statuses
 
@@ -83,6 +84,12 @@ Behavior has changed:
 Has these additional fields under the `pleroma` object:
 
 - `is_seen`: true if the notification was read by the user
+
+## GET `/api/v1/notifications`
+
+Accepts additional parameters:
+
+- `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
 
 ## POST `/api/v1/statuses`
 
