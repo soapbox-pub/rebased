@@ -7,7 +7,7 @@ defmodule Pleroma.Repo.Migrations.CreateConversationParticipationRecipientShips 
       add(:participation_id, references(:conversation_participations, on_delete: :delete_all))
     end
 
-    create_if_not_exists index(:conversation_participation_recipient_ships, [:user_id])
-    create_if_not_exists index(:conversation_participation_recipient_ships, [:participation_id])
+    create_if_not_exists(index(:conversation_participation_recipient_ships, [:user_id]))
+    create_if_not_exists(index(:conversation_participation_recipient_ships, [:participation_id]))
   end
 end
