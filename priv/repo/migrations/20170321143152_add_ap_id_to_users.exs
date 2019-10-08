@@ -3,7 +3,7 @@ defmodule Pleroma.Repo.Migrations.AddApIdToUsers do
 
   def change do
     alter table(:users) do
-      add :ap_id, :string
+      add(:ap_id, :string)
     end
   end
 end

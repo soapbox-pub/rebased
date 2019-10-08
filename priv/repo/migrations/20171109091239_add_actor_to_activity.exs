@@ -5,16 +5,17 @@ defmodule Pleroma.Repo.Migrations.AddActorToActivity do
 
   def up do
     alter table(:activities) do
-      add :actor, :string
+      add(:actor, :string)
     end
 
-    create index(:activities, [:actor, "id DESC NULLS LAST"], concurrently: true)
+    create(index(:activities, [:actor, "id DESC NULLS LAST"], concurrently: true))
   end
 
   def down do
-    drop_if_exists index(:activities, [:actor, "id DESC NULLS LAST"])
+    drop_if_exists(index(:activities, [:actor, "id DESC NULLS LAST"]))
+
     alter table(:activities) do
-      remove :actor
+      remove(:actor)
     end
   end
 end

@@ -3,6 +3,12 @@ defmodule Pleroma.Repo.Migrations.AddActivitiesLikesIndex do
   @disable_ddl_transaction true
 
   def change do
-    create index(:activities, ["((data #> '{\"object\",\"likes\"}'))"], concurrently: true, name: :activities_likes, using: :gin)
+    create(
+      index(:activities, ["((data #> '{\"object\",\"likes\"}'))"],
+        concurrently: true,
+        name: :activities_likes,
+        using: :gin
+      )
+    )
   end
 end

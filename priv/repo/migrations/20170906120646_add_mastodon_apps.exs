@@ -3,12 +3,12 @@ defmodule Pleroma.Repo.Migrations.AddMastodonApps do
 
   def change do
     create_if_not_exists table(:apps) do
-      add :client_name, :string
-      add :redirect_uris, :string
-      add :scopes, :string
-      add :website, :string
-      add :client_id, :string
-      add :client_secret, :string
+      add(:client_name, :string)
+      add(:redirect_uris, :string)
+      add(:scopes, :string)
+      add(:website, :string)
+      add(:client_id, :string)
+      add(:client_secret, :string)
 
       timestamps()
     end
