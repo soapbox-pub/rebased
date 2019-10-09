@@ -8,6 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
   alias Pleroma.Config
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -463,6 +464,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     assert %{"id" => id} = json_response(conn, 200)
     assert id == to_string(activity.id)
+  end
+
+  test "get a direct status", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{"status" => "@#{other_user.nickname}", "visibility" => "direct"})
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/statuses/#{activity.id}")
+
+    [participation] = Participation.for_user(user)
+
+    res = json_response(conn, 200)
+    assert res["pleroma"]["direct_conversation_id"] == participation.id
   end
 
   test "get statuses by IDs", %{conn: conn} do
