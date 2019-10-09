@@ -40,7 +40,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     test "search", %{conn: conn} do
       user = insert(:user)
       user_two = insert(:user, %{nickname: "shp@shitposter.club"})
-      user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
+      user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu 天子"})
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "This is about 2hu private"})
 
@@ -52,9 +52,9 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       {:ok, _} = CommonAPI.post(user_two, %{"status" => "This isn't"})
 
-      conn = get(conn, "/api/v2/search", %{"q" => "2hu #private"})
-
-      assert results = json_response(conn, 200)
+      results =
+        get(conn, "/api/v2/search", %{"q" => "2hu #private"})
+        |> json_response(200)
 
       [account | _] = results["accounts"]
       assert account["id"] == to_string(user_three.id)
@@ -65,6 +65,13 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       [status] = results["statuses"]
       assert status["id"] == to_string(activity.id)
+
+      results =
+        get(conn, "/api/v2/search", %{"q" => "天子"})
+        |> json_response(200)
+
+      [account] == results["accounts"]
+      assert account["id"] == to_string(user_three.id)
     end
   end
 
