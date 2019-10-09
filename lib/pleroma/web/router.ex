@@ -136,21 +136,15 @@ defmodule Pleroma.Web.Router do
 
     delete("/users", AdminAPIController, :user_delete)
     post("/users", AdminAPIController, :users_create)
-    patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
+    patch("/users/activate", AdminAPIController, :user_activate)
+    patch("/users/deactivate", AdminAPIController, :user_deactivate)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
 
     get("/users/:nickname/permission_group", AdminAPIController, :right_get)
     get("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_get)
-    post("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_add)
-
-    delete(
-      "/users/:nickname/permission_group/:permission_group",
-      AdminAPIController,
-      :right_delete
-    )
-
-    put("/users/:nickname/activation_status", AdminAPIController, :set_activation_status)
+    post("/users/permission_group/:permission_group", AdminAPIController, :right_add)
+    delete("/users/permission_group/:permission_group", AdminAPIController, :right_delete)
 
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)

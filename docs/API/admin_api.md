@@ -154,31 +154,62 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
+## `POST /api/pleroma/admin/users/permission_group/:permission_group`
+
 ### Add user in permission group
 
-- Method: `POST`
-- Params: none
+- Params:
+  - `nicknames`: nicknames array
 - Response:
   - On failure: `{"error": "…"}`
   - On success: JSON of the `user.info`
 
+## `DELETE /api/pleroma/admin/users/permission_group/:permission_group`
+
 ### Remove user from permission group
 
-- Method: `DELETE`
-- Params: none
+- Params:
+  - `nicknames`: nicknames array
 - Response:
   - On failure: `{"error": "…"}`
   - On success: JSON of the `user.info`
 - Note: An admin cannot revoke their own admin status.
 
-## `/api/pleroma/admin/users/:nickname/activation_status`
+## `PATCH /api/pleroma/admin/users/activate`
 
-### Active or deactivate a user
+### Activate user
 
-- Method: `PUT`
 - Params:
-  - `nickname`
-  - `status` BOOLEAN field, false value means deactivation.
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
+## `PATCH /api/pleroma/admin/users/deactivate`
+
+### Deactivate user
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
 
 ## `/api/pleroma/admin/users/:nickname_or_id`
 

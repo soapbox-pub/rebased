@@ -20,6 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
 - **Breaking:** Admin API: Return link alongside with token on password reset
+- **Breaking:** Admin API: `/users/:nickname/toggle_activation` endpoint was split into two: `/users/activate`, `/users/deactivate`, both accept `nicknames` array
+- **Breaking:** Admin API: `POST /users/permission_group/:permission_group` / `DELETE /users/permission_group/:permission_group` now accept `nicknames` array
 - Replaced [pleroma_job_queue](https://git.pleroma.social/pleroma/pleroma_job_queue) and `Pleroma.Web.Federator.RetryQueue` with [Oban](https://github.com/sorentwo/oban) (see [`docs/config.md`](docs/config.md) on migrating customized worker / retry settings)
 - Introduced [quantum](https://github.com/quantum-elixir/quantum-core) job scheduler
 - Admin API: Return `total` when querying for reports
@@ -40,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 - **Breaking:** GNU Social API with Qvitter extensions support
+- **Breaking:** Admin API: `/users/:nickname/activation_status` was removed in favor of `/users/activate`, `/users/deactivate`
 - Emoji: Remove longfox emojis.
 - Remove `Reply-To` header from report emails for admins.
 

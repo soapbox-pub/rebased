@@ -128,7 +128,7 @@ defmodule Pleroma.ModerationLogTest do
       {:ok, _} =
         ModerationLog.insert_log(%{
           actor: moderator,
-          subject: subject1,
+          subject: [subject1],
           action: "grant",
           permission: "moderator"
         })
@@ -142,7 +142,7 @@ defmodule Pleroma.ModerationLogTest do
       {:ok, _} =
         ModerationLog.insert_log(%{
           actor: moderator,
-          subject: subject1,
+          subject: [subject1],
           action: "revoke",
           permission: "moderator"
         })

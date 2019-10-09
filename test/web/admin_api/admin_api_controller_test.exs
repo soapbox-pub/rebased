@@ -386,13 +386,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "/:right POST, can add to a permission group" do
       admin = insert(:user, info: %{is_admin: true})
-      user = insert(:user)
+      user_one = insert(:user)
+      user_two = insert(:user)
 
       conn =
         build_conn()
         |> assign(:user, admin)
         |> put_req_header("accept", "application/json")
-        |> post("/api/pleroma/admin/users/#{user.nickname}/permission_group/admin")
+        |> post("/api/pleroma/admin/users/permission_group/admin", %{
+          nicknames: [user_one.nickname, user_two.nickname]
+        })
 
       assert json_response(conn, 200) == %{
                "is_admin" => true
@@ -401,18 +404,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       log_entry = Repo.one(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} made @#{user.nickname} admin"
+               "@#{admin.nickname} made @#{user_one.nickname}, @#{user_two.nickname} admin"
     end
 
     test "/:right DELETE, can remove from a permission group" do
       admin = insert(:user, info: %{is_admin: true})
-      user = insert(:user, info: %{is_admin: true})
+      user_one = insert(:user, info: %{is_admin: true})
+      user_two = insert(:user, info: %{is_admin: true})
 
       conn =
         build_conn()
         |> assign(:user, admin)
         |> put_req_header("accept", "application/json")
-        |> delete("/api/pleroma/admin/users/#{user.nickname}/permission_group/admin")
+        |> delete("/api/pleroma/admin/users/permission_group/admin", %{
+          nicknames: [user_one.nickname, user_two.nickname]
+        })
 
       assert json_response(conn, 200) == %{
                "is_admin" => false
@@ -421,65 +427,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       log_entry = Repo.one(ModerationLog)
 
       assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} revoked admin role from @#{user.nickname}"
-    end
-  end
-
-  describe "PUT /api/pleroma/admin/users/:nickname/activation_status" do
-    setup %{conn: conn} do
-      admin = insert(:user, info: %{is_admin: true})
-
-      conn =
-        conn
-        |> assign(:user, admin)
-        |> put_req_header("accept", "application/json")
-
-      %{conn: conn, admin: admin}
-    end
-
-    test "deactivates the user", %{conn: conn, admin: admin} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> put("/api/pleroma/admin/users/#{user.nickname}/activation_status", %{status: false})
-
-      user = User.get_cached_by_id(user.id)
-      assert user.info.deactivated == true
-      assert json_response(conn, :no_content)
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} deactivated user @#{user.nickname}"
-    end
-
-    test "activates the user", %{conn: conn, admin: admin} do
-      user = insert(:user, info: %{deactivated: true})
-
-      conn =
-        conn
-        |> put("/api/pleroma/admin/users/#{user.nickname}/activation_status", %{status: true})
-
-      user = User.get_cached_by_id(user.id)
-      assert user.info.deactivated == false
-      assert json_response(conn, :no_content)
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} activated user @#{user.nickname}"
-    end
-
-    test "returns 403 when requested by a non-admin", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> put("/api/pleroma/admin/users/#{user.nickname}/activation_status", %{status: false})
-
-      assert json_response(conn, :forbidden)
+               "@#{admin.nickname} revoked admin role from @#{user_one.nickname}, @#{
+                 user_two.nickname
+               }"
     end
   end
 
@@ -1029,31 +979,48 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation" do
+  test "PATCH /api/pleroma/admin/users/activate" do
     admin = insert(:user, info: %{is_admin: true})
-    user = insert(:user)
+    user_one = insert(:user, info: %{deactivated: true})
+    user_two = insert(:user, info: %{deactivated: true})
 
     conn =
       build_conn()
       |> assign(:user, admin)
-      |> patch("/api/pleroma/admin/users/#{user.nickname}/toggle_activation")
+      |> patch(
+        "/api/pleroma/admin/users/activate",
+        %{nicknames: [user_one.nickname, user_two.nickname]}
+      )
 
-    assert json_response(conn, 200) ==
-             %{
-               "deactivated" => !user.info.deactivated,
-               "id" => user.id,
-               "nickname" => user.nickname,
-               "roles" => %{"admin" => false, "moderator" => false},
-               "local" => true,
-               "tags" => [],
-               "avatar" => User.avatar_url(user) |> MediaProxy.url(),
-               "display_name" => HTML.strip_tags(user.name || user.nickname)
-             }
+    response = json_response(conn, 200)
+    assert Enum.map(response["users"], & &1["deactivated"]) == [false, false]
 
     log_entry = Repo.one(ModerationLog)
 
     assert ModerationLog.get_log_entry_message(log_entry) ==
-             "@#{admin.nickname} deactivated user @#{user.nickname}"
+             "@#{admin.nickname} activated users: @#{user_one.nickname}, @#{user_two.nickname}"
+  end
+
+  test "PATCH /api/pleroma/admin/users/deactivate" do
+    admin = insert(:user, info: %{is_admin: true})
+    user_one = insert(:user, info: %{deactivated: false})
+    user_two = insert(:user, info: %{deactivated: false})
+
+    conn =
+      build_conn()
+      |> assign(:user, admin)
+      |> patch(
+        "/api/pleroma/admin/users/deactivate",
+        %{nicknames: [user_one.nickname, user_two.nickname]}
+      )
+
+    response = json_response(conn, 200)
+    assert Enum.map(response["users"], & &1["deactivated"]) == [true, true]
+
+    log_entry = Repo.one(ModerationLog)
+
+    assert ModerationLog.get_log_entry_message(log_entry) ==
+             "@#{admin.nickname} deactivated users: @#{user_one.nickname}, @#{user_two.nickname}"
   end
 
   describe "POST /api/pleroma/admin/users/invite_token" do

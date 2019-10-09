@@ -231,22 +231,34 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def user_toggle_activation(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
-    user = User.get_cached_by_nickname(nickname)
-
-    {:ok, updated_user} = User.deactivate(user, !user.info.deactivated)
-
-    action = if user.info.deactivated, do: "activate", else: "deactivate"
+  def user_activate(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
+    {:ok, updated_users} = User.deactivate(users, false)
 
     ModerationLog.insert_log(%{
       actor: admin,
-      subject: user,
-      action: action
+      subject: users,
+      action: "activate"
     })
 
     conn
     |> put_view(AccountView)
-    |> render("show.json", %{user: updated_user})
+    |> render("index.json", %{users: Keyword.values(updated_users)})
+  end
+
+  def user_deactivate(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
+    {:ok, updated_users} = User.deactivate(users, true)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "deactivate"
+    })
+
+    conn
+    |> put_view(AccountView)
+    |> render("index.json", %{users: Keyword.values(updated_users)})
   end
 
   def tag_users(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames, "tags" => tags}) do
@@ -315,20 +327,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   def right_add(%{assigns: %{user: admin}} = conn, %{
         "permission_group" => permission_group,
-        "nickname" => nickname
+        "nicknames" => nicknames
       })
       when permission_group in ["moderator", "admin"] do
     info = Map.put(%{}, "is_" <> permission_group, true)
 
-    {:ok, user} =
-      nickname
-      |> User.get_cached_by_nickname()
-      |> User.update_info(&User.Info.admin_api_update(&1, info))
+    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
+
+    User.update_info(users, &User.Info.admin_api_update(&1, info))
 
     ModerationLog.insert_log(%{
       action: "grant",
       actor: admin,
-      subject: user,
+      subject: users,
       permission: permission_group
     })
 
@@ -349,56 +360,36 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     })
   end
 
-  def right_delete(%{assigns: %{user: %{nickname: nickname}}} = conn, %{"nickname" => nickname}) do
-    render_error(conn, :forbidden, "You can't revoke your own admin status.")
-  end
-
   def right_delete(
-        %{assigns: %{user: admin}} = conn,
+        %{assigns: %{user: %{nickname: admin_nickname} = admin}} = conn,
         %{
           "permission_group" => permission_group,
-          "nickname" => nickname
+          "nicknames" => nicknames
         }
       )
       when permission_group in ["moderator", "admin"] do
-    info = Map.put(%{}, "is_" <> permission_group, false)
+    with false <- Enum.member?(nicknames, admin_nickname) do
+      info = Map.put(%{}, "is_" <> permission_group, false)
 
-    {:ok, user} =
-      nickname
-      |> User.get_cached_by_nickname()
-      |> User.update_info(&User.Info.admin_api_update(&1, info))
+      users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
 
-    ModerationLog.insert_log(%{
-      action: "revoke",
-      actor: admin,
-      subject: user,
-      permission: permission_group
-    })
+      User.update_info(users, &User.Info.admin_api_update(&1, info))
 
-    json(conn, info)
+      ModerationLog.insert_log(%{
+        action: "revoke",
+        actor: admin,
+        subject: users,
+        permission: permission_group
+      })
+
+      json(conn, info)
+    else
+      _ -> render_error(conn, :forbidden, "You can't revoke your own admin/moderator status.")
+    end
   end
 
   def right_delete(conn, _) do
     render_error(conn, :not_found, "No such permission_group")
-  end
-
-  def set_activation_status(%{assigns: %{user: admin}} = conn, %{
-        "nickname" => nickname,
-        "status" => status
-      }) do
-    with {:ok, status} <- Ecto.Type.cast(:boolean, status),
-         %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, _} <- User.deactivate(user, !status) do
-      action = if(user.info.deactivated, do: "activate", else: "deactivate")
-
-      ModerationLog.insert_log(%{
-        actor: admin,
-        subject: user,
-        action: action
-      })
-
-      json_response(conn, :no_content, "")
-    end
   end
 
   def relay_follow(%{assigns: %{user: admin}} = conn, %{"relay_url" => target}) do
