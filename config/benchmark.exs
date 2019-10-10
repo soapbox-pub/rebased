@@ -41,7 +41,7 @@ config :pleroma, Pleroma.Repo,
   password: "postgres",
   database: "pleroma_test",
   hostname: System.get_env("DB_HOST") || "localhost",
-  pool: Ecto.Adapters.SQL.Sandbox
+  pool_size: 10
 
 # Reduce hash rounds for testing
 config :pbkdf2_elixir, rounds: 1
