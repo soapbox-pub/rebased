@@ -10,6 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
   alias Pleroma.Pagination
   alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:home, :direct])
@@ -28,7 +29,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put("muting_user", user)
       |> Map.put("user", user)
 
-    recipients = [user.ap_id | user.following]
+    recipients = [user.ap_id | User.following(user)]
 
     activities =
       recipients
@@ -128,9 +129,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
       # we must filter the following list for the user to avoid leaking statuses the user
       # does not actually have permission to see (for more info, peruse security issue #270).
+
+      user_following = User.following(user)
+
       activities =
         following
-        |> Enum.filter(fn x -> x in user.following end)
+        |> Enum.filter(fn x -> x in user_following end)
         |> ActivityPub.fetch_activities_bounded(following, params)
         |> Enum.reverse()
 

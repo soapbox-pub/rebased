@@ -16,7 +16,7 @@ defmodule Pleroma.Repo.Migrations.CreateFollowingRelationships do
     execute(update_thread_visibility(), restore_thread_visibility())
   end
 
-  # The only difference with the original verion: `actor_user` replaced with `actor_user_following`
+  # The only difference between the original version: `actor_user` replaced with `actor_user_following`
   def update_thread_visibility do
     """
     CREATE OR REPLACE FUNCTION thread_visibility(actor varchar, activity_id varchar) RETURNS boolean AS $$

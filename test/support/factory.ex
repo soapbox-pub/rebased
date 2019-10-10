@@ -39,8 +39,7 @@ defmodule Pleroma.Factory do
       user
       | ap_id: User.ap_id(user),
         follower_address: User.ap_followers(user),
-        following_address: User.ap_following(user),
-        following: [User.ap_id(user)]
+        following_address: User.ap_following(user)
     }
   end
 

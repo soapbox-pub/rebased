@@ -6,6 +6,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Object
   alias Pleroma.ThreadMute
   alias Pleroma.User
@@ -40,6 +41,7 @@ defmodule Pleroma.Web.CommonAPI do
     with {:ok, follower} <- User.follow(follower, followed),
          %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "accept"),
          {:ok, _activity} <-
            ActivityPub.accept(%{
              to: [follower.ap_id],
@@ -54,6 +56,7 @@ defmodule Pleroma.Web.CommonAPI do
   def reject_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "reject"),
          {:ok, _activity} <-
            ActivityPub.reject(%{
              to: [follower.ap_id],

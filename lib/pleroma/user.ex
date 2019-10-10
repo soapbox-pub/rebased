@@ -13,6 +13,7 @@ defmodule Pleroma.User do
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Keys
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -52,7 +53,6 @@ defmodule Pleroma.User do
     field(:password, :string, virtual: true)
     field(:password_confirmation, :string, virtual: true)
     field(:keys, :string)
-    field(:following, {:array, :string}, default: [])
     field(:ap_id, :string)
     field(:avatar, :map)
     field(:local, :boolean, default: true)
@@ -162,13 +162,7 @@ defmodule Pleroma.User do
     )
   end
 
-  def following_count(%User{following: []}), do: 0
-
-  def following_count(%User{} = user) do
-    user
-    |> get_friends_query()
-    |> Repo.aggregate(:count, :id)
-  end
+  defdelegate following_count(user), to: FollowingRelationship
 
   defp truncate_if_exists(params, key, max_length) do
     if Map.has_key?(params, key) and is_binary(params[key]) do
@@ -216,7 +210,7 @@ defmodule Pleroma.User do
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
     struct
-    |> cast(params, [:bio, :name, :avatar, :following])
+    |> cast(params, [:bio, :name, :avatar])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
@@ -324,7 +318,6 @@ defmodule Pleroma.User do
     followers = ap_followers(%User{nickname: get_field(changeset, :nickname)})
 
     changeset
-    |> put_change(:following, [followers])
     |> put_change(:follower_address, followers)
   end
 
@@ -378,8 +371,11 @@ defmodule Pleroma.User do
   def needs_update?(_), do: true
 
   @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
-  def maybe_direct_follow(%User{} = follower, %User{local: true, info: %{locked: true}}) do
-    {:ok, follower}
+  def maybe_direct_follow(
+        %User{} = follower,
+        %User{local: true, info: %{locked: true}} = followed
+      ) do
+    follow(follower, followed, "pending")
   end
 
   def maybe_direct_follow(%User{} = follower, %User{local: true} = followed) do
@@ -397,37 +393,22 @@ defmodule Pleroma.User do
   @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do
-    followed_addresses =
-      followeds
-      |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
-      |> Enum.map(fn %{follower_address: fa} -> fa end)
+    followeds =
+      Enum.reject(followeds, fn followed ->
+        blocks?(follower, followed) || blocks?(followed, follower)
+      end)
 
-    q =
-      from(u in User,
-        where: u.id == ^follower.id,
-        update: [
-          set: [
-            following:
-              fragment(
-                "array(select distinct unnest (array_cat(?, ?)))",
-                u.following,
-                ^followed_addresses
-              )
-          ]
-        ],
-        select: u
-      )
-
-    {1, [follower]} = Repo.update_all(q, [])
+    Enum.each(followeds, &follow(follower, &1, "accept"))
 
     Enum.each(followeds, &update_follower_count/1)
 
     set_cache(follower)
   end
 
-  def follow(%User{} = follower, %User{info: info} = followed) do
+  defdelegate following(user), to: FollowingRelationship
+
+  def follow(%User{} = follower, %User{info: info} = followed, state \\ "accept") do
     deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
-    ap_followers = followed.follower_address
 
     cond do
       info.deactivated ->
@@ -441,14 +422,7 @@ defmodule Pleroma.User do
           Websub.subscribe(follower, followed)
         end
 
-        q =
-          from(u in User,
-            where: u.id == ^follower.id,
-            update: [push: [following: ^ap_followers]],
-            select: u
-          )
-
-        {1, [follower]} = Repo.update_all(q, [])
+        FollowingRelationship.follow(follower, followed, state)
 
         follower = maybe_update_following_count(follower)
 
@@ -459,17 +433,8 @@ defmodule Pleroma.User do
   end
 
   def unfollow(%User{} = follower, %User{} = followed) do
-    ap_followers = followed.follower_address
-
     if following?(follower, followed) and follower.ap_id != followed.ap_id do
-      q =
-        from(u in User,
-          where: u.id == ^follower.id,
-          update: [pull: [following: ^ap_followers]],
-          select: u
-        )
-
-      {1, [follower]} = Repo.update_all(q, [])
+      FollowingRelationship.unfollow(follower, followed)
 
       follower = maybe_update_following_count(follower)
 
@@ -483,10 +448,7 @@ defmodule Pleroma.User do
     end
   end
 
-  @spec following?(User.t(), User.t()) :: boolean
-  def following?(%User{} = follower, %User{} = followed) do
-    Enum.member?(follower.following, followed.follower_address)
-  end
+  defdelegate following?(follower, followed), to: FollowingRelationship
 
   def locked?(%User{} = user) do
     user.info.locked || false
@@ -707,16 +669,7 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
-  @spec get_follow_requests(User.t()) :: {:ok, [User.t()]}
-  def get_follow_requests(%User{} = user) do
-    user
-    |> Activity.follow_requests_for_actor()
-    |> join(:inner, [a], u in User, on: a.actor == u.ap_id)
-    |> where([a, u], not fragment("? @> ?", u.following, ^[user.follower_address]))
-    |> group_by([a, u], u.id)
-    |> select([a, u], u)
-    |> Repo.all()
-  end
+  defdelegate get_follow_requests(user), to: FollowingRelationship
 
   def increase_note_count(%User{} = user) do
     User
@@ -898,18 +851,6 @@ defmodule Pleroma.User do
   end
 
   def increment_unread_conversation_count(_, _), do: :noop
-
-  def remove_duplicated_following(%User{following: following} = user) do
-    uniq_following = Enum.uniq(following)
-
-    if length(following) == length(uniq_following) do
-      {:ok, user}
-    else
-      user
-      |> update_changeset(%{following: uniq_following})
-      |> update_and_set_cache()
-    end
-  end
 
   @spec get_users_from_set([String.t()], boolean()) :: [User.t()]
   def get_users_from_set(ap_ids, local_only \\ true) do

@@ -36,8 +36,9 @@ defmodule Mix.Tasks.Pleroma.Relay do
   def run(["list"]) do
     start_pleroma()
 
-    with %User{following: following} = _user <- Relay.get_actor() do
-      following
+    with %User{} = user <- Relay.get_actor() do
+      user
+      |> User.following()
       |> Enum.map(fn entry -> URI.parse(entry).host end)
       |> Enum.uniq()
       |> Enum.each(&shell_info(&1))
