@@ -37,16 +37,11 @@ config :pleroma, :activitypub, sign_object_fetches: false
 # Configure your database
 config :pleroma, Pleroma.Repo,
   adapter: Ecto.Adapters.Postgres,
-  username: System.get_env("DB_USER") || "postgres",
-  database: System.get_env("DB_DATABASE") || "pleroma_test",
+  username: "postgres",
+  password: "postgres",
+  database: "pleroma_test",
   hostname: System.get_env("DB_HOST") || "localhost",
-  # username: "pleroma",
-  password:
-    System.get_env("DB_PASS") ||
-      "cAUrGezwXjRwd/lIPzZAcwjb/hiZiGi3FIaSGy9l/XsTcGA61FMy7eCBiRcg1DyQ",
-  # password: "",
-  pool_size: 10,
-  timeout: 180_000
+  pool: Ecto.Adapters.SQL.Sandbox
 
 # Reduce hash rounds for testing
 config :pbkdf2_elixir, rounds: 1
