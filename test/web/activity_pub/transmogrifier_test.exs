@@ -696,8 +696,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("object", object)
         |> Map.put("actor", activity.data["actor"])
 
-      {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
+      {:ok, %Activity{local: false, data: %{"id" => id}}} = Transmogrifier.handle_incoming(data)
 
+      assert id == data["id"]
       refute Activity.get_by_id(activity.id)
     end
 

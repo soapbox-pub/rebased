@@ -409,7 +409,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
+  def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, options \\ []) do
+    local = Keyword.get(options, :local, true)
+    activity_id = Keyword.get(options, :activity_id, nil)
+
     user = User.get_cached_by_ap_id(actor)
     to = (object.data["to"] || []) ++ (object.data["cc"] || [])
 
@@ -420,7 +423,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            "object" => id,
            "to" => to,
            "deleted_activity_id" => activity && activity.id
-         },
+         }
+         |> maybe_put("id", activity_id),
          {:ok, activity} <- insert(data, local, false),
          stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
