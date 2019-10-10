@@ -57,7 +57,7 @@ benchmark:
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
-    - mix pleroma.benchmark
+    - mix pleroma.load_testing
 
 unit-testing:
   stage: test
