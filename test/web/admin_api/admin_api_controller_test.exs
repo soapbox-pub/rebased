@@ -1023,6 +1023,33 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              "@#{admin.nickname} deactivated users: @#{user_one.nickname}, @#{user_two.nickname}"
   end
 
+  test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation" do
+    admin = insert(:user, info: %{is_admin: true})
+    user = insert(:user)
+
+    conn =
+      build_conn()
+      |> assign(:user, admin)
+      |> patch("/api/pleroma/admin/users/#{user.nickname}/toggle_activation")
+
+    assert json_response(conn, 200) ==
+             %{
+               "deactivated" => !user.info.deactivated,
+               "id" => user.id,
+               "nickname" => user.nickname,
+               "roles" => %{"admin" => false, "moderator" => false},
+               "local" => true,
+               "tags" => [],
+               "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+               "display_name" => HTML.strip_tags(user.name || user.nickname)
+             }
+
+    log_entry = Repo.one(ModerationLog)
+
+    assert ModerationLog.get_log_entry_message(log_entry) ==
+             "@#{admin.nickname} deactivated users: @#{user.nickname}"
+  end
+
   describe "POST /api/pleroma/admin/users/invite_token" do
     setup do
       admin = insert(:user, info: %{is_admin: true})

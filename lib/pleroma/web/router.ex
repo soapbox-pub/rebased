@@ -136,6 +136,7 @@ defmodule Pleroma.Web.Router do
 
     delete("/users", AdminAPIController, :user_delete)
     post("/users", AdminAPIController, :users_create)
+    patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     patch("/users/activate", AdminAPIController, :user_activate)
     patch("/users/deactivate", AdminAPIController, :user_deactivate)
     put("/users/tag", AdminAPIController, :tag_users)

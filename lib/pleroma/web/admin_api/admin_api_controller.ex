@@ -46,6 +46,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :user_delete,
            :users_create,
            :user_toggle_activation,
+           :user_activate,
+           :user_deactivate,
            :tag_users,
            :untag_users,
            :right_add,
@@ -229,6 +231,24 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     else
       _ -> {:error, :not_found}
     end
+  end
+
+  def user_toggle_activation(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
+    user = User.get_cached_by_nickname(nickname)
+
+    {:ok, updated_user} = User.deactivate(user, !user.info.deactivated)
+
+    action = if user.info.deactivated, do: "activate", else: "deactivate"
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: [user],
+      action: action
+    })
+
+    conn
+    |> put_view(AccountView)
+    |> render("show.json", %{user: updated_user})
   end
 
   def user_activate(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
