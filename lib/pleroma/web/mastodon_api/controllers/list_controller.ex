@@ -5,10 +5,21 @@
 defmodule Pleroma.Web.MastodonAPI.ListController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.MastodonAPI.AccountView
 
   plug(:list_by_id_and_user when action not in [:index, :create])
+
+  plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action in [:index, :show, :list_accounts])
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:lists"]}
+    when action in [:create, :update, :delete, :add_to_list, :remove_from_list]
+  )
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
@@ -49,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
     with {:ok, users} <- Pleroma.List.get_following(list) do
       conn
       |> put_view(AccountView)
-      |> render("accounts.json", for: user, users: users, as: :user)
+      |> render("index.json", for: user, users: users, as: :user)
     end
   end
 

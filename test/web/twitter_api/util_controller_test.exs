@@ -4,10 +4,13 @@
 
 defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
+  use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Mock
 
@@ -42,8 +45,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         {File, [],
          read!: fn "follow_list.txt" ->
            "Account address,Show boosts\n#{user2.ap_id},true"
-         end},
-        {PleromaJobQueue, [:passthrough], []}
+         end}
       ]) do
         response =
           conn
@@ -51,15 +53,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
           |> post("/api/pleroma/follow_import", %{"list" => %Plug.Upload{path: "follow_list.txt"}})
           |> json_response(:ok)
 
-        assert called(
-                 PleromaJobQueue.enqueue(
-                   :background,
-                   User,
-                   [:follow_import, user1, [user2.ap_id]]
-                 )
-               )
-
         assert response == "job started"
+
+        assert ObanHelpers.member?(
+                 %{
+                   "op" => "follow_import",
+                   "follower_id" => user1.id,
+                   "followed_identifiers" => [user2.ap_id]
+                 },
+                 all_enqueued(worker: Pleroma.Workers.BackgroundWorker)
+               )
       end
     end
 
@@ -78,19 +81,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert response == "job started"
     end
 
-    test "requires 'follow' permission", %{conn: conn} do
+    test "requires 'follow' or 'write:follows' permissions", %{conn: conn} do
       token1 = insert(:oauth_token, scopes: ["read", "write"])
       token2 = insert(:oauth_token, scopes: ["follow"])
+      token3 = insert(:oauth_token, scopes: ["something"])
       another_user = insert(:user)
 
-      for token <- [token1, token2] do
+      for token <- [token1, token2, token3] do
         conn =
           conn
           |> put_req_header("authorization", "Bearer #{token.token}")
           |> post("/api/pleroma/follow_import", %{"list" => "#{another_user.ap_id}"})
 
-        if token == token1 do
-          assert %{"error" => "Insufficient permissions: follow."} == json_response(conn, 403)
+        if token == token3 do
+          assert %{"error" => "Insufficient permissions: follow | write:follows."} ==
+                   json_response(conn, 403)
         else
           assert json_response(conn, 200)
         end
@@ -118,8 +123,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       user3 = insert(:user)
 
       with_mocks([
-        {File, [], read!: fn "blocks_list.txt" -> "#{user2.ap_id} #{user3.ap_id}" end},
-        {PleromaJobQueue, [:passthrough], []}
+        {File, [], read!: fn "blocks_list.txt" -> "#{user2.ap_id} #{user3.ap_id}" end}
       ]) do
         response =
           conn
@@ -127,15 +131,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
           |> post("/api/pleroma/blocks_import", %{"list" => %Plug.Upload{path: "blocks_list.txt"}})
           |> json_response(:ok)
 
-        assert called(
-                 PleromaJobQueue.enqueue(
-                   :background,
-                   User,
-                   [:blocks_import, user1, [user2.ap_id, user3.ap_id]]
-                 )
-               )
-
         assert response == "job started"
+
+        assert ObanHelpers.member?(
+                 %{
+                   "op" => "blocks_import",
+                   "blocker_id" => user1.id,
+                   "blocked_identifiers" => [user2.ap_id, user3.ap_id]
+                 },
+                 all_enqueued(worker: Pleroma.Workers.BackgroundWorker)
+               )
       end
     end
   end
@@ -338,12 +343,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     test "show follow page with error when user cannot fecth by `acct` link", %{conn: conn} do
       user = insert(:user)
 
-      response =
-        conn
-        |> assign(:user, user)
-        |> get("/ostatus_subscribe?acct=https://mastodon.social/users/not_found")
+      assert capture_log(fn ->
+               response =
+                 conn
+                 |> assign(:user, user)
+                 |> get("/ostatus_subscribe?acct=https://mastodon.social/users/not_found")
 
-      assert html_response(response, 200) =~ "Error fetching user"
+               assert html_response(response, 200) =~ "Error fetching user"
+             end) =~ "Object has been deleted"
     end
   end
 
@@ -557,6 +564,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> json_response(:ok)
 
       assert response == %{"status" => "success"}
+      ObanHelpers.perform_all()
 
       user = User.get_cached_by_id(user.id)
 
@@ -660,6 +668,218 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert resp == "\"test_captcha\""
       assert called(Pleroma.Captcha.new())
+    end
+  end
+
+  defp with_credentials(conn, username, password) do
+    header_content = "Basic " <> Base.encode64("#{username}:#{password}")
+    put_req_header(conn, "authorization", header_content)
+  end
+
+  defp valid_user(_context) do
+    user = insert(:user)
+    [user: user]
+  end
+
+  describe "POST /api/pleroma/change_email" do
+    setup [:valid_user]
+
+    test "without credentials", %{conn: conn} do
+      conn = post(conn, "/api/pleroma/change_email")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials and invalid password", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "hi",
+          "email" => "test@test.com"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Invalid password."}
+    end
+
+    test "with credentials, valid password and invalid email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => "foobar"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email has invalid format."}
+    end
+
+    test "with credentials, valid password and no email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email can't be blank."}
+    end
+
+    test "with credentials, valid password and blank email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => ""
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email can't be blank."}
+    end
+
+    test "with credentials, valid password and non unique email", %{
+      conn: conn,
+      user: current_user
+    } do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => user.email
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Email has already been taken."}
+    end
+
+    test "with credentials, valid password and valid email", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_email", %{
+          "password" => "test",
+          "email" => "cofe@foobar.com"
+        })
+
+      assert json_response(conn, 200) == %{"status" => "success"}
+    end
+  end
+
+  describe "POST /api/pleroma/change_password" do
+    setup [:valid_user]
+
+    test "without credentials", %{conn: conn} do
+      conn = post(conn, "/api/pleroma/change_password")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials and invalid password", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_password", %{
+          "password" => "hi",
+          "new_password" => "newpass",
+          "new_password_confirmation" => "newpass"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Invalid password."}
+    end
+
+    test "with credentials, valid password and new password and confirmation not matching", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_password", %{
+          "password" => "test",
+          "new_password" => "newpass",
+          "new_password_confirmation" => "notnewpass"
+        })
+
+      assert json_response(conn, 200) == %{
+               "error" => "New password does not match confirmation."
+             }
+    end
+
+    test "with credentials, valid password and invalid new password", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_password", %{
+          "password" => "test",
+          "new_password" => "",
+          "new_password_confirmation" => ""
+        })
+
+      assert json_response(conn, 200) == %{
+               "error" => "New password can't be blank."
+             }
+    end
+
+    test "with credentials, valid password and matching new password and confirmation", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_password", %{
+          "password" => "test",
+          "new_password" => "newpass",
+          "new_password_confirmation" => "newpass"
+        })
+
+      assert json_response(conn, 200) == %{"status" => "success"}
+      fetched_user = User.get_cached_by_id(current_user.id)
+      assert Comeonin.Pbkdf2.checkpw("newpass", fetched_user.password_hash) == true
+    end
+  end
+
+  describe "POST /api/pleroma/delete_account" do
+    setup [:valid_user]
+
+    test "without credentials", %{conn: conn} do
+      conn = post(conn, "/api/pleroma/delete_account")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials and invalid password", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/delete_account", %{"password" => "hi"})
+
+      assert json_response(conn, 200) == %{"error" => "Invalid password."}
+    end
+
+    test "with credentials and valid password", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/delete_account", %{"password" => "test"})
+
+      assert json_response(conn, 200) == %{"status" => "success"}
+      # Wait a second for the started task to end
+      :timer.sleep(1000)
     end
   end
 end

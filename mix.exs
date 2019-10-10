@@ -5,7 +5,7 @@ defmodule Pleroma.Mixfile do
     [
       app: :pleroma,
       version: version("1.0.0"),
-      elixir: "~> 1.7",
+      elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       elixirc_options: [warnings_as_errors: true],
@@ -100,8 +100,10 @@ defmodule Pleroma.Mixfile do
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
-      {:ecto_sql, "~> 3.1"},
+      {:ecto_sql, "~> 3.2"},
       {:postgrex, ">= 0.13.5"},
+      {:oban, "~> 0.8.1"},
+      {:quantum, "~> 2.3"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
@@ -112,7 +114,7 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
       {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.2"},
+      {:tesla, "~> 1.3", override: true},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
       {:ex_aws, "~> 2.1"},
@@ -126,13 +128,13 @@ defmodule Pleroma.Mixfile do
       {:crypt,
        git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
       {:cors_plug, "~> 1.5"},
-      {:ex_doc, "~> 0.20.2", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
       {:swoosh, "~> 0.23.2"},
       {:phoenix_swoosh, "~> 0.2"},
       {:gen_smtp, "~> 0.13"},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
-      {:floki, "~> 0.20.0"},
+      {:floki, "~> 0.23.0"},
       {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
       {:timex, "~> 3.5"},
       {:ueberauth, "~> 0.4"},
@@ -142,8 +144,8 @@ defmodule Pleroma.Mixfile do
       {:http_signatures,
        git: "https://git.pleroma.social/pleroma/http_signatures.git",
        ref: "293d77bb6f4a67ac8bde1428735c3b42f22cbb30"},
-      {:pleroma_job_queue, "~> 0.3"},
       {:telemetry, "~> 0.3"},
+      {:poolboy, "~> 1.5"},
       {:prometheus_ex, "~> 3.0"},
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
@@ -157,6 +159,10 @@ defmodule Pleroma.Mixfile do
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.11.1", only: :test},
+      {:flake_id, "~> 0.1.0"},
+      {:remote_ip,
+       git: "https://git.pleroma.social/pleroma/remote_ip.git",
+       ref: "825dc00aaba5a1b7c4202a532b696b595dd3bcb3"},
       {:mox, "~> 0.5", only: :test}
     ] ++ oauth_deps()
   end
@@ -173,7 +179,8 @@ defmodule Pleroma.Mixfile do
       "ecto.rollback": ["pleroma.ecto.rollback"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"],
+      docs: ["pleroma.docs", "docs"]
     ]
   end
 

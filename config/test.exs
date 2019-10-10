@@ -30,7 +30,8 @@ config :pleroma, :instance,
   notify_email: "noreply@example.com",
   skip_thread_containment: false,
   federating: false,
-  external_user_synchronization: false
+  external_user_synchronization: false,
+  static_dir: "test/instance_static/"
 
 config :pleroma, :activitypub, sign_object_fetches: false
 
@@ -61,7 +62,11 @@ config :web_push_encryption, :vapid_details,
 
 config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
 
-config :pleroma_job_queue, disabled: true
+config :pleroma, Oban,
+  queues: false,
+  prune: :disabled
+
+config :pleroma, Pleroma.Scheduler, jobs: []
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 2,

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
@@ -27,8 +27,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       id: to_string(notification.id),
       pleroma: %{is_seen: false},
       type: "mention",
-      account: AccountView.render("account.json", %{user: user, for: mentioned_user}),
-      status: StatusView.render("status.json", %{activity: activity, for: mentioned_user}),
+      account: AccountView.render("show.json", %{user: user, for: mentioned_user}),
+      status: StatusView.render("show.json", %{activity: activity, for: mentioned_user}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
@@ -50,8 +50,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       id: to_string(notification.id),
       pleroma: %{is_seen: false},
       type: "favourite",
-      account: AccountView.render("account.json", %{user: another_user, for: user}),
-      status: StatusView.render("status.json", %{activity: create_activity, for: user}),
+      account: AccountView.render("show.json", %{user: another_user, for: user}),
+      status: StatusView.render("show.json", %{activity: create_activity, for: user}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
@@ -72,8 +72,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       id: to_string(notification.id),
       pleroma: %{is_seen: false},
       type: "reblog",
-      account: AccountView.render("account.json", %{user: another_user, for: user}),
-      status: StatusView.render("status.json", %{activity: reblog_activity, for: user}),
+      account: AccountView.render("show.json", %{user: another_user, for: user}),
+      status: StatusView.render("show.json", %{activity: reblog_activity, for: user}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
@@ -92,7 +92,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       id: to_string(notification.id),
       pleroma: %{is_seen: false},
       type: "follow",
-      account: AccountView.render("account.json", %{user: follower, for: followed}),
+      account: AccountView.render("show.json", %{user: follower, for: followed}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
@@ -100,5 +100,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       NotificationView.render("index.json", %{notifications: [notification], for: followed})
 
     assert [expected] == result
+
+    User.perform(:delete, follower)
+    notification = Notification |> Repo.one() |> Repo.preload(:activity)
+
+    assert [] ==
+             NotificationView.render("index.json", %{notifications: [notification], for: followed})
   end
 end

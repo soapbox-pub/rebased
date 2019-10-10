@@ -13,10 +13,10 @@ defmodule Pleroma.Conversation.Participation do
   import Ecto.Query
 
   schema "conversation_participations" do
-    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:conversation, Conversation)
     field(:read, :boolean, default: false)
-    field(:last_activity_id, Pleroma.FlakeId, virtual: true)
+    field(:last_activity_id, FlakeId.Ecto.CompatType, virtual: true)
 
     has_many(:recipient_ships, RecipientShip)
     has_many(:recipients, through: [:recipient_ships, :user])
@@ -52,6 +52,15 @@ defmodule Pleroma.Conversation.Participation do
     participation
     |> read_cng(%{read: true})
     |> Repo.update()
+    |> case do
+      {:ok, participation} ->
+        participation = Repo.preload(participation, :user)
+        User.set_unread_conversation_count(participation.user)
+        {:ok, participation}
+
+      error ->
+        error
+    end
   end
 
   def mark_as_unread(participation) do
@@ -134,5 +143,13 @@ defmodule Pleroma.Conversation.Participation do
     end)
 
     {:ok, Repo.preload(participation, :recipients, force: true)}
+  end
+
+  def unread_conversation_count_for_user(user) do
+    from(p in __MODULE__,
+      where: p.user_id == ^user.id,
+      where: not p.read,
+      select: %{count: count(p.id)}
+    )
   end
 end

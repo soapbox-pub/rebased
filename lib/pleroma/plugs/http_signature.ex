@@ -15,7 +15,8 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
   end
 
   def call(conn, _opts) do
-    [signature | _] = get_req_header(conn, "signature")
+    headers = get_req_header(conn, "signature")
+    signature = Enum.at(headers, 0)
 
     if signature do
       # set (request-target) header to the appropriate value

@@ -27,7 +27,7 @@ defmodule Mix.Tasks.Pleroma.Benchmark do
     })
   end
 
-  def run(["render_timeline", nickname]) do
+  def run(["render_timeline", nickname | _] = args) do
     start_pleroma()
     user = Pleroma.User.get_by_nickname(nickname)
 
@@ -37,33 +37,37 @@ defmodule Mix.Tasks.Pleroma.Benchmark do
       |> Map.put("blocking_user", user)
       |> Map.put("muting_user", user)
       |> Map.put("user", user)
-      |> Map.put("limit", 80)
+      |> Map.put("limit", 4096)
       |> Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities()
       |> Enum.reverse()
 
     inputs = %{
-      "One activity" => Enum.take_random(activities, 1),
-      "Ten activities" => Enum.take_random(activities, 10),
-      "Twenty activities" => Enum.take_random(activities, 20),
-      "Forty activities" => Enum.take_random(activities, 40),
-      "Eighty activities" => Enum.take_random(activities, 80)
+      "1 activity" => Enum.take_random(activities, 1),
+      "10 activities" => Enum.take_random(activities, 10),
+      "20 activities" => Enum.take_random(activities, 20),
+      "40 activities" => Enum.take_random(activities, 40),
+      "80 activities" => Enum.take_random(activities, 80)
     }
+
+    inputs =
+      if Enum.at(args, 2) == "extended" do
+        Map.merge(inputs, %{
+          "200 activities" => Enum.take_random(activities, 200),
+          "500 activities" => Enum.take_random(activities, 500),
+          "2000 activities" => Enum.take_random(activities, 2000),
+          "4096 activities" => Enum.take_random(activities, 4096)
+        })
+      else
+        inputs
+      end
 
     Benchee.run(
       %{
-        "Parallel rendering" => fn activities ->
-          Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
-            activities: activities,
-            for: user,
-            as: :activity
-          })
-        end,
         "Standart rendering" => fn activities ->
           Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
             activities: activities,
             for: user,
-            as: :activity,
-            parallel: false
+            as: :activity
           })
         end
       },

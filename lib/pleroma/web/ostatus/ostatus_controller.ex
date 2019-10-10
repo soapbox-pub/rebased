@@ -9,16 +9,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Federator
   alias Pleroma.Web.Metadata.PlayerView
-  alias Pleroma.Web.OStatus
   alias Pleroma.Web.OStatus.ActivityRepresenter
-  alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.Router
   alias Pleroma.Web.XML
 
@@ -31,49 +28,10 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   plug(
     Pleroma.Plugs.SetFormatPlug
-    when action in [:feed_redirect, :object, :activity, :notice]
+    when action in [:object, :activity, :notice]
   )
 
   action_fallback(:errors)
-
-  def feed_redirect(%{assigns: %{format: "html"}} = conn, %{"nickname" => nickname}) do
-    with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname_or_id(nickname)} do
-      RedirectController.redirector_with_meta(conn, %{user: user})
-    end
-  end
-
-  def feed_redirect(%{assigns: %{format: format}} = conn, _params)
-      when format in ["json", "activity+json"] do
-    ActivityPubController.call(conn, :user)
-  end
-
-  def feed_redirect(conn, %{"nickname" => nickname}) do
-    with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
-      redirect(conn, external: OStatus.feed_path(user))
-    end
-  end
-
-  def feed(conn, %{"nickname" => nickname} = params) do
-    with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
-      query_params =
-        Map.take(params, ["max_id"])
-        |> Map.merge(%{"whole_db" => true, "actor_id" => user.ap_id})
-
-      activities =
-        ActivityPub.fetch_public_activities(query_params)
-        |> Enum.reverse()
-
-      response =
-        user
-        |> FeedRepresenter.to_simple_form(activities, [user])
-        |> :xmerl.export_simple(:xmerl_xml)
-        |> to_string
-
-      conn
-      |> put_resp_content_type("application/atom+xml")
-      |> send_resp(200, response)
-    end
-  end
 
   defp decode_or_retry(body) do
     with {:ok, magic_key} <- Pleroma.Web.Salmon.fetch_magic_key(body),
@@ -98,8 +56,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
     Federator.incoming_doc(doc)
 
-    conn
-    |> send_resp(200, "")
+    send_resp(conn, 200, "")
   end
 
   def object(%{assigns: %{format: format}} = conn, %{"uuid" => _uuid})
@@ -218,7 +175,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
     conn
     |> put_resp_header("content-type", "application/activity+json")
-    |> json(ObjectView.render("object.json", %{object: object}))
+    |> put_view(ObjectView)
+    |> render("object.json", %{object: object})
   end
 
   defp represent_activity(_conn, "activity+json", _, _) do

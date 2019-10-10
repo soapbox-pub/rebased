@@ -103,6 +103,30 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
       assert Config.from_binary(binary) == ~r/comp[lL][aA][iI][nN]er/
     end
 
+    test "link sigil" do
+      binary = Config.transform("~r/https:\/\/example.com/")
+      assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/)
+      assert Config.from_binary(binary) == ~r/https:\/\/example.com/
+    end
+
+    test "link sigil with u modifier" do
+      binary = Config.transform("~r/https:\/\/example.com/u")
+      assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/u)
+      assert Config.from_binary(binary) == ~r/https:\/\/example.com/u
+    end
+
+    test "link sigil with i modifier" do
+      binary = Config.transform("~r/https:\/\/example.com/i")
+      assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/i)
+      assert Config.from_binary(binary) == ~r/https:\/\/example.com/i
+    end
+
+    test "link sigil with s modifier" do
+      binary = Config.transform("~r/https:\/\/example.com/s")
+      assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/s)
+      assert Config.from_binary(binary) == ~r/https:\/\/example.com/s
+    end
+
     test "2 child tuple" do
       binary = Config.transform(%{"tuple" => ["v1", ":v2"]})
       assert binary == :erlang.term_to_binary({"v1", :v2})

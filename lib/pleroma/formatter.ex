@@ -3,10 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Formatter do
-  alias Pleroma.Emoji
   alias Pleroma.HTML
   alias Pleroma.User
-  alias Pleroma.Web.MediaProxy
 
   @safe_mention_regex ~r/^(\s*(?<mentions>(@.+?\s+){1,})+)(?<rest>.*)/s
   @link_regex ~r"((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+"ui
@@ -36,9 +34,9 @@ defmodule Pleroma.Formatter do
         nickname_text = get_nickname_text(nickname, opts)
 
         link =
-          "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>@<span>#{
+          ~s(<span class="h-card"><a data-user="#{id}" class="u-url mention" href="#{ap_id}" rel="ugc">@<span>#{
             nickname_text
-          }</span></a></span>"
+          }</span></a></span>)
 
         {link, %{acc | mentions: MapSet.put(acc.mentions, {"@" <> nickname, user})}}
 
@@ -50,7 +48,7 @@ defmodule Pleroma.Formatter do
   def hashtag_handler("#" <> tag = tag_text, _buffer, _opts, acc) do
     tag = String.downcase(tag)
     url = "#{Pleroma.Web.base_url()}/tag/#{tag}"
-    link = "<a class='hashtag' data-tag='#{tag}' href='#{url}' rel='tag'>#{tag_text}</a>"
+    link = ~s(<a class="hashtag" data-tag="#{tag}" href="#{url}" rel="tag ugc">#{tag_text}</a>)
 
     {link, %{acc | tags: MapSet.put(acc.tags, {tag_text, tag})}}
   end
@@ -99,51 +97,6 @@ defmodule Pleroma.Formatter do
       AutoLinker.link(text, options)
     end
   end
-
-  def emojify(text) do
-    emojify(text, Emoji.get_all())
-  end
-
-  def emojify(text, nil), do: text
-
-  def emojify(text, emoji, strip \\ false) do
-    Enum.reduce(emoji, text, fn emoji_data, text ->
-      emoji = HTML.strip_tags(elem(emoji_data, 0))
-      file = HTML.strip_tags(elem(emoji_data, 1))
-
-      html =
-        if not strip do
-          "<img class='emoji' alt='#{emoji}' title='#{emoji}' src='#{MediaProxy.url(file)}' />"
-        else
-          ""
-        end
-
-      String.replace(text, ":#{emoji}:", html) |> HTML.filter_tags()
-    end)
-  end
-
-  def demojify(text) do
-    emojify(text, Emoji.get_all(), true)
-  end
-
-  def demojify(text, nil), do: text
-
-  @doc "Outputs a list of the emoji-shortcodes in a text"
-  def get_emoji(text) when is_binary(text) do
-    Enum.filter(Emoji.get_all(), fn {emoji, _, _} -> String.contains?(text, ":#{emoji}:") end)
-  end
-
-  def get_emoji(_), do: []
-
-  @doc "Outputs a list of the emoji-Maps in a text"
-  def get_emoji_map(text) when is_binary(text) do
-    get_emoji(text)
-    |> Enum.reduce(%{}, fn {name, file, _group}, acc ->
-      Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url()}#{file}")
-    end)
-  end
-
-  def get_emoji_map(_), do: []
 
   def html_escape({text, mentions, hashtags}, type) do
     {html_escape(text, type), mentions, hashtags}

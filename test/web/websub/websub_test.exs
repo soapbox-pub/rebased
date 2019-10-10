@@ -1,14 +1,17 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.WebsubTest do
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
 
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.Router.Helpers
   alias Pleroma.Web.Websub
   alias Pleroma.Web.Websub.WebsubClientSubscription
   alias Pleroma.Web.Websub.WebsubServerSubscription
+  alias Pleroma.Workers.SubscriberWorker
 
   import Pleroma.Factory
   import Tesla.Mock
@@ -224,6 +227,7 @@ defmodule Pleroma.Web.WebsubTest do
         })
 
       _refresh = Websub.refresh_subscriptions()
+      ObanHelpers.perform(all_enqueued(worker: SubscriberWorker))
 
       assert still_good == Repo.get(WebsubClientSubscription, still_good.id)
       refute needs_refresh == Repo.get(WebsubClientSubscription, needs_refresh.id)

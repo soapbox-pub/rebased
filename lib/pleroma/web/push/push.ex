@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Push do
-  alias Pleroma.Web.Push.Impl
+  alias Pleroma.Workers.WebPusherWorker
 
   require Logger
 
@@ -31,6 +31,7 @@ defmodule Pleroma.Web.Push do
     end
   end
 
-  def send(notification),
-    do: PleromaJobQueue.enqueue(:web_push, Impl, [notification])
+  def send(notification) do
+    WebPusherWorker.enqueue("web_push", %{"notification_id" => notification.id})
+  end
 end

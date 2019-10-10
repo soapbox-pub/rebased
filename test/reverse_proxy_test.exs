@@ -42,6 +42,18 @@ defmodule Pleroma.ReverseProxyTest do
     end)
   end
 
+  describe "reverse proxy" do
+    test "do not track successful request", %{conn: conn} do
+      user_agent_mock("hackney/1.15.1", 2)
+      url = "/success"
+
+      conn = ReverseProxy.call(conn, url)
+
+      assert conn.status == 200
+      assert Cachex.get(:failed_proxy_url_cache, url) == {:ok, nil}
+    end
+  end
+
   describe "user-agent" do
     test "don't keep", %{conn: conn} do
       user_agent_mock("hackney/1.15.1", 2)
@@ -71,9 +83,15 @@ defmodule Pleroma.ReverseProxyTest do
       user_agent_mock("hackney/1.15.1", 0)
 
       assert capture_log(fn ->
-               ReverseProxy.call(conn, "/user-agent", max_body_length: 4)
+               ReverseProxy.call(conn, "/huge-file", max_body_length: 4)
              end) =~
-               "[error] Elixir.Pleroma.ReverseProxy: request to \"/user-agent\" failed: :body_too_large"
+               "[error] Elixir.Pleroma.ReverseProxy: request to \"/huge-file\" failed: :body_too_large"
+
+      assert {:ok, true} == Cachex.get(:failed_proxy_url_cache, "/huge-file")
+
+      assert capture_log(fn ->
+               ReverseProxy.call(conn, "/huge-file", max_body_length: 4)
+             end) == ""
     end
 
     defp stream_mock(invokes, with_close? \\ false) do
@@ -140,28 +158,54 @@ defmodule Pleroma.ReverseProxyTest do
   describe "returns error on" do
     test "500", %{conn: conn} do
       error_mock(500)
+      url = "/status/500"
 
-      capture_log(fn -> ReverseProxy.call(conn, "/status/500") end) =~
+      capture_log(fn -> ReverseProxy.call(conn, url) end) =~
         "[error] Elixir.Pleroma.ReverseProxy: request to /status/500 failed with HTTP status 500"
+
+      assert Cachex.get(:failed_proxy_url_cache, url) == {:ok, true}
+
+      {:ok, ttl} = Cachex.ttl(:failed_proxy_url_cache, url)
+      assert ttl <= 60_000
     end
 
     test "400", %{conn: conn} do
       error_mock(400)
+      url = "/status/400"
 
-      capture_log(fn -> ReverseProxy.call(conn, "/status/400") end) =~
+      capture_log(fn -> ReverseProxy.call(conn, url) end) =~
         "[error] Elixir.Pleroma.ReverseProxy: request to /status/400 failed with HTTP status 400"
+
+      assert Cachex.get(:failed_proxy_url_cache, url) == {:ok, true}
+      assert Cachex.ttl(:failed_proxy_url_cache, url) == {:ok, nil}
+    end
+
+    test "403", %{conn: conn} do
+      error_mock(403)
+      url = "/status/403"
+
+      capture_log(fn ->
+        ReverseProxy.call(conn, url, failed_request_ttl: :timer.seconds(120))
+      end) =~
+        "[error] Elixir.Pleroma.ReverseProxy: request to /status/403 failed with HTTP status 403"
+
+      {:ok, ttl} = Cachex.ttl(:failed_proxy_url_cache, url)
+      assert ttl > 100_000
     end
 
     test "204", %{conn: conn} do
-      ClientMock
-      |> expect(:request, fn :get, "/status/204", _, _, _ -> {:ok, 204, [], %{}} end)
+      url = "/status/204"
+      expect(ClientMock, :request, fn :get, _url, _, _, _ -> {:ok, 204, [], %{}} end)
 
       capture_log(fn ->
-        conn = ReverseProxy.call(conn, "/status/204")
+        conn = ReverseProxy.call(conn, url)
         assert conn.resp_body == "Request failed: No Content"
         assert conn.halted
       end) =~
         "[error] Elixir.Pleroma.ReverseProxy: request to \"/status/204\" failed with HTTP status 204"
+
+      assert Cachex.get(:failed_proxy_url_cache, url) == {:ok, true}
+      assert Cachex.ttl(:failed_proxy_url_cache, url) == {:ok, nil}
     end
   end
 

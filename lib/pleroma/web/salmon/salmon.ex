@@ -170,6 +170,15 @@ defmodule Pleroma.Web.Salmon do
     end
   end
 
+  def publish_one(%{recipient_id: recipient_id} = params) do
+    recipient = User.get_cached_by_id(recipient_id)
+
+    params
+    |> Map.delete(:recipient_id)
+    |> Map.put(:recipient, recipient)
+    |> publish_one()
+  end
+
   def publish_one(_), do: :noop
 
   @supported_activities [
@@ -193,7 +202,7 @@ defmodule Pleroma.Web.Salmon do
   @spec publish(User.t(), Pleroma.Activity.t()) :: none
   def publish(user, activity)
 
-  def publish(%{info: %{keys: keys}} = user, %{data: %{"type" => type}} = activity)
+  def publish(%{keys: keys} = user, %{data: %{"type" => type}} = activity)
       when type in @supported_activities do
     feed = ActivityRepresenter.to_simple_form(activity, user, true)
 
@@ -218,7 +227,7 @@ defmodule Pleroma.Web.Salmon do
         Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
 
         Publisher.enqueue_one(__MODULE__, %{
-          recipient: remote_user,
+          recipient_id: remote_user.id,
           feed: feed,
           unreachable_since: reachable_urls_metadata[remote_user.info.salmon]
         })
@@ -229,7 +238,7 @@ defmodule Pleroma.Web.Salmon do
   def publish(%{id: id}, _), do: Logger.debug(fn -> "Keys missing for user #{id}" end)
 
   def gather_webfinger_links(%User{} = user) do
-    {:ok, _private, public} = Keys.keys_from_pem(user.info.keys)
+    {:ok, _private, public} = Keys.keys_from_pem(user.keys)
     magic_key = encode_key(public)
 
     [

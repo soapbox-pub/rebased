@@ -8,7 +8,7 @@ Pleroma is a microblogging server software that can federate (= exchange message
 
 Pleroma is written in Elixir, high-performance and can run on small devices like a Raspberry Pi.
 
-For clients it supports both the [GNU Social API with Qvitter extensions](https://twitter-api.readthedocs.io/en/latest/index.html) and the [Mastodon client API](https://docs.joinmastodon.org/api/guidelines/).
+For clients it supports the [Mastodon client API](https://docs.joinmastodon.org/api/guidelines/) with Pleroma extensions (see "Pleroma's APIs and Mastodon API extensions" section on <https://docs-develop.pleroma.social>).
 
 - [Client Applications for Pleroma](https://docs-develop.pleroma.social/clients.html)
 

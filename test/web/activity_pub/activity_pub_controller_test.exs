@@ -1,19 +1,24 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   import Pleroma.Factory
   alias Pleroma.Activity
+  alias Pleroma.Delivery
   alias Pleroma.Instances
   alias Pleroma.Object
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.ReceiverWorker
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -175,68 +180,48 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(conn, 404)
     end
-  end
 
-  describe "/object/:uuid/likes" do
-    setup do
-      like = insert(:like_activity)
-      like_object_ap_id = Object.normalize(like).data["id"]
+    test "it caches a response", %{conn: conn} do
+      note = insert(:note)
+      uuid = String.split(note.data["id"], "/") |> List.last()
 
-      uuid =
-        like_object_ap_id
-        |> String.split("/")
-        |> List.last()
-
-      [id: like.data["id"], uuid: uuid]
-    end
-
-    test "it returns the like activities in a collection", %{conn: conn, id: id, uuid: uuid} do
-      result =
+      conn1 =
         conn
         |> put_req_header("accept", "application/activity+json")
-        |> get("/objects/#{uuid}/likes")
-        |> json_response(200)
+        |> get("/objects/#{uuid}")
 
-      assert List.first(result["first"]["orderedItems"])["id"] == id
-      assert result["type"] == "OrderedCollection"
-      assert result["totalItems"] == 1
-      refute result["first"]["next"]
-    end
+      assert json_response(conn1, :ok)
+      assert Enum.any?(conn1.resp_headers, &(&1 == {"x-cache", "MISS from Pleroma"}))
 
-    test "it does not crash when page number is exceeded total pages", %{conn: conn, uuid: uuid} do
-      result =
+      conn2 =
         conn
         |> put_req_header("accept", "application/activity+json")
-        |> get("/objects/#{uuid}/likes?page=2")
-        |> json_response(200)
+        |> get("/objects/#{uuid}")
 
-      assert result["type"] == "OrderedCollectionPage"
-      assert result["totalItems"] == 1
-      refute result["next"]
-      assert Enum.empty?(result["orderedItems"])
+      assert json_response(conn1, :ok) == json_response(conn2, :ok)
+      assert Enum.any?(conn2.resp_headers, &(&1 == {"x-cache", "HIT from Pleroma"}))
     end
 
-    test "it contains the next key when likes count is more than 10", %{conn: conn} do
-      note = insert(:note_activity)
-      insert_list(11, :like_activity, note_activity: note)
+    test "cached purged after object deletion", %{conn: conn} do
+      note = insert(:note)
+      uuid = String.split(note.data["id"], "/") |> List.last()
 
-      uuid =
-        note
-        |> Object.normalize()
-        |> Map.get(:data)
-        |> Map.get("id")
-        |> String.split("/")
-        |> List.last()
-
-      result =
+      conn1 =
         conn
         |> put_req_header("accept", "application/activity+json")
-        |> get("/objects/#{uuid}/likes?page=1")
-        |> json_response(200)
+        |> get("/objects/#{uuid}")
 
-      assert result["totalItems"] == 11
-      assert length(result["orderedItems"]) == 10
-      assert result["next"]
+      assert json_response(conn1, :ok)
+      assert Enum.any?(conn1.resp_headers, &(&1 == {"x-cache", "MISS from Pleroma"}))
+
+      Object.delete(note)
+
+      conn2 =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/objects/#{uuid}")
+
+      assert "Not found" == json_response(conn2, :not_found)
     end
   end
 
@@ -264,6 +249,51 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(conn, 404)
     end
+
+    test "it caches a response", %{conn: conn} do
+      activity = insert(:note_activity)
+      uuid = String.split(activity.data["id"], "/") |> List.last()
+
+      conn1 =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/activities/#{uuid}")
+
+      assert json_response(conn1, :ok)
+      assert Enum.any?(conn1.resp_headers, &(&1 == {"x-cache", "MISS from Pleroma"}))
+
+      conn2 =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/activities/#{uuid}")
+
+      assert json_response(conn1, :ok) == json_response(conn2, :ok)
+      assert Enum.any?(conn2.resp_headers, &(&1 == {"x-cache", "HIT from Pleroma"}))
+    end
+
+    test "cached purged after activity deletion", %{conn: conn} do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "cofe"})
+
+      uuid = String.split(activity.data["id"], "/") |> List.last()
+
+      conn1 =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/activities/#{uuid}")
+
+      assert json_response(conn1, :ok)
+      assert Enum.any?(conn1.resp_headers, &(&1 == {"x-cache", "MISS from Pleroma"}))
+
+      Activity.delete_by_ap_id(activity.object.data["id"])
+
+      conn2 =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/activities/#{uuid}")
+
+      assert "Not found" == json_response(conn2, :not_found)
+    end
   end
 
   describe "/inbox" do
@@ -277,7 +307,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      :timer.sleep(500)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
       assert Activity.get_by_ap_id(data["id"])
     end
 
@@ -319,7 +350,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{user.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      :timer.sleep(500)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
       assert Activity.get_by_ap_id(data["id"])
     end
 
@@ -348,7 +379,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{recipient.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      :timer.sleep(500)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
       assert Activity.get_by_ap_id(data["id"])
     end
 
@@ -365,6 +396,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn, 403)
     end
 
+    test "it doesn't crash without an authenticated user", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/inbox")
+
+      assert json_response(conn, 403)
+    end
+
     test "it returns a note activity in a collection", %{conn: conn} do
       note_activity = insert(:direct_note_activity)
       note_object = Object.normalize(note_activity)
@@ -374,7 +416,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         conn
         |> assign(:user, user)
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/inbox")
+        |> get("/users/#{user.nickname}/inbox?page=true")
 
       assert response(conn, 200) =~ note_object.data["content"]
     end
@@ -427,6 +469,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> post("/users/#{recipient.nickname}/inbox", data)
       |> json_response(200)
 
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+
       activity = Activity.get_by_ap_id(data["id"])
 
       assert activity.id
@@ -460,7 +504,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/outbox")
+        |> get("/users/#{user.nickname}/outbox?page=true")
 
       assert response(conn, 200) =~ note_object.data["content"]
     end
@@ -472,7 +516,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       conn =
         conn
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/outbox")
+        |> get("/users/#{user.nickname}/outbox?page=true")
 
       assert response(conn, 200) =~ announce_activity.data["object"]
     end
@@ -502,6 +546,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{user.nickname}/outbox", data)
 
       result = json_response(conn, 201)
+
       assert Activity.get_by_ap_id(result["id"])
     end
 
@@ -784,6 +829,128 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert length(result["orderedItems"]) == 5
       assert result["totalItems"] == 15
+    end
+  end
+
+  describe "delivery tracking" do
+    test "it tracks a signed object fetch", %{conn: conn} do
+      user = insert(:user, local: false)
+      activity = insert(:note_activity)
+      object = Object.normalize(activity)
+
+      object_path = String.trim_leading(object.data["id"], Pleroma.Web.Endpoint.url())
+
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, user)
+      |> get(object_path)
+      |> json_response(200)
+
+      assert Delivery.get(object.id, user.id)
+    end
+
+    test "it tracks a signed activity fetch", %{conn: conn} do
+      user = insert(:user, local: false)
+      activity = insert(:note_activity)
+      object = Object.normalize(activity)
+
+      activity_path = String.trim_leading(activity.data["id"], Pleroma.Web.Endpoint.url())
+
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, user)
+      |> get(activity_path)
+      |> json_response(200)
+
+      assert Delivery.get(object.id, user.id)
+    end
+
+    test "it tracks a signed object fetch when the json is cached", %{conn: conn} do
+      user = insert(:user, local: false)
+      other_user = insert(:user, local: false)
+      activity = insert(:note_activity)
+      object = Object.normalize(activity)
+
+      object_path = String.trim_leading(object.data["id"], Pleroma.Web.Endpoint.url())
+
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, user)
+      |> get(object_path)
+      |> json_response(200)
+
+      build_conn()
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, other_user)
+      |> get(object_path)
+      |> json_response(200)
+
+      assert Delivery.get(object.id, user.id)
+      assert Delivery.get(object.id, other_user.id)
+    end
+
+    test "it tracks a signed activity fetch when the json is cached", %{conn: conn} do
+      user = insert(:user, local: false)
+      other_user = insert(:user, local: false)
+      activity = insert(:note_activity)
+      object = Object.normalize(activity)
+
+      activity_path = String.trim_leading(activity.data["id"], Pleroma.Web.Endpoint.url())
+
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, user)
+      |> get(activity_path)
+      |> json_response(200)
+
+      build_conn()
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, other_user)
+      |> get(activity_path)
+      |> json_response(200)
+
+      assert Delivery.get(object.id, user.id)
+      assert Delivery.get(object.id, other_user.id)
+    end
+  end
+
+  describe "Additionnal ActivityPub C2S endpoints" do
+    test "/api/ap/whoami", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/ap/whoami")
+
+      user = User.get_cached_by_id(user.id)
+
+      assert UserView.render("user.json", %{user: user}) == json_response(conn, 200)
+    end
+
+    clear_config([:media_proxy])
+    clear_config([Pleroma.Upload])
+
+    test "uploadMedia", %{conn: conn} do
+      user = insert(:user)
+
+      desc = "Description of the image"
+
+      image = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
+
+      assert object = json_response(conn, :created)
+      assert object["name"] == desc
+      assert object["type"] == "Document"
+      assert object["actor"] == user.ap_id
     end
   end
 end

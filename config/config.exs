@@ -51,6 +51,24 @@ config :pleroma, Pleroma.Repo,
   telemetry_event: [Pleroma.Repo.Instrumenter],
   migration_lock: nil
 
+scheduled_jobs =
+  with digest_config <- Application.get_env(:pleroma, :email_notifications)[:digest],
+       true <- digest_config[:active] do
+    [{digest_config[:schedule], {Pleroma.Daemons.DigestEmailDaemon, :perform, []}}]
+  else
+    _ -> []
+  end
+
+scheduled_jobs =
+  scheduled_jobs ++
+    [{"0 */6 * * * *", {Pleroma.Web.Websub, :refresh_subscriptions, []}}]
+
+config :pleroma, Pleroma.Scheduler,
+  global: true,
+  overlap: true,
+  timezone: :utc,
+  jobs: scheduled_jobs
+
 config :pleroma, Pleroma.Captcha,
   enabled: false,
   seconds_valid: 60,
@@ -91,6 +109,7 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
+  streaming_enabled: true,
   public_endpoint: "https://s3.amazonaws.com"
 
 config :pleroma, Pleroma.Uploaders.MDII,
@@ -104,7 +123,8 @@ config :pleroma, :emoji,
     # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
     Custom: ["/emoji/*.png", "/emoji/**/*.png"]
   ],
-  default_manifest: "https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json"
+  default_manifest: "https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json",
+  shared_pack_cache_seconds_per_file: 60
 
 config :pleroma, :uri_schemes,
   valid_schemes: [
@@ -258,8 +278,9 @@ config :pleroma, :instance,
   max_account_fields: 10,
   max_remote_account_fields: 20,
   account_field_name_length: 512,
-  account_field_value_length: 512,
-  external_user_synchronization: true
+  account_field_value_length: 2048,
+  external_user_synchronization: true,
+  extended_nickname_format: false
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -312,6 +333,10 @@ config :pleroma, :activitypub,
   outgoing_blocks: true,
   follow_handshake_timeout: 500,
   sign_object_fetches: true
+
+config :pleroma, :streamer,
+  workers: 3,
+  overflow_workers: 2
 
 config :pleroma, :user, deny_follow_blocked: true
 
@@ -373,6 +398,8 @@ config :pleroma, :chat, enabled: true
 
 config :phoenix, :format_encoders, json: Jason
 
+config :phoenix, :json_library, Jason
+
 config :pleroma, :gopher,
   enabled: false,
   ip: {0, 0, 0, 0},
@@ -382,7 +409,8 @@ config :pleroma, Pleroma.Web.Metadata,
   providers: [
     Pleroma.Web.Metadata.Providers.OpenGraph,
     Pleroma.Web.Metadata.Providers.TwitterCard,
-    Pleroma.Web.Metadata.Providers.RelMe
+    Pleroma.Web.Metadata.Providers.RelMe,
+    Pleroma.Web.Metadata.Providers.Feed
   ],
   unfurl_nsfw: false
 
@@ -449,21 +477,26 @@ config :pleroma, Pleroma.User,
     "web"
   ]
 
-config :pleroma, Pleroma.Web.Federator.RetryQueue,
-  enabled: false,
-  max_jobs: 20,
-  initial_timeout: 30,
-  max_retries: 5
+config :pleroma, Oban,
+  repo: Pleroma.Repo,
+  verbose: false,
+  prune: {:maxlen, 1500},
+  queues: [
+    activity_expiration: 10,
+    federator_incoming: 50,
+    federator_outgoing: 50,
+    web_push: 50,
+    mailer: 10,
+    transmogrifier: 20,
+    scheduled_activities: 10,
+    background: 5
+  ]
 
-config :pleroma_job_queue, :queues,
-  activity_expiration: 10,
-  federator_incoming: 50,
-  federator_outgoing: 50,
-  web_push: 50,
-  mailer: 10,
-  transmogrifier: 20,
-  scheduled_activities: 10,
-  background: 5
+config :pleroma, :workers,
+  retries: [
+    federator_incoming: 5,
+    federator_outgoing: 5
+  ]
 
 config :pleroma, :fetch_initial_posts,
   enabled: false,
@@ -478,7 +511,7 @@ config :auto_linker,
     class: false,
     strip_prefix: false,
     new_window: false,
-    rel: false
+    rel: "ugc"
   ]
 
 config :pleroma, :ldap,
@@ -556,9 +589,15 @@ config :pleroma, :env, Mix.env()
 config :http_signatures,
   adapter: Pleroma.Signature
 
-config :pleroma, :rate_limit, nil
+config :pleroma, :rate_limit, authentication: {60_000, 15}
 
 config :pleroma, Pleroma.ActivityExpiration, enabled: true
+
+config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
+
+config :pleroma, :web_cache_ttl,
+  activity_pub: nil,
+  activity_pub_question: 30_000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

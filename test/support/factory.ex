@@ -71,6 +71,47 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def audio_factory(attrs \\ %{}) do
+    text = sequence(:text, &"lain radio episode #{&1}")
+
+    user = attrs[:user] || insert(:user)
+
+    data = %{
+      "type" => "Audio",
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+      "artist" => "lain",
+      "title" => text,
+      "album" => "lain radio",
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "actor" => user.ap_id,
+      "length" => 180_000
+    }
+
+    %Pleroma.Object{
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
+  def listen_factory do
+    audio = insert(:audio)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+      "type" => "Listen",
+      "actor" => audio.data["actor"],
+      "to" => audio.data["to"],
+      "object" => audio.data,
+      "published" => audio.data["published"]
+    }
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+  end
+
   def direct_note_factory do
     user2 = insert(:user)
 
@@ -283,6 +324,7 @@ defmodule Pleroma.Factory do
 
     %Pleroma.Web.OAuth.Token{
       token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
+      scopes: ["read"],
       refresh_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
       user: build(:user),
       app_id: oauth_app.id,

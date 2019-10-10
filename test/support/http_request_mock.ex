@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule HttpRequestMock do
@@ -43,6 +43,14 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/status.emelie.json")
+     }}
+  end
+
+  def get("https://mastodon.social/users/emelie/statuses/101849165031453404", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 404,
+       body: ""
      }}
   end
 
@@ -346,6 +354,14 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/mastodon-note-object.json")
+     }}
+  end
+
+  def get("http://mastodon.example.org/@admin/99541947525187368", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 404,
+       body: ""
      }}
   end
 
@@ -1002,6 +1018,10 @@ defmodule HttpRequestMock do
 
   def get("https://skippers-bin.com/users/7v1w1r8ce6", _, _, _) do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/sjw.json")}}
+  end
+
+  def get("https://patch.cx/users/rin", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/rin.json")}}
   end
 
   def get(url, query, body, headers) do

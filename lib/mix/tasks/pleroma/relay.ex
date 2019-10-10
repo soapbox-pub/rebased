@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Relay do
@@ -9,25 +9,8 @@ defmodule Mix.Tasks.Pleroma.Relay do
   alias Pleroma.Web.ActivityPub.Relay
 
   @shortdoc "Manages remote relays"
-  @moduledoc """
-  Manages remote relays
+  @moduledoc File.read!("docs/administration/CLI_tasks/relay.md")
 
-  ## Follow a remote relay
-
-  ``mix pleroma.relay follow <relay_url>``
-
-  Example: ``mix pleroma.relay follow  https://example.org/relay``
-
-  ## Unfollow a remote relay
-
-  ``mix pleroma.relay unfollow <relay_url>``
-
-  Example: ``mix pleroma.relay unfollow https://example.org/relay``
-
-  ## List relay subscriptions
-
-  ``mix pleroma.relay list``
-  """
   def run(["follow", target]) do
     start_pleroma()
 
