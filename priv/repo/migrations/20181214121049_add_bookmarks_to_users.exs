@@ -3,7 +3,7 @@ defmodule Pleroma.Repo.Migrations.AddBookmarksToUsers do
 
   def change do
     alter table(:users) do
-      add :bookmarks, {:array, :string}, null: false, default: []
+      add(:bookmarks, {:array, :string}, null: false, default: [])
     end
   end
 end

@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OAuth: support for hierarchical permissions / [Mastodon 2.4.3 OAuth permissions](https://docs.joinmastodon.org/api/permissions/)
 - Authentication: Added rate limit for password-authorized actions / login existence checks
 - Metadata Link: Atom syndication Feed
+- Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
 - Admin API: Add ability to fetch reports, grouped by status `GET /api/pleroma/admin/grouped_reports`
 
 ### Changed
@@ -29,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Return link alongside with token on password reset
 - MRF (Simple Policy): Also use `:accept`/`:reject` on the actors rather than only their activities
 - OStatus: Extract RSS functionality
+- Mastodon API: Add `pleroma.direct_conversation_id` to the status endpoint (`GET /api/v1/statuses/:id`)
 
 ### Fixed
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
@@ -87,6 +89,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub: Fix `/users/:nickname/inbox` crashing without an authenticated user
 - MRF: fix ability to follow a relay when AntiFollowbotPolicy was enabled
 - Mastodon API: Blocks are now treated consistently between the Streaming API and the Timeline APIs
+- Mastodon API: `exclude_replies` is correctly handled again.
 
 ### Added
 - Expiring/ephemeral activites. All activities can have expires_at value set, which controls when they should be deleted automatically.

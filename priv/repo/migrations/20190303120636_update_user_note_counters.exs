@@ -4,7 +4,7 @@ defmodule Pleroma.Repo.Migrations.UpdateUserNoteCounters do
   @public "https://www.w3.org/ns/activitystreams#Public"
 
   def up do
-    execute """
+    execute("""
       WITH public_note_count AS (
         SELECT
           data->>'actor' AS actor,
@@ -19,11 +19,11 @@ defmodule Pleroma.Repo.Migrations.UpdateUserNoteCounters do
       SET "info" = jsonb_set(u.info, '{note_count}', o.count::varchar::jsonb, true)
       FROM public_note_count AS o
       WHERE u.ap_id = o.actor
-    """
+    """)
   end
 
   def down do
-    execute """
+    execute("""
       WITH public_note_count AS (
         SELECT
           data->>'actor' AS actor,
@@ -36,6 +36,6 @@ defmodule Pleroma.Repo.Migrations.UpdateUserNoteCounters do
       SET "info" = jsonb_set(u.info, '{note_count}', o.count::varchar::jsonb, true)
       FROM public_note_count AS o
       WHERE u.ap_id = o.actor
-    """
+    """)
   end
 end

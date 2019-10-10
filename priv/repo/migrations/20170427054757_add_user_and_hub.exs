@@ -3,8 +3,8 @@ defmodule Pleroma.Repo.Migrations.AddUserAndHub do
 
   def change do
     alter table(:websub_client_subscriptions) do
-      add :hub, :string
-      add :user_id, references(:users)
+      add(:hub, :string)
+      add(:user_id, references(:users))
     end
   end
 end

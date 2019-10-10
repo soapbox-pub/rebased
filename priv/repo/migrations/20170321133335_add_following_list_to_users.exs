@@ -3,7 +3,7 @@ defmodule Pleroma.Repo.Migrations.AddFollowingListToUsers do
 
   def change do
     alter table(:users) do
-      add :following, :map
+      add(:following, :map)
     end
   end
 end
