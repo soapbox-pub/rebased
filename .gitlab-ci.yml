@@ -15,6 +15,7 @@ cache:
 stages:
   - build
   - test
+  - benchmark
   - deploy
   - release
 
@@ -44,6 +45,19 @@ docs-build:
     paths:
       - priv/static/doc
 
+benchmark:
+  stage: benchmark
+  variables:
+    MIX_ENV: benchmark
+  services:
+  - name: lainsoykaf/postgres-with-rum
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  script:
+    - mix deps.get
+    - mix ecto.create
+    - mix ecto.migrate
+    - mix pleroma.benchmark
 
 unit-testing:
   stage: test
