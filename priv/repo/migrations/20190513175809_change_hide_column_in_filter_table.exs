@@ -3,13 +3,13 @@ defmodule Pleroma.Repo.Migrations.ChangeHideColumnInFilterTable do
 
   def up do
     alter table(:filters) do
-      modify :hide, :boolean, default: false
+      modify(:hide, :boolean, default: false)
     end
   end
 
   def down do
     alter table(:filters) do
-      modify :hide, :boolean
+      modify(:hide, :boolean)
     end
   end
 end

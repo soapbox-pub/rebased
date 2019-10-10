@@ -806,8 +806,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_replies(query, %{"exclude_replies" => val}) when val == "true" or val == "1" do
     from(
-      activity in query,
-      where: fragment("?->'object'->>'inReplyTo' is null", activity.data)
+      [_activity, object] in query,
+      where: fragment("?->>'inReplyTo' is null", object.data)
     )
   end
 

@@ -3,6 +3,12 @@ defmodule Pleroma.Repo.Migrations.AddFTSIndexToActivities do
   @disable_ddl_transaction true
 
   def change do
-    create index(:activities, ["(to_tsvector('english', data->'object'->>'content'))"], concurrently: true, using: :gin, name: :activities_fts)
+    create(
+      index(:activities, ["(to_tsvector('english', data->'object'->>'content'))"],
+        concurrently: true,
+        using: :gin,
+        name: :activities_fts
+      )
+    )
   end
 end

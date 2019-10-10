@@ -3,8 +3,8 @@ defmodule Pleroma.Repo.Migrations.AddFieldsToUsers do
 
   def change do
     alter table(:users) do
-      add :local, :boolean, default: true
-      add :info, :map
+      add(:local, :boolean, default: true)
+      add(:info, :map)
     end
   end
 end

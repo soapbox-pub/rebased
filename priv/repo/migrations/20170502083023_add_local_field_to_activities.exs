@@ -3,9 +3,9 @@ defmodule Pleroma.Repo.Migrations.AddLocalFieldToActivities do
 
   def change do
     alter table(:activities) do
-      add :local, :boolean, default: true
+      add(:local, :boolean, default: true)
     end
 
-    create_if_not_exists index(:activities, [:local])
+    create_if_not_exists(index(:activities, [:local]))
   end
 end

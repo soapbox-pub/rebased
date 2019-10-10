@@ -3,7 +3,7 @@ defmodule Pleroma.Repo.Migrations.AddKeysColumn do
 
   def change do
     alter table("users") do
-      add_if_not_exists :keys, :text
+      add_if_not_exists(:keys, :text)
     end
   end
 end
