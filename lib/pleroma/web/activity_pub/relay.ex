@@ -51,6 +51,20 @@ defmodule Pleroma.Web.ActivityPub.Relay do
 
   def publish(_), do: {:error, "Not implemented"}
 
+  @spec list() :: {:ok, [String.t()]} | {:error, any()}
+  def list do
+    with %User{following: following} = _user <- get_actor() do
+      list =
+        following
+        |> Enum.map(fn entry -> URI.parse(entry).host end)
+        |> Enum.uniq()
+
+      {:ok, list}
+    else
+      error -> format_error(error)
+    end
+  end
+
   defp format_error({:error, error}), do: format_error(error)
 
   defp format_error(error) do

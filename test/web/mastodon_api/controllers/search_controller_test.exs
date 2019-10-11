@@ -70,7 +70,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         get(conn, "/api/v2/search", %{"q" => "天子"})
         |> json_response(200)
 
-      [account] == results["accounts"]
+      assert [account] == results["accounts"]
       assert account["id"] == to_string(user_three.id)
     end
   end

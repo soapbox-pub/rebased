@@ -401,6 +401,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
+  def relay_list(conn, _params) do
+    with {:ok, list} <- Relay.list() do
+      json(conn, %{relays: list})
+    else
+      _ ->
+        conn
+        |> put_status(500)
+    end
+  end
+
   def relay_follow(%{assigns: %{user: admin}} = conn, %{"relay_url" => target}) do
     with {:ok, _message} <- Relay.follow(target) do
       ModerationLog.insert_log(%{

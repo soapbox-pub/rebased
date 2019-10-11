@@ -152,6 +152,7 @@ defmodule Pleroma.Web.Router do
 
     put("/users/:nickname/activation_status", AdminAPIController, :set_activation_status)
 
+    get("/relay", AdminAPIController, :relay_list)
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 

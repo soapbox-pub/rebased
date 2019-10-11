@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Authentication: Added rate limit for password-authorized actions / login existence checks
 - Metadata Link: Atom syndication Feed
 - Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
+- Admin API: Add `GET /api/pleroma/admin/relay` endpoint - lists all followed relays
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
