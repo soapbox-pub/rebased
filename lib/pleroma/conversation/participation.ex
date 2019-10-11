@@ -69,6 +69,19 @@ defmodule Pleroma.Conversation.Participation do
     end
   end
 
+  def mark_all_as_read(user) do
+    {_, participations} =
+      __MODULE__
+      |> where([p], p.user_id == ^user.id)
+      |> where([p], not p.read)
+      |> update([p], set: [read: true])
+      |> select([p], p)
+      |> Repo.update_all([])
+
+    User.set_unread_conversation_count(user)
+    {:ok, participations}
+  end
+
   def mark_as_unread(participation) do
     participation
     |> read_cng(%{read: false})
