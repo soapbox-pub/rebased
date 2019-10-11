@@ -3,6 +3,11 @@ defmodule Pleroma.Repo.Migrations.AddContextIndex do
   @disable_ddl_transaction true
 
   def change do
-    create index(:activities, ["(data->>'type')", "(data->>'context')"], name: :activities_context_index, concurrently: true)
+    create(
+      index(:activities, ["(data->>'type')", "(data->>'context')"],
+        name: :activities_context_index,
+        concurrently: true
+      )
+    )
   end
 end

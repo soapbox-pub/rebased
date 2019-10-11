@@ -3,6 +3,11 @@ defmodule Pleroma.Repo.Migrations.CreateApidHostExtractionIndex do
   @disable_ddl_transaction true
 
   def change do
-    create index(:activities, ["(split_part(actor, '/', 3))"], concurrently: true, name: :activities_hosts)
+    create(
+      index(:activities, ["(split_part(actor, '/', 3))"],
+        concurrently: true,
+        name: :activities_hosts
+      )
+    )
   end
 end

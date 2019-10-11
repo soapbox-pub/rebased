@@ -27,10 +27,8 @@ defmodule Pleroma.Repo.Migrations.UpdateActivityVisibility do
     """
 
     execute(definition)
-
   end
 
   def down do
-
   end
 end

@@ -3,7 +3,7 @@ defmodule Pleroma.Repo.Migrations.AddAvatarObjectToUsers do
 
   def change do
     alter table(:users) do
-      add :avatar, :map
+      add(:avatar, :map)
     end
   end
 end

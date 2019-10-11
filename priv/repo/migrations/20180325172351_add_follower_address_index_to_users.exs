@@ -3,7 +3,7 @@ defmodule Pleroma.Repo.Migrations.AddFollowerAddressIndexToUsers do
 
   @disable_ddl_transaction true
   def change do
-    create index(:users, [:follower_address], concurrently: true)
-    create index(:users, [:following], concurrently: true, using: :gin)
+    create(index(:users, [:follower_address], concurrently: true))
+    create(index(:users, [:following], concurrently: true, using: :gin))
   end
 end

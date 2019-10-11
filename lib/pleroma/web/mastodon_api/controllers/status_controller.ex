@@ -167,7 +167,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   def show(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          true <- Visibility.visible_for_user?(activity, user) do
-      try_render(conn, "show.json", activity: activity, for: user)
+      try_render(conn, "show.json",
+        activity: activity,
+        for: user,
+        with_direct_conversation_id: true
+      )
     end
   end
 
