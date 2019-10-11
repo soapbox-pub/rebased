@@ -386,6 +386,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "/:right POST, can add to a permission group" do
       admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+        |> post("/api/pleroma/admin/users/#{user.nickname}/permission_group/admin")
+
+      assert json_response(conn, 200) == %{
+               "is_admin" => true
+             }
+
+      log_entry = Repo.one(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(log_entry) ==
+               "@#{admin.nickname} made @#{user.nickname} admin"
+    end
+
+    test "/:right POST, can add to a permission group (multiple)" do
+      admin = insert(:user, info: %{is_admin: true})
       user_one = insert(:user)
       user_two = insert(:user)
 
@@ -408,6 +428,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "/:right DELETE, can remove from a permission group" do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+        |> delete("/api/pleroma/admin/users/#{user.nickname}/permission_group/admin")
+
+      assert json_response(conn, 200) == %{
+               "is_admin" => false
+             }
+
+      log_entry = Repo.one(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(log_entry) ==
+               "@#{admin.nickname} revoked admin role from @#{user.nickname}"
+    end
+
+    test "/:right DELETE, can remove from a permission group (multiple)" do
       admin = insert(:user, info: %{is_admin: true})
       user_one = insert(:user, info: %{is_admin: true})
       user_two = insert(:user, info: %{is_admin: true})

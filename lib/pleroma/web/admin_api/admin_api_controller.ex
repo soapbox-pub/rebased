@@ -345,7 +345,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> Enum.into(%{}, &{&1, true})
   end
 
-  def right_add(%{assigns: %{user: admin}} = conn, %{
+  def right_add_multiple(%{assigns: %{user: admin}} = conn, %{
         "permission_group" => permission_group,
         "nicknames" => nicknames
       })
@@ -366,6 +366,32 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     json(conn, info)
   end
 
+  def right_add_multiple(conn, _) do
+    render_error(conn, :not_found, "No such permission_group")
+  end
+
+  def right_add(%{assigns: %{user: admin}} = conn, %{
+        "permission_group" => permission_group,
+        "nickname" => nickname
+      })
+      when permission_group in ["moderator", "admin"] do
+    info = Map.put(%{}, "is_" <> permission_group, true)
+
+    {:ok, user} =
+      nickname
+      |> User.get_cached_by_nickname()
+      |> User.update_info(&User.Info.admin_api_update(&1, info))
+
+    ModerationLog.insert_log(%{
+      action: "grant",
+      actor: admin,
+      subject: [user],
+      permission: permission_group
+    })
+
+    json(conn, info)
+  end
+
   def right_add(conn, _) do
     render_error(conn, :not_found, "No such permission_group")
   end
@@ -380,7 +406,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     })
   end
 
-  def right_delete(
+  def right_delete_multiple(
         %{assigns: %{user: %{nickname: admin_nickname} = admin}} = conn,
         %{
           "permission_group" => permission_group,
@@ -408,8 +434,37 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def right_delete(conn, _) do
+  def right_delete_multiple(conn, _) do
     render_error(conn, :not_found, "No such permission_group")
+  end
+
+  def right_delete(
+        %{assigns: %{user: admin}} = conn,
+        %{
+          "permission_group" => permission_group,
+          "nickname" => nickname
+        }
+      )
+      when permission_group in ["moderator", "admin"] do
+    info = Map.put(%{}, "is_" <> permission_group, false)
+
+    {:ok, user} =
+      nickname
+      |> User.get_cached_by_nickname()
+      |> User.update_info(&User.Info.admin_api_update(&1, info))
+
+    ModerationLog.insert_log(%{
+      action: "revoke",
+      actor: admin,
+      subject: [user],
+      permission: permission_group
+    })
+
+    json(conn, info)
+  end
+
+  def right_delete(%{assigns: %{user: %{nickname: nickname}}} = conn, %{"nickname" => nickname}) do
+    render_error(conn, :forbidden, "You can't revoke your own admin status.")
   end
 
   def relay_follow(%{assigns: %{user: admin}} = conn, %{"relay_url" => target}) do

@@ -144,8 +144,22 @@ defmodule Pleroma.Web.Router do
 
     get("/users/:nickname/permission_group", AdminAPIController, :right_get)
     get("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_get)
-    post("/users/permission_group/:permission_group", AdminAPIController, :right_add)
-    delete("/users/permission_group/:permission_group", AdminAPIController, :right_delete)
+
+    post("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_add)
+
+    delete(
+      "/users/:nickname/permission_group/:permission_group",
+      AdminAPIController,
+      :right_delete
+    )
+
+    post("/users/permission_group/:permission_group", AdminAPIController, :right_add_multiple)
+
+    delete(
+      "/users/permission_group/:permission_group",
+      AdminAPIController,
+      :right_delete_multiple
+    )
 
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)

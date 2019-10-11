@@ -154,9 +154,18 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
+## DEPRECATED `POST /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
+
+### Add user to permission group
+
+- Params: none
+- Response:
+  - On failure: `{"error": "…"}`
+  - On success: JSON of the `user.info`
+
 ## `POST /api/pleroma/admin/users/permission_group/:permission_group`
 
-### Add user in permission group
+### Add users to permission group
 
 - Params:
   - `nicknames`: nicknames array
@@ -164,9 +173,19 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On failure: `{"error": "…"}`
   - On success: JSON of the `user.info`
 
-## `DELETE /api/pleroma/admin/users/permission_group/:permission_group`
+## DEPRECATED `DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
 ### Remove user from permission group
+
+- Params: none
+- Response:
+  - On failure: `{"error": "…"}`
+  - On success: JSON of the `user.info`
+- Note: An admin cannot revoke their own admin status.
+
+## `DELETE /api/pleroma/admin/users/permission_group/:permission_group`
+
+### Remove users from permission group
 
 - Params:
   - `nicknames`: nicknames array
