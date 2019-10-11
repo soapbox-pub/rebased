@@ -646,7 +646,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <- get_obj_helper(object_id),
          :ok <- Containment.contain_origin(actor.ap_id, object.data),
-         {:ok, activity} <- ActivityPub.delete(object, local: false, activity_id: id) do
+         {:ok, activity} <-
+           ActivityPub.delete(object, local: false, activity_id: id, actor: actor.ap_id) do
       {:ok, activity}
     else
       nil ->
