@@ -514,7 +514,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => _id} = data,
+        %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => id} = data,
         _options
       ) do
     with actor <- Containment.get_actor(data),
@@ -528,7 +528,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         type: "Accept",
         actor: followed,
         object: follow_activity.data["id"],
-        local: false
+        local: false,
+        activity_id: id
       })
     else
       _e -> :error
@@ -536,7 +537,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => _id} = data,
+        %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => id} = data,
         _options
       ) do
     with actor <- Containment.get_actor(data),
@@ -550,7 +551,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
              type: "Reject",
              actor: followed,
              object: follow_activity.data["id"],
-             local: false
+             local: false,
+             activity_id: id
            }) do
       User.unfollow(follower, followed)
 

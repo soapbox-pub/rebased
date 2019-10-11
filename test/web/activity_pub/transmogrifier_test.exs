@@ -909,6 +909,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert activity.data["object"] == follow_activity.data["id"]
 
+      assert activity.data["id"] == accept_data["id"]
+
       follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
@@ -1013,6 +1015,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, activity} = Transmogrifier.handle_incoming(reject_data)
       refute activity.local
+      assert activity.data["id"] == reject_data["id"]
 
       follower = User.get_cached_by_id(follower.id)
 

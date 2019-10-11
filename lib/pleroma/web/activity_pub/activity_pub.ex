@@ -269,22 +269,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def accept(%{to: to, actor: actor, object: object} = params) do
-    # only accept false as false value
-    local = !(params[:local] == false)
-
-    with data <- %{"to" => to, "type" => "Accept", "actor" => actor.ap_id, "object" => object},
-         {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    end
+  def accept(params) do
+    accept_or_reject("Accept", params)
   end
 
-  def reject(%{to: to, actor: actor, object: object} = params) do
-    # only accept false as false value
-    local = !(params[:local] == false)
+  def reject(params) do
+    accept_or_reject("Reject", params)
+  end
 
-    with data <- %{"to" => to, "type" => "Reject", "actor" => actor.ap_id, "object" => object},
+  def accept_or_reject(type, %{to: to, actor: actor, object: object} = params) do
+    local = Map.get(params, :local, true)
+    activity_id = Map.get(params, :activity_id, nil)
+
+    with data <-
+           %{"to" => to, "type" => type, "actor" => actor.ap_id, "object" => object}
+           |> Utils.maybe_put("id", activity_id),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
