@@ -34,6 +34,12 @@ defmodule Pleroma.Web.MastoFEController do
     end
   end
 
+  @doc "GET /web/manifest.json"
+  def manifest(conn, _params) do
+    conn
+    |> render("manifest.json")
+  end
+
   @doc "PUT /api/web/settings"
   def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
     with {:ok, _} <- User.update_info(user, &User.Info.mastodon_settings_update(&1, settings)) do
