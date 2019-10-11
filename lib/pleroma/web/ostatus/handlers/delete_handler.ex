@@ -11,7 +11,7 @@ defmodule Pleroma.Web.OStatus.DeleteHandler do
   def handle_delete(entry, _doc \\ nil) do
     with id <- XML.string_from_xpath("//id", entry),
          %Object{} = object <- Object.normalize(id),
-         {:ok, delete} <- ActivityPub.delete(object, false) do
+         {:ok, delete} <- ActivityPub.delete(object, local: false) do
       delete
     end
   end
