@@ -514,7 +514,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => _id} = data,
+        %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => id} = data,
         _options
       ) do
     with actor <- Containment.get_actor(data),
@@ -528,7 +528,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         type: "Accept",
         actor: followed,
         object: follow_activity.data["id"],
-        local: false
+        local: false,
+        activity_id: id
       })
     else
       _e -> :error
@@ -536,7 +537,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => _id} = data,
+        %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => id} = data,
         _options
       ) do
     with actor <- Containment.get_actor(data),
@@ -550,7 +551,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
              type: "Reject",
              actor: followed,
              object: follow_activity.data["id"],
-             local: false
+             local: false,
+             activity_id: id
            }) do
       User.unfollow(follower, followed)
 
@@ -637,7 +639,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # an error or a tombstone.  This would allow us to verify that a deletion actually took
   # place.
   def handle_incoming(
-        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => _id} = data,
+        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => id} = data,
         _options
       ) do
     object_id = Utils.get_ap_id(object_id)
@@ -646,7 +648,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <- get_obj_helper(object_id),
          :ok <- Containment.contain_origin(actor.ap_id, object.data),
-         {:ok, activity} <- ActivityPub.delete(object, false) do
+         {:ok, activity} <-
+           ActivityPub.delete(object, local: false, activity_id: id, actor: actor.ap_id) do
       {:ok, activity}
     else
       nil ->
