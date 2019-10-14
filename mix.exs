@@ -216,7 +216,7 @@ defmodule Pleroma.Mixfile do
            branch_name <- String.trim(branch_name),
            branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
            true <-
-             !Enum.all?(["master", "HEAD", "release/", "stable"], fn name ->
+             !Enum.any?(["master", "HEAD", "release/", "stable"], fn name ->
                String.starts_with?(name, branch_name)
              end) do
         branch_name =
