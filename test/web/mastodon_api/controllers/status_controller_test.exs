@@ -19,6 +19,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   import Pleroma.Factory
 
+  clear_config([:instance, :federating])
+  clear_config([:instance, :allow_relay])
+
   describe "posting statuses" do
     setup do
       user = insert(:user)
