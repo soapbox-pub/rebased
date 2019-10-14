@@ -80,7 +80,7 @@ export FLAVOUR="arm64-musl"
 
 # Clone the release build into a temporary directory and unpack it
 su pleroma -s $SHELL -lc "
-curl 'https://git.pleroma.social/api/v4/projects/2/jobs/artifacts/master/download?job=$FLAVOUR' -o /tmp/pleroma.zip
+curl 'https://git.pleroma.social/api/v4/projects/2/jobs/artifacts/stable/download?job=$FLAVOUR' -o /tmp/pleroma.zip
 unzip /tmp/pleroma.zip -d /tmp/
 "
 

@@ -96,9 +96,9 @@ rm -r ~pleroma/*
 export FLAVOUR="arm64-musl"
 
 # Clone the release build into a temporary directory and unpack it
-# Replace `master` with `develop` if you want to run the develop branch
+# Replace `stable` with `unstable` if you want to run the unstable branch
 su pleroma -s $SHELL -lc "
-curl 'https://git.pleroma.social/api/v4/projects/2/jobs/artifacts/master/download?job=$FLAVOUR' -o /tmp/pleroma.zip
+curl 'https://git.pleroma.social/api/v4/projects/2/jobs/artifacts/stable/download?job=$FLAVOUR' -o /tmp/pleroma.zip
 unzip /tmp/pleroma.zip -d /tmp/
 "
 
