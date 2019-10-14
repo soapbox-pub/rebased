@@ -87,6 +87,66 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "fetching excluded by visibility" do
+    test "it excludes by the appropriate visibility" do
+      user = insert(:user)
+
+      {:ok, public_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+
+      {:ok, direct_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+
+      {:ok, unlisted_activity} =
+        CommonAPI.post(user, %{"status" => ".", "visibility" => "unlisted"})
+
+      {:ok, private_activity} =
+        CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          "exclude_visibilities" => "direct",
+          "actor_id" => user.ap_id
+        })
+
+      assert public_activity in activities
+      assert unlisted_activity in activities
+      assert private_activity in activities
+      refute direct_activity in activities
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          "exclude_visibilities" => "unlisted",
+          "actor_id" => user.ap_id
+        })
+
+      assert public_activity in activities
+      refute unlisted_activity in activities
+      assert private_activity in activities
+      assert direct_activity in activities
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          "exclude_visibilities" => "private",
+          "actor_id" => user.ap_id
+        })
+
+      assert public_activity in activities
+      assert unlisted_activity in activities
+      refute private_activity in activities
+      assert direct_activity in activities
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          "exclude_visibilities" => "public",
+          "actor_id" => user.ap_id
+        })
+
+      refute public_activity in activities
+      assert unlisted_activity in activities
+      assert private_activity in activities
+      assert direct_activity in activities
+    end
+  end
+
   describe "building a user from his ap id" do
     test "it returns a user" do
       user_id = "http://mastodon.example.org/users/admin"
