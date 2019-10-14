@@ -243,7 +243,7 @@ defmodule Pleroma.UserTest do
 
       user = User.get_cached_by_id(user.id)
 
-      assert User.following(user) == [user.follower_address]
+      assert User.following(user) == []
     end
 
     test "unfollow takes a user and another user" do
