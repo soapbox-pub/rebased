@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Report emails now include functional links to profiles of remote user accounts
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
 
+<<<<<<< HEAD
 ### Removed
 - ActivityPub: The `/objects/:uuid/likes` endpoint.
 
@@ -29,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The `Pleroma.FlakeId` module has been replaced with the `flake_id` library.
 
 ## [1.0.90] - 2019-09-30
+**Breaking:** The stable branch has been changed from `master` to `stable`, `master` now points to `release/1.0`
 ### Security
 - Mastodon API: respect post privacy in `/api/v1/statuses/:id/{favourited,reblogged}_by`
 
