@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Report emails now include functional links to profiles of remote user accounts
 
 ## [1.1.0] - 2019-??-??
+**Breaking:** The stable branch has been changed from `master` to `stable`, `master` now points to `release/1.0`
 ### Security
 - Mastodon API: respect post privacy in `/api/v1/statuses/:id/{favourited,reblogged}_by`
 
