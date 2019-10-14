@@ -3,34 +3,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.0.92] - 2019-10-??
-### Fixed
-- Mastodon API: `exclude_replies` is correctly handled again.
+## [1.1.0] - 2019-10-14
+**Breaking:** The stable branch has been changed from `master` to `stable`. If you want to keep using 1.0, the `release/1.0` branch will receive security updates for 6 months after 1.1 release.
 
-## [1.0.91] - 2019-10-06
-### Added
-- Reverse Proxy: Do not retry failed requests to limit pressure on the peer
-- Mastodon API: Add support for `fields_attributes` API parameter (setting custom fields)
-
-### Fixed
-- Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
-- Mastodon API: Blocks are now treated consistently between the Streaming API and the Timeline APIs
-- ActivityPub: Correct addressing of Undo.
-- ActivityPub: Correct addressing of profile update activities.
-- ActivityPub: Polls are now refreshed when necessary.
-- Mastodon API: Ensure the `account` field is not empty when rendering Notification entities.
-- Report emails now include functional links to profiles of remote user accounts
-- Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
-
-<<<<<<< HEAD
-### Removed
-- ActivityPub: The `/objects/:uuid/likes` endpoint.
-
-### Changed
-- The `Pleroma.FlakeId` module has been replaced with the `flake_id` library.
-
-## [1.0.90] - 2019-09-30
-**Breaking:** The stable branch has been changed from `master` to `stable`, `master` now points to `release/1.0`
+**OTP Note:** `pleroma_ctl` in 1.0 defaults to `master` and doesn't support specifying arbitrary branches, making `./pleroma_ctl update` fail. To fix this fetch a version of `pleroma_ctl` from 1.1 using the command below and proceed with the update normally:
+```
+curl -Lo ./bin/pleroma_ctl 'https://git.pleroma.social/pleroma/pleroma/blob/stable/rel/files/bin/pleroma_ctl'
+```
 ### Security
 - Mastodon API: respect post privacy in `/api/v1/statuses/:id/{favourited,reblogged}_by`
 
@@ -38,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** GNU Social API with Qvitter extensions support
 - Emoji: Remove longfox emojis.
 - Remove `Reply-To` header from report emails for admins.
+- ActivityPub: The `/objects/:uuid/likes` endpoint.
 
 ### Changed
 - **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
@@ -54,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - AdminAPI: Add "godmode" while fetching user statuses (i.e. admin can see private statuses)
 - Improve digest email template
 – Pagination: (optional) return `total` alongside with `items` when paginating
+- The `Pleroma.FlakeId` module has been replaced with the `flake_id` library.
 
 ### Fixed
 - Following from Osada
@@ -64,19 +45,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Misskey's endless polls being unable to render
 - Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
 - Mastodon API: Notifications endpoint crashing if one notification failed to render
+- Mastodon API: `exclude_replies` is correctly handled again.
 - Mastodon API: Add `account_id`, `type`, `offset`, and `limit` to search API (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API, streaming: Fix filtering of notifications based on blocks/mutes/thread mutes
-- ActivityPub C2S: follower/following collection pages being inaccessible even when authentifucated if `hide_followers`/ `hide_follows` was set
-- Existing user id not being preserved on insert conflict
+- Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
+- Mastodon API: Ensure the `account` field is not empty when rendering Notification entities.
+- Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
+- Mastodon API: Blocks are now treated consistently between the Streaming API and the Timeline APIs
 - Rich Media: Parser failing when no TTL can be found by image TTL setters
 - Rich Media: The crawled URL is now spliced into the rich media data.
 - ActivityPub S2S: sharedInbox usage has been mostly aligned with the rules in the AP specification.
-- Pleroma.Upload base_url was not automatically whitelisted by MediaProxy. Now your custom CDN or file hosting will be accessed directly as expected.
-- Report email not being sent to admins when the reporter is a remote user
-- Reverse Proxy limiting `max_body_length` was incorrectly defined and only checked `Content-Length` headers which may not be sufficient in some circumstances
+- ActivityPub C2S: follower/following collection pages being inaccessible even when authentifucated if `hide_followers`/ `hide_follows` was set
 - ActivityPub: Deactivated user deletion
 - ActivityPub: Fix `/users/:nickname/inbox` crashing without an authenticated user
 - MRF: fix ability to follow a relay when AntiFollowbotPolicy was enabled
+- ActivityPub: Correct addressing of Undo.
+- ActivityPub: Correct addressing of profile update activities.
+- ActivityPub: Polls are now refreshed when necessary.
+- Report emails now include functional links to profiles of remote user accounts
+- Existing user id not being preserved on insert conflict
+- Pleroma.Upload base_url was not automatically whitelisted by MediaProxy. Now your custom CDN or file hosting will be accessed directly as expected.
+- Report email not being sent to admins when the reporter is a remote user
+- Reverse Proxy limiting `max_body_length` was incorrectly defined and only checked `Content-Length` headers which may not be sufficient in some circumstances
 
 ### Added
 - Expiring/ephemeral activites. All activities can have expires_at value set, which controls when they should be deleted automatically.
@@ -90,6 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
 - Mastodon API, streaming: Add support for passing the token in the `Sec-WebSocket-Protocol` header
 - Mastodon API, extension: Ability to reset avatar, profile banner, and background
+- Mastodon API: Add support for `fields_attributes` API parameter (setting custom fields)
 - Mastodon API: Add support for categories for custom emojis by reusing the group feature. <https://github.com/tootsuite/mastodon/pull/11196>
 - Mastodon API: Add support for muting/unmuting notifications
 - Mastodon API: Add support for the `blocked_by` attribute in the relationship API (`GET /api/v1/accounts/relationships`). <https://github.com/tootsuite/mastodon/pull/10373>
@@ -98,6 +89,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: added `/auth/password` endpoint for password reset with rate limit.
 - Mastodon API: /api/v1/accounts/:id/statuses now supports nicknames or user id
 - Mastodon API: Improve support for the user profile custom fields
+- Mastodon API: Add support for `fields_attributes` API parameter (setting custom fields)
+- Mastodon API: Added an endpoint to get multiple statuses by IDs (`GET /api/v1/statuses/?ids[]=1&ids[]=2`)
 - Admin API: Return users' tags when querying reports
 - Admin API: Return avatar and display name when querying users
 - Admin API: Allow querying user by ID
@@ -116,7 +109,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Email change endpoint.
 - Admin API: Added moderation log
 - Web response cache (currently, enabled for ActivityPub)
-- Mastodon API: Added an endpoint to get multiple statuses by IDs (`GET /api/v1/statuses/?ids[]=1&ids[]=2`)
+- Reverse Proxy: Do not retry failed requests to limit pressure on the peer
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
