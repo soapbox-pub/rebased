@@ -30,12 +30,11 @@ build:
 
 docs-build:
   stage: build
-  only:
-  - master@pleroma/pleroma
+  only: &docs-only
+  - stable@pleroma/pleroma
   - develop@pleroma/pleroma
   variables:
     MIX_ENV: dev
-    PLEROMA_BUILD_ENV: prod
   script:
     - mix deps.get
     - mix compile
@@ -86,9 +85,7 @@ analysis:
 docs-deploy:
   stage: deploy
   image: alpine:3.9
-  only:
-  - stable@pleroma/pleroma
-  - develop@pleroma/pleroma
+  only: *docs-only
   before_script:
     - apk update && apk add openssh-client rsync
   script:
