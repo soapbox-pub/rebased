@@ -609,9 +609,33 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   defp build_flag_object(%{account: account, statuses: statuses} = _) do
     [account.ap_id] ++
       Enum.map(statuses || [], fn
-        %Activity{} = act -> act.data["id"]
-        act when is_map(act) -> act["id"]
-        act when is_binary(act) -> act
+        %Activity{} = act ->
+          obj = Object.get_by_ap_id(act.data["object"])
+
+          %{
+            "type" => "Note",
+            "id" => act.data["id"],
+            "content" => obj.data["content"]
+          }
+
+        act when is_map(act) ->
+          obj = Object.get_by_ap_id(act["object"])
+
+          %{
+            "type" => "Note",
+            "id" => act["id"],
+            "content" => obj.data["content"]
+          }
+
+        act
+        when is_binary(act) ->
+          activity = Activity.get_by_ap_id_with_object(act)
+
+          %{
+            "type" => "Note",
+            "id" => activity.data["id"],
+            "content" => activity.data["object"]["content"]
+          }
       end)
   end
 
