@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
     thread_length: :integer
   ]
   @users_default 20_000
-  @dms_default 20_000
+  @dms_default 1_000
   @thread_length_default 2_000
 
   def run(args) do

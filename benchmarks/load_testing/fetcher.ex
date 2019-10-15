@@ -210,7 +210,7 @@ defmodule Pleroma.LoadTesting.Fetcher do
 
     Benchee.run(%{
       "Render status" => fn ->
-        Pleroma.Web.MastodonAPI.StatusView.render("status.json", %{
+        Pleroma.Web.MastodonAPI.StatusView.render("show.json", %{
           activity: activity,
           for: user
         })
