@@ -24,13 +24,13 @@ defmodule Pleroma.ModerationLogTest do
       {:ok, _} =
         ModerationLog.insert_log(%{
           actor: moderator,
-          subject: subject1,
+          subject: [subject1],
           action: "delete"
         })
 
       log = Repo.one(ModerationLog)
 
-      assert log.data["message"] == "@#{moderator.nickname} deleted user @#{subject1.nickname}"
+      assert log.data["message"] == "@#{moderator.nickname} deleted users: @#{subject1.nickname}"
     end
 
     test "logging user creation by moderator", %{

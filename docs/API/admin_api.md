@@ -47,7 +47,7 @@ Authentication is required and the user must be an admin.
 }
 ```
 
-## `/api/pleroma/admin/users`
+## DEPRECATED `DELETE /api/pleroma/admin/users`
 
 ### Remove a user
 
@@ -55,6 +55,15 @@ Authentication is required and the user must be an admin.
 - Params:
   - `nickname`
 - Response: User’s nickname
+
+## `DELETE /api/pleroma/admin/users`
+
+### Remove a user
+
+- Method `DELETE`
+- Params:
+  - `nicknames`
+- Response: Array of user nicknames
 
 ### Create a user
 

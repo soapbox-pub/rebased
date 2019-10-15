@@ -1080,6 +1080,10 @@ defmodule Pleroma.User do
     update_info(user, &User.Info.update_notification_settings(&1, settings))
   end
 
+  def delete(users) when is_list(users) do
+    for user <- users, do: delete(user)
+  end
+
   def delete(%User{} = user) do
     BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
   end

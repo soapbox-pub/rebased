@@ -17,8 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Authentication: Added rate limit for password-authorized actions / login existence checks
 - Metadata Link: Atom syndication Feed
 - Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
+- Mastodon API: Add `exclude_visibilities` parameter to the timeline and notification endpoints
 - Admin API: `/users/:nickname/toggle_activation` endpoint is now deprecated in favor of: `/users/activate`, `/users/deactivate`, both accept `nicknames` array
-- Admin API: `POST /api/pleroma/admin/users/:nickname/permission_group/:permission_group` / `DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group` are deprecated in favor of: `POST /api/pleroma/admin/users/permission_group/:permission_group` / `DELETE /api/pleroma/admin/users/permission_group/:permission_group` (both accept `nicknames` array)
+- Admin API: `POST/DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group` are deprecated in favor of: `POST/DELETE /api/pleroma/admin/users/permission_group/:permission_group` (both accept `nicknames` array), `DELETE /api/pleroma/admin/users` (`nickname` query param or `nickname` sent in JSON body) is deprecated in favor of: `DELETE /api/pleroma/admin/users` (`nicknames` query array param or `nicknames` sent in JSON body).
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
@@ -39,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Report emails now include functional links to profiles of remote user accounts
 
 ## [1.1.0] - 2019-??-??
+**Breaking:** The stable branch has been changed from `master` to `stable`, `master` now points to `release/1.0`
 ### Security
 - Mastodon API: respect post privacy in `/api/v1/statuses/:id/{favourited,reblogged}_by`
 

@@ -17,8 +17,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.Web.MediaProxy
   import Pleroma.Factory
 
-  describe "/api/pleroma/admin/users" do
-    test "Delete" do
+  describe "DELETE /api/pleroma/admin/users" do
+    test "single user" do
       admin = insert(:user, info: %{is_admin: true})
       user = insert(:user)
 
@@ -30,15 +30,36 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       log_entry = Repo.one(ModerationLog)
 
-      assert log_entry.data["subject"]["nickname"] == user.nickname
-      assert log_entry.data["action"] == "delete"
-
       assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} deleted user @#{user.nickname}"
+               "@#{admin.nickname} deleted users: @#{user.nickname}"
 
       assert json_response(conn, 200) == user.nickname
     end
 
+    test "multiple users" do
+      admin = insert(:user, info: %{is_admin: true})
+      user_one = insert(:user)
+      user_two = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+        |> delete("/api/pleroma/admin/users", %{
+          nicknames: [user_one.nickname, user_two.nickname]
+        })
+
+      log_entry = Repo.one(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(log_entry) ==
+               "@#{admin.nickname} deleted users: @#{user_one.nickname}, @#{user_two.nickname}"
+
+      response = json_response(conn, 200)
+      assert response -- [user_one.nickname, user_two.nickname] == []
+    end
+  end
+
+  describe "/api/pleroma/admin/users" do
     test "Create" do
       admin = insert(:user, info: %{is_admin: true})
 

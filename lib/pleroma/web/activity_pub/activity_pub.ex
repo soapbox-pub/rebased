@@ -269,22 +269,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def accept(%{to: to, actor: actor, object: object} = params) do
-    # only accept false as false value
-    local = !(params[:local] == false)
-
-    with data <- %{"to" => to, "type" => "Accept", "actor" => actor.ap_id, "object" => object},
-         {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    end
+  def accept(params) do
+    accept_or_reject("Accept", params)
   end
 
-  def reject(%{to: to, actor: actor, object: object} = params) do
-    # only accept false as false value
-    local = !(params[:local] == false)
+  def reject(params) do
+    accept_or_reject("Reject", params)
+  end
 
-    with data <- %{"to" => to, "type" => "Reject", "actor" => actor.ap_id, "object" => object},
+  def accept_or_reject(type, %{to: to, actor: actor, object: object} = params) do
+    local = Map.get(params, :local, true)
+    activity_id = Map.get(params, :activity_id, nil)
+
+    with data <-
+           %{"to" => to, "type" => type, "actor" => actor.ap_id, "object" => object}
+           |> Utils.maybe_put("id", activity_id),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
@@ -409,18 +408,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
+  def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, options \\ []) do
+    local = Keyword.get(options, :local, true)
+    activity_id = Keyword.get(options, :activity_id, nil)
+    actor = Keyword.get(options, :actor, actor)
+
     user = User.get_cached_by_ap_id(actor)
     to = (object.data["to"] || []) ++ (object.data["cc"] || [])
 
     with {:ok, object, activity} <- Object.delete(object),
-         data <- %{
-           "type" => "Delete",
-           "actor" => actor,
-           "object" => id,
-           "to" => to,
-           "deleted_activity_id" => activity && activity.id
-         },
+         data <-
+           %{
+             "type" => "Delete",
+             "actor" => actor,
+             "object" => id,
+             "to" => to,
+             "deleted_activity_id" => activity && activity.id
+           }
+           |> maybe_put("id", activity_id),
          {:ok, activity} <- insert(data, local, false),
          stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
@@ -590,6 +595,49 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_visibility(query, _visibility), do: query
+
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when is_list(visibility) do
+    if Enum.all?(visibility, &(&1 in @valid_visibilities)) do
+      from(
+        a in query,
+        where:
+          not fragment(
+            "activity_visibility(?, ?, ?) = ANY (?)",
+            a.actor,
+            a.recipients,
+            a.data,
+            ^visibility
+          )
+      )
+    else
+      Logger.error("Could not exclude visibility to #{visibility}")
+      query
+    end
+  end
+
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when visibility in @valid_visibilities do
+    from(
+      a in query,
+      where:
+        not fragment(
+          "activity_visibility(?, ?, ?) = ?",
+          a.actor,
+          a.recipients,
+          a.data,
+          ^visibility
+        )
+    )
+  end
+
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when visibility not in @valid_visibilities do
+    Logger.error("Could not exclude visibility to #{visibility}")
+    query
+  end
+
+  defp exclude_visibility(query, _visibility), do: query
 
   defp restrict_thread_visibility(query, _, %{skip_thread_containment: true} = _),
     do: query
@@ -955,6 +1003,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_muted_reblogs(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
+    |> exclude_visibility(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do

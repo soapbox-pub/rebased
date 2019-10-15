@@ -71,6 +71,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   defp cast_params(params) do
     param_types = %{
       exclude_types: {:array, :string},
+      exclude_visibilities: {:array, :string},
       reblogs: :boolean,
       with_muted: :boolean
     }

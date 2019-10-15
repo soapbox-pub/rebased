@@ -682,6 +682,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it works for incoming deletes" do
       activity = insert(:note_activity)
+      deleting_user = insert(:user)
 
       data =
         File.read!("test/fixtures/mastodon-delete.json")
@@ -694,11 +695,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       data =
         data
         |> Map.put("object", object)
-        |> Map.put("actor", activity.data["actor"])
+        |> Map.put("actor", deleting_user.ap_id)
 
-      {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
+      {:ok, %Activity{actor: actor, local: false, data: %{"id" => id}}} =
+        Transmogrifier.handle_incoming(data)
 
+      assert id == data["id"]
       refute Activity.get_by_id(activity.id)
+      assert actor == deleting_user.ap_id
     end
 
     test "it fails for incoming deletes with spoofed origin" do
@@ -905,6 +909,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert activity.data["object"] == follow_activity.data["id"]
 
+      assert activity.data["id"] == accept_data["id"]
+
       follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
@@ -1009,6 +1015,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, activity} = Transmogrifier.handle_incoming(reject_data)
       refute activity.local
+      assert activity.data["id"] == reject_data["id"]
 
       follower = User.get_cached_by_id(follower.id)
 

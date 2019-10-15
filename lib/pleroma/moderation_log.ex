@@ -352,10 +352,10 @@ defmodule Pleroma.ModerationLog do
         data: %{
           "actor" => %{"nickname" => actor_nickname},
           "action" => "delete",
-          "subject" => %{"nickname" => subject_nickname, "type" => "user"}
+          "subject" => subjects
         }
       }) do
-    "@#{actor_nickname} deleted user @#{subject_nickname}"
+    "@#{actor_nickname} deleted users: #{users_to_nicknames_string(subjects)}"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()

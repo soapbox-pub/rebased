@@ -100,12 +100,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     ModerationLog.insert_log(%{
       actor: admin,
-      subject: user,
+      subject: [user],
       action: "delete"
     })
 
     conn
     |> json(nickname)
+  end
+
+  def user_delete(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
+    User.delete(users)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "delete"
+    })
+
+    conn
+    |> json(nicknames)
   end
 
   def user_follow(%{assigns: %{user: admin}} = conn, %{

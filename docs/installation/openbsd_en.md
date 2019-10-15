@@ -29,7 +29,7 @@ This creates a "pleroma" login class and sets higher values than default for dat
 Create the \_pleroma user, assign it the pleroma login class and create its home directory (/home/\_pleroma/): `useradd -m -L pleroma _pleroma`
 
 #### Clone pleroma's directory
-Enter a shell as the \_pleroma user. As root, run `su _pleroma -;cd`. Then clone the repository with `git clone -b master https://git.pleroma.social/pleroma/pleroma.git`. Pleroma is now installed in /home/\_pleroma/pleroma/, it will be configured and started at the end of this guide.
+Enter a shell as the \_pleroma user. As root, run `su _pleroma -;cd`. Then clone the repository with `git clone -b stable https://git.pleroma.social/pleroma/pleroma.git`. Pleroma is now installed in /home/\_pleroma/pleroma/, it will be configured and started at the end of this guide.
 
 #### Postgresql
 Start a shell as the \_postgresql user (as root run `su _postgresql -` then run the `initdb` command to initialize postgresql:  
