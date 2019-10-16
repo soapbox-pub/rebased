@@ -10,6 +10,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.ThreadMute
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
@@ -17,6 +18,7 @@ defmodule Pleroma.Web.CommonAPI do
   import Pleroma.Web.CommonAPI.Utils
 
   require Pleroma.Constants
+  require Logger
 
   def follow(follower, followed) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
@@ -98,15 +100,30 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def favorite(id_or_ap_id, user) do
-    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity),
-         nil <- Utils.get_existing_like(user.ap_id, object) do
-      ActivityPub.like(user, object)
+  @spec favorite(User.t(), binary()) :: {:ok, Activity.t()} | {:error, any()}
+  def favorite(%User{} = user, id) do
+    with {_, %Activity{object: object}} <- {:find_object, Activity.get_by_id_with_object(id)},
+         {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
+         {_, {:ok, %Activity{} = activity, _meta}} <-
+           {:common_pipeline,
+            ActivityPub.common_pipeline(like_object, Keyword.put(meta, :local, true))} do
+      {:ok, activity}
     else
-      _ -> {:error, dgettext("errors", "Could not favorite")}
+      e ->
+        Logger.error("Could not favorite #{id}. Error: #{inspect(e, pretty: true)}")
+        {:error, dgettext("errors", "Could not favorite")}
     end
   end
+
+  # def favorite(id_or_ap_id, user) do
+  #   with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
+  #        object <- Object.normalize(activity),
+  #        nil <- Utils.get_existing_like(user.ap_id, object) do
+  #     ActivityPub.like(user, object)
+  #   else
+  #     _ -> {:error, dgettext("errors", "Could not favorite")}
+  #   end
+  # end
 
   def unfavorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id) do

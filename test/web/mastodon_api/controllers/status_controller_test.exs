@@ -589,7 +589,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       user1 = insert(:user)
       user2 = insert(:user)
       user3 = insert(:user)
-      CommonAPI.favorite(activity.id, user2)
+      {:ok, _} = CommonAPI.favorite(user2, activity.id)
       {:ok, _bookmark} = Pleroma.Bookmark.create(user2.id, activity.id)
       {:ok, reblog_activity1, _object} = CommonAPI.repeat(activity.id, user1)
       {:ok, _, _object} = CommonAPI.repeat(activity.id, user2)
@@ -695,7 +695,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       activity = insert(:note_activity)
       user = insert(:user)
 
-      {:ok, _, _} = CommonAPI.favorite(activity.id, user)
+      {:ok, _} = CommonAPI.favorite(user, activity.id)
 
       conn =
         conn
@@ -1047,7 +1047,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "returns users who have favorited the status", %{conn: conn, activity: activity} do
       other_user = insert(:user)
-      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
 
       response =
         conn
@@ -1078,7 +1078,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       other_user = insert(:user)
       {:ok, user} = User.block(user, other_user)
 
-      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
 
       response =
         conn
@@ -1091,7 +1091,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "does not fail on an unauthenticated request", %{conn: conn, activity: activity} do
       other_user = insert(:user)
-      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
 
       response =
         conn
@@ -1112,7 +1112,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "visibility" => "direct"
         })
 
-      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
 
       conn
       |> assign(:user, nil)
@@ -1269,7 +1269,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     {:ok, _} = CommonAPI.post(other_user, %{"status" => "bla"})
     {:ok, activity} = CommonAPI.post(other_user, %{"status" => "traps are happy"})
 
-    {:ok, _, _} = CommonAPI.favorite(activity.id, user)
+    {:ok, _} = CommonAPI.favorite(user, activity.id)
 
     first_conn =
       conn
@@ -1289,7 +1289,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
           "Trees Are Never Sad Look At Them Every Once In Awhile They're Quite Beautiful."
       })
 
-    {:ok, _, _} = CommonAPI.favorite(second_activity.id, user)
+    {:ok, _} = CommonAPI.favorite(user, second_activity.id)
 
     last_like = status["id"]
 

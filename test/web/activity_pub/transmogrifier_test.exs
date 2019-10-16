@@ -1187,7 +1187,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = insert(:user)
 
-      {:ok, activity, _} = CommonAPI.favorite(referent_activity.id, user)
+      {:ok, activity} = CommonAPI.favorite(user, referent_activity.id)
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["object"] == "http://gs.example.org:4040/index.php/notice/29"

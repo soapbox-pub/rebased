@@ -68,7 +68,7 @@ defmodule Pleroma.Web.StreamerTest do
       )
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => ":("})
-      {:ok, notif, _} = CommonAPI.favorite(activity.id, blocked)
+      {:ok, notif} = CommonAPI.favorite(blocked, activity.id)
 
       Streamer.stream("user:notification", notif)
       Task.await(task)
@@ -87,7 +87,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
       {:ok, activity} = CommonAPI.add_mute(user, activity)
-      {:ok, notif, _} = CommonAPI.favorite(activity.id, user2)
+      {:ok, notif} = CommonAPI.favorite(user2, activity.id)
       Streamer.stream("user:notification", notif)
       Task.await(task)
     end
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       {:ok, user} = User.block_domain(user, "hecking-lewd-place.com")
       {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
-      {:ok, notif, _} = CommonAPI.favorite(activity.id, user2)
+      {:ok, notif} = CommonAPI.favorite(user2, activity.id)
 
       Streamer.stream("user:notification", notif)
       Task.await(task)
