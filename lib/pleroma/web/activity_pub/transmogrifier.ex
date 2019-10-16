@@ -563,18 +563,37 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Like", "object" => object_id, "actor" => _actor, "id" => id} = data,
+        %{"type" => "Like", "object" => _object_id, "actor" => _actor, "id" => _id} = data,
         _options
       ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         {:ok, activity, _object} <- ActivityPub.like(actor, object, id, false) do
+    with data <- Map.take(data, ["type", "object", "actor", "context", "id"]),
+         actor <- Containment.get_actor(data),
+         object <- Containment.get_object(data),
+         data <- data |> Map.put("actor", actor) |> Map.put("object", object),
+         _user <- User.get_or_fetch_by_ap_id(actor),
+         object <- Object.normalize(object),
+         data <- Map.put_new(data, "context", object.data["context"]),
+         {_, {:ok, activity, _meta}} <-
+           {:common_pipeline, ActivityPub.common_pipeline(data, local: false)} do
       {:ok, activity}
     else
-      _e -> :error
+      e -> {:error, e}
     end
   end
+
+  # def handle_incoming(
+  #       %{"type" => "Like", "object" => object_id, "actor" => _actor, "id" => id} = data,
+  #       _options
+  #     ) do
+  #   with actor <- Containment.get_actor(data),
+  #        {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+  #        {:ok, object} <- get_obj_helper(object_id),
+  #        {:ok, activity, _object} <- ActivityPub.like(actor, object, id, false) do
+  #     {:ok, activity}
+  #   else
+  #     _e -> :error
+  #   end
+  # end
 
   def handle_incoming(
         %{"type" => "Announce", "object" => object_id, "actor" => _actor, "id" => id} = data,

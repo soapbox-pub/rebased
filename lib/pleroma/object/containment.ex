@@ -32,6 +32,18 @@ defmodule Pleroma.Object.Containment do
     get_actor(%{"actor" => actor})
   end
 
+  def get_object(%{"object" => id}) when is_binary(id) do
+    id
+  end
+
+  def get_object(%{"object" => %{"id" => id}}) when is_binary(id) do
+    id
+  end
+
+  def get_object(_) do
+    nil
+  end
+
   @doc """
   Checks that an imported AP object's actor matches the domain it came from.
   """

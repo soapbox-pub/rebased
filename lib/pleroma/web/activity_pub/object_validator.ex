@@ -31,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def common_validations(object, meta) do
     with {_, {:ok, object, meta}} <- {:validate_id, validate_id(object, meta)},
-      {_, {:ok, object, meta}} <- {:validate_actor, validate_actor(object, meta)} do
+         {_, {:ok, object, meta}} <- {:validate_actor, validate_actor(object, meta)} do
       {:ok, object, meta}
     else
       e -> {:error, e}
@@ -43,7 +43,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def validate(%{"type" => "Like"} = object, meta) do
     with {:ok, object, meta} <- common_validations(object, meta),
-         {_, %Object{} = liked_object} <- {:find_liked_object, Object.normalize(object["object"])},
+         {_, %Object{} = liked_object} <-
+           {:find_liked_object, Object.normalize(object["object"])},
          {_, nil} <- {:existing_like, Utils.get_existing_like(object["actor"], liked_object)} do
       {:ok, object, meta}
     else
