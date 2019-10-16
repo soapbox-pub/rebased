@@ -47,7 +47,7 @@ Authentication is required and the user must be an admin.
 }
 ```
 
-## `/api/pleroma/admin/users`
+## DEPRECATED `DELETE /api/pleroma/admin/users`
 
 ### Remove a user
 
@@ -55,6 +55,15 @@ Authentication is required and the user must be an admin.
 - Params:
   - `nickname`
 - Response: User’s nickname
+
+## `DELETE /api/pleroma/admin/users`
+
+### Remove a user
+
+- Method `DELETE`
+- Params:
+  - `nicknames`
+- Response: Array of user nicknames
 
 ### Create a user
 
@@ -154,28 +163,86 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-### Add user in permission group
+## DEPRECATED `POST /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
-- Method: `POST`
+### Add user to permission group
+
 - Params: none
 - Response:
   - On failure: `{"error": "…"}`
   - On success: JSON of the `user.info`
 
+## `POST /api/pleroma/admin/users/permission_group/:permission_group`
+
+### Add users to permission group
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+  - On failure: `{"error": "…"}`
+  - On success: JSON of the `user.info`
+
+## DEPRECATED `DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
+
 ### Remove user from permission group
 
-- Method: `DELETE`
 - Params: none
 - Response:
   - On failure: `{"error": "…"}`
   - On success: JSON of the `user.info`
 - Note: An admin cannot revoke their own admin status.
 
-## `/api/pleroma/admin/users/:nickname/activation_status`
+## `DELETE /api/pleroma/admin/users/permission_group/:permission_group`
+
+### Remove users from permission group
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+  - On failure: `{"error": "…"}`
+  - On success: JSON of the `user.info`
+- Note: An admin cannot revoke their own admin status.
+
+## `PATCH /api/pleroma/admin/users/activate`
+
+### Activate user
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
+## `PATCH /api/pleroma/admin/users/deactivate`
+
+### Deactivate user
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
+## DEPRECATED `PATCH /api/pleroma/admin/users/:nickname/activation_status`
 
 ### Active or deactivate a user
 
-- Method: `PUT`
 - Params:
   - `nickname`
   - `status` BOOLEAN field, false value means deactivation.
