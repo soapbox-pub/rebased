@@ -1,6 +1,5 @@
 defmodule Pleroma.Repo.Migrations.CopyMutedToMutedNotifications do
   use Ecto.Migration
-  alias Pleroma.User
 
   def change do
     execute(

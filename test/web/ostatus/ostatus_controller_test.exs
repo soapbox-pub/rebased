@@ -51,7 +51,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
              end) =~ "[error]"
 
       # Wrong key
-      info = %{
+      update_params = %{
         magic_key:
           "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwrong1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAB"
       }
@@ -59,7 +59,8 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       # Set a wrong magic-key for a user so it has to refetch
       "http://gs.example.org:4040/index.php/user/1"
       |> User.get_cached_by_ap_id()
-      |> User.update_info(&User.Info.remote_user_creation(&1, info))
+      |> User.update_changeset(update_params)
+      |> User.update_and_set_cache()
 
       assert capture_log(fn ->
                conn =

@@ -23,7 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEController do
     assert _result = json_response(conn, 200)
 
     user = User.get_cached_by_ap_id(user.ap_id)
-    assert user.info.settings == %{"programming" => "socks"}
+    assert user.settings == %{"programming" => "socks"}
   end
 
   describe "index/2 redirections" do

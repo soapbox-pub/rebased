@@ -19,7 +19,7 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlug do
   def call(%{params: %{"admin_token" => admin_token}} = conn, _) do
     if secret_token() && admin_token == secret_token() do
       conn
-      |> assign(:user, %User{info: %{is_admin: true}})
+      |> assign(:user, %User{is_admin: true})
     else
       conn
     end

@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF (Simple Policy): Also use `:accept`/`:reject` on the actors rather than only their activities
 - OStatus: Extract RSS functionality
 - Mastodon API: Add `pleroma.direct_conversation_id` to the status endpoint (`GET /api/v1/statuses/:id`)
+- Deprecated `User.Info` embedded schema (fields moved to `User`)
 
 ### Fixed
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)

@@ -12,8 +12,8 @@ defmodule Pleroma.ModerationLogTest do
 
   describe "user moderation" do
     setup do
-      admin = insert(:user, info: %{is_admin: true})
-      moderator = insert(:user, info: %{is_moderator: true})
+      admin = insert(:user, is_admin: true)
+      moderator = insert(:user, is_moderator: true)
       subject1 = insert(:user)
       subject2 = insert(:user)
 

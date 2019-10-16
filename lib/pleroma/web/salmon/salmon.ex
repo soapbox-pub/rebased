@@ -147,7 +147,7 @@ defmodule Pleroma.Web.Salmon do
   end
 
   @doc "Pushes an activity to remote account."
-  def publish_one(%{recipient: %{info: %{salmon: salmon}}} = params),
+  def publish_one(%{recipient: %{salmon: salmon}} = params),
     do: publish_one(Map.put(params, :recipient, salmon))
 
   def publish_one(%{recipient: url, feed: feed} = params) when is_binary(url) do
@@ -217,19 +217,19 @@ defmodule Pleroma.Web.Salmon do
 
       remote_users = remote_users(user, activity)
 
-      salmon_urls = Enum.map(remote_users, & &1.info.salmon)
+      salmon_urls = Enum.map(remote_users, & &1.salmon)
       reachable_urls_metadata = Instances.filter_reachable(salmon_urls)
       reachable_urls = Map.keys(reachable_urls_metadata)
 
       remote_users
-      |> Enum.filter(&(&1.info.salmon in reachable_urls))
+      |> Enum.filter(&(&1.salmon in reachable_urls))
       |> Enum.each(fn remote_user ->
         Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
 
         Publisher.enqueue_one(__MODULE__, %{
           recipient_id: remote_user.id,
           feed: feed,
-          unreachable_since: reachable_urls_metadata[remote_user.info.salmon]
+          unreachable_since: reachable_urls_metadata[remote_user.salmon]
         })
       end)
     end

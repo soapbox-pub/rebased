@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp check_actor_is_active(actor) do
     if not is_nil(actor) do
       with user <- User.get_cached_by_ap_id(actor),
-           false <- user.info.deactivated do
+           false <- user.deactivated do
         true
       else
         _e -> false
@@ -601,7 +601,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_thread_visibility(
          query,
-         %{"user" => %User{info: %{skip_thread_containment: true}}},
+         %{"user" => %User{skip_thread_containment: true}},
          _
        ),
        do: query
@@ -639,7 +639,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put("user", reading_user)
       |> Map.put("actor_id", user.ap_id)
       |> Map.put("whole_db", true)
-      |> Map.put("pinned_activity_ids", user.info.pinned_activities)
+      |> Map.put("pinned_activity_ids", user.pinned_activities)
 
     recipients =
       user_activities_recipients(%{
@@ -1049,14 +1049,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     user_data = %{
       ap_id: data["id"],
-      info: %{
-        ap_enabled: true,
-        source_data: data,
-        banner: banner,
-        fields: fields,
-        locked: locked,
-        discoverable: discoverable
-      },
+      banner: banner,
+      discoverable: discoverable,
+      source_data: data,
+      fields: fields,
+      locked: locked,
+      ap_enabled: true,
       avatar: avatar,
       name: data["name"],
       follower_address: data["followers"],

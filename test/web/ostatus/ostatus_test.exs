@@ -33,7 +33,7 @@ defmodule Pleroma.Web.OStatusTest do
     object = Object.normalize(activity)
 
     user = User.get_cached_by_ap_id(activity.data["actor"])
-    assert user.info.note_count == 1
+    assert user.note_count == 1
     assert activity.data["type"] == "Create"
     assert object.data["type"] == "Note"
 
@@ -328,7 +328,7 @@ defmodule Pleroma.Web.OStatusTest do
 
   test "refuse following over OStatus if the followed's account is locked" do
     incoming = File.read!("test/fixtures/follow.xml")
-    _user = insert(:user, info: %{locked: true}, ap_id: "https://pawoo.net/users/pekorino")
+    _user = insert(:user, locked: true, ap_id: "https://pawoo.net/users/pekorino")
 
     {:ok, [{:error, "It's not possible to follow locked accounts over OStatus"}]} =
       OStatus.handle_incoming(incoming)
@@ -392,7 +392,7 @@ defmodule Pleroma.Web.OStatusTest do
       assert user.name == "Constance Variable"
       assert user.nickname == "lambadalambda@social.heldscal.la"
       assert user.local == false
-      assert user.info.uri == uri
+      assert user.uri == uri
       assert user.ap_id == uri
       assert user.bio == "Call me Deacon Blues."
       assert user.avatar["type"] == "Image"
@@ -402,36 +402,34 @@ defmodule Pleroma.Web.OStatusTest do
       assert user == user_again
     end
 
-    test "find_or_make_user sets all the nessary input fields" do
+    test "find_or_make_user sets all the necessary input fields" do
       uri = "https://social.heldscal.la/user/23211"
       {:ok, user} = OStatus.find_or_make_user(uri)
 
-      assert user.info ==
-               %User.Info{
-                 id: user.info.id,
-                 ap_enabled: false,
-                 background: %{},
-                 banner: %{},
-                 blocks: [],
-                 deactivated: false,
-                 default_scope: "public",
-                 domain_blocks: [],
-                 follower_count: 0,
-                 is_admin: false,
-                 is_moderator: false,
-                 keys: nil,
-                 locked: false,
-                 no_rich_text: false,
-                 note_count: 0,
-                 settings: nil,
-                 source_data: %{},
-                 hub: "https://social.heldscal.la/main/push/hub",
-                 magic_key:
-                   "RSA.uzg6r1peZU0vXGADWxGJ0PE34WvmhjUmydbX5YYdOiXfODVLwCMi1umGoqUDm-mRu4vNEdFBVJU1CpFA7dKzWgIsqsa501i2XqElmEveXRLvNRWFB6nG03Q5OUY2as8eE54BJm0p20GkMfIJGwP6TSFb-ICp3QjzbatuSPJ6xCE=.AQAB",
-                 salmon: "https://social.heldscal.la/main/salmon/user/23211",
-                 topic: "https://social.heldscal.la/api/statuses/user_timeline/23211.atom",
-                 uri: "https://social.heldscal.la/user/23211"
-               }
+      assert user.ap_enabled == false
+      assert user.background == %{}
+      assert user.banner == %{}
+      assert user.blocks == []
+      assert user.deactivated == false
+      assert user.default_scope == "public"
+      assert user.domain_blocks == []
+      assert user.follower_count == 0
+      assert user.is_admin == false
+      assert user.is_moderator == false
+      assert user.is_moderator == false
+      assert is_nil(user.keys)
+      assert user.locked == false
+
+      assert user.magic_key ==
+               "RSA.uzg6r1peZU0vXGADWxGJ0PE34WvmhjUmydbX5YYdOiXfODVLwCMi1umGoqUDm-mRu4vNEdFBVJU1CpFA7dKzWgIsqsa501i2XqElmEveXRLvNRWFB6nG03Q5OUY2as8eE54BJm0p20GkMfIJGwP6TSFb-ICp3QjzbatuSPJ6xCE=.AQAB"
+
+      assert user.no_rich_text == false
+      assert user.note_count == 0
+      assert is_nil(user.settings)
+      assert user.hub == "https://social.heldscal.la/main/push/hub"
+      assert user.salmon == "https://social.heldscal.la/main/salmon/user/23211"
+      assert user.topic == "https://social.heldscal.la/api/statuses/user_timeline/23211.atom"
+      assert user.uri == "https://social.heldscal.la/user/23211"
     end
 
     test "find_make_or_update_actor takes an author element and returns an updated user" do
@@ -465,7 +463,7 @@ defmodule Pleroma.Web.OStatusTest do
       user =
         insert(:user, %{
           ap_id: "https://social.heldscal.la/user/23211",
-          info: %{ap_enabled: true},
+          ap_enabled: true,
           local: false
         })
 
@@ -484,7 +482,7 @@ defmodule Pleroma.Web.OStatusTest do
       user =
         insert(:user, %{
           ap_id: "https://social.heldscal.la/user/23211",
-          info: %{ap_enabled: true},
+          ap_enabled: true,
           local: false
         })
 

@@ -213,7 +213,7 @@ defmodule Pleroma.Web.StreamerTest do
     test "it sends message if recipients invalid and thread containment is enabled but user's thread containment is disabled" do
       Pleroma.Config.put([:instance, :skip_thread_containment], false)
       author = insert(:user)
-      user = insert(:user, following: [author.ap_id], info: %{skip_thread_containment: true})
+      user = insert(:user, following: [author.ap_id], skip_thread_containment: true)
 
       activity =
         insert(:note_activity,

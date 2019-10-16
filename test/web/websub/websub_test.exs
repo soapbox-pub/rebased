@@ -109,7 +109,7 @@ defmodule Pleroma.Web.WebsubTest do
 
   test "initiate a subscription for a given user and topic" do
     subscriber = insert(:user)
-    user = insert(:user, %{info: %Pleroma.User.Info{topic: "some_topic", hub: "some_hub"}})
+    user = insert(:user, topic: "some_topic", hub: "some_hub")
 
     {:ok, websub} = Websub.subscribe(subscriber, user, &accepting_verifier/1)
     assert websub.subscribers == [subscriber.ap_id]

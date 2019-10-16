@@ -140,7 +140,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     |> Enum.map(& &1.ap_id)
   end
 
-  defp maybe_use_sharedinbox(%User{info: %{source_data: data}}),
+  defp maybe_use_sharedinbox(%User{source_data: data}),
     do: (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
 
   @doc """
@@ -156,7 +156,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   """
   def determine_inbox(
         %Activity{data: activity_data},
-        %User{info: %{source_data: data}} = user
+        %User{source_data: data} = user
       ) do
     to = activity_data["to"] || []
     cc = activity_data["cc"] || []
@@ -190,12 +190,12 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
     recipients
     |> Enum.filter(&User.ap_enabled?/1)
-    |> Enum.map(fn %{info: %{source_data: data}} -> data["inbox"] end)
+    |> Enum.map(fn %{source_data: data} -> data["inbox"] end)
     |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
     |> Instances.filter_reachable()
     |> Enum.each(fn {inbox, unreachable_since} ->
       %User{ap_id: ap_id} =
-        Enum.find(recipients, fn %{info: %{source_data: data}} -> data["inbox"] == inbox end)
+        Enum.find(recipients, fn %{source_data: data} -> data["inbox"] == inbox end)
 
       # Get all the recipients on the same host and add them to cc. Otherwise, a remote
       # instance would only accept a first message for the first recipient and ignore the rest.

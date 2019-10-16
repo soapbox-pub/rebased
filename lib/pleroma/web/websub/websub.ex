@@ -181,7 +181,7 @@ defmodule Pleroma.Web.Websub do
   end
 
   def subscribe(subscriber, subscribed, requester \\ &request_subscription/1) do
-    topic = subscribed.info.topic
+    topic = subscribed.topic
     # FIXME: Race condition, use transactions
     {:ok, subscription} =
       with subscription when not is_nil(subscription) <-
@@ -193,7 +193,7 @@ defmodule Pleroma.Web.Websub do
         _e ->
           subscription = %WebsubClientSubscription{
             topic: topic,
-            hub: subscribed.info.hub,
+            hub: subscribed.hub,
             subscribers: [subscriber.ap_id],
             state: "requested",
             secret: :crypto.strong_rand_bytes(8) |> Base.url_encode64(),

@@ -61,12 +61,12 @@ defmodule Pleroma.Web.MastoFEView do
       },
       poll_limits: Config.get([:instance, :poll_limits]),
       rights: %{
-        delete_others_notice: present?(user.info.is_moderator),
-        admin: present?(user.info.is_admin)
+        delete_others_notice: present?(user.is_moderator),
+        admin: present?(user.is_admin)
       },
       compose: %{
         me: "#{user.id}",
-        default_privacy: user.info.default_scope,
+        default_privacy: user.default_scope,
         default_sensitive: false,
         allow_content_types: Config.get([:instance, :allowed_post_formats])
       },
@@ -86,7 +86,7 @@ defmodule Pleroma.Web.MastoFEView do
           "video\/mp4"
         ]
       },
-      settings: user.info.settings || @default_settings,
+      settings: user.settings || @default_settings,
       push_subscription: nil,
       accounts: %{user.id => render(AccountView, "show.json", user: user, for: user)},
       custom_emojis: render(CustomEmojiView, "index.json", custom_emojis: custom_emojis),

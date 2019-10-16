@@ -109,10 +109,10 @@ defmodule Mix.Tasks.Pleroma.User do
     start_pleroma()
 
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      {:ok, user} = User.deactivate(user, !user.info.deactivated)
+      {:ok, user} = User.deactivate(user, !user.deactivated)
 
       shell_info(
-        "Activation status of #{nickname}: #{if(user.info.deactivated, do: "de", else: "")}activated"
+        "Activation status of #{nickname}: #{if(user.deactivated, do: "de", else: "")}activated"
       )
     else
       _ ->
@@ -340,7 +340,7 @@ defmodule Mix.Tasks.Pleroma.User do
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       {:ok, user} = User.toggle_confirmation(user)
 
-      message = if user.info.confirmation_pending, do: "needs", else: "doesn't need"
+      message = if user.confirmation_pending, do: "needs", else: "doesn't need"
 
       shell_info("#{nickname} #{message} confirmation.")
     else
@@ -364,23 +364,23 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   defp set_moderator(user, value) do
-    {:ok, user} = User.update_info(user, &User.Info.admin_api_update(&1, %{is_moderator: value}))
+    {:ok, user} = User.update_and_set_cache(user, %{is_moderator: value})
 
-    shell_info("Moderator status of #{user.nickname}: #{user.info.is_moderator}")
+    shell_info("Moderator status of #{user.nickname}: #{user.is_moderator}")
     user
   end
 
   defp set_admin(user, value) do
-    {:ok, user} = User.update_info(user, &User.Info.admin_api_update(&1, %{is_admin: value}))
+    {:ok, user} = User.update_and_set_cache(user, %{is_admin: value})
 
-    shell_info("Admin status of #{user.nickname}: #{user.info.is_admin}")
+    shell_info("Admin status of #{user.nickname}: #{user.is_admin}")
     user
   end
 
   defp set_locked(user, value) do
-    {:ok, user} = User.update_info(user, &User.Info.user_upgrade(&1, %{locked: value}))
+    {:ok, user} = User.update_and_set_cache(user, %{locked: value})
 
-    shell_info("Locked status of #{user.nickname}: #{user.info.locked}")
+    shell_info("Locked status of #{user.nickname}: #{user.locked}")
     user
   end
 end

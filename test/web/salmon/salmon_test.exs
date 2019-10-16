@@ -71,9 +71,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
                  [:passthrough],
                  [] do
     user_data = %{
-      info: %{
-        salmon: "http://test-example.org/salmon"
-      },
+      salmon: "http://test-example.org/salmon",
       local: false
     }
 

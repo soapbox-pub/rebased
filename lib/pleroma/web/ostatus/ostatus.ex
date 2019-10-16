@@ -287,14 +287,19 @@ defmodule Pleroma.Web.OStatus do
   end
 
   defp build_user_data(info) do
-    %{
+    info_fields = Enum.map(User.info_fields(), &to_string/1)
+
+    info
+    |> Map.take(info_fields)
+    |> Map.new(fn {k, v} -> {String.to_atom(k), v} end)
+    |> Map.merge(%{
       name: info["name"],
       nickname: info["nickname"] <> "@" <> info["host"],
       ap_id: info["uri"],
       info: info,
       avatar: info["avatar"],
       bio: info["bio"]
-    }
+    })
   end
 
   # TODO: Just takes the first one for now.

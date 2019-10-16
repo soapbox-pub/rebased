@@ -212,7 +212,7 @@ defmodule Pleroma.Web.Streamer.Worker do
   end
 
   @spec thread_containment(Activity.t(), User.t()) :: boolean()
-  defp thread_containment(_activity, %User{info: %{skip_thread_containment: true}}), do: true
+  defp thread_containment(_activity, %User{skip_thread_containment: true}), do: true
 
   defp thread_containment(activity, user) do
     if Config.get([:instance, :skip_thread_containment]) do

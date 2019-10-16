@@ -20,7 +20,7 @@ defmodule Pleroma.DigestEmailDaemonTest do
       |> Timex.to_naive_datetime()
 
     user2 = insert(:user, last_digest_emailed_at: date)
-    User.switch_email_notifications(user2, "digest", true)
+    {:ok, _} = User.switch_email_notifications(user2, "digest", true)
     CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}!"})
 
     DigestEmailDaemon.perform()

@@ -234,9 +234,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def user_toggle_activation(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
     user = User.get_cached_by_nickname(nickname)
 
-    {:ok, updated_user} = User.deactivate(user, !user.info.deactivated)
+    {:ok, updated_user} = User.deactivate(user, !user.deactivated)
 
-    action = if user.info.deactivated, do: "activate", else: "deactivate"
+    action = if user.deactivated, do: "activate", else: "deactivate"
 
     ModerationLog.insert_log(%{
       actor: admin,
@@ -318,12 +318,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         "nickname" => nickname
       })
       when permission_group in ["moderator", "admin"] do
-    info = Map.put(%{}, "is_" <> permission_group, true)
+    fields = %{:"is_#{permission_group}" => true}
 
     {:ok, user} =
       nickname
       |> User.get_cached_by_nickname()
-      |> User.update_info(&User.Info.admin_api_update(&1, info))
+      |> User.admin_api_update(fields)
 
     ModerationLog.insert_log(%{
       action: "grant",
@@ -332,7 +332,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       permission: permission_group
     })
 
-    json(conn, info)
+    json(conn, fields)
   end
 
   def right_add(conn, _) do
@@ -344,8 +344,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> json(%{
-      is_moderator: user.info.is_moderator,
-      is_admin: user.info.is_admin
+      is_moderator: user.is_moderator,
+      is_admin: user.is_admin
     })
   end
 
@@ -361,12 +361,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         }
       )
       when permission_group in ["moderator", "admin"] do
-    info = Map.put(%{}, "is_" <> permission_group, false)
+    fields = %{:"is_#{permission_group}" => false}
 
     {:ok, user} =
       nickname
       |> User.get_cached_by_nickname()
-      |> User.update_info(&User.Info.admin_api_update(&1, info))
+      |> User.admin_api_update(fields)
 
     ModerationLog.insert_log(%{
       action: "revoke",
@@ -375,7 +375,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       permission: permission_group
     })
 
-    json(conn, info)
+    json(conn, fields)
   end
 
   def right_delete(conn, _) do
@@ -389,7 +389,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with {:ok, status} <- Ecto.Type.cast(:boolean, status),
          %User{} = user <- User.get_cached_by_nickname(nickname),
          {:ok, _} <- User.deactivate(user, !status) do
-      action = if(user.info.deactivated, do: "activate", else: "deactivate")
+      action = if(user.deactivated, do: "activate", else: "deactivate")
 
       ModerationLog.insert_log(%{
         actor: admin,
