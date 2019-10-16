@@ -15,6 +15,7 @@ cache:
 stages:
   - build
   - test
+  - benchmark
   - deploy
   - release
 
@@ -27,6 +28,36 @@ build:
   script:
   - mix deps.get
   - mix compile --force
+
+docs-build:
+  stage: build
+  only:
+  - master@pleroma/pleroma
+  - develop@pleroma/pleroma
+  variables:
+    MIX_ENV: dev
+    PLEROMA_BUILD_ENV: prod
+  script:
+    - mix deps.get
+    - mix compile
+    - mix docs
+  artifacts:
+    paths:
+      - priv/static/doc
+
+benchmark:
+  stage: benchmark
+  variables:
+    MIX_ENV: benchmark
+  services:
+  - name: lainsoykaf/postgres-with-rum
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  script:
+    - mix deps.get
+    - mix ecto.create
+    - mix ecto.migrate
+    - mix pleroma.load_testing
 
 unit-testing:
   stage: test
