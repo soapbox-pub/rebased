@@ -74,12 +74,6 @@ defmodule Pleroma.UserSearchTest do
       assert [u4.id, u3.id, u1.id] == Enum.map(User.search("lain@ple", for_user: u1), & &1.id)
     end
 
-    test "finds users, handling misspelled requests" do
-      u1 = insert(:user, %{name: "lain"})
-
-      assert [u1.id] == Enum.map(User.search("laiin"), & &1.id)
-    end
-
     test "finds users, boosting ranks of friends and followers" do
       u1 = insert(:user)
       u2 = insert(:user, %{name: "Doe"})
@@ -161,17 +155,6 @@ defmodule Pleroma.UserSearchTest do
       assert [u1.id, u2.id, u3.id] == results
 
       Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
-    end
-
-    test "finds a user whose name is nil" do
-      _user = insert(:user, %{name: "notamatch", nickname: "testuser@pleroma.amplifie.red"})
-      user_two = insert(:user, %{name: nil, nickname: "lain@pleroma.soykaf.com"})
-
-      assert user_two ==
-               User.search("lain@pleroma.soykaf.com")
-               |> List.first()
-               |> Map.put(:search_rank, nil)
-               |> Map.put(:search_type, nil)
     end
 
     test "does not yield false-positive matches" do
