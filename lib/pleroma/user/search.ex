@@ -7,7 +7,6 @@ defmodule Pleroma.User.Search do
   alias Pleroma.User
   import Ecto.Query
 
-  @similarity_threshold 0.25
   @limit 20
 
   def search(query_string, opts \\ []) do
@@ -47,16 +46,16 @@ defmodule Pleroma.User.Search do
     |> base_query(following)
     |> filter_blocked_user(for_user)
     |> filter_blocked_domains(for_user)
-    |> fts_subquery(query_string)
-    |> subquery()
-    |> where([u], u.search_rank > @similarity_threshold)
+    |> fts_search(query_string)
+    |> trigram_rank(query_string)
     |> boost_search_rank(for_user)
+    |> subquery()
     |> order_by(desc: :search_rank)
     |> maybe_restrict_local(for_user)
   end
 
   @nickname_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~\-@]+$/
-  defp fts_subquery(query, query_string) do
+  defp fts_search(query, query_string) do
     {nickname_weight, name_weight} =
       if String.match?(query_string, @nickname_regex) do
         {"A", "B"}
@@ -68,19 +67,17 @@ defmodule Pleroma.User.Search do
 
     from(
       u in query,
-      select_merge: %{
-        search_rank:
-          fragment(
-            """
-            ts_rank_cd((setweight(to_tsvector('simple', ?), ?) || setweight(to_tsvector('simple', ?), ?)), to_tsquery('simple', ?))
-            """,
-            u.name,
-            ^name_weight,
-            u.nickname,
-            ^nickname_weight,
-            ^query_string
-          )
-      }
+      where:
+        fragment(
+          """
+          (setweight(to_tsvector('simple', ?), ?) || setweight(to_tsvector('simple', ?), ?)) @@ to_tsquery('simple', ?)
+          """,
+          u.name,
+          ^name_weight,
+          u.nickname,
+          ^nickname_weight,
+          ^query_string
+        )
     )
   end
 
@@ -91,6 +88,21 @@ defmodule Pleroma.User.Search do
     |> String.split()
     |> Enum.map(&(&1 <> ":*"))
     |> Enum.join(" | ")
+  end
+
+  defp trigram_rank(query, query_string) do
+    from(
+      u in query,
+      select_merge: %{
+        search_rank:
+          fragment(
+            "similarity(?, trim(? || ' ' || coalesce(?, '')))",
+            ^query_string,
+            u.nickname,
+            u.name
+          )
+      }
+    )
   end
 
   defp base_query(_user, false), do: User
