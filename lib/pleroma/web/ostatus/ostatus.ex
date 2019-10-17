@@ -19,7 +19,6 @@ defmodule Pleroma.Web.OStatus do
   alias Pleroma.Web.OStatus.NoteHandler
   alias Pleroma.Web.OStatus.UnfollowHandler
   alias Pleroma.Web.WebFinger
-  alias Pleroma.Web.Websub
 
   def is_representable?(%Activity{} = activity) do
     object = Object.normalize(activity)
@@ -314,11 +313,9 @@ defmodule Pleroma.Web.OStatus do
 
   @spec gather_user_info(String.t()) :: {:ok, map()} | {:error, any()}
   def gather_user_info(username) do
-    with {:ok, webfinger_data} <- WebFinger.finger(username),
-         {:ok, feed_data} <- Websub.gather_feed_data(webfinger_data["topic"]) do
+    with {:ok, webfinger_data} <- WebFinger.finger(username) do
       data =
         webfinger_data
-        |> Map.merge(feed_data)
         |> Map.put("fqn", username)
 
       {:ok, data}

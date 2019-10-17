@@ -14,7 +14,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Websub.WebsubClientSubscription
 
   import Mock
   import Pleroma.Factory
@@ -1368,21 +1367,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user_two = User.get_cached_by_id(user_two.id)
       assert user.follower_address in user_two.following
       refute "..." in user_two.following
-    end
-  end
-
-  describe "maybe_retire_websub" do
-    test "it deletes all websub client subscripitions with the user as topic" do
-      subscription = %WebsubClientSubscription{topic: "https://niu.moe/users/rye.atom"}
-      {:ok, ws} = Repo.insert(subscription)
-
-      subscription = %WebsubClientSubscription{topic: "https://niu.moe/users/pasty.atom"}
-      {:ok, ws2} = Repo.insert(subscription)
-
-      Transmogrifier.maybe_retire_websub("https://niu.moe/users/rye")
-
-      refute Repo.get(WebsubClientSubscription, ws.id)
-      assert Repo.get(WebsubClientSubscription, ws2.id)
     end
   end
 

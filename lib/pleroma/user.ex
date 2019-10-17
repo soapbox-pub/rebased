@@ -28,7 +28,6 @@ defmodule Pleroma.User do
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.RelMe
-  alias Pleroma.Web.Websub
   alias Pleroma.Workers.BackgroundWorker
 
   require Logger
@@ -437,12 +436,6 @@ defmodule Pleroma.User do
         {:error, "Could not follow user: #{followed.nickname} blocked you."}
 
       true ->
-        benchmark? = Pleroma.Config.get([:env]) == :benchmark
-
-        if !followed.local && follower.local && !ap_enabled?(followed) && !benchmark? do
-          Websub.subscribe(follower, followed)
-        end
-
         q =
           from(u in User,
             where: u.id == ^follower.id,

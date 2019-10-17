@@ -64,19 +64,6 @@ defmodule Pleroma.Web.OStatusTest do
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
-  test "handle incoming notes with attachments - GS, subscription" do
-    incoming = File.read!("test/fixtures/incoming_websub_gnusocial_attachments.xml")
-    {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity)
-
-    assert activity.data["type"] == "Create"
-    assert object.data["type"] == "Note"
-    assert object.data["actor"] == "https://social.heldscal.la/user/23211"
-    assert object.data["attachment"] |> length == 2
-    assert object.data["external_url"] == "https://social.heldscal.la/notice/2020923"
-    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
-  end
-
   test "handle incoming notes with tags" do
     incoming = File.read!("test/fixtures/ostatus_incoming_post_tag.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
@@ -221,53 +208,12 @@ defmodule Pleroma.Web.OStatusTest do
     refute String.contains?(retweeted_object.data["content"], "Test account")
   end
 
-  test "handle incoming favorites - GS, websub" do
-    capture_log(fn ->
-      incoming = File.read!("test/fixtures/favorite.xml")
-      {:ok, [[activity, favorited_activity]]} = OStatus.handle_incoming(incoming)
-
-      assert activity.data["type"] == "Like"
-      assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
-      assert activity.data["object"] == favorited_activity.data["object"]
-
-      assert activity.data["id"] ==
-               "tag:social.heldscal.la,2017-05-05:fave:23211:comment:2061643:2017-05-05T09:12:50+00:00"
-
-      refute activity.local
-      assert favorited_activity.data["type"] == "Create"
-      assert favorited_activity.data["actor"] == "https://shitposter.club/user/1"
-
-      assert favorited_activity.data["object"] ==
-               "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
-
-      refute favorited_activity.local
-    end)
-  end
-
   test "handle conversation references" do
     incoming = File.read!("test/fixtures/mastodon_conversation.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
     assert activity.data["context"] ==
              "tag:mastodon.social,2017-08-28:objectId=7876885:objectType=Conversation"
-  end
-
-  test "handle incoming favorites with locally available object - GS, websub" do
-    note_activity = insert(:note_activity)
-    object = Object.normalize(note_activity)
-
-    incoming =
-      File.read!("test/fixtures/favorite_with_local_note.xml")
-      |> String.replace("localid", object.data["id"])
-
-    {:ok, [[activity, favorited_activity]]} = OStatus.handle_incoming(incoming)
-
-    assert activity.data["type"] == "Like"
-    assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
-    assert activity.data["object"] == object.data["id"]
-    refute activity.local
-    assert note_activity.id == favorited_activity.id
-    assert favorited_activity.local
   end
 
   test_with_mock "handle incoming replies, fetching replied-to activities if we don't have them",
