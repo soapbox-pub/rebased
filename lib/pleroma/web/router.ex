@@ -394,6 +394,9 @@ defmodule Pleroma.Web.Router do
     get("/push/subscription", SubscriptionController, :get)
     put("/push/subscription", SubscriptionController, :update)
     delete("/push/subscription", SubscriptionController, :delete)
+
+    get("/markers", MarkerController, :index)
+    post("/markers", MarkerController, :upsert)
   end
 
   scope "/api/web", Pleroma.Web do
