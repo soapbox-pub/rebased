@@ -11,17 +11,10 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Websub
   alias Pleroma.Workers.PublisherWorker
   alias Pleroma.Workers.ReceiverWorker
-  alias Pleroma.Workers.SubscriberWorker
 
   require Logger
-
-  def init do
-    # To do: consider removing this call in favor of scheduled execution (`quantum`-based)
-    refresh_subscriptions(schedule_in: 60)
-  end
 
   @doc "Addresses [memory leaks on recursive replies fetching](https://git.pleroma.social/pleroma/pleroma/issues/161)"
   # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
@@ -51,18 +44,6 @@ defmodule Pleroma.Web.Federator do
 
   def publish(activity) do
     PublisherWorker.enqueue("publish", %{"activity_id" => activity.id})
-  end
-
-  def verify_websub(websub) do
-    SubscriberWorker.enqueue("verify_websub", %{"websub_id" => websub.id})
-  end
-
-  def request_subscription(websub) do
-    SubscriberWorker.enqueue("request_subscription", %{"websub_id" => websub.id})
-  end
-
-  def refresh_subscriptions(worker_args \\ []) do
-    SubscriberWorker.enqueue("refresh_subscriptions", %{}, worker_args ++ [max_attempts: 1])
   end
 
   # Job Worker Callbacks
@@ -109,29 +90,6 @@ defmodule Pleroma.Web.Federator do
         Logger.info(Jason.encode!(params, pretty: true))
         :error
     end
-  end
-
-  def perform(:request_subscription, websub) do
-    Logger.debug("Refreshing #{websub.topic}")
-
-    with {:ok, websub} <- Websub.request_subscription(websub) do
-      Logger.debug("Successfully refreshed #{websub.topic}")
-    else
-      _e -> Logger.debug("Couldn't refresh #{websub.topic}")
-    end
-  end
-
-  def perform(:verify_websub, websub) do
-    Logger.debug(fn ->
-      "Running WebSub verification for #{websub.id} (#{websub.topic}, #{websub.callback})"
-    end)
-
-    Websub.verify(websub)
-  end
-
-  def perform(:refresh_subscriptions) do
-    Logger.debug("Federator running refresh subscriptions")
-    Websub.refresh_subscriptions()
   end
 
   def ap_enabled_actor(id) do
