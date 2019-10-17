@@ -41,6 +41,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         assert called(Pleroma.Web.Streamer.stream("participation", participations))
       end
     end
+
+    test "streams them out on activity creation" do
+      user_one = insert(:user)
+      user_two = insert(:user)
+
+      with_mock Pleroma.Web.Streamer,
+        stream: fn _, _ -> nil end do
+        {:ok, activity} =
+          CommonAPI.post(user_one, %{
+            "status" => "@#{user_two.nickname}",
+            "visibility" => "direct"
+          })
+
+        conversation =
+          activity.data["context"]
+          |> Pleroma.Conversation.get_for_ap_id()
+          |> Repo.preload(participations: :user)
+
+        assert called(Pleroma.Web.Streamer.stream("participation", conversation.participations))
+      end
+    end
   end
 
   describe "fetching restricted by visibility" do

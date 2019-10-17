@@ -48,6 +48,12 @@ defmodule Pleroma.Conversation.Participation do
     |> validate_required([:read])
   end
 
+  def mark_as_read(%User{} = user, %Conversation{} = conversation) do
+    with %__MODULE__{} = participation <- for_user_and_conversation(user, conversation) do
+      mark_as_read(participation)
+    end
+  end
+
   def mark_as_read(participation) do
     participation
     |> read_cng(%{read: true})
