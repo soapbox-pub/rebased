@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Web.ActivityPub.SideEffects
 
   import Pleroma.Factory
+
   describe "like objects" do
     setup do
       user = insert(:user)

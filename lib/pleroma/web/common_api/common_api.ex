@@ -115,16 +115,6 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  # def favorite(id_or_ap_id, user) do
-  #   with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-  #        object <- Object.normalize(activity),
-  #        nil <- Utils.get_existing_like(user.ap_id, object) do
-  #     ActivityPub.like(user, object)
-  #   else
-  #     _ -> {:error, dgettext("errors", "Could not favorite")}
-  #   end
-  # end
-
   def unfavorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id) do
       object = Object.normalize(activity)

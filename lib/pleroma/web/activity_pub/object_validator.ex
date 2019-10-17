@@ -9,50 +9,24 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   the system.
   """
 
-  alias Pleroma.User
-  alias Pleroma.Object
-  alias Pleroma.Web.ActivityPub.Utils
-
-  def validate_id(object, meta) do
-    with {_, true} <- {:id_presence, Map.has_key?(object, "id")} do
-      {:ok, object, meta}
-    else
-      e -> {:error, e}
-    end
-  end
-
-  def validate_actor(object, meta) do
-    with {_, %User{}} <- {:actor_validation, User.get_cached_by_ap_id(object["actor"])} do
-      {:ok, object, meta}
-    else
-      e -> {:error, e}
-    end
-  end
-
-  def common_validations(object, meta) do
-    with {_, {:ok, object, meta}} <- {:validate_id, validate_id(object, meta)},
-         {_, {:ok, object, meta}} <- {:validate_actor, validate_actor(object, meta)} do
-      {:ok, object, meta}
-    else
-      e -> {:error, e}
-    end
-  end
+  alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
 
   def validate(%{"type" => "Like"} = object, meta) do
-    with {:ok, object, meta} <- common_validations(object, meta),
-         {_, %Object{} = liked_object} <-
-           {:find_liked_object, Object.normalize(object["object"])},
-         {_, nil} <- {:existing_like, Utils.get_existing_like(object["actor"], liked_object)} do
+    with {_, %{valid?: true, changes: object}} <-
+           {:validate_object, LikeValidator.cast_and_validate(object)} do
+      object = stringify_keys(object)
       {:ok, object, meta}
     else
       e -> {:error, e}
     end
   end
 
-  def validate(object, meta) do
-    common_validations(object, meta)
+  defp stringify_keys(object) do
+    object
+    |> Enum.map(fn {key, val} -> {to_string(key), val} end)
+    |> Enum.into(%{})
   end
 end
