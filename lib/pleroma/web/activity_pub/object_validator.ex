@@ -10,6 +10,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   """
 
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
+  alias Pleroma.User
+  alias Pleroma.Object
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
@@ -24,9 +26,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
-  defp stringify_keys(object) do
+  def stringify_keys(object) do
     object
     |> Enum.map(fn {key, val} -> {to_string(key), val} end)
     |> Enum.into(%{})
+  end
+
+  def fetch_actor_and_object(object) do
+    User.get_or_fetch_by_ap_id(object["actor"])
+    Object.normalize(object["object"])
+    :ok
   end
 end

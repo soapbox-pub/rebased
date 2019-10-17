@@ -13,6 +13,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       {:ok, post_activity} = CommonAPI.post(user, %{"status" => "uguu"})
 
       valid_like = %{
+        "to" => [user.ap_id],
+        "cc" => [],
         "type" => "Like",
         "id" => Utils.generate_activity_id(),
         "object" => post_activity.data["object"],

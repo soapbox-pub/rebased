@@ -16,6 +16,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
   alias Pleroma.Workers.TransmogrifierWorker
+  alias Pleroma.Web.ActivityPub.ObjectValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
 
   import Ecto.Query
 
@@ -562,38 +564,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming(
-        %{"type" => "Like", "object" => _object_id, "actor" => _actor, "id" => _id} = data,
-        _options
-      ) do
-    with data <- Map.take(data, ["type", "object", "actor", "context", "id"]),
-         actor <- Containment.get_actor(data),
-         object <- Containment.get_object(data),
-         data <- data |> Map.put("actor", actor) |> Map.put("object", object),
-         _user <- User.get_or_fetch_by_ap_id(actor),
-         object <- Object.normalize(object),
-         data <- Map.put_new(data, "context", object.data["context"]),
+  def handle_incoming(%{"type" => "Like"} = data, _options) do
+    with {_, %{changes: cast_data}} <- {:casting_data, LikeValidator.cast_data(data)},
+         cast_data <- ObjectValidator.stringify_keys(cast_data),
+         :ok <- ObjectValidator.fetch_actor_and_object(cast_data),
+         {_, {:ok, cast_data}} <- {:maybe_add_context, maybe_add_context_from_object(cast_data)},
+         {_, {:ok, cast_data}} <-
+           {:maybe_add_recipients, maybe_add_recipients_from_object(cast_data)},
          {_, {:ok, activity, _meta}} <-
-           {:common_pipeline, ActivityPub.common_pipeline(data, local: false)} do
+           {:common_pipeline, ActivityPub.common_pipeline(cast_data, local: false)} do
       {:ok, activity}
     else
       e -> {:error, e}
     end
   end
-
-  # def handle_incoming(
-  #       %{"type" => "Like", "object" => object_id, "actor" => _actor, "id" => id} = data,
-  #       _options
-  #     ) do
-  #   with actor <- Containment.get_actor(data),
-  #        {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-  #        {:ok, object} <- get_obj_helper(object_id),
-  #        {:ok, activity, _object} <- ActivityPub.like(actor, object, id, false) do
-  #     {:ok, activity}
-  #   else
-  #     _e -> :error
-  #   end
-  # end
 
   def handle_incoming(
         %{"type" => "Announce", "object" => object_id, "actor" => _actor, "id" => id} = data,
@@ -1156,4 +1140,47 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def maybe_fix_user_url(data), do: data
 
   def maybe_fix_user_object(data), do: maybe_fix_user_url(data)
+
+  defp maybe_add_context_from_object(%{"context" => context} = data) when is_binary(context),
+    do: {:ok, data}
+
+  defp maybe_add_context_from_object(%{"object" => object} = data) when is_binary(object) do
+    if object = Object.normalize(object) do
+      data =
+        data
+        |> Map.put("context", object.data["context"])
+
+      {:ok, data}
+    else
+      {:error, "No context on referenced object"}
+    end
+  end
+
+  defp maybe_add_context_from_object(_) do
+    {:error, "No referenced object"}
+  end
+
+  defp maybe_add_recipients_from_object(%{"object" => object} = data) do
+    to = data["to"] || []
+    cc = data["cc"] || []
+
+    if to == [] && cc == [] do
+      if object = Object.normalize(object) do
+        data =
+          data
+          |> Map.put("to", [object.data["actor"]])
+          |> Map.put("cc", cc)
+
+        {:ok, data}
+      else
+        {:error, "No actor on referenced object"}
+      end
+    else
+      {:ok, data}
+    end
+  end
+
+  defp maybe_add_recipients_from_object(_) do
+    {:error, "No referenced object"}
+  end
 end
