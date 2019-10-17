@@ -508,8 +508,6 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/feed", Feed.FeedController, :feed)
     get("/users/:nickname", Feed.FeedController, :feed_redirect)
 
-    post("/users/:nickname/salmon", OStatus.OStatusController, :salmon_incoming)
-
     get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end
 
