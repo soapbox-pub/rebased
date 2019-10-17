@@ -10,7 +10,6 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.Signature
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.Transmogrifier
-  alias Pleroma.Web.OStatus
 
   require Logger
   require Pleroma.Constants
@@ -87,15 +86,8 @@ defmodule Pleroma.Object.Fetcher do
       {:fetch_object, %Object{} = object} ->
         {:ok, object}
 
-      _e ->
-        # Only fallback when receiving a fetch/normalization error with ActivityPub
-        Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
-
-        # FIXME: OStatus Object Containment?
-        case OStatus.fetch_activity_from_url(id) do
-          {:ok, [activity | _]} -> {:ok, Object.normalize(activity, false)}
-          e -> e
-        end
+      e ->
+        e
     end
   end
 

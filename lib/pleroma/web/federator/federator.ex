@@ -10,7 +10,6 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Federator.Publisher
-  alias Pleroma.Web.OStatus
   alias Pleroma.Workers.PublisherWorker
   alias Pleroma.Workers.ReceiverWorker
 

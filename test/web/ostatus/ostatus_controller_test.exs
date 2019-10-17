@@ -11,7 +11,6 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.OStatus.ActivityRepresenter
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -73,27 +72,6 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   end
 
   describe "GET object/2" do
-    test "gets an object", %{conn: conn} do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = User.get_cached_by_ap_id(note_activity.data["actor"])
-      [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, object.data["id"]))
-      url = "/objects/#{uuid}"
-
-      conn =
-        conn
-        |> put_req_header("accept", "application/xml")
-        |> get(url)
-
-      expected =
-        ActivityRepresenter.to_simple_form(note_activity, user, true)
-        |> ActivityRepresenter.wrap_with_entry()
-        |> :xmerl.export_simple(:xmerl_xml)
-        |> to_string
-
-      assert response(conn, 200) == expected
-    end
-
     test "redirects to /notice/id for html format", %{conn: conn} do
       note_activity = insert(:note_activity)
       object = Object.normalize(note_activity)

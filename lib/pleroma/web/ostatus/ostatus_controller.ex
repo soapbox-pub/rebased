@@ -13,11 +13,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.Federator
   alias Pleroma.Web.Metadata.PlayerView
-  alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.Web.Router
-  alias Pleroma.Web.XML
 
   plug(
     Pleroma.Plugs.RateLimiter,
@@ -151,21 +148,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     |> render("object.json", %{object: object})
   end
 
-  defp represent_activity(_conn, "activity+json", _, _) do
+  defp represent_activity(_conn, _, _, _) do
     {:error, :not_found}
-  end
-
-  defp represent_activity(conn, _, activity, user) do
-    response =
-      activity
-      |> ActivityRepresenter.to_simple_form(user, true)
-      |> ActivityRepresenter.wrap_with_entry()
-      |> :xmerl.export_simple(:xmerl_xml)
-      |> to_string
-
-    conn
-    |> put_resp_content_type("application/atom+xml")
-    |> send_resp(200, response)
   end
 
   def errors(conn, {:error, :not_found}) do

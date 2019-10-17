@@ -13,7 +13,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.OStatus
 
   import Mock
   import Pleroma.Factory
@@ -1178,32 +1177,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["object"]["actor"] == modified["object"]["attributedTo"]
-    end
-
-    test "it translates ostatus IDs to external URLs" do
-      incoming = File.read!("test/fixtures/incoming_note_activity.xml")
-      {:ok, [referent_activity]} = OStatus.handle_incoming(incoming)
-
-      user = insert(:user)
-
-      {:ok, activity, _} = CommonAPI.favorite(referent_activity.id, user)
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"] == "http://gs.example.org:4040/index.php/notice/29"
-    end
-
-    test "it translates ostatus reply_to IDs to external URLs" do
-      incoming = File.read!("test/fixtures/incoming_note_activity.xml")
-      {:ok, [referred_activity]} = OStatus.handle_incoming(incoming)
-
-      user = insert(:user)
-
-      {:ok, activity} =
-        CommonAPI.post(user, %{"status" => "HI!", "in_reply_to_status_id" => referred_activity.id})
-
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"]["inReplyTo"] == "http://gs.example.org:4040/index.php/notice/29"
     end
 
     test "it strips internal hashtag data" do
