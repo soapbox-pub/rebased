@@ -24,40 +24,12 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     {:ap_routes, params: ["uuid"]} when action in [:object, :activity]
   )
 
-  plug(Pleroma.Web.FederatingPlug when action in [:salmon_incoming])
-
   plug(
     Pleroma.Plugs.SetFormatPlug
     when action in [:object, :activity, :notice]
   )
 
   action_fallback(:errors)
-
-  defp decode_or_retry(body) do
-    with {:ok, magic_key} <- Pleroma.Web.Salmon.fetch_magic_key(body),
-         {:ok, doc} <- Pleroma.Web.Salmon.decode_and_validate(magic_key, body) do
-      {:ok, doc}
-    else
-      _e ->
-        with [decoded | _] <- Pleroma.Web.Salmon.decode(body),
-             doc <- XML.parse_document(decoded),
-             uri when not is_nil(uri) <- XML.string_from_xpath("/entry/author[1]/uri", doc),
-             {:ok, _} <- Pleroma.Web.OStatus.make_user(uri, true),
-             {:ok, magic_key} <- Pleroma.Web.Salmon.fetch_magic_key(body),
-             {:ok, doc} <- Pleroma.Web.Salmon.decode_and_validate(magic_key, body) do
-          {:ok, doc}
-        end
-    end
-  end
-
-  def salmon_incoming(conn, _) do
-    {:ok, body, _conn} = read_body(conn)
-    {:ok, doc} = decode_or_retry(body)
-
-    Federator.incoming_doc(doc)
-
-    send_resp(conn, 200, "")
-  end
 
   def object(%{assigns: %{format: format}} = conn, %{"uuid" => _uuid})
       when format in ["json", "activity+json"] do

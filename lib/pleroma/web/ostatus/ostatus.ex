@@ -37,10 +37,6 @@ defmodule Pleroma.Web.OStatus do
 
   def feed_path(user), do: "#{user.ap_id}/feed.atom"
 
-  def pubsub_path(user), do: "#{Web.base_url()}/push/hub/#{user.nickname}"
-
-  def salmon_path(user), do: "#{user.ap_id}/salmon"
-
   def remote_follow_path, do: "#{Web.base_url()}/ostatus_subscribe?acct={uri}"
 
   def handle_incoming(xml_string, options \\ []) do
