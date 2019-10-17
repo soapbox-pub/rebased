@@ -30,10 +30,6 @@ defmodule Pleroma.Web.Federator do
 
   # Client API
 
-  def incoming_doc(doc) do
-    ReceiverWorker.enqueue("incoming_doc", %{"body" => doc})
-  end
-
   def incoming_ap_doc(params) do
     ReceiverWorker.enqueue("incoming_ap_doc", %{"params" => params})
   end
@@ -60,11 +56,6 @@ defmodule Pleroma.Web.Federator do
          {:ok, actor} <- User.ensure_keys_present(actor) do
       Publisher.publish(actor, activity)
     end
-  end
-
-  def perform(:incoming_doc, doc) do
-    Logger.info("Got document, trying to parse")
-    OStatus.handle_incoming(doc)
   end
 
   def perform(:incoming_ap_doc, params) do
