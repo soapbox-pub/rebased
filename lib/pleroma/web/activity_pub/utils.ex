@@ -349,7 +349,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     try do
       Ecto.Adapters.SQL.query!(
         Repo,
-        "UPDATE activities SET data = jsonb_set(data, '{state}', $1) WHERE data->>'type' = 'Follow' AND data->>'actor' = $2 AND data->>'object' = $3 AND data->>'state' = 'pending'",
+        "UPDATE activities SET data = safe_jsonb_set(data, '{state}', $1) WHERE data->>'type' = 'Follow' AND data->>'actor' = $2 AND data->>'object' = $3 AND data->>'state' = 'pending'",
         [state, actor, object]
       )
 
