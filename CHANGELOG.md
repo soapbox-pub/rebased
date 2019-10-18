@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ```
 delete from users where ap_id = 'https://your.instance.hostname/relay';
 ```
+- Bad user search matches
 
 ## [1.1.0] - 2019-10-14
 **Breaking:** The stable branch has been changed from `master` to `stable`. If you want to keep using 1.0, the `release/1.0` branch will receive security updates for 6 months after 1.1 release.
