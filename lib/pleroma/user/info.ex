@@ -39,9 +39,6 @@ defmodule Pleroma.User.Info do
     field(:settings, :map, default: nil)
     field(:magic_key, :string, default: nil)
     field(:uri, :string, default: nil)
-    field(:topic, :string, default: nil)
-    field(:hub, :string, default: nil)
-    field(:salmon, :string, default: nil)
     field(:hide_followers_count, :boolean, default: false)
     field(:hide_follows_count, :boolean, default: false)
     field(:hide_followers, :boolean, default: false)
@@ -262,9 +259,6 @@ defmodule Pleroma.User.Info do
       :locked,
       :magic_key,
       :uri,
-      :hub,
-      :topic,
-      :salmon,
       :hide_followers,
       :hide_follows,
       :hide_followers_count,

@@ -11,7 +11,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.OStatus
 
   clear_config([:instance, :public])
 
@@ -75,8 +74,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       {:ok, _activity} = CommonAPI.post(following, %{"status" => "test"})
 
-      {:ok, [_activity]} =
-        OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
+      _activity = insert(:note_activity, local: false)
 
       conn = get(conn, "/api/v1/timelines/public", %{"local" => "False"})
 
@@ -270,9 +268,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       following = insert(:user)
 
       {:ok, activity} = CommonAPI.post(following, %{"status" => "test #2hu"})
-
-      {:ok, [_activity]} =
-        OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
 
       nconn = get(conn, "/api/v1/timelines/tag/2hu")
 
