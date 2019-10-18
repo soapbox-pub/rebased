@@ -14,6 +14,8 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Streamer
 
+  import ExUnit.CaptureLog
+
   describe "create_notifications" do
     test "notifies someone when they are directly addressed" do
       user = insert(:user)
@@ -533,7 +535,9 @@ defmodule Pleroma.NotificationTest do
 
       assert Enum.empty?(Notification.for_user(user))
 
-      {:error, _} = CommonAPI.favorite(other_user, activity.id)
+      assert capture_log(fn ->
+               {:error, _} = CommonAPI.favorite(other_user, activity.id)
+             end) =~ "[error]"
 
       assert Enum.empty?(Notification.for_user(user))
     end
