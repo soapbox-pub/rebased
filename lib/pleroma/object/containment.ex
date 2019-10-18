@@ -57,7 +57,9 @@ defmodule Pleroma.Object.Containment do
     id_uri = URI.parse(id)
     other_uri = URI.parse(other_id)
 
-    if id_uri.host == other_uri.host do
+    # We explicitly allow 'tag' URIs through, due to legacy OStatus objects
+    # being present in the ActivityPub network.
+    if id_uri.host == other_uri.host || other_uri.scheme == "tag" do
       :ok
     else
       :error
