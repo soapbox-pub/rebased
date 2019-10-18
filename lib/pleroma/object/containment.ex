@@ -36,7 +36,7 @@ defmodule Pleroma.Object.Containment do
   # objects being present in the test suite environment.  Once these objects are
   # removed, please also remove this.
   if Mix.env() == :test do
-    defp compare_uris(_, %URI{scheme: "tag" <> _}), do: :ok
+    defp compare_uris(_, %URI{scheme: "tag"}), do: :ok
   end
 
   defp compare_uris(%URI{} = id_uri, %URI{} = other_uri) do
