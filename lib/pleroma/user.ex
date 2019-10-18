@@ -727,7 +727,7 @@ defmodule Pleroma.User do
       set: [
         info:
           fragment(
-            "jsonb_set(?, '{note_count}', ((?->>'note_count')::int + 1)::varchar::jsonb, true)",
+            "safe_jsonb_set(?, '{note_count}', ((?->>'note_count')::int + 1)::varchar::jsonb, true)",
             u.info,
             u.info
           )
@@ -748,7 +748,7 @@ defmodule Pleroma.User do
       set: [
         info:
           fragment(
-            "jsonb_set(?, '{note_count}', (greatest(0, (?->>'note_count')::int - 1))::varchar::jsonb, true)",
+            "safe_jsonb_set(?, '{note_count}', (greatest(0, (?->>'note_count')::int - 1))::varchar::jsonb, true)",
             u.info,
             u.info
           )
@@ -818,7 +818,7 @@ defmodule Pleroma.User do
         set: [
           info:
             fragment(
-              "jsonb_set(?, '{follower_count}', ?::varchar::jsonb, true)",
+              "safe_jsonb_set(?, '{follower_count}', ?::varchar::jsonb, true)",
               u.info,
               s.count
             )
