@@ -228,20 +228,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert status.in_reply_to_id == to_string(note.id)
   end
 
-  # XXX: fix this test
-  # test "contains mentions" do
-  #   incoming = File.read!("test/fixtures/incoming_reply_mastodon.xml")
-  #   # a user with this ap id might be in the cache.
-  #   recipient = "https://pleroma.soykaf.com/users/lain"
-  #   user = insert(:user, %{ap_id: recipient})
-  #
-  #   {:ok, [activity]} = OStatus.handle_incoming(incoming)
-  #
-  #   status = StatusView.render("show.json", %{activity: activity})
-  #
-  #   assert status.mentions ==
-  #            Enum.map([user], fn u -> AccountView.render("mention.json", %{user: u}) end)
-  # end
+  test "contains mentions" do
+    user = insert(:user)
+    mentioned = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "hi @#{mentioned.nickname}"})
+
+    status = StatusView.render("show.json", %{activity: activity})
+
+    assert status.mentions ==
+             Enum.map([mentioned], fn u -> AccountView.render("mention.json", %{user: u}) end)
+  end
 
   test "create mentions from the 'to' field" do
     %User{ap_id: recipient_ap_id} = insert(:user)
