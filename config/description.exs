@@ -581,9 +581,7 @@ config :pleroma, :config_description, [
         type: [:list, :module],
         description: "List of modules for federation publishing",
         suggestions: [
-          Pleroma.Web.ActivityPub.Publisher,
-          Pleroma.Web.Websub,
-          Pleroma.Web.Salmo
+          Pleroma.Web.ActivityPub.Publisher
         ]
       },
       %{
