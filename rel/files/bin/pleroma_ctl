@@ -141,8 +141,8 @@ else
 
 	ACTION="$1"
 	shift
-
-	if [ "$(echo \"$1\" | grep \"^-\" >/dev/null)" = false ]; then
+        echo "$1" | grep "^-" >/dev/null
+	if [ $? -eq 1 ]; then
 		SUBACTION="$1"
 		shift
 	fi
