@@ -162,8 +162,8 @@ defmodule Pleroma.Object.Fetcher do
       {:ok, %{status: code}} when code in [404, 410] ->
         {:error, "Object has been deleted"}
 
-      _ ->
-        {:error, "Could not fetch by AP id"}
+      e ->
+        {:error, e}
     end
   end
 
