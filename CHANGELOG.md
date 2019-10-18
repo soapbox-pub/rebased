@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.2] - 2019-10-18
+### Fixed
+- `pleroma_ctl` trying to connect to a running instance when generating the config, which of course doesn't exist.
+
 ## [1.1.1] - 2019-10-18
 ### Fixed
 - One of the migrations between 1.0.0 and 1.1.0 wiping user info of the relay user because of unexpected behavior of postgresql's `jsonb_set`, resulting in inability to post in the default configuration. If you were affected, please run the following query in postgres console, the relay user will be recreated automatically:
