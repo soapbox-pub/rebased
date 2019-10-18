@@ -13,6 +13,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+  import ExUnit.CaptureLog
 
   require Pleroma.Constants
 
@@ -274,7 +275,9 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
       {:ok, %Activity{}} = CommonAPI.favorite(user, activity.id)
-      {:error, _} = CommonAPI.favorite(user, activity.id)
+      assert capture_log(fn ->
+        assert {:error, _} = CommonAPI.favorite(user, activity.id)
+      end) =~ "[error]"
     end
   end
 
