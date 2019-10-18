@@ -54,7 +54,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     Logger.info("Removing embedded objects")
 
     Repo.query!(
-      "update activities set data = jsonb_set(data, '{object}'::text[], data->'object'->'id') where data->'object'->>'id' is not null;",
+      "update activities set data = safe_jsonb_set(data, '{object}'::text[], data->'object'->'id') where data->'object'->>'id' is not null;",
       [],
       timeout: :infinity
     )
@@ -152,7 +152,7 @@ defmodule Mix.Tasks.Pleroma.Database do
         set: [
           data:
             fragment(
-              "jsonb_set(?, '{likes}', '[]'::jsonb, true)",
+              "safe_jsonb_set(?, '{likes}', '[]'::jsonb, true)",
               object.data
             )
         ]
