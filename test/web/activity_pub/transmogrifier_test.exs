@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
-  alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
