@@ -74,6 +74,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
 </details>
 
+## [1.1.2] - 2019-10-18
+### Fixed
+- `pleroma_ctl` trying to connect to a running instance when generating the config, which of course doesn't exist.
+
 ## [1.1.1] - 2019-10-18
 ### Fixed
 - One of the migrations between 1.0.0 and 1.1.0 wiping user info of the relay user because of unexpected behavior of postgresql's `jsonb_set`, resulting in inability to post in the default configuration. If you were affected, please run the following query in postgres console, the relay user will be recreated automatically:
