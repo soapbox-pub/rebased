@@ -71,24 +71,6 @@ defmodule Pleroma.Object.FetcherTest do
 
       assert object == object_again
     end
-
-    test "it works with objects only available via Ostatus" do
-      {:ok, object} = Fetcher.fetch_object_from_id("https://shitposter.club/notice/2827873")
-      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      assert activity.data["id"]
-
-      {:ok, object_again} = Fetcher.fetch_object_from_id("https://shitposter.club/notice/2827873")
-
-      assert object == object_again
-    end
-
-    test "it correctly stitches up conversations between ostatus and ap" do
-      last = "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
-      {:ok, object} = Fetcher.fetch_object_from_id(last)
-
-      object = Object.get_by_ap_id(object.data["inReplyTo"])
-      assert object
-    end
   end
 
   describe "implementation quirks" do
