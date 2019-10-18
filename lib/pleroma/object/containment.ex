@@ -41,7 +41,7 @@ defmodule Pleroma.Object.Containment do
     id_uri = URI.parse(id)
     actor_uri = URI.parse(get_actor(params))
 
-    if id_uri.host == actor_uri.host do
+    if id_uri.host == actor_uri.host || id_uri.scheme == "tag" do
       :ok
     else
       :error
