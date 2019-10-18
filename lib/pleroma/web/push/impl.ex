@@ -125,6 +125,10 @@ defmodule Pleroma.Web.Push.Impl do
     end
   end
 
+  def format_title(%{activity: %{data: %{"directMessage" => true}}}) do
+    "New Direct Message"
+  end
+
   def format_title(%{activity: %{data: %{"type" => type}}}) do
     case type do
       "Create" -> "New Mention"
