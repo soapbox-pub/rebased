@@ -289,6 +289,14 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Response:
   - On success: URL of the unfollowed relay
 
+## `GET /api/pleroma/admin/relay`
+
+### List Relays
+
+- Params: none
+- Response:
+  - On success: JSON array of relays
+
 ## `/api/pleroma/admin/users/invite_token`
 
 ### Create an account registration invite token
