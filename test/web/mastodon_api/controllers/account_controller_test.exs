@@ -237,6 +237,20 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(post.id)
     end
+
+    test "the user views their own timelines and excludes direct messages", %{conn: conn} do
+      user = insert(:user)
+      {:ok, public_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+      {:ok, _direct_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/accounts/#{user.id}/statuses", %{"exclude_visibilities" => ["direct"]})
+
+      assert [%{"id" => id}] = json_response(conn, 200)
+      assert id == to_string(public_activity.id)
+    end
   end
 
   describe "followers" do

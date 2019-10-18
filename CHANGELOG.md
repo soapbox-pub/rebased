@@ -17,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Authentication: Added rate limit for password-authorized actions / login existence checks
 - Metadata Link: Atom syndication Feed
 - Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
+- Mastodon API: Add `exclude_visibilities` parameter to the timeline and notification endpoints
+- Admin API: `/users/:nickname/toggle_activation` endpoint is now deprecated in favor of: `/users/activate`, `/users/deactivate`, both accept `nicknames` array
+- Admin API: `POST/DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group` are deprecated in favor of: `POST/DELETE /api/pleroma/admin/users/permission_group/:permission_group` (both accept `nicknames` array), `DELETE /api/pleroma/admin/users` (`nickname` query param or `nickname` sent in JSON body) is deprecated in favor of: `DELETE /api/pleroma/admin/users` (`nicknames` query array param or `nicknames` sent in JSON body).
 - Admin API: Add `GET /api/pleroma/admin/relay` endpoint - lists all followed relays
 
 ### Changed
@@ -30,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF (Simple Policy): Also use `:accept`/`:reject` on the actors rather than only their activities
 - OStatus: Extract RSS functionality
 - Mastodon API: Add `pleroma.direct_conversation_id` to the status endpoint (`GET /api/v1/statuses/:id`)
+- Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
 
 ### Fixed
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
@@ -38,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Report emails now include functional links to profiles of remote user accounts
 
 ## [1.1.0] - 2019-??-??
+**Breaking:** The stable branch has been changed from `master` to `stable`, `master` now points to `release/1.0`
 ### Security
 - Mastodon API: respect post privacy in `/api/v1/statuses/:id/{favourited,reblogged}_by`
 

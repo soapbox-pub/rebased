@@ -69,6 +69,7 @@ defmodule Pleroma.Mixfile do
   end
 
   # Specifies which paths to compile per environment.
+  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
@@ -220,7 +221,10 @@ defmodule Pleroma.Mixfile do
       with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
            branch_name <- String.trim(branch_name),
            branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
-           true <- branch_name not in ["master", "HEAD"] do
+           true <-
+             !Enum.any?(["master", "HEAD", "release/", "stable"], fn name ->
+               String.starts_with?(name, branch_name)
+             end) do
         branch_name =
           branch_name
           |> String.trim()

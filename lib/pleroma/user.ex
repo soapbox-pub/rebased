@@ -437,7 +437,9 @@ defmodule Pleroma.User do
         {:error, "Could not follow user: #{followed.nickname} blocked you."}
 
       true ->
-        if !followed.local && follower.local && !ap_enabled?(followed) do
+        benchmark? = Pleroma.Config.get([:env]) == :benchmark
+
+        if !followed.local && follower.local && !ap_enabled?(followed) && !benchmark? do
           Websub.subscribe(follower, followed)
         end
 
@@ -1059,7 +1061,15 @@ defmodule Pleroma.User do
     BackgroundWorker.enqueue("deactivate_user", %{"user_id" => user.id, "status" => status})
   end
 
-  def deactivate(%User{} = user, status \\ true) do
+  def deactivate(user, status \\ true)
+
+  def deactivate(users, status) when is_list(users) do
+    Repo.transaction(fn ->
+      for user <- users, do: deactivate(user, status)
+    end)
+  end
+
+  def deactivate(%User{} = user, status) do
     with {:ok, user} <- update_info(user, &User.Info.set_activation_status(&1, status)) do
       Enum.each(get_followers(user), &invalidate_cache/1)
       Enum.each(get_friends(user), &update_follower_count/1)
@@ -1070,6 +1080,10 @@ defmodule Pleroma.User do
 
   def update_notification_settings(%User{} = user, settings \\ %{}) do
     update_info(user, &User.Info.update_notification_settings(&1, settings))
+  end
+
+  def delete(users) when is_list(users) do
+    for user <- users, do: delete(user)
   end
 
   def delete(%User{} = user) do
@@ -1625,6 +1639,12 @@ defmodule Pleroma.User do
 
   `fun` is called with the `user.info`.
   """
+  def update_info(users, fun) when is_list(users) do
+    Repo.transaction(fn ->
+      for user <- users, do: update_info(user, fun)
+    end)
+  end
+
   def update_info(user, fun) do
     user
     |> change_info(fun)
