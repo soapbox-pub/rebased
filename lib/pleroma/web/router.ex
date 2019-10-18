@@ -137,11 +137,14 @@ defmodule Pleroma.Web.Router do
     delete("/users", AdminAPIController, :user_delete)
     post("/users", AdminAPIController, :users_create)
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
+    patch("/users/activate", AdminAPIController, :user_activate)
+    patch("/users/deactivate", AdminAPIController, :user_deactivate)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
 
     get("/users/:nickname/permission_group", AdminAPIController, :right_get)
     get("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_get)
+
     post("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_add)
 
     delete(
@@ -150,8 +153,15 @@ defmodule Pleroma.Web.Router do
       :right_delete
     )
 
-    put("/users/:nickname/activation_status", AdminAPIController, :set_activation_status)
+    post("/users/permission_group/:permission_group", AdminAPIController, :right_add_multiple)
 
+    delete(
+      "/users/permission_group/:permission_group",
+      AdminAPIController,
+      :right_delete_multiple
+    )
+
+    get("/relay", AdminAPIController, :relay_list)
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
@@ -498,11 +508,6 @@ defmodule Pleroma.Web.Router do
 
     get("/users/:nickname/feed", Feed.FeedController, :feed)
     get("/users/:nickname", Feed.FeedController, :feed_redirect)
-
-    post("/users/:nickname/salmon", OStatus.OStatusController, :salmon_incoming)
-    post("/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request)
-    get("/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation)
-    post("/push/subscriptions/:id", Websub.WebsubController, :websub_incoming)
 
     get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end

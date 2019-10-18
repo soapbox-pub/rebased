@@ -424,8 +424,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       other_user = insert(:user)
 
       {:ok, _activity} =
-        CommonAPI.post(user, %{
-          "status" => "Hey @#{other_user.nickname}.",
+        CommonAPI.post(other_user, %{
+          "status" => "Hey @#{user.nickname}.",
           "visibility" => "direct"
         })
 
