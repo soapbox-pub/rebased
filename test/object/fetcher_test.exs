@@ -27,31 +27,16 @@ defmodule Pleroma.Object.FetcherTest do
   end
 
   describe "actor origin containment" do
-    test_with_mock "it rejects objects with a bogus origin",
-                   Pleroma.Web.OStatus,
-                   [:passthrough],
-                   [] do
+    test "it rejects objects with a bogus origin" do
       {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity.json")
-
-      refute called(Pleroma.Web.OStatus.fetch_activity_from_url(:_))
     end
 
-    test_with_mock "it rejects objects when attributedTo is wrong (variant 1)",
-                   Pleroma.Web.OStatus,
-                   [:passthrough],
-                   [] do
+    test "it rejects objects when attributedTo is wrong (variant 1)" do
       {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity2.json")
-
-      refute called(Pleroma.Web.OStatus.fetch_activity_from_url(:_))
     end
 
-    test_with_mock "it rejects objects when attributedTo is wrong (variant 2)",
-                   Pleroma.Web.OStatus,
-                   [:passthrough],
-                   [] do
+    test "it rejects objects when attributedTo is wrong (variant 2)" do
       {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity3.json")
-
-      refute called(Pleroma.Web.OStatus.fetch_activity_from_url(:_))
     end
   end
 
