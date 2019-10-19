@@ -600,8 +600,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
              "Person",
              "Application",
              "Service",
-             "Organization",
-             ["Application", "Invisible"]
+             "Organization"
            ] do
     with %User{ap_id: ^actor_id} = actor <- User.get_cached_by_ap_id(object["id"]) do
       {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)

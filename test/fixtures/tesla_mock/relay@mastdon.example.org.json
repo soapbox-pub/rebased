@@ -12,7 +12,8 @@
     "Emoji": "toot:Emoji"
   }],
   "id": "http://mastodon.example.org/users/admin",
-  "type": ["Application", "Invisible"],
+  "type": "Application",
+  "invisible": true,
   "following": "http://mastodon.example.org/users/admin/following",
   "followers": "http://mastodon.example.org/users/admin/followers",
   "inbox": "http://mastodon.example.org/users/admin/inbox",

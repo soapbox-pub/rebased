@@ -55,7 +55,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "owner" => user.ap_id,
         "publicKeyPem" => public_key
       },
-      "endpoints" => endpoints
+      "endpoints" => endpoints,
+      "invisible" => User.invisible?(user)
     }
     |> Map.merge(Utils.make_json_ld_header())
   end

@@ -1106,13 +1106,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
-
-    invisible =
-      if is_list(data["type"]) do
-        Enum.member?(data["type"], "Invisible")
-      else
-        false
-      end
+    invisible = data["invisible"] || false
 
     user_data = %{
       ap_id: data["id"],
