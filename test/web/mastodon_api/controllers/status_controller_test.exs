@@ -17,6 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+  import ExUnit.CaptureLog
 
   describe "posting statuses" do
     setup do
@@ -681,12 +682,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "returns 400 error for a wrong id", %{conn: conn} do
       user = insert(:user)
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/statuses/1/favourite")
+      assert capture_log(fn ->
+               conn =
+                 conn
+                 |> assign(:user, user)
+                 |> post("/api/v1/statuses/1/favourite")
 
-      assert json_response(conn, 400) == %{"error" => "Could not favorite"}
+               assert json_response(conn, 400) == %{"error" => "Could not favorite"}
+             end) =~ "[error]"
     end
   end
 
