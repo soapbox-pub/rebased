@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   use Pleroma.Web.ConnCase
 
-  import ExUnit.CaptureLog
   import Pleroma.Factory
 
   alias Pleroma.Object
