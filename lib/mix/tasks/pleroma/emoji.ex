@@ -111,19 +111,21 @@ defmodule Mix.Tasks.Pleroma.Emoji do
             file_list: files_to_unzip
           )
 
-        IO.puts(IO.ANSI.format(["Writing emoji.txt for ", :bright, pack_name]))
+        IO.puts(IO.ANSI.format(["Writing pack.json for ", :bright, pack_name]))
 
-        emoji_txt_str =
-          Enum.map(
-            files,
-            fn {shortcode, path} ->
-              emojo_path = Path.join("/emoji/#{pack_name}", path)
-              "#{shortcode}, #{emojo_path}"
-            end
-          )
-          |> Enum.join("\n")
+        pack_json = %{
+          pack: %{
+            "license" => pack["license"],
+            "homepage" => pack["homepage"],
+            "description" => pack["description"],
+            "fallback-src" => pack["src"],
+            "fallback-src-sha256" => pack["src_sha256"],
+            "share-files" => true
+          },
+          files: files
+        }
 
-        File.write!(Path.join(pack_path, "emoji.txt"), emoji_txt_str)
+        File.write!(Path.join(pack_path, "pack.json"), Jason.encode!(pack_json, pretty: true))
       else
         IO.puts(IO.ANSI.format([:bright, :red, "No pack named \"#{pack_name}\" found"]))
       end
