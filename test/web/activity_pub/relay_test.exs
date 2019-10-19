@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
 
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
 
@@ -17,6 +18,11 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
   test "gets an actor for the relay" do
     user = Relay.get_actor()
     assert user.ap_id == "#{Pleroma.Web.Endpoint.url()}/relay"
+  end
+
+  test "relay actor is invisible" do
+    user = Relay.get_actor()
+    assert User.invisible?(user)
   end
 
   describe "follow/1" do
