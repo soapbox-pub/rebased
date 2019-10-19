@@ -322,6 +322,16 @@ config :pleroma, :assets,
   ],
   default_mascot: :pleroma_fox_tan
 
+config :pleroma, :manifest,
+  icons: [
+    %{
+      src: "/static/logo.png",
+      type: "image/png"
+    }
+  ],
+  theme_color: "#282c37",
+  background_color: "#191b22"
+
 config :pleroma, :activitypub,
   unfollow_blocked: true,
   outgoing_blocks: true,
