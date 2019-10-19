@@ -133,6 +133,20 @@ defmodule Pleroma.Conversation.ParticipationTest do
     refute participation.read
   end
 
+  test "it marks all the user's participations as read" do
+    user = insert(:user)
+    other_user = insert(:user)
+    participation1 = insert(:participation, %{read: false, user: user})
+    participation2 = insert(:participation, %{read: false, user: user})
+    participation3 = insert(:participation, %{read: false, user: other_user})
+
+    {:ok, [%{read: true}, %{read: true}]} = Participation.mark_all_as_read(user)
+
+    assert Participation.get(participation1.id).read == true
+    assert Participation.get(participation2.id).read == true
+    assert Participation.get(participation3.id).read == false
+  end
+
   test "gets all the participations for a user, ordered by updated at descending" do
     user = insert(:user)
     {:ok, activity_one} = CommonAPI.post(user, %{"status" => "x", "visibility" => "direct"})
