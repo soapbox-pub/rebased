@@ -33,7 +33,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       [conn: conn]
     end
 
-    test "posting a status and checks reblog count after perform  all backroud job", %{conn: conn} do
+    test "posting a status does not increment reblog_count when relaying", %{conn: conn} do
       Pleroma.Config.put([:instance, :federating], true)
       Pleroma.Config.get([:instance, :allow_relay], true)
       user = insert(:user)
