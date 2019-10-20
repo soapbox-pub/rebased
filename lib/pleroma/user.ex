@@ -2014,11 +2014,11 @@ defmodule Pleroma.User do
     end
   end
 
-  defp set_notification_mutes(user, _muted_notifications, _notifications? = false) do
+  defp set_notification_mutes(user, _muted_notifications, false = _notifications?) do
     {:ok, user}
   end
 
-  defp set_notification_mutes(user, muted_notifications, _notifications? = true) do
+  defp set_notification_mutes(user, muted_notifications, true = _notifications?) do
     params = %{muted_notifications: muted_notifications}
 
     user
