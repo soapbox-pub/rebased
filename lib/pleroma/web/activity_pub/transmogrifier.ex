@@ -1073,8 +1073,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     Repo.update_all(q, [])
 
-    maybe_retire_websub(user.ap_id)
-
     q =
       from(
         a in Activity,
@@ -1115,19 +1113,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     user
     |> User.upgrade_changeset(data, true)
     |> User.update_and_set_cache()
-  end
-
-  def maybe_retire_websub(ap_id) do
-    # some sanity checks
-    if is_binary(ap_id) && String.length(ap_id) > 8 do
-      q =
-        from(
-          ws in Pleroma.Web.Websub.WebsubClientSubscription,
-          where: fragment("? like ?", ws.topic, ^"#{ap_id}%")
-        )
-
-      Repo.delete_all(q)
-    end
   end
 
   def maybe_fix_user_url(%{"url" => url} = data) when is_map(url) do

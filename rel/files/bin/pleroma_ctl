@@ -35,11 +35,11 @@ detect_branch() {
 	if [ "$branch" = "develop" ]; then
 		echo "develop"
 	elif [ "$branch" = "" ]; then
-		echo "master"
+		echo "stable"
 	else
 		# Note: branch name in version is of SemVer format and may only contain [0-9a-zA-Z-] symbols —
 		#   if supporting releases for more branches, need to ensure they contain only these symbols.
-		echo "Releases are built only for master and develop branches" >&2
+		echo "Can't detect the branch automatically, please specify it by using the --branch option." >&2
 		exit 1
 	fi
 }
@@ -141,8 +141,8 @@ else
 
 	ACTION="$1"
 	shift
-
-	if [ "$(echo \"$1\" | grep \"^-\" >/dev/null)" = false ]; then
+        echo "$1" | grep "^-" >/dev/null
+	if [ $? -eq 1 ]; then
 		SUBACTION="$1"
 		shift
 	fi

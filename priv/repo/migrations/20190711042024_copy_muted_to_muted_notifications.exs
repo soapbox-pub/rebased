@@ -3,7 +3,7 @@ defmodule Pleroma.Repo.Migrations.CopyMutedToMutedNotifications do
 
   def change do
     execute(
-      "update users set info = jsonb_set(info, '{muted_notifications}', info->'mutes', true) where local = true"
+      "update users set info = safe_jsonb_set(info, '{muted_notifications}', info->'mutes', true) where local = true"
     )
   end
 end

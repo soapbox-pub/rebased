@@ -18,6 +18,12 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
     }
   end
 
+  def render("index.json", %{users: users}) do
+    %{
+      users: render_many(users, AccountView, "show.json", as: :user)
+    }
+  end
+
   def render("show.json", %{user: user}) do
     avatar = User.avatar_url(user) |> MediaProxy.url()
     display_name = HTML.strip_tags(user.name || user.nickname)

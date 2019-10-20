@@ -26,9 +26,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
   alias Pleroma.Web.OAuth
-  alias Pleroma.Web.OStatus
   alias Pleroma.Web.RelMe
-  alias Pleroma.Web.Websub
   alias Pleroma.Workers.BackgroundWorker
 
   require Logger
@@ -620,10 +618,6 @@ defmodule Pleroma.User do
         {:error, "Could not follow user: #{followed.nickname} blocked you."}
 
       true ->
-        if !followed.local && follower.local && !ap_enabled?(followed) do
-          Websub.subscribe(follower, followed)
-        end
-
         q =
           from(u in User,
             where: u.id == ^follower.id,
@@ -803,12 +797,7 @@ defmodule Pleroma.User do
     Cachex.fetch!(:user_cache, key, fn -> user_info(user) end)
   end
 
-  def fetch_by_nickname(nickname) do
-    case ActivityPub.make_user_from_nickname(nickname) do
-      {:ok, user} -> {:ok, user}
-      _ -> OStatus.make_user(nickname)
-    end
-  end
+  def fetch_by_nickname(nickname), do: ActivityPub.make_user_from_nickname(nickname)
 
   def get_or_fetch_by_nickname(nickname) do
     with %User{} = user <- get_by_nickname(nickname) do
@@ -1209,7 +1198,15 @@ defmodule Pleroma.User do
     BackgroundWorker.enqueue("deactivate_user", %{"user_id" => user.id, "status" => status})
   end
 
-  def deactivate(%User{} = user, status \\ true) do
+  def deactivate(user, status \\ true)
+
+  def deactivate(users, status) when is_list(users) do
+    Repo.transaction(fn ->
+      for user <- users, do: deactivate(user, status)
+    end)
+  end
+
+  def deactivate(%User{} = user, status) do
     with {:ok, user} <- set_activation_status(user, status) do
       Enum.each(get_followers(user), &invalidate_cache/1)
       Enum.each(get_friends(user), &update_follower_count/1)
@@ -1235,6 +1232,10 @@ defmodule Pleroma.User do
     |> cast(params, [:notification_settings])
     |> validate_required([:notification_settings])
     |> update_and_set_cache()
+  end
+
+  def delete(users) when is_list(users) do
+    for user <- users, do: delete(user)
   end
 
   def delete(%User{} = user) do
@@ -1399,18 +1400,7 @@ defmodule Pleroma.User do
 
   def html_filter_policy(_), do: Pleroma.Config.get([:markup, :scrub_policy])
 
-  def fetch_by_ap_id(ap_id) do
-    case ActivityPub.make_user_from_ap_id(ap_id) do
-      {:ok, user} ->
-        {:ok, user}
-
-      _ ->
-        case OStatus.make_user(ap_id) do
-          {:ok, user} -> {:ok, user}
-          _ -> {:error, "Could not fetch by AP id"}
-        end
-    end
-  end
+  def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
 
   def get_or_fetch_by_ap_id(ap_id) do
     user = get_cached_by_ap_id(ap_id)
@@ -1463,12 +1453,7 @@ defmodule Pleroma.User do
     {:ok, key}
   end
 
-  # OStatus Magic Key
-  def public_key(%{magic_key: magic_key}) when not is_nil(magic_key) do
-    {:ok, Pleroma.Web.Salmon.decode_key(magic_key)}
-  end
-
-  def public_key(_), do: {:error, "not found key"}
+  def public_key_from_info(_), do: {:error, "not found key"}
 
   def get_public_key_for_ap_id(ap_id) do
     with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),

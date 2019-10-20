@@ -48,6 +48,12 @@ defmodule Pleroma.Conversation.Participation do
     |> validate_required([:read])
   end
 
+  def mark_as_read(%User{} = user, %Conversation{} = conversation) do
+    with %__MODULE__{} = participation <- for_user_and_conversation(user, conversation) do
+      mark_as_read(participation)
+    end
+  end
+
   def mark_as_read(participation) do
     participation
     |> read_cng(%{read: true})
@@ -61,6 +67,19 @@ defmodule Pleroma.Conversation.Participation do
       error ->
         error
     end
+  end
+
+  def mark_all_as_read(user) do
+    {_, participations} =
+      __MODULE__
+      |> where([p], p.user_id == ^user.id)
+      |> where([p], not p.read)
+      |> update([p], set: [read: true])
+      |> select([p], p)
+      |> Repo.update_all([])
+
+    User.set_unread_conversation_count(user)
+    {:ok, participations}
   end
 
   def mark_as_unread(participation) do

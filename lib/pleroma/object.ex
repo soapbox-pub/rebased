@@ -181,7 +181,7 @@ defmodule Pleroma.Object do
         data:
           fragment(
             """
-            jsonb_set(?, '{repliesCount}',
+            safe_jsonb_set(?, '{repliesCount}',
               (coalesce((?->>'repliesCount')::int, 0) + 1)::varchar::jsonb, true)
             """,
             o.data,
@@ -204,7 +204,7 @@ defmodule Pleroma.Object do
         data:
           fragment(
             """
-            jsonb_set(?, '{repliesCount}',
+            safe_jsonb_set(?, '{repliesCount}',
               (greatest(0, (?->>'repliesCount')::int - 1))::varchar::jsonb, true)
             """,
             o.data,
