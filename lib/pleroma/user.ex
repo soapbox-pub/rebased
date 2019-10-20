@@ -89,9 +89,6 @@ defmodule Pleroma.User do
     field(:settings, :map, default: nil)
     field(:magic_key, :string, default: nil)
     field(:uri, :string, default: nil)
-    field(:topic, :string, default: nil)
-    field(:hub, :string, default: nil)
-    field(:salmon, :string, default: nil)
     field(:hide_followers_count, :boolean, default: false)
     field(:hide_follows_count, :boolean, default: false)
     field(:hide_followers, :boolean, default: false)
@@ -250,9 +247,6 @@ defmodule Pleroma.User do
     :settings,
     :magic_key,
     :uri,
-    :topic,
-    :hub,
-    :salmon,
     :hide_followers_count,
     :hide_follows_count,
     :hide_followers,
@@ -317,9 +311,6 @@ defmodule Pleroma.User do
           :locked,
           :magic_key,
           :uri,
-          :hub,
-          :topic,
-          :salmon,
           :hide_followers,
           :hide_follows,
           :hide_followers_count,
@@ -1453,7 +1444,7 @@ defmodule Pleroma.User do
     {:ok, key}
   end
 
-  def public_key_from_info(_), do: {:error, "not found key"}
+  def public_key(_), do: {:error, "not found key"}
 
   def get_public_key_for_ap_id(ap_id) do
     with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),

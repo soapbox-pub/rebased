@@ -108,7 +108,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     [participation2, participation1] = Participation.for_user(other_user)
     assert Participation.get(participation2.id).read == false
     assert Participation.get(participation1.id).read == false
-    assert User.get_cached_by_id(other_user.id).info.unread_conversation_count == 2
+    assert User.get_cached_by_id(other_user.id).unread_conversation_count == 2
 
     [%{"unread" => false}, %{"unread" => false}] =
       conn
@@ -119,7 +119,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     [participation2, participation1] = Participation.for_user(other_user)
     assert Participation.get(participation2.id).read == true
     assert Participation.get(participation1.id).read == true
-    assert User.get_cached_by_id(other_user.id).info.unread_conversation_count == 0
+    assert User.get_cached_by_id(other_user.id).unread_conversation_count == 0
   end
 
   describe "POST /api/v1/pleroma/notifications/read" do

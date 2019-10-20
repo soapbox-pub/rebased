@@ -95,8 +95,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
         "visibility" => "direct"
       })
 
-    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 0
-    assert User.get_cached_by_id(user_two.id).info.unread_conversation_count == 1
+    assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
+    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 1
 
     [%{"id" => direct_conversation_id, "unread" => true}] =
       conn

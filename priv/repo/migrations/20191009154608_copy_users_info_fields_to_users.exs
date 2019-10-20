@@ -28,9 +28,6 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoaddsToUsers do
     :settings,
     :magic_key,
     :uri,
-    :topic,
-    :hub,
-    :salmon,
     :hide_followers_count,
     :hide_follows_count,
     :hide_followers,
@@ -121,9 +118,6 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoaddsToUsers do
       add(:settings, :map, default: nil)
       add(:magic_key, :text, default: nil)
       add(:uri, :text, default: nil)
-      add(:topic, :text, default: nil)
-      add(:hub, :text, default: nil)
-      add(:salmon, :text, default: nil)
       add(:hide_followers_count, :boolean, default: false, null: false)
       add(:hide_follows_count, :boolean, default: false, null: false)
       add(:hide_followers, :boolean, default: false, null: false)

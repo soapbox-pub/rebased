@@ -180,7 +180,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `nicknames`: nicknames array
 - Response:
   - On failure: `{"error": "…"}`
-  - On success: JSON of the `user.info`
+  - On success: JSON of the user
 
 ## DEPRECATED `DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
@@ -200,7 +200,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `nicknames`: nicknames array
 - Response:
   - On failure: `{"error": "…"}`
-  - On success: JSON of the `user.info`
+  - On success: JSON of the user
 - Note: An admin cannot revoke their own admin status.
 
 ## `PATCH /api/pleroma/admin/users/activate`
