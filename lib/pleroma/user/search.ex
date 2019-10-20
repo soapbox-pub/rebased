@@ -68,14 +68,14 @@ defmodule Pleroma.User.Search do
   defp base_query(_user, false), do: User
   defp base_query(user, true), do: User.get_followers_query(user)
 
-  defp filter_blocked_user(query, %User{info: %{blocks: blocks}})
+  defp filter_blocked_user(query, %User{blocks: blocks})
        when length(blocks) > 0 do
     from(q in query, where: not (q.ap_id in ^blocks))
   end
 
   defp filter_blocked_user(query, _), do: query
 
-  defp filter_blocked_domains(query, %User{info: %{domain_blocks: domain_blocks}})
+  defp filter_blocked_domains(query, %User{domain_blocks: domain_blocks})
        when length(domain_blocks) > 0 do
     domains = Enum.join(domain_blocks, ",")
 

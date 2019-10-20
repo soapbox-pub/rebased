@@ -1133,11 +1133,9 @@ defmodule Pleroma.UserTest do
         ap_id: user.ap_id,
         name: user.name,
         nickname: user.nickname,
-        info: %{
-          fields: [
-            %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
-          ]
-        }
+        fields: [
+          %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
+        ]
       }
 
       assert {:ok, %User{}} = User.insert_or_update_user(data)

@@ -23,7 +23,9 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     with %User{} = user <- User.get_cached_by_id(uid),
          true <- user.local and user.confirmation_pending and user.confirmation_token == token,
          {:ok, _} <-
-           User.update_and_set_cache(User.confirmation_changeset(user, need_confirmation: false)) do
+           user
+           |> User.confirmation_changeset(need_confirmation: false)
+           |> User.update_and_set_cache() do
       redirect(conn, to: "/")
     end
   end

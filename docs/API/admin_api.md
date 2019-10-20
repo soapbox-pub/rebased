@@ -160,7 +160,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params: none
 - Response:
   - On failure: `{"error": "…"}`
-  - On success: JSON of the `user.info`
+  - On success: JSON of the user
 
 ### Remove user from permission group
 
@@ -168,7 +168,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params: none
 - Response:
   - On failure: `{"error": "…"}`
-  - On success: JSON of the `user.info`
+  - On success: JSON of the user
 - Note: An admin cannot revoke their own admin status.
 
 ## `/api/pleroma/admin/users/:nickname/activation_status`

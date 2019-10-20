@@ -5,6 +5,7 @@
 defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
   import Mix.Pleroma
+  alias Ecto.Changeset
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.OAuth
@@ -364,21 +365,30 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   defp set_moderator(user, value) do
-    {:ok, user} = User.update_and_set_cache(user, %{is_moderator: value})
+    {:ok, user} =
+      user
+      |> Changeset.change(%{is_moderator: value})
+      |> User.update_and_set_cache()
 
     shell_info("Moderator status of #{user.nickname}: #{user.is_moderator}")
     user
   end
 
   defp set_admin(user, value) do
-    {:ok, user} = User.update_and_set_cache(user, %{is_admin: value})
+    {:ok, user} =
+      user
+      |> Changeset.change(%{is_admin: value})
+      |> User.update_and_set_cache()
 
     shell_info("Admin status of #{user.nickname}: #{user.is_admin}")
     user
   end
 
   defp set_locked(user, value) do
-    {:ok, user} = User.update_and_set_cache(user, %{locked: value})
+    {:ok, user} =
+      user
+      |> Changeset.change(%{locked: value})
+      |> User.update_and_set_cache()
 
     shell_info("Locked status of #{user.nickname}: #{user.locked}")
     user

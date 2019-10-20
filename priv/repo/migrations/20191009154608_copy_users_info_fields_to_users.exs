@@ -1,6 +1,98 @@
 defmodule Pleroma.Repo.Migrations.CopyUsersInfoaddsToUsers do
   use Ecto.Migration
 
+  @info_fields [
+    :banner,
+    :background,
+    :source_data,
+    :note_count,
+    :follower_count,
+    :following_count,
+    :locked,
+    :confirmation_pending,
+    :password_reset_pending,
+    :confirmation_token,
+    :default_scope,
+    :blocks,
+    :domain_blocks,
+    :mutes,
+    :muted_reblogs,
+    :muted_notifications,
+    :subscribers,
+    :deactivated,
+    :no_rich_text,
+    :ap_enabled,
+    :is_moderator,
+    :is_admin,
+    :show_role,
+    :settings,
+    :magic_key,
+    :uri,
+    :topic,
+    :hub,
+    :salmon,
+    :hide_followers_count,
+    :hide_follows_count,
+    :hide_followers,
+    :hide_follows,
+    :hide_favorites,
+    :unread_conversation_count,
+    :pinned_activities,
+    :email_notifications,
+    :mascot,
+    :emoji,
+    :pleroma_settings_store,
+    :fields,
+    :raw_fields,
+    :discoverable,
+    :skip_thread_containment,
+    :notification_settings
+  ]
+
+  @jsonb_fields [
+    :banner,
+    :background,
+    :source_data,
+    :settings,
+    :email_notifications,
+    :mascot,
+    :pleroma_settings_store,
+    :notification_settings
+  ]
+
+  @array_jsonb_fields [:emoji, :fields, :raw_fields]
+
+  @int_fields [:note_count, :follower_count, :following_count, :unread_conversation_count]
+
+  @boolean_fields [
+    :locked,
+    :confirmation_pending,
+    :password_reset_pending,
+    :deactivated,
+    :no_rich_text,
+    :ap_enabled,
+    :is_moderator,
+    :is_admin,
+    :show_role,
+    :hide_followers_count,
+    :hide_follows_count,
+    :hide_followers,
+    :hide_follows,
+    :hide_favorites,
+    :discoverable,
+    :skip_thread_containment
+  ]
+
+  @array_text_fields [
+    :blocks,
+    :domain_blocks,
+    :mutes,
+    :muted_reblogs,
+    :muted_notifications,
+    :subscribers,
+    :pinned_activities
+  ]
+
   def change do
     alter table(:users) do
       add(:banner, :map, default: %{})
@@ -8,11 +100,10 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoaddsToUsers do
       add(:source_data, :map, default: %{})
       add(:note_count, :integer, default: 0)
       add(:follower_count, :integer, default: 0)
-      # Should be filled in only for remote users
       add(:following_count, :integer, default: nil)
-      add(:locked, :boolean, default: false)
-      add(:confirmation_pending, :boolean, default: false)
-      add(:password_reset_pending, :boolean, default: false)
+      add(:locked, :boolean, default: false, null: false)
+      add(:confirmation_pending, :boolean, default: false, null: false)
+      add(:password_reset_pending, :boolean, default: false, null: false)
       add(:confirmation_token, :text, default: nil)
       add(:default_scope, :string, default: "public")
       add(:blocks, {:array, :text}, default: [])
@@ -50,5 +141,45 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoaddsToUsers do
       add(:notification_settings, :map, default: %{})
       add(:skip_thread_containment, :boolean, default: false, null: false)
     end
+
+    if direction == :up do
+      for f <- @info_fields do
+        set_field = "update users set #{f} ="
+
+        cond do
+          f in @jsonb_fields ->
+            execute("#{set_field} info->'#{f}'")
+
+          f in @array_jsonb_fields ->
+            execute("#{set_field} ARRAY(SELECT jsonb_array_elements(info->'#{f}'))")
+
+          f in @int_fields ->
+            execute("#{set_field} (info->>'#{f}')::int")
+
+          f in @boolean_fields ->
+            execute("#{set_field} coalesce((info->>'#{f}')::boolean, false)")
+
+          f in @array_text_fields ->
+            execute("#{set_field} ARRAY(SELECT jsonb_array_elements_text(info->'#{f}'))")
+
+          true ->
+            execute("#{set_field} info->>'#{f}'")
+        end
+      end
+
+      for index_name <- [
+            :users_deactivated_index,
+            :users_is_moderator_index,
+            :users_is_admin_index,
+            :users_subscribers_index
+          ] do
+        drop_if_exists(index(:users, [], name: index_name))
+      end
+    end
+
+    create_if_not_exists(index(:users, [:deactivated]))
+    create_if_not_exists(index(:users, [:is_moderator]))
+    create_if_not_exists(index(:users, [:is_admin]))
+    create_if_not_exists(index(:users, [:subscribers]))
   end
 end

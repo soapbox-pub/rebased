@@ -392,14 +392,14 @@ defmodule Pleroma.Web.CommonAPI do
   defp set_visibility(activity, _), do: {:ok, activity}
 
   def hide_reblogs(user, %{ap_id: ap_id} = _muted) do
-    if ap_id not in user.info.muted_reblogs do
-      User.update_info(user, &User.Info.add_reblog_mute(&1, ap_id))
+    if ap_id not in user.muted_reblogs do
+      User.add_reblog_mute(user, ap_id)
     end
   end
 
   def show_reblogs(user, %{ap_id: ap_id} = _muted) do
-    if ap_id in user.info.muted_reblogs do
-      User.update_info(user, &User.Info.remove_reblog_mute(&1, ap_id))
+    if ap_id in user.muted_reblogs do
+      User.remove_reblog_mute(user, ap_id)
     end
   end
 end

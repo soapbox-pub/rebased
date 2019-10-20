@@ -129,12 +129,12 @@ defmodule Pleroma.Web.Streamer.Worker do
   end
 
   defp should_send?(%User{} = user, %Activity{} = item) do
-    blocks = user.info.blocks || []
-    mutes = user.info.mutes || []
-    reblog_mutes = user.info.muted_reblogs || []
+    blocks = user.blocks || []
+    mutes = user.mutes || []
+    reblog_mutes = user.muted_reblogs || []
     recipient_blocks = MapSet.new(blocks ++ mutes)
     recipients = MapSet.new(item.recipients)
-    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.info.domain_blocks)
+    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.domain_blocks)
 
     with parent when not is_nil(parent) <- Object.normalize(item),
          true <- Enum.all?([blocks, mutes, reblog_mutes], &(item.actor not in &1)),

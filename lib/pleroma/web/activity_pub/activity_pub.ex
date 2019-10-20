@@ -235,8 +235,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
          _ <- increase_poll_votes_if_vote(create_data),
-         # Changing note count prior to enqueuing federation task in order to avoid
-         # race conditions on updating user.info
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
@@ -429,8 +427,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(data, local, false),
          stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
-         # Changing note count prior to enqueuing federation task in order to avoid
-         # race conditions on updating user.info
          {:ok, _actor} <- decrease_note_count_if_public(user, object),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
@@ -800,8 +796,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted(query, %{"with_muted" => val}) when val in [true, "true", "1"], do: query
 
-  defp restrict_muted(query, %{"muting_user" => %User{info: info}} = opts) do
-    mutes = info.mutes
+  defp restrict_muted(query, %{"muting_user" => %User{} = user} = opts) do
+    mutes = user.mutes
 
     query =
       from([activity] in query,
@@ -818,9 +814,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted(query, _), do: query
 
-  defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
-    blocks = info.blocks || []
-    domain_blocks = info.domain_blocks || []
+  defp restrict_blocked(query, %{"blocking_user" => %User{} = user}) do
+    blocks = user.blocks || []
+    domain_blocks = user.domain_blocks || []
 
     query =
       if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
@@ -861,8 +857,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_pinned(query, _), do: query
 
-  defp restrict_muted_reblogs(query, %{"muting_user" => %User{info: info}}) do
-    muted_reblogs = info.muted_reblogs || []
+  defp restrict_muted_reblogs(query, %{"muting_user" => %User{} = user}) do
+    muted_reblogs = user.muted_reblogs || []
 
     from(
       activity in query,

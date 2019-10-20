@@ -58,11 +58,11 @@ defmodule Pleroma.Notification do
     if opts[:with_muted] do
       query
     else
-      where(query, [n, a], a.actor not in ^user.info.muted_notifications)
-      |> where([n, a], a.actor not in ^user.info.blocks)
+      where(query, [n, a], a.actor not in ^user.muted_notifications)
+      |> where([n, a], a.actor not in ^user.blocks)
       |> where(
         [n, a],
-        fragment("substring(? from '.*://([^/]*)')", a.actor) not in ^user.info.domain_blocks
+        fragment("substring(? from '.*://([^/]*)')", a.actor) not in ^user.domain_blocks
       )
       |> join(:left, [n, a], tm in Pleroma.ThreadMute,
         on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data)

@@ -197,11 +197,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Enum.dedup()
 
     user_params = Map.put(user_params, :emoji, user_emojis)
-
-    changeset =
-      user
-      |> User.update_changeset(user_params)
-      |> User.change_info(& &1)
+    changeset = User.update_changeset(user, user_params)
 
     with {:ok, user} <- User.update_and_set_cache(changeset) do
       if original_user != user, do: CommonAPI.update(user)
