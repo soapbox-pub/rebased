@@ -58,7 +58,7 @@ Clone the repository:
 
 ```
 $ cd /home/pleroma
-$ git clone -b master https://git.pleroma.social/pleroma/pleroma.git
+$ git clone -b stable https://git.pleroma.social/pleroma/pleroma.git
 ```
 
 Configure Pleroma. Note that you need a domain name at this point:

@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
 
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
 
@@ -19,11 +20,16 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
     assert user.ap_id == "#{Pleroma.Web.Endpoint.url()}/relay"
   end
 
+  test "relay actor is invisible" do
+    user = Relay.get_actor()
+    assert User.invisible?(user)
+  end
+
   describe "follow/1" do
     test "returns errors when user not found" do
       assert capture_log(fn ->
-               assert Relay.follow("test-ap-id") == {:error, "Could not fetch by AP id"}
-             end) =~ "Could not fetch by AP id"
+               {:error, _} = Relay.follow("test-ap-id")
+             end) =~ "Could not decode user at fetch"
     end
 
     test "returns activity" do
@@ -41,8 +47,8 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
   describe "unfollow/1" do
     test "returns errors when user not found" do
       assert capture_log(fn ->
-               assert Relay.unfollow("test-ap-id") == {:error, "Could not fetch by AP id"}
-             end) =~ "Could not fetch by AP id"
+               {:error, _} = Relay.unfollow("test-ap-id")
+             end) =~ "Could not decode user at fetch"
     end
 
     test "returns activity" do

@@ -204,17 +204,17 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       conn =
         conn
         |> assign(:user, user)
-        |> get("/api/v1/search", %{"q" => "shp@social.heldscal.la", "resolve" => "true"})
+        |> get("/api/v1/search", %{"q" => "mike@osada.macgirvin.com", "resolve" => "true"})
 
       assert results = json_response(conn, 200)
       [account] = results["accounts"]
-      assert account["acct"] == "shp@social.heldscal.la"
+      assert account["acct"] == "mike@osada.macgirvin.com"
     end
 
     test "search doesn't fetch remote accounts if resolve is false", %{conn: conn} do
       conn =
         conn
-        |> get("/api/v1/search", %{"q" => "shp@social.heldscal.la", "resolve" => "false"})
+        |> get("/api/v1/search", %{"q" => "mike@osada.macgirvin.com", "resolve" => "false"})
 
       assert results = json_response(conn, 200)
       assert [] == results["accounts"]

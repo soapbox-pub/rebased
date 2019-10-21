@@ -41,6 +41,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         assert called(Pleroma.Web.Streamer.stream("participation", participations))
       end
     end
+
+    test "streams them out on activity creation" do
+      user_one = insert(:user)
+      user_two = insert(:user)
+
+      with_mock Pleroma.Web.Streamer,
+        stream: fn _, _ -> nil end do
+        {:ok, activity} =
+          CommonAPI.post(user_one, %{
+            "status" => "@#{user_two.nickname}",
+            "visibility" => "direct"
+          })
+
+        conversation =
+          activity.data["context"]
+          |> Pleroma.Conversation.get_for_ap_id()
+          |> Repo.preload(participations: :user)
+
+        assert called(Pleroma.Web.Streamer.stream("participation", conversation.participations))
+      end
+    end
   end
 
   describe "fetching restricted by visibility" do
@@ -87,6 +108,66 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "fetching excluded by visibility" do
+    test "it excludes by the appropriate visibility" do
+      user = insert(:user)
+
+      {:ok, public_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+
+      {:ok, direct_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+
+      {:ok, unlisted_activity} =
+        CommonAPI.post(user, %{"status" => ".", "visibility" => "unlisted"})
+
+      {:ok, private_activity} =
+        CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          "exclude_visibilities" => "direct",
+          "actor_id" => user.ap_id
+        })
+
+      assert public_activity in activities
+      assert unlisted_activity in activities
+      assert private_activity in activities
+      refute direct_activity in activities
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          "exclude_visibilities" => "unlisted",
+          "actor_id" => user.ap_id
+        })
+
+      assert public_activity in activities
+      refute unlisted_activity in activities
+      assert private_activity in activities
+      assert direct_activity in activities
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          "exclude_visibilities" => "private",
+          "actor_id" => user.ap_id
+        })
+
+      assert public_activity in activities
+      assert unlisted_activity in activities
+      refute private_activity in activities
+      assert direct_activity in activities
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          "exclude_visibilities" => "public",
+          "actor_id" => user.ap_id
+        })
+
+      refute public_activity in activities
+      assert unlisted_activity in activities
+      assert private_activity in activities
+      assert direct_activity in activities
+    end
+  end
+
   describe "building a user from his ap id" do
     test "it returns a user" do
       user_id = "http://mastodon.example.org/users/admin"
@@ -96,6 +177,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert user.info.source_data
       assert user.info.ap_enabled
       assert user.follower_address == "http://mastodon.example.org/users/admin/followers"
+    end
+
+    test "it returns a user that is invisible" do
+      user_id = "http://mastodon.example.org/users/relay"
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+      assert User.invisible?(user)
     end
 
     test "it fetches the appropriate tag-restricted posts" do

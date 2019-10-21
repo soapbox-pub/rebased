@@ -23,6 +23,39 @@ defmodule Pleroma.Conversation.ParticipationTest do
     assert %Pleroma.Conversation{} = participation.conversation
   end
 
+  test "for a new conversation or a reply, it doesn't mark the author's participation as unread" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _} =
+      CommonAPI.post(user, %{"status" => "Hey @#{other_user.nickname}.", "visibility" => "direct"})
+
+    user = User.get_cached_by_id(user.id)
+    other_user = User.get_cached_by_id(other_user.id)
+
+    [%{read: true}] = Participation.for_user(user)
+    [%{read: false} = participation] = Participation.for_user(other_user)
+
+    assert User.get_cached_by_id(user.id).info.unread_conversation_count == 0
+    assert User.get_cached_by_id(other_user.id).info.unread_conversation_count == 1
+
+    {:ok, _} =
+      CommonAPI.post(other_user, %{
+        "status" => "Hey @#{user.nickname}.",
+        "visibility" => "direct",
+        "in_reply_to_conversation_id" => participation.id
+      })
+
+    user = User.get_cached_by_id(user.id)
+    other_user = User.get_cached_by_id(other_user.id)
+
+    [%{read: false}] = Participation.for_user(user)
+    [%{read: true}] = Participation.for_user(other_user)
+
+    assert User.get_cached_by_id(user.id).info.unread_conversation_count == 1
+    assert User.get_cached_by_id(other_user.id).info.unread_conversation_count == 0
+  end
+
   test "for a new conversation, it sets the recipents of the participation" do
     user = insert(:user)
     other_user = insert(:user)
@@ -32,7 +65,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
       CommonAPI.post(user, %{"status" => "Hey @#{other_user.nickname}.", "visibility" => "direct"})
 
     user = User.get_cached_by_id(user.id)
-    other_user = User.get_cached_by_id(user.id)
+    other_user = User.get_cached_by_id(other_user.id)
     [participation] = Participation.for_user(user)
     participation = Pleroma.Repo.preload(participation, :recipients)
 
@@ -98,6 +131,20 @@ defmodule Pleroma.Conversation.ParticipationTest do
     {:ok, participation} = Participation.mark_as_unread(participation)
 
     refute participation.read
+  end
+
+  test "it marks all the user's participations as read" do
+    user = insert(:user)
+    other_user = insert(:user)
+    participation1 = insert(:participation, %{read: false, user: user})
+    participation2 = insert(:participation, %{read: false, user: user})
+    participation3 = insert(:participation, %{read: false, user: other_user})
+
+    {:ok, [%{read: true}, %{read: true}]} = Participation.mark_all_as_read(user)
+
+    assert Participation.get(participation1.id).read == true
+    assert Participation.get(participation2.id).read == true
+    assert Participation.get(participation3.id).read == false
   end
 
   test "gets all the participations for a user, ordered by updated at descending" do

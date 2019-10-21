@@ -26,9 +26,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
   alias Pleroma.Web.OAuth
-  alias Pleroma.Web.OStatus
   alias Pleroma.Web.RelMe
-  alias Pleroma.Web.Websub
   alias Pleroma.Workers.BackgroundWorker
 
   require Logger
@@ -89,6 +87,9 @@ defmodule Pleroma.User do
   def superuser?(%User{local: true, info: %User.Info{is_admin: true}}), do: true
   def superuser?(%User{local: true, info: %User.Info{is_moderator: true}}), do: true
   def superuser?(_), do: false
+
+  def invisible?(%User{info: %User.Info{invisible: true}}), do: true
+  def invisible?(_), do: false
 
   def avatar_url(user, options \\ []) do
     case user.avatar do
@@ -437,10 +438,6 @@ defmodule Pleroma.User do
         {:error, "Could not follow user: #{followed.nickname} blocked you."}
 
       true ->
-        if !followed.local && follower.local && !ap_enabled?(followed) do
-          Websub.subscribe(follower, followed)
-        end
-
         q =
           from(u in User,
             where: u.id == ^follower.id,
@@ -614,12 +611,7 @@ defmodule Pleroma.User do
     Cachex.fetch!(:user_cache, key, fn -> user_info(user) end)
   end
 
-  def fetch_by_nickname(nickname) do
-    case ActivityPub.make_user_from_nickname(nickname) do
-      {:ok, user} -> {:ok, user}
-      _ -> OStatus.make_user(nickname)
-    end
-  end
+  def fetch_by_nickname(nickname), do: ActivityPub.make_user_from_nickname(nickname)
 
   def get_or_fetch_by_nickname(nickname) do
     with %User{} = user <- get_by_nickname(nickname) do
@@ -725,7 +717,7 @@ defmodule Pleroma.User do
       set: [
         info:
           fragment(
-            "jsonb_set(?, '{note_count}', ((?->>'note_count')::int + 1)::varchar::jsonb, true)",
+            "safe_jsonb_set(?, '{note_count}', ((?->>'note_count')::int + 1)::varchar::jsonb, true)",
             u.info,
             u.info
           )
@@ -746,7 +738,7 @@ defmodule Pleroma.User do
       set: [
         info:
           fragment(
-            "jsonb_set(?, '{note_count}', (greatest(0, (?->>'note_count')::int - 1))::varchar::jsonb, true)",
+            "safe_jsonb_set(?, '{note_count}', (greatest(0, (?->>'note_count')::int - 1))::varchar::jsonb, true)",
             u.info,
             u.info
           )
@@ -816,7 +808,7 @@ defmodule Pleroma.User do
         set: [
           info:
             fragment(
-              "jsonb_set(?, '{follower_count}', ?::varchar::jsonb, true)",
+              "safe_jsonb_set(?, '{follower_count}', ?::varchar::jsonb, true)",
               u.info,
               s.count
             )
@@ -1059,7 +1051,15 @@ defmodule Pleroma.User do
     BackgroundWorker.enqueue("deactivate_user", %{"user_id" => user.id, "status" => status})
   end
 
-  def deactivate(%User{} = user, status \\ true) do
+  def deactivate(user, status \\ true)
+
+  def deactivate(users, status) when is_list(users) do
+    Repo.transaction(fn ->
+      for user <- users, do: deactivate(user, status)
+    end)
+  end
+
+  def deactivate(%User{} = user, status) do
     with {:ok, user} <- update_info(user, &User.Info.set_activation_status(&1, status)) do
       Enum.each(get_followers(user), &invalidate_cache/1)
       Enum.each(get_friends(user), &update_follower_count/1)
@@ -1070,6 +1070,10 @@ defmodule Pleroma.User do
 
   def update_notification_settings(%User{} = user, settings \\ %{}) do
     update_info(user, &User.Info.update_notification_settings(&1, settings))
+  end
+
+  def delete(users) when is_list(users) do
+    for user <- users, do: delete(user)
   end
 
   def delete(%User{} = user) do
@@ -1234,18 +1238,7 @@ defmodule Pleroma.User do
 
   def html_filter_policy(_), do: Pleroma.Config.get([:markup, :scrub_policy])
 
-  def fetch_by_ap_id(ap_id) do
-    case ActivityPub.make_user_from_ap_id(ap_id) do
-      {:ok, user} ->
-        {:ok, user}
-
-      _ ->
-        case OStatus.make_user(ap_id) do
-          {:ok, user} -> {:ok, user}
-          _ -> {:error, "Could not fetch by AP id"}
-        end
-    end
-  end
+  def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
 
   def get_or_fetch_by_ap_id(ap_id) do
     user = get_cached_by_ap_id(ap_id)
@@ -1298,11 +1291,6 @@ defmodule Pleroma.User do
       |> :public_key.pem_entry_decode()
 
     {:ok, key}
-  end
-
-  # OStatus Magic Key
-  def public_key_from_info(%{magic_key: magic_key}) when not is_nil(magic_key) do
-    {:ok, Pleroma.Web.Salmon.decode_key(magic_key)}
   end
 
   def public_key_from_info(_), do: {:error, "not found key"}
@@ -1625,6 +1613,12 @@ defmodule Pleroma.User do
 
   `fun` is called with the `user.info`.
   """
+  def update_info(users, fun) when is_list(users) do
+    Repo.transaction(fn ->
+      for user <- users, do: update_info(user, fun)
+    end)
+  end
+
   def update_info(user, fun) do
     user
     |> change_info(fun)

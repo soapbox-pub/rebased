@@ -5,7 +5,6 @@
 defmodule Mix.Tasks.Pleroma.Relay do
   use Mix.Task
   import Mix.Pleroma
-  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
 
   @shortdoc "Manages remote relays"
@@ -36,13 +35,10 @@ defmodule Mix.Tasks.Pleroma.Relay do
   def run(["list"]) do
     start_pleroma()
 
-    with %User{following: following} = _user <- Relay.get_actor() do
-      following
-      |> Enum.map(fn entry -> URI.parse(entry).host end)
-      |> Enum.uniq()
-      |> Enum.each(&shell_info(&1))
+    with {:ok, list} <- Relay.list() do
+      list |> Enum.each(&shell_info(&1))
     else
-      e -> shell_error("Error while fetching relay subscription list: #{inspect(e)}")
+      {:error, e} -> shell_error("Error while fetching relay subscription list: #{inspect(e)}")
     end
   end
 end

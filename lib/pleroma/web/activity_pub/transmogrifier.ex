@@ -596,13 +596,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           data,
         _options
       )
-      when object_type in ["Person", "Application", "Service", "Organization"] do
+      when object_type in [
+             "Person",
+             "Application",
+             "Service",
+             "Organization"
+           ] do
     with %User{ap_id: ^actor_id} = actor <- User.get_cached_by_ap_id(object["id"]) do
       {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
 
       banner = new_user_data[:info][:banner]
       locked = new_user_data[:info][:locked] || false
       attachment = get_in(new_user_data, [:info, :source_data, "attachment"]) || []
+      invisible = new_user_data[:info][:invisible] || false
 
       fields =
         attachment
@@ -612,7 +618,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       update_data =
         new_user_data
         |> Map.take([:name, :bio, :avatar])
-        |> Map.put(:info, %{banner: banner, locked: locked, fields: fields})
+        |> Map.put(:info, %{banner: banner, locked: locked, fields: fields, invisible: invisible})
 
       actor
       |> User.upgrade_changeset(update_data, true)
@@ -1073,8 +1079,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     Repo.update_all(q, [])
 
-    maybe_retire_websub(user.ap_id)
-
     q =
       from(
         a in Activity,
@@ -1115,19 +1119,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     user
     |> User.upgrade_changeset(data, true)
     |> User.update_and_set_cache()
-  end
-
-  def maybe_retire_websub(ap_id) do
-    # some sanity checks
-    if is_binary(ap_id) && String.length(ap_id) > 8 do
-      q =
-        from(
-          ws in Pleroma.Web.Websub.WebsubClientSubscription,
-          where: fragment("? like ?", ws.topic, ^"#{ap_id}%")
-        )
-
-      Repo.delete_all(q)
-    end
   end
 
   def maybe_fix_user_url(%{"url" => url} = data) when is_map(url) do

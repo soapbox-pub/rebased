@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Config
   alias Pleroma.Conversation
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
@@ -131,7 +132,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
          {:fake, false, map, recipients} <- {:fake, fake, map, recipients},
-         :ok <- Containment.contain_child(map),
+         {:containment, :ok} <- {:containment, Containment.contain_child(map)},
          {:ok, map, object} <- insert_full_object(map) do
       {:ok, activity} =
         Repo.insert(%Activity{
@@ -153,11 +154,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
       Notification.create_notifications(activity)
 
-      participations =
-        activity
-        |> Conversation.create_or_bump_for()
-        |> get_participations()
-
+      conversation = create_or_bump_conversation(activity, map["actor"])
+      participations = get_participations(conversation)
       stream_out(activity)
       stream_out_participations(participations)
       {:ok, activity}
@@ -182,7 +180,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp get_participations({:ok, %{participations: participations}}), do: participations
+  defp create_or_bump_conversation(activity, actor) do
+    with {:ok, conversation} <- Conversation.create_or_bump_for(activity),
+         %User{} = user <- User.get_cached_by_ap_id(actor),
+         Participation.mark_as_read(user, conversation) do
+      {:ok, conversation}
+    end
+  end
+
+  defp get_participations({:ok, conversation}) do
+    conversation
+    |> Repo.preload(:participations, force: true)
+    |> Map.get(:participations)
+  end
+
   defp get_participations(_), do: []
 
   def stream_out_participations(participations) do
@@ -225,6 +236,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     # only accept false as false value
     local = !(params[:local] == false)
     published = params[:published]
+    quick_insert? = Pleroma.Config.get([:env]) == :benchmark
 
     with create_data <-
            make_create_data(
@@ -235,12 +247,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
          _ <- increase_poll_votes_if_vote(create_data),
+         {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          # Changing note count prior to enqueuing federation task in order to avoid
          # race conditions on updating user.info
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
+      {:quick_insert, true, activity} ->
+        {:ok, activity}
+
       {:fake, true, activity} ->
         {:ok, activity}
 
@@ -595,6 +611,49 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_visibility(query, _visibility), do: query
+
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when is_list(visibility) do
+    if Enum.all?(visibility, &(&1 in @valid_visibilities)) do
+      from(
+        a in query,
+        where:
+          not fragment(
+            "activity_visibility(?, ?, ?) = ANY (?)",
+            a.actor,
+            a.recipients,
+            a.data,
+            ^visibility
+          )
+      )
+    else
+      Logger.error("Could not exclude visibility to #{visibility}")
+      query
+    end
+  end
+
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when visibility in @valid_visibilities do
+    from(
+      a in query,
+      where:
+        not fragment(
+          "activity_visibility(?, ?, ?) = ?",
+          a.actor,
+          a.recipients,
+          a.data,
+          ^visibility
+        )
+    )
+  end
+
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when visibility not in @valid_visibilities do
+    Logger.error("Could not exclude visibility to #{visibility}")
+    query
+  end
+
+  defp exclude_visibility(query, _visibility), do: query
 
   defp restrict_thread_visibility(query, _, %{skip_thread_containment: true} = _),
     do: query
@@ -960,6 +1019,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_muted_reblogs(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
+    |> exclude_visibility(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do
@@ -1046,6 +1106,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
+    invisible = data["invisible"] || false
 
     user_data = %{
       ap_id: data["id"],
@@ -1055,7 +1116,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         banner: banner,
         fields: fields,
         locked: locked,
-        discoverable: discoverable
+        discoverable: discoverable,
+        invisible: invisible
       },
       avatar: avatar,
       name: data["name"],
@@ -1159,7 +1221,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          data <- maybe_update_follow_information(data) do
       {:ok, data}
     else
-      e -> Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
+      e ->
+        Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
+        {:error, e}
     end
   end
 

@@ -491,10 +491,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"actor" => actor}},
         object
       ) do
-    announcements = take_announcements(object)
+    unless actor |> User.get_cached_by_ap_id() |> User.invisible?() do
+      announcements = take_announcements(object)
 
-    with announcements <- Enum.uniq([actor | announcements]) do
-      update_element_in_object("announcement", announcements, object)
+      with announcements <- Enum.uniq([actor | announcements]) do
+        update_element_in_object("announcement", announcements, object)
+      end
+    else
+      {:ok, object}
     end
   end
 

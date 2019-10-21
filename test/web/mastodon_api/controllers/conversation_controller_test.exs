@@ -54,9 +54,9 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     assert user_two.id in account_ids
     assert user_three.id in account_ids
     assert is_binary(res_id)
-    assert unread == true
+    assert unread == false
     assert res_last_status["id"] == direct.id
-    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 1
+    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 0
   end
 
   test "updates the last_status on reply", %{conn: conn} do
@@ -95,19 +95,23 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
         "visibility" => "direct"
       })
 
+    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 0
+    assert User.get_cached_by_id(user_two.id).info.unread_conversation_count == 1
+
     [%{"id" => direct_conversation_id, "unread" => true}] =
       conn
-      |> assign(:user, user_one)
+      |> assign(:user, user_two)
       |> get("/api/v1/conversations")
       |> json_response(200)
 
     %{"unread" => false} =
       conn
-      |> assign(:user, user_one)
+      |> assign(:user, user_two)
       |> post("/api/v1/conversations/#{direct_conversation_id}/read")
       |> json_response(200)
 
     assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 0
+    assert User.get_cached_by_id(user_two.id).info.unread_conversation_count == 0
 
     # The conversation is marked as unread on reply
     {:ok, _} =
@@ -124,6 +128,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
       |> json_response(200)
 
     assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 1
+    assert User.get_cached_by_id(user_two.id).info.unread_conversation_count == 0
 
     # A reply doesn't increment the user's unread_conversation_count if the conversation is unread
     {:ok, _} =
@@ -134,6 +139,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
       })
 
     assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 1
+    assert User.get_cached_by_id(user_two.id).info.unread_conversation_count == 0
   end
 
   test "(vanilla) Mastodon frontend behaviour", %{conn: conn} do

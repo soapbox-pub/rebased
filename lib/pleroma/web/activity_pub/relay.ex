@@ -10,8 +10,12 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   require Logger
 
   def get_actor do
-    "#{Pleroma.Web.Endpoint.url()}/relay"
-    |> User.get_or_create_service_actor_by_ap_id()
+    actor =
+      "#{Pleroma.Web.Endpoint.url()}/relay"
+      |> User.get_or_create_service_actor_by_ap_id()
+
+    {:ok, actor} = User.update_info(actor, &User.Info.set_invisible(&1, true))
+    actor
   end
 
   @spec follow(String.t()) :: {:ok, Activity.t()} | {:error, any()}
@@ -50,6 +54,20 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   end
 
   def publish(_), do: {:error, "Not implemented"}
+
+  @spec list() :: {:ok, [String.t()]} | {:error, any()}
+  def list do
+    with %User{following: following} = _user <- get_actor() do
+      list =
+        following
+        |> Enum.map(fn entry -> URI.parse(entry).host end)
+        |> Enum.uniq()
+
+      {:ok, list}
+    else
+      error -> format_error(error)
+    end
+  end
 
   defp format_error({:error, error}), do: format_error(error)
 

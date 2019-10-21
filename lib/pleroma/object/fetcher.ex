@@ -10,7 +10,6 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.Signature
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.Transmogrifier
-  alias Pleroma.Web.OStatus
 
   require Logger
   require Pleroma.Constants
@@ -67,7 +66,8 @@ defmodule Pleroma.Object.Fetcher do
          {:normalize, nil} <- {:normalize, Object.normalize(data, false)},
          params <- prepare_activity_params(data),
          {:containment, :ok} <- {:containment, Containment.contain_origin(id, params)},
-         {:ok, activity} <- Transmogrifier.handle_incoming(params, options),
+         {:transmogrifier, {:ok, activity}} <-
+           {:transmogrifier, Transmogrifier.handle_incoming(params, options)},
          {:object, _data, %Object{} = object} <-
            {:object, data, Object.normalize(activity, false)} do
       {:ok, object}
@@ -75,8 +75,11 @@ defmodule Pleroma.Object.Fetcher do
       {:containment, _} ->
         {:error, "Object containment failed."}
 
-      {:error, {:reject, nil}} ->
+      {:transmogrifier, {:error, {:reject, nil}}} ->
         {:reject, nil}
+
+      {:transmogrifier, _} ->
+        {:error, "Transmogrifier failure."}
 
       {:object, data, nil} ->
         reinject_object(%Object{}, data)
@@ -87,15 +90,8 @@ defmodule Pleroma.Object.Fetcher do
       {:fetch_object, %Object{} = object} ->
         {:ok, object}
 
-      _e ->
-        # Only fallback when receiving a fetch/normalization error with ActivityPub
-        Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
-
-        # FIXME: OStatus Object Containment?
-        case OStatus.fetch_activity_from_url(id) do
-          {:ok, [activity | _]} -> {:ok, Object.normalize(activity, false)}
-          e -> e
-        end
+      e ->
+        e
     end
   end
 
@@ -114,7 +110,8 @@ defmodule Pleroma.Object.Fetcher do
     with {:ok, object} <- fetch_object_from_id(id, options) do
       object
     else
-      _e ->
+      e ->
+        Logger.error("Error while fetching #{id}: #{inspect(e)}")
         nil
     end
   end
@@ -161,7 +158,7 @@ defmodule Pleroma.Object.Fetcher do
 
     Logger.debug("Fetch headers: #{inspect(headers)}")
 
-    with true <- String.starts_with?(id, "http"),
+    with {:scheme, true} <- {:scheme, String.starts_with?(id, "http")},
          {:ok, %{body: body, status: code}} when code in 200..299 <- HTTP.get(id, headers),
          {:ok, data} <- Jason.decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
@@ -169,6 +166,9 @@ defmodule Pleroma.Object.Fetcher do
     else
       {:ok, %{status: code}} when code in [404, 410] ->
         {:error, "Object has been deleted"}
+
+      {:scheme, _} ->
+        {:error, "Unsupported URI scheme"}
 
       e ->
         {:error, e}

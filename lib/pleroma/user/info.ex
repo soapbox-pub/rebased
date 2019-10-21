@@ -39,9 +39,6 @@ defmodule Pleroma.User.Info do
     field(:settings, :map, default: nil)
     field(:magic_key, :string, default: nil)
     field(:uri, :string, default: nil)
-    field(:topic, :string, default: nil)
-    field(:hub, :string, default: nil)
-    field(:salmon, :string, default: nil)
     field(:hide_followers_count, :boolean, default: false)
     field(:hide_follows_count, :boolean, default: false)
     field(:hide_followers, :boolean, default: false)
@@ -56,6 +53,7 @@ defmodule Pleroma.User.Info do
     field(:fields, {:array, :map}, default: nil)
     field(:raw_fields, {:array, :map}, default: [])
     field(:discoverable, :boolean, default: false)
+    field(:invisible, :boolean, default: false)
 
     field(:notification_settings, :map,
       default: %{
@@ -262,9 +260,6 @@ defmodule Pleroma.User.Info do
       :locked,
       :magic_key,
       :uri,
-      :hub,
-      :topic,
-      :salmon,
       :hide_followers,
       :hide_follows,
       :hide_followers_count,
@@ -272,7 +267,8 @@ defmodule Pleroma.User.Info do
       :follower_count,
       :fields,
       :following_count,
-      :discoverable
+      :discoverable,
+      :invisible
     ])
     |> validate_fields(true)
   end
@@ -397,6 +393,14 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:source_data])
     |> validate_required([:source_data])
+  end
+
+  def set_invisible(info, invisible) do
+    params = %{invisible: invisible}
+
+    info
+    |> cast(params, [:invisible])
+    |> validate_required([:invisible])
   end
 
   def admin_api_update(info, params) do
