@@ -1,4 +1,4 @@
-defmodule Pleroma.Repo.Migrations.CopyUsersInfoaddsToUsers do
+defmodule Pleroma.Repo.Migrations.CopyUsersInfoFieldsToUsers do
   use Ecto.Migration
 
   @info_fields [
@@ -136,7 +136,7 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoaddsToUsers do
       add(:skip_thread_containment, :boolean, default: false, null: false)
     end
 
-    if direction == :up do
+    if direction() == :up do
       for f <- @info_fields do
         set_field = "update users set #{f} ="
 
