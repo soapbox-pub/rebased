@@ -84,7 +84,7 @@ defmodule Pleroma.Web.Push.ImplTest do
            ) == :error
   end
 
-  test "delete subsciption if restult send message between 400..500" do
+  test "delete subscription if result send message between 400..500" do
     subscription = insert(:push_subscription)
 
     assert Impl.push_message(
@@ -97,7 +97,7 @@ defmodule Pleroma.Web.Push.ImplTest do
     refute Pleroma.Repo.get(Subscription, subscription.id)
   end
 
-  test "renders body for create activity" do
+  test "renders title and body for create activity" do
     user = insert(:user, nickname: "Bob")
 
     {:ok, activity} =
@@ -116,18 +116,24 @@ defmodule Pleroma.Web.Push.ImplTest do
              object
            ) ==
              "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
+
+    assert Impl.format_title(%{activity: activity}) ==
+             "New Mention"
   end
 
-  test "renders body for follow activity" do
+  test "renders title and body for follow activity" do
     user = insert(:user, nickname: "Bob")
     other_user = insert(:user)
     {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
     object = Object.normalize(activity)
 
     assert Impl.format_body(%{activity: activity}, user, object) == "@Bob has followed you"
+
+    assert Impl.format_title(%{activity: activity}) ==
+             "New Follower"
   end
 
-  test "renders body for announce activity" do
+  test "renders title and body for announce activity" do
     user = insert(:user)
 
     {:ok, activity} =
@@ -141,9 +147,12 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     assert Impl.format_body(%{activity: announce_activity}, user, object) ==
              "@#{user.nickname} repeated: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
+
+    assert Impl.format_title(%{activity: announce_activity}) ==
+             "New Repeat"
   end
 
-  test "renders body for like activity" do
+  test "renders title and body for like activity" do
     user = insert(:user, nickname: "Bob")
 
     {:ok, activity} =
@@ -156,5 +165,21 @@ defmodule Pleroma.Web.Push.ImplTest do
     object = Object.normalize(activity)
 
     assert Impl.format_body(%{activity: activity}, user, object) == "@Bob has favorited your post"
+
+    assert Impl.format_title(%{activity: activity}) ==
+             "New Favorite"
+  end
+
+  test "renders title for create activity with direct visibility" do
+    user = insert(:user, nickname: "Bob")
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        "visibility" => "direct",
+        "status" => "This is just between you and me, pal"
+      })
+
+    assert Impl.format_title(%{activity: activity}) ==
+             "New Direct Message"
   end
 end
