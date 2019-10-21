@@ -55,7 +55,6 @@ defmodule Pleroma.Repo.Migrations.MigrateFollowingRelationships do
     WHERE
         activities.data ->> 'type' = 'Follow'
         AND activities.data ->> 'state' IN ('accept', 'pending', 'reject')
-        AND NOT (followers.info ? 'deactivated' AND followers.info -> 'deactivated' @> 'true')
     ORDER BY activities.updated_at DESC
     ON CONFLICT DO NOTHING
     """
