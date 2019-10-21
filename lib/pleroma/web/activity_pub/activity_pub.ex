@@ -1102,15 +1102,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
+    invisible = data["invisible"] || false
 
     user_data = %{
       ap_id: data["id"],
-      banner: banner,
-      discoverable: discoverable,
+      ap_enabled: true,
       source_data: data,
+      banner: banner,
       fields: fields,
       locked: locked,
-      ap_enabled: true,
+      discoverable: discoverable,
+      invisible: invisible,
       avatar: avatar,
       name: data["name"],
       follower_address: data["followers"],

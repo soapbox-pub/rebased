@@ -12,11 +12,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  clear_config([:instance, :federating])
+  clear_config([:instance, :allow_relay])
 
   describe "posting statuses" do
     setup do
@@ -27,6 +31,34 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> assign(:user, user)
 
       [conn: conn]
+    end
+
+    test "posting a status does not increment reblog_count when relaying", %{conn: conn} do
+      Pleroma.Config.put([:instance, :federating], true)
+      Pleroma.Config.get([:instance, :allow_relay], true)
+      user = insert(:user)
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post("api/v1/statuses", %{
+          "content_type" => "text/plain",
+          "source" => "Pleroma FE",
+          "status" => "Hello world",
+          "visibility" => "public"
+        })
+        |> json_response(200)
+
+      assert response["reblogs_count"] == 0
+      ObanHelpers.perform_all()
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> get("api/v1/statuses/#{response["id"]}", %{})
+        |> json_response(200)
+
+      assert response["reblogs_count"] == 0
     end
 
     test "posting a status", %{conn: conn} do

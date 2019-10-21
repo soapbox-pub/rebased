@@ -142,6 +142,9 @@ defmodule Pleroma.User do
   def superuser?(%User{local: true, is_moderator: true}), do: true
   def superuser?(_), do: false
 
+  def invisible?(%User{info: %User.Info{invisible: true}}), do: true
+  def invisible?(_), do: false
+
   def avatar_url(user, options \\ []) do
     case user.avatar do
       %{"url" => [%{"href" => href} | _]} -> href
