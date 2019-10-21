@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
   end
 
   test "renders an invisible user with the invisible property set to true" do
-    user = insert(:user, %{info: %{invisible: true}})
+    user = insert(:user, invisible: true)
 
     assert %{"invisible" => true} = UserView.render("service.json", %{user: user})
   end

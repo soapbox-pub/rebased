@@ -42,6 +42,7 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoFieldsToUsers do
     :fields,
     :raw_fields,
     :discoverable,
+    :invisible,
     :skip_thread_containment,
     :notification_settings
   ]
@@ -77,6 +78,7 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoFieldsToUsers do
     :hide_follows,
     :hide_favorites,
     :discoverable,
+    :invisible,
     :skip_thread_containment
   ]
 
@@ -132,6 +134,7 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoFieldsToUsers do
       add(:fields, {:array, :map}, default: nil)
       add(:raw_fields, {:array, :map}, default: [])
       add(:discoverable, :boolean, default: false, null: false)
+      add(:invisible, :boolean, default: false, null: false)
       add(:notification_settings, :map, default: %{})
       add(:skip_thread_containment, :boolean, default: false, null: false)
     end

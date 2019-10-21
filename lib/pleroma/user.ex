@@ -103,6 +103,7 @@ defmodule Pleroma.User do
     field(:fields, {:array, :map}, default: nil)
     field(:raw_fields, {:array, :map}, default: [])
     field(:discoverable, :boolean, default: false)
+    field(:invisible, :boolean, default: false)
     field(:skip_thread_containment, :boolean, default: false)
 
     field(:notification_settings, :map,
@@ -142,7 +143,7 @@ defmodule Pleroma.User do
   def superuser?(%User{local: true, is_moderator: true}), do: true
   def superuser?(_), do: false
 
-  def invisible?(%User{info: %User.Info{invisible: true}}), do: true
+  def invisible?(%User{invisible: true}), do: true
   def invisible?(_), do: false
 
   def avatar_url(user, options \\ []) do
@@ -264,6 +265,7 @@ defmodule Pleroma.User do
     :fields,
     :raw_fields,
     :discoverable,
+    :invisible,
     :skip_thread_containment,
     :notification_settings
   ]
@@ -321,7 +323,8 @@ defmodule Pleroma.User do
           :follower_count,
           :fields,
           :following_count,
-          :discoverable
+          :discoverable,
+          :invisible
         ]
       )
       |> validate_required([:name, :ap_id])
@@ -2019,6 +2022,15 @@ defmodule Pleroma.User do
 
     user
     |> cast(params, [:muted_reblogs])
+    |> update_and_set_cache()
+  end
+
+  def set_invisible(user, invisible) do
+    params = %{invisible: invisible}
+
+    user
+    |> cast(params, [:invisible])
+    |> validate_required([:invisible])
     |> update_and_set_cache()
   end
 end
