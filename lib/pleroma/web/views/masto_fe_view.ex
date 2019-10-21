@@ -99,4 +99,23 @@ defmodule Pleroma.Web.MastoFEView do
   defp present?(nil), do: false
   defp present?(false), do: false
   defp present?(_), do: true
+
+  def render("manifest.json", _params) do
+    %{
+      name: Config.get([:instance, :name]),
+      description: Config.get([:instance, :description]),
+      icons: Config.get([:manifest, :icons]),
+      theme_color: Config.get([:manifest, :theme_color]),
+      background_color: Config.get([:manifest, :background_color]),
+      display: "standalone",
+      scope: Pleroma.Web.base_url(),
+      start_url: masto_fe_path(Pleroma.Web.Endpoint, :index, ["getting-started"]),
+      categories: [
+        "social"
+      ],
+      serviceworker: %{
+        src: "/sw.js"
+      }
+    }
+  end
 end

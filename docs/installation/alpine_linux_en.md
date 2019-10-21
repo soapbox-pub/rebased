@@ -91,7 +91,7 @@ sudo adduser -S -s /bin/false -h /opt/pleroma -H -G pleroma pleroma
 ```shell
 sudo mkdir -p /opt/pleroma
 sudo chown -R pleroma:pleroma /opt/pleroma
-sudo -Hu pleroma git clone -b master https://git.pleroma.social/pleroma/pleroma /opt/pleroma
+sudo -Hu pleroma git clone -b stable https://git.pleroma.social/pleroma/pleroma /opt/pleroma
 ```
 
 * Change to the new directory:

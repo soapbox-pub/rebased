@@ -38,6 +38,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://shitposter.club/users/moonman", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/moonman@shitposter.club.json")
+     }}
+  end
+
   def get("https://mastodon.social/users/emelie/statuses/101849165031453009", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -344,6 +352,181 @@ defmodule HttpRequestMock do
     {:error, :nxdomain}
   end
 
+  def get("http://osada.macgirvin.com/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 404,
+       body: ""
+     }}
+  end
+
+  def get("https://osada.macgirvin.com/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 404,
+       body: ""
+     }}
+  end
+
+  def get("http://mastodon.sdf.org/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/sdf.org_host_meta")
+     }}
+  end
+
+  def get("https://mastodon.sdf.org/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/sdf.org_host_meta")
+     }}
+  end
+
+  def get(
+        "https://mastodon.sdf.org/.well-known/webfinger?resource=https://mastodon.sdf.org/users/snowdusk",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/snowdusk@sdf.org_host_meta.json")
+     }}
+  end
+
+  def get("http://mstdn.jp/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mstdn.jp_host_meta")
+     }}
+  end
+
+  def get("https://mstdn.jp/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mstdn.jp_host_meta")
+     }}
+  end
+
+  def get("https://mstdn.jp/.well-known/webfinger?resource=kpherox@mstdn.jp", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/kpherox@mstdn.jp.xml")
+     }}
+  end
+
+  def get("http://mamot.fr/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mamot.fr_host_meta")
+     }}
+  end
+
+  def get("https://mamot.fr/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mamot.fr_host_meta")
+     }}
+  end
+
+  def get(
+        "https://mamot.fr/.well-known/webfinger?resource=https://mamot.fr/users/Skruyb",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/skruyb@mamot.fr.atom")
+     }}
+  end
+
+  def get("http://pawoo.net/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/pawoo.net_host_meta")
+     }}
+  end
+
+  def get("https://pawoo.net/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/pawoo.net_host_meta")
+     }}
+  end
+
+  def get(
+        "https://pawoo.net/.well-known/webfinger?resource=https://pawoo.net/users/pekorino",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/pekorino@pawoo.net_host_meta.json")
+     }}
+  end
+
+  def get("http://zetsubou.xn--q9jyb4c/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/xn--q9jyb4c_host_meta")
+     }}
+  end
+
+  def get("https://zetsubou.xn--q9jyb4c/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/xn--q9jyb4c_host_meta")
+     }}
+  end
+
+  def get("http://pleroma.soykaf.com/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/soykaf.com_host_meta")
+     }}
+  end
+
+  def get("https://pleroma.soykaf.com/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/soykaf.com_host_meta")
+     }}
+  end
+
+  def get("http://social.stopwatchingus-heidelberg.de/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/stopwatchingus-heidelberg.de_host_meta")
+     }}
+  end
+
+  def get("https://social.stopwatchingus-heidelberg.de/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/stopwatchingus-heidelberg.de_host_meta")
+     }}
+  end
+
   def get(
         "http://mastodon.example.org/@admin/99541947525187367",
         _,
@@ -445,7 +628,7 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/https___shitposter.club_notice_2827873.html")
+       body: File.read!("test/fixtures/tesla_mock/https___shitposter.club_notice_2827873.json")
      }}
   end
 

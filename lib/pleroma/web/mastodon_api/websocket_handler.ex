@@ -35,6 +35,13 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
          {_, stream} <- List.keyfind(params, "stream", 0),
          {:ok, user} <- allow_request(stream, [access_token, sec_websocket]),
          topic when is_binary(topic) <- expand_topic(stream, params) do
+      req =
+        if sec_websocket do
+          :cowboy_req.set_resp_header("sec-websocket-protocol", sec_websocket, req)
+        else
+          req
+        end
+
       {:cowboy_websocket, req, %{user: user, topic: topic}, %{idle_timeout: @timeout}}
     else
       {:error, code} ->

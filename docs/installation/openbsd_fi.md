@@ -44,7 +44,7 @@ Vaihda pleroma-käyttäjään ja mene kotihakemistoosi:
 
 Lataa pleroman lähdekoodi:
 
-`$ git clone -b master https://git.pleroma.social/pleroma/pleroma.git`
+`$ git clone -b stable https://git.pleroma.social/pleroma/pleroma.git`
 
 `$ cd pleroma`
 

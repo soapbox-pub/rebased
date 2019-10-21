@@ -280,26 +280,6 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def websub_subscription_factory do
-    %Pleroma.Web.Websub.WebsubServerSubscription{
-      topic: "http://example.org",
-      callback: "http://example.org/callback",
-      secret: "here's a secret",
-      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 100),
-      state: "requested"
-    }
-  end
-
-  def websub_client_subscription_factory do
-    %Pleroma.Web.Websub.WebsubClientSubscription{
-      topic: "http://example.org",
-      secret: "here's a secret",
-      valid_until: nil,
-      state: "requested",
-      subscribers: []
-    }
-  end
-
   def oauth_app_factory do
     %Pleroma.Web.OAuth.App{
       client_name: "Some client",

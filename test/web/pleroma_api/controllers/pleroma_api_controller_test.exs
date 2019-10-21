@@ -95,6 +95,33 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     assert other_user in participation.recipients
   end
 
+  test "POST /api/v1/pleroma/conversations/read", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _activity} =
+      CommonAPI.post(user, %{"status" => "Hi @#{other_user.nickname}", "visibility" => "direct"})
+
+    {:ok, _activity} =
+      CommonAPI.post(user, %{"status" => "Hi @#{other_user.nickname}", "visibility" => "direct"})
+
+    [participation2, participation1] = Participation.for_user(other_user)
+    assert Participation.get(participation2.id).read == false
+    assert Participation.get(participation1.id).read == false
+    assert User.get_cached_by_id(other_user.id).info.unread_conversation_count == 2
+
+    [%{"unread" => false}, %{"unread" => false}] =
+      conn
+      |> assign(:user, other_user)
+      |> post("/api/v1/pleroma/conversations/read", %{})
+      |> json_response(200)
+
+    [participation2, participation1] = Participation.for_user(other_user)
+    assert Participation.get(participation2.id).read == true
+    assert Participation.get(participation1.id).read == true
+    assert User.get_cached_by_id(other_user.id).info.unread_conversation_count == 0
+  end
+
   describe "POST /api/v1/pleroma/notifications/read" do
     test "it marks a single notification as read", %{conn: conn} do
       user1 = insert(:user)

@@ -401,11 +401,9 @@ defmodule Pleroma.ReverseProxy do
 
   defp client, do: Pleroma.ReverseProxy.Client
 
-  defp track_failed_url(url, code, opts) do
-    code = to_string(code)
-
+  defp track_failed_url(url, error, opts) do
     ttl =
-      if code in ["403", "404"] or String.starts_with?(code, "5") do
+      unless error in [:body_too_large, 400, 204] do
         Keyword.get(opts, :failed_request_ttl, @failed_request_ttl)
       else
         nil

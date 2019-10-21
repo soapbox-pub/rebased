@@ -19,8 +19,8 @@ defmodule Pleroma.Repo.Migrations.CreateConversations do
       timestamps()
     end
 
-    create_if_not_exists index(:conversation_participations, [:conversation_id])
-    create_if_not_exists unique_index(:conversation_participations, [:user_id, :conversation_id])
-    create_if_not_exists unique_index(:conversations, [:ap_id])
+    create_if_not_exists(index(:conversation_participations, [:conversation_id]))
+    create_if_not_exists(unique_index(:conversation_participations, [:user_id, :conversation_id]))
+    create_if_not_exists(unique_index(:conversations, [:ap_id]))
   end
 end

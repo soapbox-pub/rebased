@@ -7,14 +7,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
-  alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Websub.WebsubClientSubscription
 
   import Mock
   import Pleroma.Factory
@@ -682,6 +679,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it works for incoming deletes" do
       activity = insert(:note_activity)
+      deleting_user = insert(:user)
 
       data =
         File.read!("test/fixtures/mastodon-delete.json")
@@ -694,11 +692,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       data =
         data
         |> Map.put("object", object)
-        |> Map.put("actor", activity.data["actor"])
+        |> Map.put("actor", deleting_user.ap_id)
 
-      {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
+      {:ok, %Activity{actor: actor, local: false, data: %{"id" => id}}} =
+        Transmogrifier.handle_incoming(data)
 
+      assert id == data["id"]
       refute Activity.get_by_id(activity.id)
+      assert actor == deleting_user.ap_id
     end
 
     test "it fails for incoming deletes with spoofed origin" do
@@ -905,6 +906,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert activity.data["object"] == follow_activity.data["id"]
 
+      assert activity.data["id"] == accept_data["id"]
+
       follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
@@ -1009,6 +1012,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, activity} = Transmogrifier.handle_incoming(reject_data)
       refute activity.local
+      assert activity.data["id"] == reject_data["id"]
 
       follower = User.get_cached_by_id(follower.id)
 
@@ -1174,32 +1178,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert modified["object"]["actor"] == modified["object"]["attributedTo"]
     end
 
-    test "it translates ostatus IDs to external URLs" do
-      incoming = File.read!("test/fixtures/incoming_note_activity.xml")
-      {:ok, [referent_activity]} = OStatus.handle_incoming(incoming)
-
-      user = insert(:user)
-
-      {:ok, activity, _} = CommonAPI.favorite(referent_activity.id, user)
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"] == "http://gs.example.org:4040/index.php/notice/29"
-    end
-
-    test "it translates ostatus reply_to IDs to external URLs" do
-      incoming = File.read!("test/fixtures/incoming_note_activity.xml")
-      {:ok, [referred_activity]} = OStatus.handle_incoming(incoming)
-
-      user = insert(:user)
-
-      {:ok, activity} =
-        CommonAPI.post(user, %{"status" => "HI!", "in_reply_to_status_id" => referred_activity.id})
-
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"]["inReplyTo"] == "http://gs.example.org:4040/index.php/notice/29"
-    end
-
     test "it strips internal hashtag data" do
       user = insert(:user)
 
@@ -1362,21 +1340,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user_two = User.get_cached_by_id(user_two.id)
       assert User.following?(user_two, user)
       refute "..." in User.following(user_two)
-    end
-  end
-
-  describe "maybe_retire_websub" do
-    test "it deletes all websub client subscripitions with the user as topic" do
-      subscription = %WebsubClientSubscription{topic: "https://niu.moe/users/rye.atom"}
-      {:ok, ws} = Repo.insert(subscription)
-
-      subscription = %WebsubClientSubscription{topic: "https://niu.moe/users/pasty.atom"}
-      {:ok, ws2} = Repo.insert(subscription)
-
-      Transmogrifier.maybe_retire_websub("https://niu.moe/users/rye")
-
-      refute Repo.get(WebsubClientSubscription, ws.id)
-      assert Repo.get(WebsubClientSubscription, ws2.id)
     end
   end
 

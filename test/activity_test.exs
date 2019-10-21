@@ -126,9 +126,25 @@ defmodule Pleroma.ActivityTest do
       }
 
       {:ok, local_activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "find me!"})
+      {:ok, japanese_activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "更新情報"})
       {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
       {:ok, remote_activity} = ObanHelpers.perform(job)
-      %{local_activity: local_activity, remote_activity: remote_activity, user: user}
+
+      %{
+        japanese_activity: japanese_activity,
+        local_activity: local_activity,
+        remote_activity: remote_activity,
+        user: user
+      }
+    end
+
+    test "finds utf8 text in statuses", %{
+      japanese_activity: japanese_activity,
+      user: user
+    } do
+      activities = Activity.search(user, "更新情報")
+
+      assert [^japanese_activity] = activities
     end
 
     test "find local and remote statuses for authenticated users", %{

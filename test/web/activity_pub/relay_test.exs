@@ -23,8 +23,8 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
   describe "follow/1" do
     test "returns errors when user not found" do
       assert capture_log(fn ->
-               assert Relay.follow("test-ap-id") == {:error, "Could not fetch by AP id"}
-             end) =~ "Could not fetch by AP id"
+               {:error, _} = Relay.follow("test-ap-id")
+             end) =~ "Could not decode user at fetch"
     end
 
     test "returns activity" do
@@ -42,8 +42,8 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
   describe "unfollow/1" do
     test "returns errors when user not found" do
       assert capture_log(fn ->
-               assert Relay.unfollow("test-ap-id") == {:error, "Could not fetch by AP id"}
-             end) =~ "Could not fetch by AP id"
+               {:error, _} = Relay.unfollow("test-ap-id")
+             end) =~ "Could not decode user at fetch"
     end
 
     test "returns activity" do

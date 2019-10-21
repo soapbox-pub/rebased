@@ -581,9 +581,7 @@ config :pleroma, :config_description, [
         type: [:list, :module],
         description: "List of modules for federation publishing",
         suggestions: [
-          Pleroma.Web.ActivityPub.Publisher,
-          Pleroma.Web.Websub,
-          Pleroma.Web.Salmo
+          Pleroma.Web.ActivityPub.Publisher
         ]
       },
       %{
@@ -1097,6 +1095,45 @@ config :pleroma, :config_description, [
         suggestions: [
           :pleroma_fox_tan
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :manifest,
+    type: :group,
+    description:
+      "This section describe PWA manifest instance-specific values. Currently this option relate only for MastoFE",
+    children: [
+      %{
+        key: :icons,
+        type: {:list, :map},
+        description: "Describe the icons of the app",
+        suggestion: [
+          %{
+            src: "/static/logo.png"
+          },
+          %{
+            src: "/static/icon.png",
+            type: "image/png"
+          },
+          %{
+            src: "/static/icon.ico",
+            sizes: "72x72 96x96 128x128 256x256"
+          }
+        ]
+      },
+      %{
+        key: :theme_color,
+        type: :string,
+        description: "Describe the theme color of the app",
+        suggestions: ["#282c37", "mediumpurple"]
+      },
+      %{
+        key: :background_color,
+        type: :string,
+        description: "Describe the background color of the app",
+        suggestions: ["#191b22", "aliceblue"]
       }
     ]
   },
