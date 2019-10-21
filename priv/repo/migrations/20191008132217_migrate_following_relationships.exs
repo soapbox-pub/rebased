@@ -69,19 +69,19 @@ defmodule Pleroma.Repo.Migrations.MigrateFollowingRelationships do
         updated_at = now()
     FROM (
         SELECT
-            follwer.id AS follower_id,
-            CASE follwer.local
+            follower.id AS follower_id,
+            CASE follower.local
             WHEN TRUE THEN
-                array_prepend(follwer.follower_address, array_agg(following.follower_address))
+                array_prepend(follower.follower_address, array_agg(following.follower_address))
             ELSE
                 array_agg(following.follower_address)
             END AS following_array
         FROM
             following_relationships
-            JOIN users AS follwer ON follwer.id = following_relationships.follower_id
-            JOIN users AS FOLLOWING ON following.id = following_relationships.following_id
+            JOIN users AS follower ON follower.id = following_relationships.follower_id
+            JOIN users AS following ON following.id = following_relationships.following_id
         GROUP BY
-            follwer.id) AS following_query
+            follower.id) AS following_query
     WHERE
         following_query.follower_id = users.id
     """
