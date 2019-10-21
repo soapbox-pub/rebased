@@ -84,7 +84,7 @@ defmodule Pleroma.Web.Push.ImplTest do
            ) == :error
   end
 
-  test "delete subsciption if restult send message between 400..500" do
+  test "delete subscription if result send message between 400..500" do
     subscription = insert(:push_subscription)
 
     assert Impl.push_message(
