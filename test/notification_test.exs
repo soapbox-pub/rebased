@@ -310,6 +310,13 @@ defmodule Pleroma.NotificationTest do
       assert n1.seen == true
       assert n2.seen == true
       assert n3.seen == false
+
+      assert %Pleroma.Marker{unread_count: 1} =
+               Pleroma.Repo.get_by(
+                 Pleroma.Marker,
+                 user_id: other_user.id,
+                 timeline: "notifications"
+               )
     end
   end
 

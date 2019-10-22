@@ -11,6 +11,7 @@ defmodule Pleroma.Marker do
   alias Ecto.Multi
   alias Pleroma.Repo
   alias Pleroma.User
+  alias __MODULE__
 
   @timelines ["notifications"]
 
@@ -43,6 +44,41 @@ defmodule Pleroma.Marker do
         conflict_target: [:user_id, :timeline]
       )
     end)
+    |> Repo.transaction()
+  end
+
+  @spec multi_set_unread_count(Multi.t(), User.t(), String.t()) :: Multi.t()
+  def multi_set_unread_count(multi, %User{} = user, "notifications") do
+    multi
+    |> Multi.run(:counters, fn _repo, _changes ->
+      query =
+        from(q in Pleroma.Notification,
+          where: q.user_id == ^user.id,
+          select: %{
+            timeline: "notifications",
+            user_id: ^user.id,
+            unread_count: fragment("SUM( CASE WHEN seen = false THEN 1 ELSE 0 END ) as unread_count")
+          }
+        )
+
+      {:ok, Repo.one(query)}
+    end)
+    |> Multi.insert(
+      :marker,
+      fn %{counters: attrs} ->
+        Marker
+        |> struct(attrs)
+        |> Ecto.Changeset.change()
+      end,
+      returning: true,
+      on_conflict: {:replace, [:last_read_id, :unread_count]},
+      conflict_target: [:user_id, :timeline]
+    )
+  end
+
+  def set_unread_count(%User{} = user, timeline) do
+    Multi.new()
+    |> multi_set_unread_count(user, timeline)
     |> Repo.transaction()
   end
 
