@@ -15,7 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
       {:ok, %{"notifications" => marker}} =
         Pleroma.Marker.upsert(
           user,
-          %{"notifications" => %{"last_read_id" => "69420"}}
+          %{"notifications" => %{"last_read_id" => "69420", "unread_count" => 7}}
         )
 
       response =
@@ -28,6 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
       assert response == %{
                "notifications" => %{
                  "last_read_id" => "69420",
+                 "unread_count" => 7,
                  "updated_at" => NaiveDateTime.to_iso8601(marker.updated_at),
                  "version" => 0
                }
@@ -70,7 +71,8 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
                "notifications" => %{
                  "last_read_id" => "69420",
                  "updated_at" => _,
-                 "version" => 0
+                 "version" => 0,
+                 "unread_count" => 0
                }
              } = response
     end
@@ -98,6 +100,7 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
       assert response == %{
                "notifications" => %{
                  "last_read_id" => "69888",
+                 "unread_count" => 0,
                  "updated_at" => NaiveDateTime.to_iso8601(marker.updated_at),
                  "version" => 0
                }

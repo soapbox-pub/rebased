@@ -18,6 +18,7 @@ defmodule Pleroma.Marker do
     field(:last_read_id, :string, default: "")
     field(:timeline, :string, default: "")
     field(:lock_version, :integer, default: 0)
+    field(:unread_count, :integer, default: 0)
 
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     timestamps()
@@ -38,7 +39,7 @@ defmodule Pleroma.Marker do
 
       Multi.insert(multi, timeline, marker,
         returning: true,
-        on_conflict: {:replace, [:last_read_id]},
+        on_conflict: {:replace, [:last_read_id, :unread_count]},
         conflict_target: [:user_id, :timeline]
       )
     end)
@@ -55,7 +56,7 @@ defmodule Pleroma.Marker do
   @doc false
   defp changeset(marker, attrs) do
     marker
-    |> cast(attrs, [:last_read_id])
+    |> cast(attrs, [:last_read_id, :unread_count])
     |> validate_required([:user_id, :timeline, :last_read_id])
     |> validate_inclusion(:timeline, @timelines)
   end
