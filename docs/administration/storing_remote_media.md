@@ -7,8 +7,8 @@ as soon as the post is received by your instance.
 ## Nginx
 
 ```
-proxy_cache_path /long/term/storage/path/pleroma-media-cache levels=1:2 keys_zone=pleroma_media_cache:10m
-                 inactive=1y use_temp_path=off;
+    proxy_cache_path /long/term/storage/path/pleroma-media-cache levels=1:2
+        keys_zone=pleroma_media_cache:10m inactive=1y use_temp_path=off;
 
     location ~ ^/(media|proxy) {
         proxy_cache        pleroma_media_cache;
