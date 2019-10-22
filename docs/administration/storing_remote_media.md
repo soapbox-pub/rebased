@@ -18,7 +18,6 @@ as soon as the post is received by your instance.
         proxy_http_version 1.1;
         proxy_cache_valid  206 301 302 304 1h;
         proxy_cache_valid  200 1y;
-        proxy_cache_lock   on;
         proxy_cache_use_stale error timeout invalid_header updating;
         proxy_ignore_client_abort on;
         proxy_buffering    on;
