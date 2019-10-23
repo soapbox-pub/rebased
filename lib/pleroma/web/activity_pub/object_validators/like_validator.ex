@@ -1,11 +1,15 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.User
-  alias Pleroma.Object
 
   @primary_key false
 

@@ -9,9 +9,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   the system.
   """
 
-  alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
-  alias Pleroma.User
   alias Pleroma.Object
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)

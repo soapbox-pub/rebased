@@ -1,10 +1,11 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.CommonAPI
+
   import Pleroma.Factory
 
   describe "likes" do

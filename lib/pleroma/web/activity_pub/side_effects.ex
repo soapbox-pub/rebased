@@ -5,9 +5,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   liked object, a `Follow` activity will add the user to the follower
   collection, and so on.
   """
-  alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Object
   alias Pleroma.Notification
+  alias Pleroma.Object
+  alias Pleroma.Web.ActivityPub.Utils
 
   def handle(object, meta \\ [])
 

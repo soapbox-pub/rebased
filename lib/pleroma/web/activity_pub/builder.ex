@@ -5,10 +5,10 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   This module encodes our addressing policies and general shape of our objects.
   """
 
+  alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
-  alias Pleroma.User
-  alias Pleroma.Object
 
   @spec like(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def like(actor, object) do
