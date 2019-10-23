@@ -1106,6 +1106,50 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["actor"] == other_user.ap_id
       assert activity.data["cc"] == [user.ap_id]
     end
+
+    test "it correctly processes messages with non-array to field" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => "https://www.w3.org/ns/activitystreams#Public",
+        "type" => "Create",
+        "object" => %{
+          "content" => "blah blah blah",
+          "type" => "Note",
+          "attributedTo" => user.ap_id,
+          "inReplyTo" => nil
+        },
+        "actor" => user.ap_id
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["to"]
+    end
+
+    test "it correctly processes messages with non-array cc field" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => user.follower_address,
+        "cc" => "https://www.w3.org/ns/activitystreams#Public",
+        "type" => "Create",
+        "object" => %{
+          "content" => "blah blah blah",
+          "type" => "Note",
+          "attributedTo" => user.ap_id,
+          "inReplyTo" => nil
+        },
+        "actor" => user.ap_id
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["cc"]
+      assert [user.follower_address] == activity.data["to"]
+    end
   end
 
   describe "prepare outgoing" do

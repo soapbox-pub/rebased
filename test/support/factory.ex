@@ -377,4 +377,13 @@ defmodule Pleroma.Factory do
         )
     }
   end
+
+  def marker_factory do
+    %Pleroma.Marker{
+      user: build(:user),
+      timeline: "notifications",
+      lock_version: 0,
+      last_read_id: "1"
+    }
+  end
 end
