@@ -18,8 +18,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.ActivityPub.ObjectValidator
-  alias Pleroma.Web.ActivityPub.SideEffects
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
   alias Pleroma.Workers.BackgroundWorker
@@ -125,25 +123,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def increase_poll_votes_if_vote(_create_data), do: :noop
 
-  @spec common_pipeline(map(), keyword()) :: {:ok, Activity.t(), keyword()} | {:error, any()}
-  def common_pipeline(object, meta) do
-    with {_, {:ok, validated_object, meta}} <-
-           {:validate_object, ObjectValidator.validate(object, meta)},
-         {_, {:ok, mrfd_object}} <- {:mrf_object, MRF.filter(validated_object)},
-         {_, {:ok, %Activity{} = activity, meta}} <-
-           {:persist_object, persist(mrfd_object, meta)},
-         {_, {:ok, %Activity{} = activity, meta}} <-
-           {:execute_side_effects, SideEffects.handle(activity, meta)} do
-      {:ok, activity, meta}
-    else
-      e -> {:error, e}
-    end
-  end
-
   # TODO rewrite in with style
   @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
   def persist(object, meta) do
-    local = Keyword.get(meta, :local)
+    local = Keyword.fetch!(meta, :local)
     {recipients, _, _} = get_recipients(object)
 
     {:ok, activity} =

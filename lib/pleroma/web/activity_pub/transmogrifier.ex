@@ -12,12 +12,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.ObjectValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
   alias Pleroma.Workers.TransmogrifierWorker
-  alias Pleroma.Web.ActivityPub.ObjectValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
 
   import Ecto.Query
 
@@ -572,7 +573,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {_, {:ok, cast_data}} <-
            {:maybe_add_recipients, maybe_add_recipients_from_object(cast_data)},
          {_, {:ok, activity, _meta}} <-
-           {:common_pipeline, ActivityPub.common_pipeline(cast_data, local: false)} do
+           {:common_pipeline, Pipeline.common_pipeline(cast_data, local: false)} do
       {:ok, activity}
     else
       e -> {:error, e}

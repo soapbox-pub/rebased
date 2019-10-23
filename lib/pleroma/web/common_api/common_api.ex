@@ -11,6 +11,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
@@ -106,7 +107,7 @@ defmodule Pleroma.Web.CommonAPI do
          {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
          {_, {:ok, %Activity{} = activity, _meta}} <-
            {:common_pipeline,
-            ActivityPub.common_pipeline(like_object, Keyword.put(meta, :local, true))} do
+            Pipeline.common_pipeline(like_object, Keyword.put(meta, :local, true))} do
       {:ok, activity}
     else
       e ->
