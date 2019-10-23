@@ -1,6 +1,8 @@
 defmodule Pleroma.Repo.Migrations.CopyUsersInfoFieldsToUsers do
   use Ecto.Migration
 
+  @jsonb_array_default "'[]'::jsonb"
+
   @info_fields [
     :banner,
     :background,
@@ -129,10 +131,10 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoFieldsToUsers do
       add(:pinned_activities, {:array, :text}, default: [])
       add(:email_notifications, :map, default: %{"digest" => false})
       add(:mascot, :map, default: nil)
-      add(:emoji, {:array, :map}, default: [])
+      add(:emoji, :map, default: fragment(@jsonb_array_default))
       add(:pleroma_settings_store, :map, default: %{})
-      add(:fields, {:array, :map}, default: nil)
-      add(:raw_fields, {:array, :map}, default: [])
+      add(:fields, :map, default: fragment(@jsonb_array_default))
+      add(:raw_fields, :map, default: fragment(@jsonb_array_default))
       add(:discoverable, :boolean, default: false, null: false)
       add(:invisible, :boolean, default: false, null: false)
       add(:notification_settings, :map, default: %{})
@@ -143,12 +145,15 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoFieldsToUsers do
       for f <- @info_fields do
         set_field = "update users set #{f} ="
 
+        # Coercion of null::jsonb to NULL
+        jsonb = "case when info->>'#{f}' IS NULL then null else info->'#{f}' end"
+
         cond do
           f in @jsonb_fields ->
-            execute("#{set_field} info->'#{f}'")
+            execute("#{set_field} #{jsonb}")
 
           f in @array_jsonb_fields ->
-            execute("#{set_field} ARRAY(SELECT jsonb_array_elements(info->'#{f}'))")
+            execute("#{set_field} coalesce(#{jsonb}, #{@jsonb_array_default})")
 
           f in @int_fields ->
             execute("#{set_field} (info->>'#{f}')::int")
@@ -157,7 +162,7 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoFieldsToUsers do
             execute("#{set_field} coalesce((info->>'#{f}')::boolean, false)")
 
           f in @array_text_fields ->
-            execute("#{set_field} ARRAY(SELECT jsonb_array_elements_text(info->'#{f}'))")
+            execute("#{set_field} ARRAY(SELECT jsonb_array_elements_text(#{jsonb}))")
 
           true ->
             execute("#{set_field} info->>'#{f}'")

@@ -100,7 +100,7 @@ defmodule Pleroma.User do
     field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
     field(:pleroma_settings_store, :map, default: %{})
-    field(:fields, {:array, :map}, default: nil)
+    field(:fields, {:array, :map}, default: [])
     field(:raw_fields, {:array, :map}, default: [])
     field(:discoverable, :boolean, default: false)
     field(:invisible, :boolean, default: false)
