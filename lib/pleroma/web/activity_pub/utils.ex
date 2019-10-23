@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router.Helpers
 
@@ -608,34 +609,24 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   defp build_flag_object(%{account: account, statuses: statuses} = _) do
     [account.ap_id] ++
-      Enum.map(statuses || [], fn
-        %Activity{} = act ->
-          obj = Object.get_by_ap_id(act.data["object"])
+      Enum.map(statuses || [], fn act ->
+        id =
+          case act do
+            %Activity{} = act -> act.data["id"]
+            act when is_map(act) -> act["id"]
+            act when is_binary(act) -> act
+          end
 
-          %{
-            "type" => "Note",
-            "id" => act.data["id"],
-            "content" => obj.data["content"]
-          }
+        activity = Activity.get_by_ap_id_with_object(id)
+        actor = User.get_by_ap_id(activity.object.data["actor"])
 
-        act when is_map(act) ->
-          obj = Object.get_by_ap_id(act["object"])
-
-          %{
-            "type" => "Note",
-            "id" => act["id"],
-            "content" => obj.data["content"]
-          }
-
-        act
-        when is_binary(act) ->
-          activity = Activity.get_by_ap_id_with_object(act)
-
-          %{
-            "type" => "Note",
-            "id" => activity.data["id"],
-            "content" => activity.data["object"]["content"]
-          }
+        %{
+          "type" => "Note",
+          "id" => activity.data["id"],
+          "content" => activity.object.data["content"],
+          "published" => activity.object.data["published"],
+          "actor" => AccountView.render("show.json", %{user: actor})
+        }
       end)
   end
 

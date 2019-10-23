@@ -10,6 +10,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -385,6 +386,14 @@ defmodule Pleroma.Web.CommonAPITest do
         "status_ids" => [activity.id]
       }
 
+      note_obj = %{
+        "type" => "Note",
+        "id" => activity_ap_id,
+        "content" => "foobar",
+        "published" => activity.object.data["published"],
+        "actor" => AccountView.render("show.json", %{user: target_user})
+      }
+
       assert {:ok, flag_activity} = CommonAPI.report(reporter, report_data)
 
       assert %Activity{
@@ -392,7 +401,7 @@ defmodule Pleroma.Web.CommonAPITest do
                data: %{
                  "type" => "Flag",
                  "content" => ^comment,
-                 "object" => [^target_ap_id, ^activity_ap_id],
+                 "object" => [^target_ap_id, ^note_obj],
                  "state" => "open"
                }
              } = flag_activity
