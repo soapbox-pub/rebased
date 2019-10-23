@@ -8,6 +8,21 @@ defmodule Pleroma.MarkerTest do
 
   import Pleroma.Factory
 
+  describe "multi_set_unread_count/3" do
+    test "returns multi" do
+      user = insert(:user)
+
+      assert %Ecto.Multi{
+               operations: [marker: {:run, _}, counters: {:run, _}]
+             } =
+               Marker.multi_set_unread_count(
+                 Ecto.Multi.new(),
+                 user,
+                 "notifications"
+               )
+    end
+  end
+
   describe "get_markers/2" do
     test "returns user markers" do
       user = insert(:user)

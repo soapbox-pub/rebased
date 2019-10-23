@@ -58,7 +58,8 @@ defmodule Pleroma.Marker do
             timeline: "notifications",
             user_id: type(^user.id, :string),
             unread_count: fragment("SUM( CASE WHEN seen = false THEN 1 ELSE 0 END )"),
-            last_read_id: type(fragment("MAX( CASE WHEN seen = true THEN id ELSE null END )"), :string)
+            last_read_id:
+              type(fragment("MAX( CASE WHEN seen = true THEN id ELSE null END )"), :string)
           }
         )
 
@@ -77,11 +78,7 @@ defmodule Pleroma.Marker do
     )
   end
 
-  def set_unread_count(%User{} = user, timeline) do
-    Multi.new()
-    |> multi_set_unread_count(user, timeline)
-    |> Repo.transaction()
-  end
+  def multi_set_unread_count(multi, _, _), do: multi
 
   defp get_marker(user, timeline) do
     case Repo.find_resource(get_query(user, timeline)) do

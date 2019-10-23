@@ -26,7 +26,8 @@ defmodule Pleroma.Repo.Migrations.AddUnreadToMarker do
         timeline: "notifications",
         user_id: q.user_id,
         unread_count: fragment("SUM( CASE WHEN seen = false THEN 1 ELSE 0 END )"),
-        last_read_id: type(fragment("MAX( CASE WHEN seen = true THEN id ELSE null END )"), :string)
+        last_read_id:
+          type(fragment("MAX( CASE WHEN seen = true THEN id ELSE null END )"), :string)
       },
       group_by: [q.user_id]
     )
