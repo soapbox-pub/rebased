@@ -61,10 +61,10 @@ defmodule Pleroma.Notification do
 
   defp exclude_blocked(query, user) do
     query
-    |> where([n, a], a.actor not in ^user.info.blocks)
+    |> where([n, a], a.actor not in ^user.blocks)
     |> where(
       [n, a],
-      fragment("substring(? from '.*://([^/]*)')", a.actor) not in ^user.info.domain_blocks
+      fragment("substring(? from '.*://([^/]*)')", a.actor) not in ^user.domain_blocks
     )
   end
 
