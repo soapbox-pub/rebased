@@ -56,8 +56,9 @@ defmodule Pleroma.Marker do
           where: q.user_id == ^user.id,
           select: %{
             timeline: "notifications",
-            user_id: ^user.id,
-            unread_count: fragment("SUM( CASE WHEN seen = false THEN 1 ELSE 0 END ) as unread_count")
+            user_id: type(^user.id, :string),
+            unread_count: fragment("SUM( CASE WHEN seen = false THEN 1 ELSE 0 END )"),
+            last_read_id: type(fragment("MAX( CASE WHEN seen = true THEN id ELSE null END )"), :string)
           }
         )
 
