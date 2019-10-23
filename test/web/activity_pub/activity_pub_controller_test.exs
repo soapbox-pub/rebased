@@ -354,6 +354,87 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Activity.get_by_ap_id(data["id"])
     end
 
+    test "it accepts messages with to as string instead of array", %{conn: conn, data: data} do
+      user = insert(:user)
+
+      data =
+        Map.put(data, "to", user.ap_id)
+        |> Map.delete("cc")
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_ap_id(data["id"])
+    end
+
+    test "it accepts messages with cc as string instead of array", %{conn: conn, data: data} do
+      user = insert(:user)
+
+      data =
+        Map.put(data, "cc", user.ap_id)
+        |> Map.delete("to")
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      %Activity{} = activity = Activity.get_by_ap_id(data["id"])
+      assert user.ap_id in activity.recipients
+    end
+
+    test "it accepts messages with bcc as string instead of array", %{conn: conn, data: data} do
+      user = insert(:user)
+
+      data =
+        Map.put(data, "bcc", user.ap_id)
+        |> Map.delete("to")
+        |> Map.delete("cc")
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_ap_id(data["id"])
+    end
+
+    test "it accepts announces with to as string instead of array", %{conn: conn} do
+      user = insert(:user)
+
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "actor" => "http://mastodon.example.org/users/admin",
+        "id" => "http://mastodon.example.org/users/admin/statuses/19512778738411822/activity",
+        "object" => "https://mastodon.social/users/emelie/statuses/101849165031453009",
+        "to" => "https://www.w3.org/ns/activitystreams#Public",
+        "cc" => [user.ap_id],
+        "type" => "Announce"
+      }
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      %Activity{} = activity = Activity.get_by_ap_id(data["id"])
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity.recipients
+    end
+
     test "it accepts messages from actors that are followed by the user", %{
       conn: conn,
       data: data
