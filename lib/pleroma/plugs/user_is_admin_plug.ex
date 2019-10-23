@@ -11,7 +11,7 @@ defmodule Pleroma.Plugs.UserIsAdminPlug do
     options
   end
 
-  def call(%{assigns: %{user: %User{info: %{is_admin: true}}}} = conn, _) do
+  def call(%{assigns: %{user: %User{is_admin: true}}} = conn, _) do
     conn
   end
 

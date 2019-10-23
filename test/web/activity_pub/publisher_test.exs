@@ -27,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     test "it returns sharedInbox for messages involving as:Public in to" do
       user =
         insert(:user, %{
-          info: %{source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}}
+          source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}
         })
 
       activity = %Activity{
@@ -40,7 +40,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     test "it returns sharedInbox for messages involving as:Public in cc" do
       user =
         insert(:user, %{
-          info: %{source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}}
+          source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}
         })
 
       activity = %Activity{
@@ -53,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     test "it returns sharedInbox for messages involving multiple recipients in to" do
       user =
         insert(:user, %{
-          info: %{source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}}
+          source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}
         })
 
       user_two = insert(:user)
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     test "it returns sharedInbox for messages involving multiple recipients in cc" do
       user =
         insert(:user, %{
-          info: %{source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}}
+          source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}
         })
 
       user_two = insert(:user)
@@ -84,14 +84,12 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
     test "it returns sharedInbox for messages involving multiple recipients in total" do
       user =
-        insert(:user, %{
-          info: %{
-            source_data: %{
-              "inbox" => "http://example.com/personal-inbox",
-              "endpoints" => %{"sharedInbox" => "http://example.com/inbox"}
-            }
+        insert(:user,
+          source_data: %{
+            "inbox" => "http://example.com/personal-inbox",
+            "endpoints" => %{"sharedInbox" => "http://example.com/inbox"}
           }
-        })
+        )
 
       user_two = insert(:user)
 
@@ -104,14 +102,12 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
     test "it returns inbox for messages involving single recipients in total" do
       user =
-        insert(:user, %{
-          info: %{
-            source_data: %{
-              "inbox" => "http://example.com/personal-inbox",
-              "endpoints" => %{"sharedInbox" => "http://example.com/inbox"}
-            }
+        insert(:user,
+          source_data: %{
+            "inbox" => "http://example.com/personal-inbox",
+            "endpoints" => %{"sharedInbox" => "http://example.com/inbox"}
           }
-        })
+        )
 
       activity = %Activity{
         data: %{"to" => [user.ap_id], "cc" => []}
@@ -241,10 +237,8 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       follower =
         insert(:user,
           local: false,
-          info: %{
-            ap_enabled: true,
-            source_data: %{"inbox" => "https://domain.com/users/nick1/inbox"}
-          }
+          source_data: %{"inbox" => "https://domain.com/users/nick1/inbox"},
+          ap_enabled: true
         )
 
       actor = insert(:user, follower_address: follower.ap_id)
@@ -278,19 +272,15 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       fetcher =
         insert(:user,
           local: false,
-          info: %{
-            ap_enabled: true,
-            source_data: %{"inbox" => "https://domain.com/users/nick1/inbox"}
-          }
+          source_data: %{"inbox" => "https://domain.com/users/nick1/inbox"},
+          ap_enabled: true
         )
 
       another_fetcher =
         insert(:user,
           local: false,
-          info: %{
-            ap_enabled: true,
-            source_data: %{"inbox" => "https://domain2.com/users/nick1/inbox"}
-          }
+          source_data: %{"inbox" => "https://domain2.com/users/nick1/inbox"},
+          ap_enabled: true
         )
 
       actor = insert(:user)

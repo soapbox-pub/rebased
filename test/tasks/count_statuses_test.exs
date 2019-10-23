@@ -22,18 +22,18 @@ defmodule Mix.Tasks.Pleroma.CountStatusesTest do
     user = refresh_record(user)
     user2 = refresh_record(user2)
 
-    assert %{info: %{note_count: 2}} = user
-    assert %{info: %{note_count: 1}} = user2
+    assert %{note_count: 2} = user
+    assert %{note_count: 1} = user2
 
-    {:ok, user} = User.update_info(user, &User.Info.set_note_count(&1, 0))
-    {:ok, user2} = User.update_info(user2, &User.Info.set_note_count(&1, 0))
+    {:ok, user} = User.update_note_count(user, 0)
+    {:ok, user2} = User.update_note_count(user2, 0)
 
-    assert %{info: %{note_count: 0}} = user
-    assert %{info: %{note_count: 0}} = user2
+    assert %{note_count: 0} = user
+    assert %{note_count: 0} = user2
 
     assert capture_io(fn -> Mix.Tasks.Pleroma.CountStatuses.run([]) end) == "Done\n"
 
-    assert %{info: %{note_count: 2}} = refresh_record(user)
-    assert %{info: %{note_count: 1}} = refresh_record(user2)
+    assert %{note_count: 2} = refresh_record(user)
+    assert %{note_count: 1} = refresh_record(user2)
   end
 end

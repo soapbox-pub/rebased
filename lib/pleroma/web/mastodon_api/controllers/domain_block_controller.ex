@@ -21,8 +21,8 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
   plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   @doc "GET /api/v1/domain_blocks"
-  def index(%{assigns: %{user: %{info: info}}} = conn, _) do
-    json(conn, Map.get(info, :domain_blocks, []))
+  def index(%{assigns: %{user: user}} = conn, _) do
+    json(conn, Map.get(user, :domain_blocks, []))
   end
 
   @doc "POST /api/v1/domain_blocks"

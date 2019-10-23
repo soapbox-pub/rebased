@@ -764,7 +764,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it returns returns a uri if the user has 'hide_followers' set", %{conn: conn} do
       user = insert(:user)
-      user_two = insert(:user, %{info: %{hide_followers: true}})
+      user_two = insert(:user, hide_followers: true)
       User.follow(user, user_two)
 
       result =
@@ -777,7 +777,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it returns a 403 error on pages, if the user has 'hide_followers' set and the request is not authenticated",
          %{conn: conn} do
-      user = insert(:user, %{info: %{hide_followers: true}})
+      user = insert(:user, hide_followers: true)
 
       result =
         conn
@@ -789,7 +789,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it renders the page, if the user has 'hide_followers' set and the request is authenticated with the same user",
          %{conn: conn} do
-      user = insert(:user, %{info: %{hide_followers: true}})
+      user = insert(:user, hide_followers: true)
       other_user = insert(:user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
@@ -845,7 +845,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "it returns a uri if the user has 'hide_follows' set", %{conn: conn} do
-      user = insert(:user, %{info: %{hide_follows: true}})
+      user = insert(:user, hide_follows: true)
       user_two = insert(:user)
       User.follow(user, user_two)
 
@@ -859,7 +859,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it returns a 403 error on pages, if the user has 'hide_follows' set and the request is not authenticated",
          %{conn: conn} do
-      user = insert(:user, %{info: %{hide_follows: true}})
+      user = insert(:user, hide_follows: true)
 
       result =
         conn
@@ -871,7 +871,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it renders the page, if the user has 'hide_follows' set and the request is authenticated with the same user",
          %{conn: conn} do
-      user = insert(:user, %{info: %{hide_follows: true}})
+      user = insert(:user, hide_follows: true)
       other_user = insert(:user)
       {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
 

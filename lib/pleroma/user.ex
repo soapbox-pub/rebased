@@ -61,15 +61,70 @@ defmodule Pleroma.User do
     field(:tags, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime_usec)
     field(:last_digest_emailed_at, :naive_datetime)
+
+    field(:banner, :map, default: %{})
+    field(:background, :map, default: %{})
+    field(:source_data, :map, default: %{})
+    field(:note_count, :integer, default: 0)
+    field(:follower_count, :integer, default: 0)
+    # Should be filled in only for remote users
+    field(:following_count, :integer, default: nil)
+    field(:locked, :boolean, default: false)
+    field(:confirmation_pending, :boolean, default: false)
+    field(:password_reset_pending, :boolean, default: false)
+    field(:confirmation_token, :string, default: nil)
+    field(:default_scope, :string, default: "public")
+    field(:blocks, {:array, :string}, default: [])
+    field(:domain_blocks, {:array, :string}, default: [])
+    field(:mutes, {:array, :string}, default: [])
+    field(:muted_reblogs, {:array, :string}, default: [])
+    field(:muted_notifications, {:array, :string}, default: [])
+    field(:subscribers, {:array, :string}, default: [])
+    field(:deactivated, :boolean, default: false)
+    field(:no_rich_text, :boolean, default: false)
+    field(:ap_enabled, :boolean, default: false)
+    field(:is_moderator, :boolean, default: false)
+    field(:is_admin, :boolean, default: false)
+    field(:show_role, :boolean, default: true)
+    field(:settings, :map, default: nil)
+    field(:magic_key, :string, default: nil)
+    field(:uri, :string, default: nil)
+    field(:hide_followers_count, :boolean, default: false)
+    field(:hide_follows_count, :boolean, default: false)
+    field(:hide_followers, :boolean, default: false)
+    field(:hide_follows, :boolean, default: false)
+    field(:hide_favorites, :boolean, default: true)
+    field(:unread_conversation_count, :integer, default: 0)
+    field(:pinned_activities, {:array, :string}, default: [])
+    field(:email_notifications, :map, default: %{"digest" => false})
+    field(:mascot, :map, default: nil)
+    field(:emoji, {:array, :map}, default: [])
+    field(:pleroma_settings_store, :map, default: %{})
+    field(:fields, {:array, :map}, default: [])
+    field(:raw_fields, {:array, :map}, default: [])
+    field(:discoverable, :boolean, default: false)
+    field(:invisible, :boolean, default: false)
+    field(:skip_thread_containment, :boolean, default: false)
+
+    field(:notification_settings, :map,
+      default: %{
+        "followers" => true,
+        "follows" => true,
+        "non_follows" => true,
+        "non_followers" => true
+      }
+    )
+
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
     has_many(:deliveries, Delivery)
-    embeds_one(:info, User.Info)
+
+    field(:info, :map, default: %{})
 
     timestamps()
   end
 
-  def auth_active?(%User{info: %User.Info{confirmation_pending: true}}),
+  def auth_active?(%User{confirmation_pending: true}),
     do: !Pleroma.Config.get([:instance, :account_activation_required])
 
   def auth_active?(%User{}), do: true
@@ -84,11 +139,11 @@ defmodule Pleroma.User do
 
   def visible_for?(_, _), do: false
 
-  def superuser?(%User{local: true, info: %User.Info{is_admin: true}}), do: true
-  def superuser?(%User{local: true, info: %User.Info{is_moderator: true}}), do: true
+  def superuser?(%User{local: true, is_admin: true}), do: true
+  def superuser?(%User{local: true, is_moderator: true}), do: true
   def superuser?(_), do: false
 
-  def invisible?(%User{info: %User.Info{invisible: true}}), do: true
+  def invisible?(%User{invisible: true}), do: true
   def invisible?(_), do: false
 
   def avatar_url(user, options \\ []) do
@@ -99,13 +154,13 @@ defmodule Pleroma.User do
   end
 
   def banner_url(user, options \\ []) do
-    case user.info.banner do
+    case user.banner do
       %{"url" => [%{"href" => href} | _]} -> href
       _ -> !options[:no_default] && "#{Web.base_url()}/images/banner.png"
     end
   end
 
-  def profile_url(%User{info: %{source_data: %{"url" => url}}}), do: url
+  def profile_url(%User{source_data: %{"url" => url}}), do: url
   def profile_url(%User{ap_id: ap_id}), do: ap_id
   def profile_url(_), do: nil
 
@@ -120,15 +175,15 @@ defmodule Pleroma.User do
 
   def user_info(%User{} = user, args \\ %{}) do
     following_count =
-      Map.get(args, :following_count, user.info.following_count || following_count(user))
+      Map.get(args, :following_count, user.following_count || following_count(user))
 
-    follower_count = Map.get(args, :follower_count, user.info.follower_count)
+    follower_count = Map.get(args, :follower_count, user.follower_count)
 
     %{
-      note_count: user.info.note_count,
-      locked: user.info.locked,
-      confirmation_pending: user.info.confirmation_pending,
-      default_scope: user.info.default_scope
+      note_count: user.note_count,
+      locked: user.locked,
+      confirmation_pending: user.confirmation_pending,
+      default_scope: user.default_scope
     }
     |> Map.put(:following_count, following_count)
     |> Map.put(:follower_count, follower_count)
@@ -158,9 +213,7 @@ defmodule Pleroma.User do
 
   @spec restrict_deactivated(Ecto.Query.t()) :: Ecto.Query.t()
   def restrict_deactivated(query) do
-    from(u in query,
-      where: not fragment("? \\? 'deactivated' AND ?->'deactivated' @> 'true'", u.info, u.info)
-    )
+    from(u in query, where: u.deactivated != ^true)
   end
 
   def following_count(%User{following: []}), do: 0
@@ -169,6 +222,62 @@ defmodule Pleroma.User do
     user
     |> get_friends_query()
     |> Repo.aggregate(:count, :id)
+  end
+
+  @info_fields [
+    :banner,
+    :background,
+    :source_data,
+    :note_count,
+    :follower_count,
+    :following_count,
+    :locked,
+    :confirmation_pending,
+    :password_reset_pending,
+    :confirmation_token,
+    :default_scope,
+    :blocks,
+    :domain_blocks,
+    :mutes,
+    :muted_reblogs,
+    :muted_notifications,
+    :subscribers,
+    :deactivated,
+    :no_rich_text,
+    :ap_enabled,
+    :is_moderator,
+    :is_admin,
+    :show_role,
+    :settings,
+    :magic_key,
+    :uri,
+    :hide_followers_count,
+    :hide_follows_count,
+    :hide_followers,
+    :hide_follows,
+    :hide_favorites,
+    :unread_conversation_count,
+    :pinned_activities,
+    :email_notifications,
+    :mascot,
+    :emoji,
+    :pleroma_settings_store,
+    :fields,
+    :raw_fields,
+    :discoverable,
+    :invisible,
+    :skip_thread_containment,
+    :notification_settings
+  ]
+
+  def info_fields, do: @info_fields
+
+  defp truncate_fields_param(params) do
+    if Map.has_key?(params, :fields) do
+      Map.put(params, :fields, Enum.map(params[:fields], &truncate_field/1))
+    else
+      params
+    end
   end
 
   defp truncate_if_exists(params, key, max_length) do
@@ -189,18 +298,43 @@ defmodule Pleroma.User do
       |> Map.put(:info, params[:info] || %{})
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
+      |> truncate_fields_param()
 
     changeset =
       %User{local: false}
-      |> cast(params, [:bio, :name, :ap_id, :nickname, :avatar])
+      |> cast(
+        params,
+        [
+          :bio,
+          :name,
+          :ap_id,
+          :nickname,
+          :avatar,
+          :ap_enabled,
+          :source_data,
+          :banner,
+          :locked,
+          :magic_key,
+          :uri,
+          :hide_followers,
+          :hide_follows,
+          :hide_followers_count,
+          :hide_follows_count,
+          :follower_count,
+          :fields,
+          :following_count,
+          :discoverable,
+          :invisible
+        ]
+      )
       |> validate_required([:name, :ap_id])
       |> unique_constraint(:nickname)
       |> validate_format(:nickname, @email_regex)
       |> validate_length(:bio, max: bio_limit)
       |> validate_length(:name, max: name_limit)
-      |> change_info(&User.Info.remote_user_creation(&1, params[:info]))
+      |> validate_fields(true)
 
-    case params[:info][:source_data] do
+    case params[:source_data] do
       %{"followers" => followers, "following" => following} ->
         changeset
         |> put_change(:follower_address, followers)
@@ -217,11 +351,36 @@ defmodule Pleroma.User do
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
     struct
-    |> cast(params, [:bio, :name, :avatar, :following])
+    |> cast(
+      params,
+      [
+        :bio,
+        :name,
+        :avatar,
+        :following,
+        :locked,
+        :no_rich_text,
+        :default_scope,
+        :banner,
+        :hide_follows,
+        :hide_followers,
+        :hide_followers_count,
+        :hide_follows_count,
+        :hide_favorites,
+        :background,
+        :show_role,
+        :skip_thread_containment,
+        :fields,
+        :raw_fields,
+        :pleroma_settings_store,
+        :discoverable
+      ]
+    )
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
+    |> validate_fields(false)
   end
 
   def upgrade_changeset(struct, params \\ %{}, remote? \\ false) do
@@ -230,20 +389,38 @@ defmodule Pleroma.User do
 
     params = Map.put(params, :last_refreshed_at, NaiveDateTime.utc_now())
 
+    params = if remote?, do: truncate_fields_param(params), else: params
+
     struct
-    |> cast(params, [
-      :bio,
-      :name,
-      :follower_address,
-      :following_address,
-      :avatar,
-      :last_refreshed_at
-    ])
+    |> cast(
+      params,
+      [
+        :bio,
+        :name,
+        :follower_address,
+        :following_address,
+        :avatar,
+        :last_refreshed_at,
+        :ap_enabled,
+        :source_data,
+        :banner,
+        :locked,
+        :magic_key,
+        :follower_count,
+        :following_count,
+        :hide_follows,
+        :fields,
+        :hide_followers,
+        :discoverable,
+        :hide_followers_count,
+        :hide_follows_count
+      ]
+    )
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, max: name_limit)
-    |> change_info(&User.Info.user_upgrade(&1, params[:info], remote?))
+    |> validate_fields(remote?)
   end
 
   def password_update_changeset(struct, params) do
@@ -251,8 +428,8 @@ defmodule Pleroma.User do
     |> cast(params, [:password, :password_confirmation])
     |> validate_required([:password, :password_confirmation])
     |> validate_confirmation(:password)
-    |> put_password_hash
-    |> put_embed(:info, User.Info.set_password_reset_pending(struct.info, false))
+    |> put_password_hash()
+    |> put_change(:password_reset_pending, false)
   end
 
   @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
@@ -269,19 +446,19 @@ defmodule Pleroma.User do
     end
   end
 
+  def update_password_reset_pending(user, value) do
+    user
+    |> change()
+    |> put_change(:password_reset_pending, value)
+    |> update_and_set_cache()
+  end
+
   def force_password_reset_async(user) do
     BackgroundWorker.enqueue("force_password_reset", %{"user_id" => user.id})
   end
 
   @spec force_password_reset(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def force_password_reset(user) do
-    info_cng = User.Info.set_password_reset_pending(user.info, true)
-
-    user
-    |> change()
-    |> put_embed(:info, info_cng)
-    |> update_and_set_cache()
-  end
+  def force_password_reset(user), do: update_password_reset_pending(user, true)
 
   def register_changeset(struct, params \\ %{}, opts \\ []) do
     bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
@@ -295,6 +472,7 @@ defmodule Pleroma.User do
       end
 
     struct
+    |> confirmation_changeset(need_confirmation: need_confirmation?)
     |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
@@ -305,7 +483,6 @@ defmodule Pleroma.User do
     |> validate_format(:email, @email_regex)
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
-    |> change_info(&User.Info.confirmation_changeset(&1, need_confirmation: need_confirmation?))
     |> maybe_validate_required_email(opts[:external])
     |> put_password_hash
     |> put_ap_id()
@@ -356,7 +533,7 @@ defmodule Pleroma.User do
   end
 
   def try_send_confirmation_email(%User{} = user) do
-    if user.info.confirmation_pending &&
+    if user.confirmation_pending &&
          Pleroma.Config.get([:instance, :account_activation_required]) do
       user
       |> Pleroma.Emails.UserEmail.account_confirmation_email()
@@ -379,7 +556,7 @@ defmodule Pleroma.User do
   def needs_update?(_), do: true
 
   @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
-  def maybe_direct_follow(%User{} = follower, %User{local: true, info: %{locked: true}}) do
+  def maybe_direct_follow(%User{} = follower, %User{local: true, locked: true}) do
     {:ok, follower}
   end
 
@@ -426,13 +603,13 @@ defmodule Pleroma.User do
     set_cache(follower)
   end
 
-  def follow(%User{} = follower, %User{info: info} = followed) do
+  def follow(%User{} = follower, %User{} = followed) do
     deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
     ap_followers = followed.follower_address
 
     cond do
-      info.deactivated ->
-        {:error, "Could not follow user: You are deactivated."}
+      followed.deactivated ->
+        {:error, "Could not follow user: #{followed.nickname} is deactivated."}
 
       deny_follow_blocked and blocks?(followed, follower) ->
         {:error, "Could not follow user: #{followed.nickname} blocked you."}
@@ -486,7 +663,7 @@ defmodule Pleroma.User do
   end
 
   def locked?(%User{} = user) do
-    user.info.locked || false
+    user.locked || false
   end
 
   def get_by_id(id) do
@@ -527,6 +704,12 @@ defmodule Pleroma.User do
     Cachex.put(:user_cache, "nickname:#{user.nickname}", user)
     Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user))
     {:ok, user}
+  end
+
+  def update_and_set_cache(struct, params) do
+    struct
+    |> update_changeset(params)
+    |> update_and_set_cache()
   end
 
   def update_and_set_cache(changeset) do
@@ -713,16 +896,7 @@ defmodule Pleroma.User do
   def increase_note_count(%User{} = user) do
     User
     |> where(id: ^user.id)
-    |> update([u],
-      set: [
-        info:
-          fragment(
-            "safe_jsonb_set(?, '{note_count}', ((?->>'note_count')::int + 1)::varchar::jsonb, true)",
-            u.info,
-            u.info
-          )
-      ]
-    )
+    |> update([u], inc: [note_count: 1])
     |> select([u], u)
     |> Repo.update_all([])
     |> case do
@@ -736,12 +910,7 @@ defmodule Pleroma.User do
     |> where(id: ^user.id)
     |> update([u],
       set: [
-        info:
-          fragment(
-            "safe_jsonb_set(?, '{note_count}', (greatest(0, (?->>'note_count')::int - 1))::varchar::jsonb, true)",
-            u.info,
-            u.info
-          )
+        note_count: fragment("greatest(0, note_count - 1)")
       ]
     )
     |> select([u], u)
@@ -752,28 +921,18 @@ defmodule Pleroma.User do
     end
   end
 
-  def update_note_count(%User{} = user) do
+  def update_note_count(%User{} = user, note_count \\ nil) do
     note_count =
-      from(
-        a in Object,
-        where: fragment("?->>'actor' = ? and ?->>'type' = 'Note'", a.data, ^user.ap_id, a.data),
-        select: count(a.id)
-      )
-      |> Repo.one()
-
-    update_info(user, &User.Info.set_note_count(&1, note_count))
-  end
-
-  def update_mascot(user, url) do
-    info_changeset =
-      User.Info.mascot_update(
-        user.info,
-        url
-      )
+      note_count ||
+        from(
+          a in Object,
+          where: fragment("?->>'actor' = ? and ?->>'type' = 'Note'", a.data, ^user.ap_id, a.data),
+          select: count(a.id)
+        )
+        |> Repo.one()
 
     user
-    |> change()
-    |> put_embed(:info, info_changeset)
+    |> cast(%{note_count: note_count}, [:note_count])
     |> update_and_set_cache()
   end
 
@@ -791,8 +950,22 @@ defmodule Pleroma.User do
 
   def fetch_follow_information(user) do
     with {:ok, info} <- ActivityPub.fetch_follow_information_for_user(user) do
-      update_info(user, &User.Info.follow_information_update(&1, info))
+      user
+      |> follow_information_changeset(info)
+      |> update_and_set_cache()
     end
+  end
+
+  defp follow_information_changeset(user, params) do
+    user
+    |> cast(params, [
+      :hide_followers,
+      :hide_follows,
+      :follower_count,
+      :following_count,
+      :hide_followers_count,
+      :hide_follows_count
+    ])
   end
 
   def update_follower_count(%User{} = user) do
@@ -805,14 +978,7 @@ defmodule Pleroma.User do
       |> where(id: ^user.id)
       |> join(:inner, [u], s in subquery(follower_count_query))
       |> update([u, s],
-        set: [
-          info:
-            fragment(
-              "safe_jsonb_set(?, '{follower_count}', ?::varchar::jsonb, true)",
-              u.info,
-              s.count
-            )
-        ]
+        set: [follower_count: s.count]
       )
       |> select([u], u)
       |> Repo.update_all([])
@@ -842,14 +1008,7 @@ defmodule Pleroma.User do
     User
     |> join(:inner, [u], p in subquery(unread_query))
     |> update([u, p],
-      set: [
-        info:
-          fragment(
-            "jsonb_set(?, '{unread_conversation_count}', ?::varchar::jsonb, true)",
-            u.info,
-            p.count
-          )
-      ]
+      set: [unread_conversation_count: p.count]
     )
     |> where([u], u.id == ^user.id)
     |> select([u], u)
@@ -870,14 +1029,7 @@ defmodule Pleroma.User do
     User
     |> join(:inner, [u], p in subquery(unread_query))
     |> update([u, p],
-      set: [
-        info:
-          fragment(
-            "jsonb_set(?, '{unread_conversation_count}', (coalesce((?->>'unread_conversation_count')::int, 0) + 1)::varchar::jsonb, true)",
-            u.info,
-            u.info
-          )
-      ]
+      inc: [unread_conversation_count: 1]
     )
     |> where([u], u.id == ^user.id)
     |> where([u, p], p.count == 0)
@@ -920,11 +1072,11 @@ defmodule Pleroma.User do
 
   @spec mute(User.t(), User.t(), boolean()) :: {:ok, User.t()} | {:error, String.t()}
   def mute(muter, %User{ap_id: ap_id}, notifications? \\ true) do
-    update_info(muter, &User.Info.add_to_mutes(&1, ap_id, notifications?))
+    add_to_mutes(muter, ap_id, notifications?)
   end
 
   def unmute(muter, %{ap_id: ap_id}) do
-    update_info(muter, &User.Info.remove_from_mutes(&1, ap_id))
+    remove_from_mutes(muter, ap_id)
   end
 
   def subscribe(subscriber, %{ap_id: ap_id}) do
@@ -934,14 +1086,14 @@ defmodule Pleroma.User do
       if blocks?(subscribed, subscriber) and deny_follow_blocked do
         {:error, "Could not subscribe: #{subscribed.nickname} is blocking you"}
       else
-        update_info(subscribed, &User.Info.add_to_subscribers(&1, subscriber.ap_id))
+        User.add_to_subscribers(subscribed, subscriber.ap_id)
       end
     end
   end
 
   def unsubscribe(unsubscriber, %{ap_id: ap_id}) do
     with %User{} = user <- get_cached_by_ap_id(ap_id) do
-      update_info(user, &User.Info.remove_from_subscribers(&1, unsubscriber.ap_id))
+      User.remove_from_subscribers(user, unsubscriber.ap_id)
     end
   end
 
@@ -974,7 +1126,7 @@ defmodule Pleroma.User do
 
     {:ok, blocker} = update_follower_count(blocker)
 
-    update_info(blocker, &User.Info.add_to_block(&1, ap_id))
+    add_to_block(blocker, ap_id)
   end
 
   # helper to handle the block given only an actor's AP id
@@ -983,17 +1135,17 @@ defmodule Pleroma.User do
   end
 
   def unblock(blocker, %{ap_id: ap_id}) do
-    update_info(blocker, &User.Info.remove_from_block(&1, ap_id))
+    remove_from_block(blocker, ap_id)
   end
 
   def mutes?(nil, _), do: false
-  def mutes?(user, %{ap_id: ap_id}), do: Enum.member?(user.info.mutes, ap_id)
+  def mutes?(user, %{ap_id: ap_id}), do: Enum.member?(user.mutes, ap_id)
 
   @spec muted_notifications?(User.t() | nil, User.t() | map()) :: boolean()
   def muted_notifications?(nil, _), do: false
 
   def muted_notifications?(user, %{ap_id: ap_id}),
-    do: Enum.member?(user.info.muted_notifications, ap_id)
+    do: Enum.member?(user.muted_notifications, ap_id)
 
   def blocks?(%User{} = user, %User{} = target) do
     blocks_ap_id?(user, target) || blocks_domain?(user, target)
@@ -1002,13 +1154,13 @@ defmodule Pleroma.User do
   def blocks?(nil, _), do: false
 
   def blocks_ap_id?(%User{} = user, %User{} = target) do
-    Enum.member?(user.info.blocks, target.ap_id)
+    Enum.member?(user.blocks, target.ap_id)
   end
 
   def blocks_ap_id?(_, _), do: false
 
   def blocks_domain?(%User{} = user, %User{} = target) do
-    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.info.domain_blocks)
+    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.domain_blocks)
     %{host: host} = URI.parse(target.ap_id)
     Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, host)
   end
@@ -1017,34 +1169,26 @@ defmodule Pleroma.User do
 
   def subscribed_to?(user, %{ap_id: ap_id}) do
     with %User{} = target <- get_cached_by_ap_id(ap_id) do
-      Enum.member?(target.info.subscribers, user.ap_id)
+      Enum.member?(target.subscribers, user.ap_id)
     end
   end
 
   @spec muted_users(User.t()) :: [User.t()]
   def muted_users(user) do
-    User.Query.build(%{ap_id: user.info.mutes, deactivated: false})
+    User.Query.build(%{ap_id: user.mutes, deactivated: false})
     |> Repo.all()
   end
 
   @spec blocked_users(User.t()) :: [User.t()]
   def blocked_users(user) do
-    User.Query.build(%{ap_id: user.info.blocks, deactivated: false})
+    User.Query.build(%{ap_id: user.blocks, deactivated: false})
     |> Repo.all()
   end
 
   @spec subscribers(User.t()) :: [User.t()]
   def subscribers(user) do
-    User.Query.build(%{ap_id: user.info.subscribers, deactivated: false})
+    User.Query.build(%{ap_id: user.subscribers, deactivated: false})
     |> Repo.all()
-  end
-
-  def block_domain(user, domain) do
-    update_info(user, &User.Info.add_to_domain_block(&1, domain))
-  end
-
-  def unblock_domain(user, domain) do
-    update_info(user, &User.Info.remove_from_domain_block(&1, domain))
   end
 
   def deactivate_async(user, status \\ true) do
@@ -1060,7 +1204,7 @@ defmodule Pleroma.User do
   end
 
   def deactivate(%User{} = user, status) do
-    with {:ok, user} <- update_info(user, &User.Info.set_activation_status(&1, status)) do
+    with {:ok, user} <- set_activation_status(user, status) do
       Enum.each(get_followers(user), &invalidate_cache/1)
       Enum.each(get_friends(user), &update_follower_count/1)
 
@@ -1068,8 +1212,23 @@ defmodule Pleroma.User do
     end
   end
 
-  def update_notification_settings(%User{} = user, settings \\ %{}) do
-    update_info(user, &User.Info.update_notification_settings(&1, settings))
+  def update_notification_settings(%User{} = user, settings) do
+    settings =
+      settings
+      |> Enum.map(fn {k, v} -> {k, v in [true, "true", "True", "1"]} end)
+      |> Map.new()
+
+    notification_settings =
+      user.notification_settings
+      |> Map.merge(settings)
+      |> Map.take(["followers", "follows", "non_follows", "non_followers"])
+
+    params = %{notification_settings: notification_settings}
+
+    user
+    |> cast(params, [:notification_settings])
+    |> validate_required([:notification_settings])
+    |> update_and_set_cache()
   end
 
   def delete(users) when is_list(users) do
@@ -1111,7 +1270,7 @@ defmodule Pleroma.User do
     pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
 
     # Insert all the posts in reverse order, so they're in the right order on the timeline
-    user.info.source_data["outbox"]
+    user.source_data["outbox"]
     |> Utils.fetch_ordered_collection(pages)
     |> Enum.reverse()
     |> Enum.each(&Pleroma.Web.Federator.incoming_ap_doc/1)
@@ -1232,7 +1391,7 @@ defmodule Pleroma.User do
 
   defp delete_activity(_activity), do: "Doing nothing"
 
-  def html_filter_policy(%User{info: %{no_rich_text: true}}) do
+  def html_filter_policy(%User{no_rich_text: true}) do
     Pleroma.HTML.Scrubber.TwitterText
   end
 
@@ -1268,7 +1427,7 @@ defmodule Pleroma.User do
     else
       _ ->
         {:ok, user} =
-          %User{info: %User.Info{}}
+          %User{}
           |> cast(%{}, [:ap_id, :nickname, :local])
           |> put_change(:ap_id, uri)
           |> put_change(:nickname, nickname)
@@ -1281,9 +1440,7 @@ defmodule Pleroma.User do
   end
 
   # AP style
-  def public_key_from_info(%{
-        source_data: %{"publicKey" => %{"publicKeyPem" => public_key_pem}}
-      }) do
+  def public_key(%{source_data: %{"publicKey" => %{"publicKeyPem" => public_key_pem}}}) do
     key =
       public_key_pem
       |> :public_key.pem_decode()
@@ -1293,11 +1450,11 @@ defmodule Pleroma.User do
     {:ok, key}
   end
 
-  def public_key_from_info(_), do: {:error, "not found key"}
+  def public_key(_), do: {:error, "not found key"}
 
   def get_public_key_for_ap_id(ap_id) do
     with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
-         {:ok, public_key} <- public_key_from_info(user.info) do
+         {:ok, public_key} <- public_key(user) do
       {:ok, public_key}
     else
       _ -> :error
@@ -1316,7 +1473,7 @@ defmodule Pleroma.User do
   end
 
   def ap_enabled?(%User{local: true}), do: true
-  def ap_enabled?(%User{info: info}), do: info.ap_enabled
+  def ap_enabled?(%User{ap_enabled: ap_enabled}), do: ap_enabled
   def ap_enabled?(_), do: false
 
   @doc "Gets or fetch a user by uri or nickname."
@@ -1429,7 +1586,6 @@ defmodule Pleroma.User do
     %User{
       name: ap_id,
       ap_id: ap_id,
-      info: %User.Info{},
       nickname: "erroruser@example.com",
       inserted_at: NaiveDateTime.utc_now()
     }
@@ -1442,7 +1598,7 @@ defmodule Pleroma.User do
   end
 
   def showing_reblogs?(%User{} = user, %User{} = target) do
-    target.ap_id not in user.info.muted_reblogs
+    target.ap_id not in user.muted_reblogs
   end
 
   @doc """
@@ -1474,7 +1630,7 @@ defmodule Pleroma.User do
       left_join: a in Pleroma.Activity,
       on: u.ap_id == a.actor,
       where: not is_nil(u.nickname),
-      where: fragment("not (?->'deactivated' @> 'true')", u.info),
+      where: u.deactivated != ^true,
       where: u.id not in ^has_read_notifications,
       group_by: u.id,
       having:
@@ -1488,16 +1644,16 @@ defmodule Pleroma.User do
 
   ## Examples
 
-      iex> Pleroma.User.switch_email_notifications(Pleroma.User{info: %{email_notifications: %{"digest" => false}}}, "digest", true)
-      Pleroma.User{info: %{email_notifications: %{"digest" => true}}}
+      iex> Pleroma.User.switch_email_notifications(Pleroma.User{email_notifications: %{"digest" => false}}, "digest", true)
+      Pleroma.User{email_notifications: %{"digest" => true}}
 
-      iex> Pleroma.User.switch_email_notifications(Pleroma.User{info: %{email_notifications: %{"digest" => true}}}, "digest", false)
-      Pleroma.User{info: %{email_notifications: %{"digest" => false}}}
+      iex> Pleroma.User.switch_email_notifications(Pleroma.User{email_notifications: %{"digest" => true}}, "digest", false)
+      Pleroma.User{email_notifications: %{"digest" => false}}
   """
   @spec switch_email_notifications(t(), String.t(), boolean()) ::
           {:ok, t()} | {:error, Ecto.Changeset.t()}
   def switch_email_notifications(user, type, status) do
-    update_info(user, &User.Info.update_email_notifications(&1, %{type => status}))
+    User.update_email_notifications(user, %{type => status})
   end
 
   @doc """
@@ -1517,17 +1673,16 @@ defmodule Pleroma.User do
 
   @spec toggle_confirmation(User.t()) :: {:ok, User.t()} | {:error, Changeset.t()}
   def toggle_confirmation(%User{} = user) do
-    need_confirmation? = !user.info.confirmation_pending
-
     user
-    |> update_info(&User.Info.confirmation_changeset(&1, need_confirmation: need_confirmation?))
+    |> confirmation_changeset(need_confirmation: !user.confirmation_pending)
+    |> update_and_set_cache()
   end
 
-  def get_mascot(%{info: %{mascot: %{} = mascot}}) when not is_nil(mascot) do
+  def get_mascot(%{mascot: %{} = mascot}) when not is_nil(mascot) do
     mascot
   end
 
-  def get_mascot(%{info: %{mascot: mascot}}) when is_nil(mascot) do
+  def get_mascot(%{mascot: mascot}) when is_nil(mascot) do
     # use instance-default
     config = Pleroma.Config.get([:assets, :mascots])
     default_mascot = Pleroma.Config.get([:assets, :default_mascot])
@@ -1597,31 +1752,285 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  @doc """
-  Changes `user.info` and returns the user changeset.
-
-  `fun` is called with the `user.info`.
-  """
-  def change_info(user, fun) do
-    changeset = change(user)
-    info = get_field(changeset, :info) || %User.Info{}
-    put_embed(changeset, :info, fun.(info))
+  # Internal function; public one is `deactivate/2`
+  defp set_activation_status(user, deactivated) do
+    user
+    |> cast(%{deactivated: deactivated}, [:deactivated])
+    |> update_and_set_cache()
   end
 
-  @doc """
-  Updates `user.info` and sets cache.
+  def update_banner(user, banner) do
+    user
+    |> cast(%{banner: banner}, [:banner])
+    |> update_and_set_cache()
+  end
 
-  `fun` is called with the `user.info`.
-  """
-  def update_info(users, fun) when is_list(users) do
-    Repo.transaction(fn ->
-      for user <- users, do: update_info(user, fun)
+  def update_background(user, background) do
+    user
+    |> cast(%{background: background}, [:background])
+    |> update_and_set_cache()
+  end
+
+  def update_source_data(user, source_data) do
+    user
+    |> cast(%{source_data: source_data}, [:source_data])
+    |> update_and_set_cache()
+  end
+
+  def roles(%{is_moderator: is_moderator, is_admin: is_admin}) do
+    %{
+      admin: is_admin,
+      moderator: is_moderator
+    }
+  end
+
+  # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
+  # For example: [{"name": "Pronoun", "value": "she/her"}, …]
+  def fields(%{fields: nil, source_data: %{"attachment" => attachment}}) do
+    limit = Pleroma.Config.get([:instance, :max_remote_account_fields], 0)
+
+    attachment
+    |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
+    |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
+    |> Enum.take(limit)
+  end
+
+  def fields(%{fields: nil}), do: []
+
+  def fields(%{fields: fields}), do: fields
+
+  def validate_fields(changeset, remote? \\ false) do
+    limit_name = if remote?, do: :max_remote_account_fields, else: :max_account_fields
+    limit = Pleroma.Config.get([:instance, limit_name], 0)
+
+    changeset
+    |> validate_length(:fields, max: limit)
+    |> validate_change(:fields, fn :fields, fields ->
+      if Enum.all?(fields, &valid_field?/1) do
+        []
+      else
+        [fields: "invalid"]
+      end
     end)
   end
 
-  def update_info(user, fun) do
+  defp valid_field?(%{"name" => name, "value" => value}) do
+    name_limit = Pleroma.Config.get([:instance, :account_field_name_length], 255)
+    value_limit = Pleroma.Config.get([:instance, :account_field_value_length], 255)
+
+    is_binary(name) && is_binary(value) && String.length(name) <= name_limit &&
+      String.length(value) <= value_limit
+  end
+
+  defp valid_field?(_), do: false
+
+  defp truncate_field(%{"name" => name, "value" => value}) do
+    {name, _chopped} =
+      String.split_at(name, Pleroma.Config.get([:instance, :account_field_name_length], 255))
+
+    {value, _chopped} =
+      String.split_at(value, Pleroma.Config.get([:instance, :account_field_value_length], 255))
+
+    %{"name" => name, "value" => value}
+  end
+
+  def admin_api_update(user, params) do
     user
-    |> change_info(fun)
+    |> cast(params, [
+      :is_moderator,
+      :is_admin,
+      :show_role
+    ])
+    |> update_and_set_cache()
+  end
+
+  def mascot_update(user, url) do
+    user
+    |> cast(%{mascot: url}, [:mascot])
+    |> validate_required([:mascot])
+    |> update_and_set_cache()
+  end
+
+  def mastodon_settings_update(user, settings) do
+    user
+    |> cast(%{settings: settings}, [:settings])
+    |> validate_required([:settings])
+    |> update_and_set_cache()
+  end
+
+  @spec confirmation_changeset(User.t(), keyword()) :: Changeset.t()
+  def confirmation_changeset(user, need_confirmation: need_confirmation?) do
+    params =
+      if need_confirmation? do
+        %{
+          confirmation_pending: true,
+          confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+        }
+      else
+        %{
+          confirmation_pending: false,
+          confirmation_token: nil
+        }
+      end
+
+    cast(user, params, [:confirmation_pending, :confirmation_token])
+  end
+
+  def add_pinnned_activity(user, %Pleroma.Activity{id: id}) do
+    if id not in user.pinned_activities do
+      max_pinned_statuses = Pleroma.Config.get([:instance, :max_pinned_statuses], 0)
+      params = %{pinned_activities: user.pinned_activities ++ [id]}
+
+      user
+      |> cast(params, [:pinned_activities])
+      |> validate_length(:pinned_activities,
+        max: max_pinned_statuses,
+        message: "You have already pinned the maximum number of statuses"
+      )
+    else
+      change(user)
+    end
+    |> update_and_set_cache()
+  end
+
+  def remove_pinnned_activity(user, %Pleroma.Activity{id: id}) do
+    params = %{pinned_activities: List.delete(user.pinned_activities, id)}
+
+    user
+    |> cast(params, [:pinned_activities])
+    |> update_and_set_cache()
+  end
+
+  def update_email_notifications(user, settings) do
+    email_notifications =
+      user.email_notifications
+      |> Map.merge(settings)
+      |> Map.take(["digest"])
+
+    params = %{email_notifications: email_notifications}
+    fields = [:email_notifications]
+
+    user
+    |> cast(params, fields)
+    |> validate_required(fields)
+    |> update_and_set_cache()
+  end
+
+  defp set_subscribers(user, subscribers) do
+    params = %{subscribers: subscribers}
+
+    user
+    |> cast(params, [:subscribers])
+    |> validate_required([:subscribers])
+    |> update_and_set_cache()
+  end
+
+  def add_to_subscribers(user, subscribed) do
+    set_subscribers(user, Enum.uniq([subscribed | user.subscribers]))
+  end
+
+  def remove_from_subscribers(user, subscribed) do
+    set_subscribers(user, List.delete(user.subscribers, subscribed))
+  end
+
+  defp set_domain_blocks(user, domain_blocks) do
+    params = %{domain_blocks: domain_blocks}
+
+    user
+    |> cast(params, [:domain_blocks])
+    |> validate_required([:domain_blocks])
+    |> update_and_set_cache()
+  end
+
+  def block_domain(user, domain_blocked) do
+    set_domain_blocks(user, Enum.uniq([domain_blocked | user.domain_blocks]))
+  end
+
+  def unblock_domain(user, domain_blocked) do
+    set_domain_blocks(user, List.delete(user.domain_blocks, domain_blocked))
+  end
+
+  defp set_blocks(user, blocks) do
+    params = %{blocks: blocks}
+
+    user
+    |> cast(params, [:blocks])
+    |> validate_required([:blocks])
+    |> update_and_set_cache()
+  end
+
+  def add_to_block(user, blocked) do
+    set_blocks(user, Enum.uniq([blocked | user.blocks]))
+  end
+
+  def remove_from_block(user, blocked) do
+    set_blocks(user, List.delete(user.blocks, blocked))
+  end
+
+  defp set_mutes(user, mutes) do
+    params = %{mutes: mutes}
+
+    user
+    |> cast(params, [:mutes])
+    |> validate_required([:mutes])
+    |> update_and_set_cache()
+  end
+
+  def add_to_mutes(user, muted, notifications?) do
+    with {:ok, user} <- set_mutes(user, Enum.uniq([muted | user.mutes])) do
+      set_notification_mutes(
+        user,
+        Enum.uniq([muted | user.muted_notifications]),
+        notifications?
+      )
+    end
+  end
+
+  def remove_from_mutes(user, muted) do
+    with {:ok, user} <- set_mutes(user, List.delete(user.mutes, muted)) do
+      set_notification_mutes(
+        user,
+        List.delete(user.muted_notifications, muted),
+        true
+      )
+    end
+  end
+
+  defp set_notification_mutes(user, _muted_notifications, false = _notifications?) do
+    {:ok, user}
+  end
+
+  defp set_notification_mutes(user, muted_notifications, true = _notifications?) do
+    params = %{muted_notifications: muted_notifications}
+
+    user
+    |> cast(params, [:muted_notifications])
+    |> validate_required([:muted_notifications])
+    |> update_and_set_cache()
+  end
+
+  def add_reblog_mute(user, ap_id) do
+    params = %{muted_reblogs: user.muted_reblogs ++ [ap_id]}
+
+    user
+    |> cast(params, [:muted_reblogs])
+    |> update_and_set_cache()
+  end
+
+  def remove_reblog_mute(user, ap_id) do
+    params = %{muted_reblogs: List.delete(user.muted_reblogs, ap_id)}
+
+    user
+    |> cast(params, [:muted_reblogs])
+    |> update_and_set_cache()
+  end
+
+  def set_invisible(user, invisible) do
+    params = %{invisible: invisible}
+
+    user
+    |> cast(params, [:invisible])
+    |> validate_required([:invisible])
     |> update_and_set_cache()
   end
 end

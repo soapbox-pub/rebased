@@ -17,7 +17,7 @@ defmodule Pleroma.Daemons.DigestEmailDaemon do
     now = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
 
     from(u in inactive_users_query,
-      where: fragment(~s(? #> '{"email_notifications","digest"}' @> 'true'), u.info),
+      where: fragment(~s(? ->'digest' @> 'true'), u.email_notifications),
       where: u.last_digest_emailed_at < datetime_add(^now, ^negative_interval, "day"),
       select: u
     )

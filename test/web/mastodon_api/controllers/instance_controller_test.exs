@@ -41,19 +41,12 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     user = insert(:user, %{local: true})
 
     user2 = insert(:user, %{local: true})
-    {:ok, _user2} = User.deactivate(user2, !user2.info.deactivated)
+    {:ok, _user2} = User.deactivate(user2, !user2.deactivated)
 
     insert(:user, %{local: false, nickname: "u@peer1.com"})
     insert(:user, %{local: false, nickname: "u@peer2.com"})
 
     {:ok, _} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofe"})
-
-    # Stats should count users with missing or nil `info.deactivated` value
-
-    {:ok, _user} =
-      user.id
-      |> User.get_cached_by_id()
-      |> User.update_info(&Ecto.Changeset.change(&1, %{deactivated: nil}))
 
     Pleroma.Stats.force_update()
 

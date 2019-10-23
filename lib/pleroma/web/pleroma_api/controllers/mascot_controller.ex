@@ -24,9 +24,7 @@ defmodule Pleroma.Web.PleromaAPI.MascotController do
     with {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)),
          # Reject if not an image
          %{type: "image"} = attachment <- render_attachment(object) do
-      # Sure!
-      # Save to the user's info
-      {:ok, _user} = User.update_info(user, &User.Info.mascot_update(&1, attachment))
+      {:ok, _user} = User.mascot_update(user, attachment)
 
       json(conn, attachment)
     else

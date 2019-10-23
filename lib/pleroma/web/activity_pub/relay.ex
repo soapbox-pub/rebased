@@ -14,7 +14,7 @@ defmodule Pleroma.Web.ActivityPub.Relay do
       "#{Pleroma.Web.Endpoint.url()}/relay"
       |> User.get_or_create_service_actor_by_ap_id()
 
-    {:ok, actor} = User.update_info(actor, &User.Info.set_invisible(&1, true))
+    {:ok, actor} = User.set_invisible(actor, true)
     actor
   end
 
