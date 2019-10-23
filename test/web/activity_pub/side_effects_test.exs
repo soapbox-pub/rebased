@@ -4,11 +4,12 @@
 
 defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   use Pleroma.DataCase
+
   alias Pleroma.Object
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.SideEffects
+  alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
 
@@ -18,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, post} = CommonAPI.post(user, %{"status" => "hey"})
 
       {:ok, like_data, _meta} = Builder.like(user, post.object)
-      {:ok, like, _meta} = ActivityPub.persist(like_data, [])
+      {:ok, like, _meta} = ActivityPub.persist(like_data, [local: true])
 
       %{like: like, user: user}
     end
