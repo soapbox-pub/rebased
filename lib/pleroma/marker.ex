@@ -51,19 +51,7 @@ defmodule Pleroma.Marker do
   def multi_set_unread_count(multi, %User{} = user, "notifications") do
     multi
     |> Multi.run(:counters, fn _repo, _changes ->
-      query =
-        from(q in Pleroma.Notification,
-          where: q.user_id == ^user.id,
-          select: %{
-            timeline: "notifications",
-            user_id: type(^user.id, :string),
-            unread_count: fragment("SUM( CASE WHEN seen = false THEN 1 ELSE 0 END )"),
-            last_read_id:
-              type(fragment("MAX( CASE WHEN seen = true THEN id ELSE null END )"), :string)
-          }
-        )
-
-      {:ok, Repo.one(query)}
+      {:ok, Repo.one(Pleroma.Notification.notifications_info_query(user))}
     end)
     |> Multi.insert(
       :marker,

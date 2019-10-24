@@ -21,6 +21,12 @@ defmodule Pleroma.MarkerTest do
                  "notifications"
                )
     end
+
+    test "return empty multi" do
+      user = insert(:user)
+      multi = Ecto.Multi.new()
+      assert Marker.multi_set_unread_count(multi, user, "home") == multi
+    end
   end
 
   describe "get_markers/2" do
