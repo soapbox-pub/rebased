@@ -68,7 +68,7 @@ defmodule Pleroma.UserTest do
 
   test "returns all pending follow requests" do
     unlocked = insert(:user)
-    locked = insert(:user, %{info: %{locked: true}})
+    locked = insert(:user, locked: true)
     follower = insert(:user)
 
     CommonAPI.follow(follower, unlocked)
@@ -81,7 +81,7 @@ defmodule Pleroma.UserTest do
   end
 
   test "doesn't return already accepted or duplicate follow requests" do
-    locked = insert(:user, %{info: %{locked: true}})
+    locked = insert(:user, locked: true)
     pending_follower = insert(:user)
     accepted_follower = insert(:user)
 
@@ -95,7 +95,7 @@ defmodule Pleroma.UserTest do
   end
 
   test "clears follow requests when requester is blocked" do
-    followed = insert(:user, %{info: %{locked: true}})
+    followed = insert(:user, locked: true)
     follower = insert(:user)
 
     CommonAPI.follow(follower, followed)
@@ -151,14 +151,14 @@ defmodule Pleroma.UserTest do
     user = User.get_cached_by_id(user.id)
 
     followed = User.get_cached_by_ap_id(followed.ap_id)
-    assert followed.info.follower_count == 1
+    assert followed.follower_count == 1
 
     assert User.ap_followers(followed) in user.following
   end
 
   test "can't follow a deactivated users" do
     user = insert(:user)
-    followed = insert(:user, info: %{deactivated: true})
+    followed = insert(:user, %{deactivated: true})
 
     {:error, _} = User.follow(user, followed)
   end
@@ -182,8 +182,8 @@ defmodule Pleroma.UserTest do
   end
 
   test "local users do not automatically follow local locked accounts" do
-    follower = insert(:user, info: %{locked: true})
-    followed = insert(:user, info: %{locked: true})
+    follower = insert(:user, locked: true)
+    followed = insert(:user, locked: true)
 
     {:ok, follower} = User.maybe_direct_follow(follower, followed)
 
@@ -383,8 +383,8 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = Repo.insert(changeset)
 
-      assert user.info.confirmation_pending
-      assert user.info.confirmation_token
+      assert user.confirmation_pending
+      assert user.confirmation_token
     end
 
     test "it creates confirmed user if :confirmed option is given" do
@@ -393,8 +393,8 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = Repo.insert(changeset)
 
-      refute user.info.confirmation_pending
-      refute user.info.confirmation_token
+      refute user.confirmation_pending
+      refute user.confirmation_token
     end
   end
 
@@ -483,7 +483,8 @@ defmodule Pleroma.UserTest do
       assert orig_user.last_refreshed_at == a_week_ago
 
       {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
-      assert user.info.source_data["endpoints"]
+
+      assert user.source_data["endpoints"]
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
     end
@@ -589,63 +590,63 @@ defmodule Pleroma.UserTest do
   end
 
   describe "updating note and follower count" do
-    test "it sets the info->note_count property" do
+    test "it sets the note_count property" do
       note = insert(:note)
 
       user = User.get_cached_by_ap_id(note.data["actor"])
 
-      assert user.info.note_count == 0
+      assert user.note_count == 0
 
       {:ok, user} = User.update_note_count(user)
 
-      assert user.info.note_count == 1
+      assert user.note_count == 1
     end
 
-    test "it increases the info->note_count property" do
+    test "it increases the note_count property" do
       note = insert(:note)
       user = User.get_cached_by_ap_id(note.data["actor"])
 
-      assert user.info.note_count == 0
+      assert user.note_count == 0
 
       {:ok, user} = User.increase_note_count(user)
 
-      assert user.info.note_count == 1
+      assert user.note_count == 1
 
       {:ok, user} = User.increase_note_count(user)
 
-      assert user.info.note_count == 2
+      assert user.note_count == 2
     end
 
-    test "it decreases the info->note_count property" do
+    test "it decreases the note_count property" do
       note = insert(:note)
       user = User.get_cached_by_ap_id(note.data["actor"])
 
-      assert user.info.note_count == 0
+      assert user.note_count == 0
 
       {:ok, user} = User.increase_note_count(user)
 
-      assert user.info.note_count == 1
+      assert user.note_count == 1
 
       {:ok, user} = User.decrease_note_count(user)
 
-      assert user.info.note_count == 0
+      assert user.note_count == 0
 
       {:ok, user} = User.decrease_note_count(user)
 
-      assert user.info.note_count == 0
+      assert user.note_count == 0
     end
 
-    test "it sets the info->follower_count property" do
+    test "it sets the follower_count property" do
       user = insert(:user)
       follower = insert(:user)
 
       User.follow(follower, user)
 
-      assert user.info.follower_count == 0
+      assert user.follower_count == 0
 
       {:ok, user} = User.update_follower_count(user)
 
-      assert user.info.follower_count == 1
+      assert user.follower_count == 1
     end
   end
 
@@ -936,14 +937,14 @@ defmodule Pleroma.UserTest do
   describe ".deactivate" do
     test "can de-activate then re-activate a user" do
       user = insert(:user)
-      assert false == user.info.deactivated
+      assert false == user.deactivated
       {:ok, user} = User.deactivate(user)
-      assert true == user.info.deactivated
+      assert true == user.deactivated
       {:ok, user} = User.deactivate(user, false)
-      assert false == user.info.deactivated
+      assert false == user.deactivated
     end
 
-    test "hide a user from followers " do
+    test "hide a user from followers" do
       user = insert(:user)
       user2 = insert(:user)
 
@@ -1019,7 +1020,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it deletes deactivated user" do
-      {:ok, user} = insert(:user, info: %{deactivated: true}) |> User.set_cache()
+      {:ok, user} = insert(:user, deactivated: true) |> User.set_cache()
 
       {:ok, job} = User.delete(user)
       {:ok, _user} = ObanHelpers.perform(job)
@@ -1110,11 +1111,9 @@ defmodule Pleroma.UserTest do
         ap_id: user.ap_id,
         name: user.name,
         nickname: user.nickname,
-        info: %{
-          fields: [
-            %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
-          ]
-        }
+        fields: [
+          %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
+        ]
       }
 
       assert {:ok, %User{}} = User.insert_or_update_user(data)
@@ -1158,7 +1157,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "html_filter_policy returns TwitterText scrubber when rich-text is disabled" do
-      user = insert(:user, %{info: %{no_rich_text: true}})
+      user = insert(:user, no_rich_text: true)
 
       assert Pleroma.HTML.Scrubber.TwitterText == User.html_filter_policy(user)
     end
@@ -1195,8 +1194,8 @@ defmodule Pleroma.UserTest do
   test "auth_active?/1 works correctly" do
     Pleroma.Config.put([:instance, :account_activation_required], true)
 
-    local_user = insert(:user, local: true, info: %{confirmation_pending: true})
-    confirmed_user = insert(:user, local: true, info: %{confirmation_pending: false})
+    local_user = insert(:user, local: true, confirmation_pending: true)
+    confirmed_user = insert(:user, local: true, confirmation_pending: false)
     remote_user = insert(:user, local: false)
 
     refute User.auth_active?(local_user)
@@ -1213,20 +1212,20 @@ defmodule Pleroma.UserTest do
 
     test "returns false for remote users" do
       user = insert(:user, local: false)
-      remote_admin_user = insert(:user, local: false, info: %{is_admin: true})
+      remote_admin_user = insert(:user, local: false, is_admin: true)
 
       refute User.superuser?(user)
       refute User.superuser?(remote_admin_user)
     end
 
     test "returns true for local moderators" do
-      user = insert(:user, local: true, info: %{is_moderator: true})
+      user = insert(:user, local: true, is_moderator: true)
 
       assert User.superuser?(user)
     end
 
     test "returns true for local admins" do
-      user = insert(:user, local: true, info: %{is_admin: true})
+      user = insert(:user, local: true, is_admin: true)
 
       assert User.superuser?(user)
     end
@@ -1234,7 +1233,7 @@ defmodule Pleroma.UserTest do
 
   describe "invisible?/1" do
     test "returns true for an invisible user" do
-      user = insert(:user, local: true, info: %{invisible: true})
+      user = insert(:user, local: true, invisible: true)
 
       assert User.invisible?(user)
     end
@@ -1256,14 +1255,14 @@ defmodule Pleroma.UserTest do
     test "returns false when the account is unauthenticated and auth is required" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
-      user = insert(:user, local: true, info: %{confirmation_pending: true})
+      user = insert(:user, local: true, confirmation_pending: true)
       other_user = insert(:user, local: true)
 
       refute User.visible_for?(user, other_user)
     end
 
     test "returns true when the account is unauthenticated and auth is not required" do
-      user = insert(:user, local: true, info: %{confirmation_pending: true})
+      user = insert(:user, local: true, confirmation_pending: true)
       other_user = insert(:user, local: true)
 
       assert User.visible_for?(user, other_user)
@@ -1272,8 +1271,8 @@ defmodule Pleroma.UserTest do
     test "returns true when the account is unauthenticated and being viewed by a privileged account (auth required)" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
-      user = insert(:user, local: true, info: %{confirmation_pending: true})
-      other_user = insert(:user, local: true, info: %{is_admin: true})
+      user = insert(:user, local: true, confirmation_pending: true)
+      other_user = insert(:user, local: true, is_admin: true)
 
       assert User.visible_for?(user, other_user)
     end
@@ -1339,7 +1338,7 @@ defmodule Pleroma.UserTest do
 
       users =
         Enum.map(1..total, fn _ ->
-          insert(:user, last_digest_emailed_at: days_ago(20), info: %{deactivated: false})
+          insert(:user, last_digest_emailed_at: days_ago(20), deactivated: false)
         end)
 
       inactive_users_ids =
@@ -1357,7 +1356,7 @@ defmodule Pleroma.UserTest do
 
       users =
         Enum.map(1..total, fn _ ->
-          insert(:user, last_digest_emailed_at: days_ago(20), info: %{deactivated: false})
+          insert(:user, last_digest_emailed_at: days_ago(20), deactivated: false)
         end)
 
       {inactive, active} = Enum.split(users, trunc(total / 2))
@@ -1390,7 +1389,7 @@ defmodule Pleroma.UserTest do
 
       users =
         Enum.map(1..total, fn _ ->
-          insert(:user, last_digest_emailed_at: days_ago(20), info: %{deactivated: false})
+          insert(:user, last_digest_emailed_at: days_ago(20), deactivated: false)
         end)
 
       [sender | recipients] = users
@@ -1430,19 +1429,19 @@ defmodule Pleroma.UserTest do
 
   describe "toggle_confirmation/1" do
     test "if user is confirmed" do
-      user = insert(:user, info: %{confirmation_pending: false})
+      user = insert(:user, confirmation_pending: false)
       {:ok, user} = User.toggle_confirmation(user)
 
-      assert user.info.confirmation_pending
-      assert user.info.confirmation_token
+      assert user.confirmation_pending
+      assert user.confirmation_token
     end
 
     test "if user is unconfirmed" do
-      user = insert(:user, info: %{confirmation_pending: true, confirmation_token: "some token"})
+      user = insert(:user, confirmation_pending: true, confirmation_token: "some token")
       {:ok, user} = User.toggle_confirmation(user)
 
-      refute user.info.confirmation_pending
-      refute user.info.confirmation_token
+      refute user.confirmation_pending
+      refute user.confirmation_token
     end
   end
 
@@ -1478,7 +1477,7 @@ defmodule Pleroma.UserTest do
       user1 = insert(:user, local: false, ap_id: "http://localhost:4001/users/masto_closed")
       user2 = insert(:user, local: false, ap_id: "http://localhost:4001/users/fuser2")
       insert(:user, local: true)
-      insert(:user, local: false, info: %{deactivated: true})
+      insert(:user, local: false, deactivated: true)
       {:ok, user1: user1, user2: user2}
     end
 
@@ -1597,7 +1596,7 @@ defmodule Pleroma.UserTest do
           local: false,
           follower_address: "http://localhost:4001/users/masto_closed/followers",
           following_address: "http://localhost:4001/users/masto_closed/following",
-          info: %{ap_enabled: true}
+          ap_enabled: true
         )
 
       assert User.user_info(other_user).following_count == 0
@@ -1620,7 +1619,7 @@ defmodule Pleroma.UserTest do
           local: false,
           follower_address: "http://localhost:4001/users/masto_closed/followers",
           following_address: "http://localhost:4001/users/masto_closed/following",
-          info: %{ap_enabled: true}
+          ap_enabled: true
         )
 
       assert User.user_info(other_user).following_count == 0
@@ -1643,7 +1642,7 @@ defmodule Pleroma.UserTest do
           local: false,
           follower_address: "http://localhost:4001/users/masto_closed/followers",
           following_address: "http://localhost:4001/users/masto_closed/following",
-          info: %{ap_enabled: true}
+          ap_enabled: true
         )
 
       assert User.user_info(other_user).following_count == 0
@@ -1681,41 +1680,6 @@ defmodule Pleroma.UserTest do
     test "changes email", %{user: user} do
       assert {:ok, %User{email: "cofe@cofe.party"}} = User.change_email(user, "cofe@cofe.party")
     end
-  end
-
-  describe "set_password_reset_pending/2" do
-    setup do
-      [user: insert(:user)]
-    end
-
-    test "sets password_reset_pending to true", %{user: user} do
-      %{password_reset_pending: password_reset_pending} = user.info
-
-      refute password_reset_pending
-
-      {:ok, %{info: %{password_reset_pending: password_reset_pending}}} =
-        User.force_password_reset(user)
-
-      assert password_reset_pending
-    end
-  end
-
-  test "change_info/2" do
-    user = insert(:user)
-    assert user.info.hide_follows == false
-
-    changeset = User.change_info(user, &User.Info.profile_update(&1, %{hide_follows: true}))
-    assert changeset.changes.info.changes.hide_follows == true
-  end
-
-  test "update_info/2" do
-    user = insert(:user)
-    assert user.info.hide_follows == false
-
-    assert {:ok, _} = User.update_info(user, &User.Info.profile_update(&1, %{hide_follows: true}))
-
-    assert %{info: %{hide_follows: true}} = Repo.get(User, user.id)
-    assert {:ok, %{info: %{hide_follows: true}}} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
   end
 
   describe "get_cached_by_nickname_or_id" do
@@ -1772,6 +1736,20 @@ defmodule Pleroma.UserTest do
 
       Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
       assert %User{} = User.get_cached_by_nickname_or_id(local_user.nickname)
+    end
+  end
+
+  describe "update_email_notifications/2" do
+    setup do
+      user = insert(:user, email_notifications: %{"digest" => true})
+
+      {:ok, user: user}
+    end
+
+    test "Notifications are updated", %{user: user} do
+      true = user.email_notifications["digest"]
+      assert {:ok, result} = User.update_email_notifications(user, %{"digest" => false})
+      assert result.email_notifications["digest"] == false
     end
   end
 end

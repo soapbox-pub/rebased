@@ -79,8 +79,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     emoji_tags = Transmogrifier.take_emoji_tags(user)
 
     fields =
-      user.info
-      |> User.Info.fields()
+      user
+      |> User.fields()
       |> Enum.map(fn %{"name" => name, "value" => value} ->
         %{
           "name" => Pleroma.HTML.strip_tags(name),
@@ -100,7 +100,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "name" => user.name,
       "summary" => user.bio,
       "url" => user.ap_id,
-      "manuallyApprovesFollowers" => user.info.locked,
+      "manuallyApprovesFollowers" => user.locked,
       "publicKey" => %{
         "id" => "#{user.ap_id}#main-key",
         "owner" => user.ap_id,
@@ -108,8 +108,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       },
       "endpoints" => endpoints,
       "attachment" => fields,
-      "tag" => (user.info.source_data["tag"] || []) ++ emoji_tags,
-      "discoverable" => user.info.discoverable
+      "tag" => (user.source_data["tag"] || []) ++ emoji_tags,
+      "discoverable" => user.discoverable
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))
@@ -117,8 +117,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("following.json", %{user: user, page: page} = opts) do
-    showing_items = (opts[:for] && opts[:for] == user) || !user.info.hide_follows
-    showing_count = showing_items || !user.info.hide_follows_count
+    showing_items = (opts[:for] && opts[:for] == user) || !user.hide_follows
+    showing_count = showing_items || !user.hide_follows_count
 
     query = User.get_friends_query(user)
     query = from(user in query, select: [:ap_id])
@@ -136,8 +136,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("following.json", %{user: user} = opts) do
-    showing_items = (opts[:for] && opts[:for] == user) || !user.info.hide_follows
-    showing_count = showing_items || !user.info.hide_follows_count
+    showing_items = (opts[:for] && opts[:for] == user) || !user.hide_follows
+    showing_count = showing_items || !user.hide_follows_count
 
     query = User.get_friends_query(user)
     query = from(user in query, select: [:ap_id])
@@ -156,7 +156,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "totalItems" => total,
       "first" =>
         if showing_items do
-          collection(following, "#{user.ap_id}/following", 1, !user.info.hide_follows)
+          collection(following, "#{user.ap_id}/following", 1, !user.hide_follows)
         else
           "#{user.ap_id}/following?page=1"
         end
@@ -165,8 +165,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("followers.json", %{user: user, page: page} = opts) do
-    showing_items = (opts[:for] && opts[:for] == user) || !user.info.hide_followers
-    showing_count = showing_items || !user.info.hide_followers_count
+    showing_items = (opts[:for] && opts[:for] == user) || !user.hide_followers
+    showing_count = showing_items || !user.hide_followers_count
 
     query = User.get_followers_query(user)
     query = from(user in query, select: [:ap_id])
@@ -184,8 +184,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("followers.json", %{user: user} = opts) do
-    showing_items = (opts[:for] && opts[:for] == user) || !user.info.hide_followers
-    showing_count = showing_items || !user.info.hide_followers_count
+    showing_items = (opts[:for] && opts[:for] == user) || !user.hide_followers
+    showing_count = showing_items || !user.hide_followers_count
 
     query = User.get_followers_query(user)
     query = from(user in query, select: [:ap_id])

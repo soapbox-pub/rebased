@@ -558,8 +558,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "when you're an admin or moderator", %{conn: conn} do
       activity1 = insert(:note_activity)
       activity2 = insert(:note_activity)
-      admin = insert(:user, info: %{is_admin: true})
-      moderator = insert(:user, info: %{is_moderator: true})
+      admin = insert(:user, is_admin: true)
+      moderator = insert(:user, is_moderator: true)
 
       res_conn =
         conn

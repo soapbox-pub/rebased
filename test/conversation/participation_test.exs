@@ -36,8 +36,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
     [%{read: true}] = Participation.for_user(user)
     [%{read: false} = participation] = Participation.for_user(other_user)
 
-    assert User.get_cached_by_id(user.id).info.unread_conversation_count == 0
-    assert User.get_cached_by_id(other_user.id).info.unread_conversation_count == 1
+    assert User.get_cached_by_id(user.id).unread_conversation_count == 0
+    assert User.get_cached_by_id(other_user.id).unread_conversation_count == 1
 
     {:ok, _} =
       CommonAPI.post(other_user, %{
@@ -52,8 +52,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
     [%{read: false}] = Participation.for_user(user)
     [%{read: true}] = Participation.for_user(other_user)
 
-    assert User.get_cached_by_id(user.id).info.unread_conversation_count == 1
-    assert User.get_cached_by_id(other_user.id).info.unread_conversation_count == 0
+    assert User.get_cached_by_id(user.id).unread_conversation_count == 1
+    assert User.get_cached_by_id(other_user.id).unread_conversation_count == 0
   end
 
   test "for a new conversation, it sets the recipents of the participation" do

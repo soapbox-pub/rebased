@@ -72,7 +72,7 @@ defmodule Pleroma.Emails.UserEmail do
         Endpoint,
         :confirm_email,
         user.id,
-        to_string(user.info.confirmation_token)
+        to_string(user.confirmation_token)
       )
 
     html_body = """

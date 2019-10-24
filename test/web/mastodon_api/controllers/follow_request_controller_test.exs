@@ -12,7 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
 
   describe "locked accounts" do
     test "/api/v1/follow_requests works" do
-      user = insert(:user, %{info: %User.Info{locked: true}})
+      user = insert(:user, locked: true)
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
@@ -32,7 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
     end
 
     test "/api/v1/follow_requests/:id/authorize works" do
-      user = insert(:user, %{info: %User.Info{locked: true}})
+      user = insert(:user, locked: true)
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
     end
 
     test "/api/v1/follow_requests/:id/reject works" do
-      user = insert(:user, %{info: %User.Info{locked: true}})
+      user = insert(:user, locked: true)
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)

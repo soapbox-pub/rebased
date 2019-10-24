@@ -42,7 +42,7 @@ defmodule Pleroma.Web.MastoFEController do
 
   @doc "PUT /api/web/settings"
   def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
-    with {:ok, _} <- User.update_info(user, &User.Info.mastodon_settings_update(&1, settings)) do
+    with {:ok, _} <- User.mastodon_settings_update(user, settings) do
       json(conn, %{})
     else
       e ->

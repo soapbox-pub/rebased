@@ -6,7 +6,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Config
-  alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -20,10 +19,10 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
     setup do
       {:ok, user} =
         insert(:user)
-        |> User.change_info(&User.Info.confirmation_changeset(&1, need_confirmation: true))
-        |> Repo.update()
+        |> User.confirmation_changeset(need_confirmation: true)
+        |> User.update_and_set_cache()
 
-      assert user.info.confirmation_pending
+      assert user.confirmation_pending
 
       [user: user]
     end
@@ -105,7 +104,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
         |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => @image})
 
       user = refresh_record(user)
-      assert user.info.banner["type"] == "Image"
+      assert user.banner["type"] == "Image"
 
       assert %{"url" => _} = json_response(conn, 200)
     end
@@ -119,7 +118,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
         |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => ""})
 
       user = refresh_record(user)
-      assert user.info.banner == %{}
+      assert user.banner == %{}
 
       assert %{"url" => nil} = json_response(conn, 200)
     end
@@ -135,7 +134,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
         |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => @image})
 
       user = refresh_record(user)
-      assert user.info.background["type"] == "Image"
+      assert user.background["type"] == "Image"
       assert %{"url" => _} = json_response(conn, 200)
     end
 
@@ -148,14 +147,14 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
         |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => ""})
 
       user = refresh_record(user)
-      assert user.info.background == %{}
+      assert user.background == %{}
       assert %{"url" => nil} = json_response(conn, 200)
     end
   end
 
   describe "getting favorites timeline of specified user" do
     setup do
-      [current_user, user] = insert_pair(:user, %{info: %{hide_favorites: false}})
+      [current_user, user] = insert_pair(:user, hide_favorites: false)
       [current_user: current_user, user: user]
     end
 
@@ -319,7 +318,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       conn: conn,
       current_user: current_user
     } do
-      user = insert(:user, %{info: %{hide_favorites: true}})
+      user = insert(:user, hide_favorites: true)
       activity = insert(:note_activity)
       CommonAPI.favorite(activity.id, user)
 
@@ -341,7 +340,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
         |> assign(:user, current_user)
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
 
-      assert user.info.hide_favorites
+      assert user.hide_favorites
       assert json_response(conn, 403) == %{"error" => "Can't get favorites"}
     end
   end

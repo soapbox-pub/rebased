@@ -37,6 +37,6 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlugTest do
       %{conn | params: %{"admin_token" => "password123"}}
       |> AdminSecretAuthenticationPlug.call(%{})
 
-    assert conn.assigns[:user].info.is_admin
+    assert conn.assigns[:user].is_admin
   end
 end

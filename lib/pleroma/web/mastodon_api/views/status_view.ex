@@ -498,6 +498,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp present?(false), do: false
   defp present?(_), do: true
 
-  defp pinned?(%Activity{id: id}, %User{info: %{pinned_activities: pinned_activities}}),
+  defp pinned?(%Activity{id: id}, %User{pinned_activities: pinned_activities}),
     do: id in pinned_activities
 end
