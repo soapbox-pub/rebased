@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp check_actor_is_active(actor) do
     if not is_nil(actor) do
       with user <- User.get_cached_by_ap_id(actor),
-           false <- user.info.deactivated do
+           false <- user.deactivated do
         true
       else
         _e -> false
@@ -248,8 +248,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          _ <- increase_replies_count_if_reply(create_data),
          _ <- increase_poll_votes_if_vote(create_data),
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
-         # Changing note count prior to enqueuing federation task in order to avoid
-         # race conditions on updating user.info
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
@@ -445,8 +443,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(data, local, false),
          stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
-         # Changing note count prior to enqueuing federation task in order to avoid
-         # race conditions on updating user.info
          {:ok, _actor} <- decrease_note_count_if_public(user, object),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
@@ -662,7 +658,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_thread_visibility(
          query,
-         %{"user" => %User{info: %{skip_thread_containment: true}}},
+         %{"user" => %User{skip_thread_containment: true}},
          _
        ),
        do: query
@@ -700,7 +696,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put("user", reading_user)
       |> Map.put("actor_id", user.ap_id)
       |> Map.put("whole_db", true)
-      |> Map.put("pinned_activity_ids", user.info.pinned_activities)
+      |> Map.put("pinned_activity_ids", user.pinned_activities)
 
     recipients =
       user_activities_recipients(%{
@@ -861,8 +857,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted(query, %{"with_muted" => val}) when val in [true, "true", "1"], do: query
 
-  defp restrict_muted(query, %{"muting_user" => %User{info: info}} = opts) do
-    mutes = info.mutes
+  defp restrict_muted(query, %{"muting_user" => %User{} = user} = opts) do
+    mutes = user.mutes
 
     query =
       from([activity] in query,
@@ -879,9 +875,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted(query, _), do: query
 
-  defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
-    blocks = info.blocks || []
-    domain_blocks = info.domain_blocks || []
+  defp restrict_blocked(query, %{"blocking_user" => %User{} = user}) do
+    blocks = user.blocks || []
+    domain_blocks = user.domain_blocks || []
 
     query =
       if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
@@ -922,8 +918,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_pinned(query, _), do: query
 
-  defp restrict_muted_reblogs(query, %{"muting_user" => %User{info: info}}) do
-    muted_reblogs = info.muted_reblogs || []
+  defp restrict_muted_reblogs(query, %{"muting_user" => %User{} = user}) do
+    muted_reblogs = user.muted_reblogs || []
 
     from(
       activity in query,
@@ -1108,17 +1104,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
+    invisible = data["invisible"] || false
 
     user_data = %{
       ap_id: data["id"],
-      info: %{
-        ap_enabled: true,
-        source_data: data,
-        banner: banner,
-        fields: fields,
-        locked: locked,
-        discoverable: discoverable
-      },
+      ap_enabled: true,
+      source_data: data,
+      banner: banner,
+      fields: fields,
+      locked: locked,
+      discoverable: discoverable,
+      invisible: invisible,
       avatar: avatar,
       name: data["name"],
       follower_address: data["followers"],
@@ -1170,7 +1166,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:enabled, true} <-
            {:enabled, Pleroma.Config.get([:instance, :external_user_synchronization])},
          {:ok, info} <- fetch_follow_information_for_user(data) do
-      info = Map.merge(data.info, info)
+      info = Map.merge(data[:info] || %{}, info)
       Map.put(data, :info, info)
     else
       {:enabled, false} ->

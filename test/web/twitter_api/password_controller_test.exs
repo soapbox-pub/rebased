@@ -59,7 +59,7 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
     end
 
     test "it sets password_reset_pending to false", %{conn: conn} do
-      user = insert(:user, info: %{password_reset_pending: true})
+      user = insert(:user, password_reset_pending: true)
 
       {:ok, token} = PasswordResetToken.create_token(user)
       {:ok, _access_token} = Token.create_token(insert(:oauth_app), user, %{})
@@ -75,7 +75,7 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
       |> post("/api/pleroma/password_reset", %{data: params})
       |> html_response(:ok)
 
-      assert User.get_by_id(user.id).info.password_reset_pending == false
+      assert User.get_by_id(user.id).password_reset_pending == false
     end
   end
 end

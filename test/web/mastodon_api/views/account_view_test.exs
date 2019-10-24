@@ -26,12 +26,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     user =
       insert(:user, %{
-        info: %{
-          note_count: 5,
-          follower_count: 3,
-          source_data: source_data,
-          background: background_image
-        },
+        follower_count: 3,
+        note_count: 5,
+        source_data: source_data,
+        background: background_image,
         nickname: "shp@shitposter.club",
         name: ":karjalanpiirakka: shp",
         bio: "<script src=\"invalid-html\"></script><span>valid html</span>",
@@ -101,7 +99,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       "non_followers" => true
     }
 
-    privacy = user.info.default_scope
+    privacy = user.default_scope
 
     assert %{
              pleroma: %{notification_settings: ^notification_settings},
@@ -112,7 +110,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   test "Represent a Service(bot) account" do
     user =
       insert(:user, %{
-        info: %{note_count: 5, follower_count: 3, source_data: %{"type" => "Service"}},
+        follower_count: 3,
+        note_count: 5,
+        source_data: %{"type" => "Service"},
         nickname: "shp@shitposter.club",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
       })
@@ -164,8 +164,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   end
 
   test "Represent a deactivated user for an admin" do
-    admin = insert(:user, %{info: %{is_admin: true}})
-    deactivated_user = insert(:user, %{info: %{deactivated: true}})
+    admin = insert(:user, is_admin: true)
+    deactivated_user = insert(:user, deactivated: true)
     represented = AccountView.render("show.json", %{user: deactivated_user, for: admin})
     assert represented[:pleroma][:deactivated] == true
   end
@@ -253,7 +253,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     test "represent a relationship for the user with a pending follow request" do
       user = insert(:user)
-      other_user = insert(:user, %{info: %User.Info{locked: true}})
+      other_user = insert(:user, locked: true)
 
       {:ok, user, other_user, _} = CommonAPI.follow(user, other_user)
       user = User.get_cached_by_id(user.id)
@@ -282,7 +282,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   test "represent an embedded relationship" do
     user =
       insert(:user, %{
-        info: %{note_count: 5, follower_count: 0, source_data: %{"type" => "Service"}},
+        follower_count: 0,
+        note_count: 5,
+        source_data: %{"type" => "Service"},
         nickname: "shp@shitposter.club",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
       })
@@ -352,7 +354,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   end
 
   test "returns the settings store if the requesting user is the represented user and it's requested specifically" do
-    user = insert(:user, %{info: %User.Info{pleroma_settings_store: %{fe: "test"}}})
+    user = insert(:user, pleroma_settings_store: %{fe: "test"})
 
     result =
       AccountView.render("show.json", %{user: user, for: user, with_pleroma_settings: true})
@@ -374,14 +376,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
   describe "hiding follows/following" do
     test "shows when follows/followers stats are hidden and sets follow/follower count to 0" do
-      info = %{
-        hide_followers: true,
-        hide_followers_count: true,
-        hide_follows: true,
-        hide_follows_count: true
-      }
-
-      user = insert(:user, info: info)
+      user =
+        insert(:user, %{
+          hide_followers: true,
+          hide_followers_count: true,
+          hide_follows: true,
+          hide_follows_count: true
+        })
 
       other_user = insert(:user)
       {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
@@ -395,7 +396,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
 
     test "shows when follows/followers are hidden" do
-      user = insert(:user, info: %{hide_followers: true, hide_follows: true})
+      user = insert(:user, hide_followers: true, hide_follows: true)
       other_user = insert(:user)
       {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
@@ -408,7 +409,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
 
     test "shows actual follower/following count to the account owner" do
-      user = insert(:user, info: %{hide_followers: true, hide_follows: true})
+      user = insert(:user, hide_followers: true, hide_follows: true)
       other_user = insert(:user)
       {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
@@ -456,7 +457,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
 
     test "shows non-zero when follow requests are pending" do
-      user = insert(:user, %{info: %{locked: true}})
+      user = insert(:user, locked: true)
 
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
@@ -468,7 +469,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
 
     test "decreases when accepting a follow request" do
-      user = insert(:user, %{info: %{locked: true}})
+      user = insert(:user, locked: true)
 
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
@@ -485,7 +486,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
 
     test "decreases when rejecting a follow request" do
-      user = insert(:user, %{info: %{locked: true}})
+      user = insert(:user, locked: true)
 
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
@@ -502,14 +503,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     end
 
     test "shows non-zero when historical unapproved requests are present" do
-      user = insert(:user, %{info: %{locked: true}})
+      user = insert(:user, locked: true)
 
       assert %{locked: true} = AccountView.render("show.json", %{user: user, for: user})
 
       other_user = insert(:user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
-      {:ok, user} = User.update_info(user, &User.Info.user_upgrade(&1, %{locked: false}))
+      {:ok, user} = User.update_and_set_cache(user, %{locked: false})
 
       assert %{locked: false, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})

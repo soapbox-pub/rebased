@@ -10,8 +10,12 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   require Logger
 
   def get_actor do
-    "#{Pleroma.Web.Endpoint.url()}/relay"
-    |> User.get_or_create_service_actor_by_ap_id()
+    actor =
+      "#{Pleroma.Web.Endpoint.url()}/relay"
+      |> User.get_or_create_service_actor_by_ap_id()
+
+    {:ok, actor} = User.set_invisible(actor, true)
+    actor
   end
 
   @spec follow(String.t()) :: {:ok, Activity.t()} | {:error, any()}

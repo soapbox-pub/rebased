@@ -297,7 +297,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
   describe "update_follow_state_for_all/2" do
     test "updates the state of all Follow activities with the same actor and object" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
       follower = insert(:user)
 
       {:ok, follow_activity} = ActivityPub.follow(follower, user)
@@ -321,7 +321,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
   describe "update_follow_state/2" do
     test "updates the state of the given follow activity" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
       follower = insert(:user)
 
       {:ok, follow_activity} = ActivityPub.follow(follower, user)

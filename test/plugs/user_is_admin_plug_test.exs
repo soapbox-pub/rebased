@@ -9,7 +9,7 @@ defmodule Pleroma.Plugs.UserIsAdminPlugTest do
   import Pleroma.Factory
 
   test "accepts a user that is admin" do
-    user = insert(:user, info: %{is_admin: true})
+    user = insert(:user, is_admin: true)
 
     conn =
       build_conn()

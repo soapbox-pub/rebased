@@ -51,8 +51,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :tag_users,
            :untag_users,
            :right_add,
-           :right_delete,
-           :set_activation_status
+           :right_delete
          ]
   )
 
@@ -250,9 +249,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def user_toggle_activation(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
     user = User.get_cached_by_nickname(nickname)
 
-    {:ok, updated_user} = User.deactivate(user, !user.info.deactivated)
+    {:ok, updated_user} = User.deactivate(user, !user.deactivated)
 
-    action = if user.info.deactivated, do: "activate", else: "deactivate"
+    action = if user.deactivated, do: "activate", else: "deactivate"
 
     ModerationLog.insert_log(%{
       actor: admin,
@@ -364,11 +363,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         "nicknames" => nicknames
       })
       when permission_group in ["moderator", "admin"] do
-    info = Map.put(%{}, "is_" <> permission_group, true)
+    update = %{:"is_#{permission_group}" => true}
 
     users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
 
-    User.update_info(users, &User.Info.admin_api_update(&1, info))
+    for u <- users, do: User.admin_api_update(u, update)
 
     ModerationLog.insert_log(%{
       action: "grant",
@@ -377,7 +376,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       permission: permission_group
     })
 
-    json(conn, info)
+    json(conn, update)
   end
 
   def right_add_multiple(conn, _) do
@@ -389,12 +388,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         "nickname" => nickname
       })
       when permission_group in ["moderator", "admin"] do
-    info = Map.put(%{}, "is_" <> permission_group, true)
+    fields = %{:"is_#{permission_group}" => true}
 
     {:ok, user} =
       nickname
       |> User.get_cached_by_nickname()
-      |> User.update_info(&User.Info.admin_api_update(&1, info))
+      |> User.admin_api_update(fields)
 
     ModerationLog.insert_log(%{
       action: "grant",
@@ -403,7 +402,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       permission: permission_group
     })
 
-    json(conn, info)
+    json(conn, fields)
   end
 
   def right_add(conn, _) do
@@ -415,8 +414,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> json(%{
-      is_moderator: user.info.is_moderator,
-      is_admin: user.info.is_admin
+      is_moderator: user.is_moderator,
+      is_admin: user.is_admin
     })
   end
 
@@ -429,11 +428,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       )
       when permission_group in ["moderator", "admin"] do
     with false <- Enum.member?(nicknames, admin_nickname) do
-      info = Map.put(%{}, "is_" <> permission_group, false)
+      update = %{:"is_#{permission_group}" => false}
 
       users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
 
-      User.update_info(users, &User.Info.admin_api_update(&1, info))
+      for u <- users, do: User.admin_api_update(u, update)
 
       ModerationLog.insert_log(%{
         action: "revoke",
@@ -442,7 +441,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         permission: permission_group
       })
 
-      json(conn, info)
+      json(conn, update)
     else
       _ -> render_error(conn, :forbidden, "You can't revoke your own admin/moderator status.")
     end
@@ -460,12 +459,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         }
       )
       when permission_group in ["moderator", "admin"] do
-    info = Map.put(%{}, "is_" <> permission_group, false)
+    fields = %{:"is_#{permission_group}" => false}
 
     {:ok, user} =
       nickname
       |> User.get_cached_by_nickname()
-      |> User.update_info(&User.Info.admin_api_update(&1, info))
+      |> User.admin_api_update(fields)
 
     ModerationLog.insert_log(%{
       action: "revoke",
@@ -474,7 +473,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       permission: permission_group
     })
 
-    json(conn, info)
+    json(conn, fields)
   end
 
   def right_delete(%{assigns: %{user: %{nickname: nickname}}} = conn, %{"nickname" => nickname}) do

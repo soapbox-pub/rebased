@@ -51,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: `POST/DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group` are deprecated in favor of: `POST/DELETE /api/pleroma/admin/users/permission_group/:permission_group` (both accept `nicknames` array), `DELETE /api/pleroma/admin/users` (`nickname` query param or `nickname` sent in JSON body) is deprecated in favor of: `DELETE /api/pleroma/admin/users` (`nicknames` query array param or `nicknames` sent in JSON body).
 - Admin API: Add `GET /api/pleroma/admin/relay` endpoint - lists all followed relays
 - Pleroma API: `POST /api/v1/pleroma/conversations/read` to mark all conversations as read
+- Mastodon API: Add `/api/v1/markers` for managing timeline read markers
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
@@ -65,6 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `pleroma.direct_conversation_id` to the status endpoint (`GET /api/v1/statuses/:id`)
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
 </details>
+- Deprecated `User.Info` embedded schema (fields moved to `User`)
 
 ### Fixed
 - Report emails now include functional links to profiles of remote user accounts

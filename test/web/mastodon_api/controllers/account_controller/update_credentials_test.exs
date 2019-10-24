@@ -153,7 +153,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
         |> json_response(200)
 
       assert response["pleroma"]["skip_thread_containment"] == true
-      assert refresh_record(user).info.skip_thread_containment
+      assert refresh_record(user).skip_thread_containment
     end
 
     test "updates the user's hide_follows status", %{conn: conn} do

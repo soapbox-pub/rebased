@@ -20,6 +20,11 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
     assert user.ap_id == "#{Pleroma.Web.Endpoint.url()}/relay"
   end
 
+  test "relay actor is invisible" do
+    user = Relay.get_actor()
+    assert User.invisible?(user)
+  end
+
   describe "follow/1" do
     test "returns errors when user not found" do
       assert capture_log(fn ->

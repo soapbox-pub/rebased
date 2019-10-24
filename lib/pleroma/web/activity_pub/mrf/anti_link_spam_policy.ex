@@ -11,7 +11,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
 
   # has the user successfully posted before?
   defp old_user?(%User{} = u) do
-    u.info.note_count > 0 || u.info.follower_count > 0
+    u.note_count > 0 || u.follower_count > 0
   end
 
   # does the post contain links?

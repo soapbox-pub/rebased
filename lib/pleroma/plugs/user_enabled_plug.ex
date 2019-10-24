@@ -10,7 +10,7 @@ defmodule Pleroma.Plugs.UserEnabledPlug do
     options
   end
 
-  def call(%{assigns: %{user: %User{info: %{deactivated: true}}}} = conn, _) do
+  def call(%{assigns: %{user: %User{deactivated: true}}} = conn, _) do
     conn
     |> assign(:user, nil)
   end
