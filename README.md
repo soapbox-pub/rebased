@@ -71,7 +71,7 @@ This is useful for running Pleroma inside Tor or I2P.
 
 ## Customization and contribution
 
-The [Pleroma Documentation](https://docs-develop.pleroma.social/readme.html) offers manuals and guides on how to further customize your instance to your liking and how you can contribute to the project.
+The [Pleroma Documentation](https://docs-develop.pleroma.social) offers manuals and guides on how to further customize your instance to your liking and how you can contribute to the project.
 
 ## Troubleshooting
 
