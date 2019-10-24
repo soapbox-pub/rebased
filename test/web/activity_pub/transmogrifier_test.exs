@@ -720,7 +720,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert capture_log(fn ->
                :error = Transmogrifier.handle_incoming(data)
              end) =~
-               "[error] Could not decode user at fetch http://mastodon.example.org/users/gargron, {:error, {:error, :nxdomain}}"
+               "[error] Could not decode user at fetch http://mastodon.example.org/users/gargron, {:error, :nxdomain}"
 
       assert Activity.get_by_id(activity.id)
     end
