@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.3] - 2019-10-25
+### Fixed
+- Blocked users showing up in notifications collapsed as if they were muted
+- `pleroma_ctl` not working on Debian's default shell
+
 ## [1.1.2] - 2019-10-18
 ### Fixed
 - `pleroma_ctl` trying to connect to a running instance when generating the config, which of course doesn't exist.
