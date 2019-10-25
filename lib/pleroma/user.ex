@@ -224,54 +224,6 @@ defmodule Pleroma.User do
     |> Repo.aggregate(:count, :id)
   end
 
-  @info_fields [
-    :banner,
-    :background,
-    :source_data,
-    :note_count,
-    :follower_count,
-    :following_count,
-    :locked,
-    :confirmation_pending,
-    :password_reset_pending,
-    :confirmation_token,
-    :default_scope,
-    :blocks,
-    :domain_blocks,
-    :mutes,
-    :muted_reblogs,
-    :muted_notifications,
-    :subscribers,
-    :deactivated,
-    :no_rich_text,
-    :ap_enabled,
-    :is_moderator,
-    :is_admin,
-    :show_role,
-    :settings,
-    :magic_key,
-    :uri,
-    :hide_followers_count,
-    :hide_follows_count,
-    :hide_followers,
-    :hide_follows,
-    :hide_favorites,
-    :unread_conversation_count,
-    :pinned_activities,
-    :email_notifications,
-    :mascot,
-    :emoji,
-    :pleroma_settings_store,
-    :fields,
-    :raw_fields,
-    :discoverable,
-    :invisible,
-    :skip_thread_containment,
-    :notification_settings
-  ]
-
-  def info_fields, do: @info_fields
-
   defp truncate_fields_param(params) do
     if Map.has_key?(params, :fields) do
       Map.put(params, :fields, Enum.map(params[:fields], &truncate_field/1))
