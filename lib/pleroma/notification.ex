@@ -34,41 +34,49 @@ defmodule Pleroma.Notification do
   end
 
   def for_user_query(user, opts \\ []) do
-    query =
-      Notification
-      |> where(user_id: ^user.id)
-      |> where(
-        [n, a],
+    Notification
+    |> where(user_id: ^user.id)
+    |> where(
+      [n, a],
+      fragment(
+        "? not in (SELECT ap_id FROM users WHERE info->'deactivated' @> 'true')",
+        a.actor
+      )
+    )
+    |> join(:inner, [n], activity in assoc(n, :activity))
+    |> join(:left, [n, a], object in Object,
+      on:
         fragment(
-          "? not in (SELECT ap_id FROM users WHERE info->'deactivated' @> 'true')",
-          a.actor
+          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
+          object.data,
+          a.data
         )
-      )
-      |> join(:inner, [n], activity in assoc(n, :activity))
-      |> join(:left, [n, a], object in Object,
-        on:
-          fragment(
-            "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
-            object.data,
-            a.data
-          )
-      )
-      |> preload([n, a, o], activity: {a, object: o})
+    )
+    |> preload([n, a, o], activity: {a, object: o})
+    |> exclude_muted(user, opts)
+    |> exclude_blocked(user)
+  end
 
-    if opts[:with_muted] do
-      query
-    else
-      where(query, [n, a], a.actor not in ^user.info.muted_notifications)
-      |> where([n, a], a.actor not in ^user.info.blocks)
-      |> where(
-        [n, a],
-        fragment("substring(? from '.*://([^/]*)')", a.actor) not in ^user.info.domain_blocks
-      )
-      |> join(:left, [n, a], tm in Pleroma.ThreadMute,
-        on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data)
-      )
-      |> where([n, a, o, tm], is_nil(tm.user_id))
-    end
+  defp exclude_blocked(query, user) do
+    query
+    |> where([n, a], a.actor not in ^user.info.blocks)
+    |> where(
+      [n, a],
+      fragment("substring(? from '.*://([^/]*)')", a.actor) not in ^user.info.domain_blocks
+    )
+  end
+
+  defp exclude_muted(query, _, %{with_muted: true}) do
+    query
+  end
+
+  defp exclude_muted(query, user, _opts) do
+    query
+    |> where([n, a], a.actor not in ^user.info.muted_notifications)
+    |> join(:left, [n, a], tm in Pleroma.ThreadMute,
+      on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data)
+    )
+    |> where([n, a, o, tm], is_nil(tm.user_id))
   end
 
   def for_user(user, opts \\ %{}) do

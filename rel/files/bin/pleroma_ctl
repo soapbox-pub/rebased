@@ -140,11 +140,15 @@ else
 	FULL_ARGS="$*"
 
 	ACTION="$1"
-	shift
-        echo "$1" | grep "^-" >/dev/null
+	if [ $# -gt 0 ]; then
+		shift
+	fi
+	echo "$1" | grep "^-" >/dev/null
 	if [ $? -eq 1 ]; then
 		SUBACTION="$1"
-		shift
+		if [ $# -gt 0 ]; then
+			shift
+		fi
 	fi
 
 	if [ "$ACTION" = "update" ]; then
