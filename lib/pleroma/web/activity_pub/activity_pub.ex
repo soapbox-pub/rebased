@@ -1117,7 +1117,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       name: data["name"],
       follower_address: data["followers"],
       following_address: data["following"],
-      bio: data["summary"]
+      bio: data["summary"],
+      also_known_as: Map.get(data, "alsoKnownAs", [])
     }
 
     # nickname can be nil because of virtual actors

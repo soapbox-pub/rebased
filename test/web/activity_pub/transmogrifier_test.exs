@@ -592,6 +592,37 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.bio == "<p>Some bio</p>"
     end
 
+    test "it works with alsoKnownAs" do
+      {:ok, %Activity{data: %{"actor" => actor}}} =
+        "test/fixtures/mastodon-post-activity.json"
+        |> File.read!()
+        |> Poison.decode!()
+        |> Transmogrifier.handle_incoming()
+
+      assert User.get_cached_by_ap_id(actor).also_known_as == ["http://example.org/users/foo"]
+
+      {:ok, _activity} =
+        "test/fixtures/mastodon-update.json"
+        |> File.read!()
+        |> Poison.decode!()
+        |> Map.put("actor", actor)
+        |> Map.update!("object", fn object ->
+          object
+          |> Map.put("actor", actor)
+          |> Map.put("id", actor)
+          |> Map.put("alsoKnownAs", [
+            "http://mastodon.example.org/users/foo",
+            "http://example.org/users/bar"
+          ])
+        end)
+        |> Transmogrifier.handle_incoming()
+
+      assert User.get_cached_by_ap_id(actor).also_known_as == [
+               "http://mastodon.example.org/users/foo",
+               "http://example.org/users/bar"
+             ]
+    end
+
     test "it works with custom profile fields" do
       {:ok, activity} =
         "test/fixtures/mastodon-post-activity.json"

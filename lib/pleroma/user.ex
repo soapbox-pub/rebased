@@ -105,6 +105,7 @@ defmodule Pleroma.User do
     field(:discoverable, :boolean, default: false)
     field(:invisible, :boolean, default: false)
     field(:skip_thread_containment, :boolean, default: false)
+    field(:also_known_as, {:array, :string}, default: [])
 
     field(:notification_settings, :map,
       default: %{
@@ -324,7 +325,8 @@ defmodule Pleroma.User do
           :fields,
           :following_count,
           :discoverable,
-          :invisible
+          :invisible,
+          :also_known_as
         ]
       )
       |> validate_required([:name, :ap_id])
@@ -373,7 +375,8 @@ defmodule Pleroma.User do
         :fields,
         :raw_fields,
         :pleroma_settings_store,
-        :discoverable
+        :discoverable,
+        :also_known_as
       ]
     )
     |> unique_constraint(:nickname)
@@ -413,7 +416,8 @@ defmodule Pleroma.User do
         :hide_followers,
         :discoverable,
         :hide_followers_count,
-        :hide_follows_count
+        :hide_follows_count,
+        :also_known_as
       ]
     )
     |> unique_constraint(:nickname)

@@ -616,7 +616,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
       update_data =
         new_user_data
-        |> Map.take([:avatar, :banner, :bio, :name])
+        |> Map.take([:avatar, :banner, :bio, :name, :also_known_as])
         |> Map.put(:fields, fields)
         |> Map.put(:locked, locked)
         |> Map.put(:invisible, invisible)
