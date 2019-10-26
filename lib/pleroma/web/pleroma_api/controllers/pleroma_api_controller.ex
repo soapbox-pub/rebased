@@ -80,7 +80,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   end
 
   def read_conversations(%{assigns: %{user: user}} = conn, _params) do
-    with {:ok, participations} <- Participation.mark_all_as_read(user) do
+    with {:ok, _, participations} <- Participation.mark_all_as_read(user) do
       conn
       |> add_link_headers(participations)
       |> put_view(ConversationView)

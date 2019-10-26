@@ -971,7 +971,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def set_unread_conversation_count(_), do: :noop
+  def set_unread_conversation_count(user), do: {:ok, user}
 
   def increment_unread_conversation_count(conversation, %User{local: true} = user) do
     unread_query =
@@ -993,7 +993,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def increment_unread_conversation_count(_, _), do: :noop
+  def increment_unread_conversation_count(_, user), do: {:ok, user}
 
   def remove_duplicated_following(%User{following: following} = user) do
     uniq_following = Enum.uniq(following)
@@ -1077,7 +1077,7 @@ defmodule Pleroma.User do
     if following?(blocked, blocker), do: unfollow(blocked, blocker)
 
     {:ok, blocker} = update_follower_count(blocker)
-
+    {:ok, blocker, _} = Participation.mark_all_as_read(blocker, blocked)
     add_to_block(blocker, ap_id)
   end
 
