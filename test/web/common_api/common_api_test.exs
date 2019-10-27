@@ -421,6 +421,11 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, report} = CommonAPI.update_report_state(report_id, "resolved")
 
       assert report.data["state"] == "resolved"
+
+      [reported_user, activity_id] = report.data["object"]
+
+      assert reported_user == target_user.ap_id
+      assert activity_id == activity.data["id"]
     end
 
     test "does not update report state when state is unsupported" do
