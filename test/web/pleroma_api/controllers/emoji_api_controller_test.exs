@@ -38,7 +38,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
   end
 
   test "listing remote packs" do
-    admin = insert(:user, info: %{is_admin: true})
+    admin = insert(:user, is_admin: true)
     conn = build_conn() |> assign(:user, admin)
 
     resp = conn |> get(emoji_api_path(conn, :list_packs)) |> json_response(200)
@@ -121,7 +121,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
         text(File.read!("#{@emoji_dir_path}/test_pack_nonshared/nonshared.zip"))
     end)
 
-    admin = insert(:user, info: %{is_admin: true})
+    admin = insert(:user, is_admin: true)
 
     conn = build_conn() |> assign(:user, admin)
 
@@ -206,7 +206,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
       end)
 
       {:ok,
-       admin: insert(:user, info: %{is_admin: true}),
+       admin: insert(:user, is_admin: true),
        pack_file: pack_file,
        new_data: %{
          "license" => "Test license changed",
@@ -303,7 +303,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
       File.rm_rf!("#{@emoji_dir_path}/test_pack/dir_2")
     end)
 
-    admin = insert(:user, info: %{is_admin: true})
+    admin = insert(:user, is_admin: true)
 
     conn = build_conn()
 
@@ -391,7 +391,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
       File.rm_rf!("#{@emoji_dir_path}/test_created")
     end)
 
-    admin = insert(:user, info: %{is_admin: true})
+    admin = insert(:user, is_admin: true)
 
     conn = build_conn() |> assign(:user, admin)
 
@@ -431,7 +431,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
 
     refute Map.has_key?(resp, "test_pack_for_import")
 
-    admin = insert(:user, info: %{is_admin: true})
+    admin = insert(:user, is_admin: true)
 
     assert conn
            |> assign(:user, admin)

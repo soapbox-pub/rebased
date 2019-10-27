@@ -72,26 +72,25 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
   describe "running update_users_following_followers_counts" do
     test "following and followers count are updated" do
       [user, user2] = insert_pair(:user)
-      {:ok, %User{following: following, info: info} = user} = User.follow(user, user2)
+      {:ok, %User{following: following} = user} = User.follow(user, user2)
 
       assert length(following) == 2
-      assert info.follower_count == 0
+      assert user.follower_count == 0
 
       {:ok, user} =
         user
-        |> Ecto.Changeset.change(%{following: following ++ following})
-        |> User.change_info(&Ecto.Changeset.change(&1, %{follower_count: 3}))
+        |> Ecto.Changeset.change(%{following: following ++ following, follower_count: 3})
         |> Repo.update()
 
       assert length(user.following) == 4
-      assert user.info.follower_count == 3
+      assert user.follower_count == 3
 
       assert :ok == Mix.Tasks.Pleroma.Database.run(["update_users_following_followers_counts"])
 
       user = User.get_by_id(user.id)
 
       assert length(user.following) == 2
-      assert user.info.follower_count == 0
+      assert user.follower_count == 0
     end
   end
 

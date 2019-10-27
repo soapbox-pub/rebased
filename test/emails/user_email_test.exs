@@ -36,7 +36,7 @@ defmodule Pleroma.Emails.UserEmailTest do
 
   test "build account confirmation email" do
     config = Pleroma.Config.get(:instance)
-    user = insert(:user, info: %Pleroma.User.Info{confirmation_token: "conf-token"})
+    user = insert(:user, confirmation_token: "conf-token")
     email = UserEmail.account_confirmation_email(user)
     assert email.from == {config[:name], config[:notify_email]}
     assert email.to == [{user.name, user.email}]

@@ -101,7 +101,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     {:ok, activity} = CommonAPI.update(user)
     user = User.get_cached_by_ap_id(user.ap_id)
-    [firefox] = user.info.source_data["tag"]
+    [firefox] = user.source_data["tag"]
 
     assert firefox["name"] == ":firefox:"
 
@@ -292,7 +292,7 @@ defmodule Pleroma.Web.CommonAPITest do
       id = activity.id
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: [^id]}} = user
+      assert %User{pinned_activities: [^id]} = user
     end
 
     test "unlisted statuses can be pinned", %{user: user} do
@@ -326,7 +326,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: []}} = user
+      assert %User{pinned_activities: []} = user
     end
 
     test "should unpin when deleting a status", %{user: user, activity: activity} do
@@ -338,7 +338,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: []}} = user
+      assert %User{pinned_activities: []} = user
     end
   end
 
@@ -482,7 +482,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
   describe "accept_follow_request/2" do
     test "after acceptance, it sets all existing pending follow request states to 'accept'" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
       follower = insert(:user)
       follower_two = insert(:user)
 
@@ -502,7 +502,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "after rejection, it sets all existing pending follow request states to 'reject'" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
       follower = insert(:user)
       follower_two = insert(:user)
 

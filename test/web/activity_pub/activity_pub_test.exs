@@ -42,6 +42,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         assert called(Pleroma.Web.Streamer.stream("participation", participations))
       end
     end
+
+    test "streams them out on activity creation" do
+      user_one = insert(:user)
+      user_two = insert(:user)
+
+      with_mock Pleroma.Web.Streamer,
+        stream: fn _, _ -> nil end do
+        {:ok, activity} =
+          CommonAPI.post(user_one, %{
+            "status" => "@#{user_two.nickname}",
+            "visibility" => "direct"
+          })
+
+        conversation =
+          activity.data["context"]
+          |> Pleroma.Conversation.get_for_ap_id()
+          |> Repo.preload(participations: :user)
+
+        assert called(Pleroma.Web.Streamer.stream("participation", conversation.participations))
+      end
+    end
   end
 
   describe "fetching restricted by visibility" do
@@ -154,9 +175,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
       assert user.ap_id == user_id
       assert user.nickname == "admin@mastodon.example.org"
-      assert user.info.source_data
-      assert user.info.ap_enabled
+      assert user.source_data
+      assert user.ap_enabled
       assert user.follower_address == "http://mastodon.example.org/users/admin/followers"
+    end
+
+    test "it returns a user that is invisible" do
+      user_id = "http://mastodon.example.org/users/relay"
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+      assert User.invisible?(user)
     end
 
     test "it fetches the appropriate tag-restricted posts" do
@@ -340,7 +367,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.actor == user.ap_id
 
       user = User.get_cached_by_id(user.id)
-      assert user.info.note_count == 0
+      assert user.note_count == 0
     end
 
     test "can be fetched into a timeline" do
@@ -403,7 +430,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         })
 
       user = User.get_cached_by_id(user.id)
-      assert user.info.note_count == 2
+      assert user.note_count == 2
     end
 
     test "increases replies count" do
@@ -1070,7 +1097,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
 
     test "decrements user note count only for public activities" do
-      user = insert(:user, info: %{note_count: 10})
+      user = insert(:user, note_count: 10)
 
       {:ok, a1} =
         CommonAPI.post(User.get_cached_by_id(user.id), %{
@@ -1102,7 +1129,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, _} = Object.normalize(a4) |> ActivityPub.delete()
 
       user = User.get_cached_by_id(user.id)
-      assert user.info.note_count == 10
+      assert user.note_count == 10
     end
 
     test "it creates a delete activity and checks that it is also sent to users mentioned by the deleted object" do
@@ -1430,9 +1457,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           following_address: "http://localhost:4001/users/masto_closed/following"
         )
 
-      {:ok, info} = ActivityPub.fetch_follow_information_for_user(user)
-      assert info.hide_followers == true
-      assert info.hide_follows == false
+      {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
+      assert follow_info.hide_followers == true
+      assert follow_info.hide_follows == false
     end
 
     test "detects hidden follows" do
@@ -1453,9 +1480,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           following_address: "http://localhost:4001/users/masto_closed/following"
         )
 
-      {:ok, info} = ActivityPub.fetch_follow_information_for_user(user)
-      assert info.hide_followers == false
-      assert info.hide_follows == true
+      {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
+      assert follow_info.hide_followers == false
+      assert follow_info.hide_follows == true
     end
   end
 end

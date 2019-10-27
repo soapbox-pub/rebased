@@ -51,26 +51,28 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def determine_explicit_mentions(_), do: []
 
-  @spec recipient_in_collection(any(), any()) :: boolean()
-  defp recipient_in_collection(ap_id, coll) when is_binary(coll), do: ap_id == coll
-  defp recipient_in_collection(ap_id, coll) when is_list(coll), do: ap_id in coll
-  defp recipient_in_collection(_, _), do: false
+  @spec label_in_collection?(any(), any()) :: boolean()
+  defp label_in_collection?(ap_id, coll) when is_binary(coll), do: ap_id == coll
+  defp label_in_collection?(ap_id, coll) when is_list(coll), do: ap_id in coll
+  defp label_in_collection?(_, _), do: false
+
+  @spec label_in_message?(String.t(), map()) :: boolean()
+  def label_in_message?(label, params),
+    do:
+      [params["to"], params["cc"], params["bto"], params["bcc"]]
+      |> Enum.any?(&label_in_collection?(label, &1))
+
+  @spec unaddressed_message?(map()) :: boolean()
+  def unaddressed_message?(params),
+    do:
+      [params["to"], params["cc"], params["bto"], params["bcc"]]
+      |> Enum.all?(&is_nil(&1))
 
   @spec recipient_in_message(User.t(), User.t(), map()) :: boolean()
-  def recipient_in_message(%User{ap_id: ap_id} = recipient, %User{} = actor, params) do
-    addresses = [params["to"], params["cc"], params["bto"], params["bcc"]]
-
-    cond do
-      Enum.any?(addresses, &recipient_in_collection(ap_id, &1)) -> true
-      # if the message is unaddressed at all, then assume it is directly addressed
-      # to the recipient
-      Enum.all?(addresses, &is_nil(&1)) -> true
-      # if the message is sent from somebody the user is following, then assume it
-      # is addressed to the recipient
-      User.following?(recipient, actor) -> true
-      true -> false
-    end
-  end
+  def recipient_in_message(%User{ap_id: ap_id} = recipient, %User{} = actor, params),
+    do:
+      label_in_message?(ap_id, params) || unaddressed_message?(params) ||
+        User.following?(recipient, actor)
 
   defp extract_list(target) when is_binary(target), do: [target]
   defp extract_list(lst) when is_list(lst), do: lst
@@ -78,8 +80,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def maybe_splice_recipient(ap_id, params) do
     need_splice? =
-      !recipient_in_collection(ap_id, params["to"]) &&
-        !recipient_in_collection(ap_id, params["cc"])
+      !label_in_collection?(ap_id, params["to"]) &&
+        !label_in_collection?(ap_id, params["cc"])
 
     if need_splice? do
       cc_list = extract_list(params["cc"])
@@ -493,10 +495,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"actor" => actor}},
         object
       ) do
-    announcements = take_announcements(object)
+    unless actor |> User.get_cached_by_ap_id() |> User.invisible?() do
+      announcements = take_announcements(object)
 
-    with announcements <- Enum.uniq([actor | announcements]) do
-      update_element_in_object("announcement", announcements, object)
+      with announcements <- Enum.uniq([actor | announcements]) do
+        update_element_in_object("announcement", announcements, object)
+      end
+    else
+      {:ok, object}
     end
   end
 

@@ -42,7 +42,7 @@ defmodule Pleroma.SignatureTest do
     test "it returns key" do
       expected_result = {:ok, @rsa_public_key}
 
-      user = insert(:user, %{info: %{source_data: %{"publicKey" => @public_key}}})
+      user = insert(:user, source_data: %{"publicKey" => @public_key})
 
       assert Signature.fetch_public_key(make_fake_conn(user.ap_id)) == expected_result
     end
@@ -54,7 +54,7 @@ defmodule Pleroma.SignatureTest do
     end
 
     test "it returns error if public key is empty" do
-      user = insert(:user, %{info: %{source_data: %{"publicKey" => %{}}}})
+      user = insert(:user, source_data: %{"publicKey" => %{}})
 
       assert Signature.fetch_public_key(make_fake_conn(user.ap_id)) == {:error, :error}
     end
@@ -69,8 +69,7 @@ defmodule Pleroma.SignatureTest do
 
     test "it returns error when not found user" do
       assert capture_log(fn ->
-               assert Signature.refetch_public_key(make_fake_conn("test-ap_id")) ==
-                        {:error, {:error, :ok}}
+               {:error, _} = Signature.refetch_public_key(make_fake_conn("test-ap_id"))
              end) =~ "[error] Could not decode user"
     end
   end

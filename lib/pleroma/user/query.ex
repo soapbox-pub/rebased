@@ -56,7 +56,6 @@ defmodule Pleroma.User.Query do
 
   @ilike_criteria [:nickname, :name, :query]
   @equal_criteria [:email]
-  @role_criteria [:is_admin, :is_moderator]
   @contains_criteria [:ap_id, :nickname]
 
   @spec build(criteria()) :: Query.t()
@@ -100,15 +99,19 @@ defmodule Pleroma.User.Query do
     Enum.reduce(tags, query, &prepare_tag_criteria/2)
   end
 
-  defp compose_query({key, _}, query) when key in @role_criteria do
-    where(query, [u], fragment("(?->? @> 'true')", u.info, ^to_string(key)))
+  defp compose_query({:is_admin, _}, query) do
+    where(query, [u], u.is_admin)
+  end
+
+  defp compose_query({:is_moderator, _}, query) do
+    where(query, [u], u.is_moderator)
   end
 
   defp compose_query({:super_users, _}, query) do
     where(
       query,
       [u],
-      fragment("?->'is_admin' @> 'true' OR ?->'is_moderator' @> 'true'", u.info, u.info)
+      u.is_admin or u.is_moderator
     )
   end
 
@@ -117,7 +120,13 @@ defmodule Pleroma.User.Query do
   defp compose_query({:external, _}, query), do: location_query(query, false)
 
   defp compose_query({:active, _}, query) do
-    where(query, [u], fragment("not (?->'deactivated' @> 'true')", u.info))
+    User.restrict_deactivated(query)
+    |> where([u], not is_nil(u.nickname))
+  end
+
+  defp compose_query({:legacy_active, _}, query) do
+    query
+    |> where([u], fragment("not (?->'deactivated' @> 'true')", u.info))
     |> where([u], not is_nil(u.nickname))
   end
 
@@ -126,7 +135,7 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query({:deactivated, true}, query) do
-    where(query, [u], fragment("?->'deactivated' @> 'true'", u.info))
+    where(query, [u], u.deactivated == ^true)
     |> where([u], not is_nil(u.nickname))
   end
 
