@@ -1102,7 +1102,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       message = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
         "cc" => [user.ap_id],
-        "object" => [user.ap_id, activity],
+        "object" => [user.ap_id, activity.data["id"]],
         "type" => "Flag",
         "content" => "blocked AND reported!!!",
         "actor" => other_user.ap_id
