@@ -13,7 +13,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEView do
   import Phoenix.HTML
 
   def emoji_for_user(%User{} = user) do
-    (user.info.source_data["tag"] || [])
+    (user.source_data["tag"] || [])
     |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
     |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
       {String.trim(name, ":"), url}
