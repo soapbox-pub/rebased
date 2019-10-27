@@ -7,18 +7,21 @@ defmodule Pleroma.Web.StaticFE.ActivityRepresenter do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Router.Helpers
 
-  def prepare_activity(%User{} = user, %Object{} = object) do
+  def prepare_activity(%User{} = user, %Object{} = object, activity_id) do
     %{}
     |> set_user(user)
     |> set_object(object)
     |> set_title(object)
     |> set_content(object)
+    |> set_link(activity_id)
+    |> set_published(object)
     |> set_attachments(object)
   end
 
   def prepare_activity(%User{} = user, %Activity{} = activity),
-    do: prepare_activity(user, Object.normalize(activity.data["object"]))
+    do: prepare_activity(user, Object.normalize(activity.data["object"]), activity.id)
 
   defp set_user(data, %User{} = user), do: Map.put(data, :user, user)
 
@@ -37,6 +40,12 @@ defmodule Pleroma.Web.StaticFE.ActivityRepresenter do
 
   defp set_content(data, _), do: Map.put(data, :content, nil)
 
+  defp set_link(data, activity_id),
+    do: Map.put(data, :link, Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, activity_id))
+
+  defp set_published(data, %Object{data: %{"published" => published}}),
+    do: Map.put(data, :published, published)
+
   # TODO: attachments
   defp set_attachments(data, _), do: Map.put(data, :attachments, [])
 
@@ -45,7 +54,7 @@ defmodule Pleroma.Web.StaticFE.ActivityRepresenter do
          true <- Visibility.is_public?(activity),
          %Object{} = object <- Object.normalize(activity.data["object"]),
          %User{} = user <- User.get_or_fetch(activity.data["actor"]),
-         data <- prepare_activity(user, object) do
+         data <- prepare_activity(user, object, activity_id) do
       {:ok, data}
     else
       e ->

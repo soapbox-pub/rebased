@@ -1,13 +1,15 @@
 <div class="activity">
   <%= render("user_card.html", %{user: @data.user}) %>
   <div class="activity-content">
-    <%= if @data.title do %>
+    <%= if @data.title != "" do %>
     <details>
       <summary><%= raw @data.title %></summary>
     <% end %>
       <div class="e-content"><%= raw @data.content %></div>
-    <%= if @data.title do %>
+    <%= if @data.title != "" do %>
     </details>
     <% end %>
+    <p class="pull-right">
+      <a href="<%= @data.link %>" class="activity-link"><%= @data.published %></a></p>
   </div>
 </div>
