@@ -81,7 +81,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     else
       with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id_with_object(id)},
            {_, true} <- {:public?, Visibility.is_public?(activity)},
-             %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+           %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         cond do
           format == "html" && activity.data["type"] == "Create" ->
             %Object{} = object = Object.normalize(activity)
