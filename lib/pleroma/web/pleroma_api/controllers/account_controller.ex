@@ -126,7 +126,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
     recipients =
       if for_user do
-        [Pleroma.Constants.as_public()] ++ [for_user.ap_id | for_user.following]
+        [Pleroma.Constants.as_public()] ++ [for_user.ap_id | User.following(for_user)]
       else
         [Pleroma.Constants.as_public()]
       end

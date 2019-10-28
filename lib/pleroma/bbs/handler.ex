@@ -97,7 +97,7 @@ defmodule Pleroma.BBS.Handler do
       |> Map.put("user", user)
 
     activities =
-      [user.ap_id | user.following]
+      [user.ap_id | Pleroma.User.following(user)]
       |> ActivityPub.fetch_activities(params)
 
     Enum.each(activities, fn activity ->

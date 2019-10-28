@@ -518,7 +518,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public = [Pleroma.Constants.as_public()]
 
     recipients =
-      if opts["user"], do: [opts["user"].ap_id | opts["user"].following] ++ public, else: public
+      if opts["user"],
+        do: [opts["user"].ap_id | User.following(opts["user"])] ++ public,
+        else: public
 
     from(activity in Activity)
     |> maybe_preload_objects(opts)
@@ -712,7 +714,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp user_activities_recipients(%{"reading_user" => reading_user}) do
     if reading_user do
-      [Pleroma.Constants.as_public()] ++ [reading_user.ap_id | reading_user.following]
+      [Pleroma.Constants.as_public()] ++ [reading_user.ap_id | User.following(reading_user)]
     else
       [Pleroma.Constants.as_public()]
     end
