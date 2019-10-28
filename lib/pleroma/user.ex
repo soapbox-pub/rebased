@@ -105,13 +105,10 @@ defmodule Pleroma.User do
     field(:invisible, :boolean, default: false)
     field(:skip_thread_containment, :boolean, default: false)
 
-    field(:notification_settings, :map,
-      default: %{
-        "followers" => true,
-        "follows" => true,
-        "non_follows" => true,
-        "non_followers" => true
-      }
+    embeds_one(
+      :notification_settings,
+      Pleroma.User.NotificationSetting,
+      on_replace: :update
     )
 
     has_many(:notifications, Notification)
@@ -1095,20 +1092,9 @@ defmodule Pleroma.User do
   end
 
   def update_notification_settings(%User{} = user, settings) do
-    settings =
-      settings
-      |> Enum.map(fn {k, v} -> {k, v in [true, "true", "True", "1"]} end)
-      |> Map.new()
-
-    notification_settings =
-      user.notification_settings
-      |> Map.merge(settings)
-      |> Map.take(["followers", "follows", "non_follows", "non_followers"])
-
-    params = %{notification_settings: notification_settings}
-
     user
-    |> cast(params, [:notification_settings])
+    |> cast(%{notification_settings: settings}, [])
+    |> cast_embed(:notification_settings)
     |> validate_required([:notification_settings])
     |> update_and_set_cache()
   end
