@@ -18,7 +18,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
       |> put_view(Pleroma.Web.StaticFE.StaticFEView)
       |> render("notice.html", %{data: data})
     else
-      _ ->
+      {:error, nil} ->
         conn
         |> put_status(404)
         |> text("Not found")
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
       |> put_view(Pleroma.Web.StaticFE.StaticFEView)
       |> render("profile.html", %{data: data})
     else
-      _ ->
+      {:error, nil} ->
         conn
         |> put_status(404)
         |> text("Not found")
