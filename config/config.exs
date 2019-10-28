@@ -284,8 +284,8 @@ config :pleroma, :markup,
   allow_tables: false,
   allow_fonts: false,
   scrub_policy: [
-    Pleroma.HTML.Transform.MediaProxy,
-    Pleroma.HTML.Scrubber.Default
+    Pleroma.HTML.Scrubber.Default,
+    Pleroma.HTML.Transform.MediaProxy
   ]
 
 config :pleroma, :frontend_configurations,
