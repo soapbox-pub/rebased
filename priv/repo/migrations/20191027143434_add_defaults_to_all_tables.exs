@@ -27,6 +27,25 @@ defmodule Pleroma.Repo.Migrations.AddDefaultsToAllTables do
 
     execute("UPDATE push_subscriptions SET data = '{}'::jsonb WHERE data IS NULL")
 
+    execute("UPDATE users SET source_data = '{}'::jsonb where source_data IS NULL")
+    execute("UPDATE users SET note_count = 0 where note_count IS NULL")
+    execute("UPDATE users SET background = '{}'::jsonb where background IS NULL")
+    execute("UPDATE users SET follower_count = 0 where follower_count IS NULL")
+
+    execute(
+      "UPDATE users SET unread_conversation_count = 0 where unread_conversation_count IS NULL"
+    )
+
+    execute(
+      ~s(UPDATE users SET email_notifications = '{"digest": false}'::jsonb where email_notifications IS NULL)
+    )
+
+    execute("UPDATE users SET default_scope = 'public' where default_scope IS NULL")
+
+    execute(
+      "UPDATE users SET pleroma_settings_store = '{}'::jsonb where pleroma_settings_store IS NULL"
+    )
+
     execute("UPDATE users SET following = ARRAY[]::character varying[] WHERE following IS NULL")
     execute("UPDATE users SET tags = ARRAY[]::character varying[] WHERE tags IS NULL")
     execute(~s(UPDATE users SET notification_settings =
