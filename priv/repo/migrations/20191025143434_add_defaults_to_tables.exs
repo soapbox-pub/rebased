@@ -1,4 +1,4 @@
-defmodule Pleroma.Repo.Migrations.AddDefaultsToAllTables do
+defmodule Pleroma.Repo.Migrations.AddDefaultsToTables do
   use Ecto.Migration
 
   def up do
