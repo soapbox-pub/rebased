@@ -1334,7 +1334,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
           follower_address: User.ap_followers(%User{nickname: "rye@niu.moe"})
         })
 
-      user_two = insert(:user, %{following: [user.follower_address]})
+      user_two = insert(:user)
+      Pleroma.FollowingRelationship.follow(user_two, user, "accept")
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
       {:ok, unrelated_activity} = CommonAPI.post(user_two, %{"status" => "test"})
@@ -1381,8 +1382,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       refute user.follower_address in unrelated_activity.recipients
 
       user_two = User.get_cached_by_id(user_two.id)
-      assert user.follower_address in user_two.following
-      refute "..." in user_two.following
+      assert User.following?(user_two, user)
+      refute "..." in User.following(user_two)
     end
   end
 

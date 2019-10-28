@@ -39,10 +39,12 @@ defmodule Pleroma.LoadTesting.Fetcher do
       "muting_user" => user
     }
 
+    following = User.following(user)
+
     Benchee.run(%{
       "User home timeline" => fn ->
         Pleroma.Web.ActivityPub.ActivityPub.fetch_activities(
-          [user.ap_id | user.following],
+          following,
           home_timeline_params
         )
       end,
@@ -60,7 +62,7 @@ defmodule Pleroma.LoadTesting.Fetcher do
 
     home_activities =
       Pleroma.Web.ActivityPub.ActivityPub.fetch_activities(
-        [user.ap_id | user.following],
+        following,
         home_timeline_params
       )
 

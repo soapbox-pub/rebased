@@ -59,7 +59,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   end
 
   def visible_for_user?(activity, user) do
-    x = [user.ap_id | user.following]
+    x = [user.ap_id | User.following(user)]
     y = [activity.actor] ++ activity.data["to"] ++ (activity.data["cc"] || [])
     visible_for_user?(activity, nil) || Enum.any?(x, &(&1 in y))
   end

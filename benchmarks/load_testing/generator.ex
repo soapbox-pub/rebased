@@ -45,15 +45,13 @@ defmodule Pleroma.LoadTesting.Generator do
         %{
           ap_id: ap_id,
           follower_address: ap_id <> "/followers",
-          following_address: ap_id <> "/following",
-          following: [ap_id]
+          following_address: ap_id <> "/following"
         }
       else
         %{
           ap_id: User.ap_id(user),
           follower_address: User.ap_followers(user),
-          following_address: User.ap_following(user),
-          following: [User.ap_id(user)]
+          following_address: User.ap_following(user)
         }
       end
 
