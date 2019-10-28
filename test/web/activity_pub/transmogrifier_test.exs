@@ -746,7 +746,10 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Poison.decode!()
         |> Map.put("actor", ap_id)
 
-      assert :error == Transmogrifier.handle_incoming(data)
+      assert capture_log(fn ->
+               assert :error == Transmogrifier.handle_incoming(data)
+             end) =~ "Object containment failed"
+
       assert User.get_cached_by_ap_id(ap_id)
     end
 
@@ -1409,7 +1412,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "type" => "Announce"
       }
 
-      :error = Transmogrifier.handle_incoming(data)
+      assert capture_log(fn ->
+               :error = Transmogrifier.handle_incoming(data)
+             end) =~ "Object containment failed"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 1)" do
@@ -1422,7 +1427,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "type" => "Announce"
       }
 
-      :error = Transmogrifier.handle_incoming(data)
+      assert capture_log(fn ->
+               :error = Transmogrifier.handle_incoming(data)
+             end) =~ "Object containment failed"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 2)" do
@@ -1435,7 +1442,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "type" => "Announce"
       }
 
-      :error = Transmogrifier.handle_incoming(data)
+      assert capture_log(fn ->
+               :error = Transmogrifier.handle_incoming(data)
+             end) =~ "Object containment failed"
     end
   end
 
@@ -1738,7 +1747,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
   describe "get_obj_helper/2" do
     test "returns nil when cannot normalize object" do
-      refute Transmogrifier.get_obj_helper("test-obj-id")
+      assert capture_log(fn ->
+               refute Transmogrifier.get_obj_helper("test-obj-id")
+             end) =~ "Unsupported URI scheme"
     end
 
     test "returns {:ok, %Object{}} for success case" do
