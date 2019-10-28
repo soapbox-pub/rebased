@@ -8,7 +8,6 @@ defmodule Pleroma.Repo.Migrations.SetNotNullForUsers do
     execute("UPDATE users SET follower_count = 0 WHERE follower_count IS NULL")
 
     execute("ALTER TABLE users
-    ALTER COLUMN following SET NOT NULL,
     ALTER COLUMN local SET NOT NULL,
     ALTER COLUMN source_data SET NOT NULL,
     ALTER COLUMN note_count SET NOT NULL,
@@ -27,7 +26,6 @@ defmodule Pleroma.Repo.Migrations.SetNotNullForUsers do
 
   def down do
     execute("ALTER TABLE users
-    ALTER COLUMN following DROP NOT NULL,
     ALTER COLUMN local DROP NOT NULL,
     ALTER COLUMN source_data DROP NOT NULL,
     ALTER COLUMN note_count DROP NOT NULL,
