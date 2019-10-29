@@ -1,15 +1,29 @@
 <div class="activity">
   <%= render("user_card.html", %{user: @data.user}) %>
+  <p class="pull-right">
+    <a href="<%= @data.link %>" class="activity-link"><%= @data.published %></a></p>
   <div class="activity-content">
     <%= if @data.title != "" do %>
-    <details>
-      <summary><%= raw @data.title %></summary>
-    <% end %>
+      <details>
+        <summary><%= raw @data.title %></summary>
+        <div class="e-content"><%= raw @data.content %></div>
+      </details>
+    <% else %>
       <div class="e-content"><%= raw @data.content %></div>
-    <%= if @data.title != "" do %>
-    </details>
     <% end %>
-    <p class="pull-right">
-      <a href="<%= @data.link %>" class="activity-link"><%= @data.published %></a></p>
+    <%= for %{"name" => name, "url" => [url | _]} <- @data.attachment do %>
+      <%= if @data.sensitive do %>
+        <details class="nsfw">
+          <summary>sensitive media</summary>
+          <div>
+            <%= render("_attachment.html", %{name: name, url: url["href"],
+                                             mediaType: fetch_media_type(url)}) %>
+          </div>
+        </details>
+      <% else %>
+        <%= render("_attachment.html", %{name: name, url: url["href"],
+                                         mediaType: fetch_media_type(url)}) %>
+      <% end %>
+    <% end %>
   </div>
 </div>

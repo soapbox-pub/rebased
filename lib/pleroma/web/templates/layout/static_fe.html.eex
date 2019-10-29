@@ -36,6 +36,11 @@
         margin-right: 4px;
       }
 
+      .activity-content img, video {
+        max-width: 800px;
+        max-height: 800px;
+      }
+
       a {
         color: white;
       }

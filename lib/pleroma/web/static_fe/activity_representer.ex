@@ -19,6 +19,8 @@ defmodule Pleroma.Web.StaticFE.ActivityRepresenter do
     |> set_content(object)
     |> set_link(activity.id)
     |> set_published(object)
+    |> set_sensitive(object)
+    |> set_attachment(object.data["attachment"])
     |> set_attachments(object)
   end
 
@@ -39,17 +41,23 @@ defmodule Pleroma.Web.StaticFE.ActivityRepresenter do
 
   defp set_content(data, _), do: Map.put(data, :content, nil)
 
+  defp set_attachment(data, attachment), do: Map.put(data, :attachment, attachment)
+
   defp set_link(data, activity_id),
     do: Map.put(data, :link, Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, activity_id))
 
   defp set_published(data, %Object{data: %{"published" => published}}),
     do: Map.put(data, :published, published)
 
+  defp set_sensitive(data, %Object{data: %{"sensitive" => sensitive}}),
+    do: Map.put(data, :sensitive, sensitive)
+
   # TODO: attachments
   defp set_attachments(data, _), do: Map.put(data, :attachments, [])
 
   def represent(activity_id) do
-    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(activity_id),
+    with %Activity{data: %{"type" => "Create"}} = activity <-
+           Activity.get_by_id_with_object(activity_id),
          true <- Visibility.is_public?(activity),
          {:ok, %User{} = user} <- User.get_or_fetch(activity.data["actor"]) do
       {:ok, prepare_activity(user, activity)}
