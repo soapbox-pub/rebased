@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTML do
-
   defp get_scrubbers(scrubber) when is_atom(scrubber), do: [scrubber]
   defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
   defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
@@ -39,6 +38,7 @@ defmodule Pleroma.HTML do
         callback \\ fn x -> x end
       ) do
     key = "#{key}#{generate_scrubber_signature(scrubbers)}|#{activity.id}"
+
     Cachex.fetch!(:scrubber_cache, key, fn _key ->
       object = Pleroma.Object.normalize(activity)
       ensure_scrubbed_html(content, scrubbers, object.data["fake"] || false, callback)
@@ -168,7 +168,6 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
-#  Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
   Meta.allow_tag_with_uri_attributes(:a, ["href", "data-user", "data-tag"], @valid_schemes)
