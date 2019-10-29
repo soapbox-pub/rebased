@@ -164,7 +164,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
                follows: true,
                non_follows: true,
                non_followers: true,
-               privacy_option: "name_and_message"
+               privacy_option: false
              } == user.notification_settings
     end
 
@@ -173,7 +173,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       conn
       |> assign(:user, user)
-      |> put("/api/pleroma/notification_settings", %{"privacy_option" => "name_only"})
+      |> put("/api/pleroma/notification_settings", %{"privacy_option" => "1"})
       |> json_response(:ok)
 
       user = refresh_record(user)
@@ -183,7 +183,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
                follows: true,
                non_follows: true,
                non_followers: true,
-               privacy_option: "name_only"
+               privacy_option: true
              } == user.notification_settings
     end
   end

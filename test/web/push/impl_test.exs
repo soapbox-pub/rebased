@@ -6,6 +6,7 @@ defmodule Pleroma.Web.Push.ImplTest do
   use Pleroma.DataCase
 
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Push.Impl
   alias Pleroma.Web.Push.Subscription
@@ -181,5 +182,51 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     assert Impl.format_title(%{activity: activity}) ==
              "New Direct Message"
+  end
+
+  describe "build_content/3" do
+    test "returns info content for direct message with enabled privacy option" do
+      user = insert(:user, nickname: "Bob")
+      user2 = insert(:user, nickname: "Rob", notification_settings: %{privacy_option: true})
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "visibility" => "direct",
+          "status" => "<Lorem ipsum dolor sit amet."
+        })
+
+      notif = insert(:notification, user: user2, activity: activity)
+
+      actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+      object = Object.normalize(activity)
+
+      assert Impl.build_content(notif, actor, object) == %{
+               body: "@Bob",
+               title: "New Direct Message"
+             }
+    end
+
+    test "returns regular content for direct message with disabled privacy option" do
+      user = insert(:user, nickname: "Bob")
+      user2 = insert(:user, nickname: "Rob", notification_settings: %{privacy_option: false})
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "visibility" => "direct",
+          "status" =>
+            "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
+        })
+
+      notif = insert(:notification, user: user2, activity: activity)
+
+      actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+      object = Object.normalize(activity)
+
+      assert Impl.build_content(notif, actor, object) == %{
+               body:
+                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini...",
+               title: "New Direct Message"
+             }
+    end
   end
 end
