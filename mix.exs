@@ -109,7 +109,7 @@ defmodule Pleroma.Mixfile do
       {:pbkdf2_elixir, "~> 0.12.3"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:html_sanitize_ex, "~> 1.3.0"},
-      {:fast_sanitize, git: "https://git.pleroma.social/pleroma/fast_sanitize.git", ref: "2820d841393b3c2f2183d0377f572bf00f513b7c"},
+      {:fast_sanitize, git: "https://git.pleroma.social/pleroma/fast_sanitize.git", ref: "0d996cac23e86afc342a24047e77443661bbbb13"},
       {:html_entities, "~> 0.4"},
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},
