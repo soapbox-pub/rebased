@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   A module to handle coding from internal to wire ActivityPub and back.
   """
   alias Pleroma.Activity
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
@@ -474,7 +475,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            {_, false} <- {:user_locked, User.locked?(followed)},
            {_, {:ok, follower}} <- {:follow, User.follow(follower, followed)},
            {_, {:ok, _}} <-
-             {:follow_state_update, Utils.update_follow_state_for_all(activity, "accept")} do
+             {:follow_state_update, Utils.update_follow_state_for_all(activity, "accept")},
+           {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "accept") do
         ActivityPub.accept(%{
           to: [follower.ap_id],
           actor: followed,
@@ -484,6 +486,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       else
         {:user_blocked, true} ->
           {:ok, _} = Utils.update_follow_state_for_all(activity, "reject")
+          {:ok, _relationship} = FollowingRelationship.update(follower, followed, "reject")
 
           ActivityPub.reject(%{
             to: [follower.ap_id],
@@ -494,6 +497,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         {:follow, {:error, _}} ->
           {:ok, _} = Utils.update_follow_state_for_all(activity, "reject")
+          {:ok, _relationship} = FollowingRelationship.update(follower, followed, "reject")
 
           ActivityPub.reject(%{
             to: [follower.ap_id],
@@ -503,6 +507,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           })
 
         {:user_locked, true} ->
+          {:ok, _relationship} = FollowingRelationship.update(follower, followed, "pending")
           :noop
       end
 
@@ -522,7 +527,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
-         {:ok, _follower} = User.follow(follower, followed) do
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "accept") do
       ActivityPub.accept(%{
         to: follow_activity.data["to"],
         type: "Accept",
@@ -545,6 +550,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "reject"),
          {:ok, activity} <-
            ActivityPub.reject(%{
              to: follow_activity.data["to"],
@@ -554,8 +560,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
              local: false,
              activity_id: id
            }) do
-      User.unfollow(follower, followed)
-
       {:ok, activity}
     else
       _e -> :error
@@ -1061,43 +1065,22 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     # we pass a fake user so that the followers collection is stripped away
     old_follower_address = User.ap_followers(%User{nickname: user.nickname})
 
-    q =
-      from(
-        u in User,
-        where: ^old_follower_address in u.following,
-        update: [
-          set: [
-            following:
-              fragment(
-                "array_replace(?,?,?)",
-                u.following,
-                ^old_follower_address,
-                ^user.follower_address
-              )
-          ]
+    from(
+      a in Activity,
+      where: ^old_follower_address in a.recipients,
+      update: [
+        set: [
+          recipients:
+            fragment(
+              "array_replace(?,?,?)",
+              a.recipients,
+              ^old_follower_address,
+              ^user.follower_address
+            )
         ]
-      )
-
-    Repo.update_all(q, [])
-
-    q =
-      from(
-        a in Activity,
-        where: ^old_follower_address in a.recipients,
-        update: [
-          set: [
-            recipients:
-              fragment(
-                "array_replace(?,?,?)",
-                a.recipients,
-                ^old_follower_address,
-                ^user.follower_address
-              )
-          ]
-        ]
-      )
-
-    Repo.update_all(q, [])
+      ]
+    )
+    |> Repo.update_all([])
   end
 
   def upgrade_user_from_ap_id(ap_id) do

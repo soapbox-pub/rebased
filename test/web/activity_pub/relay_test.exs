@@ -56,14 +56,14 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       service_actor = Relay.get_actor()
       ActivityPub.follow(service_actor, user)
       Pleroma.User.follow(service_actor, user)
-      assert "#{user.ap_id}/followers" in refresh_record(service_actor).following
+      assert "#{user.ap_id}/followers" in User.following(service_actor)
       assert {:ok, %Activity{} = activity} = Relay.unfollow(user.ap_id)
       assert activity.actor == "#{Pleroma.Web.Endpoint.url()}/relay"
       assert user.ap_id in activity.recipients
       assert activity.data["type"] == "Undo"
       assert activity.data["actor"] == service_actor.ap_id
       assert activity.data["to"] == [user.ap_id]
-      refute "#{user.ap_id}/followers" in refresh_record(service_actor).following
+      refute "#{user.ap_id}/followers" in User.following(service_actor)
     end
   end
 

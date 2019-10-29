@@ -25,7 +25,7 @@ While we don’t provide docker files, other people have written very good ones.
 
 ### Dependencies
 
-* Postgresql version 9.6 or newer
+* Postgresql version 9.6 or newer, including the contrib modules
 * Elixir version 1.7 or newer. If your distribution only has an old version available, check [Elixir’s install page](https://elixir-lang.org/install.html) or use a tool like [asdf](https://github.com/asdf-vm/asdf).
 * Build-essential tools
 
@@ -71,7 +71,7 @@ This is useful for running Pleroma inside Tor or I2P.
 
 ## Customization and contribution
 
-The [Pleroma Documentation](https://docs-develop.pleroma.social/readme.html) offers manuals and guides on how to further customize your instance to your liking and how you can contribute to the project.
+The [Pleroma Documentation](https://docs-develop.pleroma.social) offers manuals and guides on how to further customize your instance to your liking and how you can contribute to the project.
 
 ## Troubleshooting
 

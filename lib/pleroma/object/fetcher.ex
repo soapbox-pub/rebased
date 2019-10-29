@@ -90,6 +90,9 @@ defmodule Pleroma.Object.Fetcher do
       {:fetch_object, %Object{} = object} ->
         {:ok, object}
 
+      {:fetch, {:error, error}} ->
+        {:error, error}
+
       e ->
         e
     end
@@ -110,6 +113,9 @@ defmodule Pleroma.Object.Fetcher do
     with {:ok, object} <- fetch_object_from_id(id, options) do
       object
     else
+      {:error, %Tesla.Mock.Error{}} ->
+        nil
+
       e ->
         Logger.error("Error while fetching #{id}: #{inspect(e)}")
         nil
@@ -169,6 +175,9 @@ defmodule Pleroma.Object.Fetcher do
 
       {:scheme, _} ->
         {:error, "Unsupported URI scheme"}
+
+      {:error, e} ->
+        {:error, e}
 
       e ->
         {:error, e}

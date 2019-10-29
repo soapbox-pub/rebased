@@ -693,7 +693,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, announce, _object} = CommonAPI.repeat(activity_three.id, booster)
 
-    [announce_activity] = ActivityPub.fetch_activities([user.ap_id | user.following])
+    [announce_activity] = ActivityPub.fetch_activities([user.ap_id | User.following(user)])
 
     assert announce_activity.id == announce.id
   end
@@ -1219,7 +1219,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         })
 
       activities =
-        ActivityPub.fetch_activities([user1.ap_id | user1.following])
+        ActivityPub.fetch_activities([user1.ap_id | User.following(user1)])
         |> Enum.map(fn a -> a.id end)
 
       private_activity_1 = Activity.get_by_ap_id_with_object(private_activity_1.data["id"])
@@ -1229,7 +1229,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert length(activities) == 3
 
       activities =
-        ActivityPub.fetch_activities([user1.ap_id | user1.following], %{"user" => user1})
+        ActivityPub.fetch_activities([user1.ap_id | User.following(user1)], %{"user" => user1})
         |> Enum.map(fn a -> a.id end)
 
       assert [public_activity.id, private_activity_1.id] == activities

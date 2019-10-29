@@ -163,7 +163,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
       user = User.get_cached_by_id(user.id)
 
-      if Enum.empty?(user.following) do
+      if Enum.empty?(User.get_friends(user)) do
         shell_info("Successfully unsubscribed all followers from #{user.nickname}")
       end
     else

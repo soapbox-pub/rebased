@@ -2572,22 +2572,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "GET /relay", %{admin: admin} do
-      Pleroma.Web.ActivityPub.Relay.get_actor()
-      |> Ecto.Changeset.change(
-        following: [
-          "http://test-app.com/user/test1",
-          "http://test-app.com/user/test1",
-          "http://test-app-42.com/user/test1"
-        ]
-      )
-      |> Pleroma.User.update_and_set_cache()
+      relay_user = Pleroma.Web.ActivityPub.Relay.get_actor()
+
+      ["http://mastodon.example.org/users/admin", "https://mstdn.io/users/mayuutann"]
+      |> Enum.each(fn ap_id ->
+        {:ok, user} = User.get_or_fetch_by_ap_id(ap_id)
+        User.follow(relay_user, user)
+      end)
 
       conn =
         build_conn()
         |> assign(:user, admin)
         |> get("/api/pleroma/admin/relay")
 
-      assert json_response(conn, 200)["relays"] -- ["test-app.com", "test-app-42.com"] == []
+      assert json_response(conn, 200)["relays"] -- ["mastodon.example.org", "mstdn.io"] == []
     end
 
     test "DELETE /relay", %{admin: admin} do

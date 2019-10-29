@@ -471,7 +471,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       conn =
         build_conn()
-        |> assign(:user, follower)
+        |> assign(:user, User.get_cached_by_id(follower.id))
         |> post("/api/v1/accounts/#{followed.id}/follow?reblogs=true")
 
       assert %{"showing_reblogs" => true} = json_response(conn, 200)
