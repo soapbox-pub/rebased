@@ -507,6 +507,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           })
 
         {:user_locked, true} ->
+          {:ok, _relationship} = FollowingRelationship.update(follower, followed, "pending")
           :noop
       end
 

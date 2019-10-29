@@ -804,6 +804,25 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       refute User.following?(User.get_cached_by_ap_id(data["actor"]), user)
     end
 
+    test "it works for incoming follows to locked account" do
+      pending_follower = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
+      user = insert(:user, locked: true)
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["type"] == "Follow"
+      assert data["object"] == user.ap_id
+      assert data["state"] == "pending"
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+
+      assert [^pending_follower] = User.get_follow_requests(user)
+    end
+
     test "it works for incoming blocks" do
       user = insert(:user)
 
