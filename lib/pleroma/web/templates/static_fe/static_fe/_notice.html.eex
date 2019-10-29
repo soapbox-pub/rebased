@@ -1,7 +1,7 @@
-<div class="activity">
-  <%= render("user_card.html", %{user: @data.user}) %>
+<div class="activity" <%= if @data[:selected] do %> id="selected" <% end %>>
   <p class="pull-right">
     <a href="<%= @data.link %>" class="activity-link"><%= @data.published %></a></p>
+  <%= render("user_card.html", %{user: @data.user}) %>
   <div class="activity-content">
     <%= if @data.title != "" do %>
       <details>

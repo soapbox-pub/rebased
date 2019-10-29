@@ -23,6 +23,7 @@
       }
 
       .activity {
+        padding: 1em;
         margin-bottom: 1em;
       }
 
@@ -39,6 +40,10 @@
       .activity-content img, video {
         max-width: 800px;
         max-height: 800px;
+      }
+
+      #selected {
+        background-color: #1b2735;
       }
 
       a {

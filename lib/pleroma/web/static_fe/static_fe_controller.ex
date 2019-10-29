@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.StaticFE.StaticFEController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.StaticFE.ActivityRepresenter
   alias Pleroma.Web.StaticFE.UserRepresenter
 
@@ -12,11 +13,20 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
   def show_notice(conn, %{"notice_id" => notice_id}) do
     with {:ok, data} <- ActivityRepresenter.represent(notice_id) do
+      context = data.object.data["context"]
+      activities = ActivityPub.fetch_activities_for_context(context, %{})
+
+      data =
+        for a <- Enum.reverse(activities) do
+          ActivityRepresenter.prepare_activity(data.user, a)
+          |> Map.put(:selected, a.object.id == data.object.id)
+        end
+
       conn
       |> put_layout(:static_fe)
       |> put_status(200)
       |> put_view(Pleroma.Web.StaticFE.StaticFEView)
-      |> render("notice.html", %{data: data})
+      |> render("conversation.html", %{data: data})
     else
       {:error, nil} ->
         conn

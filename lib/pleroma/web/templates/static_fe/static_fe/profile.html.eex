@@ -8,7 +8,7 @@
 </h1>
 <p><%= raw @data.user.bio %></p>
 <div class="activity-stream">
-<%= for activity <- @data.timeline do %>
-  <%= render("notice.html", %{data: activity}) %>
-<% end %>
+  <%= for activity <- @data.timeline do %>
+    <%= render("_notice.html", %{data: activity}) %>
+  <% end %>
 </div>
