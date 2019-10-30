@@ -17,22 +17,20 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   def show_notice(%{assigns: %{notice_id: notice_id}} = conn, _params) do
     with {:ok, data} <- ActivityRepresenter.represent(notice_id) do
       context = data.object.data["context"]
-      activities = ActivityPub.fetch_activities_for_context(context, %{})
 
-      data =
-        for a <- Enum.reverse(activities) do
+      activities =
+        for a <- Enum.reverse(ActivityPub.fetch_activities_for_context(context, %{})) do
           ActivityRepresenter.prepare_activity(data.user, a)
           |> Map.put(:selected, a.object.id == data.object.id)
         end
 
-      render(conn, "conversation.html", data: data)
+      render(conn, "conversation.html", activities: activities)
     end
   end
 
   def show_user(%{assigns: %{username_or_id: username_or_id}} = conn, _params) do
-    with {:ok, data} <- UserRepresenter.represent(username_or_id) do
-      render(conn, "profile.html", data: data)
-    end
+    {:ok, data} = UserRepresenter.represent(username_or_id)
+    render(conn, "profile.html", %{user: data.user, timeline: data.timeline})
   end
 
   def assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),

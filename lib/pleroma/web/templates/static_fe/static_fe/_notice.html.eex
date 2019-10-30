@@ -1,19 +1,19 @@
-<div class="activity" <%= if @data[:selected] do %> id="selected" <% end %>>
+<div class="activity" <%= if @selected do %> id="selected" <% end %>>
   <p class="pull-right">
-    <%= link @data.published, to: @data.link, class: "activity-link" %>
+    <%= link @published, to: @link, class: "activity-link" %>
   </p>
-  <%= render("user_card.html", %{user: @data.user}) %>
+  <%= render("user_card.html", %{user: @user}) %>
   <div class="activity-content">
-    <%= if @data.title != "" do %>
+    <%= if @title != "" do %>
       <details>
-        <summary><%= raw @data.title %></summary>
-        <div class="e-content"><%= raw @data.content %></div>
+        <summary><%= raw @title %></summary>
+        <div class="e-content"><%= raw @content %></div>
       </details>
     <% else %>
-      <div class="e-content"><%= raw @data.content %></div>
+      <div class="e-content"><%= raw @content %></div>
     <% end %>
-    <%= for %{"name" => name, "url" => [url | _]} <- @data.attachment do %>
-      <%= if @data.sensitive do %>
+    <%= for %{"name" => name, "url" => [url | _]} <- @attachment do %>
+      <%= if @sensitive do %>
         <details class="nsfw">
           <summary><%= Gettext.gettext("sensitive media") %></summary>
           <div>

@@ -1,5 +1,5 @@
 <div class="conversation">
-  <%= for notice <- @data do %>
-    <%= render("_notice.html", %{data: notice}) %>
+  <%= for activity <- @activities do %>
+    <%= render("_notice.html", activity) %>
   <% end %>
 </div>

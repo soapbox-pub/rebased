@@ -1,14 +1,14 @@
 <h1>
   <form class="pull-right collapse" method="POST" action="<%= Helpers.util_path(@conn, :remote_subscribe) %>">
-    <input type="hidden" name="nickname" value="<%= @data.user.nickname %>">
+    <input type="hidden" name="nickname" value="<%= @user.nickname %>">
     <input type="hidden" name="profile" value="">
     <button type="submit" class="collapse">Remote follow</button>
   </form>
-  <%= raw (@data.user.name |> Formatter.emojify(emoji_for_user(@data.user))) %>
+  <%= raw (@user.name |> Formatter.emojify(emoji_for_user(@user))) %>
 </h1>
-<p><%= raw @data.user.bio %></p>
+<p><%= raw @user.bio %></p>
 <div class="activity-stream">
-  <%= for activity <- @data.timeline do %>
-    <%= render("_notice.html", %{data: activity}) %>
+  <%= for activity <- @timeline do %>
+    <%= render("_notice.html", Map.put(activity, :selected, false)) %>
   <% end %>
 </div>
