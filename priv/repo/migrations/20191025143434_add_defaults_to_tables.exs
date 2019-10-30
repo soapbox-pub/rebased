@@ -12,7 +12,6 @@ defmodule Pleroma.Repo.Migrations.AddDefaultsToTables do
     ALTER COLUMN data SET DEFAULT '{}'::jsonb")
 
     execute(~s(ALTER TABLE users
-    ALTER COLUMN following SET DEFAULT ARRAY[]::character varying[],
     ALTER COLUMN tags SET DEFAULT ARRAY[]::character varying[],
     ALTER COLUMN notification_settings SET DEFAULT
       '{"followers": true, "follows": true, "non_follows": true, "non_followers": true}'::jsonb))
@@ -46,7 +45,6 @@ defmodule Pleroma.Repo.Migrations.AddDefaultsToTables do
       "UPDATE users SET pleroma_settings_store = '{}'::jsonb where pleroma_settings_store IS NULL"
     )
 
-    execute("UPDATE users SET following = ARRAY[]::character varying[] WHERE following IS NULL")
     execute("UPDATE users SET tags = ARRAY[]::character varying[] WHERE tags IS NULL")
     execute(~s(UPDATE users SET notification_settings =
       '{"followers": true, "follows": true, "non_follows": true, "non_followers": true}'::jsonb
@@ -64,7 +62,6 @@ defmodule Pleroma.Repo.Migrations.AddDefaultsToTables do
     ALTER COLUMN data DROP DEFAULT")
 
     execute("ALTER TABLE users
-    ALTER COLUMN following DROP DEFAULT,
     ALTER COLUMN tags DROP DEFAULT,
     ALTER COLUMN notification_settings SET DEFAULT '{}'::jsonb")
   end
