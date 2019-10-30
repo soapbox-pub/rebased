@@ -28,4 +28,9 @@ defmodule Pleroma.Web.StaticFE.StaticFEView do
   def fetch_media_type(%{"mediaType" => mediaType}) do
     Utils.fetch_media_type(@media_types, mediaType)
   end
+
+  def format_date(date) do
+    {:ok, date, _} = DateTime.from_iso8601(date)
+    Pleroma.Web.CommonAPI.Utils.format_asctime(date)
+  end
 end
