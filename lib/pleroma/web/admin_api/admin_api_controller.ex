@@ -333,7 +333,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       email: params["email"]
     }
 
-    with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)),
+    with {:ok, users, _count} <- Search.user(Map.merge(search_params, filters)),
+         {:ok, users, count} <- filter_relay_user(users),
          do:
            conn
            |> json(
@@ -343,6 +344,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
                page_size: page_size
              )
            )
+  end
+
+  defp filter_relay_user(users) do
+    filtered_users = Enum.reject(users, &(&1.ap_id == Relay.relay_ap_id()))
+
+    {:ok, filtered_users, length(filtered_users)}
   end
 
   @filters ~w(local external active deactivated is_admin is_moderator)
