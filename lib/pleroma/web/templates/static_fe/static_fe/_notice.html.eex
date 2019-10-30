@@ -15,7 +15,7 @@
     <%= for %{"name" => name, "url" => [url | _]} <- @data.attachment do %>
       <%= if @data.sensitive do %>
         <details class="nsfw">
-          <summary>sensitive media</summary>
+          <summary><%= Gettext.gettext("sensitive media") %></summary>
           <div>
             <%= render("_attachment.html", %{name: name, url: url["href"],
                                              mediaType: fetch_media_type(url)}) %>

@@ -6,6 +6,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEView do
   use Pleroma.Web, :view
 
   alias Pleroma.User
+  alias Pleroma.Web.Gettext
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Formatter
   alias Pleroma.Web.Metadata.Utils
