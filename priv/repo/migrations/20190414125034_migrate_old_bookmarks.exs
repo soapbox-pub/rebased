@@ -8,10 +8,10 @@ defmodule Pleroma.Repo.Migrations.MigrateOldBookmarks do
 
   def up do
     query =
-      from(u in User,
+      from(u in "users",
         where: u.local == true,
-        where: fragment("array_length(bookmarks, 1)") > 0,
-        select: %{id: u.id, bookmarks: fragment("bookmarks")}
+        where: fragment("array_length(?, 1)", u.bookmarks) > 0,
+        select: %{id: u.id, bookmarks: u.bookmarks}
       )
 
     Repo.stream(query)
