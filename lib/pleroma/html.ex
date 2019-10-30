@@ -108,8 +108,8 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
 
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
-  require HtmlSanitizeEx.Scrubber.Meta
-  alias HtmlSanitizeEx.Scrubber.Meta
+  require FastSanitize.Sanitizer.Meta
+  alias FastSanitize.Sanitizer.Meta
 
   Meta.strip_comments()
 
@@ -291,10 +291,9 @@ defmodule Pleroma.HTML.Scrubber.LinksOnly do
 
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
-  require HtmlSanitizeEx.Scrubber.Meta
-  alias HtmlSanitizeEx.Scrubber.Meta
+  require FastSanitize.Sanitizer.Meta
+  alias FastSanitize.Sanitizer.Meta
 
-  Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
   # links

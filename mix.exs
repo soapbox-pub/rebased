@@ -108,7 +108,6 @@ defmodule Pleroma.Mixfile do
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
       {:trailing_format_plug, "~> 0.0.7"},
-      {:html_sanitize_ex, "~> 1.3.0"},
       {:fast_sanitize,
        git: "https://git.pleroma.social/pleroma/fast_sanitize.git",
        ref: "37f55e2bbe6eb44e8a9c4b3831a5ce73a2f6955c"},

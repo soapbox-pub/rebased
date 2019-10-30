@@ -5,6 +5,7 @@
 defmodule Pleroma.BBS.Handler do
   use Sshd.ShellHandler
   alias Pleroma.Activity
+  alias Pleroma.HTML
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
@@ -44,7 +45,7 @@ defmodule Pleroma.BBS.Handler do
   def puts_activity(activity) do
     status = Pleroma.Web.MastodonAPI.StatusView.render("show.json", %{activity: activity})
     IO.puts("-- #{status.id} by #{status.account.display_name} (#{status.account.acct})")
-    IO.puts(HtmlSanitizeEx.strip_tags(status.content))
+    IO.puts(HTML.strip_tags(status.content))
     IO.puts("")
   end
 
