@@ -57,9 +57,10 @@ defmodule Pleroma.Web.ActivityPub.Relay do
 
   @spec list() :: {:ok, [String.t()]} | {:error, any()}
   def list do
-    with %User{following: following} = _user <- get_actor() do
+    with %User{} = user <- get_actor() do
       list =
-        following
+        user
+        |> User.following()
         |> Enum.map(fn entry -> URI.parse(entry).host end)
         |> Enum.uniq()
 

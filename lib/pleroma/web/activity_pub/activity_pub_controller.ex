@@ -319,12 +319,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       when page? in [true, "true"] do
     activities =
       if params["max_id"] do
-        ActivityPub.fetch_activities([user.ap_id | user.following], %{
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], %{
           "max_id" => params["max_id"],
           "limit" => 10
         })
       else
-        ActivityPub.fetch_activities([user.ap_id | user.following], %{"limit" => 10})
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], %{"limit" => 10})
       end
 
     conn

@@ -88,10 +88,9 @@ defmodule Pleroma.UserTest do
     CommonAPI.follow(pending_follower, locked)
     CommonAPI.follow(pending_follower, locked)
     CommonAPI.follow(accepted_follower, locked)
-    User.follow(accepted_follower, locked)
+    Pleroma.FollowingRelationship.update(accepted_follower, locked, "accept")
 
-    assert [activity] = User.get_follow_requests(locked)
-    assert activity
+    assert [^pending_follower] = User.get_follow_requests(locked)
   end
 
   test "clears follow requests when requester is blocked" do
@@ -136,10 +135,10 @@ defmodule Pleroma.UserTest do
     followed_two = insert(:user)
 
     {:ok, user} = User.follow_all(user, [followed_zero, followed_one])
-    assert length(user.following) == 3
+    assert length(User.following(user)) == 3
 
     {:ok, user} = User.follow_all(user, [followed_one, followed_two])
-    assert length(user.following) == 4
+    assert length(User.following(user)) == 4
   end
 
   test "follow takes a user and another user" do
@@ -153,7 +152,7 @@ defmodule Pleroma.UserTest do
     followed = User.get_cached_by_ap_id(followed.ap_id)
     assert followed.follower_count == 1
 
-    assert User.ap_followers(followed) in user.following
+    assert User.ap_followers(followed) in User.following(user)
   end
 
   test "can't follow a deactivated users" do
@@ -218,26 +217,29 @@ defmodule Pleroma.UserTest do
           nickname: "fuser2",
           ap_id: "http://localhost:4001/users/fuser2",
           follower_address: "http://localhost:4001/users/fuser2/followers",
-          following_address: "http://localhost:4001/users/fuser2/following",
-          following: [User.ap_followers(followed)]
+          following_address: "http://localhost:4001/users/fuser2/following"
         })
+
+      {:ok, user} = User.follow(user, followed, "accept")
 
       {:ok, user, _activity} = User.unfollow(user, followed)
 
       user = User.get_cached_by_id(user.id)
 
-      assert user.following == []
+      assert User.following(user) == []
     end
 
     test "unfollow takes a user and another user" do
       followed = insert(:user)
-      user = insert(:user, %{following: [User.ap_followers(followed)]})
+      user = insert(:user)
+
+      {:ok, user} = User.follow(user, followed, "accept")
+
+      assert User.following(user) == [user.follower_address, followed.follower_address]
 
       {:ok, user, _activity} = User.unfollow(user, followed)
 
-      user = User.get_cached_by_id(user.id)
-
-      assert user.following == []
+      assert User.following(user) == [user.follower_address]
     end
 
     test "unfollow doesn't unfollow yourself" do
@@ -245,14 +247,14 @@ defmodule Pleroma.UserTest do
 
       {:error, _} = User.unfollow(user, user)
 
-      user = User.get_cached_by_id(user.id)
-      assert user.following == [user.ap_id]
+      assert User.following(user) == [user.follower_address]
     end
   end
 
   test "test if a user is following another user" do
     followed = insert(:user)
-    user = insert(:user, %{following: [User.ap_followers(followed)]})
+    user = insert(:user)
+    User.follow(user, followed, "accept")
 
     assert User.following?(user, followed)
     refute User.following?(followed, user)
@@ -335,17 +337,13 @@ defmodule Pleroma.UserTest do
       refute changeset.valid?
     end
 
-    test "it sets the password_hash, ap_id and following fields" do
+    test "it sets the password_hash and ap_id" do
       changeset = User.register_changeset(%User{}, @full_user_data)
 
       assert changeset.valid?
 
       assert is_binary(changeset.changes[:password_hash])
       assert changeset.changes[:ap_id] == User.ap_id(%User{nickname: @full_user_data.nickname})
-
-      assert changeset.changes[:following] == [
-               User.ap_followers(%User{nickname: @full_user_data.nickname})
-             ]
 
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
     end
@@ -647,37 +645,6 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.update_follower_count(user)
 
       assert user.follower_count == 1
-    end
-  end
-
-  describe "remove duplicates from following list" do
-    test "it removes duplicates" do
-      user = insert(:user)
-      follower = insert(:user)
-
-      {:ok, %User{following: following} = follower} = User.follow(follower, user)
-      assert length(following) == 2
-
-      {:ok, follower} =
-        follower
-        |> User.update_changeset(%{following: following ++ following})
-        |> Repo.update()
-
-      assert length(follower.following) == 4
-
-      {:ok, follower} = User.remove_duplicated_following(follower)
-      assert length(follower.following) == 2
-    end
-
-    test "it does nothing when following is uniq" do
-      user = insert(:user)
-      follower = insert(:user)
-
-      {:ok, follower} = User.follow(follower, user)
-      assert length(follower.following) == 2
-
-      {:ok, follower} = User.remove_duplicated_following(follower)
-      assert length(follower.following) == 2
     end
   end
 
@@ -989,7 +956,9 @@ defmodule Pleroma.UserTest do
       assert [activity] == ActivityPub.fetch_public_activities(%{}) |> Repo.preload(:bookmark)
 
       assert [%{activity | thread_muted?: CommonAPI.thread_muted?(user2, activity)}] ==
-               ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
+               ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
+                 "user" => user2
+               })
 
       {:ok, _user} = User.deactivate(user)
 
@@ -997,7 +966,9 @@ defmodule Pleroma.UserTest do
       assert [] == Pleroma.Notification.for_user(user2)
 
       assert [] ==
-               ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
+               ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
+                 "user" => user2
+               })
     end
   end
 

@@ -139,7 +139,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
   describe "running unsubscribe" do
     test "user is unsubscribed" do
       followed = insert(:user)
-      user = insert(:user, %{following: [User.ap_followers(followed)]})
+      user = insert(:user)
+      User.follow(user, followed, "accept")
 
       Mix.Tasks.Pleroma.User.run(["unsubscribe", user.nickname])
 
@@ -154,7 +155,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ "Successfully unsubscribed"
 
       user = User.get_cached_by_nickname(user.nickname)
-      assert Enum.empty?(user.following)
+      assert Enum.empty?(User.get_friends(user))
       assert user.deactivated
     end
 

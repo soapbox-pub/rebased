@@ -366,7 +366,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> response(200)
 
       assert response =~ "Account followed!"
-      assert user2.follower_address in refresh_record(user).following
+      assert user2.follower_address in User.following(user)
     end
 
     test "returns error when user is deactivated", %{conn: conn} do
@@ -438,7 +438,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> response(200)
 
       assert response =~ "Account followed!"
-      assert user2.follower_address in refresh_record(user).following
+      assert user2.follower_address in User.following(user)
     end
 
     test "returns error when followee not found", %{conn: conn} do

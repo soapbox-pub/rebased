@@ -95,79 +95,37 @@ defmodule Pleroma.Repo.Migrations.CopyUsersInfoFieldsToUsers do
   ]
 
   def change do
-    alter table(:users) do
-      add(:banner, :map, default: %{})
-      add(:background, :map, default: %{})
-      add(:source_data, :map, default: %{})
-      add(:note_count, :integer, default: 0)
-      add(:follower_count, :integer, default: 0)
-      add(:following_count, :integer, default: nil)
-      add(:locked, :boolean, default: false, null: false)
-      add(:confirmation_pending, :boolean, default: false, null: false)
-      add(:password_reset_pending, :boolean, default: false, null: false)
-      add(:confirmation_token, :text, default: nil)
-      add(:default_scope, :string, default: "public")
-      add(:blocks, {:array, :text}, default: [])
-      add(:domain_blocks, {:array, :text}, default: [])
-      add(:mutes, {:array, :text}, default: [])
-      add(:muted_reblogs, {:array, :text}, default: [])
-      add(:muted_notifications, {:array, :text}, default: [])
-      add(:subscribers, {:array, :text}, default: [])
-      add(:deactivated, :boolean, default: false, null: false)
-      add(:no_rich_text, :boolean, default: false, null: false)
-      add(:ap_enabled, :boolean, default: false, null: false)
-      add(:is_moderator, :boolean, default: false, null: false)
-      add(:is_admin, :boolean, default: false, null: false)
-      add(:show_role, :boolean, default: true, null: false)
-      add(:settings, :map, default: nil)
-      add(:magic_key, :text, default: nil)
-      add(:uri, :text, default: nil)
-      add(:hide_followers_count, :boolean, default: false, null: false)
-      add(:hide_follows_count, :boolean, default: false, null: false)
-      add(:hide_followers, :boolean, default: false, null: false)
-      add(:hide_follows, :boolean, default: false, null: false)
-      add(:hide_favorites, :boolean, default: true, null: false)
-      add(:unread_conversation_count, :integer, default: 0)
-      add(:pinned_activities, {:array, :text}, default: [])
-      add(:email_notifications, :map, default: %{"digest" => false})
-      add(:mascot, :map, default: nil)
-      add(:emoji, :map, default: fragment(@jsonb_array_default))
-      add(:pleroma_settings_store, :map, default: %{})
-      add(:fields, :map, default: fragment(@jsonb_array_default))
-      add(:raw_fields, :map, default: fragment(@jsonb_array_default))
-      add(:discoverable, :boolean, default: false, null: false)
-      add(:invisible, :boolean, default: false, null: false)
-      add(:notification_settings, :map, default: %{})
-      add(:skip_thread_containment, :boolean, default: false, null: false)
-    end
-
     if direction() == :up do
-      for f <- @info_fields do
-        set_field = "update users set #{f} ="
+      sets =
+        for f <- @info_fields do
+          set_field = "#{f} ="
 
-        # Coercion of null::jsonb to NULL
-        jsonb = "case when info->>'#{f}' IS NULL then null else info->'#{f}' end"
+          # Coercion of null::jsonb to NULL
+          jsonb = "case when info->>'#{f}' IS NULL then null else info->'#{f}' end"
 
-        cond do
-          f in @jsonb_fields ->
-            execute("#{set_field} #{jsonb}")
+          cond do
+            f in @jsonb_fields ->
+              "#{set_field} #{jsonb}"
 
-          f in @array_jsonb_fields ->
-            execute("#{set_field} coalesce(#{jsonb}, #{@jsonb_array_default})")
+            f in @array_jsonb_fields ->
+              "#{set_field} coalesce(#{jsonb}, #{@jsonb_array_default})"
 
-          f in @int_fields ->
-            execute("#{set_field} (info->>'#{f}')::int")
+            f in @int_fields ->
+              "#{set_field} (info->>'#{f}')::int"
 
-          f in @boolean_fields ->
-            execute("#{set_field} coalesce((info->>'#{f}')::boolean, false)")
+            f in @boolean_fields ->
+              "#{set_field} coalesce((info->>'#{f}')::boolean, false)"
 
-          f in @array_text_fields ->
-            execute("#{set_field} ARRAY(SELECT jsonb_array_elements_text(#{jsonb}))")
+            f in @array_text_fields ->
+              "#{set_field} ARRAY(SELECT jsonb_array_elements_text(#{jsonb}))"
 
-          true ->
-            execute("#{set_field} info->>'#{f}'")
+            true ->
+              "#{set_field} info->>'#{f}'"
+          end
         end
-      end
+        |> Enum.join(", ")
+
+      execute("update users set " <> sets)
 
       for index_name <- [
             :users_deactivated_index,

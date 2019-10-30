@@ -28,6 +28,8 @@ defmodule Pleroma.User.Query do
   """
   import Ecto.Query
   import Pleroma.Web.AdminAPI.Search, only: [not_empty_string: 1]
+
+  alias Pleroma.FollowingRelationship
   alias Pleroma.User
 
   @type criteria ::
@@ -139,18 +141,40 @@ defmodule Pleroma.User.Query do
     |> where([u], not is_nil(u.nickname))
   end
 
-  defp compose_query({:followers, %User{id: id, follower_address: follower_address}}, query) do
-    where(query, [u], fragment("? <@ ?", ^[follower_address], u.following))
+  defp compose_query({:followers, %User{id: id}}, query) do
+    query
     |> where([u], u.id != ^id)
+    |> join(:inner, [u], r in FollowingRelationship,
+      as: :relationships,
+      on: r.following_id == ^id and r.follower_id == u.id
+    )
+    |> where([relationships: r], r.state == "accept")
   end
 
-  defp compose_query({:friends, %User{id: id, following: following}}, query) do
-    where(query, [u], u.follower_address in ^following)
+  defp compose_query({:friends, %User{id: id}}, query) do
+    query
     |> where([u], u.id != ^id)
+    |> join(:inner, [u], r in FollowingRelationship,
+      as: :relationships,
+      on: r.following_id == u.id and r.follower_id == ^id
+    )
+    |> where([relationships: r], r.state == "accept")
   end
 
   defp compose_query({:recipients_from_activity, to}, query) do
-    where(query, [u], u.ap_id in ^to or fragment("? && ?", u.following, ^to))
+    query
+    |> join(:left, [u], r in FollowingRelationship,
+      as: :relationships,
+      on: r.follower_id == u.id
+    )
+    |> join(:left, [relationships: r], f in User,
+      as: :following,
+      on: f.id == r.following_id
+    )
+    |> where(
+      [u, following: f, relationships: r],
+      u.ap_id in ^to or (f.follower_address in ^to and r.state == "accept")
+    )
   end
 
   defp compose_query({:order_by, key}, query) do
