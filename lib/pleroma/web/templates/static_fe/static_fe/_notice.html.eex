@@ -2,7 +2,7 @@
   <p class="pull-right">
     <%= link @published, to: @link, class: "activity-link" %>
   </p>
-  <%= render("user_card.html", %{user: @user}) %>
+  <%= render("_user_card.html", %{user: @user}) %>
   <div class="activity-content">
     <%= if @title != "" do %>
       <details>

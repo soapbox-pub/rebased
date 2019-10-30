@@ -43,6 +43,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   end
 
   def show_notice(%{assigns: %{notice_id: notice_id}} = conn, _params) do
+    instance_name = Pleroma.Config.get([:instance, :name], "Pleroma")
     activity = Activity.get_by_id_with_object(notice_id)
     context = activity.object.data["context"]
     activities = ActivityPub.fetch_activities_for_context(context, %{})
@@ -52,10 +53,11 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
         represent(activity, a.object.id == activity.object.id)
       end
 
-    render(conn, "conversation.html", activities: represented)
+    render(conn, "conversation.html", %{activities: represented, instance_name: instance_name})
   end
 
   def show_user(%{assigns: %{username_or_id: username_or_id}} = conn, _params) do
+    instance_name = Pleroma.Config.get([:instance, :name], "Pleroma")
     %User{} = user = User.get_cached_by_nickname_or_id(username_or_id)
 
     timeline =
@@ -63,7 +65,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
         represent(activity, user, false)
       end
 
-    render(conn, "profile.html", %{user: user, timeline: timeline})
+    render(conn, "profile.html", %{user: user, timeline: timeline, instance_name: instance_name})
   end
 
   def assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),

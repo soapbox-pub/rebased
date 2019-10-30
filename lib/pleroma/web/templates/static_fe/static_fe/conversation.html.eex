@@ -1,3 +1,5 @@
+<h1><%= link @instance_name, to: "/" %></h1>
+
 <div class="conversation">
   <%= for activity <- @activities do %>
     <%= render("_notice.html", activity) %>
