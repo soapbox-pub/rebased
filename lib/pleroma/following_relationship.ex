@@ -107,4 +107,28 @@ defmodule Pleroma.FollowingRelationship do
       [user.follower_address | following]
     end
   end
+
+  def move_following(origin, target) do
+    following_relationships =
+      __MODULE__
+      |> where(following_id: ^origin.id)
+      |> preload([:follower])
+      |> limit(50)
+      |> Repo.all()
+
+    case following_relationships do
+      [] ->
+        :ok
+
+      following_relationships ->
+        Enum.each(following_relationships, fn following_relationship ->
+          Repo.transaction(fn ->
+            Repo.delete(following_relationship)
+            User.follow(following_relationship.follower, target)
+          end)
+        end)
+
+        move_following(origin, target)
+    end
+  end
 end

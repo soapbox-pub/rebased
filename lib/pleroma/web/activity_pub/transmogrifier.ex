@@ -785,6 +785,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def handle_incoming(
+        %{
+          "type" => "Move",
+          "actor" => origin_actor,
+          "object" => origin_actor,
+          "target" => target_actor
+        },
+        _options
+      ) do
+    with %User{} = origin_user <- User.get_cached_by_ap_id(origin_actor),
+         {:ok, %User{} = target_user} <- User.get_or_fetch_by_ap_id(target_actor),
+         true <- origin_actor in target_user.also_known_as do
+      ActivityPub.move(origin_user, target_user, false)
+    else
+      _e -> :error
+    end
+  end
+
   def handle_incoming(_, _), do: :error
 
   @spec get_obj_helper(String.t(), Keyword.t()) :: {:ok, Object.t()} | nil
