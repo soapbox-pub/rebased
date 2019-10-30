@@ -27,4 +27,11 @@
       <% end %>
     <% end %>
   </div>
+  <%= if @selected do %>
+    <dl class="counts">
+      <dt><%= Gettext.gettext("replies") %></dt><dd><%= @counts.replies %></dd>
+      <dt><%= Gettext.gettext("announces") %></dt><dd><%= @counts.announces %></dd>
+      <dt><%= Gettext.gettext("likes") %></dt><dd><%= @counts.likes %></dd>
+    </dl>
+  <% end %>
 </div>

@@ -24,6 +24,7 @@
 
       .activity {
         padding: 1em;
+        padding-bottom: 2em;
         margin-bottom: 1em;
       }
 
@@ -44,6 +45,11 @@
 
       #selected {
         background-color: #1b2735;
+      }
+
+      .counts dt, .counts dd {
+        float: left;
+        margin-left: 1em;
       }
 
       a {

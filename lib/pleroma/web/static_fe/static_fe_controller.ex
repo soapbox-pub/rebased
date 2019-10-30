@@ -24,6 +24,16 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
   defp get_title(_), do: nil
 
+  def get_counts(%Activity{} = activity) do
+    %Object{data: data} = Object.normalize(activity)
+
+    %{
+      likes: data["like_count"] || 0,
+      replies: data["repliesCount"] || 0,
+      announces: data["announcement_count"] || 0
+    }
+  end
+
   def represent(%Activity{} = activity, %User{} = user, selected) do
     %{
       user: user,
@@ -33,7 +43,8 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
       link: Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, activity.id),
       published: activity.object.data["published"],
       sensitive: activity.object.data["sensitive"],
-      selected: selected
+      selected: selected,
+      counts: get_counts(activity)
     }
   end
 
@@ -50,7 +61,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
     represented =
       for a <- Enum.reverse(activities) do
-        represent(activity, a.object.id == activity.object.id)
+        represent(a, a.object.id == activity.object.id)
       end
 
     render(conn, "conversation.html", %{activities: represented, instance_name: instance_name})
