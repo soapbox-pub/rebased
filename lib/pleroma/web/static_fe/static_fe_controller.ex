@@ -9,9 +9,12 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   alias Pleroma.Web.StaticFE.ActivityRepresenter
   alias Pleroma.Web.StaticFE.UserRepresenter
 
-  require Logger
+  plug(:put_layout, :static_fe)
+  plug(:put_view, Pleroma.Web.StaticFE.StaticFEView)
+  plug(:assign_id)
+  action_fallback(:not_found)
 
-  def show_notice(conn, %{"notice_id" => notice_id}) do
+  def show_notice(%{assigns: %{notice_id: notice_id}} = conn, _params) do
     with {:ok, data} <- ActivityRepresenter.represent(notice_id) do
       context = data.object.data["context"]
       activities = ActivityPub.fetch_activities_for_context(context, %{})
@@ -22,45 +25,29 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
           |> Map.put(:selected, a.object.id == data.object.id)
         end
 
-      conn
-      |> put_layout(:static_fe)
-      |> put_status(200)
-      |> put_view(Pleroma.Web.StaticFE.StaticFEView)
-      |> render("conversation.html", %{data: data})
-    else
-      {:error, nil} ->
-        conn
-        |> put_status(404)
-        |> text("Not found")
+      render(conn, "conversation.html", data: data)
     end
   end
 
-  def show_user(conn, %{"username_or_id" => username_or_id}) do
+  def show_user(%{assigns: %{username_or_id: username_or_id}} = conn, _params) do
     with {:ok, data} <- UserRepresenter.represent(username_or_id) do
-      conn
-      |> put_layout(:static_fe)
-      |> put_status(200)
-      |> put_view(Pleroma.Web.StaticFE.StaticFEView)
-      |> render("profile.html", %{data: data})
-    else
-      {:error, nil} ->
-        conn
-        |> put_status(404)
-        |> text("Not found")
+      render(conn, "profile.html", data: data)
     end
   end
 
-  def show(%{path_info: ["notice", notice_id]} = conn, _params),
-    do: show_notice(conn, %{"notice_id" => notice_id})
+  def assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),
+    do: assign(conn, :notice_id, notice_id)
 
-  def show(%{path_info: ["users", user_id]} = conn, _params),
-    do: show_user(conn, %{"username_or_id" => user_id})
+  def assign_id(%{path_info: ["users", user_id]} = conn, _opts),
+    do: assign(conn, :username_or_id, user_id)
 
-  def show(%{path_info: [user_id]} = conn, _params),
-    do: show_user(conn, %{"username_or_id" => user_id})
+  def assign_id(%{path_info: [user_id]} = conn, _opts),
+    do: assign(conn, :username_or_id, user_id)
+
+  def assign_id(conn, _opts), do: conn
 
   # Fallback for unhandled types
-  def show(conn, _params) do
+  def not_found(conn, _opts) do
     conn
     |> put_status(404)
     |> text("Not found")

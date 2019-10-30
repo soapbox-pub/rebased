@@ -24,12 +24,9 @@ defmodule Pleroma.Web.StaticFE.UserRepresenter do
   end
 
   def represent(username_or_id) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(username_or_id),
-         data <- prepare_user(user) do
-      {:ok, data}
-    else
-      e ->
-        {:error, e}
+    case User.get_cached_by_nickname_or_id(username_or_id) do
+      %User{} = user -> {:ok, prepare_user(user)}
+      nil -> {:error, "User not found"}
     end
   end
 end

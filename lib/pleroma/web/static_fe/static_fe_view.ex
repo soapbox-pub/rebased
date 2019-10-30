@@ -11,19 +11,20 @@ defmodule Pleroma.Web.StaticFE.StaticFEView do
   alias Pleroma.Web.Metadata.Utils
   alias Pleroma.Web.Router.Helpers
 
-  import Phoenix.HTML
+  use Phoenix.HTML
 
   @media_types ["image", "audio", "video"]
 
   def emoji_for_user(%User{} = user) do
-    (user.source_data["tag"] || [])
+    user.source_data
+    |> Map.get("tag", [])
     |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
     |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
       {String.trim(name, ":"), url}
     end)
   end
 
-  def fetch_media_type(url) do
-    Utils.fetch_media_type(@media_types, url["mediaType"])
+  def fetch_media_type(%{"mediaType" => mediaType}) do
+    Utils.fetch_media_type(@media_types, mediaType)
   end
 end

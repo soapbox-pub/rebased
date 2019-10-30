@@ -62,8 +62,8 @@ defmodule Pleroma.Web.StaticFE.ActivityRepresenter do
          {:ok, %User{} = user} <- User.get_or_fetch(activity.data["actor"]) do
       {:ok, prepare_activity(user, activity)}
     else
-      e ->
-        {:error, e}
+      {:error, reason} -> {:error, reason}
+      _error -> {:error, "Not found"}
     end
   end
 end

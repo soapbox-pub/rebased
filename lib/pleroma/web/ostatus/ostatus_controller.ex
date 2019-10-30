@@ -77,7 +77,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   def notice(%{assigns: %{format: format}} = conn, %{"id" => id}) do
     if Pleroma.Config.get([:instance, :static_fe], false) do
-      Pleroma.Web.StaticFE.StaticFEController.show(conn, %{"notice_id" => id})
+      Pleroma.Web.StaticFE.StaticFEController.call(conn, :show_notice)
     else
       with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id_with_object(id)},
            {_, true} <- {:public?, Visibility.is_public?(activity)},
