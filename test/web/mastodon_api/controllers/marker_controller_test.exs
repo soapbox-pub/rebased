@@ -26,13 +26,13 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
         |> json_response(200)
 
       assert response == %{
-        "notifications" => %{
-          "last_read_id" => "69420",
-          "updated_at" => NaiveDateTime.to_iso8601(marker.updated_at),
-          "version" => 0,
-          "pleroma" => %{ "unread_count" => 7 }
-        }
-      }
+               "notifications" => %{
+                 "last_read_id" => "69420",
+                 "updated_at" => NaiveDateTime.to_iso8601(marker.updated_at),
+                 "version" => 0,
+                 "pleroma" => %{"unread_count" => 7}
+               }
+             }
     end
 
     test "gets markers with missed scopes", %{conn: conn} do
@@ -72,7 +72,7 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
                  "last_read_id" => "69420",
                  "updated_at" => _,
                  "version" => 0,
-                 "pleroma" => %{ "unread_count" => 0 }
+                 "pleroma" => %{"unread_count" => 0}
                }
              } = response
     end
@@ -102,7 +102,7 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
                  "last_read_id" => "69888",
                  "updated_at" => NaiveDateTime.to_iso8601(marker.updated_at),
                  "version" => 0,
-                 "pleroma" => %{ "unread_count" => 0 }
+                 "pleroma" => %{"unread_count" => 0}
                }
              }
     end
