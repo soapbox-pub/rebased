@@ -34,7 +34,9 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
     }
   end
 
-  def represent(%Activity{} = activity, %User{} = user, selected) do
+  def represent(%Activity{} = activity, selected) do
+    {:ok, user} = User.get_or_fetch(activity.object.data["actor"])
+
     %{
       user: user,
       title: get_title(activity.object),
@@ -46,11 +48,6 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
       selected: selected,
       counts: get_counts(activity)
     }
-  end
-
-  def represent(%Activity{} = activity, selected) do
-    {:ok, user} = User.get_or_fetch(activity.data["actor"])
-    represent(activity, user, selected)
   end
 
   def show_notice(%{assigns: %{notice_id: notice_id}} = conn, _params) do
@@ -73,7 +70,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
     timeline =
       for activity <- ActivityPub.fetch_user_activities(user, nil, %{}) do
-        represent(activity, user, false)
+        represent(activity, false)
       end
 
     render(conn, "profile.html", %{user: user, timeline: timeline, instance_name: instance_name})
