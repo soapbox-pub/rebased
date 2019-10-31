@@ -155,3 +155,9 @@ Has theses additionnal parameters (which are the same as in Pleroma-API):
     * `captcha_solution`: optional, contains provider-specific captcha solution,
     * `captcha_token`: optional, contains provider-specific captcha token
     * `token`: invite token required when the registerations aren't public.
+
+## Markers
+
+Has these additional fields under the `pleroma` object:
+
+- `unread_count`: contains number unread notifications
