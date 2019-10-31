@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.StaticFE.StaticFEView do
   use Pleroma.Web, :view
 
+  alias Calendar.Strftime
+  alias Pleroma.Emoji.Formatter
   alias Pleroma.User
   alias Pleroma.Web.Gettext
   alias Pleroma.Web.MediaProxy
@@ -31,6 +33,6 @@ defmodule Pleroma.Web.StaticFE.StaticFEView do
 
   def format_date(date) do
     {:ok, date, _} = DateTime.from_iso8601(date)
-    Pleroma.Web.CommonAPI.Utils.format_asctime(date)
+    Strftime.strftime!(date, "%Y/%m/%d %l:%M:%S %p UTC")
   end
 end
