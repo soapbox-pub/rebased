@@ -1,16 +1,22 @@
-<h1><%= link @instance_name, to: "/" %></h1>
+<header>
+  <h1><%= link @instance_name, to: "/" %></h1>
 
-<h3>
-  <form class="pull-right collapse" method="POST" action="<%= Helpers.util_path(@conn, :remote_subscribe) %>">
-    <input type="hidden" name="nickname" value="<%= @user.nickname %>">
-    <input type="hidden" name="profile" value="">
-    <button type="submit" class="collapse">Remote follow</button>
-  </form>
-  <%= raw (@user.name |> Formatter.emojify(emoji_for_user(@user))) %>
-</h3>
-<p><%= raw @user.bio %></p>
-<div class="activity-stream">
-  <%= for activity <- @timeline do %>
-    <%= render("_notice.html", Map.put(activity, :selected, false)) %>
-  <% end %>
-</div>
+  <h3>
+    <form class="pull-right collapse" method="POST" action="<%= Helpers.util_path(@conn, :remote_subscribe) %>">
+      <input type="hidden" name="nickname" value="<%= @user.nickname %>">
+      <input type="hidden" name="profile" value="">
+      <button type="submit" class="collapse">Remote follow</button>
+    </form>
+    <%= raw Formatter.emojify(@user.name, emoji_for_user(@user)) %> |
+    <%= link "@#{@user.nickname}@#{Endpoint.host()}", to: User.profile_url(@user) %>
+  </h3>
+  <p><%= raw @user.bio %></p>
+</header>
+
+<main>
+  <div class="activity-stream">
+    <%= for activity <- @timeline do %>
+      <%= render("_notice.html", Map.put(activity, :selected, false)) %>
+    <% end %>
+  </div>
+</main>

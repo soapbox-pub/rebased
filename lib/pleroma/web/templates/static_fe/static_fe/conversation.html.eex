@@ -1,7 +1,11 @@
-<h1><%= link @instance_name, to: "/" %></h1>
+<header>
+  <h1><%= link @instance_name, to: "/" %></h1>
+</header>
 
-<div class="conversation">
-  <%= for activity <- @activities do %>
-    <%= render("_notice.html", activity) %>
-  <% end %>
-</div>
+<main>
+  <div class="conversation">
+    <%= for activity <- @activities do %>
+      <%= render("_notice.html", activity) %>
+    <% end %>
+  </div>
+</main>

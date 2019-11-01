@@ -4,7 +4,7 @@ body {
     color: white;
 }
 
-.container {
+main {
     margin: 50px auto;
     max-width: 960px;
     padding: 40px;
@@ -13,7 +13,11 @@ body {
 }
 
 header {
-    border-bottom: 2em solid #282c37;
+    margin: 50px auto;
+    max-width: 960px;
+    padding: 40px;
+    background-color: #313543;
+    border-radius: 4px;
 }
 
 .activity {
@@ -57,11 +61,11 @@ a {
     margin-bottom: 8px;
 }
 
-.h-card a {
+header a, .h-card a {
     text-decoration: none;
 }
 
-.h-card a:hover {
+header a:hover, .h-card a:hover {
     text-decoration: underline;
 }
 

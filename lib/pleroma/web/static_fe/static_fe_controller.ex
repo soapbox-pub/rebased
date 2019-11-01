@@ -34,17 +34,17 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
     }
   end
 
-  def represent(%Activity{} = activity, selected) do
+  def represent(%Activity{object: %Object{data: data}} = activity, selected) do
     {:ok, user} = User.get_or_fetch(activity.object.data["actor"])
 
     %{
       user: user,
       title: get_title(activity.object),
-      content: activity.object.data["content"] || nil,
-      attachment: activity.object.data["attachment"],
+      content: data["content"] || nil,
+      attachment: data["attachment"],
       link: Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, activity.id),
-      published: activity.object.data["published"],
-      sensitive: activity.object.data["sensitive"],
+      published: data["published"],
+      sensitive: data["sensitive"],
       selected: selected,
       counts: get_counts(activity)
     }
