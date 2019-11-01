@@ -37,12 +37,19 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   def represent(%Activity{object: %Object{data: data}} = activity, selected) do
     {:ok, user} = User.get_or_fetch(activity.object.data["actor"])
 
+    link =
+      if user.local do
+        Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, activity)
+      else
+        data["url"] || data["external_url"] || data["id"]
+      end
+
     %{
       user: user,
       title: get_title(activity.object),
       content: data["content"] || nil,
       attachment: data["attachment"],
-      link: Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, activity.id),
+      link: link,
       published: data["published"],
       sensitive: data["sensitive"],
       selected: selected,
