@@ -76,41 +76,37 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def notice(%{assigns: %{format: format}} = conn, %{"id" => id}) do
-    if Pleroma.Config.get([:instance, :static_fe], false) do
-      Pleroma.Web.StaticFE.StaticFEController.call(conn, :show_notice)
-    else
-      with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id_with_object(id)},
-           {_, true} <- {:public?, Visibility.is_public?(activity)},
-           %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
-        cond do
-          format == "html" && activity.data["type"] == "Create" ->
-            %Object{} = object = Object.normalize(activity)
+    with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id_with_object(id)},
+         {_, true} <- {:public?, Visibility.is_public?(activity)},
+         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+      cond do
+        format == "html" && activity.data["type"] == "Create" ->
+          %Object{} = object = Object.normalize(activity)
 
-            RedirectController.redirector_with_meta(
-              conn,
-              %{
-                activity_id: activity.id,
-                object: object,
-                url: Router.Helpers.o_status_url(Endpoint, :notice, activity.id),
-                user: user
-              }
-            )
+          RedirectController.redirector_with_meta(
+            conn,
+            %{
+              activity_id: activity.id,
+              object: object,
+              url: Router.Helpers.o_status_url(Endpoint, :notice, activity.id),
+              user: user
+            }
+          )
 
-          format == "html" ->
-            RedirectController.redirector(conn, nil)
+        format == "html" ->
+          RedirectController.redirector(conn, nil)
 
-          true ->
-            represent_activity(conn, format, activity, user)
-        end
-      else
-        reason when reason in [{:public?, false}, {:activity, nil}] ->
-          conn
-          |> put_status(404)
-          |> RedirectController.redirector(nil, 404)
-
-        e ->
-          e
+        true ->
+          represent_activity(conn, format, activity, user)
       end
+    else
+      reason when reason in [{:public?, false}, {:activity, nil}] ->
+        conn
+        |> put_status(404)
+        |> RedirectController.redirector(nil, 404)
+
+      e ->
+        e
     end
   end
 
