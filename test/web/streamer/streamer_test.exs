@@ -110,6 +110,24 @@ defmodule Pleroma.Web.StreamerTest do
       Streamer.stream("user:notification", notif)
       Task.await(task)
     end
+
+    test "it sends follow activities to the 'user:notification' stream", %{
+      user: user
+    } do
+      user2 = insert(:user)
+      task = Task.async(fn -> assert_receive {:text, _}, 4_000 end)
+
+      Streamer.add_socket(
+        "user:notification",
+        %{transport_pid: task.pid, assigns: %{user: user}}
+      )
+
+      {:ok, _follower, _followed, _activity} = CommonAPI.follow(user2, user)
+
+      # We don't directly pipe the notification to the streamer as it's already
+      # generated as a side effect of CommonAPI.follow().
+      Task.await(task)
+    end
   end
 
   test "it sends to public" do
