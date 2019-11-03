@@ -21,31 +21,31 @@ defmodule Pleroma.HTMLTest do
   """
 
   @html_onerror_sample """
-    <img src="http://example.com/image.jpg" onerror="alert('hacked')">
+  <img src="http://example.com/image.jpg" onerror="alert('hacked')">
   """
 
   @html_span_class_sample """
-    <span class="animate-spin">hi</span>
+  <span class="animate-spin">hi</span>
   """
 
   @html_span_microformats_sample """
-    <span class="h-card"><a class="u-url mention">@<span>foo</span></a></span>
+  <span class="h-card"><a class="u-url mention">@<span>foo</span></a></span>
   """
 
   @html_span_invalid_microformats_sample """
-    <span class="h-card"><a class="u-url mention animate-spin">@<span>foo</span></a></span>
+  <span class="h-card"><a class="u-url mention animate-spin">@<span>foo</span></a></span>
   """
 
   describe "StripTags scrubber" do
     test "works as expected" do
       expected = """
-      this is in bold
+        this is in bold
         this is a paragraph
         this is a linebreak
-        this is a link with allowed "rel" attribute: example.com
-        this is a link with not allowed "rel" attribute: example.com
+        this is a link with allowed &quot;rel&quot; attribute: example.com
+        this is a link with not allowed &quot;rel&quot; attribute: example.com
         this is an image: 
-        alert('hacked')
+        alert(&#39;hacked&#39;)
       """
 
       assert expected == HTML.strip_tags(@html_sample)
@@ -61,13 +61,13 @@ defmodule Pleroma.HTMLTest do
   describe "TwitterText scrubber" do
     test "normalizes HTML as expected" do
       expected = """
-      this is in bold
+        this is in bold
         <p>this is a paragraph</p>
-        this is a linebreak<br />
-        this is a link with allowed "rel" attribute: <a href="http://example.com/" rel="tag">example.com</a>
-        this is a link with not allowed "rel" attribute: <a href="http://example.com/">example.com</a>
-        this is an image: <img src="http://example.com/image.jpg" /><br />
-        alert('hacked')
+        this is a linebreak<br/>
+        this is a link with allowed &quot;rel&quot; attribute: <a href="http://example.com/" rel="tag">example.com</a>
+        this is a link with not allowed &quot;rel&quot; attribute: <a href="http://example.com/">example.com</a>
+        this is an image: <img src="http://example.com/image.jpg"/><br/>
+        alert(&#39;hacked&#39;)
       """
 
       assert expected == HTML.filter_tags(@html_sample, Pleroma.HTML.Scrubber.TwitterText)
@@ -75,7 +75,7 @@ defmodule Pleroma.HTMLTest do
 
     test "does not allow attribute-based XSS" do
       expected = """
-      <img src="http://example.com/image.jpg" />
+      <img src="http://example.com/image.jpg"/>
       """
 
       assert expected == HTML.filter_tags(@html_onerror_sample, Pleroma.HTML.Scrubber.TwitterText)
@@ -115,13 +115,13 @@ defmodule Pleroma.HTMLTest do
   describe "default scrubber" do
     test "normalizes HTML as expected" do
       expected = """
-      <b>this is in bold</b>
+        <b>this is in bold</b>
         <p>this is a paragraph</p>
-        this is a linebreak<br />
-        this is a link with allowed "rel" attribute: <a href="http://example.com/" rel="tag">example.com</a>
-        this is a link with not allowed "rel" attribute: <a href="http://example.com/">example.com</a>
-        this is an image: <img src="http://example.com/image.jpg" /><br />
-        alert('hacked')
+        this is a linebreak<br/>
+        this is a link with allowed &quot;rel&quot; attribute: <a href="http://example.com/" rel="tag">example.com</a>
+        this is a link with not allowed &quot;rel&quot; attribute: <a href="http://example.com/">example.com</a>
+        this is an image: <img src="http://example.com/image.jpg"/><br/>
+        alert(&#39;hacked&#39;)
       """
 
       assert expected == HTML.filter_tags(@html_sample, Pleroma.HTML.Scrubber.Default)
@@ -129,7 +129,7 @@ defmodule Pleroma.HTMLTest do
 
     test "does not allow attribute-based XSS" do
       expected = """
-      <img src="http://example.com/image.jpg" />
+      <img src="http://example.com/image.jpg"/>
       """
 
       assert expected == HTML.filter_tags(@html_onerror_sample, Pleroma.HTML.Scrubber.Default)

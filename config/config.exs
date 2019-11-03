@@ -284,8 +284,8 @@ config :pleroma, :markup,
   allow_tables: false,
   allow_fonts: false,
   scrub_policy: [
-    Pleroma.HTML.Transform.MediaProxy,
-    Pleroma.HTML.Scrubber.Default
+    Pleroma.HTML.Scrubber.Default,
+    Pleroma.HTML.Transform.MediaProxy
   ]
 
 config :pleroma, :frontend_configurations,
@@ -603,6 +603,7 @@ config :pleroma, :web_cache_ttl,
   activity_pub: nil,
   activity_pub_question: 30_000
 
+config :swarm, node_blacklist: [~r/myhtmlex_.*$/]
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

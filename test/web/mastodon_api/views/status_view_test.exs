@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -107,7 +108,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       in_reply_to_account_id: nil,
       card: nil,
       reblog: nil,
-      content: HtmlSanitizeEx.basic_html(object_data["content"]),
+      content: HTML.filter_tags(object_data["content"]),
       created_at: created_at,
       reblogs_count: 0,
       replies_count: 0,
@@ -119,7 +120,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       pinned: false,
       sensitive: false,
       poll: nil,
-      spoiler_text: HtmlSanitizeEx.basic_html(object_data["summary"]),
+      spoiler_text: HTML.filter_tags(object_data["summary"]),
       visibility: "public",
       media_attachments: [],
       mentions: [],
@@ -146,8 +147,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         local: true,
         conversation_id: convo_id,
         in_reply_to_account_acct: nil,
-        content: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["content"])},
-        spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["summary"])},
+        content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
+        spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
         expires_at: nil,
         direct_conversation_id: nil,
         thread_muted: false
