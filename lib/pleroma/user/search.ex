@@ -54,15 +54,7 @@ defmodule Pleroma.User.Search do
     |> maybe_restrict_local(for_user)
   end
 
-  @nickname_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~\-@]+$/
   defp fts_search(query, query_string) do
-    {nickname_weight, name_weight} =
-      if String.match?(query_string, @nickname_regex) do
-        {"A", "B"}
-      else
-        {"B", "A"}
-      end
-
     query_string = to_tsquery(query_string)
 
     from(
@@ -70,12 +62,10 @@ defmodule Pleroma.User.Search do
       where:
         fragment(
           """
-          (setweight(to_tsvector('simple', ?), ?) || setweight(to_tsvector('simple', ?), ?)) @@ to_tsquery('simple', ?)
+          (to_tsvector('simple', ?) || to_tsvector('simple', ?)) @@ to_tsquery('simple', ?)
           """,
           u.name,
-          ^name_weight,
           u.nickname,
-          ^nickname_weight,
           ^query_string
         )
     )
