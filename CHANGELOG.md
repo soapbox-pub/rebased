@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.1.4] - 2019-11-01
 ### Fixed
 - Added a migration that fills up empty user.info fields to prevent breakage after previous unsafe migrations.
+- Failure to migrate from pre-1.0.0 versions
+- Mastodon API: Notification stream not including follow notifications
 
 ## [1.1.3] - 2019-10-25
 ### Fixed
