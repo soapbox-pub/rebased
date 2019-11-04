@@ -65,8 +65,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OStatus: Extract RSS functionality
 - Mastodon API: Add `pleroma.direct_conversation_id` to the status endpoint (`GET /api/v1/statuses/:id`)
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
-</details>
 - Deprecated `User.Info` embedded schema (fields moved to `User`)
+- Store status data inside Flag activity
+</details>
 
 ### Fixed
 - Report emails now include functional links to profiles of remote user accounts

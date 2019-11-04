@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
   import Mock
@@ -1109,10 +1110,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
       object = Object.normalize(activity)
 
+      note_obj = %{
+        "type" => "Note",
+        "id" => activity.data["id"],
+        "content" => "test post",
+        "published" => object.data["published"],
+        "actor" => AccountView.render("show.json", %{user: user})
+      }
+
       message = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
         "cc" => [user.ap_id],
-        "object" => [user.ap_id, object.data["id"]],
+        "object" => [user.ap_id, activity.data["id"]],
         "type" => "Flag",
         "content" => "blocked AND reported!!!",
         "actor" => other_user.ap_id
@@ -1120,7 +1129,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert {:ok, activity} = Transmogrifier.handle_incoming(message)
 
-      assert activity.data["object"] == [user.ap_id, object.data["id"]]
+      assert activity.data["object"] == [user.ap_id, note_obj]
       assert activity.data["content"] == "blocked AND reported!!!"
       assert activity.data["actor"] == other_user.ap_id
       assert activity.data["cc"] == [user.ap_id]
