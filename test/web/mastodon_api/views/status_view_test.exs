@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.Conversation.Participation
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -23,10 +24,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     :ok
   end
 
-  test "returns the direct conversation id when given the `with_conversation_id` option" do
+  test "loads and returns the direct conversation id when given the `with_direct_conversation_id` option" do
     user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+    [participation] = Participation.for_user(user)
 
     status =
       StatusView.render("show.json",
@@ -35,7 +37,26 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         for: user
       )
 
-    assert status[:pleroma][:direct_conversation_id]
+    assert status[:pleroma][:direct_conversation_id] == participation.id
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+    assert status[:pleroma][:direct_conversation_id] == nil
+  end
+
+  test "returns the direct conversation id when given the `direct_conversation_id` option" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+    [participation] = Participation.for_user(user)
+
+    status =
+      StatusView.render("show.json",
+        activity: activity,
+        direct_conversation_id: participation.id,
+        for: user
+      )
+
+    assert status[:pleroma][:direct_conversation_id] == participation.id
   end
 
   test "returns a temporary ap_id based user for activities missing db users" do
