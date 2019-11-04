@@ -25,13 +25,13 @@ defmodule Pleroma.Web.RelMe do
   def parse(_), do: {:error, "No URL provided"}
 
   defp parse_url(url) do
-    {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: @hackney_options)
-
-    data =
-      Floki.attribute(html, "link[rel~=me]", "href") ++
-        Floki.attribute(html, "a[rel~=me]", "href")
-
-    {:ok, data}
+    with {:ok, %Tesla.Env{body: html, status: status}} when status in 200..299 <-
+           Pleroma.HTTP.get(url, [], adapter: @hackney_options),
+         data <-
+           Floki.attribute(html, "link[rel~=me]", "href") ++
+             Floki.attribute(html, "a[rel~=me]", "href") do
+      {:ok, data}
+    end
   rescue
     e -> {:error, "Parsing error: #{inspect(e)}"}
   end
