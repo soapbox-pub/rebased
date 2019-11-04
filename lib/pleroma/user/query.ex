@@ -175,6 +175,7 @@ defmodule Pleroma.User.Query do
       [u, following: f, relationships: r],
       u.ap_id in ^to or (f.follower_address in ^to and r.state == "accept")
     )
+    |> distinct(true)
   end
 
   defp compose_query({:order_by, key}, query) do

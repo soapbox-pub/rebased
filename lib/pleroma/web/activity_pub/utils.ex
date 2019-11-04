@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router.Helpers
 
@@ -21,6 +22,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   require Pleroma.Constants
 
   @supported_object_types ["Article", "Note", "Video", "Page", "Question", "Answer", "Audio"]
+  @strip_status_report_states ~w(closed resolved)
   @supported_report_states ~w(open closed resolved)
   @valid_visibilities ~w(public unlisted private direct)
 
@@ -614,10 +616,24 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   defp build_flag_object(%{account: account, statuses: statuses} = _) do
     [account.ap_id] ++
-      Enum.map(statuses || [], fn
-        %Activity{} = act -> act.data["id"]
-        act when is_map(act) -> act["id"]
-        act when is_binary(act) -> act
+      Enum.map(statuses || [], fn act ->
+        id =
+          case act do
+            %Activity{} = act -> act.data["id"]
+            act when is_map(act) -> act["id"]
+            act when is_binary(act) -> act
+          end
+
+        activity = Activity.get_by_ap_id_with_object(id)
+        actor = User.get_by_ap_id(activity.object.data["actor"])
+
+        %{
+          "type" => "Note",
+          "id" => activity.data["id"],
+          "content" => activity.object.data["content"],
+          "published" => activity.object.data["published"],
+          "actor" => AccountView.render("show.json", %{user: actor})
+        }
       end)
   end
 
@@ -664,6 +680,20 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   #### Report-related helpers
 
+  def update_report_state(%Activity{} = activity, state)
+      when state in @strip_status_report_states do
+    {:ok, stripped_activity} = strip_report_status_data(activity)
+
+    new_data =
+      activity.data
+      |> Map.put("state", state)
+      |> Map.put("object", stripped_activity.data["object"])
+
+    activity
+    |> Changeset.change(data: new_data)
+    |> Repo.update()
+  end
+
   def update_report_state(%Activity{} = activity, state) when state in @supported_report_states do
     new_data = Map.put(activity.data, "state", state)
 
@@ -673,6 +703,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def update_report_state(_, _), do: {:error, "Unsupported state"}
+
+  def strip_report_status_data(activity) do
+    [actor | reported_activities] = activity.data["object"]
+    stripped_activities = Enum.map(reported_activities, & &1["id"])
+    new_data = put_in(activity.data, ["object"], [actor | stripped_activities])
+
+    {:ok, %{activity | data: new_data}}
+  end
 
   def update_activity_visibility(activity, visibility) when visibility in @valid_visibilities do
     [to, cc, recipients] =
