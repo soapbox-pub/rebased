@@ -46,13 +46,22 @@ Authentication is required and the user must be an admin.
 }
 ```
 
-## `DELETE /api/pleroma/admin/users`
+## DEPRECATED `DELETE /api/pleroma/admin/users`
 
 ### Remove a user
 
 - Params:
   - `nickname`
 - Response: User’s nickname
+
+## `DELETE /api/pleroma/admin/users`
+
+### Remove a user
+
+- Method `DELETE`
+- Params:
+  - `nicknames`
+- Response: Array of user nicknames
 
 ### Create a user
 
@@ -149,14 +158,26 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `POST /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
+## DEPRECATED `POST /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
-### Add user in permission group
+### Add user to permission group
 
 - Params: none
 - Response:
   - On failure: `{"error": "…"}`
-  - On success: JSON of the `user.info`
+  - On success: JSON of the user
+
+## `POST /api/pleroma/admin/users/permission_group/:permission_group`
+
+### Add users to permission group
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+  - On failure: `{"error": "…"}`
+  - On success: JSON of the user
+
+## DEPRECATED `DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
 ## `DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
@@ -165,10 +186,57 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params: none
 - Response:
   - On failure: `{"error": "…"}`
-  - On success: JSON of the `user.info`
+  - On success: JSON of the user
 - Note: An admin cannot revoke their own admin status.
 
-## `PUT /api/pleroma/admin/users/:nickname/activation_status`
+## `DELETE /api/pleroma/admin/users/permission_group/:permission_group`
+
+### Remove users from permission group
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+  - On failure: `{"error": "…"}`
+  - On success: JSON of the user
+- Note: An admin cannot revoke their own admin status.
+
+## `PATCH /api/pleroma/admin/users/activate`
+
+### Activate user
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
+## `PATCH /api/pleroma/admin/users/deactivate`
+
+### Deactivate user
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
+## DEPRECATED `PATCH /api/pleroma/admin/users/:nickname/activation_status`
 
 ### Active or deactivate a user
 
@@ -215,6 +283,14 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `relay_url`
 - Response:
   - On success: URL of the unfollowed relay
+
+## `GET /api/pleroma/admin/relay`
+
+### List Relays
+
+- Params: none
+- Response:
+  - On success: JSON array of relays
 
 ## `POST /api/pleroma/admin/users/invite_token`
 

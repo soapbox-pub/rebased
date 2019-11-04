@@ -17,7 +17,7 @@ defmodule Pleroma.Plugs.UserEnabledPlugTest do
   end
 
   test "with a user that is deactivated, it removes that user", %{conn: conn} do
-    user = insert(:user, info: %{deactivated: true})
+    user = insert(:user, deactivated: true)
 
     conn =
       conn

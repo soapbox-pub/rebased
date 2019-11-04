@@ -161,11 +161,6 @@ defmodule Pleroma.Application do
         id: :web_push_init,
         start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
         restart: :temporary
-      },
-      %{
-        id: :federator_init,
-        start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
-        restart: :temporary
       }
     ]
   end
@@ -175,11 +170,6 @@ defmodule Pleroma.Application do
       %{
         id: :web_push_init,
         start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
-        restart: :temporary
-      },
-      %{
-        id: :federator_init,
-        start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
         restart: :temporary
       },
       %{

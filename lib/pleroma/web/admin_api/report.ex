@@ -13,8 +13,9 @@ defmodule Pleroma.Web.AdminAPI.Report do
     account = User.get_cached_by_ap_id(account_ap_id)
 
     statuses =
-      Enum.map(status_ap_ids, fn ap_id ->
-        Activity.get_by_ap_id_with_object(ap_id)
+      Enum.map(status_ap_ids, fn
+        act when is_map(act) -> Activity.get_by_ap_id_with_object(act["id"])
+        act when is_binary(act) -> Activity.get_by_ap_id_with_object(act)
       end)
 
     %{report: report, user: user, account: account, statuses: statuses}

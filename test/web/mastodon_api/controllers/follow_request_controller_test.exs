@@ -12,13 +12,11 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
 
   describe "locked accounts" do
     test "/api/v1/follow_requests works" do
-      user = insert(:user, %{info: %User.Info{locked: true}})
+      user = insert(:user, locked: true)
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
-
-      user = User.get_cached_by_id(user.id)
-      other_user = User.get_cached_by_id(other_user.id)
+      {:ok, other_user} = User.follow(other_user, user, "pending")
 
       assert User.following?(other_user, user) == false
 
@@ -32,10 +30,11 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
     end
 
     test "/api/v1/follow_requests/:id/authorize works" do
-      user = insert(:user, %{info: %User.Info{locked: true}})
+      user = insert(:user, locked: true)
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
+      {:ok, other_user} = User.follow(other_user, user, "pending")
 
       user = User.get_cached_by_id(user.id)
       other_user = User.get_cached_by_id(other_user.id)
@@ -57,7 +56,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
     end
 
     test "/api/v1/follow_requests/:id/reject works" do
-      user = insert(:user, %{info: %User.Info{locked: true}})
+      user = insert(:user, locked: true)
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)

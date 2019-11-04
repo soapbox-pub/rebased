@@ -129,14 +129,14 @@ defmodule Pleroma.Web.Streamer.Worker do
   end
 
   defp should_send?(%User{} = user, %Activity{} = item) do
-    blocks = user.info.blocks || []
-    mutes = user.info.mutes || []
-    reblog_mutes = user.info.muted_reblogs || []
+    blocks = user.blocks || []
+    mutes = user.mutes || []
+    reblog_mutes = user.muted_reblogs || []
     recipient_blocks = MapSet.new(blocks ++ mutes)
     recipients = MapSet.new(item.recipients)
-    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.info.domain_blocks)
+    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.domain_blocks)
 
-    with parent when not is_nil(parent) <- Object.normalize(item),
+    with parent <- Object.normalize(item) || item,
          true <- Enum.all?([blocks, mutes, reblog_mutes], &(item.actor not in &1)),
          true <- Enum.all?([blocks, mutes], &(parent.data["actor"] not in &1)),
          true <- MapSet.disjoint?(recipients, recipient_blocks),
@@ -212,7 +212,7 @@ defmodule Pleroma.Web.Streamer.Worker do
   end
 
   @spec thread_containment(Activity.t(), User.t()) :: boolean()
-  defp thread_containment(_activity, %User{info: %{skip_thread_containment: true}}), do: true
+  defp thread_containment(_activity, %User{skip_thread_containment: true}), do: true
 
   defp thread_containment(activity, user) do
     if Config.get([:instance, :skip_thread_containment]) do

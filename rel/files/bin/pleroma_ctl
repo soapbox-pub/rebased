@@ -35,31 +35,62 @@ detect_branch() {
 	if [ "$branch" = "develop" ]; then
 		echo "develop"
 	elif [ "$branch" = "" ]; then
-		echo "master"
+		echo "stable"
 	else
-	  # Note: branch name in version is of SemVer format and may only contain [0-9a-zA-Z-] symbols —
-	  #   if supporting releases for more branches, need to ensure they contain only these symbols.
-		echo "Releases are built only for master and develop branches" >&2
+		# Note: branch name in version is of SemVer format and may only contain [0-9a-zA-Z-] symbols —
+		#   if supporting releases for more branches, need to ensure they contain only these symbols.
+		echo "Can't detect the branch automatically, please specify it by using the --branch option." >&2
 		exit 1
 	fi
 }
 update() {
 	set -e
+	NO_RM=false
+
+	while echo "$1" | grep "^-" >/dev/null; do
+		case "$1" in
+		--zip-url)
+			FULL_URI="$2"
+			shift 2
+			;;
+		--no-rm)
+			NO_RM=true
+			shift
+			;;
+		--flavour)
+			FLAVOUR="$2"
+			shift 2
+			;;
+		--branch)
+			BRANCH="$2"
+			shift 2
+			;;
+		--tmp-dir)
+			TMP_DIR="$2"
+			shift 2
+			;;
+		-*)
+			echo "invalid option: $1" 1>&2
+			shift
+			;;
+		esac
+	done
+
 	RELEASE_ROOT=$(dirname "$SCRIPTPATH")
-	uri="${PLEROMA_CTL_URI:-https://git.pleroma.social}"
-	project_id="${PLEROMA_CTL_PROJECT_ID:-2}"
-	project_branch="$(detect_branch)"
-	flavour="${PLEROMA_CTL_FLAVOUR:-$(detect_flavour)}"
-	echo "Detected flavour: $flavour"
-	tmp="${PLEROMA_CTL_TMP_DIR:-/tmp}"
+	uri="https://git.pleroma.social"
+	project_id="2"
+	project_branch="${BRANCH:-$(detect_branch)}"
+	flavour="${FLAVOUR:-$(detect_flavour)}"
+	tmp="${TMP_DIR:-/tmp}"
 	artifact="$tmp/pleroma.zip"
-	full_uri="${uri}/api/v4/projects/${project_id}/jobs/artifacts/${project_branch}/download?job=${flavour}"
+	full_uri="${FULL_URI:-${uri}/api/v4/projects/${project_id}/jobs/artifacts/${project_branch}/download?job=${flavour}}"
 	echo "Downloading the artifact from ${full_uri} to ${artifact}"
 	curl "$full_uri" -o "${artifact}"
 	echo "Unpacking ${artifact} to ${tmp}"
 	unzip -q "$artifact" -d "$tmp"
 	echo "Copying files over to $RELEASE_ROOT"
-	if [ "$1" != "--no-rm" ]; then
+	if [ "$NO_RM" = false ]; then
+		echo "Removing files from the previous release"
 		rm -r "${RELEASE_ROOT:-?}"/*
 	fi
 	cp -rf "$tmp/release"/* "$RELEASE_ROOT"
@@ -86,36 +117,45 @@ if [ -z "$1" ] || [ "$1" = "help" ]; then
 	  Rollback database migrations (needs to be done before downgrading)
 
 	update [OPTIONS]
-	  Update the instance using the latest CI artifact for the current branch.
+	  Update the instance.
 
-	  The only supported option is --no-rm, when set the script won't delete the whole directory, but
-	  just force copy over files from the new release. This wastes more space, but may be useful if
-	  some files are stored inside of the release directories (although you really shouldn't store them
-	  there), or if you want to be able to quickly revert a broken update.
-
-	  The script will try to detect your architecture and ABI and set a flavour automatically,
-	  but if it is wrong, you can overwrite it by setting PLEROMA_CTL_FLAVOUR to the desired flavour.
-
-	  By default the artifact will be downloaded from https://git.pleroma.social for pleroma/pleroma (project id: 2)
-	  to /tmp/, you can overwrite these settings by setting PLEROMA_CTL_URI, PLEROMA_CTL_PROJECT_ID and PLEROMA_CTL_TMP_DIR
-	  respectively.
-
+	  Options:
+	  --branch  Update to a specified branch, instead of the latest version of the current one.
+	  --flavour Update to a specified flavour (CPU architecture+libc), instead of the current one.
+	  --zip-url Get the release from a specified url. If set, renders the previous 2 options inactive.
+	  --no-rm   Do not erase previous release's files.
+	  --tmp-dir Download the temporary files to a specified directory.
 
     and any mix tasks under Pleroma namespace, for example \`mix pleroma.user COMMAND\` is
     equivalent to \`$(basename "$0") user COMMAND\`
 
     By default pleroma_ctl will try calling into a running instance to execute non migration-related commands,
-    if for some reason this is undesired, set PLEROMA_CTL_RPC_DISABLED environment variable
+    if for some reason this is undesired, set PLEROMA_CTL_RPC_DISABLED environment variable.
+
 "
 else
 	SCRIPT=$(readlink -f "$0")
 	SCRIPTPATH=$(dirname "$SCRIPT")
 
-	if [ "$1" = "update" ]; then
-		update "$2"
-	elif [ "$1" = "migrate" ] || [ "$1" = "rollback" ] || [ "$1" = "create" ] || [ "$1 $2" = "instance gen" ] || [ -n "$PLEROMA_CTL_RPC_DISABLED" ]; then
-		"$SCRIPTPATH"/pleroma eval 'Pleroma.ReleaseTasks.run("'"$*"'")'
+	FULL_ARGS="$*"
+
+	ACTION="$1"
+	if [ $# -gt 0 ]; then
+		shift
+	fi
+	echo "$1" | grep "^-" >/dev/null
+	if [ $? -eq 1 ]; then
+		SUBACTION="$1"
+		if [ $# -gt 0 ]; then
+			shift
+		fi
+	fi
+
+	if [ "$ACTION" = "update" ]; then
+		update "$@"
+	elif [ "$ACTION" = "migrate" ] || [ "$ACTION" = "rollback" ] || [ "$ACTION" = "create" ] || [ "$ACTION $SUBACTION" = "instance gen" ] || [ "$PLEROMA_CTL_RPC_DISABLED" = true ]; then
+		"$SCRIPTPATH"/pleroma eval 'Pleroma.ReleaseTasks.run("'"$FULL_ARGS"'")'
 	else
-		"$SCRIPTPATH"/pleroma rpc 'Pleroma.ReleaseTasks.run("'"$*"'")'
+		"$SCRIPTPATH"/pleroma rpc 'Pleroma.ReleaseTasks.run("'"$FULL_ARGS"'")'
 	fi
 fi

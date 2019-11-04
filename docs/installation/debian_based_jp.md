@@ -68,7 +68,7 @@ sudo useradd -r -s /bin/false -m -d /var/lib/pleroma -U pleroma
 ```
 sudo mkdir -p /opt/pleroma
 sudo chown -R pleroma:pleroma /opt/pleroma
-sudo -Hu pleroma git clone -b master https://git.pleroma.social/pleroma/pleroma /opt/pleroma
+sudo -Hu pleroma git clone -b stable https://git.pleroma.social/pleroma/pleroma /opt/pleroma
 ```
 
 *  新しいディレクトリに移動します。

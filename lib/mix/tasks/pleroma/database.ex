@@ -28,7 +28,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     Logger.info("Removing embedded objects")
 
     Repo.query!(
-      "update activities set data = jsonb_set(data, '{object}'::text[], data->'object'->'id') where data->'object'->>'id' is not null;",
+      "update activities set data = safe_jsonb_set(data, '{object}'::text[], data->'object'->'id') where data->'object'->>'id' is not null;",
       [],
       timeout: :infinity
     )
@@ -52,9 +52,9 @@ defmodule Mix.Tasks.Pleroma.Database do
   def run(["update_users_following_followers_counts"]) do
     start_pleroma()
 
-    users = Repo.all(User)
-    Enum.each(users, &User.remove_duplicated_following/1)
-    Enum.each(users, &User.update_follower_count/1)
+    User
+    |> Repo.all()
+    |> Enum.each(&User.update_follower_count/1)
   end
 
   def run(["prune_objects" | args]) do
@@ -126,7 +126,7 @@ defmodule Mix.Tasks.Pleroma.Database do
         set: [
           data:
             fragment(
-              "jsonb_set(?, '{likes}', '[]'::jsonb, true)",
+              "safe_jsonb_set(?, '{likes}', '[]'::jsonb, true)",
               object.data
             )
         ]

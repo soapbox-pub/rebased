@@ -39,8 +39,7 @@ defmodule Pleroma.Factory do
       user
       | ap_id: User.ap_id(user),
         follower_address: User.ap_followers(user),
-        following_address: User.ap_following(user),
-        following: [User.ap_id(user)]
+        following_address: User.ap_following(user)
     }
   end
 
@@ -281,26 +280,6 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def websub_subscription_factory do
-    %Pleroma.Web.Websub.WebsubServerSubscription{
-      topic: "http://example.org",
-      callback: "http://example.org/callback",
-      secret: "here's a secret",
-      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 100),
-      state: "requested"
-    }
-  end
-
-  def websub_client_subscription_factory do
-    %Pleroma.Web.Websub.WebsubClientSubscription{
-      topic: "http://example.org",
-      secret: "here's a secret",
-      valid_until: nil,
-      state: "requested",
-      subscribers: []
-    }
-  end
-
   def oauth_app_factory do
     %Pleroma.Web.OAuth.App{
       client_name: "Some client",
@@ -395,6 +374,15 @@ defmodule Pleroma.Factory do
             :erlang.term_to_binary(%{another_key: "#{key}somevalue", another: "#{key}somevalue"})
           end
         )
+    }
+  end
+
+  def marker_factory do
+    %Pleroma.Marker{
+      user: build(:user),
+      timeline: "notifications",
+      lock_version: 0,
+      last_read_id: "1"
     }
   end
 end

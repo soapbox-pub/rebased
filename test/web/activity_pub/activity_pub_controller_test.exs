@@ -354,6 +354,87 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Activity.get_by_ap_id(data["id"])
     end
 
+    test "it accepts messages with to as string instead of array", %{conn: conn, data: data} do
+      user = insert(:user)
+
+      data =
+        Map.put(data, "to", user.ap_id)
+        |> Map.delete("cc")
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_ap_id(data["id"])
+    end
+
+    test "it accepts messages with cc as string instead of array", %{conn: conn, data: data} do
+      user = insert(:user)
+
+      data =
+        Map.put(data, "cc", user.ap_id)
+        |> Map.delete("to")
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      %Activity{} = activity = Activity.get_by_ap_id(data["id"])
+      assert user.ap_id in activity.recipients
+    end
+
+    test "it accepts messages with bcc as string instead of array", %{conn: conn, data: data} do
+      user = insert(:user)
+
+      data =
+        Map.put(data, "bcc", user.ap_id)
+        |> Map.delete("to")
+        |> Map.delete("cc")
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_ap_id(data["id"])
+    end
+
+    test "it accepts announces with to as string instead of array", %{conn: conn} do
+      user = insert(:user)
+
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "actor" => "http://mastodon.example.org/users/admin",
+        "id" => "http://mastodon.example.org/users/admin/statuses/19512778738411822/activity",
+        "object" => "https://mastodon.social/users/emelie/statuses/101849165031453009",
+        "to" => "https://www.w3.org/ns/activitystreams#Public",
+        "cc" => [user.ap_id],
+        "type" => "Announce"
+      }
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      %Activity{} = activity = Activity.get_by_ap_id(data["id"])
+      assert "https://www.w3.org/ns/activitystreams#Public" in activity.recipients
+    end
+
     test "it accepts messages from actors that are followed by the user", %{
       conn: conn,
       data: data
@@ -683,7 +764,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it returns returns a uri if the user has 'hide_followers' set", %{conn: conn} do
       user = insert(:user)
-      user_two = insert(:user, %{info: %{hide_followers: true}})
+      user_two = insert(:user, hide_followers: true)
       User.follow(user, user_two)
 
       result =
@@ -696,7 +777,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it returns a 403 error on pages, if the user has 'hide_followers' set and the request is not authenticated",
          %{conn: conn} do
-      user = insert(:user, %{info: %{hide_followers: true}})
+      user = insert(:user, hide_followers: true)
 
       result =
         conn
@@ -708,7 +789,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it renders the page, if the user has 'hide_followers' set and the request is authenticated with the same user",
          %{conn: conn} do
-      user = insert(:user, %{info: %{hide_followers: true}})
+      user = insert(:user, hide_followers: true)
       other_user = insert(:user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
@@ -764,7 +845,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "it returns a uri if the user has 'hide_follows' set", %{conn: conn} do
-      user = insert(:user, %{info: %{hide_follows: true}})
+      user = insert(:user, hide_follows: true)
       user_two = insert(:user)
       User.follow(user, user_two)
 
@@ -778,7 +859,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it returns a 403 error on pages, if the user has 'hide_follows' set and the request is not authenticated",
          %{conn: conn} do
-      user = insert(:user, %{info: %{hide_follows: true}})
+      user = insert(:user, hide_follows: true)
 
       result =
         conn
@@ -790,7 +871,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it renders the page, if the user has 'hide_follows' set and the request is authenticated with the same user",
          %{conn: conn} do
-      user = insert(:user, %{info: %{hide_follows: true}})
+      user = insert(:user, hide_follows: true)
       other_user = insert(:user)
       {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
 

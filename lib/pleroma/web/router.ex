@@ -137,11 +137,14 @@ defmodule Pleroma.Web.Router do
     delete("/users", AdminAPIController, :user_delete)
     post("/users", AdminAPIController, :users_create)
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
+    patch("/users/activate", AdminAPIController, :user_activate)
+    patch("/users/deactivate", AdminAPIController, :user_deactivate)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
 
     get("/users/:nickname/permission_group", AdminAPIController, :right_get)
     get("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_get)
+
     post("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_add)
 
     delete(
@@ -150,8 +153,15 @@ defmodule Pleroma.Web.Router do
       :right_delete
     )
 
-    put("/users/:nickname/activation_status", AdminAPIController, :set_activation_status)
+    post("/users/permission_group/:permission_group", AdminAPIController, :right_add_multiple)
 
+    delete(
+      "/users/permission_group/:permission_group",
+      AdminAPIController,
+      :right_delete_multiple
+    )
+
+    get("/relay", AdminAPIController, :relay_list)
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
@@ -257,6 +267,7 @@ defmodule Pleroma.Web.Router do
 
       get("/conversations/:id/statuses", PleromaAPIController, :conversation_statuses)
       get("/conversations/:id", PleromaAPIController, :conversation)
+      post("/conversations/read", PleromaAPIController, :read_conversations)
     end
 
     scope [] do
@@ -395,6 +406,9 @@ defmodule Pleroma.Web.Router do
     get("/push/subscription", SubscriptionController, :get)
     put("/push/subscription", SubscriptionController, :update)
     delete("/push/subscription", SubscriptionController, :delete)
+
+    get("/markers", MarkerController, :index)
+    post("/markers", MarkerController, :upsert)
   end
 
   scope "/api/web", Pleroma.Web do
@@ -500,11 +514,6 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/feed", Feed.FeedController, :feed)
     get("/users/:nickname", Feed.FeedController, :feed_redirect)
 
-    post("/users/:nickname/salmon", OStatus.OStatusController, :salmon_incoming)
-    post("/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request)
-    get("/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation)
-    post("/push/subscriptions/:id", Websub.WebsubController, :websub_incoming)
-
     get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end
 
@@ -585,6 +594,12 @@ defmodule Pleroma.Web.Router do
 
   scope "/nodeinfo", Pleroma.Web do
     get("/:version", Nodeinfo.NodeinfoController, :nodeinfo)
+  end
+
+  scope "/", Pleroma.Web do
+    pipe_through(:api)
+
+    get("/web/manifest.json", MastoFEController, :manifest)
   end
 
   scope "/", Pleroma.Web do

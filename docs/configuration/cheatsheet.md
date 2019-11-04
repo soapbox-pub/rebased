@@ -247,6 +247,35 @@ relates to mascots on the mastodon frontend
 * `default_mascot`: An element from `mascots` - This will be used as the default mascot
   on MastoFE (default: `:pleroma_fox_tan`)
 
+## :manifest
+
+This section describe PWA manifest instance-specific values. Currently this option relate only for MastoFE.
+
+* `icons`: Describe the icons of the app, this a list of maps describing icons in the same way as the
+  [spec](https://www.w3.org/TR/appmanifest/#imageresource-and-its-members) describes it.
+
+  Example:
+
+  ```elixir
+  config :pleroma, :manifest,
+    icons: [
+      %{
+        src: "/static/logo.png"
+      },
+      %{
+        src: "/static/icon.png",
+        type: "image/png"
+      },
+      %{
+        src: "/static/icon.ico",
+        sizes: "72x72 96x96 128x128 256x256"
+      }
+    ]
+  ```
+
+* `theme_color`: Describe the theme color of the app. (Example: `"#282c37"`, `"rebeccapurple"`)
+* `background_color`: Describe the background color of the app. (Example: `"#191b22"`, `"aliceblue"`)
+
 ## :mrf_simple
 * `media_removal`: List of instances to remove medias from
 * `media_nsfw`: List of instances to put medias as NSFW(sensitive) from

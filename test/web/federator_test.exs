@@ -81,14 +81,16 @@ defmodule Pleroma.Web.FederatorTest do
         local: false,
         nickname: "nick1@domain.com",
         ap_id: "https://domain.com/users/nick1",
-        info: %{ap_enabled: true, source_data: %{"inbox" => inbox1}}
+        source_data: %{"inbox" => inbox1},
+        ap_enabled: true
       })
 
       insert(:user, %{
         local: false,
         nickname: "nick2@domain2.com",
         ap_id: "https://domain2.com/users/nick2",
-        info: %{ap_enabled: true, source_data: %{"inbox" => inbox2}}
+        source_data: %{"inbox" => inbox2},
+        ap_enabled: true
       })
 
       dt = NaiveDateTime.utc_now()
@@ -107,93 +109,6 @@ defmodule Pleroma.Web.FederatorTest do
                %{
                  "op" => "publish_one",
                  "params" => %{"inbox" => inbox1, "unreachable_since" => expected_dt}
-               },
-               all_enqueued(worker: PublisherWorker)
-             )
-    end
-
-    test "it federates only to reachable instances via Websub" do
-      user = insert(:user)
-      websub_topic = Pleroma.Web.OStatus.feed_path(user)
-
-      sub1 =
-        insert(:websub_subscription, %{
-          topic: websub_topic,
-          state: "active",
-          callback: "http://pleroma.soykaf.com/cb"
-        })
-
-      sub2 =
-        insert(:websub_subscription, %{
-          topic: websub_topic,
-          state: "active",
-          callback: "https://pleroma2.soykaf.com/cb"
-        })
-
-      dt = NaiveDateTime.utc_now()
-      Instances.set_unreachable(sub2.callback, dt)
-
-      Instances.set_consistently_unreachable(sub1.callback)
-
-      {:ok, _activity} = CommonAPI.post(user, %{"status" => "HI"})
-
-      expected_callback = sub2.callback
-      expected_dt = NaiveDateTime.to_iso8601(dt)
-
-      ObanHelpers.perform(all_enqueued(worker: PublisherWorker))
-
-      assert ObanHelpers.member?(
-               %{
-                 "op" => "publish_one",
-                 "params" => %{
-                   "callback" => expected_callback,
-                   "unreachable_since" => expected_dt
-                 }
-               },
-               all_enqueued(worker: PublisherWorker)
-             )
-    end
-
-    test "it federates only to reachable instances via Salmon" do
-      user = insert(:user)
-
-      _remote_user1 =
-        insert(:user, %{
-          local: false,
-          nickname: "nick1@domain.com",
-          ap_id: "https://domain.com/users/nick1",
-          info: %{salmon: "https://domain.com/salmon"}
-        })
-
-      remote_user2 =
-        insert(:user, %{
-          local: false,
-          nickname: "nick2@domain2.com",
-          ap_id: "https://domain2.com/users/nick2",
-          info: %{salmon: "https://domain2.com/salmon"}
-        })
-
-      remote_user2_id = remote_user2.id
-
-      dt = NaiveDateTime.utc_now()
-      Instances.set_unreachable(remote_user2.ap_id, dt)
-
-      Instances.set_consistently_unreachable("domain.com")
-
-      {:ok, _activity} =
-        CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
-
-      expected_dt = NaiveDateTime.to_iso8601(dt)
-
-      ObanHelpers.perform(all_enqueued(worker: PublisherWorker))
-
-      assert ObanHelpers.member?(
-               %{
-                 "op" => "publish_one",
-                 "params" => %{
-                   "recipient_id" => remote_user2_id,
-                   "unreachable_since" => expected_dt
-                 }
                },
                all_enqueued(worker: PublisherWorker)
              )

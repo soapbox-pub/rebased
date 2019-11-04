@@ -49,7 +49,7 @@ defmodule Pleroma.Web.Streamer do
     end
   end
 
-  defp handle_should_send(_) do
-    true
-  end
+  defp handle_should_send(:benchmark), do: false
+
+  defp handle_should_send(_), do: true
 end

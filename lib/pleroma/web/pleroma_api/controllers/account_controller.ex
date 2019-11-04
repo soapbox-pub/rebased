@@ -80,9 +80,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   @doc "PATCH /api/v1/pleroma/accounts/update_banner"
   def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
-    new_info = %{"banner" => %{}}
-
-    with {:ok, user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
+    with {:ok, user} <- User.update_banner(user, %{}) do
       CommonAPI.update(user)
       json(conn, %{url: nil})
     end
@@ -90,8 +88,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   def update_banner(%{assigns: %{user: user}} = conn, params) do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
-         new_info <- %{"banner" => object.data},
-         {:ok, user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
+         {:ok, user} <- User.update_banner(user, object.data) do
       CommonAPI.update(user)
       %{"url" => [%{"href" => href} | _]} = object.data
 
@@ -101,17 +98,14 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   @doc "PATCH /api/v1/pleroma/accounts/update_background"
   def update_background(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
-    new_info = %{"background" => %{}}
-
-    with {:ok, _user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
+    with {:ok, _user} <- User.update_background(user, %{}) do
       json(conn, %{url: nil})
     end
   end
 
   def update_background(%{assigns: %{user: user}} = conn, params) do
     with {:ok, object} <- ActivityPub.upload(params, type: :background),
-         new_info <- %{"background" => object.data},
-         {:ok, _user} <- User.update_info(user, &User.Info.profile_update(&1, new_info)) do
+         {:ok, _user} <- User.update_background(user, object.data) do
       %{"url" => [%{"href" => href} | _]} = object.data
 
       json(conn, %{url: href})
@@ -119,7 +113,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   end
 
   @doc "GET /api/v1/pleroma/accounts/:id/favourites"
-  def favourites(%{assigns: %{account: %{info: %{hide_favorites: true}}}} = conn, _params) do
+  def favourites(%{assigns: %{account: %{hide_favorites: true}}} = conn, _params) do
     render_error(conn, :forbidden, "Can't get favorites")
   end
 
@@ -132,7 +126,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
     recipients =
       if for_user do
-        [Pleroma.Constants.as_public()] ++ [for_user.ap_id | for_user.following]
+        [Pleroma.Constants.as_public()] ++ [for_user.ap_id | User.following(for_user)]
       else
         [Pleroma.Constants.as_public()]
       end
