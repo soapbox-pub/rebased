@@ -101,7 +101,7 @@ defmodule Pleroma.FollowingRelationship do
       |> select([r, u], u.follower_address)
       |> Repo.all()
 
-    if not user.local or user.nickname in [nil, "internal.fetch"] do
+    if not user.local or user.invisible do
       following
     else
       [user.follower_address | following]
