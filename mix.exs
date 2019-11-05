@@ -111,7 +111,7 @@ defmodule Pleroma.Mixfile do
       {:fast_sanitize,
        git: "https://git.pleroma.social/pleroma/fast_sanitize.git",
        ref: "1af67547a02a104e26c99d03012383e8643bc4c2"},
-      {:html_entities, "~> 0.4"},
+      {:html_entities, "~> 0.5", override: true},
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
