@@ -566,8 +566,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(%{"type" => "Like"} = data, _options) do
-    with {_, %{changes: cast_data}} <- {:casting_data, LikeValidator.cast_data(data)},
-         cast_data <- ObjectValidator.stringify_keys(cast_data),
+    with {_, {:ok, cast_data_sym}} <-
+           {:casting_data,
+            data |> LikeValidator.cast_data() |> Ecto.Changeset.apply_action(:insert)},
+         {_, cast_data} <-
+           {:stringify_keys, ObjectValidator.stringify_keys(cast_data_sym |> Map.from_struct())},
          :ok <- ObjectValidator.fetch_actor_and_object(cast_data),
          {_, {:ok, cast_data}} <- {:maybe_add_context, maybe_add_context_from_object(cast_data)},
          {_, {:ok, cast_data}} <-

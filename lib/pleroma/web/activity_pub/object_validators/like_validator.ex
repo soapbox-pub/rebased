@@ -4,12 +4,12 @@
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
   use Ecto.Schema
-  import Ecto.Changeset
 
-  alias Pleroma.Object
-  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Utils
+
+  import Ecto.Changeset
+  import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
 
   @primary_key false
 
@@ -38,8 +38,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
     data_cng
     |> validate_inclusion(:type, ["Like"])
     |> validate_required([:id, :type, :object, :actor, :context, :to, :cc])
-    |> validate_change(:actor, &actor_valid?/2)
-    |> validate_change(:object, &object_valid?/2)
+    |> validate_actor_presence()
+    |> validate_object_presence()
     |> validate_existing_like()
   end
 
@@ -54,20 +54,4 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
   end
 
   def validate_existing_like(cng), do: cng
-
-  def actor_valid?(field_name, actor) do
-    if User.get_cached_by_ap_id(actor) do
-      []
-    else
-      [{field_name, "can't find user"}]
-    end
-  end
-
-  def object_valid?(field_name, object) do
-    if Object.get_cached_by_ap_id(object) do
-      []
-    else
-      [{field_name, "can't find object"}]
-    end
-  end
 end

@@ -17,9 +17,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   def validate(object, meta)
 
   def validate(%{"type" => "Like"} = object, meta) do
-    with {_, %{valid?: true, changes: object}} <-
-           {:validate_object, LikeValidator.cast_and_validate(object)} do
-      object = stringify_keys(object)
+    with {_, {:ok, object}} <-
+           {:validate_object,
+            object |> LikeValidator.cast_and_validate() |> Ecto.Changeset.apply_action(:insert)} do
+      object = stringify_keys(object |> Map.from_struct())
       {:ok, object, meta}
     else
       e -> {:error, e}

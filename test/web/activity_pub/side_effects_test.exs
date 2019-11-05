@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, post} = CommonAPI.post(user, %{"status" => "hey"})
 
       {:ok, like_data, _meta} = Builder.like(user, post.object)
-      {:ok, like, _meta} = ActivityPub.persist(like_data, [local: true])
+      {:ok, like, _meta} = ActivityPub.persist(like_data, local: true)
 
       %{like: like, user: user}
     end
