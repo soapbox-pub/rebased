@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTML do
-  alias HtmlSanitizeEx.Scrubber
-
   defp get_scrubbers(scrubber) when is_atom(scrubber), do: [scrubber]
   defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
   defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
@@ -24,9 +22,13 @@ defmodule Pleroma.HTML do
     end)
   end
 
-  def filter_tags(html, scrubber), do: Scrubber.scrub(html, scrubber)
+  def filter_tags(html, scrubber) do
+    {:ok, content} = FastSanitize.Sanitizer.scrub(html, scrubber)
+    content
+  end
+
   def filter_tags(html), do: filter_tags(html, nil)
-  def strip_tags(html), do: Scrubber.scrub(html, Scrubber.StripTags)
+  def strip_tags(html), do: filter_tags(html, FastSanitize.Sanitizer.StripTags)
 
   def get_cached_scrubbed_html_for_activity(
         content,
@@ -46,7 +48,7 @@ defmodule Pleroma.HTML do
   def get_cached_stripped_html_for_activity(content, activity, key) do
     get_cached_scrubbed_html_for_activity(
       content,
-      HtmlSanitizeEx.Scrubber.StripTags,
+      FastSanitize.Sanitizer.StripTags,
       activity,
       key,
       &HtmlEntities.decode/1
@@ -106,16 +108,15 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
 
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
-  require HtmlSanitizeEx.Scrubber.Meta
-  alias HtmlSanitizeEx.Scrubber.Meta
+  require FastSanitize.Sanitizer.Meta
+  alias FastSanitize.Sanitizer.Meta
 
-  Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
   # links
-  Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
+  Meta.allow_tag_with_uri_attributes(:a, ["href", "data-user", "data-tag"], @valid_schemes)
 
-  Meta.allow_tag_with_this_attribute_values("a", "class", [
+  Meta.allow_tag_with_this_attribute_values(:a, "class", [
     "hashtag",
     "u-url",
     "mention",
@@ -123,29 +124,29 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
     "mention u-url"
   ])
 
-  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+  Meta.allow_tag_with_this_attribute_values(:a, "rel", [
     "tag",
     "nofollow",
     "noopener",
     "noreferrer"
   ])
 
-  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+  Meta.allow_tag_with_these_attributes(:a, ["name", "title"])
 
   # paragraphs and linebreaks
-  Meta.allow_tag_with_these_attributes("br", [])
-  Meta.allow_tag_with_these_attributes("p", [])
+  Meta.allow_tag_with_these_attributes(:br, [])
+  Meta.allow_tag_with_these_attributes(:p, [])
 
   # microformats
-  Meta.allow_tag_with_this_attribute_values("span", "class", ["h-card"])
-  Meta.allow_tag_with_these_attributes("span", [])
+  Meta.allow_tag_with_this_attribute_values(:span, "class", ["h-card"])
+  Meta.allow_tag_with_these_attributes(:span, [])
 
   # allow inline images for custom emoji
   if Pleroma.Config.get([:markup, :allow_inline_images]) do
     # restrict img tags to http/https only, because of MediaProxy.
-    Meta.allow_tag_with_uri_attributes("img", ["src"], ["http", "https"])
+    Meta.allow_tag_with_uri_attributes(:img, ["src"], ["http", "https"])
 
-    Meta.allow_tag_with_these_attributes("img", [
+    Meta.allow_tag_with_these_attributes(:img, [
       "width",
       "height",
       "class",
@@ -160,19 +161,18 @@ end
 defmodule Pleroma.HTML.Scrubber.Default do
   @doc "The default HTML scrubbing policy: no "
 
-  require HtmlSanitizeEx.Scrubber.Meta
-  alias HtmlSanitizeEx.Scrubber.Meta
+  require FastSanitize.Sanitizer.Meta
+  alias FastSanitize.Sanitizer.Meta
   # credo:disable-for-previous-line
   # No idea how to fix this one…
 
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
-  Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
-  Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
+  Meta.allow_tag_with_uri_attributes(:a, ["href", "data-user", "data-tag"], @valid_schemes)
 
-  Meta.allow_tag_with_this_attribute_values("a", "class", [
+  Meta.allow_tag_with_this_attribute_values(:a, "class", [
     "hashtag",
     "u-url",
     "mention",
@@ -180,7 +180,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
     "mention u-url"
   ])
 
-  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+  Meta.allow_tag_with_this_attribute_values(:a, "rel", [
     "tag",
     "nofollow",
     "noopener",
@@ -188,37 +188,37 @@ defmodule Pleroma.HTML.Scrubber.Default do
     "ugc"
   ])
 
-  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+  Meta.allow_tag_with_these_attributes(:a, ["name", "title"])
 
-  Meta.allow_tag_with_these_attributes("abbr", ["title"])
+  Meta.allow_tag_with_these_attributes(:abbr, ["title"])
 
-  Meta.allow_tag_with_these_attributes("b", [])
-  Meta.allow_tag_with_these_attributes("blockquote", [])
-  Meta.allow_tag_with_these_attributes("br", [])
-  Meta.allow_tag_with_these_attributes("code", [])
-  Meta.allow_tag_with_these_attributes("del", [])
-  Meta.allow_tag_with_these_attributes("em", [])
-  Meta.allow_tag_with_these_attributes("i", [])
-  Meta.allow_tag_with_these_attributes("li", [])
-  Meta.allow_tag_with_these_attributes("ol", [])
-  Meta.allow_tag_with_these_attributes("p", [])
-  Meta.allow_tag_with_these_attributes("pre", [])
-  Meta.allow_tag_with_these_attributes("strong", [])
-  Meta.allow_tag_with_these_attributes("sub", [])
-  Meta.allow_tag_with_these_attributes("sup", [])
-  Meta.allow_tag_with_these_attributes("u", [])
-  Meta.allow_tag_with_these_attributes("ul", [])
+  Meta.allow_tag_with_these_attributes(:b, [])
+  Meta.allow_tag_with_these_attributes(:blockquote, [])
+  Meta.allow_tag_with_these_attributes(:br, [])
+  Meta.allow_tag_with_these_attributes(:code, [])
+  Meta.allow_tag_with_these_attributes(:del, [])
+  Meta.allow_tag_with_these_attributes(:em, [])
+  Meta.allow_tag_with_these_attributes(:i, [])
+  Meta.allow_tag_with_these_attributes(:li, [])
+  Meta.allow_tag_with_these_attributes(:ol, [])
+  Meta.allow_tag_with_these_attributes(:p, [])
+  Meta.allow_tag_with_these_attributes(:pre, [])
+  Meta.allow_tag_with_these_attributes(:strong, [])
+  Meta.allow_tag_with_these_attributes(:sub, [])
+  Meta.allow_tag_with_these_attributes(:sup, [])
+  Meta.allow_tag_with_these_attributes(:u, [])
+  Meta.allow_tag_with_these_attributes(:ul, [])
 
-  Meta.allow_tag_with_this_attribute_values("span", "class", ["h-card"])
-  Meta.allow_tag_with_these_attributes("span", [])
+  Meta.allow_tag_with_this_attribute_values(:span, "class", ["h-card"])
+  Meta.allow_tag_with_these_attributes(:span, [])
 
   @allow_inline_images Pleroma.Config.get([:markup, :allow_inline_images])
 
   if @allow_inline_images do
     # restrict img tags to http/https only, because of MediaProxy.
-    Meta.allow_tag_with_uri_attributes("img", ["src"], ["http", "https"])
+    Meta.allow_tag_with_uri_attributes(:img, ["src"], ["http", "https"])
 
-    Meta.allow_tag_with_these_attributes("img", [
+    Meta.allow_tag_with_these_attributes(:img, [
       "width",
       "height",
       "class",
@@ -228,24 +228,24 @@ defmodule Pleroma.HTML.Scrubber.Default do
   end
 
   if Pleroma.Config.get([:markup, :allow_tables]) do
-    Meta.allow_tag_with_these_attributes("table", [])
-    Meta.allow_tag_with_these_attributes("tbody", [])
-    Meta.allow_tag_with_these_attributes("td", [])
-    Meta.allow_tag_with_these_attributes("th", [])
-    Meta.allow_tag_with_these_attributes("thead", [])
-    Meta.allow_tag_with_these_attributes("tr", [])
+    Meta.allow_tag_with_these_attributes(:table, [])
+    Meta.allow_tag_with_these_attributes(:tbody, [])
+    Meta.allow_tag_with_these_attributes(:td, [])
+    Meta.allow_tag_with_these_attributes(:th, [])
+    Meta.allow_tag_with_these_attributes(:thead, [])
+    Meta.allow_tag_with_these_attributes(:tr, [])
   end
 
   if Pleroma.Config.get([:markup, :allow_headings]) do
-    Meta.allow_tag_with_these_attributes("h1", [])
-    Meta.allow_tag_with_these_attributes("h2", [])
-    Meta.allow_tag_with_these_attributes("h3", [])
-    Meta.allow_tag_with_these_attributes("h4", [])
-    Meta.allow_tag_with_these_attributes("h5", [])
+    Meta.allow_tag_with_these_attributes(:h1, [])
+    Meta.allow_tag_with_these_attributes(:h2, [])
+    Meta.allow_tag_with_these_attributes(:h3, [])
+    Meta.allow_tag_with_these_attributes(:h4, [])
+    Meta.allow_tag_with_these_attributes(:h5, [])
   end
 
   if Pleroma.Config.get([:markup, :allow_fonts]) do
-    Meta.allow_tag_with_these_attributes("font", ["face"])
+    Meta.allow_tag_with_these_attributes(:font, ["face"])
   end
 
   Meta.strip_everything_not_covered()
@@ -258,7 +258,7 @@ defmodule Pleroma.HTML.Transform.MediaProxy do
 
   def before_scrub(html), do: html
 
-  def scrub_attribute("img", {"src", "http" <> target}) do
+  def scrub_attribute(:img, {"src", "http" <> target}) do
     media_url =
       ("http" <> target)
       |> MediaProxy.url()
@@ -268,16 +268,16 @@ defmodule Pleroma.HTML.Transform.MediaProxy do
 
   def scrub_attribute(_tag, attribute), do: attribute
 
-  def scrub({"img", attributes, children}) do
+  def scrub({:img, attributes, children}) do
     attributes =
       attributes
-      |> Enum.map(fn attr -> scrub_attribute("img", attr) end)
+      |> Enum.map(fn attr -> scrub_attribute(:img, attr) end)
       |> Enum.reject(&is_nil(&1))
 
-    {"img", attributes, children}
+    {:img, attributes, children}
   end
 
-  def scrub({:comment, _children}), do: ""
+  def scrub({:comment, _text, _children}), do: ""
 
   def scrub({tag, attributes, children}), do: {tag, attributes, children}
   def scrub({_tag, children}), do: children
@@ -291,16 +291,15 @@ defmodule Pleroma.HTML.Scrubber.LinksOnly do
 
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
-  require HtmlSanitizeEx.Scrubber.Meta
-  alias HtmlSanitizeEx.Scrubber.Meta
+  require FastSanitize.Sanitizer.Meta
+  alias FastSanitize.Sanitizer.Meta
 
-  Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
   # links
-  Meta.allow_tag_with_uri_attributes("a", ["href"], @valid_schemes)
+  Meta.allow_tag_with_uri_attributes(:a, ["href"], @valid_schemes)
 
-  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+  Meta.allow_tag_with_this_attribute_values(:a, "rel", [
     "tag",
     "nofollow",
     "noopener",
@@ -309,6 +308,6 @@ defmodule Pleroma.HTML.Scrubber.LinksOnly do
     "ugc"
   ])
 
-  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+  Meta.allow_tag_with_these_attributes(:a, ["name", "title"])
   Meta.strip_everything_not_covered()
 end

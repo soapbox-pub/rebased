@@ -1095,7 +1095,12 @@ defmodule Pleroma.User do
   def deactivate(%User{} = user, status) do
     with {:ok, user} <- set_activation_status(user, status) do
       Enum.each(get_followers(user), &invalidate_cache/1)
-      Enum.each(get_friends(user), &update_follower_count/1)
+
+      # Only update local user counts, remote will be update during the next pull.
+      user
+      |> get_friends()
+      |> Enum.filter(& &1.local)
+      |> Enum.each(&update_follower_count/1)
 
       {:ok, user}
     end

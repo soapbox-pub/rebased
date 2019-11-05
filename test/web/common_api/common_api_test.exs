@@ -10,6 +10,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -140,7 +141,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       object = Object.normalize(activity)
 
-      assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
+      assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
     end
 
     test "it filters out obviously bad tags when accepting a post as Markdown" do
@@ -156,7 +157,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       object = Object.normalize(activity)
 
-      assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
+      assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
     end
 
     test "it does not allow replies to direct messages that are not direct messages themselves" do
@@ -385,6 +386,14 @@ defmodule Pleroma.Web.CommonAPITest do
         "status_ids" => [activity.id]
       }
 
+      note_obj = %{
+        "type" => "Note",
+        "id" => activity_ap_id,
+        "content" => "foobar",
+        "published" => activity.object.data["published"],
+        "actor" => AccountView.render("show.json", %{user: target_user})
+      }
+
       assert {:ok, flag_activity} = CommonAPI.report(reporter, report_data)
 
       assert %Activity{
@@ -392,7 +401,7 @@ defmodule Pleroma.Web.CommonAPITest do
                data: %{
                  "type" => "Flag",
                  "content" => ^comment,
-                 "object" => [^target_ap_id, ^activity_ap_id],
+                 "object" => [^target_ap_id, ^note_obj],
                  "state" => "open"
                }
              } = flag_activity
@@ -412,6 +421,11 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, report} = CommonAPI.update_report_state(report_id, "resolved")
 
       assert report.data["state"] == "resolved"
+
+      [reported_user, activity_id] = report.data["object"]
+
+      assert reported_user == target_user.ap_id
+      assert activity_id == activity.data["id"]
     end
 
     test "does not update report state when state is unsupported" do

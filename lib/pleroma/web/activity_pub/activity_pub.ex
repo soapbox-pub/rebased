@@ -503,7 +503,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     with flag_data <- make_flag_data(params, additional),
          {:ok, activity} <- insert(flag_data, local),
-         :ok <- maybe_federate(activity) do
+         {:ok, stripped_activity} <- strip_report_status_data(activity),
+         :ok <- maybe_federate(stripped_activity) do
       Enum.each(User.all_superusers(), fn superuser ->
         superuser
         |> Pleroma.Emails.AdminEmail.report(actor, account, statuses, content)

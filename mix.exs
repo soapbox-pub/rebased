@@ -63,7 +63,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :myhtmlex, :swarm],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -108,7 +108,9 @@ defmodule Pleroma.Mixfile do
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
       {:trailing_format_plug, "~> 0.0.7"},
-      {:html_sanitize_ex, "~> 1.3.0"},
+      {:fast_sanitize,
+       git: "https://git.pleroma.social/pleroma/fast_sanitize.git",
+       ref: "1af67547a02a104e26c99d03012383e8643bc4c2"},
       {:html_entities, "~> 0.4"},
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},

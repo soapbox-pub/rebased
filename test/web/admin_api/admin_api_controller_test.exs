@@ -13,6 +13,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.UserInviteToken
+  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MediaProxy
   import Pleroma.Factory
@@ -1040,6 +1041,32 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "tags" => [],
                    "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user.name || user.nickname)
+                 }
+               ]
+             }
+    end
+
+    test "it omits relay user", %{admin: admin} do
+      assert %User{} = Relay.get_actor()
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users")
+
+      assert json_response(conn, 200) == %{
+               "count" => 1,
+               "page_size" => 50,
+               "users" => [
+                 %{
+                   "deactivated" => admin.deactivated,
+                   "id" => admin.id,
+                   "nickname" => admin.nickname,
+                   "roles" => %{"admin" => true, "moderator" => false},
+                   "local" => true,
+                   "tags" => [],
+                   "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(admin.name || admin.nickname)
                  }
                ]
              }

@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -1281,35 +1282,99 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert 3 = length(activities)
   end
 
-  test "it can create a Flag activity" do
-    reporter = insert(:user)
-    target_account = insert(:user)
-    {:ok, activity} = CommonAPI.post(target_account, %{"status" => "foobar"})
-    context = Utils.generate_context_id()
-    content = "foobar"
+  describe "flag/1" do
+    setup do
+      reporter = insert(:user)
+      target_account = insert(:user)
+      content = "foobar"
+      {:ok, activity} = CommonAPI.post(target_account, %{"status" => content})
+      context = Utils.generate_context_id()
 
-    reporter_ap_id = reporter.ap_id
-    target_ap_id = target_account.ap_id
-    activity_ap_id = activity.data["id"]
+      reporter_ap_id = reporter.ap_id
+      target_ap_id = target_account.ap_id
+      activity_ap_id = activity.data["id"]
 
-    assert {:ok, activity} =
-             ActivityPub.flag(%{
-               actor: reporter,
-               context: context,
-               account: target_account,
-               statuses: [activity],
-               content: content
-             })
+      activity_with_object = Activity.get_by_ap_id_with_object(activity_ap_id)
 
-    assert %Activity{
-             actor: ^reporter_ap_id,
-             data: %{
-               "type" => "Flag",
-               "content" => ^content,
-               "context" => ^context,
-               "object" => [^target_ap_id, ^activity_ap_id]
-             }
-           } = activity
+      {:ok,
+       %{
+         reporter: reporter,
+         context: context,
+         target_account: target_account,
+         reported_activity: activity,
+         content: content,
+         activity_ap_id: activity_ap_id,
+         activity_with_object: activity_with_object,
+         reporter_ap_id: reporter_ap_id,
+         target_ap_id: target_ap_id
+       }}
+    end
+
+    test "it can create a Flag activity",
+         %{
+           reporter: reporter,
+           context: context,
+           target_account: target_account,
+           reported_activity: reported_activity,
+           content: content,
+           activity_ap_id: activity_ap_id,
+           activity_with_object: activity_with_object,
+           reporter_ap_id: reporter_ap_id,
+           target_ap_id: target_ap_id
+         } do
+      assert {:ok, activity} =
+               ActivityPub.flag(%{
+                 actor: reporter,
+                 context: context,
+                 account: target_account,
+                 statuses: [reported_activity],
+                 content: content
+               })
+
+      note_obj = %{
+        "type" => "Note",
+        "id" => activity_ap_id,
+        "content" => content,
+        "published" => activity_with_object.object.data["published"],
+        "actor" => AccountView.render("show.json", %{user: target_account})
+      }
+
+      assert %Activity{
+               actor: ^reporter_ap_id,
+               data: %{
+                 "type" => "Flag",
+                 "content" => ^content,
+                 "context" => ^context,
+                 "object" => [^target_ap_id, ^note_obj]
+               }
+             } = activity
+    end
+
+    test_with_mock "strips status data from Flag, before federating it",
+                   %{
+                     reporter: reporter,
+                     context: context,
+                     target_account: target_account,
+                     reported_activity: reported_activity,
+                     content: content
+                   },
+                   Utils,
+                   [:passthrough],
+                   [] do
+      {:ok, activity} =
+        ActivityPub.flag(%{
+          actor: reporter,
+          context: context,
+          account: target_account,
+          statuses: [reported_activity],
+          content: content
+        })
+
+      new_data =
+        put_in(activity.data, ["object"], [target_account.ap_id, reported_activity.data["id"]])
+
+      assert_called(Utils.maybe_federate(%{activity | data: new_data}))
+    end
   end
 
   test "fetch_activities/2 returns activities addressed to a list " do
