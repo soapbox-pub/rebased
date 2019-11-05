@@ -61,35 +61,48 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   end
 
   def show(%{assigns: %{notice_id: notice_id}} = conn, _params) do
-    activity = Activity.get_by_id_with_object(notice_id)
-    timeline =
-      activity.object.data["context"]
-      |> ActivityPub.fetch_activities_for_context(%{})
-      |> Enum.reverse()
-      |> Enum.map(&represent(&1, &1.object.id == activity.object.id))
+    case Activity.get_by_id_with_object(notice_id) do
+      %Activity{} = activity ->
+        timeline =
+          activity.object.data["context"]
+          |> ActivityPub.fetch_activities_for_context(%{})
+          |> Enum.reverse()
+          |> Enum.map(&represent(&1, &1.object.id == activity.object.id))
 
-    render(conn, "conversation.html", %{activities: timeline})
+        render(conn, "conversation.html", %{activities: timeline})
+
+      _ ->
+        conn
+        |> put_status(404)
+        |> render_error(:not_found, "Notice not found")
+    end
   end
 
   def show(%{assigns: %{username_or_id: username_or_id}} = conn, params) do
-    %User{} = user = User.get_cached_by_nickname_or_id(username_or_id)
+    case User.get_cached_by_nickname_or_id(username_or_id) do
+      %User{} = user ->
+        timeline =
+          ActivityPub.fetch_user_activities(user, nil, Map.take(params, @page_keys))
+          |> Enum.map(&represent/1)
 
-    timeline =
-      ActivityPub.fetch_user_activities(user, nil, Map.take(params, @page_keys))
-      |> Enum.map(&represent/1)
+        prev_page_id =
+          (params["min_id"] || params["max_id"]) &&
+            List.first(timeline) && List.first(timeline).id
 
-    prev_page_id =
-      (params["min_id"] || params["max_id"]) &&
-        List.first(timeline) && List.first(timeline).id
+        next_page_id = List.last(timeline) && List.last(timeline).id
 
-    next_page_id = List.last(timeline) && List.last(timeline).id
+        render(conn, "profile.html", %{
+          user: user,
+          timeline: timeline,
+          prev_page_id: prev_page_id,
+          next_page_id: next_page_id
+        })
 
-    render(conn, "profile.html", %{
-      user: user,
-      timeline: timeline,
-      prev_page_id: prev_page_id,
-      next_page_id: next_page_id
-    })
+      _ ->
+        conn
+        |> put_status(404)
+        |> render_error(:not_found, "User not found")
+    end
   end
 
   def assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),
