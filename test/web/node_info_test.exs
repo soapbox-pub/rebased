@@ -24,8 +24,8 @@ defmodule Pleroma.Web.NodeInfoTest do
   end
 
   test "nodeinfo shows staff accounts", %{conn: conn} do
-    moderator = insert(:user, %{local: true, info: %{is_moderator: true}})
-    admin = insert(:user, %{local: true, info: %{is_admin: true}})
+    moderator = insert(:user, local: true, is_moderator: true)
+    admin = insert(:user, local: true, is_admin: true)
 
     conn =
       conn

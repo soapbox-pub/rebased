@@ -86,18 +86,18 @@ defmodule Pleroma.ModerationLog do
     parsed_datetime
   end
 
-  @spec insert_log(%{actor: User, subject: User, action: String.t(), permission: String.t()}) ::
+  @spec insert_log(%{actor: User, subject: [User], action: String.t(), permission: String.t()}) ::
           {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
-        subject: %User{} = subject,
+        subject: subjects,
         action: action,
         permission: permission
       }) do
     %ModerationLog{
       data: %{
         "actor" => user_to_map(actor),
-        "subject" => user_to_map(subject),
+        "subject" => user_to_map(subjects),
         "action" => action,
         "permission" => permission,
         "message" => ""
@@ -303,11 +303,14 @@ defmodule Pleroma.ModerationLog do
   end
 
   @spec insert_log_entry_with_message(ModerationLog) :: {:ok, ModerationLog} | {:error, any}
-
   defp insert_log_entry_with_message(entry) do
     entry.data["message"]
     |> put_in(get_log_entry_message(entry))
     |> Repo.insert()
+  end
+
+  defp user_to_map(users) when is_list(users) do
+    users |> Enum.map(&user_to_map/1)
   end
 
   defp user_to_map(%User{} = user) do
@@ -349,10 +352,10 @@ defmodule Pleroma.ModerationLog do
         data: %{
           "actor" => %{"nickname" => actor_nickname},
           "action" => "delete",
-          "subject" => %{"nickname" => subject_nickname, "type" => "user"}
+          "subject" => subjects
         }
       }) do
-    "@#{actor_nickname} deleted user @#{subject_nickname}"
+    "@#{actor_nickname} deleted users: #{users_to_nicknames_string(subjects)}"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
@@ -363,12 +366,7 @@ defmodule Pleroma.ModerationLog do
           "subjects" => subjects
         }
       }) do
-    nicknames =
-      subjects
-      |> Enum.map(&"@#{&1["nickname"]}")
-      |> Enum.join(", ")
-
-    "@#{actor_nickname} created users: #{nicknames}"
+    "@#{actor_nickname} created users: #{users_to_nicknames_string(subjects)}"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
@@ -376,10 +374,28 @@ defmodule Pleroma.ModerationLog do
         data: %{
           "actor" => %{"nickname" => actor_nickname},
           "action" => "activate",
-          "subject" => %{"nickname" => subject_nickname, "type" => "user"}
+          "subject" => user
+        }
+      })
+      when is_map(user) do
+    get_log_entry_message(%ModerationLog{
+      data: %{
+        "actor" => %{"nickname" => actor_nickname},
+        "action" => "activate",
+        "subject" => [user]
+      }
+    })
+  end
+
+  @spec get_log_entry_message(ModerationLog) :: String.t()
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "activate",
+          "subject" => users
         }
       }) do
-    "@#{actor_nickname} activated user @#{subject_nickname}"
+    "@#{actor_nickname} activated users: #{users_to_nicknames_string(users)}"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
@@ -387,10 +403,28 @@ defmodule Pleroma.ModerationLog do
         data: %{
           "actor" => %{"nickname" => actor_nickname},
           "action" => "deactivate",
-          "subject" => %{"nickname" => subject_nickname, "type" => "user"}
+          "subject" => user
+        }
+      })
+      when is_map(user) do
+    get_log_entry_message(%ModerationLog{
+      data: %{
+        "actor" => %{"nickname" => actor_nickname},
+        "action" => "deactivate",
+        "subject" => [user]
+      }
+    })
+  end
+
+  @spec get_log_entry_message(ModerationLog) :: String.t()
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "deactivate",
+          "subject" => users
         }
       }) do
-    "@#{actor_nickname} deactivated user @#{subject_nickname}"
+    "@#{actor_nickname} deactivated users: #{users_to_nicknames_string(users)}"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
@@ -402,14 +436,9 @@ defmodule Pleroma.ModerationLog do
           "action" => "tag"
         }
       }) do
-    nicknames_string =
-      nicknames
-      |> Enum.map(&"@#{&1}")
-      |> Enum.join(", ")
-
     tags_string = tags |> Enum.join(", ")
 
-    "@#{actor_nickname} added tags: #{tags_string} to users: #{nicknames_string}"
+    "@#{actor_nickname} added tags: #{tags_string} to users: #{nicknames_to_string(nicknames)}"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
@@ -421,14 +450,9 @@ defmodule Pleroma.ModerationLog do
           "action" => "untag"
         }
       }) do
-    nicknames_string =
-      nicknames
-      |> Enum.map(&"@#{&1}")
-      |> Enum.join(", ")
-
     tags_string = tags |> Enum.join(", ")
 
-    "@#{actor_nickname} removed tags: #{tags_string} from users: #{nicknames_string}"
+    "@#{actor_nickname} removed tags: #{tags_string} from users: #{nicknames_to_string(nicknames)}"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
@@ -436,11 +460,31 @@ defmodule Pleroma.ModerationLog do
         data: %{
           "actor" => %{"nickname" => actor_nickname},
           "action" => "grant",
-          "subject" => %{"nickname" => subject_nickname},
+          "subject" => user,
+          "permission" => permission
+        }
+      })
+      when is_map(user) do
+    get_log_entry_message(%ModerationLog{
+      data: %{
+        "actor" => %{"nickname" => actor_nickname},
+        "action" => "grant",
+        "subject" => [user],
+        "permission" => permission
+      }
+    })
+  end
+
+  @spec get_log_entry_message(ModerationLog) :: String.t()
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "grant",
+          "subject" => users,
           "permission" => permission
         }
       }) do
-    "@#{actor_nickname} made @#{subject_nickname} #{permission}"
+    "@#{actor_nickname} made #{users_to_nicknames_string(users)} #{permission}"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
@@ -448,11 +492,31 @@ defmodule Pleroma.ModerationLog do
         data: %{
           "actor" => %{"nickname" => actor_nickname},
           "action" => "revoke",
-          "subject" => %{"nickname" => subject_nickname},
+          "subject" => user,
+          "permission" => permission
+        }
+      })
+      when is_map(user) do
+    get_log_entry_message(%ModerationLog{
+      data: %{
+        "actor" => %{"nickname" => actor_nickname},
+        "action" => "revoke",
+        "subject" => [user],
+        "permission" => permission
+      }
+    })
+  end
+
+  @spec get_log_entry_message(ModerationLog) :: String.t()
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "revoke",
+          "subject" => users,
           "permission" => permission
         }
       }) do
-    "@#{actor_nickname} revoked #{permission} role from @#{subject_nickname}"
+    "@#{actor_nickname} revoked #{permission} role from #{users_to_nicknames_string(users)}"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
@@ -550,5 +614,17 @@ defmodule Pleroma.ModerationLog do
         }
       }) do
     "@#{actor_nickname} deleted status ##{subject_id}"
+  end
+
+  defp nicknames_to_string(nicknames) do
+    nicknames
+    |> Enum.map(&"@#{&1}")
+    |> Enum.join(", ")
+  end
+
+  defp users_to_nicknames_string(users) do
+    users
+    |> Enum.map(&"@#{&1["nickname"]}")
+    |> Enum.join(", ")
   end
 end

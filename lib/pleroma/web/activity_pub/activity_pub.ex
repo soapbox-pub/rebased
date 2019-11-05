@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Config
   alias Pleroma.Conversation
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
@@ -68,7 +69,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp check_actor_is_active(actor) do
     if not is_nil(actor) do
       with user <- User.get_cached_by_ap_id(actor),
-           false <- user.info.deactivated do
+           false <- user.deactivated do
         true
       else
         _e -> false
@@ -149,7 +150,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {recipients, _, _} = get_recipients(map),
          # ???
          {:fake, false, map, recipients} <- {:fake, fake, map, recipients},
-         :ok <- Containment.contain_child(map),
+         {:containment, :ok} <- {:containment, Containment.contain_child(map)},
          {:ok, map, object} <- insert_full_object(map) do
       {:ok, activity} =
         Repo.insert(%Activity{
@@ -171,11 +172,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
       Notification.create_notifications(activity)
 
-      participations =
-        activity
-        |> Conversation.create_or_bump_for()
-        |> get_participations()
-
+      conversation = create_or_bump_conversation(activity, map["actor"])
+      participations = get_participations(conversation)
       stream_out(activity)
       stream_out_participations(participations)
       {:ok, activity}
@@ -200,7 +198,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp get_participations({:ok, %{participations: participations}}), do: participations
+  defp create_or_bump_conversation(activity, actor) do
+    with {:ok, conversation} <- Conversation.create_or_bump_for(activity),
+         %User{} = user <- User.get_cached_by_ap_id(actor),
+         Participation.mark_as_read(user, conversation) do
+      {:ok, conversation}
+    end
+  end
+
+  defp get_participations({:ok, conversation}) do
+    conversation
+    |> Repo.preload(:participations, force: true)
+    |> Map.get(:participations)
+  end
+
   defp get_participations(_), do: []
 
   def stream_out_participations(participations) do
@@ -243,6 +254,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     # only accept false as false value
     local = !(params[:local] == false)
     published = params[:published]
+    quick_insert? = Pleroma.Config.get([:env]) == :benchmark
 
     with create_data <-
            make_create_data(
@@ -253,12 +265,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
          _ <- increase_poll_votes_if_vote(create_data),
-         # Changing note count prior to enqueuing federation task in order to avoid
-         # race conditions on updating user.info
+         {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
+      {:quick_insert, true, activity} ->
+        {:ok, activity}
+
       {:fake, true, activity} ->
         {:ok, activity}
 
@@ -447,8 +461,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(data, local, false),
          stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
-         # Changing note count prior to enqueuing federation task in order to avoid
-         # race conditions on updating user.info
          {:ok, _actor} <- decrease_note_count_if_public(user, object),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
@@ -509,7 +521,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     with flag_data <- make_flag_data(params, additional),
          {:ok, activity} <- insert(flag_data, local),
-         :ok <- maybe_federate(activity) do
+         {:ok, stripped_activity} <- strip_report_status_data(activity),
+         :ok <- maybe_federate(stripped_activity) do
       Enum.each(User.all_superusers(), fn superuser ->
         superuser
         |> Pleroma.Emails.AdminEmail.report(actor, account, statuses, content)
@@ -524,7 +537,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public = [Pleroma.Constants.as_public()]
 
     recipients =
-      if opts["user"], do: [opts["user"].ap_id | opts["user"].following] ++ public, else: public
+      if opts["user"],
+        do: [opts["user"].ap_id | User.following(opts["user"])] ++ public,
+        else: public
 
     from(activity in Activity)
     |> maybe_preload_objects(opts)
@@ -614,12 +629,55 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_visibility(query, _visibility), do: query
 
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when is_list(visibility) do
+    if Enum.all?(visibility, &(&1 in @valid_visibilities)) do
+      from(
+        a in query,
+        where:
+          not fragment(
+            "activity_visibility(?, ?, ?) = ANY (?)",
+            a.actor,
+            a.recipients,
+            a.data,
+            ^visibility
+          )
+      )
+    else
+      Logger.error("Could not exclude visibility to #{visibility}")
+      query
+    end
+  end
+
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when visibility in @valid_visibilities do
+    from(
+      a in query,
+      where:
+        not fragment(
+          "activity_visibility(?, ?, ?) = ?",
+          a.actor,
+          a.recipients,
+          a.data,
+          ^visibility
+        )
+    )
+  end
+
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when visibility not in @valid_visibilities do
+    Logger.error("Could not exclude visibility to #{visibility}")
+    query
+  end
+
+  defp exclude_visibility(query, _visibility), do: query
+
   defp restrict_thread_visibility(query, _, %{skip_thread_containment: true} = _),
     do: query
 
   defp restrict_thread_visibility(
          query,
-         %{"user" => %User{info: %{skip_thread_containment: true}}},
+         %{"user" => %User{skip_thread_containment: true}},
          _
        ),
        do: query
@@ -657,7 +715,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put("user", reading_user)
       |> Map.put("actor_id", user.ap_id)
       |> Map.put("whole_db", true)
-      |> Map.put("pinned_activity_ids", user.info.pinned_activities)
+      |> Map.put("pinned_activity_ids", user.pinned_activities)
 
     recipients =
       user_activities_recipients(%{
@@ -675,7 +733,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp user_activities_recipients(%{"reading_user" => reading_user}) do
     if reading_user do
-      [Pleroma.Constants.as_public()] ++ [reading_user.ap_id | reading_user.following]
+      [Pleroma.Constants.as_public()] ++ [reading_user.ap_id | User.following(reading_user)]
     else
       [Pleroma.Constants.as_public()]
     end
@@ -818,8 +876,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted(query, %{"with_muted" => val}) when val in [true, "true", "1"], do: query
 
-  defp restrict_muted(query, %{"muting_user" => %User{info: info}} = opts) do
-    mutes = info.mutes
+  defp restrict_muted(query, %{"muting_user" => %User{} = user} = opts) do
+    mutes = user.mutes
 
     query =
       from([activity] in query,
@@ -836,9 +894,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted(query, _), do: query
 
-  defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
-    blocks = info.blocks || []
-    domain_blocks = info.domain_blocks || []
+  defp restrict_blocked(query, %{"blocking_user" => %User{} = user}) do
+    blocks = user.blocks || []
+    domain_blocks = user.domain_blocks || []
 
     query =
       if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
@@ -879,8 +937,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_pinned(query, _), do: query
 
-  defp restrict_muted_reblogs(query, %{"muting_user" => %User{info: info}}) do
-    muted_reblogs = info.muted_reblogs || []
+  defp restrict_muted_reblogs(query, %{"muting_user" => %User{} = user}) do
+    muted_reblogs = user.muted_reblogs || []
 
     from(
       activity in query,
@@ -978,6 +1036,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_muted_reblogs(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
+    |> exclude_visibility(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do
@@ -1064,17 +1123,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
+    invisible = data["invisible"] || false
 
     user_data = %{
       ap_id: data["id"],
-      info: %{
-        ap_enabled: true,
-        source_data: data,
-        banner: banner,
-        fields: fields,
-        locked: locked,
-        discoverable: discoverable
-      },
+      ap_enabled: true,
+      source_data: data,
+      banner: banner,
+      fields: fields,
+      locked: locked,
+      discoverable: discoverable,
+      invisible: invisible,
       avatar: avatar,
       name: data["name"],
       follower_address: data["followers"],
@@ -1126,7 +1185,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:enabled, true} <-
            {:enabled, Pleroma.Config.get([:instance, :external_user_synchronization])},
          {:ok, info} <- fetch_follow_information_for_user(data) do
-      info = Map.merge(data.info, info)
+      info = Map.merge(data[:info] || %{}, info)
       Map.put(data, :info, info)
     else
       {:enabled, false} ->
@@ -1177,7 +1236,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          data <- maybe_update_follow_information(data) do
       {:ok, data}
     else
-      e -> Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
+      e ->
+        Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
+        {:error, e}
     end
   end
 

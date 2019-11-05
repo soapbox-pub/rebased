@@ -5,7 +5,11 @@ defmodule Pleroma.Repo.Migrations.AddFollowingAddressFromSourceData do
 
   def change do
     query =
-      User.external_users_query()
+      User.Query.build(%{
+        external: true,
+        legacy_active: true,
+        order_by: :id
+      })
       |> select([u], struct(u, [:id, :ap_id, :info]))
 
     Pleroma.Repo.stream(query)

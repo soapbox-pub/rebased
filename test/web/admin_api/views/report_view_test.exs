@@ -49,6 +49,8 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
     {:ok, report_activity} =
       CommonAPI.report(user, %{"account_id" => other_user.id, "status_ids" => [activity.id]})
 
+    other_user = Pleroma.User.get_by_id(other_user.id)
+
     expected = %{
       content: nil,
       actor:

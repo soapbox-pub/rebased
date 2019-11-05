@@ -7,14 +7,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
-  alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Websub.WebsubClientSubscription
 
   import Mock
   import Pleroma.Factory
@@ -148,7 +146,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(object_data["actor"])
 
-      assert user.info.note_count == 1
+      assert user.note_count == 1
     end
 
     test "it works for incoming notices with hashtags" do
@@ -587,7 +585,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                }
              ]
 
-      assert user.info.banner["url"] == [
+      assert user.banner["url"] == [
                %{
                  "href" =>
                    "https://cd.niu.moe/accounts/headers/000/033/323/original/850b3448fa5fd477.png"
@@ -606,7 +604,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(activity.actor)
 
-      assert User.Info.fields(user.info) == [
+      assert User.fields(user) == [
                %{"name" => "foo", "value" => "bar"},
                %{"name" => "foo1", "value" => "bar1"}
              ]
@@ -627,7 +625,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(user.ap_id)
 
-      assert User.Info.fields(user.info) == [
+      assert User.fields(user) == [
                %{"name" => "foo", "value" => "updated"},
                %{"name" => "foo1", "value" => "updated"}
              ]
@@ -645,7 +643,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(user.ap_id)
 
-      assert User.Info.fields(user.info) == [
+      assert User.fields(user) == [
                %{"name" => "foo", "value" => "updated"},
                %{"name" => "foo1", "value" => "updated"}
              ]
@@ -656,7 +654,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(user.ap_id)
 
-      assert User.Info.fields(user.info) == []
+      assert User.fields(user) == []
     end
 
     test "it works for incoming update activities which lock the account" do
@@ -679,7 +677,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(update_data)
 
       user = User.get_cached_by_ap_id(data["actor"])
-      assert user.info.locked == true
+      assert user.locked == true
     end
 
     test "it works for incoming deletes" do
@@ -725,7 +723,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert capture_log(fn ->
                :error = Transmogrifier.handle_incoming(data)
              end) =~
-               "[error] Could not decode user at fetch http://mastodon.example.org/users/gargron, {:error, {:error, :nxdomain}}"
+               "[error] Could not decode user at fetch http://mastodon.example.org/users/gargron, {:error, :nxdomain}"
 
       assert Activity.get_by_id(activity.id)
     end
@@ -751,7 +749,10 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Poison.decode!()
         |> Map.put("actor", ap_id)
 
-      assert :error == Transmogrifier.handle_incoming(data)
+      assert capture_log(fn ->
+               assert :error == Transmogrifier.handle_incoming(data)
+             end) =~ "Object containment failed"
+
       assert User.get_cached_by_ap_id(ap_id)
     end
 
@@ -807,6 +808,25 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["actor"] == "http://mastodon.example.org/users/admin"
 
       refute User.following?(User.get_cached_by_ap_id(data["actor"]), user)
+    end
+
+    test "it works for incoming follows to locked account" do
+      pending_follower = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
+      user = insert(:user, locked: true)
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["type"] == "Follow"
+      assert data["object"] == user.ap_id
+      assert data["state"] == "pending"
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+
+      assert [^pending_follower] = User.get_follow_requests(user)
     end
 
     test "it works for incoming blocks" do
@@ -920,7 +940,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it works for incoming accepts which were orphaned" do
       follower = insert(:user)
-      followed = insert(:user, %{info: %User.Info{locked: true}})
+      followed = insert(:user, locked: true)
 
       {:ok, follow_activity} = ActivityPub.follow(follower, followed)
 
@@ -942,7 +962,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it works for incoming accepts which are referenced by IRI only" do
       follower = insert(:user)
-      followed = insert(:user, %{info: %User.Info{locked: true}})
+      followed = insert(:user, locked: true)
 
       {:ok, follow_activity} = ActivityPub.follow(follower, followed)
 
@@ -962,7 +982,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it fails for incoming accepts which cannot be correlated" do
       follower = insert(:user)
-      followed = insert(:user, %{info: %User.Info{locked: true}})
+      followed = insert(:user, locked: true)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -981,7 +1001,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it fails for incoming rejects which cannot be correlated" do
       follower = insert(:user)
-      followed = insert(:user, %{info: %User.Info{locked: true}})
+      followed = insert(:user, locked: true)
 
       accept_data =
         File.read!("test/fixtures/mastodon-reject-activity.json")
@@ -1000,7 +1020,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it works for incoming rejects which are orphaned" do
       follower = insert(:user)
-      followed = insert(:user, %{info: %User.Info{locked: true}})
+      followed = insert(:user, locked: true)
 
       {:ok, follower} = User.follow(follower, followed)
       {:ok, _follow_activity} = ActivityPub.follow(follower, followed)
@@ -1026,7 +1046,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it works for incoming rejects which are referenced by IRI only" do
       follower = insert(:user)
-      followed = insert(:user, %{info: %User.Info{locked: true}})
+      followed = insert(:user, locked: true)
 
       {:ok, follower} = User.follow(follower, followed)
       {:ok, follow_activity} = ActivityPub.follow(follower, followed)
@@ -1095,10 +1115,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
       object = Object.normalize(activity)
 
+      note_obj = %{
+        "type" => "Note",
+        "id" => activity.data["id"],
+        "content" => "test post",
+        "published" => object.data["published"],
+        "actor" => AccountView.render("show.json", %{user: user})
+      }
+
       message = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
         "cc" => [user.ap_id],
-        "object" => [user.ap_id, object.data["id"]],
+        "object" => [user.ap_id, activity.data["id"]],
         "type" => "Flag",
         "content" => "blocked AND reported!!!",
         "actor" => other_user.ap_id
@@ -1106,10 +1134,54 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert {:ok, activity} = Transmogrifier.handle_incoming(message)
 
-      assert activity.data["object"] == [user.ap_id, object.data["id"]]
+      assert activity.data["object"] == [user.ap_id, note_obj]
       assert activity.data["content"] == "blocked AND reported!!!"
       assert activity.data["actor"] == other_user.ap_id
       assert activity.data["cc"] == [user.ap_id]
+    end
+
+    test "it correctly processes messages with non-array to field" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => "https://www.w3.org/ns/activitystreams#Public",
+        "type" => "Create",
+        "object" => %{
+          "content" => "blah blah blah",
+          "type" => "Note",
+          "attributedTo" => user.ap_id,
+          "inReplyTo" => nil
+        },
+        "actor" => user.ap_id
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["to"]
+    end
+
+    test "it correctly processes messages with non-array cc field" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => user.follower_address,
+        "cc" => "https://www.w3.org/ns/activitystreams#Public",
+        "type" => "Create",
+        "object" => %{
+          "content" => "blah blah blah",
+          "type" => "Note",
+          "attributedTo" => user.ap_id,
+          "inReplyTo" => nil
+        },
+        "actor" => user.ap_id
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["cc"]
+      assert [user.follower_address] == activity.data["to"]
     end
   end
 
@@ -1181,32 +1253,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["object"]["actor"] == modified["object"]["attributedTo"]
-    end
-
-    test "it translates ostatus IDs to external URLs" do
-      incoming = File.read!("test/fixtures/incoming_note_activity.xml")
-      {:ok, [referent_activity]} = OStatus.handle_incoming(incoming)
-
-      user = insert(:user)
-
-      {:ok, activity} = CommonAPI.favorite(user, referent_activity.id)
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"] == "http://gs.example.org:4040/index.php/notice/29"
-    end
-
-    test "it translates ostatus reply_to IDs to external URLs" do
-      incoming = File.read!("test/fixtures/incoming_note_activity.xml")
-      {:ok, [referred_activity]} = OStatus.handle_incoming(incoming)
-
-      user = insert(:user)
-
-      {:ok, activity} =
-        CommonAPI.post(user, %{"status" => "HI!", "in_reply_to_status_id" => referred_activity.id})
-
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"]["inReplyTo"] == "http://gs.example.org:4040/index.php/notice/29"
     end
 
     test "it strips internal hashtag data" do
@@ -1321,25 +1367,26 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
           follower_address: User.ap_followers(%User{nickname: "rye@niu.moe"})
         })
 
-      user_two = insert(:user, %{following: [user.follower_address]})
+      user_two = insert(:user)
+      Pleroma.FollowingRelationship.follow(user_two, user, "accept")
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
       {:ok, unrelated_activity} = CommonAPI.post(user_two, %{"status" => "test"})
       assert "http://localhost:4001/users/rye@niu.moe/followers" in activity.recipients
 
       user = User.get_cached_by_id(user.id)
-      assert user.info.note_count == 1
+      assert user.note_count == 1
 
       {:ok, user} = Transmogrifier.upgrade_user_from_ap_id("https://niu.moe/users/rye")
       ObanHelpers.perform_all()
 
-      assert user.info.ap_enabled
-      assert user.info.note_count == 1
+      assert user.ap_enabled
+      assert user.note_count == 1
       assert user.follower_address == "https://niu.moe/users/rye/followers"
       assert user.following_address == "https://niu.moe/users/rye/following"
 
       user = User.get_cached_by_id(user.id)
-      assert user.info.note_count == 1
+      assert user.note_count == 1
 
       activity = Activity.get_by_id(activity.id)
       assert user.follower_address in activity.recipients
@@ -1360,7 +1407,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                      "https://cdn.niu.moe/accounts/headers/000/033/323/original/850b3448fa5fd477.png"
                  }
                ]
-             } = user.info.banner
+             } = user.banner
 
       refute "..." in activity.recipients
 
@@ -1368,23 +1415,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       refute user.follower_address in unrelated_activity.recipients
 
       user_two = User.get_cached_by_id(user_two.id)
-      assert user.follower_address in user_two.following
-      refute "..." in user_two.following
-    end
-  end
-
-  describe "maybe_retire_websub" do
-    test "it deletes all websub client subscripitions with the user as topic" do
-      subscription = %WebsubClientSubscription{topic: "https://niu.moe/users/rye.atom"}
-      {:ok, ws} = Repo.insert(subscription)
-
-      subscription = %WebsubClientSubscription{topic: "https://niu.moe/users/pasty.atom"}
-      {:ok, ws2} = Repo.insert(subscription)
-
-      Transmogrifier.maybe_retire_websub("https://niu.moe/users/rye")
-
-      refute Repo.get(WebsubClientSubscription, ws.id)
-      assert Repo.get(WebsubClientSubscription, ws2.id)
+      assert User.following?(user_two, user)
+      refute "..." in User.following(user_two)
     end
   end
 
@@ -1410,7 +1442,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "type" => "Announce"
       }
 
-      :error = Transmogrifier.handle_incoming(data)
+      assert capture_log(fn ->
+               :error = Transmogrifier.handle_incoming(data)
+             end) =~ "Object containment failed"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 1)" do
@@ -1423,7 +1457,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "type" => "Announce"
       }
 
-      :error = Transmogrifier.handle_incoming(data)
+      assert capture_log(fn ->
+               :error = Transmogrifier.handle_incoming(data)
+             end) =~ "Object containment failed"
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 2)" do
@@ -1436,7 +1472,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "type" => "Announce"
       }
 
-      :error = Transmogrifier.handle_incoming(data)
+      assert capture_log(fn ->
+               :error = Transmogrifier.handle_incoming(data)
+             end) =~ "Object containment failed"
     end
   end
 
@@ -1739,7 +1777,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
   describe "get_obj_helper/2" do
     test "returns nil when cannot normalize object" do
-      refute Transmogrifier.get_obj_helper("test-obj-id")
+      assert capture_log(fn ->
+               refute Transmogrifier.get_obj_helper("test-obj-id")
+             end) =~ "Unsupported URI scheme"
     end
 
     test "returns {:ok, %Object{}} for success case" do

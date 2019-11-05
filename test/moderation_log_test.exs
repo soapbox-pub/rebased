@@ -12,8 +12,8 @@ defmodule Pleroma.ModerationLogTest do
 
   describe "user moderation" do
     setup do
-      admin = insert(:user, info: %{is_admin: true})
-      moderator = insert(:user, info: %{is_moderator: true})
+      admin = insert(:user, is_admin: true)
+      moderator = insert(:user, is_moderator: true)
       subject1 = insert(:user)
       subject2 = insert(:user)
 
@@ -24,13 +24,13 @@ defmodule Pleroma.ModerationLogTest do
       {:ok, _} =
         ModerationLog.insert_log(%{
           actor: moderator,
-          subject: subject1,
+          subject: [subject1],
           action: "delete"
         })
 
       log = Repo.one(ModerationLog)
 
-      assert log.data["message"] == "@#{moderator.nickname} deleted user @#{subject1.nickname}"
+      assert log.data["message"] == "@#{moderator.nickname} deleted users: @#{subject1.nickname}"
     end
 
     test "logging user creation by moderator", %{
@@ -128,7 +128,7 @@ defmodule Pleroma.ModerationLogTest do
       {:ok, _} =
         ModerationLog.insert_log(%{
           actor: moderator,
-          subject: subject1,
+          subject: [subject1],
           action: "grant",
           permission: "moderator"
         })
@@ -142,7 +142,7 @@ defmodule Pleroma.ModerationLogTest do
       {:ok, _} =
         ModerationLog.insert_log(%{
           actor: moderator,
-          subject: subject1,
+          subject: [subject1],
           action: "revoke",
           permission: "moderator"
         })

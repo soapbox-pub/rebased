@@ -38,6 +38,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://shitposter.club/users/moonman", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/moonman@shitposter.club.json")
+     }}
+  end
+
   def get("https://mastodon.social/users/emelie/statuses/101849165031453009", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -340,6 +348,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("http://mastodon.example.org/users/relay", _, _, Accept: "application/activity+json") do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/relay@mastdon.example.org.json")
+     }}
+  end
+
   def get("http://mastodon.example.org/users/gargron", _, _, Accept: "application/activity+json") do
     {:error, :nxdomain}
   end
@@ -620,7 +636,7 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/https___shitposter.club_notice_2827873.html")
+       body: File.read!("test/fixtures/tesla_mock/https___shitposter.club_notice_2827873.json")
      }}
   end
 
@@ -1167,6 +1183,30 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://10.111.10.1/notice/9kCP7V", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: ""}}
+  end
+
+  def get("https://172.16.32.40/notice/9kCP7V", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: ""}}
+  end
+
+  def get("https://192.168.10.40/notice/9kCP7V", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: ""}}
+  end
+
+  def get("https://www.patreon.com/posts/mastodon-2-9-and-28121681", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: ""}}
+  end
+
+  def get("http://mastodon.example.org/@admin/99541947525187367", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/mastodon-post-activity.json")}}
+  end
+
+  def get("https://info.pleroma.site/activity4.json", _, _, _) do
+    {:ok, %Tesla.Env{status: 500, body: "Error occurred"}}
+  end
+
   def get("http://example.com/rel_me/anchor", _, _, _) do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rel_me_anchor.html")}}
   end
@@ -1197,6 +1237,10 @@ defmodule HttpRequestMock do
 
   def get("https://patch.cx/users/rin", _, _, _) do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/rin.json")}}
+  end
+
+  def get("http://example.com/rel_me/error", _, _, _) do
+    {:ok, %Tesla.Env{status: 404, body: ""}}
   end
 
   def get(url, query, body, headers) do

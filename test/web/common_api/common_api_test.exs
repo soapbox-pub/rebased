@@ -10,6 +10,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -101,7 +102,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     {:ok, activity} = CommonAPI.update(user)
     user = User.get_cached_by_ap_id(user.ap_id)
-    [firefox] = user.info.source_data["tag"]
+    [firefox] = user.source_data["tag"]
 
     assert firefox["name"] == ":firefox:"
 
@@ -141,7 +142,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       object = Object.normalize(activity)
 
-      assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
+      assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
     end
 
     test "it filters out obviously bad tags when accepting a post as Markdown" do
@@ -157,7 +158,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       object = Object.normalize(activity)
 
-      assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
+      assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
     end
 
     test "it does not allow replies to direct messages that are not direct messages themselves" do
@@ -298,7 +299,7 @@ defmodule Pleroma.Web.CommonAPITest do
       id = activity.id
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: [^id]}} = user
+      assert %User{pinned_activities: [^id]} = user
     end
 
     test "unlisted statuses can be pinned", %{user: user} do
@@ -332,7 +333,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: []}} = user
+      assert %User{pinned_activities: []} = user
     end
 
     test "should unpin when deleting a status", %{user: user, activity: activity} do
@@ -344,7 +345,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: []}} = user
+      assert %User{pinned_activities: []} = user
     end
   end
 
@@ -392,6 +393,14 @@ defmodule Pleroma.Web.CommonAPITest do
         "status_ids" => [activity.id]
       }
 
+      note_obj = %{
+        "type" => "Note",
+        "id" => activity_ap_id,
+        "content" => "foobar",
+        "published" => activity.object.data["published"],
+        "actor" => AccountView.render("show.json", %{user: target_user})
+      }
+
       assert {:ok, flag_activity} = CommonAPI.report(reporter, report_data)
 
       assert %Activity{
@@ -399,7 +408,7 @@ defmodule Pleroma.Web.CommonAPITest do
                data: %{
                  "type" => "Flag",
                  "content" => ^comment,
-                 "object" => [^target_ap_id, ^activity_ap_id],
+                 "object" => [^target_ap_id, ^note_obj],
                  "state" => "open"
                }
              } = flag_activity
@@ -419,6 +428,11 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, report} = CommonAPI.update_report_state(report_id, "resolved")
 
       assert report.data["state"] == "resolved"
+
+      [reported_user, activity_id] = report.data["object"]
+
+      assert reported_user == target_user.ap_id
+      assert activity_id == activity.data["id"]
     end
 
     test "does not update report state when state is unsupported" do
@@ -475,7 +489,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
   describe "accept_follow_request/2" do
     test "after acceptance, it sets all existing pending follow request states to 'accept'" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
       follower = insert(:user)
       follower_two = insert(:user)
 
@@ -495,7 +509,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "after rejection, it sets all existing pending follow request states to 'reject'" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
       follower = insert(:user)
       follower_two = insert(:user)
 

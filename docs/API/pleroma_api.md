@@ -367,6 +367,13 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
     * `recipients`: A list of ids of users that should receive posts to this conversation. This will replace the current list of recipients, so submit the full list. The owner of owner of the conversation will always be part of the set of recipients, though.
 * Response: JSON, statuses (200 - healthy, 503 unhealthy)
 
+## `GET /api/v1/pleroma/conversations/read`
+### Marks all user's conversations as read.
+* Method `POST`
+* Authentication: required
+* Params: None
+* Response: JSON, returns a list of Mastodon Conversation entities that were marked as read (200 - healthy, 503 unhealthy).
+
 ## `GET /api/pleroma/emoji/packs`
 ### Lists the custom emoji packs on the server
 * Method `GET`

@@ -68,12 +68,7 @@ defmodule Pleroma.Stats do
 
     domain_count = Enum.count(peers)
 
-    status_query =
-      from(u in User.Query.build(%{local: true}),
-        select: fragment("sum((?->>'note_count')::int)", u.info)
-      )
-
-    status_count = Repo.one(status_query)
+    status_count = Repo.aggregate(User.Query.build(%{local: true}), :sum, :note_count)
 
     user_count = Repo.aggregate(User.Query.build(%{local: true, active: true}), :count, :id)
 

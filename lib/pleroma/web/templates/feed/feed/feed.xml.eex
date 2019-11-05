@@ -10,8 +10,6 @@
   <title><%= @user.nickname <> "'s timeline" %></title>
   <updated><%= most_recent_update(@activities, @user) %></updated>
   <logo><%= logo(@user) %></logo>
-  <link rel="hub" href="<%= websub_url(@conn, :websub_subscription_request, @user.nickname) %>"/>
-  <link rel="salmon" href="<%= o_status_url(@conn, :salmon_incoming, @user.nickname) %>"/>
   <link rel="self" href="<%= '#{feed_url(@conn, :feed, @user.nickname)}.atom' %>" type="application/atom+xml"/>
 
   <%= render @view_module, "_author.xml", assigns %>
