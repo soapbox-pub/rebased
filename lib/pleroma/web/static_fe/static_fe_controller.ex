@@ -15,6 +15,8 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   plug(:put_view, Pleroma.Web.StaticFE.StaticFEView)
   plug(:assign_id)
 
+  @page_keys ["max_id", "min_id", "limit", "since_id", "order"]
+
   defp get_title(%Object{data: %{"name" => name}}) when is_binary(name),
     do: name
 
@@ -53,7 +55,8 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
       published: data["published"],
       sensitive: data["sensitive"],
       selected: selected,
-      counts: get_counts(activity)
+      counts: get_counts(activity),
+      id: activity.id
     }
   end
 
@@ -68,14 +71,25 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
     render(conn, "conversation.html", %{activities: timeline})
   end
 
-  def show(%{assigns: %{username_or_id: username_or_id}} = conn, _params) do
+  def show(%{assigns: %{username_or_id: username_or_id}} = conn, params) do
     %User{} = user = User.get_cached_by_nickname_or_id(username_or_id)
 
     timeline =
-      ActivityPub.fetch_user_activities(user, nil, %{})
+      ActivityPub.fetch_user_activities(user, nil, Map.take(params, @page_keys))
       |> Enum.map(&represent/1)
 
-    render(conn, "profile.html", %{user: user, timeline: timeline})
+    prev_page_id =
+      (params["min_id"] || params["max_id"]) &&
+        List.first(timeline) && List.first(timeline).id
+
+    next_page_id = List.last(timeline) && List.last(timeline).id
+
+    render(conn, "profile.html", %{
+      user: user,
+      timeline: timeline,
+      prev_page_id: prev_page_id,
+      next_page_id: next_page_id
+    })
   end
 
   def assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),
