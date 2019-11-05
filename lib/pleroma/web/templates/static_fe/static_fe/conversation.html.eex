@@ -1,5 +1,5 @@
 <header>
-  <h1><%= link @instance_name, to: "/" %></h1>
+  <h1><%= link instance_name(), to: "/" %></h1>
 </header>
 
 <main>

@@ -1,5 +1,5 @@
 <header>
-  <h1><%= link @instance_name, to: "/" %></h1>
+  <h1><%= link instance_name(), to: "/" %></h1>
 
   <h3>
     <form class="pull-right collapse" method="POST" action="<%= Helpers.util_path(@conn, :remote_subscribe) %>">

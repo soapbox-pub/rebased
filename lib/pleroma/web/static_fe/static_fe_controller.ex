@@ -58,28 +58,24 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   end
 
   def show(%{assigns: %{notice_id: notice_id}} = conn, _params) do
-    instance_name = Pleroma.Config.get([:instance, :name], "Pleroma")
     activity = Activity.get_by_id_with_object(notice_id)
-    context = activity.object.data["context"]
-    activities = ActivityPub.fetch_activities_for_context(context, %{})
-
     timeline =
-      for a <- Enum.reverse(activities) do
-        represent(a, a.object.id == activity.object.id)
-      end
+      activity.object.data["context"]
+      |> ActivityPub.fetch_activities_for_context(%{})
+      |> Enum.reverse()
+      |> Enum.map(&represent(&1, &1.object.id == activity.object.id))
 
-    render(conn, "conversation.html", %{activities: timeline, instance_name: instance_name})
+    render(conn, "conversation.html", %{activities: timeline})
   end
 
   def show(%{assigns: %{username_or_id: username_or_id}} = conn, _params) do
-    instance_name = Pleroma.Config.get([:instance, :name], "Pleroma")
     %User{} = user = User.get_cached_by_nickname_or_id(username_or_id)
 
     timeline =
       ActivityPub.fetch_user_activities(user, nil, %{})
       |> Enum.map(&represent/1)
 
-    render(conn, "profile.html", %{user: user, timeline: timeline, instance_name: instance_name})
+    render(conn, "profile.html", %{user: user, timeline: timeline})
   end
 
   def assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),

@@ -36,4 +36,6 @@ defmodule Pleroma.Web.StaticFE.StaticFEView do
     {:ok, date, _} = DateTime.from_iso8601(date)
     Strftime.strftime!(date, "%Y/%m/%d %l:%M:%S %p UTC")
   end
+
+  def instance_name, do: Pleroma.Config.get([:instance, :name], "Pleroma")
 end

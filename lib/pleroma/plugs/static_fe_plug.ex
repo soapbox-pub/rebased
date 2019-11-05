@@ -3,17 +3,24 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Plugs.StaticFEPlug do
+  import Plug.Conn
+  alias Pleroma.Web.StaticFE.StaticFEController
+
   def init(options), do: options
 
-  def accepts_html?({"accept", a}), do: String.contains?(a, "text/html")
-  def accepts_html?({_, _}), do: false
-
   def call(conn, _) do
-    with true <- Pleroma.Config.get([:instance, :static_fe], false),
-         {_, _} <- Enum.find(conn.req_headers, &accepts_html?/1) do
-      Pleroma.Web.StaticFE.StaticFEController.call(conn, :show)
+    if enabled?() and accepts_html?(conn) do
+      conn
+      |> StaticFEController.call(:show)
+      |> halt()
     else
-      _ -> conn
+      conn
     end
+  end
+
+  defp enabled?, do: Pleroma.Config.get([:instance, :static_fe], false)
+
+  defp accepts_html?(conn) do
+    conn |> get_req_header("accept") |> List.first() |> String.contains?("text/html")
   end
 end
