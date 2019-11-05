@@ -29,22 +29,6 @@ build:
   - mix deps.get
   - mix compile --force
 
-docs-build:
-  stage: build
-  only:
-  - master@pleroma/pleroma
-  - develop@pleroma/pleroma
-  variables:
-    MIX_ENV: dev
-    PLEROMA_BUILD_ENV: prod
-  script:
-    - mix deps.get
-    - mix compile
-    - mix docs
-  artifacts:
-    paths:
-      - priv/static/doc
-
 benchmark:
   stage: benchmark
   variables:
