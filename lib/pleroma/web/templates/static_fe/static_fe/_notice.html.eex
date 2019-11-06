@@ -5,7 +5,7 @@
   <%= render("_user_card.html", %{user: @user}) %>
   <div class="activity-content">
     <%= if @title != "" do %>
-      <details>
+      <details <%= if open_content?() do %>open<% end %>>
         <summary><%= raw @title %></summary>
         <div class="e-content"><%= raw @content %></div>
       </details>

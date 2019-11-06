@@ -38,4 +38,11 @@ defmodule Pleroma.Web.StaticFE.StaticFEView do
   end
 
   def instance_name, do: Pleroma.Config.get([:instance, :name], "Pleroma")
+
+  def open_content? do
+    Pleroma.Config.get(
+      [:frontend_configurations, :collapse_message_with_subjects],
+      true
+    )
+  end
 end
