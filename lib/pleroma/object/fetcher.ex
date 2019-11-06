@@ -54,7 +54,7 @@ defmodule Pleroma.Object.Fetcher do
          {:ok, object} <- reinject_object(object, data) do
       {:ok, object}
     else
-      {:local, true} -> object
+      {:local, true} -> {:ok, object}
       e -> {:error, e}
     end
   end
