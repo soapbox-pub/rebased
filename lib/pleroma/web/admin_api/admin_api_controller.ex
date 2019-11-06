@@ -607,10 +607,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   @doc "Force password reset for a given user"
-  def force_password_reset(conn, %{"nickname" => nickname}) do
-    (%User{local: true} = user) = User.get_cached_by_nickname(nickname)
+  def force_password_reset(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
 
-    User.force_password_reset_async(user)
+    Enum.map(users, &User.force_password_reset_async/1)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "force_password_reset"
+    })
 
     json_response(conn, :no_content, "")
   end
