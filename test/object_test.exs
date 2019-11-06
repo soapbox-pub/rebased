@@ -124,6 +124,8 @@ defmodule Pleroma.ObjectTest do
       %Object{} =
         object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
 
+      Object.set_cache(object)
+
       assert Enum.at(object.data["oneOf"], 0)["replies"]["totalItems"] == 4
       assert Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 0
 
@@ -133,6 +135,8 @@ defmodule Pleroma.ObjectTest do
       })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
+      object_in_cache = Object.get_cached_by_ap_id(object.data["id"])
+      assert updated_object == object_in_cache
       assert Enum.at(updated_object.data["oneOf"], 0)["replies"]["totalItems"] == 8
       assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 3
     end
@@ -141,6 +145,8 @@ defmodule Pleroma.ObjectTest do
       %Object{} =
         object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
 
+      Object.set_cache(object)
+
       assert Enum.at(object.data["oneOf"], 0)["replies"]["totalItems"] == 4
       assert Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 0
 
@@ -148,6 +154,8 @@ defmodule Pleroma.ObjectTest do
                mock_modified.(%Tesla.Env{status: 404, body: ""})
 
                updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
+               object_in_cache = Object.get_cached_by_ap_id(object.data["id"])
+               assert updated_object == object_in_cache
                assert Enum.at(updated_object.data["oneOf"], 0)["replies"]["totalItems"] == 4
                assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 0
              end) =~
@@ -160,6 +168,8 @@ defmodule Pleroma.ObjectTest do
       %Object{} =
         object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
 
+      Object.set_cache(object)
+
       assert Enum.at(object.data["oneOf"], 0)["replies"]["totalItems"] == 4
       assert Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 0
 
@@ -169,6 +179,8 @@ defmodule Pleroma.ObjectTest do
       })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: 100)
+      object_in_cache = Object.get_cached_by_ap_id(object.data["id"])
+      assert updated_object == object_in_cache
       assert Enum.at(updated_object.data["oneOf"], 0)["replies"]["totalItems"] == 4
       assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 0
     end
@@ -176,6 +188,8 @@ defmodule Pleroma.ObjectTest do
     test "preserves internal fields on refetch", %{mock_modified: mock_modified} do
       %Object{} =
         object = Object.normalize("https://patch.cx/objects/9a172665-2bc5-452d-8428-2361d4c33b1d")
+
+      Object.set_cache(object)
 
       assert Enum.at(object.data["oneOf"], 0)["replies"]["totalItems"] == 4
       assert Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 0
@@ -192,6 +206,8 @@ defmodule Pleroma.ObjectTest do
       })
 
       updated_object = Object.get_by_id_and_maybe_refetch(object.id, interval: -1)
+      object_in_cache = Object.get_cached_by_ap_id(object.data["id"])
+      assert updated_object == object_in_cache
       assert Enum.at(updated_object.data["oneOf"], 0)["replies"]["totalItems"] == 8
       assert Enum.at(updated_object.data["oneOf"], 1)["replies"]["totalItems"] == 3
 
