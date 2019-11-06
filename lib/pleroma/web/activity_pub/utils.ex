@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.Changeset
   alias Ecto.UUID
   alias Pleroma.Activity
-  alias Pleroma.Activity.Queries
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -697,8 +696,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
           required(:groups) => [
             %{
               required(:date) => String.t(),
-              required(:account) => %User{},
-              required(:status) => %Activity{},
+              required(:account) => %{},
+              required(:status) => %{},
               required(:actors) => [%User{}],
               required(:reports) => [%Activity{}]
             }
@@ -706,32 +705,23 @@ defmodule Pleroma.Web.ActivityPub.Utils do
           required(:total) => integer
         }
   def get_reports_grouped_by_status do
-    paginated_activities = get_reported_status_ids()
-
     groups =
-      paginated_activities
+      get_reported_status_ids()
       |> Enum.map(fn entry ->
-        status =
-          Activity
-          |> Queries.by_ap_id(entry[:activity_id])
-          |> Activity.with_preloaded_object(:left)
-          |> Activity.with_preloaded_user_actor()
-          |> Repo.one()
-
-        reports = get_reports_by_status_id(status.data["id"])
-
-        max_date =
-          Enum.max_by(reports, &Pleroma.Web.CommonAPI.Utils.to_masto_date(&1.data["published"])).data[
-            "published"
-          ]
-
+        activity = Jason.decode!(entry.activity)
+        reports = get_reports_by_status_id(activity["id"])
+        max_date = Enum.max_by(reports, &NaiveDateTime.from_iso8601!(&1.data["published"]))
         actors = Enum.map(reports, & &1.user_actor)
 
         %{
-          date: max_date,
-          account: status.user_actor,
-          status: status,
-          actors: actors,
+          date: max_date.data["published"],
+          account: activity["actor"],
+          status: %{
+            id: activity["id"],
+            content: activity["content"],
+            published: activity["published"]
+          },
+          actors: Enum.uniq(actors),
           reports: reports
         }
       end)
@@ -741,28 +731,30 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     }
   end
 
-  def get_reports_by_status_id(status_id) do
+  def get_reports_by_status_id(ap_id) do
     from(a in Activity,
       where: fragment("(?)->>'type' = 'Flag'", a.data),
-      where: fragment("(?)->'object' \\? (?)", a.data, ^status_id)
+      where: fragment("(?)->'object' @> ?", a.data, ^[%{id: ap_id}])
     )
     |> Activity.with_preloaded_user_actor()
     |> Repo.all()
   end
 
-  @spec get_reported_status_ids() :: %{
-          required(:items) => [%Activity{}],
-          required(:total) => integer
-        }
+  @spec get_reported_status_ids() :: [
+          %{
+            required(:activity) => String.t(),
+            required(:date) => String.t()
+          }
+        ]
   def get_reported_status_ids do
     from(a in Activity,
       where: fragment("(?)->>'type' = 'Flag'", a.data),
       select: %{
         date: fragment("max(?->>'published') date", a.data),
-        activity_id:
-          fragment("jsonb_array_elements_text((? #- '{object,0}')->'object') activity_id", a.data)
+        activity:
+          fragment("jsonb_array_elements_text((? #- '{object,0}')->'object') activity", a.data)
       },
-      group_by: fragment("activity_id"),
+      group_by: fragment("activity"),
       order_by: fragment("date DESC")
     )
     |> Repo.all()

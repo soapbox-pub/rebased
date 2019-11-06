@@ -47,8 +47,8 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
       Enum.map(groups, fn group ->
         %{
           date: group[:date],
-          account: merge_account_views(group[:account]),
-          status: StatusView.render("show.json", %{activity: group[:status]}),
+          account: group[:account],
+          status: group[:status],
           actors: Enum.map(group[:actors], &merge_account_views/1),
           reports:
             group[:reports]

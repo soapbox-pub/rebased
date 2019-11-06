@@ -1551,7 +1551,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "GET /api/pleroma/admin/grouped_reports" do
     setup %{conn: conn} do
-      admin = insert(:user, info: %{is_admin: true})
+      admin = insert(:user, is_admin: true)
       [reporter, target_user] = insert_pair(:user)
 
       date1 = (DateTime.to_unix(DateTime.utc_now()) + 1000) |> DateTime.from_unix!()
@@ -1567,53 +1567,124 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       third_status =
         insert(:note_activity, user: target_user, data_attrs: %{"published" => date3})
 
-      %{
-        conn: assign(conn, :user, admin),
-        reporter: reporter,
-        target_user: target_user,
-        first_status: first_status,
-        second_status: second_status,
-        third_status: third_status
-      }
-    end
-
-    test "returns reports grouped by status", %{
-      conn: conn,
-      reporter: reporter,
-      target_user: target_user,
-      first_status: first_status,
-      second_status: second_status,
-      third_status: third_status
-    } do
-      {:ok, %{id: _}} =
+      {:ok, first_report} =
         CommonAPI.report(reporter, %{
           "account_id" => target_user.id,
           "status_ids" => [first_status.id, second_status.id, third_status.id]
         })
 
-      {:ok, %{id: _}} =
+      {:ok, second_report} =
         CommonAPI.report(reporter, %{
           "account_id" => target_user.id,
           "status_ids" => [first_status.id, second_status.id]
         })
 
-      {:ok, %{id: _}} =
+      {:ok, third_report} =
         CommonAPI.report(reporter, %{
           "account_id" => target_user.id,
           "status_ids" => [first_status.id]
         })
 
+      %{
+        conn: assign(conn, :user, admin),
+        first_status: Activity.get_by_ap_id_with_object(first_status.data["id"]),
+        second_status: Activity.get_by_ap_id_with_object(second_status.data["id"]),
+        third_status: Activity.get_by_ap_id_with_object(third_status.data["id"]),
+        first_status_reports: [first_report, second_report, third_report],
+        second_status_reports: [first_report, second_report],
+        third_status_reports: [first_report],
+        target_user: target_user,
+        reporter: reporter
+      }
+    end
+
+    test "returns reports grouped by status", %{
+      conn: conn,
+      first_status: first_status,
+      second_status: second_status,
+      third_status: third_status,
+      first_status_reports: first_status_reports,
+      second_status_reports: second_status_reports,
+      third_status_reports: third_status_reports,
+      target_user: target_user,
+      reporter: reporter
+    } do
       response =
         conn
         |> get("/api/pleroma/admin/grouped_reports")
         |> json_response(:ok)
 
       assert length(response["reports"]) == 3
-      [third_group, second_group, first_group] = response["reports"]
 
-      assert length(third_group["reports"]) == 3
+      first_group =
+        Enum.find(response["reports"], &(&1["status"]["id"] == first_status.data["id"]))
+
+      second_group =
+        Enum.find(response["reports"], &(&1["status"]["id"] == second_status.data["id"]))
+
+      third_group =
+        Enum.find(response["reports"], &(&1["status"]["id"] == third_status.data["id"]))
+
+      assert length(first_group["reports"]) == 3
       assert length(second_group["reports"]) == 2
-      assert length(first_group["reports"]) == 1
+      assert length(third_group["reports"]) == 1
+
+      assert first_group["date"] ==
+               Enum.max_by(first_status_reports, fn act ->
+                 NaiveDateTime.from_iso8601!(act.data["published"])
+               end).data["published"]
+
+      assert first_group["status"] == %{
+               "id" => first_status.data["id"],
+               "content" => first_status.object.data["content"],
+               "published" => first_status.object.data["published"]
+             }
+
+      assert first_group["account"]["id"] == target_user.id
+
+      assert length(first_group["actors"]) == 1
+      assert hd(first_group["actors"])["id"] == reporter.id
+
+      assert Enum.map(first_group["reports"], & &1["id"]) --
+               Enum.map(first_status_reports, & &1.id) == []
+
+      assert second_group["date"] ==
+               Enum.max_by(second_status_reports, fn act ->
+                 NaiveDateTime.from_iso8601!(act.data["published"])
+               end).data["published"]
+
+      assert second_group["status"] == %{
+               "id" => second_status.data["id"],
+               "content" => second_status.object.data["content"],
+               "published" => second_status.object.data["published"]
+             }
+
+      assert second_group["account"]["id"] == target_user.id
+
+      assert length(second_group["actors"]) == 1
+      assert hd(second_group["actors"])["id"] == reporter.id
+
+      assert Enum.map(second_group["reports"], & &1["id"]) --
+               Enum.map(second_status_reports, & &1.id) == []
+
+      assert third_group["date"] ==
+               Enum.max_by(third_status_reports, fn act ->
+                 NaiveDateTime.from_iso8601!(act.data["published"])
+               end).data["published"]
+
+      assert third_group["status"] == %{
+               "id" => third_status.data["id"],
+               "content" => third_status.object.data["content"],
+               "published" => third_status.object.data["published"]
+             }
+
+      assert third_group["account"]["id"] == target_user.id
+
+      assert length(third_group["actors"]) == 1
+      assert hd(third_group["actors"])["id"] == reporter.id
+
+      assert Enum.map(third_group["reports"], & &1["id"]) --
+               Enum.map(third_status_reports, & &1.id) == []
     end
   end
 
