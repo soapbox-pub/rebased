@@ -38,7 +38,8 @@ defmodule Pleroma.Object.Fetcher do
          data <- maybe_reinject_internal_fields(data, struct),
          changeset <- Object.change(struct, %{data: data}),
          changeset <- touch_changeset(changeset),
-         {:ok, object} <- Repo.insert_or_update(changeset) do
+         {:ok, object} <- Repo.insert_or_update(changeset),
+         {:ok, object} <- Object.set_cache(object) do
       {:ok, object}
     else
       e ->
