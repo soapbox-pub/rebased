@@ -3,9 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,minimal-ui" />
-    <title>
-    <%= Pleroma.Config.get([:instance, :name]) %>
-    </title>
+    <title><%= Pleroma.Config.get([:instance, :name]) %></title>
+    <%= Phoenix.HTML.raw(@meta || "") %>
     <link rel="stylesheet" href="/static/static-fe.css">
   </head>
   <body>

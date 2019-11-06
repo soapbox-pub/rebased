@@ -9,6 +9,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.Metadata
   alias Pleroma.Web.Router.Helpers
 
   plug(:put_layout, :static_fe)
@@ -63,13 +64,16 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   def show(%{assigns: %{notice_id: notice_id}} = conn, _params) do
     case Activity.get_by_id_with_object(notice_id) do
       %Activity{} = activity ->
+        %User{} = user = User.get_by_ap_id(activity.object.data["actor"])
+        meta = Metadata.build_tags(%{activity_id: notice_id, object: activity.object, user: user})
+
         timeline =
           activity.object.data["context"]
           |> ActivityPub.fetch_activities_for_context(%{})
           |> Enum.reverse()
           |> Enum.map(&represent(&1, &1.object.id == activity.object.id))
 
-        render(conn, "conversation.html", %{activities: timeline})
+        render(conn, "conversation.html", %{activities: timeline, meta: meta})
 
       _ ->
         conn
@@ -81,6 +85,8 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   def show(%{assigns: %{username_or_id: username_or_id}} = conn, params) do
     case User.get_cached_by_nickname_or_id(username_or_id) do
       %User{} = user ->
+        meta = Metadata.build_tags(%{user: user})
+
         timeline =
           ActivityPub.fetch_user_activities(user, nil, Map.take(params, @page_keys))
           |> Enum.map(&represent/1)
@@ -95,7 +101,8 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
           user: user,
           timeline: timeline,
           prev_page_id: prev_page_id,
-          next_page_id: next_page_id
+          next_page_id: next_page_id,
+          meta: meta
         })
 
       _ ->
