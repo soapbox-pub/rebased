@@ -78,7 +78,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
       _ ->
         conn
         |> put_status(404)
-        |> render_error(:not_found, "Notice not found")
+        |> render("error.html", %{message: "Post not found.", meta: ""})
     end
   end
 
@@ -108,7 +108,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
       _ ->
         conn
         |> put_status(404)
-        |> render_error(:not_found, "User not found")
+        |> render("error.html", %{message: "User not found.", meta: ""})
     end
   end
 

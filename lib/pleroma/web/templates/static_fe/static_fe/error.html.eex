@@ -1,0 +1,7 @@
+<header>
+  <h1><%= gettext("Oops") %></h1>
+</header>
+
+<main>
+  <p><%= @message %></p>
+</main>
