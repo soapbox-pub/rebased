@@ -625,9 +625,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def list_grouped_reports(conn, _params) do
+    reports = Utils.get_reported_activities()
+
     conn
     |> put_view(ReportView)
-    |> render("index_grouped.json", Utils.get_reports_grouped_by_status())
+    |> render("index_grouped.json", Utils.get_reports_grouped_by_status(reports))
   end
 
   def report_show(conn, %{"id" => id}) do
