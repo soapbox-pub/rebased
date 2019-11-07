@@ -59,6 +59,59 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
   end
 
+  test "filters conversations by recipients", %{conn: conn} do
+    user_one = insert(:user)
+    user_two = insert(:user)
+    user_three = insert(:user)
+
+    {:ok, direct1} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, _direct2} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_three.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, direct3} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}, @#{user_three.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, _direct4} =
+      CommonAPI.post(user_two, %{
+        "status" => "Hi @#{user_three.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, direct5} =
+      CommonAPI.post(user_two, %{
+        "status" => "Hi @#{user_one.nickname}!",
+        "visibility" => "direct"
+      })
+
+    [conversation1, conversation2] =
+      conn
+      |> assign(:user, user_one)
+      |> get("/api/v1/conversations", %{"recipients" => [user_two.id]})
+      |> json_response(200)
+
+    assert conversation1["last_status"]["id"] == direct5.id
+    assert conversation2["last_status"]["id"] == direct1.id
+
+    [conversation1] =
+      conn
+      |> assign(:user, user_one)
+      |> get("/api/v1/conversations", %{"recipients" => [user_two.id, user_three.id]})
+      |> json_response(200)
+
+    assert conversation1["last_status"]["id"] == direct3.id
+  end
+
   test "updates the last_status on reply", %{conn: conn} do
     user_one = insert(:user)
     user_two = insert(:user)

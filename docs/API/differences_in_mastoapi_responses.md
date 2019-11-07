@@ -72,6 +72,12 @@ Has an additional field under the `pleroma` object:
 
 - `recipients`: The list of the recipients of this Conversation. These will be addressed when replying to this conversation.
 
+## GET `/api/v1/conversations`
+
+Accepts additional parameters:
+
+- `recipients`: Only return conversations with the given recipients (a list of user ids). Usage example: `GET /api/v1/conversations?recipients[]=1&recipients[]=2`
+
 ## Account Search
 
 Behavior has changed:

@@ -57,6 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Add `GET /api/pleroma/admin/relay` endpoint - lists all followed relays
 - Pleroma API: `POST /api/v1/pleroma/conversations/read` to mark all conversations as read
 - Mastodon API: Add `/api/v1/markers` for managing timeline read markers
+- Mastodon API: Add the `recipients` parameter to `GET /api/v1/conversations`
 </details>
 
 ### Fixed
