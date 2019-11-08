@@ -63,7 +63,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
   def show(%{assigns: %{notice_id: notice_id}} = conn, _params) do
     case Activity.get_by_id_with_object(notice_id) do
-      %Activity{} = activity ->
+      %Activity{local: true} = activity ->
         %User{} = user = User.get_by_ap_id(activity.object.data["actor"])
         meta = Metadata.build_tags(%{activity_id: notice_id, object: activity.object, user: user})
 
