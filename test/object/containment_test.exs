@@ -67,6 +67,20 @@ defmodule Pleroma.Object.ContainmentTest do
              end) =~
                "[error] Could not decode user at fetch https://n1u.moe/users/rye, {:error, :error}"
     end
+
+    test "contain_origin_from_id() gracefully handles cases where no ID is present" do
+      data = %{
+        "type" => "Create",
+        "object" => %{
+          "id" => "http://example.net/~alyssa/activities/1234",
+          "attributedTo" => "http://example.org/~alyssa"
+        },
+        "actor" => "http://example.com/~bob"
+      }
+
+      :error =
+        Containment.contain_origin_from_id("http://example.net/~alyssa/activities/1234", data)
+    end
   end
 
   describe "containment of children" do
