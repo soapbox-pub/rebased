@@ -6,16 +6,25 @@ defmodule Pleroma.Web.Feed.FeedControllerTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
+  import SweetXml
 
   alias Pleroma.Object
   alias Pleroma.User
 
+  clear_config([:feed])
+
   test "gets a feed", %{conn: conn} do
+    Pleroma.Config.put(
+      [:feed, :post_title],
+      %{max_length: 10, omission: "..."}
+    )
+
     activity = insert(:note_activity)
 
     note =
       insert(:note,
         data: %{
+          "content" => "This is :moominmamma: note ",
           "attachment" => [
             %{
               "url" => [%{"mediaType" => "image/png", "href" => "https://pleroma.gov/image.png"}]
@@ -26,15 +35,30 @@ defmodule Pleroma.Web.Feed.FeedControllerTest do
       )
 
     note_activity = insert(:note_activity, note: note)
-    object = Object.normalize(note_activity)
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
-    conn =
+    note2 =
+      insert(:note,
+        user: user,
+        data: %{"content" => "42 This is :moominmamma: note ", "inReplyTo" => activity.data["id"]}
+      )
+
+    _note_activity2 = insert(:note_activity, note: note2)
+    object = Object.normalize(note_activity)
+
+    resp =
       conn
       |> put_req_header("content-type", "application/atom+xml")
       |> get("/users/#{user.nickname}/feed.atom")
+      |> response(200)
 
-    assert response(conn, 200) =~ object.data["content"]
+    activity_titles =
+      resp
+      |> SweetXml.parse()
+      |> SweetXml.xpath(~x"//entry/title/text()"l)
+
+    assert activity_titles == ['42 This...', 'This is...']
+    assert resp =~ object.data["content"]
   end
 
   test "returns 404 for a missing feed", %{conn: conn} do
