@@ -58,6 +58,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         "polls",
         "pleroma_explicit_addressing",
         "shareable_emoji_packs",
+        "multifetch",
         if Config.get([:media_proxy, :enabled]) do
           "media_proxy"
         end,
