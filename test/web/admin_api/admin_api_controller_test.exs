@@ -2760,7 +2760,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> patch("/api/pleroma/admin/users/#{user.nickname}/force_password_reset")
+        |> patch("/api/pleroma/admin/users/force_password_reset", %{nicknames: [user.nickname]})
 
       assert json_response(conn, 204) == ""
 
