@@ -137,7 +137,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user),
          {:show_follows, true} <-
-           {:show_follows, (for_user && for_user == user) || !user.info.hide_follows} do
+           {:show_follows, (for_user && for_user == user) || !user.hide_follows} do
       {page, _} = Integer.parse(page)
 
       conn
@@ -174,7 +174,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user),
          {:show_followers, true} <-
-           {:show_followers, (for_user && for_user == user) || !user.info.hide_followers} do
+           {:show_followers, (for_user && for_user == user) || !user.hide_followers} do
       {page, _} = Integer.parse(page)
 
       conn
@@ -319,12 +319,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       when page? in [true, "true"] do
     activities =
       if params["max_id"] do
-        ActivityPub.fetch_activities([user.ap_id | user.following], %{
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], %{
           "max_id" => params["max_id"],
           "limit" => 10
         })
       else
-        ActivityPub.fetch_activities([user.ap_id | user.following], %{"limit" => 10})
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], %{"limit" => 10})
       end
 
     conn
@@ -387,7 +387,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def handle_user_activity(user, %{"type" => "Delete"} = params) do
     with %Object{} = object <- Object.normalize(params["object"]),
-         true <- user.info.is_moderator || user.ap_id == object.data["actor"],
+         true <- user.is_moderator || user.ap_id == object.data["actor"],
          {:ok, delete} <- ActivityPub.delete(object) do
       {:ok, delete}
     else

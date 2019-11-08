@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Utils
 
   require Pleroma.Constants
 
@@ -15,7 +16,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   def is_public?(%Object{data: data}), do: is_public?(data)
   def is_public?(%Activity{data: data}), do: is_public?(data)
   def is_public?(%{"directMessage" => true}), do: false
-  def is_public?(data), do: Pleroma.Constants.as_public() in (data["to"] ++ (data["cc"] || []))
+  def is_public?(data), do: Utils.label_in_message?(Pleroma.Constants.as_public(), data)
 
   def is_private?(activity) do
     with false <- is_public?(activity),
@@ -58,7 +59,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   end
 
   def visible_for_user?(activity, user) do
-    x = [user.ap_id | user.following]
+    x = [user.ap_id | User.following(user)]
     y = [activity.actor] ++ activity.data["to"] ++ (activity.data["cc"] || [])
     visible_for_user?(activity, nil) || Enum.any?(x, &(&1 in y))
   end

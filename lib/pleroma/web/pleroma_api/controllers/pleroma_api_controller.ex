@@ -125,6 +125,15 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
+  def read_conversations(%{assigns: %{user: user}} = conn, _params) do
+    with {:ok, _, participations} <- Participation.mark_all_as_read(user) do
+      conn
+      |> add_link_headers(participations)
+      |> put_view(ConversationView)
+      |> render("participations.json", participations: participations, for: user)
+    end
+  end
+
   def read_notification(%{assigns: %{user: user}} = conn, %{"id" => notification_id}) do
     with {:ok, notification} <- Notification.read_one(user, notification_id) do
       conn

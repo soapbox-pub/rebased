@@ -6,6 +6,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Object
   alias Pleroma.ThreadMute
   alias Pleroma.User
@@ -40,6 +41,7 @@ defmodule Pleroma.Web.CommonAPI do
     with {:ok, follower} <- User.follow(follower, followed),
          %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "accept"),
          {:ok, _activity} <-
            ActivityPub.accept(%{
              to: [follower.ap_id],
@@ -54,6 +56,7 @@ defmodule Pleroma.Web.CommonAPI do
   def reject_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "reject"),
          {:ok, _activity} <-
            ActivityPub.reject(%{
              to: [follower.ap_id],
@@ -282,10 +285,10 @@ defmodule Pleroma.Web.CommonAPI do
   # Updates the emojis for a user based on their profile
   def update(user) do
     emoji = emoji_from_profile(user)
-    source_data = user.info |> Map.get(:source_data, %{}) |> Map.put("tag", emoji)
+    source_data = Map.put(user.source_data, "tag", emoji)
 
     user =
-      case User.update_info(user, &User.Info.set_source_data(&1, source_data)) do
+      case User.update_source_data(user, source_data) do
         {:ok, user} -> user
         _ -> user
       end
@@ -306,20 +309,20 @@ defmodule Pleroma.Web.CommonAPI do
            object: %Object{data: %{"type" => "Note"}}
          } = activity <- get_by_id_or_ap_id(id_or_ap_id),
          true <- Visibility.is_public?(activity),
-         {:ok, _user} <- User.update_info(user, &User.Info.add_pinnned_activity(&1, activity)) do
+         {:ok, _user} <- User.add_pinnned_activity(user, activity) do
       {:ok, activity}
     else
-      {:error, %{changes: %{info: %{errors: [pinned_activities: {err, _}]}}}} -> {:error, err}
+      {:error, %{errors: [pinned_activities: {err, _}]}} -> {:error, err}
       _ -> {:error, dgettext("errors", "Could not pin")}
     end
   end
 
   def unpin(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         {:ok, _user} <- User.update_info(user, &User.Info.remove_pinnned_activity(&1, activity)) do
+         {:ok, _user} <- User.remove_pinnned_activity(user, activity) do
       {:ok, activity}
     else
-      %{errors: [pinned_activities: {err, _}]} -> {:error, err}
+      {:error, %{errors: [pinned_activities: {err, _}]}} -> {:error, err}
       _ -> {:error, dgettext("errors", "Could not unpin")}
     end
   end
@@ -411,14 +414,14 @@ defmodule Pleroma.Web.CommonAPI do
   defp set_visibility(activity, _), do: {:ok, activity}
 
   def hide_reblogs(user, %{ap_id: ap_id} = _muted) do
-    if ap_id not in user.info.muted_reblogs do
-      User.update_info(user, &User.Info.add_reblog_mute(&1, ap_id))
+    if ap_id not in user.muted_reblogs do
+      User.add_reblog_mute(user, ap_id)
     end
   end
 
   def show_reblogs(user, %{ap_id: ap_id} = _muted) do
-    if ap_id in user.info.muted_reblogs do
-      User.update_info(user, &User.Info.remove_reblog_mute(&1, ap_id))
+    if ap_id in user.muted_reblogs do
+      User.remove_reblog_mute(user, ap_id)
     end
   end
 end

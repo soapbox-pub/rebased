@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -297,7 +298,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
   describe "update_follow_state_for_all/2" do
     test "updates the state of all Follow activities with the same actor and object" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
       follower = insert(:user)
 
       {:ok, follow_activity} = ActivityPub.follow(follower, user)
@@ -321,7 +322,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
   describe "update_follow_state/2" do
     test "updates the state of the given follow activity" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
       follower = insert(:user)
 
       {:ok, follow_activity} = ActivityPub.follow(follower, user)
@@ -581,11 +582,19 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
           %{}
         )
 
+      note_obj = %{
+        "type" => "Note",
+        "id" => activity_ap_id,
+        "content" => content,
+        "published" => activity.object.data["published"],
+        "actor" => AccountView.render("show.json", %{user: target_account})
+      }
+
       assert %{
                "type" => "Flag",
                "content" => ^content,
                "context" => ^context,
-               "object" => [^target_ap_id, ^activity_ap_id],
+               "object" => [^target_ap_id, ^note_obj],
                "state" => "open"
              } = res
     end

@@ -13,6 +13,7 @@ Some apps operate under the assumption that no more than 4 attachments can be re
 ## Timelines
 
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
+Adding the parameter `exclude_visibilities` to the timeline queries will exclude the statuses with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`), e.g., `exclude_visibilities[]=direct&exclude_visibilities[]=private`.
 
 ## Statuses
 
@@ -71,6 +72,12 @@ Has an additional field under the `pleroma` object:
 
 - `recipients`: The list of the recipients of this Conversation. These will be addressed when replying to this conversation.
 
+## GET `/api/v1/conversations`
+
+Accepts additional parameters:
+
+- `recipients`: Only return conversations with the given recipients (a list of user ids). Usage example: `GET /api/v1/conversations?recipients[]=1&recipients[]=2`
+
 ## Account Search
 
 Behavior has changed:
@@ -83,6 +90,12 @@ Behavior has changed:
 Has these additional fields under the `pleroma` object:
 
 - `is_seen`: true if the notification was read by the user
+
+## GET `/api/v1/notifications`
+
+Accepts additional parameters:
+
+- `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
 
 ## POST `/api/v1/statuses`
 

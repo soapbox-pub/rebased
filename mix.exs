@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("1.0.0"),
+      version: version("1.1.50"),
       elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -63,12 +63,13 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :swarm],
       included_applications: [:ex_syslogger]
     ]
   end
 
   # Specifies which paths to compile per environment.
+  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
@@ -107,8 +108,8 @@ defmodule Pleroma.Mixfile do
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
       {:trailing_format_plug, "~> 0.0.7"},
-      {:html_sanitize_ex, "~> 1.3.0"},
-      {:html_entities, "~> 0.4"},
+      {:fast_sanitize, "~> 0.1"},
+      {:html_entities, "~> 0.5", override: true},
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
@@ -220,7 +221,10 @@ defmodule Pleroma.Mixfile do
       with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
            branch_name <- String.trim(branch_name),
            branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
-           true <- branch_name not in ["master", "HEAD"] do
+           true <-
+             !Enum.any?(["master", "HEAD", "release/", "stable"], fn name ->
+               String.starts_with?(name, branch_name)
+             end) do
         branch_name =
           branch_name
           |> String.trim()

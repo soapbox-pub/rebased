@@ -7,6 +7,7 @@ defmodule Pleroma.Web.StreamerTest do
 
   import Pleroma.Factory
 
+  alias Pleroma.Conversation.Participation
   alias Pleroma.List
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -110,6 +111,24 @@ defmodule Pleroma.Web.StreamerTest do
       Streamer.stream("user:notification", notif)
       Task.await(task)
     end
+
+    test "it sends follow activities to the 'user:notification' stream", %{
+      user: user
+    } do
+      user2 = insert(:user)
+      task = Task.async(fn -> assert_receive {:text, _}, 4_000 end)
+
+      Streamer.add_socket(
+        "user:notification",
+        %{transport_pid: task.pid, assigns: %{user: user}}
+      )
+
+      {:ok, _follower, _followed, _activity} = CommonAPI.follow(user2, user)
+
+      # We don't directly pipe the notification to the streamer as it's already
+      # generated as a side effect of CommonAPI.follow().
+      Task.await(task)
+    end
   end
 
   test "it sends to public" do
@@ -169,7 +188,8 @@ defmodule Pleroma.Web.StreamerTest do
     test "it doesn't send to user if recipients invalid and thread containment is enabled" do
       Pleroma.Config.put([:instance, :skip_thread_containment], false)
       author = insert(:user)
-      user = insert(:user, following: [author.ap_id])
+      user = insert(:user)
+      User.follow(user, author, "accept")
 
       activity =
         insert(:note_activity,
@@ -191,7 +211,8 @@ defmodule Pleroma.Web.StreamerTest do
     test "it sends message if recipients invalid and thread containment is disabled" do
       Pleroma.Config.put([:instance, :skip_thread_containment], true)
       author = insert(:user)
-      user = insert(:user, following: [author.ap_id])
+      user = insert(:user)
+      User.follow(user, author, "accept")
 
       activity =
         insert(:note_activity,
@@ -213,7 +234,8 @@ defmodule Pleroma.Web.StreamerTest do
     test "it sends message if recipients invalid and thread containment is enabled but user's thread containment is disabled" do
       Pleroma.Config.put([:instance, :skip_thread_containment], false)
       author = insert(:user)
-      user = insert(:user, following: [author.ap_id], info: %{skip_thread_containment: true})
+      user = insert(:user, skip_thread_containment: true)
+      User.follow(user, author, "accept")
 
       activity =
         insert(:note_activity,
@@ -460,7 +482,14 @@ defmodule Pleroma.Web.StreamerTest do
 
       task =
         Task.async(fn ->
-          assert_receive {:text, _received_event}, 4_000
+          assert_receive {:text, received_event}, 4_000
+
+          assert %{"event" => "conversation", "payload" => received_payload} =
+                   Jason.decode!(received_event)
+
+          assert %{"last_status" => last_status} = Jason.decode!(received_payload)
+          [participation] = Participation.for_user(user)
+          assert last_status["pleroma"]["direct_conversation_id"] == participation.id
         end)
 
       Streamer.add_socket(
@@ -477,7 +506,7 @@ defmodule Pleroma.Web.StreamerTest do
       Task.await(task)
     end
 
-    test "it doesn't send conversation update to the 'direct' streamj when the last message in the conversation is deleted" do
+    test "it doesn't send conversation update to the 'direct' stream when the last message in the conversation is deleted" do
       user = insert(:user)
       another_user = insert(:user)
 

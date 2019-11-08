@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router.Helpers
 
@@ -21,6 +22,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   require Pleroma.Constants
 
   @supported_object_types ["Article", "Note", "Video", "Page", "Question", "Answer", "Audio"]
+  @strip_status_report_states ~w(closed resolved)
   @supported_report_states ~w(open closed resolved)
   @valid_visibilities ~w(public unlisted private direct)
 
@@ -49,26 +51,28 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def determine_explicit_mentions(_), do: []
 
-  @spec recipient_in_collection(any(), any()) :: boolean()
-  defp recipient_in_collection(ap_id, coll) when is_binary(coll), do: ap_id == coll
-  defp recipient_in_collection(ap_id, coll) when is_list(coll), do: ap_id in coll
-  defp recipient_in_collection(_, _), do: false
+  @spec label_in_collection?(any(), any()) :: boolean()
+  defp label_in_collection?(ap_id, coll) when is_binary(coll), do: ap_id == coll
+  defp label_in_collection?(ap_id, coll) when is_list(coll), do: ap_id in coll
+  defp label_in_collection?(_, _), do: false
+
+  @spec label_in_message?(String.t(), map()) :: boolean()
+  def label_in_message?(label, params),
+    do:
+      [params["to"], params["cc"], params["bto"], params["bcc"]]
+      |> Enum.any?(&label_in_collection?(label, &1))
+
+  @spec unaddressed_message?(map()) :: boolean()
+  def unaddressed_message?(params),
+    do:
+      [params["to"], params["cc"], params["bto"], params["bcc"]]
+      |> Enum.all?(&is_nil(&1))
 
   @spec recipient_in_message(User.t(), User.t(), map()) :: boolean()
-  def recipient_in_message(%User{ap_id: ap_id} = recipient, %User{} = actor, params) do
-    addresses = [params["to"], params["cc"], params["bto"], params["bcc"]]
-
-    cond do
-      Enum.any?(addresses, &recipient_in_collection(ap_id, &1)) -> true
-      # if the message is unaddressed at all, then assume it is directly addressed
-      # to the recipient
-      Enum.all?(addresses, &is_nil(&1)) -> true
-      # if the message is sent from somebody the user is following, then assume it
-      # is addressed to the recipient
-      User.following?(recipient, actor) -> true
-      true -> false
-    end
-  end
+  def recipient_in_message(%User{ap_id: ap_id} = recipient, %User{} = actor, params),
+    do:
+      label_in_message?(ap_id, params) || unaddressed_message?(params) ||
+        User.following?(recipient, actor)
 
   defp extract_list(target) when is_binary(target), do: [target]
   defp extract_list(lst) when is_list(lst), do: lst
@@ -76,8 +80,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def maybe_splice_recipient(ap_id, params) do
     need_splice? =
-      !recipient_in_collection(ap_id, params["to"]) &&
-        !recipient_in_collection(ap_id, params["cc"])
+      !label_in_collection?(ap_id, params["to"]) &&
+        !label_in_collection?(ap_id, params["cc"])
 
     if need_splice? do
       cc_list = extract_list(params["cc"])
@@ -582,10 +586,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"actor" => actor}},
         object
       ) do
-    announcements = take_announcements(object)
+    unless actor |> User.get_cached_by_ap_id() |> User.invisible?() do
+      announcements = take_announcements(object)
 
-    with announcements <- Enum.uniq([actor | announcements]) do
-      update_element_in_object("announcement", announcements, object)
+      with announcements <- Enum.uniq([actor | announcements]) do
+        update_element_in_object("announcement", announcements, object)
+      end
+    else
+      {:ok, object}
     end
   end
 
@@ -699,10 +707,24 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   defp build_flag_object(%{account: account, statuses: statuses} = _) do
     [account.ap_id] ++
-      Enum.map(statuses || [], fn
-        %Activity{} = act -> act.data["id"]
-        act when is_map(act) -> act["id"]
-        act when is_binary(act) -> act
+      Enum.map(statuses || [], fn act ->
+        id =
+          case act do
+            %Activity{} = act -> act.data["id"]
+            act when is_map(act) -> act["id"]
+            act when is_binary(act) -> act
+          end
+
+        activity = Activity.get_by_ap_id_with_object(id)
+        actor = User.get_by_ap_id(activity.object.data["actor"])
+
+        %{
+          "type" => "Note",
+          "id" => activity.data["id"],
+          "content" => activity.object.data["content"],
+          "published" => activity.object.data["published"],
+          "actor" => AccountView.render("show.json", %{user: actor})
+        }
       end)
   end
 
@@ -749,6 +771,20 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   #### Report-related helpers
 
+  def update_report_state(%Activity{} = activity, state)
+      when state in @strip_status_report_states do
+    {:ok, stripped_activity} = strip_report_status_data(activity)
+
+    new_data =
+      activity.data
+      |> Map.put("state", state)
+      |> Map.put("object", stripped_activity.data["object"])
+
+    activity
+    |> Changeset.change(data: new_data)
+    |> Repo.update()
+  end
+
   def update_report_state(%Activity{} = activity, state) when state in @supported_report_states do
     new_data = Map.put(activity.data, "state", state)
 
@@ -758,6 +794,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def update_report_state(_, _), do: {:error, "Unsupported state"}
+
+  def strip_report_status_data(activity) do
+    [actor | reported_activities] = activity.data["object"]
+    stripped_activities = Enum.map(reported_activities, & &1["id"])
+    new_data = put_in(activity.data, ["object"], [actor | stripped_activities])
+
+    {:ok, %{activity | data: new_data}}
+  end
 
   def update_activity_visibility(activity, visibility) when visibility in @valid_visibilities do
     [to, cc, recipients] =

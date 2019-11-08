@@ -24,7 +24,8 @@ defmodule Pleroma.Plugs.TrailingFormatPlug do
     "/api/help",
     "/api/externalprofile",
     "/notice",
-    "/api/pleroma/emoji"
+    "/api/pleroma/emoji",
+    "/api/oauth_tokens"
   ]
 
   def init(opts) do

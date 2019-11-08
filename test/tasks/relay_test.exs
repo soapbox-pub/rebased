@@ -51,7 +51,7 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       target_user = User.get_cached_by_ap_id(target_instance)
       follow_activity = Utils.fetch_latest_follow(local_user, target_user)
       User.follow(local_user, target_user)
-      assert "#{target_instance}/followers" in refresh_record(local_user).following
+      assert "#{target_instance}/followers" in User.following(local_user)
       Mix.Tasks.Pleroma.Relay.run(["unfollow", target_instance])
 
       cancelled_activity = Activity.get_by_ap_id(follow_activity.data["id"])
@@ -68,7 +68,7 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       assert undo_activity.data["type"] == "Undo"
       assert undo_activity.data["actor"] == local_user.ap_id
       assert undo_activity.data["object"] == cancelled_activity.data
-      refute "#{target_instance}/followers" in refresh_record(local_user).following
+      refute "#{target_instance}/followers" in User.following(local_user)
     end
   end
 
@@ -78,20 +78,18 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
 
       refute_receive {:mix_shell, :info, _}
 
-      Pleroma.Web.ActivityPub.Relay.get_actor()
-      |> Ecto.Changeset.change(
-        following: [
-          "http://test-app.com/user/test1",
-          "http://test-app.com/user/test1",
-          "http://test-app-42.com/user/test1"
-        ]
-      )
-      |> Pleroma.User.update_and_set_cache()
+      relay_user = Relay.get_actor()
+
+      ["http://mastodon.example.org/users/admin", "https://mstdn.io/users/mayuutann"]
+      |> Enum.each(fn ap_id ->
+        {:ok, user} = User.get_or_fetch_by_ap_id(ap_id)
+        User.follow(relay_user, user)
+      end)
 
       :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
 
-      assert_receive {:mix_shell, :info, ["test-app.com"]}
-      assert_receive {:mix_shell, :info, ["test-app-42.com"]}
+      assert_receive {:mix_shell, :info, ["mstdn.io"]}
+      assert_receive {:mix_shell, :info, ["mastodon.example.org"]}
     end
   end
 end

@@ -164,7 +164,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
                "follows" => true,
                "non_follows" => true,
                "non_followers" => true
-             } == user.info.notification_settings
+             } == user.notification_settings
     end
   end
 
@@ -366,11 +366,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> response(200)
 
       assert response =~ "Account followed!"
-      assert user2.follower_address in refresh_record(user).following
+      assert user2.follower_address in User.following(user)
     end
 
     test "returns error when user is deactivated", %{conn: conn} do
-      user = insert(:user, info: %{deactivated: true})
+      user = insert(:user, deactivated: true)
       user2 = insert(:user)
 
       response =
@@ -438,7 +438,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> response(200)
 
       assert response =~ "Account followed!"
-      assert user2.follower_address in refresh_record(user).following
+      assert user2.follower_address in User.following(user)
     end
 
     test "returns error when followee not found", %{conn: conn} do
@@ -568,7 +568,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       user = User.get_cached_by_id(user.id)
 
-      assert user.info.deactivated == true
+      assert user.deactivated == true
     end
 
     test "it returns returns when password invalid", %{conn: conn} do
@@ -583,7 +583,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert response == %{"error" => "Invalid password."}
       user = User.get_cached_by_id(user.id)
 
-      refute user.info.deactivated
+      refute user.deactivated
     end
   end
 

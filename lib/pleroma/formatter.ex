@@ -127,7 +127,7 @@ defmodule Pleroma.Formatter do
     end
   end
 
-  defp get_ap_id(%User{info: %{source_data: %{"url" => url}}}) when is_binary(url), do: url
+  defp get_ap_id(%User{source_data: %{"url" => url}}) when is_binary(url), do: url
   defp get_ap_id(%User{ap_id: ap_id}), do: ap_id
 
   defp get_nickname_text(nickname, %{mentions_format: :full}), do: User.full_nickname(nickname)

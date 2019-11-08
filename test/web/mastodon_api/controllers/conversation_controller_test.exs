@@ -17,7 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     {:ok, user_two} = User.follow(user_two, user_one)
 
-    assert User.get_cached_by_id(user_two.id).info.unread_conversation_count == 0
+    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
 
     {:ok, direct} =
       CommonAPI.post(user_one, %{
@@ -25,7 +25,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
         "visibility" => "direct"
       })
 
-    assert User.get_cached_by_id(user_two.id).info.unread_conversation_count == 1
+    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 1
 
     {:ok, _follower_only} =
       CommonAPI.post(user_one, %{
@@ -54,9 +54,62 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     assert user_two.id in account_ids
     assert user_three.id in account_ids
     assert is_binary(res_id)
-    assert unread == true
+    assert unread == false
     assert res_last_status["id"] == direct.id
-    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 1
+    assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
+  end
+
+  test "filters conversations by recipients", %{conn: conn} do
+    user_one = insert(:user)
+    user_two = insert(:user)
+    user_three = insert(:user)
+
+    {:ok, direct1} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, _direct2} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_three.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, direct3} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}, @#{user_three.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, _direct4} =
+      CommonAPI.post(user_two, %{
+        "status" => "Hi @#{user_three.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, direct5} =
+      CommonAPI.post(user_two, %{
+        "status" => "Hi @#{user_one.nickname}!",
+        "visibility" => "direct"
+      })
+
+    [conversation1, conversation2] =
+      conn
+      |> assign(:user, user_one)
+      |> get("/api/v1/conversations", %{"recipients" => [user_two.id]})
+      |> json_response(200)
+
+    assert conversation1["last_status"]["id"] == direct5.id
+    assert conversation2["last_status"]["id"] == direct1.id
+
+    [conversation1] =
+      conn
+      |> assign(:user, user_one)
+      |> get("/api/v1/conversations", %{"recipients" => [user_two.id, user_three.id]})
+      |> json_response(200)
+
+    assert conversation1["last_status"]["id"] == direct3.id
   end
 
   test "updates the last_status on reply", %{conn: conn} do
@@ -95,19 +148,23 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
         "visibility" => "direct"
       })
 
+    assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
+    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 1
+
     [%{"id" => direct_conversation_id, "unread" => true}] =
       conn
-      |> assign(:user, user_one)
+      |> assign(:user, user_two)
       |> get("/api/v1/conversations")
       |> json_response(200)
 
     %{"unread" => false} =
       conn
-      |> assign(:user, user_one)
+      |> assign(:user, user_two)
       |> post("/api/v1/conversations/#{direct_conversation_id}/read")
       |> json_response(200)
 
-    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 0
+    assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
+    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
 
     # The conversation is marked as unread on reply
     {:ok, _} =
@@ -123,7 +180,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
       |> get("/api/v1/conversations")
       |> json_response(200)
 
-    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 1
+    assert User.get_cached_by_id(user_one.id).unread_conversation_count == 1
+    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
 
     # A reply doesn't increment the user's unread_conversation_count if the conversation is unread
     {:ok, _} =
@@ -133,7 +191,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
         "in_reply_to_status_id" => direct.id
       })
 
-    assert User.get_cached_by_id(user_one.id).info.unread_conversation_count == 1
+    assert User.get_cached_by_id(user_one.id).unread_conversation_count == 1
+    assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
   end
 
   test "(vanilla) Mastodon frontend behaviour", %{conn: conn} do

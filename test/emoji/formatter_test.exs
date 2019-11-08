@@ -12,7 +12,7 @@ defmodule Pleroma.Emoji.FormatterTest do
       text = "I love :firefox:"
 
       expected_result =
-        "I love <img class=\"emoji\" alt=\"firefox\" title=\"firefox\" src=\"/emoji/Firefox.gif\" />"
+        "I love <img class=\"emoji\" alt=\"firefox\" title=\"firefox\" src=\"/emoji/Firefox.gif\"/>"
 
       assert Formatter.emojify(text) == expected_result
     end
@@ -28,10 +28,7 @@ defmodule Pleroma.Emoji.FormatterTest do
         }
         |> Pleroma.Emoji.build()
 
-      expected_result =
-        "I love <img class=\"emoji\" alt=\"\" title=\"\" src=\"https://placehold.it/1x1\" />"
-
-      assert Formatter.emojify(text, [{custom_emoji.code, custom_emoji}]) == expected_result
+      refute Formatter.emojify(text, [{custom_emoji.code, custom_emoji}]) =~ text
     end
   end
 

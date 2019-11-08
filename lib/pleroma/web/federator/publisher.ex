@@ -80,4 +80,30 @@ defmodule Pleroma.Web.Federator.Publisher do
       links ++ module.gather_nodeinfo_protocol_names()
     end)
   end
+
+  @doc """
+  Gathers a set of remote users given an IR envelope.
+  """
+  def remote_users(%User{id: user_id}, %{data: %{"to" => to} = data}) do
+    cc = Map.get(data, "cc", [])
+
+    bcc =
+      data
+      |> Map.get("bcc", [])
+      |> Enum.reduce([], fn ap_id, bcc ->
+        case Pleroma.List.get_by_ap_id(ap_id) do
+          %Pleroma.List{user_id: ^user_id} = list ->
+            {:ok, following} = Pleroma.List.get_following(list)
+            bcc ++ Enum.map(following, & &1.ap_id)
+
+          _ ->
+            bcc
+        end
+      end)
+
+    [to, cc, bcc]
+    |> Enum.concat()
+    |> Enum.map(&User.get_cached_by_ap_id/1)
+    |> Enum.filter(fn user -> user && !user.local end)
+  end
 end

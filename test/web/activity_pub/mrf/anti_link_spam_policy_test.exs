@@ -35,7 +35,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
     test "it allows posts without links" do
       user = insert(:user)
 
-      assert user.info.note_count == 0
+      assert user.note_count == 0
 
       message =
         @linkless_message
@@ -47,7 +47,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
     test "it disallows posts with links" do
       user = insert(:user)
 
-      assert user.info.note_count == 0
+      assert user.note_count == 0
 
       message =
         @linkful_message
@@ -59,9 +59,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
 
   describe "with old user" do
     test "it allows posts without links" do
-      user = insert(:user, info: %{note_count: 1})
+      user = insert(:user, note_count: 1)
 
-      assert user.info.note_count == 1
+      assert user.note_count == 1
 
       message =
         @linkless_message
@@ -71,9 +71,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
     end
 
     test "it allows posts with links" do
-      user = insert(:user, info: %{note_count: 1})
+      user = insert(:user, note_count: 1)
 
-      assert user.info.note_count == 1
+      assert user.note_count == 1
 
       message =
         @linkful_message
@@ -85,9 +85,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
 
   describe "with followed new user" do
     test "it allows posts without links" do
-      user = insert(:user, info: %{follower_count: 1})
+      user = insert(:user, follower_count: 1)
 
-      assert user.info.follower_count == 1
+      assert user.follower_count == 1
 
       message =
         @linkless_message
@@ -97,9 +97,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
     end
 
     test "it allows posts with links" do
-      user = insert(:user, info: %{follower_count: 1})
+      user = insert(:user, follower_count: 1)
 
-      assert user.info.follower_count == 1
+      assert user.follower_count == 1
 
       message =
         @linkful_message
@@ -133,7 +133,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
 
   describe "with contentless-objects" do
     test "it does not reject them or error out" do
-      user = insert(:user, info: %{note_count: 1})
+      user = insert(:user, note_count: 1)
 
       message =
         @response_message

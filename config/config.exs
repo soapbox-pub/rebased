@@ -59,10 +59,6 @@ scheduled_jobs =
     _ -> []
   end
 
-scheduled_jobs =
-  scheduled_jobs ++
-    [{"0 */6 * * * *", {Pleroma.Web.Websub, :refresh_subscriptions, []}}]
-
 config :pleroma, Pleroma.Scheduler,
   global: true,
   overlap: true,
@@ -243,9 +239,7 @@ config :pleroma, :instance,
   federation_incoming_replies_max_depth: 100,
   federation_reachability_timeout_days: 7,
   federation_publisher_modules: [
-    Pleroma.Web.ActivityPub.Publisher,
-    Pleroma.Web.Websub,
-    Pleroma.Web.Salmon
+    Pleroma.Web.ActivityPub.Publisher
   ],
   allow_relay: true,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
@@ -290,8 +284,8 @@ config :pleroma, :markup,
   allow_tables: false,
   allow_fonts: false,
   scrub_policy: [
-    Pleroma.HTML.Transform.MediaProxy,
-    Pleroma.HTML.Scrubber.Default
+    Pleroma.HTML.Scrubber.Default,
+    Pleroma.HTML.Transform.MediaProxy
   ]
 
 config :pleroma, :frontend_configurations,
@@ -327,6 +321,16 @@ config :pleroma, :assets,
     }
   ],
   default_mascot: :pleroma_fox_tan
+
+config :pleroma, :manifest,
+  icons: [
+    %{
+      src: "/static/logo.png",
+      type: "image/png"
+    }
+  ],
+  theme_color: "#282c37",
+  background_color: "#191b22"
 
 config :pleroma, :activitypub,
   unfollow_blocked: true,
@@ -599,6 +603,7 @@ config :pleroma, :web_cache_ttl,
   activity_pub: nil,
   activity_pub_question: 30_000
 
+config :swarm, node_blacklist: [~r/myhtml_.*$/]
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
