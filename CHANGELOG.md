@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.5] - 2019-11-09
+### Fixed
+- Polls having different numbers in timelines/notifications/poll api endpoints due to cache desyncronization
+
+- Pleroma API: OAuth token endpoint not being found when ".json" suffix is appended
+
 ## [1.1.4] - 2019-11-01
 ### Fixed
 - Added a migration that fills up empty user.info fields to prevent breakage after previous unsafe migrations.
