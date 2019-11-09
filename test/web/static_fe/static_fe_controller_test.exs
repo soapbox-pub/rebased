@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
   use Pleroma.Web.ConnCase
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
 
