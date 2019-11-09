@@ -12,7 +12,7 @@ For clients it supports the [Mastodon client API](https://docs.joinmastodon.org/
 ## Installation
 
 ### OTP releases (Recommended)
-If you are running Linux (glibc or musl) on x86/arm, the recommended way to install Pleroma is by using OTP releases. OTP releases are as close as you can get to binary releases with Erlang/Elixir. The release is self-contained, and provides everything needed to boot it, it is easily administered via the provided shell script to open up a remote console, start/stop/restart the release, start in the background, send remote commands, and more. The installation instructions are available [here](https://docs-develop.pleroma.social/backend/installation/otp_en/)
+If you are running Linux (glibc or musl) on x86/arm, the recommended way to install Pleroma is by using OTP releases. OTP releases are as close as you can get to binary releases with Erlang/Elixir. The release is self-contained, and provides everything needed to boot it. The installation instructions are available [here](https://docs-develop.pleroma.social/backend/installation/otp_en/).
 
 ### From Source
 If your platform is not supported, or you just want to be able to edit the source code easily, you may install Pleroma from source.
