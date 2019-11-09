@@ -39,4 +39,4 @@ While we don’t provide docker files, other people have written very good ones.
 
 ## Community Channels
 * IRC: **#pleroma** and **#pleroma-dev** on freenode, webchat is available at <https://irc.pleroma.social>
-* Matrix: <https://matrix.to/#/#freenode_#pleroma:matrix.org>
+* Matrix: <https://matrix.to/#/#freenode_#pleroma:matrix.org> and <https://matrix.to/#/#freenode_#pleroma-dev:matrix.org>
