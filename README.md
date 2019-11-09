@@ -1,4 +1,4 @@
-<img src="https://git.pleroma.social/pleroma/pleroma/uploads/021b5f7735fd15f6c5f0f25501958f2a/pleroma-banner-vector-nopad.svg" width="300px" />
+<img src="https://git.pleroma.social/pleroma/pleroma/uploads/8cec84f5a084d887339f57deeb8a293e/pleroma-banner-vector-nopad-notext.svg" width="300px" />
 
 ## About 
 
