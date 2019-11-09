@@ -137,55 +137,151 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
   end
 
-  test "filters notifications using exclude_visibilities", %{conn: conn} do
-    user = insert(:user)
-    other_user = insert(:user)
+  describe "exclude_visibilities" do
+    test "filters notifications for mentions", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
 
-    {:ok, public_activity} =
-      CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "public"})
+      {:ok, public_activity} =
+        CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "public"})
 
-    {:ok, direct_activity} =
-      CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "direct"})
+      {:ok, direct_activity} =
+        CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "direct"})
 
-    {:ok, unlisted_activity} =
-      CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "unlisted"})
+      {:ok, unlisted_activity} =
+        CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "unlisted"})
 
-    {:ok, private_activity} =
-      CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "private"})
+      {:ok, private_activity} =
+        CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "private"})
 
-    conn = assign(conn, :user, user)
+      conn = assign(conn, :user, user)
 
-    conn_res =
-      get(conn, "/api/v1/notifications", %{
-        exclude_visibilities: ["public", "unlisted", "private"]
-      })
+      conn_res =
+        get(conn, "/api/v1/notifications", %{
+          exclude_visibilities: ["public", "unlisted", "private"]
+        })
 
-    assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
-    assert id == direct_activity.id
+      assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+      assert id == direct_activity.id
 
-    conn_res =
-      get(conn, "/api/v1/notifications", %{
-        exclude_visibilities: ["public", "unlisted", "direct"]
-      })
+      conn_res =
+        get(conn, "/api/v1/notifications", %{
+          exclude_visibilities: ["public", "unlisted", "direct"]
+        })
 
-    assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
-    assert id == private_activity.id
+      assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+      assert id == private_activity.id
 
-    conn_res =
-      get(conn, "/api/v1/notifications", %{
-        exclude_visibilities: ["public", "private", "direct"]
-      })
+      conn_res =
+        get(conn, "/api/v1/notifications", %{
+          exclude_visibilities: ["public", "private", "direct"]
+        })
 
-    assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
-    assert id == unlisted_activity.id
+      assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+      assert id == unlisted_activity.id
 
-    conn_res =
-      get(conn, "/api/v1/notifications", %{
-        exclude_visibilities: ["unlisted", "private", "direct"]
-      })
+      conn_res =
+        get(conn, "/api/v1/notifications", %{
+          exclude_visibilities: ["unlisted", "private", "direct"]
+        })
 
-    assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
-    assert id == public_activity.id
+      assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+      assert id == public_activity.id
+    end
+
+    test "filters notifications for Like activities", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, public_activity} =
+        CommonAPI.post(other_user, %{"status" => ".", "visibility" => "public"})
+
+      {:ok, direct_activity} =
+        CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "direct"})
+
+      {:ok, unlisted_activity} =
+        CommonAPI.post(other_user, %{"status" => ".", "visibility" => "unlisted"})
+
+      {:ok, private_activity} =
+        CommonAPI.post(other_user, %{"status" => ".", "visibility" => "private"})
+
+      {:ok, _, _} = CommonAPI.favorite(public_activity.id, user)
+      {:ok, _, _} = CommonAPI.favorite(direct_activity.id, user)
+      {:ok, _, _} = CommonAPI.favorite(unlisted_activity.id, user)
+      {:ok, _, _} = CommonAPI.favorite(private_activity.id, user)
+
+      activity_ids =
+        conn
+        |> assign(:user, other_user)
+        |> get("/api/v1/notifications", %{exclude_visibilities: ["direct"]})
+        |> json_response(200)
+        |> Enum.map(& &1["status"]["id"])
+
+      assert public_activity.id in activity_ids
+      assert unlisted_activity.id in activity_ids
+      assert private_activity.id in activity_ids
+      refute direct_activity.id in activity_ids
+
+      activity_ids =
+        conn
+        |> assign(:user, other_user)
+        |> get("/api/v1/notifications", %{exclude_visibilities: ["unlisted"]})
+        |> json_response(200)
+        |> Enum.map(& &1["status"]["id"])
+
+      assert public_activity.id in activity_ids
+      refute unlisted_activity.id in activity_ids
+      assert private_activity.id in activity_ids
+      assert direct_activity.id in activity_ids
+
+      activity_ids =
+        conn
+        |> assign(:user, other_user)
+        |> get("/api/v1/notifications", %{exclude_visibilities: ["private"]})
+        |> json_response(200)
+        |> Enum.map(& &1["status"]["id"])
+
+      assert public_activity.id in activity_ids
+      assert unlisted_activity.id in activity_ids
+      refute private_activity.id in activity_ids
+      assert direct_activity.id in activity_ids
+
+      activity_ids =
+        conn
+        |> assign(:user, other_user)
+        |> get("/api/v1/notifications", %{exclude_visibilities: ["public"]})
+        |> json_response(200)
+        |> Enum.map(& &1["status"]["id"])
+
+      refute public_activity.id in activity_ids
+      assert unlisted_activity.id in activity_ids
+      assert private_activity.id in activity_ids
+      assert direct_activity.id in activity_ids
+    end
+
+    test "filters notifications for Announce activities", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, public_activity} =
+        CommonAPI.post(other_user, %{"status" => ".", "visibility" => "public"})
+
+      {:ok, unlisted_activity} =
+        CommonAPI.post(other_user, %{"status" => ".", "visibility" => "unlisted"})
+
+      {:ok, _, _} = CommonAPI.repeat(public_activity.id, user)
+      {:ok, _, _} = CommonAPI.repeat(unlisted_activity.id, user)
+
+      activity_ids =
+        conn
+        |> assign(:user, other_user)
+        |> get("/api/v1/notifications", %{exclude_visibilities: ["unlisted"]})
+        |> json_response(200)
+        |> Enum.map(& &1["status"]["id"])
+
+      assert public_activity.id in activity_ids
+      refute unlisted_activity.id in activity_ids
+    end
   end
 
   test "filters notifications using exclude_types", %{conn: conn} do
