@@ -734,56 +734,54 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
 
     test "retrieves a maximum of 20 activities" do
-      activities = ActivityBuilder.insert_list(30)
-      last_expected = List.last(activities)
+      ActivityBuilder.insert_list(10)
+      expected_activities = ActivityBuilder.insert_list(20)
 
       activities = ActivityPub.fetch_public_activities()
-      last = List.last(activities)
 
+      assert collect_ids(activities) == collect_ids(expected_activities)
       assert length(activities) == 20
-      assert last == last_expected
     end
 
     test "retrieves ids starting from a since_id" do
       activities = ActivityBuilder.insert_list(30)
-      later_activities = ActivityBuilder.insert_list(10)
+      expected_activities = ActivityBuilder.insert_list(10)
       since_id = List.last(activities).id
-      last_expected = List.last(later_activities)
 
       activities = ActivityPub.fetch_public_activities(%{"since_id" => since_id})
-      last = List.last(activities)
 
+      assert collect_ids(activities) == collect_ids(expected_activities)
       assert length(activities) == 10
-      assert last == last_expected
     end
 
     test "retrieves ids up to max_id" do
-      _first_activities = ActivityBuilder.insert_list(10)
-      activities = ActivityBuilder.insert_list(20)
-      later_activities = ActivityBuilder.insert_list(10)
-      max_id = List.first(later_activities).id
-      last_expected = List.last(activities)
+      ActivityBuilder.insert_list(10)
+      expected_activities = ActivityBuilder.insert_list(20)
+
+      %{id: max_id} =
+        10
+        |> ActivityBuilder.insert_list()
+        |> List.first()
 
       activities = ActivityPub.fetch_public_activities(%{"max_id" => max_id})
-      last = List.last(activities)
 
       assert length(activities) == 20
-      assert last == last_expected
+      assert collect_ids(activities) == collect_ids(expected_activities)
     end
 
     test "paginates via offset/limit" do
-      _first_activities = ActivityBuilder.insert_list(10)
-      activities = ActivityBuilder.insert_list(10)
-      _later_activities = ActivityBuilder.insert_list(10)
-      first_expected = List.first(activities)
+      _first_part_activities = ActivityBuilder.insert_list(10)
+      second_part_activities = ActivityBuilder.insert_list(10)
+
+      later_activities = ActivityBuilder.insert_list(10)
 
       activities =
         ActivityPub.fetch_public_activities(%{"page" => "2", "page_size" => "20"}, :offset)
 
-      first = List.first(activities)
-
       assert length(activities) == 20
-      assert first == first_expected
+
+      assert collect_ids(activities) ==
+               collect_ids(second_part_activities) ++ collect_ids(later_activities)
     end
 
     test "doesn't return reblogs for users for whom reblogs have been muted" do
