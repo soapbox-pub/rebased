@@ -98,9 +98,18 @@ defmodule Pleroma.User.Search do
   defp base_query(_user, false), do: User
   defp base_query(user, true), do: User.get_followers_query(user)
 
-  defp filter_blocked_user(query, %User{blocks: blocks})
-       when length(blocks) > 0 do
-    from(q in query, where: not (q.ap_id in ^blocks))
+  defp filter_blocked_user(query, %User{} = blocker) do
+    blocker_id = FlakeId.from_string(blocker.id)
+
+    from(
+      q in query,
+      where:
+        fragment(
+          "? NOT IN (SELECT blockee_id FROM user_blocks WHERE user_blocks.blocker_id = ?)",
+          q.id,
+          ^blocker_id
+        )
+    )
   end
 
   defp filter_blocked_user(query, _), do: query

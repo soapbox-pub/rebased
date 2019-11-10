@@ -7,6 +7,7 @@ defmodule Pleroma.User do
 
   import Ecto.Changeset
   import Ecto.Query
+  import Ecto, only: [assoc: 2]
 
   alias Comeonin.Pbkdf2
   alias Ecto.Multi
@@ -21,6 +22,7 @@ defmodule Pleroma.User do
   alias Pleroma.Repo
   alias Pleroma.RepoStreamer
   alias Pleroma.User
+  alias Pleroma.UserBlock
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
@@ -74,7 +76,6 @@ defmodule Pleroma.User do
     field(:password_reset_pending, :boolean, default: false)
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
-    field(:blocks, {:array, :string}, default: [])
     field(:domain_blocks, {:array, :string}, default: [])
     field(:mutes, {:array, :string}, default: [])
     field(:muted_reblogs, {:array, :string}, default: [])
@@ -118,8 +119,15 @@ defmodule Pleroma.User do
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
     has_many(:deliveries, Delivery)
+    has_many(:blocker_blocks, UserBlock, foreign_key: :blocker_id)
+    has_many(:blockee_blocks, UserBlock, foreign_key: :blockee_id)
+    has_many(:blocked_users, through: [:blocker_blocks, :blockee])
+    has_many(:blocker_users, through: [:blockee_blocks, :blocker])
 
     field(:info, :map, default: %{})
+
+    # `:blocks` is deprecated (replaced with `blocked_users` relation)
+    field(:blocks, {:array, :string}, default: [])
 
     timestamps()
   end
@@ -986,7 +994,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def block(blocker, %User{ap_id: ap_id} = blocked) do
+  def block(blocker, %User{} = blocked) do
     # sever any follow relationships to prevent leaks per activitypub (Pleroma issue #213)
     blocker =
       if following?(blocker, blocked) do
@@ -1015,7 +1023,7 @@ defmodule Pleroma.User do
 
     {:ok, blocker} = update_follower_count(blocker)
     {:ok, blocker, _} = Participation.mark_all_as_read(blocker, blocked)
-    add_to_block(blocker, ap_id)
+    add_to_block(blocker, blocked)
   end
 
   # helper to handle the block given only an actor's AP id
@@ -1023,8 +1031,13 @@ defmodule Pleroma.User do
     block(blocker, get_cached_by_ap_id(ap_id))
   end
 
+  def unblock(blocker, %User{} = blocked) do
+    remove_from_block(blocker, blocked)
+  end
+
+  # helper to handle the block given only an actor's AP id
   def unblock(blocker, %{ap_id: ap_id}) do
-    remove_from_block(blocker, ap_id)
+    unblock(blocker, get_cached_by_ap_id(ap_id))
   end
 
   def mutes?(nil, _), do: false
@@ -1043,7 +1056,7 @@ defmodule Pleroma.User do
   def blocks?(nil, _), do: false
 
   def blocks_ap_id?(%User{} = user, %User{} = target) do
-    Enum.member?(user.blocks, target.ap_id)
+    UserBlock.exists?(user, target)
   end
 
   def blocks_ap_id?(_, _), do: false
@@ -1070,8 +1083,18 @@ defmodule Pleroma.User do
 
   @spec blocked_users(User.t()) :: [User.t()]
   def blocked_users(user) do
-    User.Query.build(%{ap_id: user.blocks, deactivated: false})
+    user
+    |> assoc(:blocked_users)
+    |> restrict_deactivated()
     |> Repo.all()
+  end
+
+  def blocked_ap_ids(user) do
+    Repo.all(
+      from(u in assoc(user, :blocked_users),
+        select: u.ap_id
+      )
+    )
   end
 
   @spec subscribers(User.t()) :: [User.t()]
@@ -1179,7 +1202,7 @@ defmodule Pleroma.User do
       blocked_identifiers,
       fn blocked_identifier ->
         with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
-             {:ok, blocker} <- block(blocker, blocked),
+             {:ok, _user_block} <- block(blocker, blocked),
              {:ok, _} <- ActivityPub.block(blocker, blocked) do
           blocked
         else
@@ -1844,21 +1867,15 @@ defmodule Pleroma.User do
     set_domain_blocks(user, List.delete(user.domain_blocks, domain_blocked))
   end
 
-  defp set_blocks(user, blocks) do
-    params = %{blocks: blocks}
-
-    user
-    |> cast(params, [:blocks])
-    |> validate_required([:blocks])
-    |> update_and_set_cache()
+  @spec add_to_block(User.t(), User.t()) :: {:ok, UserBlock.t()} | {:error, Ecto.Changeset.t()}
+  defp add_to_block(%User{} = user, %User{} = blocked) do
+    UserBlock.create(user, blocked)
   end
 
-  def add_to_block(user, blocked) do
-    set_blocks(user, Enum.uniq([blocked | user.blocks]))
-  end
-
-  def remove_from_block(user, blocked) do
-    set_blocks(user, List.delete(user.blocks, blocked))
+  @spec add_to_block(User.t(), User.t()) ::
+          {:ok, UserBlock.t()} | {:ok, nil} | {:error, Ecto.Changeset.t()}
+  defp remove_from_block(%User{} = user, %User{} = blocked) do
+    UserBlock.delete(user, blocked)
   end
 
   defp set_mutes(user, mutes) do

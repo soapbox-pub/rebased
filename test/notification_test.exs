@@ -93,7 +93,7 @@ defmodule Pleroma.NotificationTest do
       activity = insert(:note_activity)
       author = User.get_cached_by_ap_id(activity.data["actor"])
       user = insert(:user)
-      {:ok, user} = User.block(user, author)
+      {:ok, _user_block} = User.block(user, author)
 
       assert Notification.create_notification(activity, user)
     end
@@ -656,7 +656,7 @@ defmodule Pleroma.NotificationTest do
     test "it doesn't return notifications for blocked user" do
       user = insert(:user)
       blocked = insert(:user)
-      {:ok, user} = User.block(user, blocked)
+      {:ok, _user_block} = User.block(user, blocked)
 
       {:ok, _activity} = CommonAPI.post(blocked, %{"status" => "hey @#{user.nickname}"})
 
@@ -696,7 +696,7 @@ defmodule Pleroma.NotificationTest do
     test "it doesn't return notifications from a blocked user when with_muted is set" do
       user = insert(:user)
       blocked = insert(:user)
-      {:ok, user} = User.block(user, blocked)
+      {:ok, _user_block} = User.block(user, blocked)
 
       {:ok, _activity} = CommonAPI.post(blocked, %{"status" => "hey @#{user.nickname}"})
 

@@ -387,7 +387,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       user = insert(:user)
       user2 = insert(:user)
 
-      {:ok, _user} = Pleroma.User.block(user2, user)
+      {:ok, _user_block} = Pleroma.User.block(user2, user)
 
       response =
         conn
@@ -485,7 +485,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       Pleroma.Config.put([:user, :deny_follow_blocked], true)
       user = insert(:user)
       user2 = insert(:user)
-      {:ok, _user} = Pleroma.User.block(user2, user)
+      {:ok, _user_block} = Pleroma.User.block(user2, user)
 
       response =
         conn

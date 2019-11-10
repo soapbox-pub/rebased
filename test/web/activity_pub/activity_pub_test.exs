@@ -484,7 +484,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activity_five = insert(:note_activity)
       user = insert(:user)
 
-      {:ok, user} = User.block(user, %{ap_id: activity_five.data["actor"]})
+      {:ok, _user_block} = User.block(user, %{ap_id: activity_five.data["actor"]})
 
       activities = ActivityPub.fetch_activities_for_context("2hu", %{"blocking_user" => user})
       assert activities == [activity_two, activity]
@@ -497,7 +497,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activity_three = insert(:note_activity)
     user = insert(:user)
     booster = insert(:user)
-    {:ok, user} = User.block(user, %{ap_id: activity_one.data["actor"]})
+    {:ok, _user_block} = User.block(user, %{ap_id: activity_one.data["actor"]})
 
     activities =
       ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
@@ -506,7 +506,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_three)
     refute Enum.member?(activities, activity_one)
 
-    {:ok, user} = User.unblock(user, %{ap_id: activity_one.data["actor"]})
+    {:ok, _user_block} = User.unblock(user, %{ap_id: activity_one.data["actor"]})
 
     activities =
       ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
@@ -515,7 +515,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_three)
     assert Enum.member?(activities, activity_one)
 
-    {:ok, user} = User.block(user, %{ap_id: activity_three.data["actor"]})
+    {:ok, _user_block} = User.block(user, %{ap_id: activity_three.data["actor"]})
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Activity.get_by_id(activity_three.id)
@@ -542,7 +542,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     blockee = insert(:user)
     friend = insert(:user)
 
-    {:ok, blocker} = User.block(blocker, blockee)
+    {:ok, _user_block} = User.block(blocker, blockee)
 
     {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey!"})
 
@@ -565,7 +565,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     blockee = insert(:user)
     friend = insert(:user)
 
-    {:ok, blocker} = User.block(blocker, blockee)
+    {:ok, _user_block} = User.block(blocker, blockee)
 
     {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey!"})
 

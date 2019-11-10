@@ -876,7 +876,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_muted(query, _), do: query
 
   defp restrict_blocked(query, %{"blocking_user" => %User{} = user}) do
-    blocks = user.blocks || []
+    blocked_ap_ids = User.blocked_ap_ids(user)
     domain_blocks = user.domain_blocks || []
 
     query =
@@ -884,14 +884,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     from(
       [activity, object: o] in query,
-      where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
-      where: fragment("not (? && ?)", activity.recipients, ^blocks),
+      where: fragment("not (? = ANY(?))", activity.actor, ^blocked_ap_ids),
+      where: fragment("not (? && ?)", activity.recipients, ^blocked_ap_ids),
       where:
         fragment(
           "not (?->>'type' = 'Announce' and ?->'to' \\?| ?)",
           activity.data,
           activity.data,
-          ^blocks
+          ^blocked_ap_ids
         ),
       where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks),
       where: fragment("not (split_part(?->>'actor', '/', 3) = ANY(?))", o.data, ^domain_blocks)

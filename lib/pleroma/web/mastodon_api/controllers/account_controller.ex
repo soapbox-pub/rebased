@@ -341,7 +341,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/block"
   def block(%{assigns: %{user: blocker, account: blocked}} = conn, _params) do
-    with {:ok, blocker} <- User.block(blocker, blocked),
+    with {:ok, _user_block} <- User.block(blocker, blocked),
          {:ok, _activity} <- ActivityPub.block(blocker, blocked) do
       render(conn, "relationship.json", user: blocker, target: blocked)
     else
@@ -351,7 +351,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/unblock"
   def unblock(%{assigns: %{user: blocker, account: blocked}} = conn, _params) do
-    with {:ok, blocker} <- User.unblock(blocker, blocked),
+    with {:ok, _user_block} <- User.unblock(blocker, blocked),
          {:ok, _activity} <- ActivityPub.unblock(blocker, blocked) do
       render(conn, "relationship.json", user: blocker, target: blocked)
     else

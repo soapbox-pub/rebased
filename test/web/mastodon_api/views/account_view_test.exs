@@ -219,8 +219,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
       {:ok, user} = User.follow(user, other_user)
       {:ok, other_user} = User.subscribe(user, other_user)
-      {:ok, user} = User.block(user, other_user)
-      {:ok, other_user} = User.block(other_user, user)
+      {:ok, _user_block} = User.block(user, other_user)
+      {:ok, _user_block} = User.block(other_user, user)
 
       expected = %{
         id: to_string(other_user.id),
@@ -291,7 +291,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     other_user = insert(:user)
     {:ok, other_user} = User.follow(other_user, user)
-    {:ok, other_user} = User.block(other_user, user)
+    {:ok, _user_block} = User.block(other_user, user)
     {:ok, _} = User.follow(insert(:user), user)
 
     expected = %{
