@@ -11,7 +11,6 @@ defmodule Pleroma.Web.StaticFE.StaticFEView do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Gettext
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.Formatter
   alias Pleroma.Web.Metadata.Utils
   alias Pleroma.Web.Router.Helpers
 
