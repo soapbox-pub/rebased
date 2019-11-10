@@ -279,7 +279,7 @@ config :pleroma, :instance,
 config :pleroma, :feed,
   post_title: %{
     max_length: 100,
-    omission: "..."
+    omission: "…"
   }
 
 config :pleroma, :markup,
