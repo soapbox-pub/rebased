@@ -2269,6 +2269,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       Pleroma.Config.put([:instance, :dynamic_configuration], true)
     end
 
+    clear_config([:feed, :post_title]) do
+      Pleroma.Config.put([:feed, :post_title], %{max_length: 100, omission: "…"})
+    end
+
     test "transfer settings to DB and to file", %{conn: conn, admin: admin} do
       assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) == []
       conn = get(conn, "/api/pleroma/admin/config/migrate_to_db")
