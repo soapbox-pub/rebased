@@ -2,11 +2,13 @@
   <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
   <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
   <id><%= @data["id"] %></id>
-  <title><%= "New note by #{@user.nickname}" %></title>
-  <content type="html"><%= activity_content(@activity) %></content>
+  <title><%= activity_title(@object, Keyword.get(@feed_config, :post_title, %{})) %></title>
+  <content type="html"><%= activity_content(@object) %></content>
   <published><%= @data["published"] %></published>
   <updated><%= @data["published"] %></updated>
-  <ostatus:conversation ref="<%= activity_context(@activity) %>"><%= activity_context(@activity) %></ostatus:conversation>
+  <ostatus:conversation ref="<%= activity_context(@activity) %>">
+    <%= activity_context(@activity) %>
+  </ostatus:conversation>
   <link ref="<%= activity_context(@activity) %>" rel="ostatus:conversation"/>
 
   <%= if @data["summary"] do %>

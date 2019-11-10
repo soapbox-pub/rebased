@@ -71,7 +71,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put("blocking_user", user)
       |> Map.put("muting_user", user)
       |> ActivityPub.fetch_public_activities()
-      |> Enum.reverse()
 
     conn
     |> add_link_headers(activities, %{"local" => local_only})
@@ -110,7 +109,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put("tag_all", tag_all)
       |> Map.put("tag_reject", tag_reject)
       |> ActivityPub.fetch_public_activities()
-      |> Enum.reverse()
 
     conn
     |> add_link_headers(activities, %{"local" => local_only})

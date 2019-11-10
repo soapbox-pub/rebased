@@ -568,7 +568,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> fetch_activities_query(opts)
     |> restrict_unlisted()
     |> Pagination.fetch_paginated(opts, pagination)
-    |> Enum.reverse()
   end
 
   @valid_visibilities ~w[direct unlisted public private]

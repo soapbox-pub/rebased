@@ -276,6 +276,12 @@ config :pleroma, :instance,
   external_user_synchronization: true,
   extended_nickname_format: false
 
+config :pleroma, :feed,
+  post_title: %{
+    max_length: 100,
+    omission: "..."
+  }
+
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
   # of custom emoji.  Issue #275 discusses defanging that somehow.
