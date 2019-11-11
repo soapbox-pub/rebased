@@ -37,11 +37,27 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     authorize(conn, Map.merge(params, auth_attrs))
   end
 
-  def authorize(%Plug.Conn{assigns: %{token: %Token{}}} = conn, params) do
+  def authorize(%Plug.Conn{assigns: %{token: %Token{}}} = conn, %{"force_login" => _} = params) do
     if ControllerHelper.truthy_param?(params["force_login"]) do
       do_authorize(conn, params)
     else
       handle_existing_authorization(conn, params)
+    end
+  end
+
+  # Note: the token is set in oauth_plug, but the token and client do not always go together.
+  # For example, MastodonFE's token is set if user requests with another client,
+  # after user already authorized to MastodonFE.
+  # So we have to check client and token.
+  def authorize(
+        %Plug.Conn{assigns: %{token: %Token{} = token}} = conn,
+        %{"client_id" => client_id} = params
+      ) do
+    with %Token{} = t <- Repo.get_by(Token, token: token.token) |> Repo.preload(:app),
+         ^client_id <- t.app.client_id do
+      handle_existing_authorization(conn, params)
+    else
+      _ -> do_authorize(conn, params)
     end
   end
 
