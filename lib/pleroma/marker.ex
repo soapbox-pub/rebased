@@ -56,7 +56,7 @@ defmodule Pleroma.Marker do
     |> Multi.insert(
       :marker,
       fn %{counters: attrs} ->
-        Marker
+        %Marker{timeline: "notifications", user_id: user.id}
         |> struct(attrs)
         |> Ecto.Changeset.change()
       end,

@@ -41,8 +41,6 @@ defmodule Pleroma.Notification do
     from(q in Pleroma.Notification,
       where: q.user_id == ^user.id,
       select: %{
-        timeline: "notifications",
-        user_id: type(^user.id, :string),
         unread_count: fragment("SUM( CASE WHEN seen = false THEN 1 ELSE 0 END )"),
         last_read_id:
           type(fragment("MAX( CASE WHEN seen = true THEN id ELSE null END )"), :string)
