@@ -6,6 +6,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Helpers.UriHelper
+  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
@@ -24,7 +25,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   plug(:fetch_session)
   plug(:fetch_flash)
-  plug(Pleroma.Plugs.RateLimiter, :authentication when action == :create_authorization)
+  plug(RateLimiter, [name: :authentication] when action == :create_authorization)
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 

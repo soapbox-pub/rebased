@@ -12,163 +12,196 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
   # Note: each example must work with separate buckets in order to prevent concurrency issues
 
-  test "init/1" do
-    limiter_name = :test_init
-    Pleroma.Config.put([:rate_limit, limiter_name], {1, 1})
+  describe "config" do
+    test "config is required for plug to work" do
+      limiter_name = :test_init
+      Pleroma.Config.put([:rate_limit, limiter_name], {1, 1})
 
-    assert {limiter_name, {1, 1}, []} == RateLimiter.init(limiter_name)
-    assert nil == RateLimiter.init(:foo)
+      assert %{limits: {1, 1}, name: :test_init, opts: [name: :test_init]} ==
+               RateLimiter.init(name: limiter_name)
+
+      assert nil == RateLimiter.init(name: :foo)
+    end
+
+    test "it restricts based on config values" do
+      limiter_name = :test_opts
+      scale = 60
+      limit = 5
+
+      Pleroma.Config.put([:rate_limit, limiter_name], {scale, limit})
+
+      opts = RateLimiter.init(name: limiter_name)
+      conn = conn(:get, "/")
+
+      for i <- 1..5 do
+        conn = RateLimiter.call(conn, opts)
+        assert {^i, _} = RateLimiter.inspect_bucket(conn, limiter_name, opts)
+        Process.sleep(10)
+      end
+
+      conn = RateLimiter.call(conn, opts)
+      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+      assert conn.halted
+
+      Process.sleep(50)
+
+      conn = conn(:get, "/")
+
+      conn = RateLimiter.call(conn, opts)
+      assert {1, 4} = RateLimiter.inspect_bucket(conn, limiter_name, opts)
+
+      refute conn.status == Plug.Conn.Status.code(:too_many_requests)
+      refute conn.resp_body
+      refute conn.halted
+    end
   end
 
-  test "ip/1" do
-    assert "127.0.0.1" == RateLimiter.ip(%{remote_ip: {127, 0, 0, 1}})
+  describe "options" do
+    test "`bucket_name` option overrides default bucket name" do
+      limiter_name = :test_bucket_name
+
+      Pleroma.Config.put([:rate_limit, limiter_name], {1000, 5})
+
+      base_bucket_name = "#{limiter_name}:group1"
+      opts = RateLimiter.init(name: limiter_name, bucket_name: base_bucket_name)
+
+      conn = conn(:get, "/")
+
+      RateLimiter.call(conn, opts)
+      assert {1, 4} = RateLimiter.inspect_bucket(conn, base_bucket_name, opts)
+      assert {:err, :not_found} = RateLimiter.inspect_bucket(conn, limiter_name, opts)
+    end
+
+    test "`params` option allows different queries to be tracked independently" do
+      limiter_name = :test_params
+      Pleroma.Config.put([:rate_limit, limiter_name], {1000, 5})
+
+      opts = RateLimiter.init(name: limiter_name, params: ["id"])
+
+      conn = conn(:get, "/?id=1")
+      conn = Plug.Conn.fetch_query_params(conn)
+      conn_2 = conn(:get, "/?id=2")
+
+      RateLimiter.call(conn, opts)
+      assert {1, 4} = RateLimiter.inspect_bucket(conn, limiter_name, opts)
+      assert {0, 5} = RateLimiter.inspect_bucket(conn_2, limiter_name, opts)
+    end
+
+    test "it supports combination of options modifying bucket name" do
+      limiter_name = :test_options_combo
+      Pleroma.Config.put([:rate_limit, limiter_name], {1000, 5})
+
+      base_bucket_name = "#{limiter_name}:group1"
+      opts = RateLimiter.init(name: limiter_name, bucket_name: base_bucket_name, params: ["id"])
+      id = "100"
+
+      conn = conn(:get, "/?id=#{id}")
+      conn = Plug.Conn.fetch_query_params(conn)
+      conn_2 = conn(:get, "/?id=#{101}")
+
+      RateLimiter.call(conn, opts)
+      assert {1, 4} = RateLimiter.inspect_bucket(conn, base_bucket_name, opts)
+      assert {0, 5} = RateLimiter.inspect_bucket(conn_2, base_bucket_name, opts)
+    end
   end
 
-  test "it restricts by opts" do
-    limiter_name = :test_opts
-    scale = 1000
-    limit = 5
+  describe "unauthenticated users" do
+    test "are restricted based on remote IP" do
+      limiter_name = :test_unauthenticated
+      Pleroma.Config.put([:rate_limit, limiter_name], [{1000, 5}, {1, 10}])
 
-    Pleroma.Config.put([:rate_limit, limiter_name], {scale, limit})
+      opts = RateLimiter.init(name: limiter_name)
 
-    opts = RateLimiter.init(limiter_name)
-    conn = conn(:get, "/")
-    bucket_name = "#{limiter_name}:#{RateLimiter.ip(conn)}"
+      conn = %{conn(:get, "/") | remote_ip: {127, 0, 0, 2}}
+      conn_2 = %{conn(:get, "/") | remote_ip: {127, 0, 0, 3}}
 
-    conn = RateLimiter.call(conn, opts)
-    assert {1, 4, _, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
+      for i <- 1..5 do
+        conn = RateLimiter.call(conn, opts)
+        assert {^i, _} = RateLimiter.inspect_bucket(conn, limiter_name, opts)
+        refute conn.halted
+      end
 
-    conn = RateLimiter.call(conn, opts)
-    assert {2, 3, _, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
+      conn = RateLimiter.call(conn, opts)
 
-    conn = RateLimiter.call(conn, opts)
-    assert {3, 2, _, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
+      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+      assert conn.halted
 
-    conn = RateLimiter.call(conn, opts)
-    assert {4, 1, _, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
+      conn_2 = RateLimiter.call(conn_2, opts)
+      assert {1, 4} = RateLimiter.inspect_bucket(conn_2, limiter_name, opts)
 
-    conn = RateLimiter.call(conn, opts)
-    assert {5, 0, to_reset, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
-
-    conn = RateLimiter.call(conn, opts)
-
-    assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
-    assert conn.halted
-
-    Process.sleep(to_reset)
-
-    conn = conn(:get, "/")
-
-    conn = RateLimiter.call(conn, opts)
-    assert {1, 4, _, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
-
-    refute conn.status == Plug.Conn.Status.code(:too_many_requests)
-    refute conn.resp_body
-    refute conn.halted
+      refute conn_2.status == Plug.Conn.Status.code(:too_many_requests)
+      refute conn_2.resp_body
+      refute conn_2.halted
+    end
   end
 
-  test "`bucket_name` option overrides default bucket name" do
-    limiter_name = :test_bucket_name
-    scale = 1000
-    limit = 5
+  describe "authenticated users" do
+    setup do
+      Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
-    Pleroma.Config.put([:rate_limit, limiter_name], {scale, limit})
-    base_bucket_name = "#{limiter_name}:group1"
-    opts = RateLimiter.init({limiter_name, bucket_name: base_bucket_name})
+      :ok
+    end
 
-    conn = conn(:get, "/")
-    default_bucket_name = "#{limiter_name}:#{RateLimiter.ip(conn)}"
-    customized_bucket_name = "#{base_bucket_name}:#{RateLimiter.ip(conn)}"
+    test "can have limits seperate from unauthenticated connections" do
+      limiter_name = :test_authenticated
 
-    RateLimiter.call(conn, opts)
-    assert {1, 4, _, _, _} = ExRated.inspect_bucket(customized_bucket_name, scale, limit)
-    assert {0, 5, _, _, _} = ExRated.inspect_bucket(default_bucket_name, scale, limit)
-  end
+      scale = 1000
+      limit = 5
+      Pleroma.Config.put([:rate_limit, limiter_name], [{1, 10}, {scale, limit}])
 
-  test "`params` option appends specified params' values to bucket name" do
-    limiter_name = :test_params
-    scale = 1000
-    limit = 5
+      opts = RateLimiter.init(name: limiter_name)
 
-    Pleroma.Config.put([:rate_limit, limiter_name], {scale, limit})
-    opts = RateLimiter.init({limiter_name, params: ["id"]})
-    id = "1"
+      user = insert(:user)
+      conn = conn(:get, "/") |> assign(:user, user)
 
-    conn = conn(:get, "/?id=#{id}")
-    conn = Plug.Conn.fetch_query_params(conn)
+      for i <- 1..5 do
+        conn = RateLimiter.call(conn, opts)
+        assert {^i, _} = RateLimiter.inspect_bucket(conn, limiter_name, opts)
+        refute conn.halted
+      end
 
-    default_bucket_name = "#{limiter_name}:#{RateLimiter.ip(conn)}"
-    parametrized_bucket_name = "#{limiter_name}:#{id}:#{RateLimiter.ip(conn)}"
+      conn = RateLimiter.call(conn, opts)
 
-    RateLimiter.call(conn, opts)
-    assert {1, 4, _, _, _} = ExRated.inspect_bucket(parametrized_bucket_name, scale, limit)
-    assert {0, 5, _, _, _} = ExRated.inspect_bucket(default_bucket_name, scale, limit)
-  end
+      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+      assert conn.halted
 
-  test "it supports combination of options modifying bucket name" do
-    limiter_name = :test_options_combo
-    scale = 1000
-    limit = 5
+      Process.sleep(1550)
 
-    Pleroma.Config.put([:rate_limit, limiter_name], {scale, limit})
-    base_bucket_name = "#{limiter_name}:group1"
-    opts = RateLimiter.init({limiter_name, bucket_name: base_bucket_name, params: ["id"]})
-    id = "100"
+      conn = conn(:get, "/") |> assign(:user, user)
+      conn = RateLimiter.call(conn, opts)
+      assert {1, 4} = RateLimiter.inspect_bucket(conn, limiter_name, opts)
 
-    conn = conn(:get, "/?id=#{id}")
-    conn = Plug.Conn.fetch_query_params(conn)
+      refute conn.status == Plug.Conn.Status.code(:too_many_requests)
+      refute conn.resp_body
+      refute conn.halted
+    end
 
-    default_bucket_name = "#{limiter_name}:#{RateLimiter.ip(conn)}"
-    parametrized_bucket_name = "#{base_bucket_name}:#{id}:#{RateLimiter.ip(conn)}"
+    test "diffrerent users are counted independently" do
+      limiter_name = :test_authenticated
+      Pleroma.Config.put([:rate_limit, limiter_name], [{1, 10}, {1000, 5}])
 
-    RateLimiter.call(conn, opts)
-    assert {1, 4, _, _, _} = ExRated.inspect_bucket(parametrized_bucket_name, scale, limit)
-    assert {0, 5, _, _, _} = ExRated.inspect_bucket(default_bucket_name, scale, limit)
-  end
+      opts = RateLimiter.init(name: limiter_name)
 
-  test "optional limits for authenticated users" do
-    limiter_name = :test_authenticated
-    Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
+      user = insert(:user)
+      conn = conn(:get, "/") |> assign(:user, user)
 
-    scale = 1000
-    limit = 5
-    Pleroma.Config.put([:rate_limit, limiter_name], [{1, 10}, {scale, limit}])
+      user_2 = insert(:user)
+      conn_2 = conn(:get, "/") |> assign(:user, user_2)
 
-    opts = RateLimiter.init(limiter_name)
+      for i <- 1..5 do
+        conn = RateLimiter.call(conn, opts)
+        assert {^i, _} = RateLimiter.inspect_bucket(conn, limiter_name, opts)
+      end
 
-    user = insert(:user)
-    conn = conn(:get, "/") |> assign(:user, user)
-    bucket_name = "#{limiter_name}:#{user.id}"
+      conn = RateLimiter.call(conn, opts)
+      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+      assert conn.halted
 
-    conn = RateLimiter.call(conn, opts)
-    assert {1, 4, _, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
-
-    conn = RateLimiter.call(conn, opts)
-    assert {2, 3, _, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
-
-    conn = RateLimiter.call(conn, opts)
-    assert {3, 2, _, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
-
-    conn = RateLimiter.call(conn, opts)
-    assert {4, 1, _, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
-
-    conn = RateLimiter.call(conn, opts)
-    assert {5, 0, to_reset, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
-
-    conn = RateLimiter.call(conn, opts)
-
-    assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
-    assert conn.halted
-
-    Process.sleep(to_reset)
-
-    conn = conn(:get, "/") |> assign(:user, user)
-
-    conn = RateLimiter.call(conn, opts)
-    assert {1, 4, _, _, _} = ExRated.inspect_bucket(bucket_name, scale, limit)
-
-    refute conn.status == Plug.Conn.Status.code(:too_many_requests)
-    refute conn.resp_body
-    refute conn.halted
+      conn_2 = RateLimiter.call(conn_2, opts)
+      assert {1, 4} = RateLimiter.inspect_bucket(conn_2, limiter_name, opts)
+      refute conn_2.status == Plug.Conn.Status.code(:too_many_requests)
+      refute conn_2.resp_body
+      refute conn_2.halted
+    end
   end
 end

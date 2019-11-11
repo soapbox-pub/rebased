@@ -8,6 +8,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Fallback.RedirectController
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.ObjectView
@@ -17,8 +18,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.Router
 
   plug(
-    Pleroma.Plugs.RateLimiter,
-    {:ap_routes, params: ["uuid"]} when action in [:object, :activity]
+    RateLimiter,
+    [name: :ap_routes, params: ["uuid"]] when action in [:object, :activity]
   )
 
   plug(
