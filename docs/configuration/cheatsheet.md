@@ -180,6 +180,14 @@ config :pleroma, :frontend_configurations,
 
 These settings **need to be complete**, they will override the defaults.
 
+### :static_fe
+
+Render profiles and posts using server-generated HTML that is viewable without using JavaScript.
+
+Available options:
+
+* `enabled` - Enables the rendering of static HTML. Defaults to `false`.
+
 ### :assets
 
 This section configures assets to be used with various frontends. Currently the only option
@@ -797,11 +805,3 @@ config :auto_linker,
     rel: "ugc"
   ]
 ```
-
-## :static_fe
-
-Render profiles and posts using server-generated HTML that is viewable without using JavaScript.
-
-Available options:
-
-* `enabled` - Enables the rendering of static HTML. Defaults to `false`.
