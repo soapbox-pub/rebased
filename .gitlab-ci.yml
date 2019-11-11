@@ -34,7 +34,7 @@ benchmark:
   variables:
     MIX_ENV: benchmark
   services:
-  - name: lainsoykaf/postgres-with-rum
+  - name: postgres:9.6
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -46,7 +46,7 @@ benchmark:
 unit-testing:
   stage: test
   services:
-  - name: lainsoykaf/postgres-with-rum
+  - name: postgres:9.6
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -58,7 +58,7 @@ unit-testing:
 unit-testing-rum:
   stage: test
   services:
-  - name: lainsoykaf/postgres-with-rum
+  - name: minibikini/postgres-with-rum:12
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   variables:
@@ -138,7 +138,7 @@ stop_review_app:
     - ssh -t dokku@pleroma.online -- --force postgres:destroy $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db
 
 amd64:
-  stage: release 
+  stage: release
   # TODO: Replace with upstream image when 1.9.0 comes out
   image: rinpatch/elixir:1.9.0-rc.0
   only: &release-only
