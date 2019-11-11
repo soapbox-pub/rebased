@@ -523,7 +523,7 @@ config :pleroma, :workers,
 
 Configuration for [Quantum](https://github.com/quantum-elixir/quantum-core) jobs scheduler.
 
-See [Quantum readme](https://github.com/quantum-elixir/quantum-core#usage) for the list of supported options. 
+See [Quantum readme](https://github.com/quantum-elixir/quantum-core#usage) for the list of supported options.
 
 Example:
 
@@ -593,6 +593,10 @@ See the [Quack Github](https://github.com/azohra/quack) for more details
 ## Database options
 
 ### RUM indexing for full text search
+
+!!! warning
+    It is recommended to use PostgreSQL v11 or newer. We have seen some minor issues with lower PostgreSQL versions.
+
 * `rum_enabled`: If RUM indexes should be used. Defaults to `false`.
 
 RUM indexes are an alternative indexing scheme that is not included in PostgreSQL by default. While they may eventually be mainlined, for now they have to be installed as a PostgreSQL extension from https://github.com/postgrespro/rum.
