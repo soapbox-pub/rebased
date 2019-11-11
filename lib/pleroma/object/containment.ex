@@ -64,14 +64,14 @@ defmodule Pleroma.Object.Containment do
   def contain_origin(id, %{"attributedTo" => actor} = params),
     do: contain_origin(id, Map.put(params, "actor", actor))
 
-  def contain_origin_from_id(_id, %{"id" => nil}), do: :error
-
-  def contain_origin_from_id(id, %{"id" => other_id} = _params) do
+  def contain_origin_from_id(id, %{"id" => other_id} = _params) when is_binary(other_id) do
     id_uri = URI.parse(id)
     other_uri = URI.parse(other_id)
 
     compare_uris(id_uri, other_uri)
   end
+
+  def contain_origin_from_id(_id, _data), do: :error
 
   def contain_child(%{"object" => %{"id" => id, "attributedTo" => _} = object}),
     do: contain_origin(id, object)
