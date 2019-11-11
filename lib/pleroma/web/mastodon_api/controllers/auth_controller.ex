@@ -15,7 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
 
   @local_mastodon_name "Mastodon-Local"
 
-  plug(Pleroma.Plugs.RateLimiter, :password_reset when action == :password_reset)
+  plug(Pleroma.Plugs.RateLimiter, [name: :password_reset] when action == :password_reset)
 
   @doc "GET /web/login"
   def login(%{assigns: %{user: %User{}}} = conn, _params) do

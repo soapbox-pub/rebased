@@ -36,7 +36,8 @@ defmodule Pleroma.Application do
         Pleroma.Emoji,
         Pleroma.Captcha,
         Pleroma.Daemons.ScheduledActivityDaemon,
-        Pleroma.Daemons.ActivityExpirationDaemon
+        Pleroma.Daemons.ActivityExpirationDaemon,
+        Pleroma.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
         hackney_pool_children() ++
