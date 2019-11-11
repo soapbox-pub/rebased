@@ -1195,6 +1195,13 @@ defmodule Pleroma.UserTest do
     refute User.auth_active?(local_user)
     assert User.auth_active?(confirmed_user)
     assert User.auth_active?(remote_user)
+
+    # also shows unactive for deactivated users
+
+    deactivated_but_confirmed =
+      insert(:user, local: true, confirmation_pending: false, deactivated: true)
+
+    refute User.auth_active?(deactivated_but_confirmed)
   end
 
   describe "superuser?/1" do
