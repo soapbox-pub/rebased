@@ -45,24 +45,23 @@ defmodule Pleroma.UserBlock do
   def delete(%User{} = blocker, %User{} = blockee) do
     attrs = %{blocker_id: blocker.id, blockee_id: blockee.id}
 
-    if is_nil(existing_record = Repo.get_by(UserBlock, attrs)) do
-      {:ok, nil}
-    else
-      Repo.delete(existing_record)
+    case Repo.get_by(UserBlock, attrs) do
+      %UserBlock{} = existing_record -> Repo.delete(existing_record)
+      nil -> {:ok, nil}
     end
   end
 
   defp validate_not_self_block(%Ecto.Changeset{} = changeset) do
     changeset
     |> validate_change(:blockee_id, fn _, blockee_id ->
-      if blockee_id == changeset.changes[:blocker_id] || changeset.data.blocker_id do
+      if blockee_id == get_field(changeset, :blocker_id) do
         [blockee_id: "can't be equal to blocker_id"]
       else
         []
       end
     end)
     |> validate_change(:blocker_id, fn _, blocker_id ->
-      if blocker_id == changeset.changes[:blockee_id] || changeset.data.blockee_id do
+      if blocker_id == get_field(changeset, :blockee_id) do
         [blocker_id: "can't be equal to blockee_id"]
       else
         []

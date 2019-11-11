@@ -1090,11 +1090,10 @@ defmodule Pleroma.User do
   end
 
   def blocked_ap_ids(user) do
-    Repo.all(
-      from(u in assoc(user, :blocked_users),
-        select: u.ap_id
-      )
-    )
+    user
+    |> assoc(:blocked_users)
+    |> select([u], u.ap_id)
+    |> Repo.all()
   end
 
   @spec subscribers(User.t()) :: [User.t()]
