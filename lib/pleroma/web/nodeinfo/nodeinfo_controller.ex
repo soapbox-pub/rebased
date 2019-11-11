@@ -46,6 +46,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
         data
         |> Map.merge(%{quarantined_instances: quarantined})
+        |> Map.put(:enabled, Config.get([:instance, :federating]))
       else
         %{}
       end
