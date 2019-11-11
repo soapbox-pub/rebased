@@ -10,9 +10,13 @@ defmodule Pleroma.Plugs.UserEnabledPlug do
     options
   end
 
-  def call(%{assigns: %{user: %User{info: %{deactivated: true}}}} = conn, _) do
-    conn
-    |> assign(:user, nil)
+  def call(%{assigns: %{user: %User{} = user}} = conn, _) do
+    if User.auth_active?(user) do
+      conn
+    else
+      conn
+      |> assign(:user, nil)
+    end
   end
 
   def call(conn, _) do
