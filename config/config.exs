@@ -605,6 +605,8 @@ config :pleroma, Pleroma.ActivityExpiration, enabled: true
 
 config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
 
+config :pleroma, :static_fe, enabled: false
+
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,
   activity_pub_question: 30_000

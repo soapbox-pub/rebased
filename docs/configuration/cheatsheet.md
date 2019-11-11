@@ -798,3 +798,10 @@ config :auto_linker,
   ]
 ```
 
+## :static_fe
+
+Render profiles and posts using server-generated HTML that is viewable without using JavaScript.
+
+Available options:
+
+* `enabled` - Enables the rendering of static HTML. Defaults to `false`.
