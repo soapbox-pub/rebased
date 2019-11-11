@@ -58,7 +58,6 @@ Authentication is required and the user must be an admin.
 
 ### Remove a user
 
-- Method `DELETE`
 - Params:
   - `nicknames`
 - Response: Array of user nicknames
@@ -735,7 +734,6 @@ Copy settings on key `:pleroma` to DB.
 
 Copy all settings from DB to `config/prod.exported_from_db.secret.exs` with deletion from DB.
 
-- Method `GET`
 - Params: none
 - Response:
 

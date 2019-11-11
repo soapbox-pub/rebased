@@ -92,12 +92,7 @@ defmodule Pleroma.Activity do
 
   def with_joined_user_actor(query, join_type \\ :inner) do
     join(query, join_type, [activity], u in User,
-      on:
-        fragment(
-          "? = ?->>'actor'",
-          u.ap_id,
-          activity.data
-        ),
+      on: u.ap_id == activity.actor,
       as: :user_actor
     )
   end
