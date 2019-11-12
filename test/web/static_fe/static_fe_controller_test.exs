@@ -151,7 +151,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       assert html_response(conn, 404) =~ "not found"
     end
 
-    test "404 for remote cached status", %{conn: conn} do
+    test "302 for remote cached status", %{conn: conn} do
       user = insert(:user)
 
       message = %{
@@ -175,7 +175,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
         |> put_req_header("accept", "text/html")
         |> get("/notice/#{activity.id}")
 
-      assert html_response(conn, 404) =~ "not found"
+      assert html_response(conn, 302) =~ "redirected"
     end
   end
 end

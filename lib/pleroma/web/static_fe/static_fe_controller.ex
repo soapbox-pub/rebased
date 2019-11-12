@@ -77,6 +77,11 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
       render(conn, "conversation.html", %{activities: timeline, meta: meta})
     else
+      %Activity{object: %Object{data: data}} ->
+        conn
+        |> put_status(:found)
+        |> redirect(external: data["url"] || data["external_url"] || data["id"])
+
       _ ->
         conn
         |> put_status(404)
