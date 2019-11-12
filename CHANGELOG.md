@@ -51,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: `POST/DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group` are deprecated in favor of: `POST/DELETE /api/pleroma/admin/users/permission_group/:permission_group` (both accept `nicknames` array), `DELETE /api/pleroma/admin/users` (`nickname` query param or `nickname` sent in JSON body) is deprecated in favor of: `DELETE /api/pleroma/admin/users` (`nicknames` query array param or `nicknames` sent in JSON body).
 - Admin API: Add `GET /api/pleroma/admin/relay` endpoint - lists all followed relays
 - Pleroma API: `POST /api/v1/pleroma/conversations/read` to mark all conversations as read
+- ActivityPub: Support `Move` activities
 - Mastodon API: Add `/api/v1/markers` for managing timeline read markers
 
 ### Changed
