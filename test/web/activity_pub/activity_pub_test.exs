@@ -1428,10 +1428,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       %{ap_id: old_ap_id} = old_user = insert(:user)
       %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
       follower = insert(:user)
+      follower_move_opted_out = insert(:user, allow_following_move: false)
 
       User.follow(follower, old_user)
+      User.follow(follower_move_opted_out, old_user)
 
       assert User.following?(follower, old_user)
+      assert User.following?(follower_move_opted_out, old_user)
 
       assert {:ok, activity} = ActivityPub.move(old_user, new_user)
 
@@ -1458,6 +1461,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       refute User.following?(follower, old_user)
       assert User.following?(follower, new_user)
+
+      assert User.following?(follower_move_opted_out, old_user)
+      refute User.following?(follower_move_opted_out, new_user)
     end
 
     test "old user must be in the new user's `also_known_as` list" do

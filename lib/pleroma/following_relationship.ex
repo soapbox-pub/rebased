@@ -109,26 +109,20 @@ defmodule Pleroma.FollowingRelationship do
   end
 
   def move_following(origin, target) do
-    following_relationships =
-      __MODULE__
-      |> where(following_id: ^origin.id)
-      |> preload([:follower])
-      |> limit(50)
-      |> Repo.all()
-
-    case following_relationships do
-      [] ->
-        :ok
-
-      following_relationships ->
-        Enum.each(following_relationships, fn following_relationship ->
-          Repo.transaction(fn ->
-            Repo.delete(following_relationship)
-            User.follow(following_relationship.follower, target)
-          end)
-        end)
-
-        move_following(origin, target)
+    __MODULE__
+    |> join(:inner, [r], f in assoc(r, :follower))
+    |> where(following_id: ^origin.id)
+    |> where([r, f], f.allow_following_move == true)
+    |> limit(50)
+    |> preload([:follower])
+    |> Repo.all()
+    |> Enum.map(fn following_relationship ->
+      Repo.delete(following_relationship)
+      Pleroma.Web.CommonAPI.follow(following_relationship.follower, target)
+    end)
+    |> case do
+      [] -> :ok
+      _ -> move_following(origin, target)
     end
   end
 end

@@ -104,6 +104,7 @@ defmodule Pleroma.User do
     field(:raw_fields, {:array, :map}, default: [])
     field(:discoverable, :boolean, default: false)
     field(:invisible, :boolean, default: false)
+    field(:allow_following_move, :boolean, default: true)
     field(:skip_thread_containment, :boolean, default: false)
     field(:also_known_as, {:array, :string}, default: [])
 
@@ -314,6 +315,7 @@ defmodule Pleroma.User do
         :hide_followers_count,
         :hide_follows_count,
         :hide_favorites,
+        :allow_following_move,
         :background,
         :show_role,
         :skip_thread_containment,
@@ -359,6 +361,7 @@ defmodule Pleroma.User do
         :hide_follows,
         :fields,
         :hide_followers,
+        :allow_following_move,
         :discoverable,
         :hide_followers_count,
         :hide_follows_count,
