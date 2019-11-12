@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   alias Pleroma.Activity
   alias Pleroma.Builders.ActivityBuilder
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -1464,6 +1465,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert User.following?(follower_move_opted_out, old_user)
       refute User.following?(follower_move_opted_out, new_user)
+
+      activity = %Activity{activity | object: nil}
+
+      assert [%Notification{activity: ^activity}] =
+               Notification.for_user_since(follower, ~N[2019-04-13 11:22:33])
+
+      assert [%Notification{activity: ^activity}] =
+               Notification.for_user_since(follower_move_opted_out, ~N[2019-04-13 11:22:33])
     end
 
     test "old user must be in the new user's `also_known_as` list" do

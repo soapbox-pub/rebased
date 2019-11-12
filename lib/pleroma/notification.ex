@@ -251,10 +251,13 @@ defmodule Pleroma.Notification do
     end
   end
 
-  def create_notifications(%Activity{data: %{"to" => _, "type" => type}} = activity)
-      when type in ["Like", "Announce", "Follow"] do
-    users = get_notified_from_activity(activity)
-    notifications = Enum.map(users, fn user -> create_notification(activity, user) end)
+  def create_notifications(%Activity{data: %{"type" => type}} = activity)
+      when type in ["Like", "Announce", "Follow", "Move"] do
+    notifications =
+      activity
+      |> get_notified_from_activity()
+      |> Enum.map(&create_notification(activity, &1))
+
     {:ok, notifications}
   end
 
@@ -276,19 +279,15 @@ defmodule Pleroma.Notification do
 
   def get_notified_from_activity(activity, local_only \\ true)
 
-  def get_notified_from_activity(
-        %Activity{data: %{"to" => _, "type" => type} = _data} = activity,
-        local_only
-      )
-      when type in ["Create", "Like", "Announce", "Follow"] do
-    recipients =
-      []
-      |> Utils.maybe_notify_to_recipients(activity)
-      |> Utils.maybe_notify_mentioned_recipients(activity)
-      |> Utils.maybe_notify_subscribers(activity)
-      |> Enum.uniq()
-
-    User.get_users_from_set(recipients, local_only)
+  def get_notified_from_activity(%Activity{data: %{"type" => type}} = activity, local_only)
+      when type in ["Create", "Like", "Announce", "Follow", "Move"] do
+    []
+    |> Utils.maybe_notify_to_recipients(activity)
+    |> Utils.maybe_notify_mentioned_recipients(activity)
+    |> Utils.maybe_notify_subscribers(activity)
+    |> Utils.maybe_notify_followers(activity)
+    |> Enum.uniq()
+    |> User.get_users_from_set(local_only)
   end
 
   def get_notified_from_activity(_, _local_only), do: []
