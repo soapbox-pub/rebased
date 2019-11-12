@@ -36,15 +36,22 @@ defmodule Pleroma.Notification do
     |> cast(attrs, [:seen])
   end
 
-  @spec notifications_info_query(User.t()) :: Ecto.Queryable.t()
-  def notifications_info_query(user) do
+  @spec unread_count_query(User.t()) :: Ecto.Queryable.t()
+  def unread_count_query(user) do
     from(q in Pleroma.Notification,
       where: q.user_id == ^user.id,
-      select: %{
-        unread_count: fragment("SUM( CASE WHEN seen = false THEN 1 ELSE 0 END )"),
-        last_read_id:
-          type(fragment("MAX( CASE WHEN seen = true THEN id ELSE null END )"), :string)
-      }
+      where: q.seen == false
+    )
+  end
+
+  @spec last_read_query(User.t()) :: Ecto.Queryable.t()
+  def last_read_query(user) do
+    from(q in Pleroma.Notification,
+      where: q.user_id == ^user.id,
+      where: q.seen == true,
+      select: type(q.id, :string),
+      limit: 1,
+      order_by: [desc: :id]
     )
   end
 

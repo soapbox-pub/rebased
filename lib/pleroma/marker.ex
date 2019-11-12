@@ -9,6 +9,7 @@ defmodule Pleroma.Marker do
   import Ecto.Query
 
   alias Ecto.Multi
+  alias Pleroma.Notification
   alias Pleroma.Repo
   alias Pleroma.User
   alias __MODULE__
@@ -51,7 +52,11 @@ defmodule Pleroma.Marker do
   def multi_set_unread_count(multi, %User{} = user, "notifications") do
     multi
     |> Multi.run(:counters, fn _repo, _changes ->
-      {:ok, Repo.one(Pleroma.Notification.notifications_info_query(user))}
+      {:ok,
+       %{
+         unread_count: Repo.aggregate(Notification.unread_count_query(user), :count, :id),
+         last_read_id: Repo.one(Notification.last_read_query(user))
+       }}
     end)
     |> Multi.insert(
       :marker,
