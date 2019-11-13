@@ -25,7 +25,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
     test "it restricts based on config values" do
       limiter_name = :test_opts
-      scale = 60
+      scale = 80
       limit = 5
 
       Pleroma.Config.put([:rate_limit, limiter_name], {scale, limit})
