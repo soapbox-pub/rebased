@@ -119,11 +119,26 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
     end
   end
 
+  def show(%{assigns: %{object_id: _}} = conn, _params) do
+    url = Helpers.url(conn) <> conn.request_path
+    case Activity.get_create_by_object_ap_id_with_object(url) do
+      %Activity{} = activity ->
+        redirect(conn, to: "/notice/#{activity.id}")
+        _ ->
+        conn
+        |> put_status(404)
+        |> render("error.html", %{message: "Post not found.", meta: ""})
+    end
+  end
+
   def assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),
     do: assign(conn, :notice_id, notice_id)
 
   def assign_id(%{path_info: ["users", user_id]} = conn, _opts),
     do: assign(conn, :username_or_id, user_id)
+
+  def assign_id(%{path_info: ["objects", object_id]} = conn, _opts),
+    do: assign(conn, :object_id, object_id)
 
   def assign_id(conn, _opts), do: conn
 end
