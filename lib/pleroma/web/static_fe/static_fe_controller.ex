@@ -27,6 +27,12 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
   defp get_title(_), do: nil
 
+  defp not_found(conn, message) do
+    conn
+    |> put_status(404)
+    |> render("error.html", %{message: message, meta: ""})
+  end
+
   def get_counts(%Activity{} = activity) do
     %Object{data: data} = Object.normalize(activity)
 
@@ -83,9 +89,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
         |> redirect(external: data["url"] || data["external_url"] || data["id"])
 
       _ ->
-        conn
-        |> put_status(404)
-        |> render("error.html", %{message: "Post not found.", meta: ""})
+        not_found(conn, "Post not found.")
     end
   end
 
@@ -113,9 +117,33 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
         })
 
       _ ->
-        conn
-        |> put_status(404)
-        |> render("error.html", %{message: "User not found.", meta: ""})
+        not_found(conn, "User not found.")
+    end
+  end
+
+  def show(%{assigns: %{object_id: _}} = conn, _params) do
+    url = Helpers.url(conn) <> conn.request_path
+
+    case Activity.get_create_by_object_ap_id_with_object(url) do
+      %Activity{} = activity ->
+        to = Helpers.o_status_path(Pleroma.Web.Endpoint, :notice, activity)
+        redirect(conn, to: to)
+
+      _ ->
+        not_found(conn, "Post not found.")
+    end
+  end
+
+  def show(%{assigns: %{activity_id: _}} = conn, _params) do
+    url = Helpers.url(conn) <> conn.request_path
+
+    case Activity.get_by_ap_id(url) do
+      %Activity{} = activity ->
+        to = Helpers.o_status_path(Pleroma.Web.Endpoint, :notice, activity)
+        redirect(conn, to: to)
+
+      _ ->
+        not_found(conn, "Post not found.")
     end
   end
 
@@ -124,6 +152,12 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
   def assign_id(%{path_info: ["users", user_id]} = conn, _opts),
     do: assign(conn, :username_or_id, user_id)
+
+  def assign_id(%{path_info: ["objects", object_id]} = conn, _opts),
+    do: assign(conn, :object_id, object_id)
+
+  def assign_id(%{path_info: ["activities", activity_id]} = conn, _opts),
+    do: assign(conn, :activity_id, activity_id)
 
   def assign_id(conn, _opts), do: conn
 end
