@@ -143,6 +143,20 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       assert html_response(conn, 302) =~ "redirected"
     end
 
+    test "redirect by activity ID", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, %Activity{data: %{"id" => id}}} =
+        CommonAPI.post(user, %{"status" => "I'm a doctor, not a devops!"})
+
+      conn =
+        conn
+        |> put_req_header("accept", "text/html")
+        |> get(URI.parse(id).path)
+
+      assert html_response(conn, 302) =~ "redirected"
+    end
+
     test "404 when notice not found", %{conn: conn} do
       conn =
         conn
