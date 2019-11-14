@@ -60,6 +60,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `/api/v1/markers` for managing timeline read markers
 - Mastodon API: Add the `recipients` parameter to `GET /api/v1/conversations`
 - Configuration: `feed` option for user atom feed.
+- Admin API: Add `/api/pleroma/admin/instances/:instance/statuses` - lists all statuses from a given instance
 </details>
 
 ### Fixed

@@ -177,6 +177,8 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname", AdminAPIController, :user_show)
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
 
+    get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
+
     get("/reports", AdminAPIController, :list_reports)
     get("/reports/:id", AdminAPIController, :report_show)
     put("/reports/:id", AdminAPIController, :report_update_state)
