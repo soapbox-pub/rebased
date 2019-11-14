@@ -22,7 +22,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
-  plug(RateLimiter, :search when action in [:search, :search2, :account_search])
+  plug(RateLimiter, [name: :search] when action in [:search, :search2, :account_search])
 
   def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = User.search(query, search_options(params, user))

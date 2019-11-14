@@ -322,6 +322,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def react_with_emoji(user, object, emoji, options \\ []) do
+    with local <- Keyword.get(options, :local, true),
+         activity_id <- Keyword.get(options, :activity_id, nil),
+         Pleroma.Emoji.is_unicode_emoji?(emoji),
+         reaction_data <- make_emoji_reaction_data(user, object, emoji, activity_id),
+         {:ok, activity} <- insert(reaction_data, local),
+         {:ok, object} <- add_emoji_reaction_to_object(activity, object),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity, object}
+    end
+  end
+
+  def unreact_with_emoji(user, reaction_id, options \\ []) do
+    with local <- Keyword.get(options, :local, true),
+         activity_id <- Keyword.get(options, :activity_id, nil),
+         user_ap_id <- user.ap_id,
+         %Activity{actor: ^user_ap_id} = reaction_activity <- Activity.get_by_ap_id(reaction_id),
+         object <- Object.normalize(reaction_activity),
+         unreact_data <- make_undo_data(user, reaction_activity, activity_id),
+         {:ok, activity} <- insert(unreact_data, local),
+         {:ok, object} <- remove_emoji_reaction_from_object(reaction_activity, object),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity, object}
+    end
+  end
+
   # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
   def like(
         %User{ap_id: ap_id} = user,

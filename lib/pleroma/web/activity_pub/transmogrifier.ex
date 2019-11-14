@@ -566,6 +566,34 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  @misskey_reactions %{
+    "like" => "👍",
+    "love" => "❤️",
+    "laugh" => "😆",
+    "hmm" => "🤔",
+    "surprise" => "😮",
+    "congrats" => "🎉",
+    "angry" => "💢",
+    "confused" => "😥",
+    "rip" => "😇",
+    "pudding" => "🍮",
+    "star" => "⭐"
+  }
+
+  @doc "Rewrite misskey likes into EmojiReactions"
+  def handle_incoming(
+        %{
+          "type" => "Like",
+          "_misskey_reaction" => reaction
+        } = data,
+        options
+      ) do
+    data
+    |> Map.put("type", "EmojiReaction")
+    |> Map.put("content", @misskey_reactions[reaction] || reaction)
+    |> handle_incoming(options)
+  end
+
   def handle_incoming(
         %{"type" => "Like", "object" => object_id, "actor" => _actor, "id" => id} = data,
         _options
@@ -574,6 +602,27 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <- get_obj_helper(object_id),
          {:ok, activity, _object} <- ActivityPub.like(actor, object, id, false) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "EmojiReaction",
+          "object" => object_id,
+          "actor" => _actor,
+          "id" => id,
+          "content" => emoji
+        } = data,
+        _options
+      ) do
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id),
+         {:ok, activity, _object} <-
+           ActivityPub.react_with_emoji(actor, object, emoji, activity_id: id, local: false) do
       {:ok, activity}
     else
       _e -> :error
@@ -709,6 +758,28 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(follower),
          {:ok, activity} <- ActivityPub.unfollow(follower, followed, id, false) do
       User.unfollow(follower, followed)
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "Undo",
+          "object" => %{"type" => "EmojiReaction", "id" => reaction_activity_id},
+          "actor" => _actor,
+          "id" => id
+        } = data,
+        _options
+      ) do
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, activity, _} <-
+           ActivityPub.unreact_with_emoji(actor, reaction_activity_id,
+             activity_id: id,
+             local: false
+           ) do
       {:ok, activity}
     else
       _e -> :error
@@ -1048,7 +1119,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "attachment", attachments)
   end
 
-  defp strip_internal_fields(object) do
+  def strip_internal_fields(object) do
     object
     |> Map.drop(Pleroma.Constants.object_internal_fields())
   end

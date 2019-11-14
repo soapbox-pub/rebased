@@ -812,6 +812,78 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "react to an object" do
+    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
+      Pleroma.Config.put([:instance, :federating], true)
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      assert called(Pleroma.Web.Federator.publish(reaction_activity))
+    end
+
+    test "adds an emoji reaction activity to the db" do
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      assert reaction_activity
+
+      assert reaction_activity.data["actor"] == reactor.ap_id
+      assert reaction_activity.data["type"] == "EmojiReaction"
+      assert reaction_activity.data["content"] == "🔥"
+      assert reaction_activity.data["object"] == object.data["id"]
+      assert reaction_activity.data["to"] == [User.ap_followers(reactor), activity.data["actor"]]
+      assert reaction_activity.data["context"] == object.data["context"]
+      assert object.data["reaction_count"] == 1
+      assert object.data["reactions"]["🔥"] == [reactor.ap_id]
+    end
+  end
+
+  describe "unreacting to an object" do
+    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
+      Pleroma.Config.put([:instance, :federating], true)
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      assert called(Pleroma.Web.Federator.publish(reaction_activity))
+
+      {:ok, unreaction_activity, _object} =
+        ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
+
+      assert called(Pleroma.Web.Federator.publish(unreaction_activity))
+    end
+
+    test "adds an undo activity to the db" do
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      {:ok, unreaction_activity, _object} =
+        ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
+
+      assert unreaction_activity.actor == reactor.ap_id
+      assert unreaction_activity.data["object"] == reaction_activity.data["id"]
+
+      object = Object.get_by_ap_id(object.data["id"])
+      assert object.data["reaction_count"] == 0
+      assert object.data["reactions"] == %{}
+    end
+  end
+
   describe "like an object" do
     test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
       Pleroma.Config.put([:instance, :federating], true)

@@ -274,7 +274,7 @@ config :pleroma, :instance,
   account_field_name_length: 512,
   account_field_value_length: 2048,
   external_user_synchronization: true,
-  extended_nickname_format: false
+  extended_nickname_format: true
 
 config :pleroma, :feed,
   post_title: %{
@@ -604,6 +604,8 @@ config :pleroma, :rate_limit, authentication: {60_000, 15}
 config :pleroma, Pleroma.ActivityExpiration, enabled: true
 
 config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
+
+config :pleroma, :static_fe, enabled: false
 
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,

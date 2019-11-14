@@ -2,11 +2,10 @@
 
 Authentication is required and the user must be an admin.
 
-## `/api/pleroma/admin/users`
+## `GET /api/pleroma/admin/users`
 
 ### List users
 
-- Method `GET`
 - Query Params:
   - *optional* `query`: **string** search term (e.g. nickname, domain, nickname@domain)
   - *optional* `filters`: **string** comma-separated string of filters:
@@ -51,7 +50,6 @@ Authentication is required and the user must be an admin.
 
 ### Remove a user
 
-- Method `DELETE`
 - Params:
   - `nickname`
 - Response: User’s nickname
@@ -60,7 +58,6 @@ Authentication is required and the user must be an admin.
 
 ### Remove a user
 
-- Method `DELETE`
 - Params:
   - `nicknames`
 - Response: Array of user nicknames
@@ -78,31 +75,30 @@ Authentication is required and the user must be an admin.
   ]
 - Response: User’s nickname
 
-## `/api/pleroma/admin/users/follow`
+## `POST /api/pleroma/admin/users/follow`
+
 ### Make a user follow another user
 
-- Methods: `POST`
 - Params:
- - `follower`: The nickname of the follower
- - `followed`: The nickname of the followed
+  - `follower`: The nickname of the follower
+  - `followed`: The nickname of the followed
 - Response:
- - "ok"
+  - "ok"
 
-## `/api/pleroma/admin/users/unfollow`
+## `POST /api/pleroma/admin/users/unfollow`
+
 ### Make a user unfollow another user
 
-- Methods: `POST`
 - Params:
- - `follower`: The nickname of the follower
- - `followed`: The nickname of the followed
+  - `follower`: The nickname of the follower
+  - `followed`: The nickname of the followed
 - Response:
- - "ok"
+  - "ok"
 
-## `/api/pleroma/admin/users/:nickname/toggle_activation`
+## `PATCH /api/pleroma/admin/users/:nickname/toggle_activation`
 
 ### Toggle user activation
 
-- Method: `PATCH`
 - Params:
   - `nickname`
 - Response: User’s object
@@ -115,27 +111,26 @@ Authentication is required and the user must be an admin.
 }
 ```
 
-## `/api/pleroma/admin/users/tag`
+## `PUT /api/pleroma/admin/users/tag`
 
 ### Tag a list of users
 
-- Method: `PUT`
 - Params:
   - `nicknames` (array)
   - `tags` (array)
+
+## `DELETE /api/pleroma/admin/users/tag`
 
 ### Untag a list of users
 
-- Method: `DELETE`
 - Params:
   - `nicknames` (array)
   - `tags` (array)
 
-## `/api/pleroma/admin/users/:nickname/permission_group`
+## `GET /api/pleroma/admin/users/:nickname/permission_group`
 
 ### Get user user permission groups membership
 
-- Method: `GET`
 - Params: none
 - Response:
 
@@ -146,13 +141,12 @@ Authentication is required and the user must be an admin.
 }
 ```
 
-## `/api/pleroma/admin/users/:nickname/permission_group/:permission_group`
+## `GET /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
 Note: Available `:permission_group` is currently moderator and admin. 404 is returned when the permission group doesn’t exist.
 
 ### Get user user permission groups membership per permission group
 
-- Method: `GET`
 - Params: none
 - Response:
 
@@ -183,6 +177,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On success: JSON of the user
 
 ## DEPRECATED `DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
+
+## `DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
 ### Remove user from permission group
 
@@ -247,22 +243,20 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `nickname`
   - `status` BOOLEAN field, false value means deactivation.
 
-## `/api/pleroma/admin/users/:nickname_or_id`
+## `GET /api/pleroma/admin/users/:nickname_or_id`
 
 ### Retrive the details of a user
 
-- Method: `GET`
 - Params:
   - `nickname` or `id`
 - Response:
   - On failure: `Not found`
   - On success: JSON of the user
 
-## `/api/pleroma/admin/users/:nickname_or_id/statuses`
+## `GET /api/pleroma/admin/users/:nickname_or_id/statuses`
 
 ### Retrive user's latest statuses
 
-- Method: `GET`
 - Params:
   - `nickname` or `id`
   - *optional* `page_size`: number of statuses to return (default is `20`)
@@ -271,19 +265,19 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On failure: `Not found`
   - On success: JSON array of user's latest statuses
 
-## `/api/pleroma/admin/relay`
+## `POST /api/pleroma/admin/relay`
 
 ### Follow a Relay
 
-- Methods: `POST`
 - Params:
   - `relay_url`
 - Response:
   - On success: URL of the followed relay
 
+## `DELETE /api/pleroma/admin/relay`
+
 ### Unfollow a Relay
 
-- Methods: `DELETE`
 - Params:
   - `relay_url`
 - Response:
@@ -297,11 +291,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Response:
   - On success: JSON array of relays
 
-## `/api/pleroma/admin/users/invite_token`
+## `POST /api/pleroma/admin/users/invite_token`
 
 ### Create an account registration invite token
 
-- Methods: `POST`
 - Params:
   - *optional* `max_use` (integer)
   - *optional* `expires_at` (date string e.g. "2019-04-07")
@@ -319,11 +312,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `/api/pleroma/admin/users/invites`
+## `GET /api/pleroma/admin/users/invites`
 
 ### Get a list of generated invites
 
-- Methods: `GET`
 - Params: none
 - Response:
 
@@ -345,11 +337,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `/api/pleroma/admin/users/revoke_invite`
+## `POST /api/pleroma/admin/users/revoke_invite`
 
 ### Revoke invite by token
 
-- Methods: `POST`
 - Params:
   - `token`
 - Response:
@@ -367,21 +358,18 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-
-## `/api/pleroma/admin/users/email_invite`
+## `POST /api/pleroma/admin/users/email_invite`
 
 ### Sends registration invite via email
 
-- Methods: `POST`
 - Params:
   - `email`
   - `name`, optional
 
-## `/api/pleroma/admin/users/:nickname/password_reset`
+## `GET /api/pleroma/admin/users/:nickname/password_reset`
 
 ### Get a password reset token for a given nickname
 
-- Methods: `GET`
 - Params: none
 - Response:
 
@@ -392,18 +380,18 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `/api/pleroma/admin/users/force_password_reset`
+## `PATCH /api/pleroma/admin/users/force_password_reset`
 
 ### Force passord reset for a user with a given nickname
 
-- Methods: `PATCH`
 - Params:
   - `nicknames`
 - Response: none (code `204`)
 
-## `/api/pleroma/admin/reports`
+## `GET /api/pleroma/admin/reports`
+
 ### Get a list of reports
-- Method `GET`
+
 - Params:
   - *optional* `state`: **string** the state of reports. Valid values are `open`, `closed` and `resolved`
   - *optional* `limit`: **integer** the number of records to retrieve
@@ -418,7 +406,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ```json
 {
-  "total" : 1,
+  "totalReports" : 1,
   "reports": [
     {
       "account": {
@@ -560,9 +548,34 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `/api/pleroma/admin/reports/:id`
+## `GET /api/pleroma/admin/grouped_reports`
+
+### Get a list of reports, grouped by status
+
+- Params: none
+- On success: JSON, returns a list of reports, where:
+  - `date`: date of the latest report
+  - `account`: the user who has been reported (see `/api/pleroma/admin/reports` for reference)
+  - `status`: reported status (see `/api/pleroma/admin/reports` for reference)
+  - `actors`: users who had reported this status (see `/api/pleroma/admin/reports` for reference)
+  - `reports`: reports (see `/api/pleroma/admin/reports` for reference)
+
+```json
+  "reports": [
+    {
+      "date": "2019-10-07T12:31:39.615149Z",
+      "account": { ... },
+      "status": { ... },
+      "actors": [{ ... }, { ... }],
+      "reports": [{ ... }]
+    }
+  ]
+```
+
+## `GET /api/pleroma/admin/reports/:id`
+
 ### Get an individual report
-- Method `GET`
+
 - Params:
   - `id`
 - Response:
@@ -571,22 +584,41 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 404 Not Found `"Not found"`
   - On success: JSON, Report object (see above)
 
-## `/api/pleroma/admin/reports/:id`
-### Change the state of the report
-- Method `PUT`
+## `PATCH /api/pleroma/admin/reports`
+
+### Change the state of one or multiple reports
+
 - Params:
-  - `id`
-  - `state`: required, the new state. Valid values are `open`, `closed` and `resolved`
+
+```json
+  `reports`: [
+    {
+      `id`, // required, report id
+      `state` // required, the new state. Valid values are `open`, `closed` and `resolved`
+    },
+    ...
+  ]
+```
+
 - Response:
   - On failure:
-    - 400 Bad Request `"Unsupported state"`
-    - 403 Forbidden `{"error": "error_msg"}`
-    - 404 Not Found `"Not found"`
-  - On success: JSON, Report object (see above)
+    - 400 Bad Request, JSON:
 
-## `/api/pleroma/admin/reports/:id/respond`
+    ```json
+      [
+        {
+          `id`, // report id
+          `error` // error message
+        }
+      ]
+    ```
+
+  - On success: `204`, empty response
+
+## `POST /api/pleroma/admin/reports/:id/respond`
+
 ### Respond to a report
-- Method `POST`
+
 - Params:
   - `id`
   - `status`: required, the message
@@ -656,9 +688,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `/api/pleroma/admin/statuses/:id`
+## `PUT /api/pleroma/admin/statuses/:id`
+
 ### Change the scope of an individual reported status
-- Method `PUT`
+
 - Params:
   - `id`
   - `sensitive`: optional, valid values are `true` or `false`
@@ -670,9 +703,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 404 Not Found `"Not found"`
   - On success: JSON, Mastodon Status entity
 
-## `/api/pleroma/admin/statuses/:id`
+## `DELETE /api/pleroma/admin/statuses/:id`
+
 ### Delete an individual reported status
-- Method `DELETE`
+
 - Params:
   - `id`
 - Response:
@@ -681,11 +715,12 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 404 Not Found `"Not found"`
   - On success: 200 OK `{}`
 
+## `GET /api/pleroma/admin/config/migrate_to_db`
 
-## `/api/pleroma/admin/config/migrate_to_db`
 ### Run mix task pleroma.config migrate_to_db
+
 Copy settings on key `:pleroma` to DB.
-- Method `GET`
+
 - Params: none
 - Response:
 
@@ -693,10 +728,12 @@ Copy settings on key `:pleroma` to DB.
 {}
 ```
 
-## `/api/pleroma/admin/config/migrate_from_db`
+## `GET /api/pleroma/admin/config/migrate_from_db`
+
 ### Run mix task pleroma.config migrate_from_db
+
 Copy all settings from DB to `config/prod.exported_from_db.secret.exs` with deletion from DB.
-- Method `GET`
+
 - Params: none
 - Response:
 
@@ -704,10 +741,12 @@ Copy all settings from DB to `config/prod.exported_from_db.secret.exs` with dele
 {}
 ```
 
-## `/api/pleroma/admin/config`
+## `GET /api/pleroma/admin/config`
+
 ### List config settings
+
 List config settings only works with `:pleroma => :instance => :dynamic_configuration` setting to `true`.
-- Method `GET`
+
 - Params: none
 - Response:
 
@@ -723,8 +762,10 @@ List config settings only works with `:pleroma => :instance => :dynamic_configur
 }
 ```
 
-## `/api/pleroma/admin/config`
+## `POST /api/pleroma/admin/config`
+
 ### Update config settings
+
 Updating config settings only works with `:pleroma => :instance => :dynamic_configuration` setting to `true`.
 Module name can be passed as string, which starts with `Pleroma`, e.g. `"Pleroma.Upload"`.
 Atom keys and values can be passed with `:` in the beginning, e.g. `":upload"`.
@@ -747,7 +788,6 @@ Compile time settings (need instance reboot):
   - `Pleroma.Upload` -> `:proxy_remote`
   - `:instance` -> `:upload_limit`
 
-- Method `POST`
 - Params:
   - `configs` => [
     - `group` (string)
@@ -802,9 +842,10 @@ Compile time settings (need instance reboot):
 }
 ```
 
-## `/api/pleroma/admin/moderation_log`
+## `GET /api/pleroma/admin/moderation_log`
+
 ### Get moderation log
-- Method `GET`
+
 - Params:
   - *optional* `page`: **integer** page number
   - *optional* `page_size`: **integer** number of log entries per page (default is `50`)
@@ -831,8 +872,9 @@ Compile time settings (need instance reboot):
 ```
 
 ## `POST /api/pleroma/admin/reload_emoji`
+
 ### Reload the instance's custom emoji
-* Method `POST`
-* Authentication: required
-* Params: None
-* Response: JSON, "ok" and 200 status
+
+- Authentication: required
+- Params: None
+- Response: JSON, "ok" and 200 status

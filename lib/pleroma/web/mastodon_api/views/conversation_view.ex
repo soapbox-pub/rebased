@@ -12,7 +12,10 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("participations.json", %{participations: participations, for: user}) do
-    render_many(participations, __MODULE__, "participation.json", as: :participation, for: user)
+    safe_render_many(participations, __MODULE__, "participation.json", %{
+      as: :participation,
+      for: user
+    })
   end
 
   def render("participation.json", %{participation: participation, for: user}) do

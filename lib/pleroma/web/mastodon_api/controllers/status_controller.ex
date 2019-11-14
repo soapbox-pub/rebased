@@ -82,17 +82,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   plug(
     RateLimiter,
-    {:status_id_action, bucket_name: "status_id_action:reblog_unreblog", params: ["id"]}
+    [name: :status_id_action, bucket_name: "status_id_action:reblog_unreblog", params: ["id"]]
     when action in ~w(reblog unreblog)a
   )
 
   plug(
     RateLimiter,
-    {:status_id_action, bucket_name: "status_id_action:fav_unfav", params: ["id"]}
+    [name: :status_id_action, bucket_name: "status_id_action:fav_unfav", params: ["id"]]
     when action in ~w(favourite unfavourite)a
   )
 
-  plug(RateLimiter, :statuses_actions when action in @rate_limited_status_actions)
+  plug(RateLimiter, [name: :statuses_actions] when action in @rate_limited_status_actions)
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
