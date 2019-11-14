@@ -53,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `pleroma.unread_conversation_count` to the Account entity
 - OAuth: support for hierarchical permissions / [Mastodon 2.4.3 OAuth permissions](https://docs.joinmastodon.org/api/permissions/)
 - Metadata Link: Atom syndication Feed
+- Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
 - Mastodon API: Add `exclude_visibilities` parameter to the timeline and notification endpoints
 - Admin API: `/users/:nickname/toggle_activation` endpoint is now deprecated in favor of: `/users/activate`, `/users/deactivate`, both accept `nicknames` array
 - Admin API: `POST/DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group` are deprecated in favor of: `POST/DELETE /api/pleroma/admin/users/permission_group/:permission_group` (both accept `nicknames` array), `DELETE /api/pleroma/admin/users` (`nickname` query param or `nickname` sent in JSON body) is deprecated in favor of: `DELETE /api/pleroma/admin/users` (`nicknames` query array param or `nicknames` sent in JSON body).
@@ -61,6 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `/api/v1/markers` for managing timeline read markers
 - Mastodon API: Add the `recipients` parameter to `GET /api/v1/conversations`
 - Configuration: `feed` option for user atom feed.
+- Pleroma API: Add Emoji reactions
 </details>
 
 ### Fixed

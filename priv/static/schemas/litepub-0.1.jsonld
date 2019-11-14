@@ -28,7 +28,8 @@
             "oauthRegistrationEndpoint": {
                 "@id": "litepub:oauthRegistrationEndpoint",
                 "@type": "@id"
-            }
+            },
+            "EmojiReaction": "litepub:EmojiReaction"
         }
     ]
 }

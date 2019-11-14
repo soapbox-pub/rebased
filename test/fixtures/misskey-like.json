@@ -1,0 +1,14 @@
+{
+  "@context" : [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {"Hashtag" : "as:Hashtag"}
+  ],
+  "_misskey_reaction" : "pudding",
+  "actor": "http://mastodon.example.org/users/admin",
+  "cc" : ["https://testing.pleroma.lol/users/lain"],
+  "id" : "https://misskey.xyz/75149198-2f45-46e4-930a-8b0538297075",
+  "nickname" : "lain",
+  "object" : "https://testing.pleroma.lol/objects/c331bbf7-2eb9-4801-a709-2a6103492a5a",
+  "type" : "Like"
+}
