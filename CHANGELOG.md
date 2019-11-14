@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Breaking** Admin API: `PATCH /api/pleroma/admin/users/:nickname/force_password_reset` is now `PATCH /api/pleroma/admin/users/force_password_reset` (accepts `nicknames` array in the request body)
 - **Breaking:** Admin API: Return link alongside with token on password reset
+- **Breaking:** Admin API: `PUT /api/pleroma/admin/reports/:id` is now `PATCH /api/pleroma/admin/reports`, see admin_api.md for details
 - **Breaking:** `/api/pleroma/admin/users/invite_token` now uses `POST`, changed accepted params and returns full invite in json instead of only token string.
 - Admin API: Return `total` when querying for reports
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
@@ -45,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   <summary>API Changes</summary>
 
 - Job queue stats to the healthcheck page
+- Admin API: Add ability to fetch reports, grouped by status `GET /api/pleroma/admin/grouped_reports`
 - Admin API: Add ability to require password reset
 - Mastodon API: Account entities now include `follow_requests_count` (planned Mastodon 3.x addition)
 - Pleroma API: `GET /api/v1/pleroma/accounts/:id/scrobbles` to get a list of recently scrobbled items
@@ -56,7 +58,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
 - Mastodon API: Add `exclude_visibilities` parameter to the timeline and notification endpoints
 - Admin API: `/users/:nickname/toggle_activation` endpoint is now deprecated in favor of: `/users/activate`, `/users/deactivate`, both accept `nicknames` array
-- Admin API: `POST/DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group` are deprecated in favor of: `POST/DELETE /api/pleroma/admin/users/permission_group/:permission_group` (both accept `nicknames` array), `DELETE /api/pleroma/admin/users` (`nickname` query param or `nickname` sent in JSON body) is deprecated in favor of: `DELETE /api/pleroma/admin/users` (`nicknames` query array param or `nicknames` sent in JSON body).
+- Admin API: Multiple endpoints now require `nicknames` array, instead of singe `nickname`:
+  - `POST/DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group` are deprecated in favor of: `POST/DELETE /api/pleroma/admin/users/permission_group/:permission_group`
+  - `DELETE /api/pleroma/admin/users` (`nickname` query param or `nickname` sent in JSON body) is deprecated in favor of: `DELETE /api/pleroma/admin/users` (`nicknames` query array param or `nicknames` sent in JSON body)
 - Admin API: Add `GET /api/pleroma/admin/relay` endpoint - lists all followed relays
 - Pleroma API: `POST /api/v1/pleroma/conversations/read` to mark all conversations as read
 - Mastodon API: Add `/api/v1/markers` for managing timeline read markers

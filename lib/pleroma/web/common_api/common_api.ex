@@ -370,6 +370,13 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def update_report_state(activity_ids, state) when is_list(activity_ids) do
+    case Utils.update_report_state(activity_ids, state) do
+      :ok -> {:ok, activity_ids}
+      _ -> {:error, dgettext("errors", "Could not update state")}
+    end
+  end
+
   def update_report_state(activity_id, state) do
     with %Activity{} = activity <- Activity.get_by_id(activity_id) do
       Utils.update_report_state(activity, state)

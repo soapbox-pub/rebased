@@ -468,6 +468,35 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert CommonAPI.update_report_state(report_id, "test") == {:error, "Unsupported state"}
     end
+
+    test "updates state of multiple reports" do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %Activity{id: first_report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel offended",
+          "status_ids" => [activity.id]
+        })
+
+      {:ok, %Activity{id: second_report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel very offended!",
+          "status_ids" => [activity.id]
+        })
+
+      {:ok, report_ids} =
+        CommonAPI.update_report_state([first_report_id, second_report_id], "resolved")
+
+      first_report = Activity.get_by_id(first_report_id)
+      second_report = Activity.get_by_id(second_report_id)
+
+      assert report_ids -- [first_report_id, second_report_id] == []
+      assert first_report.data["state"] == "resolved"
+      assert second_report.data["state"] == "resolved"
+    end
   end
 
   describe "reblog muting" do

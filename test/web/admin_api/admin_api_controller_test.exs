@@ -1312,7 +1312,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "PUT /api/pleroma/admin/reports/:id" do
+  describe "PATCH /api/pleroma/admin/reports" do
     setup %{conn: conn} do
       admin = insert(:user, is_admin: true)
       [reporter, target_user] = insert_pair(:user)
@@ -1325,16 +1325,32 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           "status_ids" => [activity.id]
         })
 
-      %{conn: assign(conn, :user, admin), id: report_id, admin: admin}
+      {:ok, %{id: second_report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel very offended",
+          "status_ids" => [activity.id]
+        })
+
+      %{
+        conn: assign(conn, :user, admin),
+        id: report_id,
+        admin: admin,
+        second_report_id: second_report_id
+      }
     end
 
     test "mark report as resolved", %{conn: conn, id: id, admin: admin} do
-      response =
-        conn
-        |> put("/api/pleroma/admin/reports/#{id}", %{"state" => "resolved"})
-        |> json_response(:ok)
+      conn
+      |> patch("/api/pleroma/admin/reports", %{
+        "reports" => [
+          %{"state" => "resolved", "id" => id}
+        ]
+      })
+      |> json_response(:no_content)
 
-      assert response["state"] == "resolved"
+      activity = Activity.get_by_id(id)
+      assert activity.data["state"] == "resolved"
 
       log_entry = Repo.one(ModerationLog)
 
@@ -1343,12 +1359,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "closes report", %{conn: conn, id: id, admin: admin} do
-      response =
-        conn
-        |> put("/api/pleroma/admin/reports/#{id}", %{"state" => "closed"})
-        |> json_response(:ok)
+      conn
+      |> patch("/api/pleroma/admin/reports", %{
+        "reports" => [
+          %{"state" => "closed", "id" => id}
+        ]
+      })
+      |> json_response(:no_content)
 
-      assert response["state"] == "closed"
+      activity = Activity.get_by_id(id)
+      assert activity.data["state"] == "closed"
 
       log_entry = Repo.one(ModerationLog)
 
@@ -1359,17 +1379,54 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "returns 400 when state is unknown", %{conn: conn, id: id} do
       conn =
         conn
-        |> put("/api/pleroma/admin/reports/#{id}", %{"state" => "test"})
+        |> patch("/api/pleroma/admin/reports", %{
+          "reports" => [
+            %{"state" => "test", "id" => id}
+          ]
+        })
 
-      assert json_response(conn, :bad_request) == "Unsupported state"
+      assert hd(json_response(conn, :bad_request))["error"] == "Unsupported state"
     end
 
     test "returns 404 when report is not exist", %{conn: conn} do
       conn =
         conn
-        |> put("/api/pleroma/admin/reports/test", %{"state" => "closed"})
+        |> patch("/api/pleroma/admin/reports", %{
+          "reports" => [
+            %{"state" => "closed", "id" => "test"}
+          ]
+        })
 
-      assert json_response(conn, :not_found) == "Not found"
+      assert hd(json_response(conn, :bad_request))["error"] == "not_found"
+    end
+
+    test "updates state of multiple reports", %{
+      conn: conn,
+      id: id,
+      admin: admin,
+      second_report_id: second_report_id
+    } do
+      conn
+      |> patch("/api/pleroma/admin/reports", %{
+        "reports" => [
+          %{"state" => "resolved", "id" => id},
+          %{"state" => "closed", "id" => second_report_id}
+        ]
+      })
+      |> json_response(:no_content)
+
+      activity = Activity.get_by_id(id)
+      second_activity = Activity.get_by_id(second_report_id)
+      assert activity.data["state"] == "resolved"
+      assert second_activity.data["state"] == "closed"
+
+      [first_log_entry, second_log_entry] = Repo.all(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(first_log_entry) ==
+               "@#{admin.nickname} updated report ##{id} with 'resolved' state"
+
+      assert ModerationLog.get_log_entry_message(second_log_entry) ==
+               "@#{admin.nickname} updated report ##{second_report_id} with 'closed' state"
     end
   end
 
@@ -1492,7 +1549,145 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  #
+  describe "GET /api/pleroma/admin/grouped_reports" do
+    setup %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      [reporter, target_user] = insert_pair(:user)
+
+      date1 = (DateTime.to_unix(DateTime.utc_now()) + 1000) |> DateTime.from_unix!()
+      date2 = (DateTime.to_unix(DateTime.utc_now()) + 2000) |> DateTime.from_unix!()
+      date3 = (DateTime.to_unix(DateTime.utc_now()) + 3000) |> DateTime.from_unix!()
+
+      first_status =
+        insert(:note_activity, user: target_user, data_attrs: %{"published" => date1})
+
+      second_status =
+        insert(:note_activity, user: target_user, data_attrs: %{"published" => date2})
+
+      third_status =
+        insert(:note_activity, user: target_user, data_attrs: %{"published" => date3})
+
+      {:ok, first_report} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "status_ids" => [first_status.id, second_status.id, third_status.id]
+        })
+
+      {:ok, second_report} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "status_ids" => [first_status.id, second_status.id]
+        })
+
+      {:ok, third_report} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "status_ids" => [first_status.id]
+        })
+
+      %{
+        conn: assign(conn, :user, admin),
+        first_status: Activity.get_by_ap_id_with_object(first_status.data["id"]),
+        second_status: Activity.get_by_ap_id_with_object(second_status.data["id"]),
+        third_status: Activity.get_by_ap_id_with_object(third_status.data["id"]),
+        first_status_reports: [first_report, second_report, third_report],
+        second_status_reports: [first_report, second_report],
+        third_status_reports: [first_report],
+        target_user: target_user,
+        reporter: reporter
+      }
+    end
+
+    test "returns reports grouped by status", %{
+      conn: conn,
+      first_status: first_status,
+      second_status: second_status,
+      third_status: third_status,
+      first_status_reports: first_status_reports,
+      second_status_reports: second_status_reports,
+      third_status_reports: third_status_reports,
+      target_user: target_user,
+      reporter: reporter
+    } do
+      response =
+        conn
+        |> get("/api/pleroma/admin/grouped_reports")
+        |> json_response(:ok)
+
+      assert length(response["reports"]) == 3
+
+      first_group =
+        Enum.find(response["reports"], &(&1["status"]["id"] == first_status.data["id"]))
+
+      second_group =
+        Enum.find(response["reports"], &(&1["status"]["id"] == second_status.data["id"]))
+
+      third_group =
+        Enum.find(response["reports"], &(&1["status"]["id"] == third_status.data["id"]))
+
+      assert length(first_group["reports"]) == 3
+      assert length(second_group["reports"]) == 2
+      assert length(third_group["reports"]) == 1
+
+      assert first_group["date"] ==
+               Enum.max_by(first_status_reports, fn act ->
+                 NaiveDateTime.from_iso8601!(act.data["published"])
+               end).data["published"]
+
+      assert first_group["status"] == %{
+               "id" => first_status.data["id"],
+               "content" => first_status.object.data["content"],
+               "published" => first_status.object.data["published"]
+             }
+
+      assert first_group["account"]["id"] == target_user.id
+
+      assert length(first_group["actors"]) == 1
+      assert hd(first_group["actors"])["id"] == reporter.id
+
+      assert Enum.map(first_group["reports"], & &1["id"]) --
+               Enum.map(first_status_reports, & &1.id) == []
+
+      assert second_group["date"] ==
+               Enum.max_by(second_status_reports, fn act ->
+                 NaiveDateTime.from_iso8601!(act.data["published"])
+               end).data["published"]
+
+      assert second_group["status"] == %{
+               "id" => second_status.data["id"],
+               "content" => second_status.object.data["content"],
+               "published" => second_status.object.data["published"]
+             }
+
+      assert second_group["account"]["id"] == target_user.id
+
+      assert length(second_group["actors"]) == 1
+      assert hd(second_group["actors"])["id"] == reporter.id
+
+      assert Enum.map(second_group["reports"], & &1["id"]) --
+               Enum.map(second_status_reports, & &1.id) == []
+
+      assert third_group["date"] ==
+               Enum.max_by(third_status_reports, fn act ->
+                 NaiveDateTime.from_iso8601!(act.data["published"])
+               end).data["published"]
+
+      assert third_group["status"] == %{
+               "id" => third_status.data["id"],
+               "content" => third_status.object.data["content"],
+               "published" => third_status.object.data["published"]
+             }
+
+      assert third_group["account"]["id"] == target_user.id
+
+      assert length(third_group["actors"]) == 1
+      assert hd(third_group["actors"])["id"] == reporter.id
+
+      assert Enum.map(third_group["reports"], & &1["id"]) --
+               Enum.map(third_status_reports, & &1.id) == []
+    end
+  end
+
   describe "POST /api/pleroma/admin/reports/:id/respond" do
     setup %{conn: conn} do
       admin = insert(:user, is_admin: true)
