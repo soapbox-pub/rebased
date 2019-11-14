@@ -120,6 +120,25 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def react_with_emoji(id, user, emoji) do
+    with %Activity{} = activity <- Activity.get_by_id(id),
+         object <- Object.normalize(activity) do
+      ActivityPub.react_with_emoji(user, object, emoji)
+    else
+      _ ->
+        {:error, dgettext("errors", "Could not add reaction emoji")}
+    end
+  end
+
+  def unreact_with_emoji(id, user, emoji) do
+    with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji) do
+      ActivityPub.unreact_with_emoji(user, reaction_activity.data["id"])
+    else
+      _ ->
+        {:error, dgettext("errors", "Could not remove reaction emoji")}
+    end
+  end
+
   def vote(user, %{data: %{"type" => "Question"}} = object, choices) do
     with :ok <- validate_not_author(object, user),
          :ok <- validate_existing_votes(user, object),

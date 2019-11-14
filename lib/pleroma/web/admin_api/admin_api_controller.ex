@@ -334,6 +334,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     }
 
     with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)),
+         {:ok, users, count} <- filter_relay_user(users, count),
          do:
            conn
            |> json(
@@ -343,6 +344,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
                page_size: page_size
              )
            )
+  end
+
+  defp filter_relay_user(users, count) do
+    filtered_users = Enum.reject(users, &relay_user?/1)
+    count = if Enum.any?(users, &relay_user?/1), do: length(filtered_users), else: count
+
+    {:ok, filtered_users, count}
+  end
+
+  defp relay_user?(user) do
+    user.ap_id == Relay.relay_ap_id()
   end
 
   @filters ~w(local external active deactivated is_admin is_moderator)
@@ -595,10 +607,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   @doc "Force password reset for a given user"
-  def force_password_reset(conn, %{"nickname" => nickname}) do
-    (%User{local: true} = user) = User.get_cached_by_nickname(nickname)
+  def force_password_reset(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
 
-    User.force_password_reset_async(user)
+    Enum.map(users, &User.force_password_reset_async/1)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "force_password_reset"
+    })
 
     json_response(conn, :no_content, "")
   end

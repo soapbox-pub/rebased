@@ -122,8 +122,36 @@ defmodule Pleroma.Conversation.Participation do
       order_by: [desc: p.updated_at],
       preload: [conversation: [:users]]
     )
+    |> restrict_recipients(user, params)
     |> Pleroma.Pagination.fetch_paginated(params)
   end
+
+  def restrict_recipients(query, user, %{"recipients" => user_ids}) do
+    user_ids =
+      [user.id | user_ids]
+      |> Enum.uniq()
+      |> Enum.reduce([], fn user_id, acc ->
+        case FlakeId.Ecto.CompatType.dump(user_id) do
+          {:ok, user_id} -> [user_id | acc]
+          _ -> acc
+        end
+      end)
+
+    conversation_subquery =
+      __MODULE__
+      |> group_by([p], p.conversation_id)
+      |> having(
+        [p],
+        count(p.user_id) == ^length(user_ids) and
+          fragment("array_agg(?) @> ?", p.user_id, ^user_ids)
+      )
+      |> select([p], %{id: p.conversation_id})
+
+    query
+    |> join(:inner, [p], c in subquery(conversation_subquery), on: p.conversation_id == c.id)
+  end
+
+  def restrict_recipients(query, _, _), do: query
 
   def for_user_and_conversation(user, conversation) do
     from(p in __MODULE__,

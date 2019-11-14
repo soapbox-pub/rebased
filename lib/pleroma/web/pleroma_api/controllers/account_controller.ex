@@ -42,7 +42,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     when action != :confirmation_resend
   )
 
-  plug(RateLimiter, :account_confirmation_resend when action == :confirmation_resend)
+  plug(RateLimiter, [name: :account_confirmation_resend] when action == :confirmation_resend)
   plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])
   plug(:put_view, Pleroma.Web.MastodonAPI.AccountView)
 

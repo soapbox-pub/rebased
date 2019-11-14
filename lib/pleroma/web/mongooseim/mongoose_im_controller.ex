@@ -10,8 +10,8 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   alias Pleroma.Repo
   alias Pleroma.User
 
-  plug(RateLimiter, :authentication when action in [:user_exists, :check_password])
-  plug(RateLimiter, {:authentication, params: ["user"]} when action == :check_password)
+  plug(RateLimiter, [name: :authentication] when action in [:user_exists, :check_password])
+  plug(RateLimiter, [name: :authentication, params: ["user"]] when action == :check_password)
 
   def user_exists(conn, %{"user" => username}) do
     with %User{} <- Repo.get_by(User, nickname: username, local: true) do

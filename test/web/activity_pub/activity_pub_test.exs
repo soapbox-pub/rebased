@@ -13,6 +13,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -736,56 +737,54 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
 
     test "retrieves a maximum of 20 activities" do
-      activities = ActivityBuilder.insert_list(30)
-      last_expected = List.last(activities)
+      ActivityBuilder.insert_list(10)
+      expected_activities = ActivityBuilder.insert_list(20)
 
       activities = ActivityPub.fetch_public_activities()
-      last = List.last(activities)
 
+      assert collect_ids(activities) == collect_ids(expected_activities)
       assert length(activities) == 20
-      assert last == last_expected
     end
 
     test "retrieves ids starting from a since_id" do
       activities = ActivityBuilder.insert_list(30)
-      later_activities = ActivityBuilder.insert_list(10)
+      expected_activities = ActivityBuilder.insert_list(10)
       since_id = List.last(activities).id
-      last_expected = List.last(later_activities)
 
       activities = ActivityPub.fetch_public_activities(%{"since_id" => since_id})
-      last = List.last(activities)
 
+      assert collect_ids(activities) == collect_ids(expected_activities)
       assert length(activities) == 10
-      assert last == last_expected
     end
 
     test "retrieves ids up to max_id" do
-      _first_activities = ActivityBuilder.insert_list(10)
-      activities = ActivityBuilder.insert_list(20)
-      later_activities = ActivityBuilder.insert_list(10)
-      max_id = List.first(later_activities).id
-      last_expected = List.last(activities)
+      ActivityBuilder.insert_list(10)
+      expected_activities = ActivityBuilder.insert_list(20)
+
+      %{id: max_id} =
+        10
+        |> ActivityBuilder.insert_list()
+        |> List.first()
 
       activities = ActivityPub.fetch_public_activities(%{"max_id" => max_id})
-      last = List.last(activities)
 
       assert length(activities) == 20
-      assert last == last_expected
+      assert collect_ids(activities) == collect_ids(expected_activities)
     end
 
     test "paginates via offset/limit" do
-      _first_activities = ActivityBuilder.insert_list(10)
-      activities = ActivityBuilder.insert_list(10)
-      _later_activities = ActivityBuilder.insert_list(10)
-      first_expected = List.first(activities)
+      _first_part_activities = ActivityBuilder.insert_list(10)
+      second_part_activities = ActivityBuilder.insert_list(10)
+
+      later_activities = ActivityBuilder.insert_list(10)
 
       activities =
         ActivityPub.fetch_public_activities(%{"page" => "2", "page_size" => "20"}, :offset)
 
-      first = List.first(activities)
-
       assert length(activities) == 20
-      assert first == first_expected
+
+      assert collect_ids(activities) ==
+               collect_ids(second_part_activities) ++ collect_ids(later_activities)
     end
 
     test "doesn't return reblogs for users for whom reblogs have been muted" do
@@ -813,6 +812,78 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
 
       assert Enum.any?(activities, fn %{id: id} -> id == activity.id end)
+    end
+  end
+
+  describe "react to an object" do
+    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
+      Pleroma.Config.put([:instance, :federating], true)
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      assert called(Pleroma.Web.Federator.publish(reaction_activity))
+    end
+
+    test "adds an emoji reaction activity to the db" do
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      assert reaction_activity
+
+      assert reaction_activity.data["actor"] == reactor.ap_id
+      assert reaction_activity.data["type"] == "EmojiReaction"
+      assert reaction_activity.data["content"] == "🔥"
+      assert reaction_activity.data["object"] == object.data["id"]
+      assert reaction_activity.data["to"] == [User.ap_followers(reactor), activity.data["actor"]]
+      assert reaction_activity.data["context"] == object.data["context"]
+      assert object.data["reaction_count"] == 1
+      assert object.data["reactions"]["🔥"] == [reactor.ap_id]
+    end
+  end
+
+  describe "unreacting to an object" do
+    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
+      Pleroma.Config.put([:instance, :federating], true)
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      assert called(Pleroma.Web.Federator.publish(reaction_activity))
+
+      {:ok, unreaction_activity, _object} =
+        ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
+
+      assert called(Pleroma.Web.Federator.publish(unreaction_activity))
+    end
+
+    test "adds an undo activity to the db" do
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      {:ok, unreaction_activity, _object} =
+        ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
+
+      assert unreaction_activity.actor == reactor.ap_id
+      assert unreaction_activity.data["object"] == reaction_activity.data["id"]
+
+      object = Object.get_by_ap_id(object.data["id"])
+      assert object.data["reaction_count"] == 0
+      assert object.data["reactions"] == %{}
     end
   end
 
@@ -1284,35 +1355,99 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert 3 = length(activities)
   end
 
-  test "it can create a Flag activity" do
-    reporter = insert(:user)
-    target_account = insert(:user)
-    {:ok, activity} = CommonAPI.post(target_account, %{"status" => "foobar"})
-    context = Utils.generate_context_id()
-    content = "foobar"
+  describe "flag/1" do
+    setup do
+      reporter = insert(:user)
+      target_account = insert(:user)
+      content = "foobar"
+      {:ok, activity} = CommonAPI.post(target_account, %{"status" => content})
+      context = Utils.generate_context_id()
 
-    reporter_ap_id = reporter.ap_id
-    target_ap_id = target_account.ap_id
-    activity_ap_id = activity.data["id"]
+      reporter_ap_id = reporter.ap_id
+      target_ap_id = target_account.ap_id
+      activity_ap_id = activity.data["id"]
 
-    assert {:ok, activity} =
-             ActivityPub.flag(%{
-               actor: reporter,
-               context: context,
-               account: target_account,
-               statuses: [activity],
-               content: content
-             })
+      activity_with_object = Activity.get_by_ap_id_with_object(activity_ap_id)
 
-    assert %Activity{
-             actor: ^reporter_ap_id,
-             data: %{
-               "type" => "Flag",
-               "content" => ^content,
-               "context" => ^context,
-               "object" => [^target_ap_id, ^activity_ap_id]
-             }
-           } = activity
+      {:ok,
+       %{
+         reporter: reporter,
+         context: context,
+         target_account: target_account,
+         reported_activity: activity,
+         content: content,
+         activity_ap_id: activity_ap_id,
+         activity_with_object: activity_with_object,
+         reporter_ap_id: reporter_ap_id,
+         target_ap_id: target_ap_id
+       }}
+    end
+
+    test "it can create a Flag activity",
+         %{
+           reporter: reporter,
+           context: context,
+           target_account: target_account,
+           reported_activity: reported_activity,
+           content: content,
+           activity_ap_id: activity_ap_id,
+           activity_with_object: activity_with_object,
+           reporter_ap_id: reporter_ap_id,
+           target_ap_id: target_ap_id
+         } do
+      assert {:ok, activity} =
+               ActivityPub.flag(%{
+                 actor: reporter,
+                 context: context,
+                 account: target_account,
+                 statuses: [reported_activity],
+                 content: content
+               })
+
+      note_obj = %{
+        "type" => "Note",
+        "id" => activity_ap_id,
+        "content" => content,
+        "published" => activity_with_object.object.data["published"],
+        "actor" => AccountView.render("show.json", %{user: target_account})
+      }
+
+      assert %Activity{
+               actor: ^reporter_ap_id,
+               data: %{
+                 "type" => "Flag",
+                 "content" => ^content,
+                 "context" => ^context,
+                 "object" => [^target_ap_id, ^note_obj]
+               }
+             } = activity
+    end
+
+    test_with_mock "strips status data from Flag, before federating it",
+                   %{
+                     reporter: reporter,
+                     context: context,
+                     target_account: target_account,
+                     reported_activity: reported_activity,
+                     content: content
+                   },
+                   Utils,
+                   [:passthrough],
+                   [] do
+      {:ok, activity} =
+        ActivityPub.flag(%{
+          actor: reporter,
+          context: context,
+          account: target_account,
+          statuses: [reported_activity],
+          content: content
+        })
+
+      new_data =
+        put_in(activity.data, ["object"], [target_account.ap_id, reported_activity.data["id"]])
+
+      assert_called(Utils.maybe_federate(%{activity | data: new_data}))
+    end
   end
 
   test "fetch_activities/2 returns activities addressed to a list " do

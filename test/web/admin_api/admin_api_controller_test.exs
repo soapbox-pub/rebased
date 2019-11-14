@@ -13,6 +13,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.UserInviteToken
+  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MediaProxy
   import Pleroma.Factory
@@ -1040,6 +1041,32 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "tags" => [],
                    "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user.name || user.nickname)
+                 }
+               ]
+             }
+    end
+
+    test "it omits relay user", %{admin: admin} do
+      assert %User{} = Relay.get_actor()
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users")
+
+      assert json_response(conn, 200) == %{
+               "count" => 1,
+               "page_size" => 50,
+               "users" => [
+                 %{
+                   "deactivated" => admin.deactivated,
+                   "id" => admin.id,
+                   "nickname" => admin.nickname,
+                   "roles" => %{"admin" => true, "moderator" => false},
+                   "local" => true,
+                   "tags" => [],
+                   "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(admin.name || admin.nickname)
                  }
                ]
              }
@@ -2242,6 +2269,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       Pleroma.Config.put([:instance, :dynamic_configuration], true)
     end
 
+    clear_config([:feed, :post_title]) do
+      Pleroma.Config.put([:feed, :post_title], %{max_length: 100, omission: "…"})
+    end
+
     test "transfer settings to DB and to file", %{conn: conn, admin: admin} do
       assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) == []
       conn = get(conn, "/api/pleroma/admin/config/migrate_to_db")
@@ -2538,7 +2569,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> patch("/api/pleroma/admin/users/#{user.nickname}/force_password_reset")
+        |> patch("/api/pleroma/admin/users/force_password_reset", %{nicknames: [user.nickname]})
 
       assert json_response(conn, 204) == ""
 

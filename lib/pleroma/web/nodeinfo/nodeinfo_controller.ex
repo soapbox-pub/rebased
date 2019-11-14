@@ -46,6 +46,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
         data
         |> Map.merge(%{quarantined_instances: quarantined})
+        |> Map.put(:enabled, Config.get([:instance, :federating]))
       else
         %{}
       end
@@ -58,6 +59,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         "polls",
         "pleroma_explicit_addressing",
         "shareable_emoji_packs",
+        "multifetch",
         if Config.get([:media_proxy, :enabled]) do
           "media_proxy"
         end,

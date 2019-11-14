@@ -878,27 +878,50 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  test "get recipients from activity" do
-    actor = insert(:user)
-    user = insert(:user, local: true)
-    user_two = insert(:user, local: false)
-    addressed = insert(:user, local: true)
-    addressed_remote = insert(:user, local: false)
+  describe "get_recipients_from_activity" do
+    test "get recipients" do
+      actor = insert(:user)
+      user = insert(:user, local: true)
+      user_two = insert(:user, local: false)
+      addressed = insert(:user, local: true)
+      addressed_remote = insert(:user, local: false)
 
-    {:ok, activity} =
-      CommonAPI.post(actor, %{
-        "status" => "hey @#{addressed.nickname} @#{addressed_remote.nickname}"
-      })
+      {:ok, activity} =
+        CommonAPI.post(actor, %{
+          "status" => "hey @#{addressed.nickname} @#{addressed_remote.nickname}"
+        })
 
-    assert Enum.map([actor, addressed], & &1.ap_id) --
-             Enum.map(User.get_recipients_from_activity(activity), & &1.ap_id) == []
+      assert Enum.map([actor, addressed], & &1.ap_id) --
+               Enum.map(User.get_recipients_from_activity(activity), & &1.ap_id) == []
 
-    {:ok, user} = User.follow(user, actor)
-    {:ok, _user_two} = User.follow(user_two, actor)
-    recipients = User.get_recipients_from_activity(activity)
-    assert length(recipients) == 3
-    assert user in recipients
-    assert addressed in recipients
+      {:ok, user} = User.follow(user, actor)
+      {:ok, _user_two} = User.follow(user_two, actor)
+      recipients = User.get_recipients_from_activity(activity)
+      assert length(recipients) == 3
+      assert user in recipients
+      assert addressed in recipients
+    end
+
+    test "has following" do
+      actor = insert(:user)
+      user = insert(:user)
+      user_two = insert(:user)
+      addressed = insert(:user, local: true)
+
+      {:ok, activity} =
+        CommonAPI.post(actor, %{
+          "status" => "hey @#{addressed.nickname}"
+        })
+
+      assert Enum.map([actor, addressed], & &1.ap_id) --
+               Enum.map(User.get_recipients_from_activity(activity), & &1.ap_id) == []
+
+      {:ok, _actor} = User.follow(actor, user)
+      {:ok, _actor} = User.follow(actor, user_two)
+      recipients = User.get_recipients_from_activity(activity)
+      assert length(recipients) == 2
+      assert addressed in recipients
+    end
   end
 
   describe ".deactivate" do
