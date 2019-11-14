@@ -53,7 +53,7 @@ unit-testing:
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
-    - mix coveralls --trace --preload-modules
+    - mix coveralls --preload-modules
 
 unit-testing-rum:
   stage: test
@@ -68,7 +68,7 @@ unit-testing-rum:
     - mix ecto.create
     - mix ecto.migrate
     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
-    - mix test --trace --preload-modules
+    - mix test --preload-modules
 
 lint:
   stage: test
