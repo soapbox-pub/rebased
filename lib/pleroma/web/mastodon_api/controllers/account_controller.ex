@@ -323,7 +323,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   def mute(%{assigns: %{user: muter, account: muted}} = conn, params) do
     notifications? = params |> Map.get("notifications", true) |> truthy_param?()
 
-    with {:ok, muter} <- User.mute(muter, muted, notifications?) do
+    with {:ok, _user_mute} <- User.mute(muter, muted, notifications?) do
+      # TODO: remove `muter` refresh once `muted_notifications` field is deprecated
+      muter = User.get_cached_by_id(muter.id)
       render(conn, "relationship.json", user: muter, target: muted)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
@@ -332,7 +334,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/unmute"
   def unmute(%{assigns: %{user: muter, account: muted}} = conn, _params) do
-    with {:ok, muter} <- User.unmute(muter, muted) do
+    with {:ok, _user_mute} <- User.unmute(muter, muted) do
+      # TODO: remove `muter` refresh once `muted_notifications` field is deprecated
+      muter = User.get_cached_by_id(muter.id)
       render(conn, "relationship.json", user: muter, target: muted)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})

@@ -30,9 +30,8 @@ defmodule Pleroma.Repo.Migrations.DataMigrationPopulateUserBlocks do
 
         for blockee_ap_id <- blockee_ap_ids do
           blockee_id = blockee_id_by_ap_id[blockee_ap_id]
-          blockee_uuid = blockee_id && Ecto.UUID.cast!(blockee_id)
 
-          with {:ok, blockee_uuid} <- Ecto.UUID.cast(blockee_id) do
+          with {:ok, blockee_uuid} <- blockee_id && Ecto.UUID.cast(blockee_id) do
             execute(
               "INSERT INTO user_blocks(blocker_id, blockee_id, inserted_at) " <>
                 "VALUES('#{blocker_uuid}'::uuid, '#{blockee_uuid}'::uuid, now()) " <>

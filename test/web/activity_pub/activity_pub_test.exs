@@ -611,7 +611,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activity_three = insert(:note_activity)
     user = insert(:user)
     booster = insert(:user)
-    {:ok, user} = User.mute(user, %User{ap_id: activity_one.data["actor"]})
+
+    activity_one_actor = User.get_by_ap_id(activity_one.data["actor"])
+    {:ok, _user_mute} = User.mute(user, activity_one_actor)
 
     activities =
       ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
@@ -632,7 +634,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_three)
     assert Enum.member?(activities, activity_one)
 
-    {:ok, user} = User.unmute(user, %User{ap_id: activity_one.data["actor"]})
+    {:ok, _user_mute} = User.unmute(user, activity_one_actor)
 
     activities =
       ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
@@ -641,7 +643,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_three)
     assert Enum.member?(activities, activity_one)
 
-    {:ok, user} = User.mute(user, %User{ap_id: activity_three.data["actor"]})
+    activity_three_actor = User.get_by_ap_id(activity_three.data["actor"])
+    {:ok, _user_mute} = User.mute(user, activity_three_actor)
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Activity.get_by_id(activity_three.id)

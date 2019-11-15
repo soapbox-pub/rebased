@@ -112,7 +112,7 @@ defmodule Pleroma.NotificationTest do
       muter = insert(:user)
       muted = insert(:user)
 
-      {:ok, muter} = User.mute(muter, muted, false)
+      {:ok, _user_mute} = User.mute(muter, muted, false)
 
       {:ok, activity} = CommonAPI.post(muted, %{"status" => "Hi @#{muter.nickname}"})
 
@@ -636,7 +636,7 @@ defmodule Pleroma.NotificationTest do
     test "it returns notifications for muted user without notifications" do
       user = insert(:user)
       muted = insert(:user)
-      {:ok, user} = User.mute(user, muted, false)
+      {:ok, _user_mute} = User.mute(user, muted, false)
 
       {:ok, _activity} = CommonAPI.post(muted, %{"status" => "hey @#{user.nickname}"})
 
@@ -646,7 +646,10 @@ defmodule Pleroma.NotificationTest do
     test "it doesn't return notifications for muted user with notifications" do
       user = insert(:user)
       muted = insert(:user)
-      {:ok, user} = User.mute(user, muted)
+      {:ok, _user_mute} = User.mute(user, muted)
+
+      # Refreshing to reflect embedded ap id relation fields (remove once removed)
+      user = refresh_record(user)
 
       {:ok, _activity} = CommonAPI.post(muted, %{"status" => "hey @#{user.nickname}"})
 
@@ -686,7 +689,7 @@ defmodule Pleroma.NotificationTest do
     test "it returns notifications from a muted user when with_muted is set" do
       user = insert(:user)
       muted = insert(:user)
-      {:ok, user} = User.mute(user, muted)
+      {:ok, _user_mute} = User.mute(user, muted)
 
       {:ok, _activity} = CommonAPI.post(muted, %{"status" => "hey @#{user.nickname}"})
 

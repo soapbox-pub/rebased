@@ -868,7 +868,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, user} = User.mute(user, other_user)
+    {:ok, _user_mute} = User.mute(user, other_user)
 
     conn =
       conn

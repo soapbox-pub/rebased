@@ -673,7 +673,10 @@ defmodule Pleroma.UserTest do
       refute User.mutes?(user, muted_user)
       refute User.muted_notifications?(user, muted_user)
 
-      {:ok, user} = User.mute(user, muted_user)
+      {:ok, _user_mute} = User.mute(user, muted_user)
+
+      # Refreshing to reflect embedded ap id relation fields (remove once removed)
+      user = refresh_record(user)
 
       assert User.mutes?(user, muted_user)
       assert User.muted_notifications?(user, muted_user)
@@ -683,8 +686,8 @@ defmodule Pleroma.UserTest do
       user = insert(:user)
       muted_user = insert(:user)
 
-      {:ok, user} = User.mute(user, muted_user)
-      {:ok, user} = User.unmute(user, muted_user)
+      {:ok, _user_mute} = User.mute(user, muted_user)
+      {:ok, _user_mute} = User.unmute(user, muted_user)
 
       refute User.mutes?(user, muted_user)
       refute User.muted_notifications?(user, muted_user)
@@ -697,7 +700,7 @@ defmodule Pleroma.UserTest do
       refute User.mutes?(user, muted_user)
       refute User.muted_notifications?(user, muted_user)
 
-      {:ok, user} = User.mute(user, muted_user, false)
+      {:ok, _user_mute} = User.mute(user, muted_user, false)
 
       assert User.mutes?(user, muted_user)
       refute User.muted_notifications?(user, muted_user)

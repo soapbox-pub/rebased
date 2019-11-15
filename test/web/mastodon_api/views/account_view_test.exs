@@ -191,8 +191,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       {:ok, user} = User.follow(user, other_user)
       {:ok, other_user} = User.follow(other_user, user)
       {:ok, other_user} = User.subscribe(user, other_user)
-      {:ok, user} = User.mute(user, other_user, true)
+      {:ok, _user_mute} = User.mute(user, other_user, true)
       {:ok, user} = CommonAPI.hide_reblogs(user, other_user)
+
+      # Refreshing to reflect embedded ap id relation fields (remove once removed)
+      user = refresh_record(user)
 
       expected = %{
         id: to_string(other_user.id),
