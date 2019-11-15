@@ -36,6 +36,20 @@ defmodule Pleroma.MarkerTest do
       insert(:marker, timeline: "home", user: user)
       assert Marker.get_markers(user, ["notifications"]) == [refresh_record(marker)]
     end
+
+    test "returns user markers with recount unread notifications" do
+      user = insert(:user)
+      marker = insert(:marker, user: user)
+      insert(:notification, user: user)
+      insert(:notification, user: user)
+      insert(:marker, timeline: "home", user: user)
+
+      assert Marker.get_markers(
+               user,
+               ["notifications"],
+               %{recount_unread: true}
+             ) == [%Marker{refresh_record(marker) | unread_count: 2}]
+    end
   end
 
   describe "upsert/2" do

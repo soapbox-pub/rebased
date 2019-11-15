@@ -18,7 +18,13 @@ defmodule Pleroma.Web.MastodonAPI.MarkerController do
 
   # GET /api/v1/markers
   def index(%{assigns: %{user: user}} = conn, params) do
-    markers = Pleroma.Marker.get_markers(user, params["timeline"])
+    markers =
+      Pleroma.Marker.get_markers(
+        user,
+        params["timeline"],
+        %{recount_unread: true}
+      )
+
     render(conn, "markers.json", %{markers: markers})
   end
 

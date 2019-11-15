@@ -15,6 +15,7 @@ defmodule Pleroma.Marker do
   alias __MODULE__
 
   @timelines ["notifications"]
+  @type t :: %__MODULE__{}
 
   schema "markers" do
     field(:last_read_id, :string, default: "")
@@ -26,8 +27,18 @@ defmodule Pleroma.Marker do
     timestamps()
   end
 
-  def get_markers(user, timelines \\ []) do
-    Repo.all(get_query(user, timelines))
+  @doc """
+  Gets markers by user and timeline.
+
+  opts:
+  `recount_unread` - run force recount unread notifications for `true` value
+  """
+  @spec get_markers(User.t(), list(String), map()) :: list(t())
+  def get_markers(user, timelines \\ [], opts \\ %{}) do
+    user
+    |> get_query(timelines)
+    |> recount_unread_notifications(opts[:recount_unread])
+    |> Repo.all()
   end
 
   def upsert(%User{} = user, attrs) do
@@ -99,4 +110,18 @@ defmodule Pleroma.Marker do
     |> by_user_id(user.id)
     |> by_timeline(timelines)
   end
+
+  defp recount_unread_notifications(query, true) do
+    from(
+      q in query,
+      left_join: n in "notifications",
+      on: n.user_id == q.user_id and n.seen == false,
+      group_by: [:id],
+      select_merge: %{
+        unread_count: fragment("count(?)", n.id)
+      }
+    )
+  end
+
+  defp recount_unread_notifications(query, _), do: query
 end
