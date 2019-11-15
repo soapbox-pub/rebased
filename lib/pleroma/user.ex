@@ -124,6 +124,9 @@ defmodule Pleroma.User do
     timestamps()
   end
 
+  @doc "Returns if the user should be allowed to authenticate"
+  def auth_active?(%User{deactivated: true}), do: false
+
   def auth_active?(%User{confirmation_pending: true}),
     do: !Pleroma.Config.get([:instance, :account_activation_required])
 
