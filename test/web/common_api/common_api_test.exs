@@ -227,6 +227,33 @@ defmodule Pleroma.Web.CommonAPITest do
   end
 
   describe "reactions" do
+    test "reacting to a status with an emoji" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:ok, reaction, _} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+
+      assert reaction.data["actor"] == user.ap_id
+      assert reaction.data["content"] == "👍"
+
+      # TODO: test error case.
+    end
+
+    test "unreacting to a status with an emoji" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+      {:ok, reaction, _} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+
+      {:ok, unreaction, _} = CommonAPI.unreact_with_emoji(activity.id, user, "👍")
+
+      assert unreaction.data["type"] == "Undo"
+      assert unreaction.data["object"] == reaction.data["id"]
+    end
+
     test "repeating a status" do
       user = insert(:user)
       other_user = insert(:user)
@@ -440,6 +467,35 @@ defmodule Pleroma.Web.CommonAPITest do
         })
 
       assert CommonAPI.update_report_state(report_id, "test") == {:error, "Unsupported state"}
+    end
+
+    test "updates state of multiple reports" do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %Activity{id: first_report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel offended",
+          "status_ids" => [activity.id]
+        })
+
+      {:ok, %Activity{id: second_report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel very offended!",
+          "status_ids" => [activity.id]
+        })
+
+      {:ok, report_ids} =
+        CommonAPI.update_report_state([first_report_id, second_report_id], "resolved")
+
+      first_report = Activity.get_by_id(first_report_id)
+      second_report = Activity.get_by_id(second_report_id)
+
+      assert report_ids -- [first_report_id, second_report_id] == []
+      assert first_report.data["state"] == "resolved"
+      assert second_report.data["state"] == "resolved"
     end
   end
 

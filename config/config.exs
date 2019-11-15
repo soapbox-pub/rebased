@@ -90,7 +90,7 @@ config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
   filters: [Pleroma.Upload.Filter.Dedupe],
-  link_name: true,
+  link_name: false,
   proxy_remote: false,
   proxy_opts: [
     redirect_on_failure: false,
@@ -257,7 +257,7 @@ config :pleroma, :instance,
   mrf_transparency_exclusions: [],
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,
-  no_attachment_links: false,
+  no_attachment_links: true,
   welcome_user_nickname: nil,
   welcome_message: nil,
   max_report_comment_size: 1000,
@@ -274,7 +274,7 @@ config :pleroma, :instance,
   account_field_name_length: 512,
   account_field_value_length: 2048,
   external_user_synchronization: true,
-  extended_nickname_format: false
+  extended_nickname_format: true
 
 config :pleroma, :feed,
   post_title: %{
@@ -380,6 +380,10 @@ config :pleroma, :mrf_subchain, match_actor: %{}
 config :pleroma, :mrf_vocabulary,
   accept: [],
   reject: []
+
+config :pleroma, :mrf_object_age,
+  threshold: 172_800,
+  actions: [:delist, :strip_followers]
 
 config :pleroma, :rich_media,
   enabled: true,
@@ -604,6 +608,8 @@ config :pleroma, :rate_limit, authentication: {60_000, 15}
 config :pleroma, Pleroma.ActivityExpiration, enabled: true
 
 config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
+
+config :pleroma, :static_fe, enabled: false
 
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,

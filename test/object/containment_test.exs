@@ -17,6 +17,16 @@ defmodule Pleroma.Object.ContainmentTest do
   end
 
   describe "general origin containment" do
+    test "works for completely actorless posts" do
+      assert :error ==
+               Containment.contain_origin("https://glaceon.social/users/monorail", %{
+                 "deleted" => "2019-10-30T05:48:50.249606Z",
+                 "formerType" => "Note",
+                 "id" => "https://glaceon.social/users/monorail/statuses/103049757364029187",
+                 "type" => "Tombstone"
+               })
+    end
+
     test "contain_origin_from_id() catches obvious spoofing attempts" do
       data = %{
         "id" => "http://example.com/~alyssa/activities/1234.json"

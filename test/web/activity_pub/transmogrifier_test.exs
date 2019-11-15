@@ -339,6 +339,80 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"] == activity.data["object"]
     end
 
+    test "it works for incoming misskey likes, turning them into EmojiReactions" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+
+      data =
+        File.read!("test/fixtures/misskey-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == data["actor"]
+      assert data["type"] == "EmojiReaction"
+      assert data["id"] == data["id"]
+      assert data["object"] == activity.data["object"]
+      assert data["content"] == "🍮"
+    end
+
+    test "it works for incoming misskey likes that contain unicode emojis, turning them into EmojiReactions" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+
+      data =
+        File.read!("test/fixtures/misskey-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+        |> Map.put("_misskey_reaction", "⭐")
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == data["actor"]
+      assert data["type"] == "EmojiReaction"
+      assert data["id"] == data["id"]
+      assert data["object"] == activity.data["object"]
+      assert data["content"] == "⭐"
+    end
+
+    test "it works for incoming emoji reactions" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+
+      data =
+        File.read!("test/fixtures/emoji-reaction.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "EmojiReaction"
+      assert data["id"] == "http://mastodon.example.org/users/admin#reactions/2"
+      assert data["object"] == activity.data["object"]
+      assert data["content"] == "👌"
+    end
+
+    test "it works for incoming emoji reaction undos" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+      {:ok, reaction_activity, _object} = CommonAPI.react_with_emoji(activity.id, user, "👌")
+
+      data =
+        File.read!("test/fixtures/mastodon-undo-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", reaction_activity.data["id"])
+        |> Map.put("actor", user.ap_id)
+
+      {:ok, activity} = Transmogrifier.handle_incoming(data)
+
+      assert activity.actor == user.ap_id
+      assert activity.data["id"] == data["id"]
+      assert activity.data["type"] == "Undo"
+    end
+
     test "it returns an error for incoming unlikes wihout a like activity" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
@@ -551,6 +625,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, %Activity{object: object}} = Transmogrifier.handle_incoming(data)
 
       refute Map.has_key?(object.data, "likes")
+    end
+
+    test "it strips internal reactions" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+      {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, user, "📢")
+
+      %{object: object} = Activity.get_by_id_with_object(activity.id)
+      assert Map.has_key?(object.data, "reactions")
+      assert Map.has_key?(object.data, "reaction_count")
+
+      object_data = Transmogrifier.strip_internal_fields(object.data)
+      refute Map.has_key?(object_data, "reactions")
+      refute Map.has_key?(object_data, "reaction_count")
     end
 
     test "it works for incoming update activities" do

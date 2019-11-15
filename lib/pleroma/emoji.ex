@@ -98,4 +98,35 @@ defmodule Pleroma.Emoji do
   defp update_emojis(emojis) do
     :ets.insert(@ets, emojis)
   end
+
+  @external_resource "lib/pleroma/emoji-data.txt"
+
+  emojis =
+    @external_resource
+    |> File.read!()
+    |> String.split("\n")
+    |> Enum.filter(fn line -> line != "" and not String.starts_with?(line, "#") end)
+    |> Enum.map(fn line ->
+      line
+      |> String.split(";", parts: 2)
+      |> hd()
+      |> String.trim()
+      |> String.split("..")
+      |> case do
+        [number] ->
+          <<String.to_integer(number, 16)::utf8>>
+
+        [first, last] ->
+          String.to_integer(first, 16)..String.to_integer(last, 16)
+          |> Enum.map(&<<&1::utf8>>)
+      end
+    end)
+    |> List.flatten()
+    |> Enum.uniq()
+
+  for emoji <- emojis do
+    def is_unicode_emoji?(unquote(emoji)), do: true
+  end
+
+  def is_unicode_emoji?(_), do: false
 end

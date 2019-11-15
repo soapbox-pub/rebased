@@ -1,0 +1,37 @@
+<div class="activity" <%= if @selected do %> id="selected" <% end %>>
+  <p class="pull-right">
+    <%= link format_date(@published), to: @link, class: "activity-link" %>
+  </p>
+  <%= render("_user_card.html", %{user: @user}) %>
+  <div class="activity-content">
+    <%= if @title != "" do %>
+      <details <%= if open_content?() do %>open<% end %>>
+        <summary><%= raw @title %></summary>
+        <div class="e-content"><%= raw @content %></div>
+      </details>
+    <% else %>
+      <div class="e-content"><%= raw @content %></div>
+    <% end %>
+    <%= for %{"name" => name, "url" => [url | _]} <- @attachment do %>
+      <%= if @sensitive do %>
+        <details class="nsfw">
+          <summary><%= Gettext.gettext("sensitive media") %></summary>
+          <div>
+            <%= render("_attachment.html", %{name: name, url: url["href"],
+                                             mediaType: fetch_media_type(url)}) %>
+          </div>
+        </details>
+      <% else %>
+        <%= render("_attachment.html", %{name: name, url: url["href"],
+                                         mediaType: fetch_media_type(url)}) %>
+      <% end %>
+    <% end %>
+  </div>
+  <%= if @selected do %>
+    <dl class="counts">
+      <dt><%= Gettext.gettext("replies") %></dt><dd><%= @counts.replies %></dd>
+      <dt><%= Gettext.gettext("announces") %></dt><dd><%= @counts.announces %></dd>
+      <dt><%= Gettext.gettext("likes") %></dt><dd><%= @counts.likes %></dd>
+    </dl>
+  <% end %>
+</div>

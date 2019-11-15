@@ -41,6 +41,7 @@ You shouldn't edit the base config directly to avoid breakages and merge conflic
     * `Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`: Crawls attachments using their MediaProxy URLs so that the MediaProxy cache is primed.
     * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
+    * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
 * `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in [:frontend_configurations](#frontend_configurations) or in ``static/config.json``.
@@ -137,6 +138,13 @@ config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
 
+#### :mrf_object_age
+* `threshold`: Required age (in seconds) of a post before actions are taken.
+* `actions`: A list of actions to apply to the post:
+  * `:delist` removes the post from public timelines
+  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
+  * `:reject` rejects the message entirely
+
 ### :activitypub
 * ``unfollow_blocked``: Whether blocks result in people getting unfollowed
 * ``outgoing_blocks``: Whether to federate blocks to other instances
@@ -179,6 +187,14 @@ config :pleroma, :frontend_configurations,
 ```
 
 These settings **need to be complete**, they will override the defaults.
+
+### :static_fe
+
+Render profiles and posts using server-generated HTML that is viewable without using JavaScript.
+
+Available options:
+
+* `enabled` - Enables the rendering of static HTML. Defaults to `false`.
 
 ### :assets
 
@@ -523,7 +539,7 @@ config :pleroma, :workers,
 
 Configuration for [Quantum](https://github.com/quantum-elixir/quantum-core) jobs scheduler.
 
-See [Quantum readme](https://github.com/quantum-elixir/quantum-core#usage) for the list of supported options. 
+See [Quantum readme](https://github.com/quantum-elixir/quantum-core#usage) for the list of supported options.
 
 Example:
 
@@ -593,6 +609,10 @@ See the [Quack Github](https://github.com/azohra/quack) for more details
 ## Database options
 
 ### RUM indexing for full text search
+
+!!! warning
+    It is recommended to use PostgreSQL v11 or newer. We have seen some minor issues with lower PostgreSQL versions.
+
 * `rum_enabled`: If RUM indexes should be used. Defaults to `false`.
 
 RUM indexes are an alternative indexing scheme that is not included in PostgreSQL by default. While they may eventually be mainlined, for now they have to be installed as a PostgreSQL extension from https://github.com/postgrespro/rum.
@@ -793,4 +813,3 @@ config :auto_linker,
     rel: "ugc"
   ]
 ```
-
