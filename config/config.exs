@@ -381,6 +381,10 @@ config :pleroma, :mrf_vocabulary,
   accept: [],
   reject: []
 
+config :pleroma, :mrf_object_age,
+  threshold: 172_800,
+  actions: [:delist, :strip_followers]
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],

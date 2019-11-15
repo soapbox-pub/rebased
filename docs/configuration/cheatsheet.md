@@ -41,6 +41,7 @@ You shouldn't edit the base config directly to avoid breakages and merge conflic
     * `Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`: Crawls attachments using their MediaProxy URLs so that the MediaProxy cache is primed.
     * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
+    * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
 * `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in [:frontend_configurations](#frontend_configurations) or in ``static/config.json``.
@@ -136,6 +137,13 @@ An example:
 config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
+
+#### :mrf_object_age
+* `threshold`: Required age (in seconds) of a post before actions are taken.
+* `actions`: A list of actions to apply to the post:
+  * `:delist` removes the post from public timelines
+  * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
+  * `:reject` rejects the message entirely
 
 ### :activitypub
 * ``unfollow_blocked``: Whether blocks result in people getting unfollowed
