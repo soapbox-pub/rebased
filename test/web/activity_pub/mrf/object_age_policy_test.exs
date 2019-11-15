@@ -6,8 +6,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
   use Pleroma.DataCase
   alias Pleroma.Config
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy
+  alias Pleroma.Web.ActivityPub.Visibility
 
   clear_config([:mrf_object_age]) do
     Config.put(:mrf_object_age,
