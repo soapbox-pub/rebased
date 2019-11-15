@@ -80,6 +80,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
 </details>
 
+## [1.1.5] - 2019-11-09
+### Fixed
+- Polls having different numbers in timelines/notifications/poll api endpoints due to cache desyncronization
+- Pleroma API: OAuth token endpoint not being found when ".json" suffix is appended
+
+### Changed
+- Frontend bundle updated to [044c9ad0](https://git.pleroma.social/pleroma/pleroma-fe/commit/044c9ad0562af059dd961d50961a3880fca9c642)
+
+## [1.1.4] - 2019-11-01
+### Fixed
+- Added a migration that fills up empty user.info fields to prevent breakage after previous unsafe migrations.
+- Failure to migrate from pre-1.0.0 versions
+- Mastodon API: Notification stream not including follow notifications
+
+## [1.1.3] - 2019-10-25
+### Fixed
+- Blocked users showing up in notifications collapsed as if they were muted
+- `pleroma_ctl` not working on Debian's default shell
+
 ## [1.1.2] - 2019-10-18
 ### Fixed
 - `pleroma_ctl` trying to connect to a running instance when generating the config, which of course doesn't exist.
