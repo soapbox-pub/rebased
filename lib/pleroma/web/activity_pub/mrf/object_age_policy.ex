@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
 
-  require Logger
   require Pleroma.Constants
 
   @moduledoc "Filter activities depending on their age"
@@ -50,8 +49,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
         {:ok, message}
       else
         # Unhandleable error: somebody is messing around, just drop the message.
-        e ->
-          Logger.error("ERROR: #{inspect(e)}")
+        _e ->
           {:reject, nil}
       end
     else
