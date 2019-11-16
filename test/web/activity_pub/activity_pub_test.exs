@@ -785,6 +785,75 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert activity == expected_activity
   end
 
+  describe "irreversible filters" do
+    setup do
+      user = insert(:user)
+      user_two = insert(:user)
+
+      insert(:filter, user: user_two, phrase: "cofe", hide: true)
+      insert(:filter, user: user_two, phrase: "ok boomer", hide: true)
+      insert(:filter, user: user_two, phrase: "test", hide: false)
+
+      params = %{
+        "type" => ["Create", "Announce"],
+        "user" => user_two
+      }
+
+      {:ok, %{user: user, user_two: user_two, params: params}}
+    end
+
+    test "it returns statuses if they don't contain exact filter words", %{
+      user: user,
+      params: params
+    } do
+      {:ok, _} = CommonAPI.post(user, %{"status" => "hey"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => "got cofefe?"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => "I am not a boomer"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => "ok boomers"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => "ccofee is not a word"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => "this is a test"})
+
+      activities = ActivityPub.fetch_activities([], params)
+
+      assert Enum.count(activities) == 6
+    end
+
+    test "it does not filter user's own statuses", %{user_two: user_two, params: params} do
+      {:ok, _} = CommonAPI.post(user_two, %{"status" => "Give me some cofe!"})
+      {:ok, _} = CommonAPI.post(user_two, %{"status" => "ok boomer"})
+
+      activities = ActivityPub.fetch_activities([], params)
+
+      assert Enum.count(activities) == 2
+    end
+
+    test "it excludes statuses with filter words", %{user: user, params: params} do
+      {:ok, _} = CommonAPI.post(user, %{"status" => "Give me some cofe!"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => "ok boomer"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => "is it a cOfE?"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => "cofe is all I need"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => "— ok BOOMER\n"})
+
+      activities = ActivityPub.fetch_activities([], params)
+
+      assert Enum.empty?(activities)
+    end
+
+    test "it returns all statuses if user does not have any filters" do
+      another_user = insert(:user)
+      {:ok, _} = CommonAPI.post(another_user, %{"status" => "got cofe?"})
+      {:ok, _} = CommonAPI.post(another_user, %{"status" => "test!"})
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          "type" => ["Create", "Announce"],
+          "user" => another_user
+        })
+
+      assert Enum.count(activities) == 2
+    end
+  end
+
   describe "public fetch activities" do
     test "doesn't retrieve unlisted activities" do
       user = insert(:user)

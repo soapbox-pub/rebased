@@ -126,7 +126,7 @@ defmodule Pleroma.FilterTest do
 
     {:ok, filter_one} = Pleroma.Filter.create(query_one)
     {:ok, filter_two} = Pleroma.Filter.create(query_two)
-    filters = Pleroma.Filter.get_filters(user)
+    filters = Pleroma.Filter.get_by_user(Pleroma.Filter, user)
     assert filter_one in filters
     assert filter_two in filters
   end
