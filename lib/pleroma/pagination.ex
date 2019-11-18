@@ -78,7 +78,8 @@ defmodule Pleroma.Pagination do
       since_id: :string,
       max_id: :string,
       offset: :integer,
-      limit: :integer
+      limit: :integer,
+      skip_order: :boolean
     }
 
     params =
@@ -102,6 +103,8 @@ defmodule Pleroma.Pagination do
   defp restrict(query, :max_id, %{max_id: max_id}, table_binding) do
     where(query, [{q, table_position(query, table_binding)}], q.id < ^max_id)
   end
+
+  defp restrict(query, :order, %{skip_order: true}, _), do: query
 
   defp restrict(query, :order, %{min_id: _}, table_binding) do
     order_by(

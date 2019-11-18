@@ -1067,7 +1067,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Object.with_joined_activity()
     |> select([_like, object, activity], %{activity | object: object})
     |> order_by([like, _, _], desc: like.updated_at)
-    |> Pagination.fetch_paginated(params, pagination, :object_activity)
+    |> Pagination.fetch_paginated(
+      Map.merge(params, %{"skip_order" => true}),
+      pagination,
+      :object_activity
+    )
   end
 
   defp maybe_update_cc(activities, list_memberships, %User{ap_id: user_ap_id})
