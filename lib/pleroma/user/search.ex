@@ -100,11 +100,11 @@ defmodule Pleroma.User.Search do
 
   defp filter_blocked_user(query, %User{} = blocker) do
     query
-    |> join(:left, [u], b in Pleroma.UserBlock,
+    |> join(:left, [u], b in Pleroma.UserRelationship,
       as: :blocks,
-      on: b.blocker_id == ^blocker.id and u.id == b.blockee_id
+      on: b.relationship_type == ^:block and b.source_id == ^blocker.id and u.id == b.target_id
     )
-    |> where([blocks: b], is_nil(b.blockee_id))
+    |> where([blocks: b], is_nil(b.target_id))
   end
 
   defp filter_blocked_user(query, _), do: query

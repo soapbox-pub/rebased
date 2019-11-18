@@ -129,7 +129,9 @@ defmodule Pleroma.Web.Streamer.Worker do
   end
 
   defp should_send?(%User{} = user, %Activity{} = item) do
-    {:ok, [blocks, mutes]} = User.related_ap_ids(user, [:blocked_users, :muted_users])
+    related_ap_ids = User.related_ap_ids(user, [:block, :mute])
+    blocks = related_ap_ids[:block] || []
+    mutes = related_ap_ids[:mute] || []
     reblog_mutes = user.muted_reblogs || []
     recipient_blocks = MapSet.new(blocks ++ mutes)
     recipients = MapSet.new(item.recipients)
