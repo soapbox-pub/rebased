@@ -13,6 +13,9 @@ defmodule Pleroma.Pagination do
   alias Pleroma.Repo
 
   @default_limit 20
+  @page_keys ["max_id", "min_id", "limit", "since_id", "order"]
+
+  def page_keys, do: @page_keys
 
   def fetch_paginated(query, params, type \\ :keyset)
 
