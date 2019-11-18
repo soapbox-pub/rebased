@@ -23,6 +23,23 @@ defmodule Pleroma.Object do
     timestamps()
   end
 
+  def with_joined_activity(query, activity_type \\ "Create", join_type \\ :inner) do
+    object_position = Map.get(query.aliases, :object, 0)
+
+    join(query, join_type, [{object, object_position}], a in Activity,
+      on:
+        fragment(
+          "COALESCE(?->'object'->>'id', ?->>'object') = (? ->> 'id') AND (?->>'type' = ?) ",
+          a.data,
+          a.data,
+          object.data,
+          a.data,
+          ^activity_type
+        ),
+      as: :object_activity
+    )
+  end
+
   def create(data) do
     Object.change(%Object{}, %{data: data})
     |> Repo.insert()

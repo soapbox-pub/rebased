@@ -348,7 +348,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   def favourites(%{assigns: %{user: user}} = conn, params) do
     activities =
       ActivityPub.fetch_favourites(
-        [],
         user,
         Map.take(params, Pleroma.Pagination.page_keys())
       )

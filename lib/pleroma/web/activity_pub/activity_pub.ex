@@ -1058,40 +1058,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   @doc """
   Fetch favorites activities of user with order by sort adds to favorites
   """
-  @spec fetch_favourites(list(String.t()), User.t(), map(), atom()) :: list(Activity.t())
-  def fetch_favourites(recipients, user, params \\ %{}, pagination \\ :keyset) do
-    opts =
-      %{
-        "type" => "Create",
-        "favorited_by" => user.ap_id,
-        "blocking_user" => user
-      }
-      |> Map.merge(params)
-
-    recipients
-    |> fetch_activities_query(opts)
-    |> order_by_favourites(user)
-    |> Pagination.fetch_paginated(opts, pagination)
-  end
-
-  # sorts by adds to favorites
-  #
-  @spec order_by_favourites(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
-  defp order_by_favourites(query, user) do
-    join(query, :inner, [activity, object], a1 in Activity,
-      on:
-        fragment(
-          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object') AND (?->>'type' = 'Like') AND (?.actor = ?)",
-          object.data,
-          a1.data,
-          a1.data,
-          a1.data,
-          a1,
-          ^user.ap_id
-        ),
-      as: :like_activity
-    )
-    |> order_by([_, _, like_activity], desc: like_activity.updated_at)
+  @spec fetch_favourites(User.t(), map(), atom()) :: list(Activity.t())
+  def fetch_favourites(user, params \\ %{}, pagination \\ :keyset) do
+    user.ap_id
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_type("Like")
+    |> Activity.with_joined_object()
+    |> Object.with_joined_activity()
+    |> select([_like, object, activity], %{activity | object: object})
+    |> order_by([like, _, _], desc: like.updated_at)
+    |> Pagination.fetch_paginated(params, pagination, :object_activity)
   end
 
   defp maybe_update_cc(activities, list_memberships, %User{ap_id: user_ap_id})
