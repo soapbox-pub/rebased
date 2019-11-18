@@ -346,15 +346,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc "GET /api/v1/favourites"
   def favourites(%{assigns: %{user: user}} = conn, params) do
-    params =
-      params
-      |> Map.put("type", "Create")
-      |> Map.put("favorited_by", user.ap_id)
-      |> Map.put("blocking_user", user)
-
-    activities =
-      ActivityPub.fetch_activities([], params)
-      |> Enum.reverse()
+    activities = ActivityPub.fetch_favourites([], user, Map.take(params, ["limit"]))
 
     conn
     |> add_link_headers(activities)
