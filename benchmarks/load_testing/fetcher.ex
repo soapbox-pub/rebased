@@ -57,6 +57,9 @@ defmodule Pleroma.LoadTesting.Fetcher do
         Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities(
           mastodon_federated_timeline_params
         )
+      end,
+      "User favourites timeline" => fn ->
+        Pleroma.Web.ActivityPub.ActivityPub.fetch_favourites(user)
       end
     })
 
@@ -73,6 +76,8 @@ defmodule Pleroma.LoadTesting.Fetcher do
       Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities(
         mastodon_federated_timeline_params
       )
+
+    user_favourites = Pleroma.Web.ActivityPub.ActivityPub.fetch_favourites(user)
 
     Benchee.run(%{
       "Rendering home timeline" => fn ->
@@ -95,7 +100,13 @@ defmodule Pleroma.LoadTesting.Fetcher do
           for: user,
           as: :activity
         })
-      end
+      end,
+      "Rendering favorites timeline" => fn ->
+        Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
+              activities: user_favourites,
+              for: user,
+              as: :activity})
+      end,
     })
   end
 
