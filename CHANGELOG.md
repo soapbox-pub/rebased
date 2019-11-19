@@ -4,17 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.1.6] - 2019-11-19
-## Fixed
+### Fixed
 - Not being able to log into to third party apps when the browser is logged into mastofe
 - Email confirmation not being required even when enabled
 - Mastodon API: conversations API crashing when one status is malformed
 
-## Bundled Pleroma-FE Changes
-### Added
+### Bundled Pleroma-FE Changes
+#### Added
 - About page
 - Meme arrows
 
-### Fixed
+#### Fixed
 - Image modal not closing unless clicked outside of image
 - Attachment upload spinner not being centered
 - Showing follow counters being 0 when they are actually hidden
