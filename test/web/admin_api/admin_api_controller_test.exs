@@ -2839,6 +2839,68 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} unfollowed relay: http://mastodon.example.org/users/admin"
     end
   end
+
+  describe "PATCH /confirm_email" do
+    setup %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+
+      %{conn: assign(conn, :user, admin), admin: admin}
+    end
+
+    test "it confirms emails of two users", %{admin: admin} do
+      [first_user, second_user] = insert_pair(:user, confirmation_pending: true)
+
+      assert first_user.confirmation_pending == true
+      assert second_user.confirmation_pending == true
+
+      build_conn()
+      |> assign(:user, admin)
+      |> patch("/api/pleroma/admin/users/confirm_email", %{
+        nicknames: [
+          first_user.nickname,
+          second_user.nickname
+        ]
+      })
+
+      assert first_user.confirmation_pending == true
+      assert second_user.confirmation_pending == true
+
+      log_entry = Repo.one(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(log_entry) ==
+               "@#{admin.nickname} confirmed email for users: @#{first_user.nickname}, @#{
+                 second_user.nickname
+               }"
+    end
+  end
+
+  describe "PATCH /resend_confirmation_email" do
+    setup %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+
+      %{conn: assign(conn, :user, admin), admin: admin}
+    end
+
+    test "it resend emails for two users", %{admin: admin} do
+      [first_user, second_user] = insert_pair(:user, confirmation_pending: true)
+
+      build_conn()
+      |> assign(:user, admin)
+      |> patch("/api/pleroma/admin/users/resend_confirmation_email", %{
+        nicknames: [
+          first_user.nickname,
+          second_user.nickname
+        ]
+      })
+
+      log_entry = Repo.one(ModerationLog)
+
+      assert ModerationLog.get_log_entry_message(log_entry) ==
+               "@#{admin.nickname} re-sent confirmation email for users: @#{first_user.nickname}, @#{
+                 second_user.nickname
+               }"
+    end
+  end
 end
 
 # Needed for testing
