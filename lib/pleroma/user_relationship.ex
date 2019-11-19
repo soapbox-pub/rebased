@@ -20,6 +20,20 @@ defmodule Pleroma.UserRelationship do
     timestamps(updated_at: false)
   end
 
+  for relationship_type <- Keyword.keys(UserRelationshipTypeEnum.__enum_map__()) do
+    # Definitions of `create_block/2`, `create_mute/2` etc.
+    def unquote(:"create_#{relationship_type}")(source, target),
+      do: create(unquote(relationship_type), source, target)
+
+    # Definitions of `delete_block/2`, `delete_mute/2` etc.
+    def unquote(:"delete_#{relationship_type}")(source, target),
+      do: delete(unquote(relationship_type), source, target)
+
+    # Definitions of `block_exists?/2`, `mute_exists?/2` etc.
+    def unquote(:"#{relationship_type}_exists?")(source, target),
+      do: exists?(unquote(relationship_type), source, target)
+  end
+
   def changeset(%UserRelationship{} = user_relationship, params \\ %{}) do
     user_relationship
     |> cast(params, [:relationship_type, :source_id, :target_id])
@@ -36,10 +50,6 @@ defmodule Pleroma.UserRelationship do
     |> Repo.exists?()
   end
 
-  def block_exists?(%User{} = blocker, %User{} = blockee), do: exists?(:block, blocker, blockee)
-
-  def mute_exists?(%User{} = muter, %User{} = mutee), do: exists?(:mute, muter, mutee)
-
   def create(relationship_type, %User{} = source, %User{} = target) do
     %UserRelationship{}
     |> changeset(%{
@@ -53,10 +63,6 @@ defmodule Pleroma.UserRelationship do
     )
   end
 
-  def create_block(%User{} = blocker, %User{} = blockee), do: create(:block, blocker, blockee)
-
-  def create_mute(%User{} = muter, %User{} = mutee), do: create(:mute, muter, mutee)
-
   def delete(relationship_type, %User{} = source, %User{} = target) do
     attrs = %{relationship_type: relationship_type, source_id: source.id, target_id: target.id}
 
@@ -65,10 +71,6 @@ defmodule Pleroma.UserRelationship do
       nil -> {:ok, nil}
     end
   end
-
-  def delete_block(%User{} = blocker, %User{} = blockee), do: delete(:block, blocker, blockee)
-
-  def delete_mute(%User{} = muter, %User{} = mutee), do: delete(:mute, muter, mutee)
 
   defp validate_not_self_relationship(%Ecto.Changeset{} = changeset) do
     changeset

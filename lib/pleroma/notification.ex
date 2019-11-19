@@ -60,7 +60,7 @@ defmodule Pleroma.Notification do
   end
 
   defp exclude_blocked(query, user) do
-    blocked_ap_ids = User.blocked_ap_ids(user)
+    blocked_ap_ids = User.blocked_users_ap_ids(user)
 
     query
     |> where([n, a], a.actor not in ^blocked_ap_ids)
@@ -75,8 +75,10 @@ defmodule Pleroma.Notification do
   end
 
   defp exclude_muted(query, user, _opts) do
+    notification_muted_ap_ids = User.notification_muted_users_ap_ids(user)
+
     query
-    |> where([n, a], a.actor not in ^user.muted_notifications)
+    |> where([n, a], a.actor not in ^notification_muted_ap_ids)
     |> join(:left, [n, a], tm in Pleroma.ThreadMute,
       on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data)
     )

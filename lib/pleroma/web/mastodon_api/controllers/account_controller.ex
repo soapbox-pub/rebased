@@ -323,9 +323,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   def mute(%{assigns: %{user: muter, account: muted}} = conn, params) do
     notifications? = params |> Map.get("notifications", true) |> truthy_param?()
 
-    with {:ok, _user_mute} <- User.mute(muter, muted, notifications?) do
-      # TODO: remove `muter` refresh once `muted_notifications` field is deprecated
-      muter = User.get_cached_by_id(muter.id)
+    with {:ok, _user_relationships} <- User.mute(muter, muted, notifications?) do
       render(conn, "relationship.json", user: muter, target: muted)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
@@ -334,9 +332,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/unmute"
   def unmute(%{assigns: %{user: muter, account: muted}} = conn, _params) do
-    with {:ok, _user_mute} <- User.unmute(muter, muted) do
-      # TODO: remove `muter` refresh once `muted_notifications` field is deprecated
-      muter = User.get_cached_by_id(muter.id)
+    with {:ok, _user_relationships} <- User.unmute(muter, muted) do
       render(conn, "relationship.json", user: muter, target: muted)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
@@ -377,12 +373,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "GET /api/v1/mutes"
   def mutes(%{assigns: %{user: user}} = conn, _) do
-    render(conn, "index.json", users: User.muted_users(user), for: user, as: :user)
+    users = User.muted_users(user, _restrict_deactivated = true)
+    render(conn, "index.json", users: users, for: user, as: :user)
   end
 
   @doc "GET /api/v1/blocks"
   def blocks(%{assigns: %{user: user}} = conn, _) do
-    render(conn, "index.json", users: User.blocked_users(user), for: user, as: :user)
+    users = User.blocked_users(user, _restrict_deactivated = true)
+    render(conn, "index.json", users: users, for: user, as: :user)
   end
 
   @doc "GET /api/v1/endorsements"

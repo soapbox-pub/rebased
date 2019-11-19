@@ -884,7 +884,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_muted(query, %{"with_muted" => val}) when val in [true, "true", "1"], do: query
 
   defp restrict_muted(query, %{"muting_user" => %User{} = user} = opts) do
-    mutes = opts["muted_ap_ids"] || User.muted_ap_ids(user)
+    mutes = opts["muted_ap_ids"] || User.muted_users_ap_ids(user)
 
     query =
       from([activity] in query,
@@ -902,7 +902,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_muted(query, _), do: query
 
   defp restrict_blocked(query, %{"blocking_user" => %User{} = user} = opts) do
-    blocked_ap_ids = opts["blocked_ap_ids"] || User.blocked_ap_ids(user)
+    blocked_ap_ids = opts["blocked_ap_ids"] || User.blocked_users_ap_ids(user)
     domain_blocks = user.domain_blocks || []
 
     query =
@@ -945,7 +945,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_pinned(query, _), do: query
 
   defp restrict_muted_reblogs(query, %{"muting_user" => %User{} = user}) do
-    muted_reblogs = user.muted_reblogs || []
+    muted_reblogs = User.reblog_muted_users_ap_ids(user)
 
     from(
       activity in query,

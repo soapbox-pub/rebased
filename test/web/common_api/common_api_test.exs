@@ -509,14 +509,14 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "add a reblog mute", %{muter: muter, muted: muted} do
-      {:ok, muter} = CommonAPI.hide_reblogs(muter, muted)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(muter, muted)
 
       assert User.showing_reblogs?(muter, muted) == false
     end
 
     test "remove a reblog mute", %{muter: muter, muted: muted} do
-      {:ok, muter} = CommonAPI.hide_reblogs(muter, muted)
-      {:ok, muter} = CommonAPI.show_reblogs(muter, muted)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(muter, muted)
+      {:ok, _reblog_mute} = CommonAPI.show_reblogs(muter, muted)
 
       assert User.showing_reblogs?(muter, muted) == true
     end
