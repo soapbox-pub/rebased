@@ -656,7 +656,7 @@ Feel free to adjust the priv_dir and port number. Then you will have to create t
 
 ### :admin_token
 
-Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the 'admin_token' parameter. Example:
+Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the `admin_token` parameter or `x-admin-token` HTTP header. Example:
 
 ```elixir
 config :pleroma, :admin_token, "somerandomtoken"
@@ -664,8 +664,14 @@ config :pleroma, :admin_token, "somerandomtoken"
 
 You can then do
 
-```sh
-curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
+```shell
+curl "http://localhost:4000/api/pleroma/admin/users/invites?admin_token=somerandomtoken"
+```
+
+or
+
+```shell
+curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/pleroma/admin/users/invites"
 ```
 
 ### :auth
