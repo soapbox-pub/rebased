@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.1.6] - 2019-11-19
 ## Fixed
 - Not being able to log into to third party apps when the browser is logged into mastofe
+- Email confirmation not being required even when enabled
 - Mastodon API: conversations API crashing when one status is malformed
 
 ## [1.1.5] - 2019-11-09
