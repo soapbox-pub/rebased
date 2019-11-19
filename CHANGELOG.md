@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.6] - 2019-11-19
+## Fixed
+- Mastodon API: conversations API crashing when one status is malformed
+
 ## [1.1.5] - 2019-11-09
 ### Fixed
 - Polls having different numbers in timelines/notifications/poll api endpoints due to cache desyncronization
