@@ -21,7 +21,7 @@ defmodule Pleroma.Plugs.UserEnabledPlugTest do
     old = Pleroma.Config.get([:instance, :account_activation_required])
     Pleroma.Config.put([:instance, :account_activation_required], true)
 
-    user = insert(:user, confirmation_pending: true)
+    user = insert(:user, info: %{confirmation_pending: true})
 
     conn =
       conn
