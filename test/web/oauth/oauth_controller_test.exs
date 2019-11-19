@@ -468,6 +468,29 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert html_response(conn, 200) =~ ~s(type="submit")
     end
 
+    test "renders authentication page if user is already authenticated but user request with another client",
+         %{
+           app: app,
+           conn: conn
+         } do
+      token = insert(:oauth_token, app_id: app.id)
+
+      conn =
+        conn
+        |> put_session(:oauth_token, token.token)
+        |> get(
+          "/oauth/authorize",
+          %{
+            "response_type" => "code",
+            "client_id" => "another_client_id",
+            "redirect_uri" => OAuthController.default_redirect_uri(app),
+            "scope" => "read"
+          }
+        )
+
+      assert html_response(conn, 200) =~ ~s(type="submit")
+    end
+
     test "with existing authentication and non-OOB `redirect_uri`, redirects to app with `token` and `state` params",
          %{
            app: app,

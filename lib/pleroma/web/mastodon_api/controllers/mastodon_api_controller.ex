@@ -1671,9 +1671,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     participations = Participation.for_user_with_last_activity_id(user, params)
 
     conversations =
-      Enum.map(participations, fn participation ->
-        ConversationView.render("participation.json", %{participation: participation, for: user})
-      end)
+      ConversationView.safe_render_many(participations, ConversationView, "participation.json", %{
+        as: :participation,
+        for: user
+      })
 
     conn
     |> add_link_headers(:conversations, participations)
