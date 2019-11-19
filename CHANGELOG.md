@@ -81,6 +81,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
 </details>
 
+## [1.1.6] - 2019-11-19
+### Fixed
+- Not being able to log into to third party apps when the browser is logged into mastofe
+- Email confirmation not being required even when enabled
+- Mastodon API: conversations API crashing when one status is malformed
+
+### Bundled Pleroma-FE Changes
+#### Added
+- About page
+- Meme arrows
+
+#### Fixed
+- Image modal not closing unless clicked outside of image
+- Attachment upload spinner not being centered
+- Showing follow counters being 0 when they are actually hidden
+
 ## [1.1.5] - 2019-11-09
 ### Fixed
 - Polls having different numbers in timelines/notifications/poll api endpoints due to cache desyncronization
