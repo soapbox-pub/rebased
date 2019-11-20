@@ -1158,11 +1158,14 @@ defmodule Pleroma.User do
   end
 
   @doc """
-  Returns map of related AP IDs list by relation type.
-  E.g. `related_ap_ids(user, [:block])` -> `%{block: ["https://some.site/users/userapid"]}`
+  Returns map of outgoing (blocked, muted etc.) relations' user AP IDs by relation type.
+  E.g. `outgoing_relations_ap_ids(user, [:block])` -> `%{block: ["https://some.site/users/userapid"]}`
   """
-  @spec related_ap_ids(User.t(), list(atom())) :: %{atom() => list(String.t())}
-  def related_ap_ids(%User{} = user, relationship_types) when is_list(relationship_types) do
+  @spec outgoing_relations_ap_ids(User.t(), list(atom())) :: %{atom() => list(String.t())}
+  def outgoing_relations_ap_ids(_, []), do: %{}
+
+  def outgoing_relations_ap_ids(%User{} = user, relationship_types)
+      when is_list(relationship_types) do
     db_result =
       user
       |> assoc(:outgoing_relationships)
