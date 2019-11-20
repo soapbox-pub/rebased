@@ -15,7 +15,7 @@ config :pleroma, Pleroma.Captcha,
   method: Pleroma.Captcha.Mock
 
 # Print only warnings and errors during test
-config :logger,
+config :logger, :console,
   level: :warn,
   format: "\n[$level] $message\n"
 
