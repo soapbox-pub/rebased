@@ -4,4 +4,10 @@
 
 import EctoEnum
 
-defenum(UserRelationshipTypeEnum, block: 1, mute: 2, reblog_mute: 3, notification_mute: 4)
+defenum(UserRelationshipTypeEnum,
+  block: 1,
+  mute: 2,
+  reblog_mute: 3,
+  notification_mute: 4,
+  inverse_subscription: 5
+)

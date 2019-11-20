@@ -144,7 +144,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   @doc "POST /api/v1/pleroma/accounts/:id/subscribe"
   def subscribe(%{assigns: %{user: user, account: subscription_target}} = conn, _params) do
-    with {:ok, subscription_target} <- User.subscribe(user, subscription_target) do
+    with {:ok, _subscription} <- User.subscribe(user, subscription_target) do
       render(conn, "relationship.json", user: user, target: subscription_target)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
@@ -153,7 +153,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   @doc "POST /api/v1/pleroma/accounts/:id/unsubscribe"
   def unsubscribe(%{assigns: %{user: user, account: subscription_target}} = conn, _params) do
-    with {:ok, subscription_target} <- User.unsubscribe(user, subscription_target) do
+    with {:ok, _subscription} <- User.unsubscribe(user, subscription_target) do
       render(conn, "relationship.json", user: user, target: subscription_target)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})

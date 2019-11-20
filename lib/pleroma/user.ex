@@ -44,10 +44,17 @@ defmodule Pleroma.User do
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
   @extended_local_nickname_regex ~r/^[a-zA-Z\d_-]+$/
 
+  # AP ID user relationships (blocks, mutes etc.)
   # Format: [rel_type: [outgoing_rel: :outgoing_rel_target, incoming_rel: :incoming_rel_source]]
   @user_relationships_config [
-    block: [blocker_blocks: :blocked_users, blockee_blocks: :blocker_users],
-    mute: [muter_mutes: :muted_users, mutee_mutes: :muter_users],
+    block: [
+      blocker_blocks: :blocked_users,
+      blockee_blocks: :blocker_users
+    ],
+    mute: [
+      muter_mutes: :muted_users,
+      mutee_mutes: :muter_users
+    ],
     reblog_mute: [
       reblog_muter_mutes: :reblog_muted_users,
       reblog_mutee_mutes: :reblog_muter_users
@@ -55,6 +62,11 @@ defmodule Pleroma.User do
     notification_mute: [
       notification_muter_mutes: :notification_muted_users,
       notification_mutee_mutes: :notification_muter_users
+    ],
+    # Note: `inverse_subscription` relationship is inverse: subscriber acts as relationship target
+    inverse_subscription: [
+      subscribee_subscriptions: :subscriber_users,
+      subscriber_subscriptions: :subscribee_users
     ]
   ]
 
@@ -90,7 +102,6 @@ defmodule Pleroma.User do
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:domain_blocks, {:array, :string}, default: [])
-    field(:subscribers, {:array, :string}, default: [])
     field(:deactivated, :boolean, default: false)
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
@@ -167,6 +178,8 @@ defmodule Pleroma.User do
     field(:muted_reblogs, {:array, :string}, default: [])
     # `:muted_notifications` is deprecated (replaced with `notification_muted_users` relation)
     field(:muted_notifications, {:array, :string}, default: [])
+    # `:subscribers` is deprecated (replaced with `subscriber_users` relation)
+    field(:subscribers, {:array, :string}, default: [])
 
     timestamps()
   end
@@ -1046,33 +1059,43 @@ defmodule Pleroma.User do
 
   @spec mute(User.t(), User.t(), boolean()) ::
           {:ok, list(UserRelationship.t())} | {:error, String.t()}
-  def mute(muter, %User{} = mutee, notifications? \\ true) do
+  def mute(%User{} = muter, %User{} = mutee, notifications? \\ true) do
     add_to_mutes(muter, mutee, notifications?)
   end
 
-  def unmute(muter, %User{} = mutee) do
+  def unmute(%User{} = muter, %User{} = mutee) do
     remove_from_mutes(muter, mutee)
   end
 
-  def subscribe(subscriber, %{ap_id: ap_id}) do
-    with %User{} = subscribed <- get_cached_by_ap_id(ap_id) do
-      deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
+  def subscribe(%User{} = subscriber, %User{} = target) do
+    deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
 
-      if blocks?(subscribed, subscriber) and deny_follow_blocked do
-        {:error, "Could not subscribe: #{subscribed.nickname} is blocking you"}
-      else
-        User.add_to_subscribers(subscribed, subscriber.ap_id)
-      end
+    if blocks?(target, subscriber) and deny_follow_blocked do
+      {:error, "Could not subscribe: #{target.nickname} is blocking you"}
+    else
+      # Note: the relationship is inverse: subscriber acts as relationship target
+      UserRelationship.create_inverse_subscription(target, subscriber)
     end
   end
 
-  def unsubscribe(unsubscriber, %{ap_id: ap_id}) do
+  def subscribe(%User{} = subscriber, %{ap_id: ap_id}) do
+    with %User{} = subscribee <- get_cached_by_ap_id(ap_id) do
+      subscribe(subscriber, subscribee)
+    end
+  end
+
+  def unsubscribe(%User{} = unsubscriber, %User{} = target) do
+    # Note: the relationship is inverse: subscriber acts as relationship target
+    UserRelationship.delete_inverse_subscription(target, unsubscriber)
+  end
+
+  def unsubscribe(%User{} = unsubscriber, %{ap_id: ap_id}) do
     with %User{} = user <- get_cached_by_ap_id(ap_id) do
-      User.remove_from_subscribers(user, unsubscriber.ap_id)
+      unsubscribe(unsubscriber, user)
     end
   end
 
-  def block(blocker, %User{} = blocked) do
+  def block(%User{} = blocker, %User{} = blocked) do
     # sever any follow relationships to prevent leaks per activitypub (Pleroma issue #213)
     blocker =
       if following?(blocker, blocked) do
@@ -1089,13 +1112,7 @@ defmodule Pleroma.User do
         nil -> blocked
       end
 
-    blocker =
-      if subscribed_to?(blocked, blocker) do
-        {:ok, blocker} = unsubscribe(blocked, blocker)
-        blocker
-      else
-        blocker
-      end
+    unsubscribe(blocked, blocker)
 
     if following?(blocked, blocker), do: unfollow(blocked, blocker)
 
@@ -1105,16 +1122,16 @@ defmodule Pleroma.User do
   end
 
   # helper to handle the block given only an actor's AP id
-  def block(blocker, %{ap_id: ap_id}) do
+  def block(%User{} = blocker, %{ap_id: ap_id}) do
     block(blocker, get_cached_by_ap_id(ap_id))
   end
 
-  def unblock(blocker, %User{} = blocked) do
+  def unblock(%User{} = blocker, %User{} = blocked) do
     remove_from_block(blocker, blocked)
   end
 
   # helper to handle the block given only an actor's AP id
-  def unblock(blocker, %{ap_id: ap_id}) do
+  def unblock(%User{} = blocker, %{ap_id: ap_id}) do
     unblock(blocker, get_cached_by_ap_id(ap_id))
   end
 
@@ -1128,7 +1145,7 @@ defmodule Pleroma.User do
   @spec muted_notifications?(User.t() | nil, User.t() | map()) :: boolean()
   def muted_notifications?(nil, _), do: false
 
-  def muted_notifications?(user, %User{} = target),
+  def muted_notifications?(%User{} = user, %User{} = target),
     do: UserRelationship.notification_mute_exists?(user, target)
 
   def blocks?(nil, _), do: false
@@ -1151,9 +1168,14 @@ defmodule Pleroma.User do
 
   def blocks_domain?(_, _), do: false
 
-  def subscribed_to?(user, %{ap_id: ap_id}) do
+  def subscribed_to?(%User{} = user, %User{} = target) do
+    # Note: the relationship is inverse: subscriber acts as relationship target
+    UserRelationship.inverse_subscription_exists?(target, user)
+  end
+
+  def subscribed_to?(%User{} = user, %{ap_id: ap_id}) do
     with %User{} = target <- get_cached_by_ap_id(ap_id) do
-      Enum.member?(target.subscribers, user.ap_id)
+      subscribed_to?(user, target)
     end
   end
 
@@ -1181,12 +1203,6 @@ defmodule Pleroma.User do
       %{},
       fn rel_type -> {rel_type, db_result[rel_type] || []} end
     )
-  end
-
-  @spec subscribers(User.t()) :: [User.t()]
-  def subscribers(user) do
-    User.Query.build(%{ap_id: user.subscribers, deactivated: false})
-    |> Repo.all()
   end
 
   def deactivate_async(user, status \\ true) do
@@ -1917,23 +1933,6 @@ defmodule Pleroma.User do
     |> cast(params, fields)
     |> validate_required(fields)
     |> update_and_set_cache()
-  end
-
-  defp set_subscribers(user, subscribers) do
-    params = %{subscribers: subscribers}
-
-    user
-    |> cast(params, [:subscribers])
-    |> validate_required([:subscribers])
-    |> update_and_set_cache()
-  end
-
-  def add_to_subscribers(user, subscribed) do
-    set_subscribers(user, Enum.uniq([subscribed | user.subscribers]))
-  end
-
-  def remove_from_subscribers(user, subscribed) do
-    set_subscribers(user, List.delete(user.subscribers, subscribed))
   end
 
   defp set_domain_blocks(user, domain_blocks) do

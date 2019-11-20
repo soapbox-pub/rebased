@@ -526,7 +526,7 @@ defmodule Pleroma.Web.CommonAPITest do
     test "also unsubscribes a user" do
       [follower, followed] = insert_pair(:user)
       {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
-      {:ok, followed} = User.subscribe(follower, followed)
+      {:ok, _subscription} = User.subscribe(follower, followed)
 
       assert User.subscribed_to?(follower, followed)
 

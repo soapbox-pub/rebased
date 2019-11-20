@@ -8,9 +8,13 @@ defmodule Pleroma.Repo.Migrations.DataMigrationPopulateUserRelationships do
 
   def up do
     Enum.each(
-      [blocks: 1, mutes: 2, muted_reblogs: 3, muted_notifications: 4],
+      [blocks: 1, mutes: 2, muted_reblogs: 3, muted_notifications: 4, subscribers: 5],
       fn {field, relationship_type_code} ->
         migrate(field, relationship_type_code)
+
+        if field == :subscribers do
+          drop_if_exists(index(:users, [:subscribers]))
+        end
       end
     )
   end
