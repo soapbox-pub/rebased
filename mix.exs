@@ -194,26 +194,20 @@ defmodule Pleroma.Mixfile do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
     # Pre-release version, denoted from patch version with a hyphen
-    {git_tag, git_pre_release} =
+    git_pre_release =
       with {tag, 0} <-
              System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true),
-           tag = String.trim(tag),
-           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]),
-           describe = String.trim(describe),
-           ahead <- String.replace(describe, tag, ""),
-           ahead <- String.trim_leading(ahead, "-") do
-        {String.replace_prefix(tag, "v", ""), if(ahead != "", do: String.trim(ahead))}
+           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]) do
+        describe
+        |> String.trim()
+        |> String.replace(String.trim(tag), "")
+        |> String.trim_leading("-")
+        |> String.trim()
       else
         _ ->
           {commit_hash, 0} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
-          {nil, "0-g" <> String.trim(commit_hash)}
+          "0-g" <> String.trim(commit_hash)
       end
-
-    if git_tag && version != git_tag do
-      Mix.shell().error(
-        "Application version #{inspect(version)} does not match git tag #{inspect(git_tag)}"
-      )
-    end
 
     # Branch name as pre-release version component, denoted with a dot
     branch_name =
