@@ -67,8 +67,7 @@ defmodule Pleroma.User do
     field(:source_data, :map, default: %{})
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
-    # Should be filled in only for remote users
-    field(:following_count, :integer, default: nil)
+    field(:following_count, :integer, default: 0)
     field(:locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
     field(:password_reset_pending, :boolean, default: false)
@@ -177,19 +176,17 @@ defmodule Pleroma.User do
   def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
 
   def user_info(%User{} = user, args \\ %{}) do
-    following_count =
-      Map.get(args, :following_count, user.following_count || following_count(user))
-
+    following_count = Map.get(args, :following_count, user.following_count)
     follower_count = Map.get(args, :follower_count, user.follower_count)
 
     %{
       note_count: user.note_count,
       locked: user.locked,
       confirmation_pending: user.confirmation_pending,
-      default_scope: user.default_scope
+      default_scope: user.default_scope,
+      follower_count: follower_count,
+      following_count: following_count
     }
-    |> Map.put(:following_count, following_count)
-    |> Map.put(:follower_count, follower_count)
   end
 
   def follow_state(%User{} = user, %User{} = target) do
@@ -522,14 +519,9 @@ defmodule Pleroma.User do
   @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do
-    followeds =
-      Enum.reject(followeds, fn followed ->
-        blocks?(follower, followed) || blocks?(followed, follower)
-      end)
-
-    Enum.each(followeds, &follow(follower, &1, "accept"))
-
-    Enum.each(followeds, &update_follower_count/1)
+    followeds
+    |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
+    |> Enum.each(&follow(follower, &1, "accept"))
 
     set_cache(follower)
   end
@@ -549,11 +541,11 @@ defmodule Pleroma.User do
       true ->
         FollowingRelationship.follow(follower, followed, state)
 
-        follower = maybe_update_following_count(follower)
-
         {:ok, _} = update_follower_count(followed)
 
-        set_cache(follower)
+        follower
+        |> update_following_count()
+        |> set_cache()
     end
   end
 
@@ -561,11 +553,12 @@ defmodule Pleroma.User do
     if following?(follower, followed) and follower.ap_id != followed.ap_id do
       FollowingRelationship.unfollow(follower, followed)
 
-      follower = maybe_update_following_count(follower)
-
       {:ok, followed} = update_follower_count(followed)
 
-      set_cache(follower)
+      {:ok, follower} =
+        follower
+        |> update_following_count()
+        |> set_cache()
 
       {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
     else
@@ -895,8 +888,8 @@ defmodule Pleroma.User do
     end
   end
 
-  @spec maybe_update_following_count(User.t()) :: User.t()
-  def maybe_update_following_count(%User{local: false} = user) do
+  @spec update_following_count(User.t()) :: User.t()
+  def update_following_count(%User{local: false} = user) do
     if Pleroma.Config.get([:instance, :external_user_synchronization]) do
       maybe_fetch_follow_information(user)
     else
@@ -904,7 +897,13 @@ defmodule Pleroma.User do
     end
   end
 
-  def maybe_update_following_count(user), do: user
+  def update_following_count(%User{local: true} = user) do
+    following_count = FollowingRelationship.following_count(user)
+
+    user
+    |> follow_information_changeset(%{following_count: following_count})
+    |> Repo.update!()
+  end
 
   def set_unread_conversation_count(%User{local: true} = user) do
     unread_query = Participation.unread_conversation_count_for_user(user)
@@ -1097,7 +1096,12 @@ defmodule Pleroma.User do
 
   def deactivate(%User{} = user, status) do
     with {:ok, user} <- set_activation_status(user, status) do
-      Enum.each(get_followers(user), &invalidate_cache/1)
+      user
+      |> get_followers()
+      |> Enum.filter(& &1.local)
+      |> Enum.each(fn follower ->
+        follower |> update_following_count() |> set_cache()
+      end)
 
       # Only update local user counts, remote will be update during the next pull.
       user

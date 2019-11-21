@@ -148,9 +148,10 @@ defmodule Pleroma.UserTest do
     {:ok, user} = User.follow(user, followed)
 
     user = User.get_cached_by_id(user.id)
-
     followed = User.get_cached_by_ap_id(followed.ap_id)
+
     assert followed.follower_count == 1
+    assert user.following_count == 1
 
     assert User.ap_followers(followed) in User.following(user)
   end
@@ -952,12 +953,14 @@ defmodule Pleroma.UserTest do
       user2 = insert(:user)
 
       {:ok, user2} = User.follow(user2, user)
+      assert user2.following_count == 1
       assert User.following_count(user2) == 1
 
       {:ok, _user} = User.deactivate(user)
 
       info = User.get_cached_user_info(user2)
 
+      assert refresh_record(user2).following_count == 0
       assert info.following_count == 0
       assert User.following_count(user2) == 0
       assert [] = User.get_friends(user2)
