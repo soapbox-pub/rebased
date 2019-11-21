@@ -15,6 +15,14 @@ defmodule Pleroma.UserSearchTest do
   end
 
   describe "User.search" do
+    test "excluded invisible users from results" do
+      user = insert(:user, %{nickname: "john t1000"})
+      insert(:user, %{invisible: true, nickname: "john t800"})
+
+      [found_user] = User.search("john")
+      assert found_user.id == user.id
+    end
+
     test "accepts limit parameter" do
       Enum.each(0..4, &insert(:user, %{nickname: "john#{&1}"}))
       assert length(User.search("john", limit: 3)) == 3

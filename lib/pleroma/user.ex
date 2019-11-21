@@ -133,6 +133,8 @@ defmodule Pleroma.User do
 
   def visible_for?(user, for_user \\ nil)
 
+  def visible_for?(%User{invisible: true}, _), do: false
+
   def visible_for?(%User{id: user_id}, %User{id: for_id}) when user_id == for_id, do: true
 
   def visible_for?(%User{} = user, for_user) do
@@ -1321,22 +1323,23 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "Creates an internal service actor by URI if missing.  Optionally takes nickname for addressing."
+  @doc """
+  Creates an internal service actor by URI if missing.
+  Optionally takes nickname for addressing.
+  """
   def get_or_create_service_actor_by_ap_id(uri, nickname \\ nil) do
-    with %User{} = user <- get_cached_by_ap_id(uri) do
-      user
-    else
-      _ ->
-        {:ok, user} =
-          %User{}
-          |> cast(%{}, [:ap_id, :nickname, :local])
-          |> put_change(:ap_id, uri)
-          |> put_change(:nickname, nickname)
-          |> put_change(:local, true)
-          |> put_change(:follower_address, uri <> "/followers")
-          |> Repo.insert()
+    with user when is_nil(user) <- get_cached_by_ap_id(uri) do
+      {:ok, user} =
+        %User{
+          invisible: true,
+          local: true,
+          ap_id: uri,
+          nickname: nickname,
+          follower_address: uri <> "/followers"
+        }
+        |> Repo.insert()
 
-        user
+      user
     end
   end
 

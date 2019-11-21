@@ -25,6 +25,25 @@ defmodule Pleroma.UserTest do
 
   clear_config([:instance, :account_activation_required])
 
+  describe "service actors" do
+    test "returns invisible actor" do
+      uri = "#{Pleroma.Web.Endpoint.url()}/internal/fetch-test"
+      followers_uri = "#{uri}/followers"
+      user = User.get_or_create_service_actor_by_ap_id(uri, "internal.fetch-test")
+
+      assert %User{
+               nickname: "internal.fetch-test",
+               invisible: true,
+               local: true,
+               ap_id: ^uri,
+               follower_address: ^followers_uri
+             } = user
+
+      user2 = User.get_or_create_service_actor_by_ap_id(uri, "internal.fetch-test")
+      assert user.id == user2.id
+    end
+  end
+
   describe "when tags are nil" do
     test "tagging a user" do
       user = insert(:user, %{tags: nil})
