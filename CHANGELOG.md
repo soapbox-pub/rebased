@@ -70,6 +70,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add the `recipients` parameter to `GET /api/v1/conversations`
 - Configuration: `feed` option for user atom feed.
 - Pleroma API: Add Emoji reactions
+- Admin API: `PATCH /api/pleroma/users/confirm_email` to confirm email for multiple users, `PATCH /api/pleroma/users/resend_confirmation_email` to resend confirmation email for multiple users
 </details>
 
 ### Fixed

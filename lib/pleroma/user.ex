@@ -491,6 +491,10 @@ defmodule Pleroma.User do
     end
   end
 
+  def try_send_confirmation_email(users) do
+    Enum.each(users, &try_send_confirmation_email/1)
+  end
+
   def needs_update?(%User{local: true}), do: false
 
   def needs_update?(%User{local: false, last_refreshed_at: nil}), do: true
@@ -1580,6 +1584,11 @@ defmodule Pleroma.User do
     user
     |> confirmation_changeset(need_confirmation: !user.confirmation_pending)
     |> update_and_set_cache()
+  end
+
+  @spec toggle_confirmation([User.t()]) :: [{:ok, User.t()} | {:error, Changeset.t()}]
+  def toggle_confirmation(users) do
+    Enum.map(users, &toggle_confirmation/1)
   end
 
   def get_mascot(%{mascot: %{} = mascot}) when not is_nil(mascot) do

@@ -335,7 +335,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     }
 
     with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)),
-         {:ok, users, count} <- filter_relay_user(users, count),
+         {:ok, users, count} <- filter_service_users(users, count),
          do:
            conn
            |> json(
@@ -347,15 +347,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            )
   end
 
-  defp filter_relay_user(users, count) do
-    filtered_users = Enum.reject(users, &relay_user?/1)
-    count = if Enum.any?(users, &relay_user?/1), do: length(filtered_users), else: count
+  defp filter_service_users(users, count) do
+    filtered_users = Enum.reject(users, &service_user?/1)
+    count = if Enum.any?(users, &service_user?/1), do: length(filtered_users), else: count
 
     {:ok, filtered_users, count}
   end
 
-  defp relay_user?(user) do
-    user.ap_id == Relay.relay_ap_id()
+  defp service_user?(user) do
+    String.match?(user.ap_id, ~r/.*\/relay$/) or
+      String.match?(user.ap_id, ~r/.*\/internal\/fetch$/)
   end
 
   @filters ~w(local external active deactivated is_admin is_moderator)
@@ -797,6 +798,34 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     Pleroma.Emoji.reload()
 
     conn |> json("ok")
+  end
+
+  def confirm_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
+
+    User.toggle_confirmation(users)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "confirm_email"
+    })
+
+    conn |> json("")
+  end
+
+  def resend_confirmation_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
+
+    User.try_send_confirmation_email(users)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "resend_confirmation_email"
+    })
+
+    conn |> json("")
   end
 
   def errors(conn, {:error, :not_found}) do

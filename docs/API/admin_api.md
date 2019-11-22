@@ -870,3 +870,19 @@ Compile time settings (need instance reboot):
 - Authentication: required
 - Params: None
 - Response: JSON, "ok" and 200 status
+
+## `PATCH /api/pleroma/admin/users/confirm_email`
+
+### Confirm users' emails
+
+- Params:
+  - `nicknames`
+- Response: Array of user nicknames
+
+## `PATCH /api/pleroma/admin/users/resend_confirmation_email`
+
+### Resend confirmation email
+
+- Params:
+  - `nicknames`
+- Response: Array of user nicknames
