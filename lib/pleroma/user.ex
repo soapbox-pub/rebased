@@ -490,7 +490,7 @@ defmodule Pleroma.User do
   end
 
   def try_send_confirmation_email(users) do
-    Enum.map(users, &try_send_confirmation_email/1)
+    Enum.each(users, &try_send_confirmation_email/1)
   end
 
   def needs_update?(%User{local: true}), do: false
