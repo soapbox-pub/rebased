@@ -57,9 +57,6 @@ defmodule Pleroma.LoadTesting.Fetcher do
         Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities(
           mastodon_federated_timeline_params
         )
-      end,
-      "User favourites timeline" => fn ->
-        Pleroma.Web.ActivityPub.ActivityPub.fetch_favourites(user)
       end
     })
 
@@ -76,8 +73,6 @@ defmodule Pleroma.LoadTesting.Fetcher do
       Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities(
         mastodon_federated_timeline_params
       )
-
-    user_favourites = Pleroma.Web.ActivityPub.ActivityPub.fetch_favourites(user)
 
     Benchee.run(%{
       "Rendering home timeline" => fn ->
@@ -102,10 +97,33 @@ defmodule Pleroma.LoadTesting.Fetcher do
         })
       end,
       "Rendering favorites timeline" => fn ->
-        Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
-              activities: user_favourites,
-              for: user,
-              as: :activity})
+        conn = Phoenix.ConnTest.build_conn(:get, "http://localhost:4001/api/v1/favourites", nil)
+        Pleroma.Web.MastodonAPI.StatusController.favourites(
+          %Plug.Conn{conn |
+                     assigns: %{user: user},
+                     query_params:  %{"limit" => "0"},
+                     body_params: %{},
+                     cookies: %{},
+                     params: %{},
+                     path_params: %{},
+                     private: %{
+                       Pleroma.Web.Router => {[], %{}},
+                       phoenix_router: Pleroma.Web.Router,
+                       phoenix_action: :favourites,
+                       phoenix_controller: Pleroma.Web.MastodonAPI.StatusController,
+                       phoenix_endpoint: Pleroma.Web.Endpoint,
+                       phoenix_format: "json",
+                       phoenix_layout: {Pleroma.Web.LayoutView, "app.html"},
+                       phoenix_recycled: true,
+
+                       phoenix_view: Pleroma.Web.MastodonAPI.StatusView,
+                       plug_session: %{"user_id" => user.id},
+                       plug_session_fetch: :done,
+                       plug_session_info: :write,
+                       plug_skip_csrf_protection: true
+                     }
+          },
+          %{})
       end,
     })
   end
