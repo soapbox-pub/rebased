@@ -54,7 +54,7 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
           date: group[:date],
           account: group[:account],
           status: status,
-          status_deleted: status_deleted,
+          status_deleted: group[:status_deleted],
           actors: Enum.map(group[:actors], &merge_account_views/1),
           reports:
             group[:reports]
