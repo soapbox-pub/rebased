@@ -15,6 +15,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
   import Pleroma.Factory
 
@@ -1616,14 +1617,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert length(response["reports"]) == 3
 
-      first_group =
-        Enum.find(response["reports"], &(&1["status"]["id"] == first_status.data["id"]))
+      first_group = Enum.find(response["reports"], &(&1["status"]["id"] == first_status.id))
 
-      second_group =
-        Enum.find(response["reports"], &(&1["status"]["id"] == second_status.data["id"]))
+      second_group = Enum.find(response["reports"], &(&1["status"]["id"] == second_status.id))
 
-      third_group =
-        Enum.find(response["reports"], &(&1["status"]["id"] == third_status.data["id"]))
+      third_group = Enum.find(response["reports"], &(&1["status"]["id"] == third_status.id))
 
       assert length(first_group["reports"]) == 3
       assert length(second_group["reports"]) == 2
@@ -1634,11 +1632,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  NaiveDateTime.from_iso8601!(act.data["published"])
                end).data["published"]
 
-      assert first_group["status"] == %{
-               "id" => first_status.data["id"],
-               "content" => first_status.object.data["content"],
-               "published" => first_status.object.data["published"]
-             }
+      assert first_group["status"] == StatusView.render("show.json", %{activity: first_status})
 
       assert first_group["account"]["id"] == target_user.id
 
