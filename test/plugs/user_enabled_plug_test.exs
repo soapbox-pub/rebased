@@ -16,6 +16,23 @@ defmodule Pleroma.Plugs.UserEnabledPlugTest do
     assert ret_conn == conn
   end
 
+  test "with a user that's not confirmed and a config requiring confirmation, it removes that user",
+       %{conn: conn} do
+    old = Pleroma.Config.get([:instance, :account_activation_required])
+    Pleroma.Config.put([:instance, :account_activation_required], true)
+
+    user = insert(:user, confirmation_pending: true)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> UserEnabledPlug.call(%{})
+
+    assert conn.assigns.user == nil
+
+    Pleroma.Config.put([:instance, :account_activation_required], old)
+  end
+
   test "with a user that is deactivated, it removes that user", %{conn: conn} do
     user = insert(:user, deactivated: true)
 

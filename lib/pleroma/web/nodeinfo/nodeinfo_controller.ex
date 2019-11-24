@@ -120,6 +120,12 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           banner: Config.get([:instance, :banner_upload_limit]),
           background: Config.get([:instance, :background_upload_limit])
         },
+        fieldsLimits: %{
+          maxFields: Config.get([:instance, :max_account_fields]),
+          maxRemoteFields: Config.get([:instance, :max_remote_account_fields]),
+          nameLength: Config.get([:instance, :account_field_name_length]),
+          valueLength: Config.get([:instance, :account_field_value_length])
+        },
         accountActivationRequired: Config.get([:instance, :account_activation_required], false),
         invitesEnabled: Config.get([:instance, :invites_enabled], false),
         mailerEnabled: Config.get([Pleroma.Emails.Mailer, :enabled], false),

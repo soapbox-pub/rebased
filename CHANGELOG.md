@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Return `total` when querying for reports
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
 - Admin API: Return link alongside with token on password reset
+- Admin API: Support authentication via `x-admin-token` HTTP header
 - Mastodon API: Add `pleroma.direct_conversation_id` to the status endpoint (`GET /api/v1/statuses/:id`)
 - Mastodon API: `pleroma.thread_muted` to the Status entity
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
@@ -42,6 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Static Frontend: Add the ability to render user profiles and notices server-side without requiring JS app.
 - Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
 - Support for `X-Forwarded-For` and similar HTTP headers which used by reverse proxies to pass a real user IP address to the backend. Must not be enabled unless your instance is behind at least one reverse proxy (such as Nginx, Apache HTTPD or Varnish Cache).
+- MRF: New module which handles incoming posts based on their age. By default, all incoming posts that are older than 2 days will be unlisted and not shown to their followers.
 <details>
   <summary>API Changes</summary>
 
@@ -79,6 +81,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
 </details>
+
+## [1.1.6] - 2019-11-19
+### Fixed
+- Not being able to log into to third party apps when the browser is logged into mastofe
+- Email confirmation not being required even when enabled
+- Mastodon API: conversations API crashing when one status is malformed
+
+### Bundled Pleroma-FE Changes
+#### Added
+- About page
+- Meme arrows
+
+#### Fixed
+- Image modal not closing unless clicked outside of image
+- Attachment upload spinner not being centered
+- Showing follow counters being 0 when they are actually hidden
+
+## [1.1.5] - 2019-11-09
+### Fixed
+- Polls having different numbers in timelines/notifications/poll api endpoints due to cache desyncronization
+- Pleroma API: OAuth token endpoint not being found when ".json" suffix is appended
+
+### Changed
+- Frontend bundle updated to [044c9ad0](https://git.pleroma.social/pleroma/pleroma-fe/commit/044c9ad0562af059dd961d50961a3880fca9c642)
+
+## [1.1.4] - 2019-11-01
+### Fixed
+- Added a migration that fills up empty user.info fields to prevent breakage after previous unsafe migrations.
+- Failure to migrate from pre-1.0.0 versions
+- Mastodon API: Notification stream not including follow notifications
+
+## [1.1.3] - 2019-10-25
+### Fixed
+- Blocked users showing up in notifications collapsed as if they were muted
+- `pleroma_ctl` not working on Debian's default shell
 
 ## [1.1.2] - 2019-10-18
 ### Fixed

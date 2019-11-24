@@ -235,14 +235,6 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## DEPRECATED `PATCH /api/pleroma/admin/users/:nickname/activation_status`
-
-### Active or deactivate a user
-
-- Params:
-  - `nickname`
-  - `status` BOOLEAN field, false value means deactivation.
-
 ## `GET /api/pleroma/admin/users/:nickname_or_id`
 
 ### Retrive the details of a user

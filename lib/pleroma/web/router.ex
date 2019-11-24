@@ -13,6 +13,7 @@ defmodule Pleroma.Web.Router do
   pipeline :oauth do
     plug(:fetch_session)
     plug(Pleroma.Plugs.OAuthPlug)
+    plug(Pleroma.Plugs.UserEnabledPlug)
   end
 
   pipeline :api do
