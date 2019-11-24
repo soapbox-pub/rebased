@@ -25,6 +25,25 @@ defmodule Pleroma.UserTest do
 
   clear_config([:instance, :account_activation_required])
 
+  describe "service actors" do
+    test "returns invisible actor" do
+      uri = "#{Pleroma.Web.Endpoint.url()}/internal/fetch-test"
+      followers_uri = "#{uri}/followers"
+      user = User.get_or_create_service_actor_by_ap_id(uri, "internal.fetch-test")
+
+      assert %User{
+               nickname: "internal.fetch-test",
+               invisible: true,
+               local: true,
+               ap_id: ^uri,
+               follower_address: ^followers_uri
+             } = user
+
+      user2 = User.get_or_create_service_actor_by_ap_id(uri, "internal.fetch-test")
+      assert user.id == user2.id
+    end
+  end
+
   describe "when tags are nil" do
     test "tagging a user" do
       user = insert(:user, %{tags: nil})
@@ -148,9 +167,10 @@ defmodule Pleroma.UserTest do
     {:ok, user} = User.follow(user, followed)
 
     user = User.get_cached_by_id(user.id)
-
     followed = User.get_cached_by_ap_id(followed.ap_id)
+
     assert followed.follower_count == 1
+    assert user.following_count == 1
 
     assert User.ap_followers(followed) in User.following(user)
   end
@@ -952,12 +972,14 @@ defmodule Pleroma.UserTest do
       user2 = insert(:user)
 
       {:ok, user2} = User.follow(user2, user)
+      assert user2.following_count == 1
       assert User.following_count(user2) == 1
 
       {:ok, _user} = User.deactivate(user)
 
       info = User.get_cached_user_info(user2)
 
+      assert refresh_record(user2).following_count == 0
       assert info.following_count == 0
       assert User.following_count(user2) == 0
       assert [] = User.get_friends(user2)

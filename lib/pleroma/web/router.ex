@@ -180,6 +180,9 @@ defmodule Pleroma.Web.Router do
 
     get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
 
+    patch("/users/confirm_email", AdminAPIController, :confirm_email)
+    patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
+
     get("/reports", AdminAPIController, :list_reports)
     get("/grouped_reports", AdminAPIController, :list_grouped_reports)
     get("/reports/:id", AdminAPIController, :report_show)
