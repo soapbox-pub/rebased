@@ -852,7 +852,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def get_reports_by_status_id(ap_id) do
     from(a in Activity,
       where: fragment("(?)->>'type' = 'Flag'", a.data),
-      where: fragment("(?)->'object' @> ?", a.data, ^[%{id: ap_id}])
+      where: fragment("(?)->'object' @> ?", a.data, ^[%{id: ap_id}]),
+      or_where: fragment("(?)->'object' @> ?", a.data, ^[ap_id])
     )
     |> Activity.with_preloaded_user_actor()
     |> Repo.all()
