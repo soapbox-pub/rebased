@@ -624,7 +624,31 @@ defmodule Pleroma.ModerationLog do
           "subject" => subjects
         }
       }) do
-    "@#{actor_nickname} force password reset for users: #{users_to_nicknames_string(subjects)}"
+    "@#{actor_nickname} forced password reset for users: #{users_to_nicknames_string(subjects)}"
+  end
+
+  @spec get_log_entry_message(ModerationLog) :: String.t()
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "confirm_email",
+          "subject" => subjects
+        }
+      }) do
+    "@#{actor_nickname} confirmed email for users: #{users_to_nicknames_string(subjects)}"
+  end
+
+  @spec get_log_entry_message(ModerationLog) :: String.t()
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "resend_confirmation_email",
+          "subject" => subjects
+        }
+      }) do
+    "@#{actor_nickname} re-sent confirmation email for users: #{
+      users_to_nicknames_string(subjects)
+    }"
   end
 
   defp nicknames_to_string(nicknames) do
