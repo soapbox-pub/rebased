@@ -17,8 +17,14 @@ defmodule Pleroma.Application do
   def repository, do: @repository
 
   def user_agent do
-    info = "#{Pleroma.Web.base_url()} <#{Pleroma.Config.get([:instance, :email], "")}>"
-    named_version() <> "; " <> info
+    case Pleroma.Config.get([:http, :user_agent], :default) do
+      :default ->
+        info = "#{Pleroma.Web.base_url()} <#{Pleroma.Config.get([:instance, :email], "")}>"
+        named_version() <> "; " <> info
+
+      custom ->
+        custom
+    end
   end
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
