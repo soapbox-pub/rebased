@@ -507,6 +507,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activities = ActivityPub.fetch_activities_for_context("2hu", %{blocking_user: user})
       assert activities == [activity_two, activity]
     end
+
+    test "doesn't return activities with filtered words" do
+      user = insert(:user)
+      user_two = insert(:user)
+      insert(:filter, user: user, phrase: "test", hide: true)
+
+      {:ok, %{id: id1, data: %{"context" => context}}} = CommonAPI.post(user, %{"status" => "1"})
+
+      {:ok, %{id: id2}} =
+        CommonAPI.post(user_two, %{"status" => "2", "in_reply_to_status_id" => id1})
+
+      {:ok, %{id: id3} = user_activity} =
+        CommonAPI.post(user, %{"status" => "3 test?", "in_reply_to_status_id" => id2})
+
+      {:ok, %{id: id4} = filtered_activity} =
+        CommonAPI.post(user_two, %{"status" => "4 test!", "in_reply_to_status_id" => id3})
+
+      {:ok, _} = CommonAPI.post(user, %{"status" => "5", "in_reply_to_status_id" => id4})
+
+      activities =
+        context
+        |> ActivityPub.fetch_activities_for_context(%{"user" => user})
+        |> Enum.map(& &1.id)
+
+      assert length(activities) == 4
+      assert user_activity.id in activities
+      refute filtered_activity.id in activities
+    end
   end
 
   test "doesn't return blocked activities" do
