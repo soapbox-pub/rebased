@@ -505,6 +505,9 @@ config :pleroma, Oban,
     transmogrifier: 20,
     scheduled_activities: 10,
     background: 5
+  ],
+  crontab: [
+    {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker}
   ]
 
 config :pleroma, :workers,
@@ -594,8 +597,7 @@ config :pleroma, :email_notifications,
 config :pleroma, :oauth2,
   token_expires_in: 600,
   issue_new_refresh_token: true,
-  clean_expired_tokens: false,
-  clean_expired_tokens_interval: 86_400_000
+  clean_expired_tokens: false
 
 config :pleroma, :database, rum_enabled: false
 

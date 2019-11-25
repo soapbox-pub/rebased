@@ -483,6 +483,7 @@ Configuration options described in [Oban readme](https://github.com/sorentwo/oba
 * `verbose` - logs verbosity
 * `prune` - non-retryable jobs [pruning settings](https://github.com/sorentwo/oban#pruning) (`:disabled` / `{:maxlen, value}` / `{:maxage, value}`)
 * `queues` - job queues (see below)
+* `crontab` - periodic jobs, see [`Oban.Cron`](#obancron)
 
 Pleroma has the following queues:
 
@@ -494,6 +495,12 @@ Pleroma has the following queues:
 * `web_push` - Web push notifications
 * `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivity`](#pleromascheduledactivity)
 
+#### Oban.Cron
+
+Pleroma has the periodic jobs:
+
+`Pleroma.Workers.Cron.ClearOauthTokenWorker` - the job to clean an expired oauth tokens.
+
 Example:
 
 ```elixir
@@ -504,6 +511,9 @@ config :pleroma, Oban,
   queues: [
     federator_incoming: 50,
     federator_outgoing: 50
+  ],
+  crontab: [
+    {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker}
   ]
 ```
 
@@ -786,8 +796,7 @@ Configure OAuth 2 provider capabilities:
 
 * `token_expires_in` - The lifetime in seconds of the access token.
 * `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
-* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
-* `clean_expired_tokens_interval` - Interval to run the job to clean expired tokens. Defaults to `86_400_000` (24 hours).
+* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`. Interval settings sets in configuration periodic jobs [`Oban.Cron`](#obancron)
 
 ## Link parsing
 

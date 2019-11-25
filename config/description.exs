@@ -2251,13 +2251,6 @@ config :pleroma, :config_description, [
         key: :clean_expired_tokens,
         type: :boolean,
         description: "Enable a background job to clean expired oauth tokens. Defaults to false"
-      },
-      %{
-        key: :clean_expired_tokens_interval,
-        type: :integer,
-        description:
-          "Interval to run the job to clean expired tokens. Defaults to 86_400_000 (24 hours).",
-        suggestions: [86_400_000]
       }
     ]
   },
