@@ -227,6 +227,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
+  def list_instance_statuses(conn, %{"instance" => instance} = params) do
+    {page, page_size} = page_params(params)
+
+    activities =
+      ActivityPub.fetch_instance_activities(%{
+        "instance" => instance,
+        "limit" => page_size,
+        "offset" => (page - 1) * page_size
+      })
+
+    conn
+    |> put_view(StatusView)
+    |> render("index.json", %{activities: activities, as: :activity})
+  end
+
   def list_user_statuses(conn, %{"nickname" => nickname} = params) do
     godmode = params["godmode"] == "true" || params["godmode"] == true
 

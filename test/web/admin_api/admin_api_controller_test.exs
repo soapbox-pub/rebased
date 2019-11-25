@@ -2862,6 +2862,43 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "instances" do
+    test "GET /instances/:instance/statuses" do
+      admin = insert(:user, is_admin: true)
+      user = insert(:user, local: false, nickname: "archaeme@archae.me")
+      user2 = insert(:user, local: false, nickname: "test@test.com")
+      insert_pair(:note_activity, user: user)
+      insert(:note_activity, user: user2)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/instances/archae.me/statuses")
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 2
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/instances/test.com/statuses")
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 1
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/instances/nonexistent.com/statuses")
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 0
+    end
+  end
+
   describe "PATCH /confirm_email" do
     setup %{conn: conn} do
       admin = insert(:user, is_admin: true)
