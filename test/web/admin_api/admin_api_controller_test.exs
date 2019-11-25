@@ -1654,9 +1654,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  NaiveDateTime.from_iso8601!(act.data["published"])
                end).data["published"]
 
-      assert first_group["status"] == StatusView.render("show.json", %{activity: first_status})
+      assert first_group["status"] ==
+               stringify_keys(StatusView.render("show.json", %{activity: first_status}))
 
-      assert first_group["account"]["id"] == target_user.id
+      assert(first_group["account"]["id"] == target_user.id)
 
       assert length(first_group["actors"]) == 1
       assert hd(first_group["actors"])["id"] == reporter.id
@@ -1669,11 +1670,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  NaiveDateTime.from_iso8601!(act.data["published"])
                end).data["published"]
 
-      assert second_group["status"] == %{
-               "id" => second_status.data["id"],
-               "content" => second_status.object.data["content"],
-               "published" => second_status.object.data["published"]
-             }
+      assert second_group["status"] ==
+               stringify_keys(StatusView.render("show.json", %{activity: second_status}))
 
       assert second_group["account"]["id"] == target_user.id
 
@@ -1688,11 +1686,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  NaiveDateTime.from_iso8601!(act.data["published"])
                end).data["published"]
 
-      assert third_group["status"] == %{
-               "id" => third_status.data["id"],
-               "content" => third_status.object.data["content"],
-               "published" => third_status.object.data["published"]
-             }
+      assert third_group["status"] ==
+               stringify_keys(StatusView.render("show.json", %{activity: third_status}))
 
       assert third_group["account"]["id"] == target_user.id
 
