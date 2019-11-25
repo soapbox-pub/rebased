@@ -74,6 +74,13 @@ You shouldn't edit the base config directly to avoid breakages and merge conflic
 
 * `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
 
+## :http
+
+* `proxy_url`: an upstream proxy to fetch posts and/or media with, (default: `nil`)
+* `send_user_agent`: should we include a user agent with HTTP requests? (default: `true`)
+* `user_agent`: what user agent should  we use? (default: `:default`), must be string or `:default`
+* `adapter`: array of hackney options
+
 ## Federation
 ### MRF policies
 
