@@ -92,6 +92,12 @@ Has these additional fields under the `pleroma` object:
 
 - `is_seen`: true if the notification was read by the user
 
+### Move Notification
+
+The `type` value is `move`. Has an additional field:
+
+- `target`: new account
+
 ## GET `/api/v1/notifications`
 
 Accepts additional parameters:

@@ -28,7 +28,8 @@ defmodule Pleroma.Activity do
     "Create" => "mention",
     "Follow" => "follow",
     "Announce" => "reblog",
-    "Like" => "favourite"
+    "Like" => "favourite",
+    "Move" => "move"
   }
 
   @mastodon_to_ap_notification_types for {k, v} <- @mastodon_notification_types,
