@@ -48,8 +48,7 @@ defmodule Pleroma.Web.Push.Impl do
         preferred_locale: "en",
         pleroma: %{
           activity_id: activity_id,
-          direct_conversation_id: direct_conversation_id,
-          account: user.ap_id
+          direct_conversation_id: direct_conversation_id
         }
       }
       |> Jason.encode!()
