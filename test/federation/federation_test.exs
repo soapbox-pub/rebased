@@ -33,8 +33,8 @@ defmodule Pleroma.Integration.FederationTest do
         within @federated1 do
           import Pleroma.Web.Router.Helpers
           user = Pleroma.Factory.insert(:user)
-          user_url = mastodon_api_url(Pleroma.Web.Endpoint, :user, user)
-          url_404 = mastodon_api_url(Pleroma.Web.Endpoint, :user, "not-exists")
+          user_url = account_url(Pleroma.Web.Endpoint, :show, user)
+          url_404 = account_url(Pleroma.Web.Endpoint, :show, "not-exists")
 
           {user.nickname, user_url, url_404}
         end
