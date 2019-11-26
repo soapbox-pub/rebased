@@ -43,6 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Authentication: Added rate limit for password-authorized actions / login existence checks
 - Static Frontend: Add the ability to render user profiles and notices server-side without requiring JS app.
 - Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
+- Mix task to list all users (`mix pleroma.user list`)
 - Support for `X-Forwarded-For` and similar HTTP headers which used by reverse proxies to pass a real user IP address to the backend. Must not be enabled unless your instance is behind at least one reverse proxy (such as Nginx, Apache HTTPD or Varnish Cache).
 - MRF: New module which handles incoming posts based on their age. By default, all incoming posts that are older than 2 days will be unlisted and not shown to their followers.
 <details>
@@ -70,6 +71,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add the `recipients` parameter to `GET /api/v1/conversations`
 - Configuration: `feed` option for user atom feed.
 - Pleroma API: Add Emoji reactions
+- Admin API: Add `/api/pleroma/admin/instances/:instance/statuses` - lists all statuses from a given instance
+- Admin API: `PATCH /api/pleroma/users/confirm_email` to confirm email for multiple users, `PATCH /api/pleroma/users/resend_confirmation_email` to resend confirmation email for multiple users
 </details>
 
 ### Fixed
@@ -80,6 +83,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
+- Admin API: Error when trying to update reports in the "old" format
 </details>
 
 ## [1.1.6] - 2019-11-19

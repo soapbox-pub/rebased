@@ -15,6 +15,11 @@ $PREFIX new <nickname> <email> [<options>]
 - `--admin`/`--no-admin` - whether the user should be an admin
 - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions
 
+## List local users
+```sh
+$PREFIX list
+```
+
 ## Generate an invite link
 ```sh
 $PREFIX invite [<options>]

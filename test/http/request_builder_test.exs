@@ -16,9 +16,19 @@ defmodule Pleroma.HTTP.RequestBuilderTest do
 
     test "send pleroma user agent" do
       Pleroma.Config.put([:http, :send_user_agent], true)
+      Pleroma.Config.put([:http, :user_agent], :default)
 
       assert RequestBuilder.headers(%{}, []) == %{
                headers: [{"User-Agent", Pleroma.Application.user_agent()}]
+             }
+    end
+
+    test "send custom user agent" do
+      Pleroma.Config.put([:http, :send_user_agent], true)
+      Pleroma.Config.put([:http, :user_agent], "totally-not-pleroma")
+
+      assert RequestBuilder.headers(%{}, []) == %{
+               headers: [{"User-Agent", "totally-not-pleroma"}]
              }
     end
   end
