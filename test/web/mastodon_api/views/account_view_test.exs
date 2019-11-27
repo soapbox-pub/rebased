@@ -375,6 +375,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     refute result.display_name == "<marquee> username </marquee>"
   end
 
+  test "never display nil user follow counts" do
+    user = insert(:user, following_count: 0, follower_count: 0)
+    result = AccountView.render("show.json", %{user: user})
+
+    assert result.following_count == 0
+    assert result.followers_count == 0
+  end
+
   describe "hiding follows/following" do
     test "shows when follows/followers stats are hidden and sets follow/follower count to 0" do
       user =
