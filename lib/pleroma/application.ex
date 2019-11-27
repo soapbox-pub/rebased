@@ -31,7 +31,6 @@ defmodule Pleroma.Application do
     children =
       [
         Pleroma.Repo,
-        Pleroma.Scheduler,
         Pleroma.Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,

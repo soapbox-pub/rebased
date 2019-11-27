@@ -51,20 +51,6 @@ config :pleroma, Pleroma.Repo,
   telemetry_event: [Pleroma.Repo.Instrumenter],
   migration_lock: nil
 
-scheduled_jobs =
-  with digest_config <- Application.get_env(:pleroma, :email_notifications)[:digest],
-       true <- digest_config[:active] do
-    [{digest_config[:schedule], {Pleroma.Daemons.DigestEmailDaemon, :perform, []}}]
-  else
-    _ -> []
-  end
-
-config :pleroma, Pleroma.Scheduler,
-  global: true,
-  overlap: true,
-  timezone: :utc,
-  jobs: scheduled_jobs
-
 config :pleroma, Pleroma.Captcha,
   enabled: false,
   seconds_valid: 60,
@@ -510,7 +496,8 @@ config :pleroma, Oban,
     {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
     {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
     {"* * * * *", Pleroma.Workers.Cron.ScheduledActivityWorker},
-    {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker}
+    {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
+    {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker}
   ]
 
 config :pleroma, :workers,
@@ -592,7 +579,6 @@ config :pleroma, Pleroma.ScheduledActivity,
 config :pleroma, :email_notifications,
   digest: %{
     active: false,
-    schedule: "0 0 * * 0",
     interval: 7,
     inactivity_threshold: 7
   }
