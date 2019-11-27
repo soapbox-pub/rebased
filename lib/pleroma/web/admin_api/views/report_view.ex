@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.AdminAPI.ReportView do
   use Pleroma.Web, :view
+  alias Pleroma.Activity
   alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.Web.AdminAPI.Report
@@ -46,15 +47,15 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
     reports =
       Enum.map(groups, fn group ->
         status =
-          if group[:status_deleted],
-            do: group[:status],
-            else: StatusView.render("show.json", %{activity: group[:status]})
+          case group.status do
+            %Activity{} = activity -> StatusView.render("show.json", %{activity: activity})
+            _ -> group.status
+          end
 
         %{
           date: group[:date],
           account: group[:account],
-          status: status,
-          status_deleted: group[:status_deleted],
+          status: Map.put_new(status, "deleted", false),
           actors: Enum.map(group[:actors], &merge_account_views/1),
           reports:
             group[:reports]

@@ -1613,6 +1613,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         first_status: Activity.get_by_ap_id_with_object(first_status.data["id"]),
         second_status: Activity.get_by_ap_id_with_object(second_status.data["id"]),
         third_status: Activity.get_by_ap_id_with_object(third_status.data["id"]),
+        first_report: first_report,
         first_status_reports: [first_report, second_report, third_report],
         second_status_reports: [first_report, second_report],
         third_status_reports: [first_report],
@@ -1655,7 +1656,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                end).data["published"]
 
       assert first_group["status"] ==
-               stringify_keys(StatusView.render("show.json", %{activity: first_status}))
+               Map.put(
+                 stringify_keys(StatusView.render("show.json", %{activity: first_status})),
+                 "deleted",
+                 false
+               )
 
       assert(first_group["account"]["id"] == target_user.id)
 
@@ -1671,7 +1676,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                end).data["published"]
 
       assert second_group["status"] ==
-               stringify_keys(StatusView.render("show.json", %{activity: second_status}))
+               Map.put(
+                 stringify_keys(StatusView.render("show.json", %{activity: second_status})),
+                 "deleted",
+                 false
+               )
 
       assert second_group["account"]["id"] == target_user.id
 
@@ -1687,7 +1696,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                end).data["published"]
 
       assert third_group["status"] ==
-               stringify_keys(StatusView.render("show.json", %{activity: third_status}))
+               Map.put(
+                 stringify_keys(StatusView.render("show.json", %{activity: third_status})),
+                 "deleted",
+                 false
+               )
 
       assert third_group["account"]["id"] == target_user.id
 
@@ -1696,6 +1709,51 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert Enum.map(third_group["reports"], & &1["id"]) --
                Enum.map(third_status_reports, & &1.id) == []
+    end
+
+    test "reopened report renders status data", %{
+      conn: conn,
+      first_report: first_report,
+      first_status: first_status
+    } do
+      {:ok, _} = CommonAPI.update_report_state(first_report.id, "resolved")
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/grouped_reports")
+        |> json_response(:ok)
+
+      first_group = Enum.find(response["reports"], &(&1["status"]["id"] == first_status.id))
+
+      assert first_group["status"] ==
+               Map.put(
+                 stringify_keys(StatusView.render("show.json", %{activity: first_status})),
+                 "deleted",
+                 false
+               )
+    end
+
+    test "reopened report does not render status data if status has been deleted", %{
+      conn: conn,
+      first_report: first_report,
+      first_status: first_status,
+      target_user: target_user
+    } do
+      {:ok, _} = CommonAPI.update_report_state(first_report.id, "resolved")
+      {:ok, _} = CommonAPI.delete(first_status.id, target_user)
+
+      refute Activity.get_by_ap_id(first_status.id)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/grouped_reports")
+        |> json_response(:ok)
+
+      assert Enum.find(response["reports"], &(&1["status"]["deleted"] == true))["status"][
+               "deleted"
+             ] == true
+
+      assert length(Enum.filter(response["reports"], &(&1["status"]["deleted"] == false))) == 2
     end
   end
 

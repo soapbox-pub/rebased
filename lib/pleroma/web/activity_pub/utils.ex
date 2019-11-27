@@ -722,16 +722,22 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         act when is_binary(act) -> act
       end
 
-    activity = Activity.get_by_ap_id_with_object(id)
-    actor = User.get_by_ap_id(activity.object.data["actor"])
+    case Activity.get_by_ap_id_with_object(id) do
+      %Activity{} = activity ->
+        %{
+          "type" => "Note",
+          "id" => activity.data["id"],
+          "content" => activity.object.data["content"],
+          "published" => activity.object.data["published"],
+          "actor" =>
+            AccountView.render("show.json", %{
+              user: User.get_by_ap_id(activity.object.data["actor"])
+            })
+        }
 
-    %{
-      "type" => "Note",
-      "id" => activity.data["id"],
-      "content" => activity.object.data["content"],
-      "published" => activity.object.data["published"],
-      "actor" => AccountView.render("show.json", %{user: actor})
-    }
+      _ ->
+        %{"id" => id, "deleted" => true}
+    end
   end
 
   defp build_flag_object(_), do: []
@@ -792,30 +798,27 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     reports = get_reports_by_status_id(activity["id"])
     max_date = Enum.max_by(reports, &NaiveDateTime.from_iso8601!(&1.data["published"]))
     actors = Enum.map(reports, & &1.user_actor)
-    {deleted, status} = get_status_data(activity)
+    status = get_status_data(activity)
 
     %{
       date: max_date.data["published"],
       account: activity["actor"],
       status: status,
-      status_deleted: deleted,
       actors: Enum.uniq(actors),
       reports: reports
     }
   end
 
-  defp get_status_data(activity) do
-    case Activity.get_by_ap_id(activity["id"]) do
-      %Activity{} = act ->
-        {false, act}
+  defp get_status_data(status) do
+    case status["deleted"] do
+      true ->
+        %{
+          "id" => status["id"],
+          "deleted" => true
+        }
 
       _ ->
-        {true,
-         %{
-           id: activity["id"],
-           content: activity["content"],
-           published: activity["published"]
-         }}
+        Activity.get_by_ap_id(status["id"])
     end
   end
 
@@ -829,7 +832,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.all()
   end
 
-  @spec get_reports_grouped_by_status(%{required(:activity) => String.t()}) :: %{
+  @spec get_reports_grouped_by_status([String.t()]) :: %{
           required(:groups) => [
             %{
               required(:date) => String.t(),
@@ -838,8 +841,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
               required(:actors) => [%User{}],
               required(:reports) => [%Activity{}]
             }
-          ],
-          required(:total) => integer
+          ]
         }
   def get_reports_grouped_by_status(activity_ids) do
     parsed_groups =
