@@ -1347,6 +1347,14 @@ defmodule Pleroma.UserTest do
     assert User.user_info(user).follower_count == 2
   end
 
+  test "with nil follower count fields, 0 will be returned" do
+    user = insert(:user, follower_count: nil, following_count: nil)
+    user_info = User.user_info(user)
+
+    assert user_info.follower_count == 0
+    assert user_info.following_count == 0
+  end
+
   describe "list_inactive_users_query/1" do
     defp days_ago(days) do
       NaiveDateTime.add(

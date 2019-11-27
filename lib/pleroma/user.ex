@@ -178,8 +178,8 @@ defmodule Pleroma.User do
   def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
 
   def user_info(%User{} = user, args \\ %{}) do
-    following_count = Map.get(args, :following_count, user.following_count)
-    follower_count = Map.get(args, :follower_count, user.follower_count)
+    following_count = Map.get(args, :following_count, user.following_count) || 0
+    follower_count = Map.get(args, :follower_count, user.follower_count) || 0
 
     %{
       note_count: user.note_count,
