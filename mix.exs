@@ -63,7 +63,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :swarm],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -102,7 +102,6 @@ defmodule Pleroma.Mixfile do
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_sql, "~> 3.2"},
       {:oban, "~> 0.11.1"},
-      {:quantum, "~> 2.3"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
