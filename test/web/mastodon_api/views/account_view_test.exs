@@ -350,7 +350,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       }
     }
 
-    assert expected == AccountView.render("show.json", %{user: user, for: other_user})
+    assert expected ==
+             AccountView.render("show.json", %{user: refresh_record(user), for: other_user})
   end
 
   test "returns the settings store if the requesting user is the represented user and it's requested specifically" do
