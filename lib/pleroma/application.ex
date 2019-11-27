@@ -35,7 +35,6 @@ defmodule Pleroma.Application do
         Pleroma.Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,
-        Pleroma.Daemons.ActivityExpirationDaemon,
         Pleroma.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
