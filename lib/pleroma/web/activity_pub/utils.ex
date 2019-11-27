@@ -798,11 +798,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     reports = get_reports_by_status_id(activity["id"])
     max_date = Enum.max_by(reports, &NaiveDateTime.from_iso8601!(&1.data["published"]))
     actors = Enum.map(reports, & &1.user_actor)
+    [%{data: %{"object" => [account_id | _]}} | _] = reports
+
+    account =
+      AccountView.render("show.json", %{
+        user: User.get_by_ap_id(account_id)
+      })
+
     status = get_status_data(activity)
 
     %{
       date: max_date.data["published"],
-      account: activity["actor"],
+      account: account,
       status: status,
       actors: Enum.uniq(actors),
       reports: reports

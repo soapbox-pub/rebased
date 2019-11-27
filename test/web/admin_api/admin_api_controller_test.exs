@@ -1755,6 +1755,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert length(Enum.filter(response["reports"], &(&1["status"]["deleted"] == false))) == 2
     end
+
+    test "account not empty if status was deleted", %{
+      conn: conn,
+      first_report: first_report,
+      first_status: first_status,
+      target_user: target_user
+    } do
+      {:ok, _} = CommonAPI.update_report_state(first_report.id, "resolved")
+      {:ok, _} = CommonAPI.delete(first_status.id, target_user)
+
+      refute Activity.get_by_ap_id(first_status.id)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/grouped_reports")
+        |> json_response(:ok)
+
+      assert Enum.find(response["reports"], &(&1["status"]["deleted"] == true))["account"]
+    end
   end
 
   describe "POST /api/pleroma/admin/reports/:id/respond" do
