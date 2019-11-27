@@ -508,7 +508,8 @@ config :pleroma, Oban,
   ],
   crontab: [
     {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
-    {"0 * * * *", Pleroma.Workers.Cron.StatsWorker}
+    {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
+    {"* * * * *", Pleroma.Workers.Cron.ScheduledActivityWorker}
   ]
 
 config :pleroma, :workers,
