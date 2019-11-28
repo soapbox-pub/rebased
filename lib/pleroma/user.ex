@@ -1020,7 +1020,7 @@ defmodule Pleroma.User do
     do: Enum.member?(user.muted_notifications, ap_id)
 
   def blocks?(%User{} = user, %User{} = target) do
-    blocks_ap_id?(user, target) || blocks_domain?(user, target)
+    blocks_ap_id?(user, target) || (!User.following?(user, target) && blocks_domain?(user, target))
   end
 
   def blocks?(nil, _), do: false
