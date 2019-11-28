@@ -15,7 +15,7 @@ defmodule Pleroma.Web.StreamerTest do
   alias Pleroma.Web.Streamer.StreamerSocket
   alias Pleroma.Web.Streamer.Worker
 
-  @moduletag needs_streamer: true
+  @moduletag needs_streamer: true, capture_log: true
   clear_config_all([:instance, :skip_thread_containment])
 
   describe "user streams" do
