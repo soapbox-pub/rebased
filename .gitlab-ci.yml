@@ -58,7 +58,7 @@ unit-testing:
 federated-testing:
   stage: test
   services:
-  - name: lainsoykaf/postgres-with-rum
+  - name: minibikini/postgres-with-rum:12
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
