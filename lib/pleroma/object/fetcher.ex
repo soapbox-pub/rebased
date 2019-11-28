@@ -49,7 +49,7 @@ defmodule Pleroma.Object.Fetcher do
   end
 
   def refetch_object(%Object{data: %{"id" => id}} = object) do
-    with {:local, false} <- {:local, String.starts_with?(id, Pleroma.Web.base_url() <> "/")},
+    with {:local, false} <- {:local, Object.local?(object)},
          {:ok, data} <- fetch_and_contain_remote_object_from_id(id),
          {:ok, object} <- reinject_object(object, data) do
       {:ok, object}

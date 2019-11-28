@@ -961,9 +961,9 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.follow(user, user2)
       {:ok, _user} = User.deactivate(user)
 
-      info = User.get_cached_user_info(user2)
+      user2 = User.get_cached_by_id(user2.id)
 
-      assert info.follower_count == 0
+      assert user2.follower_count == 0
       assert [] = User.get_followers(user2)
     end
 
@@ -977,10 +977,10 @@ defmodule Pleroma.UserTest do
 
       {:ok, _user} = User.deactivate(user)
 
-      info = User.get_cached_user_info(user2)
+      user2 = User.get_cached_by_id(user2.id)
 
       assert refresh_record(user2).following_count == 0
-      assert info.following_count == 0
+      assert user2.following_count == 0
       assert User.following_count(user2) == 0
       assert [] = User.get_friends(user2)
     end
@@ -1182,13 +1182,12 @@ defmodule Pleroma.UserTest do
   describe "caching" do
     test "invalidate_cache works" do
       user = insert(:user)
-      _user_info = User.get_cached_user_info(user)
 
+      User.set_cache(user)
       User.invalidate_cache(user)
 
       {:ok, nil} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
       {:ok, nil} = Cachex.get(:user_cache, "nickname:#{user.nickname}")
-      {:ok, nil} = Cachex.get(:user_cache, "user_info:#{user.id}")
     end
 
     test "User.delete() plugs any possible zombie objects" do
@@ -1344,7 +1343,7 @@ defmodule Pleroma.UserTest do
 
     {:ok, user} = User.block(user, follower)
 
-    assert User.user_info(user).follower_count == 2
+    assert user.follower_count == 2
   end
 
   describe "list_inactive_users_query/1" do
@@ -1521,51 +1520,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "set_info_cache/2" do
-    setup do
-      user = insert(:user)
-      {:ok, user: user}
-    end
-
-    test "update from args", %{user: user} do
-      User.set_info_cache(user, %{following_count: 15, follower_count: 18})
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user)
-      assert followers == 18
-      assert following == 15
-    end
-
-    test "without args", %{user: user} do
-      User.set_info_cache(user, %{})
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user)
-      assert followers == 0
-      assert following == 0
-    end
-  end
-
-  describe "user_info/2" do
-    setup do
-      user = insert(:user)
-      {:ok, user: user}
-    end
-
-    test "update from args", %{user: user} do
-      %{follower_count: followers, following_count: following} =
-        User.user_info(user, %{following_count: 15, follower_count: 18})
-
-      assert followers == 18
-      assert following == 15
-    end
-
-    test "without args", %{user: user} do
-      %{follower_count: followers, following_count: following} = User.user_info(user)
-
-      assert followers == 0
-      assert following == 0
-    end
-  end
-
   describe "is_internal_user?/1" do
     test "non-internal user returns false" do
       user = insert(:user)
@@ -1622,14 +1576,14 @@ defmodule Pleroma.UserTest do
           ap_enabled: true
         )
 
-      assert User.user_info(other_user).following_count == 0
-      assert User.user_info(other_user).follower_count == 0
+      assert other_user.following_count == 0
+      assert other_user.follower_count == 0
 
       {:ok, user} = Pleroma.User.follow(user, other_user)
       other_user = Pleroma.User.get_by_id(other_user.id)
 
-      assert User.user_info(user).following_count == 1
-      assert User.user_info(other_user).follower_count == 1
+      assert user.following_count == 1
+      assert other_user.follower_count == 1
     end
 
     test "syncronizes the counters with the remote instance for the followed when enabled" do
@@ -1645,14 +1599,14 @@ defmodule Pleroma.UserTest do
           ap_enabled: true
         )
 
-      assert User.user_info(other_user).following_count == 0
-      assert User.user_info(other_user).follower_count == 0
+      assert other_user.following_count == 0
+      assert other_user.follower_count == 0
 
       Pleroma.Config.put([:instance, :external_user_synchronization], true)
       {:ok, _user} = User.follow(user, other_user)
       other_user = User.get_by_id(other_user.id)
 
-      assert User.user_info(other_user).follower_count == 437
+      assert other_user.follower_count == 437
     end
 
     test "syncronizes the counters with the remote instance for the follower when enabled" do
@@ -1668,13 +1622,13 @@ defmodule Pleroma.UserTest do
           ap_enabled: true
         )
 
-      assert User.user_info(other_user).following_count == 0
-      assert User.user_info(other_user).follower_count == 0
+      assert other_user.following_count == 0
+      assert other_user.follower_count == 0
 
       Pleroma.Config.put([:instance, :external_user_synchronization], true)
       {:ok, other_user} = User.follow(other_user, user)
 
-      assert User.user_info(other_user).following_count == 152
+      assert other_user.following_count == 152
     end
   end
 

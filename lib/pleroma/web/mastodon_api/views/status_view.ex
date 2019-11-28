@@ -9,8 +9,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
-  alias Pleroma.Conversation
-  alias Pleroma.Conversation.Participation
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -245,12 +243,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     direct_conversation_id =
       with {_, nil} <- {:direct_conversation_id, opts[:direct_conversation_id]},
            {_, true} <- {:include_id, opts[:with_direct_conversation_id]},
-           {_, %User{} = for_user} <- {:for_user, opts[:for]},
-           %{data: %{"context" => context}} when is_binary(context) <- activity,
-           %Conversation{} = conversation <- Conversation.get_for_ap_id(context),
-           %Participation{id: participation_id} <-
-             Participation.for_user_and_conversation(for_user, conversation) do
-        participation_id
+           {_, %User{} = for_user} <- {:for_user, opts[:for]} do
+        Activity.direct_conversation_id(activity, for_user)
       else
         {:direct_conversation_id, participation_id} when is_integer(participation_id) ->
           participation_id

@@ -255,4 +255,8 @@ defmodule Pleroma.Object do
     |> Object.change(%{data: Map.merge(data || %{}, attrs)})
     |> Repo.update()
   end
+
+  def local?(%Object{data: %{"id" => id}}) do
+    String.starts_with?(id, Pleroma.Web.base_url() <> "/")
+  end
 end
