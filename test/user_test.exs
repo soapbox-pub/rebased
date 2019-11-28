@@ -881,13 +881,13 @@ defmodule Pleroma.UserTest do
     end
 
     test "follows take precedence over domain blocks" do
-        user = insert(:user)
-        good_eggo = insert(:user, %{ap_id: "https://meanies.social/user/cuteposter"})
-        
-        {:ok, user} = User.block_domain(user, "meanies.social")
-        {:ok, user} = User.follow(user, good_eggo)
+      user = insert(:user)
+      good_eggo = insert(:user, %{ap_id: "https://meanies.social/user/cuteposter"})
 
-        refute User.blocks?(user, good_eggo)
+      {:ok, user} = User.block_domain(user, "meanies.social")
+      {:ok, user} = User.follow(user, good_eggo)
+
+      refute User.blocks?(user, good_eggo)
     end
   end
 
