@@ -1923,6 +1923,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       Pleroma.Config.put([:instance, :dynamic_configuration], true)
     end
 
+    @tag capture_log: true
     test "create new config setting in db", %{conn: conn} do
       conn =
         post(conn, "/api/pleroma/admin/config", %{
