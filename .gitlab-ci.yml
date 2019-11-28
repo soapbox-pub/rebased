@@ -31,6 +31,7 @@ build:
 
 benchmark:
   stage: benchmark
+  when: manual
   variables:
     MIX_ENV: benchmark
   services:
