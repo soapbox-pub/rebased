@@ -1233,13 +1233,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp collection_private(data) do
-    if is_map(data["first"]) and
-         data["first"]["type"] in ["CollectionPage", "OrderedCollectionPage"] do
+  defp collection_private(%{"first" => first}) do
+    if is_map(first) and
+         first["type"] in ["CollectionPage", "OrderedCollectionPage"] do
       {:ok, false}
     else
       with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
-             Fetcher.fetch_and_contain_remote_object_from_id(data["first"]) do
+             Fetcher.fetch_and_contain_remote_object_from_id(first) do
         {:ok, false}
       else
         {:error, {:ok, %{status: code}}} when code in [401, 403] ->
@@ -1253,6 +1253,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end
     end
   end
+
+  defp collection_private(_data), do: {:ok, true}
 
   def user_data_from_user_object(data) do
     with {:ok, data} <- MRF.filter(data),
