@@ -350,7 +350,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       }
     }
 
-    assert expected == AccountView.render("show.json", %{user: user, for: other_user})
+    assert expected ==
+             AccountView.render("show.json", %{user: refresh_record(user), for: other_user})
   end
 
   test "returns the settings store if the requesting user is the represented user and it's requested specifically" do
@@ -372,6 +373,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     user = insert(:user, name: "<marquee> username </marquee>")
     result = AccountView.render("show.json", %{user: user})
     refute result.display_name == "<marquee> username </marquee>"
+  end
+
+  test "never display nil user follow counts" do
+    user = insert(:user, following_count: 0, follower_count: 0)
+    result = AccountView.render("show.json", %{user: user})
+
+    assert result.following_count == 0
+    assert result.followers_count == 0
   end
 
   describe "hiding follows/following" do
