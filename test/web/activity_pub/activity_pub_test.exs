@@ -1554,5 +1554,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert follow_info.hide_followers == false
       assert follow_info.hide_follows == true
     end
+
+    test "detects hidden follows/followers for friendica" do
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:8080/followers/fuser3",
+          following_address: "http://localhost:8080/following/fuser3"
+        )
+
+      {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
+      assert follow_info.hide_followers == true
+      assert follow_info.follower_count == 296
+      assert follow_info.following_count == 32
+      assert follow_info.hide_follows == true
+    end
   end
 end
