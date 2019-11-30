@@ -2,6 +2,24 @@ defmodule Pleroma.LoadTesting.Generator do
   use Pleroma.LoadTesting.Helper
   alias Pleroma.Web.CommonAPI
 
+  def generate_like_activities(user, posts) do
+    count_likes = Kernel.trunc(length(posts) / 4)
+    IO.puts("Starting generating #{count_likes} like activities...")
+
+    {time, _} =
+      :timer.tc(fn ->
+        Task.async_stream(
+           Enum.take_random(posts, count_likes),
+          fn post -> {:ok, _, _} = CommonAPI.favorite(post.id, user) end,
+          max_concurrency: 10,
+          timeout: 30_000
+        )
+        |> Stream.run()
+      end)
+
+    IO.puts("Inserting like activities take #{to_sec(time)} sec.\n")
+  end
+
   def generate_users(opts) do
     IO.puts("Starting generating #{opts[:users_max]} users...")
     {time, _} = :timer.tc(fn -> do_generate_users(opts) end)
