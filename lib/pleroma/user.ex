@@ -118,8 +118,6 @@ defmodule Pleroma.User do
     has_many(:registrations, Registration)
     has_many(:deliveries, Delivery)
 
-    field(:info, :map, default: %{})
-
     timestamps()
   end
 
@@ -225,7 +223,6 @@ defmodule Pleroma.User do
 
     params =
       params
-      |> Map.put(:info, params[:info] || %{})
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
       |> truncate_fields_param()
@@ -1211,7 +1208,7 @@ defmodule Pleroma.User do
   def external_users(opts \\ []) do
     query =
       external_users_query()
-      |> select([u], struct(u, [:id, :ap_id, :info]))
+      |> select([u], struct(u, [:id, :ap_id]))
 
     query =
       if opts[:max_id],

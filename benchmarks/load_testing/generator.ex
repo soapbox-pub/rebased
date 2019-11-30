@@ -49,7 +49,6 @@ defmodule Pleroma.LoadTesting.Generator do
       password_hash:
         "$pbkdf2-sha512$160000$bU.OSFI7H/yqWb5DPEqyjw$uKp/2rmXw12QqnRRTqTtuk2DTwZfF8VR4MYW2xMeIlqPR/UX1nT1CEKVUx2CowFMZ5JON8aDvURrZpJjSgqXrg",
       bio: "Tester Number #{i}",
-      info: %{},
       local: remote
     }
 
