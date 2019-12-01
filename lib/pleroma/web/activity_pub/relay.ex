@@ -14,7 +14,6 @@ defmodule Pleroma.Web.ActivityPub.Relay do
       relay_ap_id()
       |> User.get_or_create_service_actor_by_ap_id()
 
-    {:ok, actor} = User.set_invisible(actor, true)
     actor
   end
 

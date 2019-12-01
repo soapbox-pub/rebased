@@ -348,7 +348,17 @@ Available caches:
 * `:activity_pub` - activity pub routes (except question activities). Defaults to `nil` (no expiration).
 * `:activity_pub_question` - activity pub routes (question activities). Defaults to `30_000` (30 seconds).
 
-## :hackney_pools
+## HTTP client
+
+### :http
+
+* `proxy_url`: an upstream proxy to fetch posts and/or media with, (default: `nil`)
+* `send_user_agent`: should we include a user agent with HTTP requests? (default: `true`)
+* `user_agent`: what user agent should  we use? (default: `:default`), must be string or `:default`
+* `adapter`: array of hackney options
+
+
+### :hackney_pools
 
 Advanced. Tweaks Hackney (http client) connections pools.
 
@@ -656,7 +666,7 @@ Feel free to adjust the priv_dir and port number. Then you will have to create t
 
 ### :admin_token
 
-Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the 'admin_token' parameter. Example:
+Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the `admin_token` parameter or `x-admin-token` HTTP header. Example:
 
 ```elixir
 config :pleroma, :admin_token, "somerandomtoken"
@@ -664,8 +674,14 @@ config :pleroma, :admin_token, "somerandomtoken"
 
 You can then do
 
-```sh
-curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
+```shell
+curl "http://localhost:4000/api/pleroma/admin/users/invites?admin_token=somerandomtoken"
+```
+
+or
+
+```shell
+curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/pleroma/admin/users/invites"
 ```
 
 ### :auth

@@ -180,7 +180,8 @@ config :pleroma, Pleroma.Web.Endpoint,
 
 # Configures Elixir's Logger
 config :logger, :console,
-  format: "$time $metadata[$level] $message\n",
+  level: :debug,
+  format: "\n$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
 config :logger, :ex_syslogger,
@@ -208,6 +209,7 @@ config :tesla, adapter: Tesla.Adapter.Hackney
 config :pleroma, :http,
   proxy_url: nil,
   send_user_agent: true,
+  user_agent: :default,
   adapter: [
     ssl_options: [
       # Workaround for remote server certificate chain issues

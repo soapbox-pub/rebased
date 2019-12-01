@@ -39,6 +39,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity == returned_activity
     end
 
+    @tag capture_log: true
     test "it fetches replied-to activities if we don't have them" do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
@@ -533,6 +534,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert object.data["content"] == "this is a private toot"
     end
 
+    @tag capture_log: true
     test "it rejects incoming announces with an inlined activity from another origin" do
       data =
         File.read!("test/fixtures/bogus-mastodon-announce.json")
@@ -814,6 +816,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Activity.get_by_id(activity.id)
     end
 
+    @tag capture_log: true
     test "it works for incoming user deletes" do
       %{ap_id: ap_id} = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
 
@@ -1749,6 +1752,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert modified_object["inReplyToAtomUri"] == ""
     end
 
+    @tag capture_log: true
     test "returns modified object when allowed incoming reply", %{data: data} do
       object_with_reply =
         Map.put(
@@ -1868,6 +1872,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
              end) =~ "Unsupported URI scheme"
     end
 
+    @tag capture_log: true
     test "returns {:ok, %Object{}} for success case" do
       assert {:ok, %Object{}} =
                Transmogrifier.get_obj_helper("https://shitposter.club/notice/2827873")

@@ -80,7 +80,7 @@ defmodule Pleroma.Object do
   end
 
   defp warn_on_no_object_preloaded(ap_id) do
-    "Object.normalize() called without preloaded object (#{ap_id}). Consider preloading the object"
+    "Object.normalize() called without preloaded object (#{inspect(ap_id)}). Consider preloading the object"
     |> Logger.debug()
 
     Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
@@ -271,5 +271,9 @@ defmodule Pleroma.Object do
     object
     |> Object.change(%{data: Map.merge(data || %{}, attrs)})
     |> Repo.update()
+  end
+
+  def local?(%Object{data: %{"id" => id}}) do
+    String.starts_with?(id, Pleroma.Web.base_url() <> "/")
   end
 end

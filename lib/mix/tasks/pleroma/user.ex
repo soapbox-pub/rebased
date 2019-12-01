@@ -364,6 +364,24 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
+  def run(["list"]) do
+    start_pleroma()
+
+    Pleroma.User.Query.build(%{local: true})
+    |> Pleroma.RepoStreamer.chunk_stream(500)
+    |> Stream.each(fn users ->
+      users
+      |> Enum.each(fn user ->
+        shell_info(
+          "#{user.nickname} moderator: #{user.info.is_moderator}, admin: #{user.info.is_admin}, locked: #{
+            user.info.locked
+          }, deactivated: #{user.info.deactivated}"
+        )
+      end)
+    end)
+    |> Stream.run()
+  end
+
   defp set_moderator(user, value) do
     {:ok, user} =
       user

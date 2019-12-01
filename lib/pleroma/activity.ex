@@ -303,4 +303,17 @@ defmodule Pleroma.Activity do
   end
 
   defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search
+
+  def direct_conversation_id(activity, for_user) do
+    alias Pleroma.Conversation.Participation
+
+    with %{data: %{"context" => context}} when is_binary(context) <- activity,
+         %Pleroma.Conversation{} = conversation <- Pleroma.Conversation.get_for_ap_id(context),
+         %Participation{id: participation_id} <-
+           Participation.for_user_and_conversation(for_user, conversation) do
+      participation_id
+    else
+      _ -> nil
+    end
+  end
 end

@@ -235,14 +235,6 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## DEPRECATED `PATCH /api/pleroma/admin/users/:nickname/activation_status`
-
-### Active or deactivate a user
-
-- Params:
-  - `nickname`
-  - `status` BOOLEAN field, false value means deactivation.
-
 ## `GET /api/pleroma/admin/users/:nickname_or_id`
 
 ### Retrive the details of a user
@@ -878,3 +870,19 @@ Compile time settings (need instance reboot):
 - Authentication: required
 - Params: None
 - Response: JSON, "ok" and 200 status
+
+## `PATCH /api/pleroma/admin/users/confirm_email`
+
+### Confirm users' emails
+
+- Params:
+  - `nicknames`
+- Response: Array of user nicknames
+
+## `PATCH /api/pleroma/admin/users/resend_confirmation_email`
+
+### Resend confirmation email
+
+- Params:
+  - `nicknames`
+- Response: Array of user nicknames

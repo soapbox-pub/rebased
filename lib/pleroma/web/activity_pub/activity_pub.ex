@@ -734,6 +734,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
+  def fetch_instance_activities(params) do
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce"])
+      |> Map.put("instance", params["instance"])
+      |> Map.put("whole_db", true)
+
+    fetch_activities([Pleroma.Constants.as_public()], params, :offset)
+    |> Enum.reverse()
+  end
+
   defp user_activities_recipients(%{"godmode" => true}) do
     []
   end
@@ -961,6 +972,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
+  defp restrict_instance(query, %{"instance" => instance}) do
+    users =
+      from(
+        u in User,
+        select: u.ap_id,
+        where: fragment("? LIKE ?", u.nickname, ^"%@#{instance}")
+      )
+      |> Repo.all()
+
+    from(activity in query, where: activity.actor in ^users)
+  end
+
+  defp restrict_instance(query, _), do: query
+
   defp exclude_poll_votes(query, %{"include_poll_votes" => true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1041,6 +1066,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
+    |> restrict_instance(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
     |> exclude_visibility(opts)
@@ -1226,13 +1252,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp collection_private(data) do
-    if is_map(data["first"]) and
-         data["first"]["type"] in ["CollectionPage", "OrderedCollectionPage"] do
+  defp collection_private(%{"first" => first}) do
+    if is_map(first) and
+         first["type"] in ["CollectionPage", "OrderedCollectionPage"] do
       {:ok, false}
     else
       with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
-             Fetcher.fetch_and_contain_remote_object_from_id(data["first"]) do
+             Fetcher.fetch_and_contain_remote_object_from_id(first) do
         {:ok, false}
       else
         {:error, {:ok, %{status: code}}} when code in [401, 403] ->
@@ -1246,6 +1272,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end
     end
   end
+
+  defp collection_private(_data), do: {:ok, true}
 
   def user_data_from_user_object(data) do
     with {:ok, data} <- MRF.filter(data),
