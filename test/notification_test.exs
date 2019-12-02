@@ -630,6 +630,35 @@ defmodule Pleroma.NotificationTest do
 
       assert Enum.empty?(Notification.for_user(local_user))
     end
+
+    test "move activity generates a notification" do
+      %{ap_id: old_ap_id} = old_user = insert(:user)
+      %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
+      follower = insert(:user)
+      other_follower = insert(:user, %{allow_following_move: false})
+
+      User.follow(follower, old_user)
+      User.follow(other_follower, old_user)
+
+      Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
+      ObanHelpers.perform_all()
+
+      assert [
+               %{
+                 activity: %{
+                   data: %{"type" => "Move", "actor" => ^old_ap_id, "target" => ^new_ap_id}
+                 }
+               }
+             ] = Notification.for_user(follower)
+
+      assert [
+               %{
+                 activity: %{
+                   data: %{"type" => "Move", "actor" => ^old_ap_id, "target" => ^new_ap_id}
+                 }
+               }
+             ] = Notification.for_user(other_follower)
+    end
   end
 
   describe "for_user" do

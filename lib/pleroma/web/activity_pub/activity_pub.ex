@@ -541,6 +541,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def move(%User{} = origin, %User{} = target, local \\ true) do
+    params = %{
+      "type" => "Move",
+      "actor" => origin.ap_id,
+      "object" => origin.ap_id,
+      "target" => target.ap_id
+    }
+
+    with true <- origin.ap_id in target.also_known_as,
+         {:ok, activity} <- insert(params, local) do
+      maybe_federate(activity)
+
+      BackgroundWorker.enqueue("move_following", %{
+        "origin_id" => origin.id,
+        "target_id" => target.id
+      })
+
+      {:ok, activity}
+    else
+      false -> {:error, "Target account must have the origin in `alsoKnownAs`"}
+      err -> err
+    end
+  end
+
   defp fetch_activities_for_context_query(context, opts) do
     public = [Pleroma.Constants.as_public()]
 
@@ -1171,7 +1195,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       name: data["name"],
       follower_address: data["followers"],
       following_address: data["following"],
-      bio: data["summary"]
+      bio: data["summary"],
+      also_known_as: Map.get(data, "alsoKnownAs", [])
     }
 
     # nickname can be nil because of virtual actors
