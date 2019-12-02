@@ -91,7 +91,6 @@ defmodule Pleroma.HTML do
     Cachex.fetch!(:scrubber_cache, key, fn _key ->
       result =
         content
-        |> HtmlEntities.decode()
         |> Floki.filter_out("a.mention,a.hashtag,a[rel~=\"tag\"]")
         |> Floki.attribute("a", "href")
         |> Enum.at(0)
