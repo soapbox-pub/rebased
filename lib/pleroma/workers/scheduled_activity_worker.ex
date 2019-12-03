@@ -2,12 +2,13 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Workers.Cron.ScheduledActivityWorker do
+defmodule Pleroma.Workers.ScheduledActivityWorker do
   @moduledoc """
-  The worker to post scheduled actvities.
+  The worker to post scheduled activity.
   """
 
-  use Oban.Worker, queue: "scheduled_activities"
+  use Pleroma.Workers.WorkerHelper, queue: "scheduled_activities"
+
   alias Pleroma.Config
   alias Pleroma.ScheduledActivity
   alias Pleroma.User
@@ -15,18 +16,20 @@ defmodule Pleroma.Workers.Cron.ScheduledActivityWorker do
 
   require Logger
 
-  @schedule_interval :timer.minutes(1)
-
   @impl Oban.Worker
-  def perform(_opts, _job) do
+  def perform(%{"activity_id" => activity_id}, _job) do
     if Config.get([ScheduledActivity, :enabled]) do
-      @schedule_interval
-      |> ScheduledActivity.due_activities()
-      |> Enum.each(&post_activity/1)
+      case Pleroma.Repo.get(ScheduledActivity, activity_id) do
+        %ScheduledActivity{} = scheduled_activity ->
+          post_activity(scheduled_activity)
+
+        _ ->
+          Logger.error("#{__MODULE__} Couldn't find scheduled activity: #{activity_id}")
+      end
     end
   end
 
-  def post_activity(scheduled_activity) do
+  defp post_activity(%ScheduledActivity{} = scheduled_activity) do
     try do
       {:ok, scheduled_activity} = ScheduledActivity.delete(scheduled_activity)
       %User{} = user = User.get_cached_by_id(scheduled_activity.user_id)

@@ -45,7 +45,8 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityController do
 
   @doc "DELETE /api/v1/scheduled_statuses/:id"
   def delete(%{assigns: %{scheduled_activity: scheduled_activity}} = conn, _params) do
-    with {:ok, scheduled_activity} <- ScheduledActivity.delete(scheduled_activity) do
+    with {:ok, scheduled_activity} <- ScheduledActivity.delete(scheduled_activity),
+         _ <- ScheduledActivity.delete_job(scheduled_activity) do
       render(conn, "show.json", scheduled_activity: scheduled_activity)
     end
   end

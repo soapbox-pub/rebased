@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
   alias Pleroma.ScheduledActivity
 
   import Pleroma.Factory
+  import Ecto.Query
 
   test "shows scheduled activities", %{conn: conn} do
     user = insert(:user)
@@ -68,7 +69,30 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
 
   test "updates a scheduled activity", %{conn: conn} do
     user = insert(:user)
-    scheduled_activity = insert(:scheduled_activity, user: user)
+
+    scheduled_at =
+      NaiveDateTime.add(
+        NaiveDateTime.utc_now(),
+        :timer.minutes(60),
+        :millisecond
+      )
+
+    {:ok, scheduled_activity} =
+      ScheduledActivity.create(
+        user,
+        %{
+          scheduled_at: scheduled_at,
+          params: build(:note).data
+        }
+      )
+
+    scheduled_activity_job =
+      Repo.one(from(j in Oban.Job, where: j.queue == "scheduled_activities"))
+
+    assert scheduled_activity_job.args == %{"activity_id" => scheduled_activity.id}
+
+    assert DateTime.truncate(scheduled_activity_job.scheduled_at, :second) ==
+             to_datetime(scheduled_at)
 
     new_scheduled_at =
       NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(120), :millisecond)
@@ -82,6 +106,10 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
 
     assert %{"scheduled_at" => expected_scheduled_at} = json_response(res_conn, 200)
     assert expected_scheduled_at == Pleroma.Web.CommonAPI.Utils.to_masto_date(new_scheduled_at)
+    scheduled_activity_job = refresh_record(scheduled_activity_job)
+
+    assert DateTime.truncate(scheduled_activity_job.scheduled_at, :second) ==
+             to_datetime(new_scheduled_at)
 
     res_conn =
       conn
@@ -93,7 +121,25 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
 
   test "deletes a scheduled activity", %{conn: conn} do
     user = insert(:user)
-    scheduled_activity = insert(:scheduled_activity, user: user)
+
+    {:ok, scheduled_activity} =
+      ScheduledActivity.create(
+        user,
+        %{
+          scheduled_at:
+            NaiveDateTime.add(
+              NaiveDateTime.utc_now(),
+              :timer.minutes(60),
+              :millisecond
+            ),
+          params: build(:note).data
+        }
+      )
+
+    scheduled_activity_job =
+      Repo.one(from(j in Oban.Job, where: j.queue == "scheduled_activities"))
+
+    assert scheduled_activity_job.args == %{"activity_id" => scheduled_activity.id}
 
     res_conn =
       conn
@@ -101,7 +147,8 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
       |> delete("/api/v1/scheduled_statuses/#{scheduled_activity.id}")
 
     assert %{} = json_response(res_conn, 200)
-    assert nil == Repo.get(ScheduledActivity, scheduled_activity.id)
+    refute Repo.get(ScheduledActivity, scheduled_activity.id)
+    refute Repo.get(Oban.Job, scheduled_activity_job.id)
 
     res_conn =
       conn

@@ -26,6 +26,7 @@ defmodule Pleroma.ScheduledActivityTest do
       attrs = %{params: %{}, scheduled_at: today}
       {:ok, _} = ScheduledActivity.create(user, attrs)
       {:ok, _} = ScheduledActivity.create(user, attrs)
+
       {:error, changeset} = ScheduledActivity.create(user, attrs)
       assert changeset.errors == [scheduled_at: {"daily limit exceeded", []}]
     end
@@ -83,7 +84,10 @@ defmodule Pleroma.ScheduledActivityTest do
         params: %{status: "hi"}
       )
 
-    Pleroma.Workers.Cron.ScheduledActivityWorker.perform(:opts, :pid)
+    Pleroma.Workers.ScheduledActivityWorker.perform(
+      %{"activity_id" => scheduled_activity.id},
+      :pid
+    )
 
     refute Repo.get(ScheduledActivity, scheduled_activity.id)
     activity = Repo.all(Pleroma.Activity) |> Enum.find(&(&1.actor == user.ap_id))
