@@ -38,7 +38,8 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
       content: content,
       created_at: created_at,
       statuses: StatusView.render("index.json", %{activities: statuses, as: :activity}),
-      state: report.data["state"]
+      state: report.data["state"],
+      notes: render(__MODULE__, "index_notes.json", %{notes: report.report_notes})
     }
   end
 
@@ -59,6 +60,21 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
 
     %{
       reports: reports
+    }
+  end
+
+  def render("index_notes.json", %{notes: notes}) when is_list(notes) do
+    Enum.map(notes, &render(__MODULE__, "show_note.json", &1))
+  end
+
+  def render("index_notes.json", _), do: []
+
+  def render("show_note.json", %{content: content, user_id: user_id}) do
+    user = User.get_by_id(user_id)
+
+    %{
+      content: content,
+      user: merge_account_views(user)
     }
   end
 

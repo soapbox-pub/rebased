@@ -1710,61 +1710,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "POST /api/pleroma/admin/reports/:id/respond" do
-    setup %{conn: conn} do
-      admin = insert(:user, is_admin: true)
-
-      %{conn: assign(conn, :user, admin), admin: admin}
-    end
-
-    test "returns created dm", %{conn: conn, admin: admin} do
-      [reporter, target_user] = insert_pair(:user)
-      activity = insert(:note_activity, user: target_user)
-
-      {:ok, %{id: report_id}} =
-        CommonAPI.report(reporter, %{
-          "account_id" => target_user.id,
-          "comment" => "I feel offended",
-          "status_ids" => [activity.id]
-        })
-
-      response =
-        conn
-        |> post("/api/pleroma/admin/reports/#{report_id}/respond", %{
-          "status" => "I will check it out"
-        })
-        |> json_response(:ok)
-
-      recipients = Enum.map(response["mentions"], & &1["username"])
-
-      assert reporter.nickname in recipients
-      assert response["content"] == "I will check it out"
-      assert response["visibility"] == "direct"
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} responded with 'I will check it out' to report ##{
-                 response["id"]
-               }"
-    end
-
-    test "returns 400 when status is missing", %{conn: conn} do
-      conn = post(conn, "/api/pleroma/admin/reports/test/respond")
-
-      assert json_response(conn, :bad_request) == "Invalid parameters"
-    end
-
-    test "returns 404 when report id is invalid", %{conn: conn} do
-      conn =
-        post(conn, "/api/pleroma/admin/reports/test/respond", %{
-          "status" => "foo"
-        })
-
-      assert json_response(conn, :not_found) == "Not found"
-    end
-  end
-
   describe "PUT /api/pleroma/admin/statuses/:id" do
     setup %{conn: conn} do
       admin = insert(:user, is_admin: true)
@@ -2959,6 +2904,55 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} re-sent confirmation email for users: @#{first_user.nickname}, @#{
                  second_user.nickname
                }"
+    end
+  end
+
+  describe "POST /reports/:id/notes" do
+    setup do
+      admin = insert(:user, is_admin: true)
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel offended",
+          "status_ids" => [activity.id]
+        })
+
+      build_conn()
+      |> assign(:user, admin)
+      |> post("/api/pleroma/admin/reports/#{report_id}/notes", %{
+        content: "this is disgusting!"
+      })
+
+      %{
+        admin_id: admin.id,
+        report_id: report_id,
+        admin: admin
+      }
+    end
+
+    test "it creates report note", %{admin_id: admin_id, report_id: report_id} do
+      assert %{
+               activity_id: ^report_id,
+               content: "this is disgusting!",
+               user_id: ^admin_id
+             } = Repo.one(Pleroma.ReportNote)
+    end
+
+    test "it returns reports with notes", %{admin: admin} do
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/reports")
+
+      reponse = json_response(conn, 200)
+      notes = hd(reponse["reports"])["notes"]
+      [note] = notes
+
+      assert note["user"]["nickname"] == admin.nickname
+      assert note["content"] == "this is disgusting!"
     end
   end
 end

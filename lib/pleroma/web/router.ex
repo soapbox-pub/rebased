@@ -187,7 +187,7 @@ defmodule Pleroma.Web.Router do
     get("/grouped_reports", AdminAPIController, :list_grouped_reports)
     get("/reports/:id", AdminAPIController, :report_show)
     patch("/reports", AdminAPIController, :reports_update)
-    post("/reports/:id/respond", AdminAPIController, :report_respond)
+    post("/reports/:id/notes", AdminAPIController, :report_notes_create)
 
     put("/statuses/:id", AdminAPIController, :status_update)
     delete("/statuses/:id", AdminAPIController, :status_delete)
