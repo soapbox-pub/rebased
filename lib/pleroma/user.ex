@@ -169,8 +169,6 @@ defmodule Pleroma.User do
       has_many(incoming_relation_source, through: [incoming_relation, :source])
     end
 
-    field(:info, :map, default: %{})
-
     # `:blocks` is deprecated (replaced with `blocked_users` relation)
     field(:blocks, {:array, :string}, default: [])
     # `:mutes` is deprecated (replaced with `muted_users` relation)
