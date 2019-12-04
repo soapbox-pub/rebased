@@ -11,6 +11,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.AdminAPI.Config
   alias Pleroma.Web.AdminAPI.ConfigView
@@ -226,6 +227,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
+  def list_instance_statuses(conn, %{"instance" => instance} = params) do
+    {page, page_size} = page_params(params)
+
+    activities =
+      ActivityPub.fetch_instance_activities(%{
+        "instance" => instance,
+        "limit" => page_size,
+        "offset" => (page - 1) * page_size
+      })
+
+    conn
+    |> put_view(StatusView)
+    |> render("index.json", %{activities: activities, as: :activity})
+  end
+
   def list_user_statuses(conn, %{"nickname" => nickname} = params) do
     godmode = params["godmode"] == "true" || params["godmode"] == true
 
@@ -334,7 +350,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     }
 
     with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)),
-         {:ok, users, count} <- filter_relay_user(users, count),
+         {:ok, users, count} <- filter_service_users(users, count),
          do:
            conn
            |> json(
@@ -346,15 +362,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            )
   end
 
-  defp filter_relay_user(users, count) do
-    filtered_users = Enum.reject(users, &relay_user?/1)
-    count = if Enum.any?(users, &relay_user?/1), do: length(filtered_users), else: count
+  defp filter_service_users(users, count) do
+    filtered_users = Enum.reject(users, &service_user?/1)
+    count = if Enum.any?(users, &service_user?/1), do: length(filtered_users), else: count
 
     {:ok, filtered_users, count}
   end
 
-  defp relay_user?(user) do
-    user.ap_id == Relay.relay_ap_id()
+  defp service_user?(user) do
+    String.match?(user.ap_id, ~r/.*\/relay$/) or
+      String.match?(user.ap_id, ~r/.*\/internal\/fetch$/)
   end
 
   @filters ~w(local external active deactivated is_admin is_moderator)
@@ -607,10 +624,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   @doc "Force password reset for a given user"
-  def force_password_reset(conn, %{"nickname" => nickname}) do
-    (%User{local: true} = user) = User.get_cached_by_nickname(nickname)
+  def force_password_reset(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
 
-    User.force_password_reset_async(user)
+    Enum.map(users, &User.force_password_reset_async/1)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "force_password_reset"
+    })
 
     json_response(conn, :no_content, "")
   end
@@ -618,19 +641,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def list_reports(conn, params) do
     {page, page_size} = page_params(params)
 
-    params =
-      params
-      |> Map.put("type", "Flag")
-      |> Map.put("skip_preload", true)
-      |> Map.put("total", true)
-      |> Map.put("limit", page_size)
-      |> Map.put("offset", (page - 1) * page_size)
+    conn
+    |> put_view(ReportView)
+    |> render("index.json", %{reports: Utils.get_reports(params, page, page_size)})
+  end
 
-    reports = ActivityPub.fetch_activities([], params, :offset)
+  def list_grouped_reports(conn, _params) do
+    reports = Utils.get_reported_activities()
 
     conn
     |> put_view(ReportView)
-    |> render("index.json", %{reports: reports})
+    |> render("index_grouped.json", Utils.get_reports_grouped_by_status(reports))
   end
 
   def report_show(conn, %{"id" => id}) do
@@ -643,17 +664,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def report_update_state(%{assigns: %{user: admin}} = conn, %{"id" => id, "state" => state}) do
-    with {:ok, report} <- CommonAPI.update_report_state(id, state) do
-      ModerationLog.insert_log(%{
-        action: "report_update",
-        actor: admin,
-        subject: report
-      })
+  def reports_update(%{assigns: %{user: admin}} = conn, %{"reports" => reports}) do
+    result =
+      reports
+      |> Enum.map(fn report ->
+        with {:ok, activity} <- CommonAPI.update_report_state(report["id"], report["state"]) do
+          ModerationLog.insert_log(%{
+            action: "report_update",
+            actor: admin,
+            subject: activity
+          })
 
-      conn
-      |> put_view(ReportView)
-      |> render("show.json", Report.extract_report_info(report))
+          activity
+        else
+          {:error, message} -> %{id: report["id"], error: message}
+        end
+      end)
+
+    case Enum.any?(result, &Map.has_key?(&1, :error)) do
+      true -> json_response(conn, :bad_request, result)
+      false -> json_response(conn, :no_content, "")
     end
   end
 
@@ -783,6 +813,34 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     Pleroma.Emoji.reload()
 
     conn |> json("ok")
+  end
+
+  def confirm_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
+
+    User.toggle_confirmation(users)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "confirm_email"
+    })
+
+    conn |> json("")
+  end
+
+  def resend_confirmation_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
+
+    User.try_send_confirmation_email(users)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "resend_confirmation_email"
+    })
+
+    conn |> json("")
   end
 
   def errors(conn, {:error, :not_found}) do

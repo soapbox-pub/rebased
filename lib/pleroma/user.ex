@@ -67,8 +67,7 @@ defmodule Pleroma.User do
     field(:source_data, :map, default: %{})
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
-    # Should be filled in only for remote users
-    field(:following_count, :integer, default: nil)
+    field(:following_count, :integer, default: 0)
     field(:locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
     field(:password_reset_pending, :boolean, default: false)
@@ -104,7 +103,9 @@ defmodule Pleroma.User do
     field(:raw_fields, {:array, :map}, default: [])
     field(:discoverable, :boolean, default: false)
     field(:invisible, :boolean, default: false)
+    field(:allow_following_move, :boolean, default: true)
     field(:skip_thread_containment, :boolean, default: false)
+    field(:also_known_as, {:array, :string}, default: [])
 
     field(:notification_settings, :map,
       default: %{
@@ -119,10 +120,11 @@ defmodule Pleroma.User do
     has_many(:registrations, Registration)
     has_many(:deliveries, Delivery)
 
-    field(:info, :map, default: %{})
-
     timestamps()
   end
+
+  @doc "Returns if the user should be allowed to authenticate"
+  def auth_active?(%User{deactivated: true}), do: false
 
   def auth_active?(%User{confirmation_pending: true}),
     do: !Pleroma.Config.get([:instance, :account_activation_required])
@@ -130,6 +132,8 @@ defmodule Pleroma.User do
   def auth_active?(%User{}), do: true
 
   def visible_for?(user, for_user \\ nil)
+
+  def visible_for?(%User{invisible: true}, _), do: false
 
   def visible_for?(%User{id: user_id}, %User{id: for_id}) when user_id == for_id, do: true
 
@@ -173,22 +177,6 @@ defmodule Pleroma.User do
   def ap_following(%User{following_address: fa}) when is_binary(fa), do: fa
   def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
 
-  def user_info(%User{} = user, args \\ %{}) do
-    following_count =
-      Map.get(args, :following_count, user.following_count || following_count(user))
-
-    follower_count = Map.get(args, :follower_count, user.follower_count)
-
-    %{
-      note_count: user.note_count,
-      locked: user.locked,
-      confirmation_pending: user.confirmation_pending,
-      default_scope: user.default_scope
-    }
-    |> Map.put(:following_count, following_count)
-    |> Map.put(:follower_count, follower_count)
-  end
-
   def follow_state(%User{} = user, %User{} = target) do
     case Utils.fetch_latest_follow(user, target) do
       %{data: %{"state" => state}} -> state
@@ -205,10 +193,6 @@ defmodule Pleroma.User do
   @spec set_follow_state_cache(String.t(), String.t(), String.t()) :: {:ok | :error, boolean()}
   def set_follow_state_cache(user_ap_id, target_ap_id, state) do
     Cachex.put(:user_cache, "follow_state:#{user_ap_id}|#{target_ap_id}", state)
-  end
-
-  def set_info_cache(user, args) do
-    Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user, args))
   end
 
   @spec restrict_deactivated(Ecto.Query.t()) :: Ecto.Query.t()
@@ -241,7 +225,6 @@ defmodule Pleroma.User do
 
     params =
       params
-      |> Map.put(:info, params[:info] || %{})
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
       |> truncate_fields_param()
@@ -270,7 +253,8 @@ defmodule Pleroma.User do
           :fields,
           :following_count,
           :discoverable,
-          :invisible
+          :invisible,
+          :also_known_as
         ]
       )
       |> validate_required([:name, :ap_id])
@@ -312,13 +296,15 @@ defmodule Pleroma.User do
         :hide_followers_count,
         :hide_follows_count,
         :hide_favorites,
+        :allow_following_move,
         :background,
         :show_role,
         :skip_thread_containment,
         :fields,
         :raw_fields,
         :pleroma_settings_store,
-        :discoverable
+        :discoverable,
+        :also_known_as
       ]
     )
     |> unique_constraint(:nickname)
@@ -356,9 +342,11 @@ defmodule Pleroma.User do
         :hide_follows,
         :fields,
         :hide_followers,
+        :allow_following_move,
         :discoverable,
         :hide_followers_count,
-        :hide_follows_count
+        :hide_follows_count,
+        :also_known_as
       ]
     )
     |> unique_constraint(:nickname)
@@ -489,6 +477,10 @@ defmodule Pleroma.User do
     end
   end
 
+  def try_send_confirmation_email(users) do
+    Enum.each(users, &try_send_confirmation_email/1)
+  end
+
   def needs_update?(%User{local: true}), do: false
 
   def needs_update?(%User{local: false, last_refreshed_at: nil}), do: true
@@ -519,14 +511,9 @@ defmodule Pleroma.User do
   @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do
-    followeds =
-      Enum.reject(followeds, fn followed ->
-        blocks?(follower, followed) || blocks?(followed, follower)
-      end)
-
-    Enum.each(followeds, &follow(follower, &1, "accept"))
-
-    Enum.each(followeds, &update_follower_count/1)
+    followeds
+    |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
+    |> Enum.each(&follow(follower, &1, "accept"))
 
     set_cache(follower)
   end
@@ -546,11 +533,11 @@ defmodule Pleroma.User do
       true ->
         FollowingRelationship.follow(follower, followed, state)
 
-        follower = maybe_update_following_count(follower)
-
         {:ok, _} = update_follower_count(followed)
 
-        set_cache(follower)
+        follower
+        |> update_following_count()
+        |> set_cache()
     end
   end
 
@@ -558,11 +545,12 @@ defmodule Pleroma.User do
     if following?(follower, followed) and follower.ap_id != followed.ap_id do
       FollowingRelationship.unfollow(follower, followed)
 
-      follower = maybe_update_following_count(follower)
-
       {:ok, followed} = update_follower_count(followed)
 
-      set_cache(follower)
+      {:ok, follower} =
+        follower
+        |> update_following_count()
+        |> set_cache()
 
       {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
     else
@@ -612,7 +600,6 @@ defmodule Pleroma.User do
   def set_cache(%User{} = user) do
     Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
     Cachex.put(:user_cache, "nickname:#{user.nickname}", user)
-    Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user))
     {:ok, user}
   end
 
@@ -631,7 +618,6 @@ defmodule Pleroma.User do
   def invalidate_cache(user) do
     Cachex.del(:user_cache, "ap_id:#{user.ap_id}")
     Cachex.del(:user_cache, "nickname:#{user.nickname}")
-    Cachex.del(:user_cache, "user_info:#{user.id}")
   end
 
   def get_cached_by_ap_id(ap_id) do
@@ -697,11 +683,6 @@ defmodule Pleroma.User do
 
   def get_by_nickname_or_email(nickname_or_email) do
     get_by_nickname(nickname_or_email) || get_by_email(nickname_or_email)
-  end
-
-  def get_cached_user_info(user) do
-    key = "user_info:#{user.id}"
-    Cachex.fetch!(:user_cache, key, fn -> user_info(user) end)
   end
 
   def fetch_by_nickname(nickname), do: ActivityPub.make_user_from_nickname(nickname)
@@ -892,8 +873,8 @@ defmodule Pleroma.User do
     end
   end
 
-  @spec maybe_update_following_count(User.t()) :: User.t()
-  def maybe_update_following_count(%User{local: false} = user) do
+  @spec update_following_count(User.t()) :: User.t()
+  def update_following_count(%User{local: false} = user) do
     if Pleroma.Config.get([:instance, :external_user_synchronization]) do
       maybe_fetch_follow_information(user)
     else
@@ -901,7 +882,13 @@ defmodule Pleroma.User do
     end
   end
 
-  def maybe_update_following_count(user), do: user
+  def update_following_count(%User{local: true} = user) do
+    following_count = FollowingRelationship.following_count(user)
+
+    user
+    |> follow_information_changeset(%{following_count: following_count})
+    |> Repo.update!()
+  end
 
   def set_unread_conversation_count(%User{local: true} = user) do
     unread_query = Participation.unread_conversation_count_for_user(user)
@@ -1094,7 +1081,12 @@ defmodule Pleroma.User do
 
   def deactivate(%User{} = user, status) do
     with {:ok, user} <- set_activation_status(user, status) do
-      Enum.each(get_followers(user), &invalidate_cache/1)
+      user
+      |> get_followers()
+      |> Enum.filter(& &1.local)
+      |> Enum.each(fn follower ->
+        follower |> update_following_count() |> set_cache()
+      end)
 
       # Only update local user counts, remote will be update during the next pull.
       user
@@ -1223,7 +1215,7 @@ defmodule Pleroma.User do
   def external_users(opts \\ []) do
     query =
       external_users_query()
-      |> select([u], struct(u, [:id, :ap_id, :info]))
+      |> select([u], struct(u, [:id, :ap_id]))
 
     query =
       if opts[:max_id],
@@ -1314,22 +1306,23 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "Creates an internal service actor by URI if missing.  Optionally takes nickname for addressing."
+  @doc """
+  Creates an internal service actor by URI if missing.
+  Optionally takes nickname for addressing.
+  """
   def get_or_create_service_actor_by_ap_id(uri, nickname \\ nil) do
-    with %User{} = user <- get_cached_by_ap_id(uri) do
-      user
-    else
-      _ ->
-        {:ok, user} =
-          %User{}
-          |> cast(%{}, [:ap_id, :nickname, :local])
-          |> put_change(:ap_id, uri)
-          |> put_change(:nickname, nickname)
-          |> put_change(:local, true)
-          |> put_change(:follower_address, uri <> "/followers")
-          |> Repo.insert()
+    with user when is_nil(user) <- get_cached_by_ap_id(uri) do
+      {:ok, user} =
+        %User{
+          invisible: true,
+          local: true,
+          ap_id: uri,
+          nickname: nickname,
+          follower_address: uri <> "/followers"
+        }
+        |> Repo.insert()
 
-        user
+      user
     end
   end
 
@@ -1570,6 +1563,11 @@ defmodule Pleroma.User do
     user
     |> confirmation_changeset(need_confirmation: !user.confirmation_pending)
     |> update_and_set_cache()
+  end
+
+  @spec toggle_confirmation([User.t()]) :: [{:ok, User.t()} | {:error, Changeset.t()}]
+  def toggle_confirmation(users) do
+    Enum.map(users, &toggle_confirmation/1)
   end
 
   def get_mascot(%{mascot: %{} = mascot}) when not is_nil(mascot) do

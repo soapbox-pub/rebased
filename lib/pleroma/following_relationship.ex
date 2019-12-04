@@ -101,10 +101,28 @@ defmodule Pleroma.FollowingRelationship do
       |> select([r, u], u.follower_address)
       |> Repo.all()
 
-    if not user.local or user.nickname in [nil, "internal.fetch"] do
+    if not user.local or user.invisible do
       following
     else
       [user.follower_address | following]
+    end
+  end
+
+  def move_following(origin, target) do
+    __MODULE__
+    |> join(:inner, [r], f in assoc(r, :follower))
+    |> where(following_id: ^origin.id)
+    |> where([r, f], f.allow_following_move == true)
+    |> limit(50)
+    |> preload([:follower])
+    |> Repo.all()
+    |> Enum.map(fn following_relationship ->
+      Repo.delete(following_relationship)
+      Pleroma.Web.CommonAPI.follow(following_relationship.follower, target)
+    end)
+    |> case do
+      [] -> :ok
+      _ -> move_following(origin, target)
     end
   end
 end

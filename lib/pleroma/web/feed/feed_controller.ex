@@ -33,21 +33,22 @@ defmodule Pleroma.Web.Feed.FeedController do
 
   def feed(conn, %{"nickname" => nickname} = params) do
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
-      query_params =
-        params
-        |> Map.take(["max_id"])
-        |> Map.put("type", ["Create"])
-        |> Map.put("whole_db", true)
-        |> Map.put("actor_id", user.ap_id)
-
       activities =
-        query_params
+        %{
+          "type" => ["Create"],
+          "whole_db" => true,
+          "actor_id" => user.ap_id
+        }
+        |> Map.merge(Map.take(params, ["max_id"]))
         |> ActivityPub.fetch_public_activities()
-        |> Enum.reverse()
 
       conn
       |> put_resp_content_type("application/atom+xml")
-      |> render("feed.xml", user: user, activities: activities)
+      |> render("feed.xml",
+        user: user,
+        activities: activities,
+        feed_config: Pleroma.Config.get([:feed])
+      )
     end
   end
 

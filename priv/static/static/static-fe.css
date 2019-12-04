@@ -1,0 +1,176 @@
+body {
+    background-color: #282c37;
+    font-family: sans-serif;
+    color: white;
+}
+
+main {
+    margin: 50px auto;
+    max-width: 960px;
+    padding: 40px;
+    background-color: #313543;
+    border-radius: 4px;
+}
+
+header {
+    margin: 50px auto;
+    max-width: 960px;
+    padding: 40px;
+    background-color: #313543;
+    border-radius: 4px;
+}
+
+.activity {
+    border-radius: 4px;
+    padding: 1em;
+    padding-bottom: 2em;
+    margin-bottom: 1em;
+}
+
+.avatar {
+    cursor: pointer;
+}
+
+.avatar img {
+    float: left;
+    border-radius: 4px;
+    margin-right: 4px;
+}
+
+.activity-content img, video, audio {
+    padding: 1em;
+    max-width: 800px;
+    max-height: 800px;
+}
+
+#selected {
+    background-color: #1b2735;
+}
+
+.counts dt, .counts dd {
+    float: left;
+    margin-left: 1em;
+}
+
+a {
+    color: white;
+}
+
+.h-card {
+    min-height: 48px;
+    margin-bottom: 8px;
+}
+
+header a, .h-card a {
+    text-decoration: none;
+}
+
+header a:hover, .h-card a:hover {
+    text-decoration: underline;
+}
+
+.display-name {
+    padding-top: 4px;
+    display: block;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    color: white;
+}
+
+/* keep emoji from being hilariously huge */
+.display-name img {
+    max-height: 1em;
+}
+
+.display-name .nickname {
+    padding-top: 4px;
+    display: block;
+}
+
+.nickname:hover {
+    text-decoration: none;
+}
+
+.pull-right {
+    float: right;
+}
+
+.collapse {
+    margin: 0;
+    width: auto;
+}
+
+h1 {
+    margin: 0;
+}
+
+h2 {
+    color: #9baec8;
+    font-weight: normal;
+    font-size: 20px;
+    margin-bottom: 40px;
+}
+
+form {
+    width: 100%;
+}
+
+input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px;
+    margin-top: 20px;
+    background-color: rgba(0,0,0,.1);
+    color: white;
+    border: 0;
+    border-bottom: 2px solid #9baec8;
+    font-size: 14px;
+}
+
+input:focus {
+    border-bottom: 2px solid #4b8ed8;
+}
+
+input[type="checkbox"] {
+    width: auto;
+}
+
+button {
+    box-sizing: border-box;
+    width: 100%;
+    color: white;
+    background-color: #419bdd;
+    border-radius: 4px;
+    border: none;
+    padding: 10px;
+    margin-top: 30px;
+    text-transform: uppercase;
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.alert-danger {
+    box-sizing: border-box;
+    width: 100%;
+    color: #D8000C;
+    background-color: #FFD2D2;
+    border-radius: 4px;
+    border: none;
+    padding: 10px;
+    margin-top: 20px;
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.alert-info {
+    box-sizing: border-box;
+    width: 100%;
+    color: #00529B;
+    background-color: #BDE5F8;
+    border-radius: 4px;
+    border: none;
+    padding: 10px;
+    margin-top: 20px;
+    font-weight: 500;
+    font-size: 16px;
+}

@@ -569,6 +569,34 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  @misskey_reactions %{
+    "like" => "👍",
+    "love" => "❤️",
+    "laugh" => "😆",
+    "hmm" => "🤔",
+    "surprise" => "😮",
+    "congrats" => "🎉",
+    "angry" => "💢",
+    "confused" => "😥",
+    "rip" => "😇",
+    "pudding" => "🍮",
+    "star" => "⭐"
+  }
+
+  @doc "Rewrite misskey likes into EmojiReactions"
+  def handle_incoming(
+        %{
+          "type" => "Like",
+          "_misskey_reaction" => reaction
+        } = data,
+        options
+      ) do
+    data
+    |> Map.put("type", "EmojiReaction")
+    |> Map.put("content", @misskey_reactions[reaction] || reaction)
+    |> handle_incoming(options)
+  end
+
   def handle_incoming(%{"type" => "Like"} = data, _options) do
     with {_, {:ok, cast_data_sym}} <-
            {:casting_data,
@@ -584,6 +612,27 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       {:ok, activity}
     else
       e -> {:error, e}
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "EmojiReaction",
+          "object" => object_id,
+          "actor" => _actor,
+          "id" => id,
+          "content" => emoji
+        } = data,
+        _options
+      ) do
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id),
+         {:ok, activity, _object} <-
+           ActivityPub.react_with_emoji(actor, object, emoji, activity_id: id, local: false) do
+      {:ok, activity}
+    else
+      _e -> :error
     end
   end
 
@@ -627,7 +676,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
       update_data =
         new_user_data
-        |> Map.take([:avatar, :banner, :bio, :name])
+        |> Map.take([:avatar, :banner, :bio, :name, :also_known_as])
         |> Map.put(:fields, fields)
         |> Map.put(:locked, locked)
         |> Map.put(:invisible, invisible)
@@ -725,6 +774,28 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{
           "type" => "Undo",
+          "object" => %{"type" => "EmojiReaction", "id" => reaction_activity_id},
+          "actor" => _actor,
+          "id" => id
+        } = data,
+        _options
+      ) do
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, activity, _} <-
+           ActivityPub.unreact_with_emoji(actor, reaction_activity_id,
+             activity_id: id,
+             local: false
+           ) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "Undo",
           "object" => %{"type" => "Block", "object" => blocked},
           "actor" => blocker,
           "id" => id
@@ -788,6 +859,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       activity
       |> Map.put("object", data)
       |> handle_incoming(options)
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "Move",
+          "actor" => origin_actor,
+          "object" => origin_actor,
+          "target" => target_actor
+        },
+        _options
+      ) do
+    with %User{} = origin_user <- User.get_cached_by_ap_id(origin_actor),
+         {:ok, %User{} = target_user} <- User.get_or_fetch_by_ap_id(target_actor),
+         true <- origin_actor in target_user.also_known_as do
+      ActivityPub.move(origin_user, target_user, false)
     else
       _e -> :error
     end
@@ -1055,7 +1144,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "attachment", attachments)
   end
 
-  defp strip_internal_fields(object) do
+  def strip_internal_fields(object) do
     object
     |> Map.drop(Pleroma.Constants.object_internal_fields())
   end

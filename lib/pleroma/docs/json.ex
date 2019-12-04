@@ -5,7 +5,7 @@ defmodule Pleroma.Docs.JSON do
   def process(descriptions) do
     config_path = "docs/generate_config.json"
 
-    with {:ok, file} <- File.open(config_path, [:write]),
+    with {:ok, file} <- File.open(config_path, [:write, :utf8]),
          json <- generate_json(descriptions),
          :ok <- IO.write(file, json),
          :ok <- File.close(file) do

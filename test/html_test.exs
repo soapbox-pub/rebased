@@ -228,5 +228,16 @@ defmodule Pleroma.HTMLTest do
 
       assert url == "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72255140"
     end
+
+    test "does not crash when there is an HTML entity in a link" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "\"http://cofe.com/?boomer=ok&foo=bar\""})
+
+      object = Object.normalize(activity)
+
+      assert {:ok, nil} = HTML.extract_first_external_url(object, object.data["content"])
+    end
   end
 end

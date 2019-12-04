@@ -45,7 +45,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def user(conn, %{"nickname" => nickname}) do
-    with %User{} = user <- User.get_cached_by_nickname(nickname),
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname),
          {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_content_type("application/activity+json")
@@ -53,6 +53,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> render("user.json", %{user: user})
     else
       nil -> {:error, :not_found}
+      %{local: false} -> {:error, :not_found}
     end
   end
 

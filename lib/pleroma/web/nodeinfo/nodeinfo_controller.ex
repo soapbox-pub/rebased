@@ -46,6 +46,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
         data
         |> Map.merge(%{quarantined_instances: quarantined})
+        |> Map.put(:enabled, Config.get([:instance, :federating]))
       else
         %{}
       end
@@ -58,6 +59,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         "polls",
         "pleroma_explicit_addressing",
         "shareable_emoji_packs",
+        "multifetch",
         if Config.get([:media_proxy, :enabled]) do
           "media_proxy"
         end,
@@ -117,6 +119,12 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           avatar: Config.get([:instance, :avatar_upload_limit]),
           banner: Config.get([:instance, :banner_upload_limit]),
           background: Config.get([:instance, :background_upload_limit])
+        },
+        fieldsLimits: %{
+          maxFields: Config.get([:instance, :max_account_fields]),
+          maxRemoteFields: Config.get([:instance, :max_remote_account_fields]),
+          nameLength: Config.get([:instance, :account_field_name_length]),
+          valueLength: Config.get([:instance, :account_field_value_length])
         },
         accountActivationRequired: Config.get([:instance, :account_activation_required], false),
         invitesEnabled: Config.get([:instance, :invites_enabled], false),

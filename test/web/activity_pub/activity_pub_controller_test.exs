@@ -110,6 +110,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
     end
+
+    test "it returns 404 for remote users", %{
+      conn: conn
+    } do
+      user = insert(:user, local: false, nickname: "remoteuser@example.com")
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/users/#{user.nickname}.json")
+
+      assert json_response(conn, 404)
+    end
   end
 
   describe "/object/:uuid" do

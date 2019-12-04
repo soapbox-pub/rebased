@@ -13,6 +13,7 @@ defmodule Pleroma.Web.Router do
   pipeline :oauth do
     plug(:fetch_session)
     plug(Pleroma.Plugs.OAuthPlug)
+    plug(Pleroma.Plugs.UserEnabledPlug)
   end
 
   pipeline :api do
@@ -171,15 +172,21 @@ defmodule Pleroma.Web.Router do
     post("/users/email_invite", AdminAPIController, :email_invite)
 
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
-    patch("/users/:nickname/force_password_reset", AdminAPIController, :force_password_reset)
+    patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
 
     get("/users", AdminAPIController, :list_users)
     get("/users/:nickname", AdminAPIController, :user_show)
     get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
 
+    get("/instances/:instance/statuses", AdminAPIController, :list_instance_statuses)
+
+    patch("/users/confirm_email", AdminAPIController, :confirm_email)
+    patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
+
     get("/reports", AdminAPIController, :list_reports)
+    get("/grouped_reports", AdminAPIController, :list_grouped_reports)
     get("/reports/:id", AdminAPIController, :report_show)
-    put("/reports/:id", AdminAPIController, :report_update_state)
+    patch("/reports", AdminAPIController, :reports_update)
     post("/reports/:id/respond", AdminAPIController, :report_respond)
 
     put("/statuses/:id", AdminAPIController, :status_update)
@@ -261,6 +268,12 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
+    pipe_through(:api)
+
+    get("/statuses/:id/emoji_reactions_by", PleromaAPIController, :emoji_reactions_by)
+  end
+
+  scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     scope [] do
       pipe_through(:authenticated_api)
 
@@ -273,6 +286,8 @@ defmodule Pleroma.Web.Router do
       pipe_through(:authenticated_api)
 
       patch("/conversations/:id", PleromaAPIController, :update_conversation)
+      post("/statuses/:id/react_with_emoji", PleromaAPIController, :react_with_emoji)
+      post("/statuses/:id/unreact_with_emoji", PleromaAPIController, :unreact_with_emoji)
       post("/notifications/read", PleromaAPIController, :read_notification)
 
       patch("/accounts/update_avatar", AccountController, :update_avatar)
@@ -495,6 +510,7 @@ defmodule Pleroma.Web.Router do
 
   pipeline :ostatus do
     plug(:accepts, ["html", "xml", "atom", "activity+json", "json"])
+    plug(Pleroma.Plugs.StaticFEPlug)
   end
 
   pipeline :oembed do

@@ -10,20 +10,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
+- **Breaking:** attachment links (`config :pleroma, :instance, no_attachment_links` and `config :pleroma, Pleroma.Upload, link_name`) disabled by default
 - Replaced [pleroma_job_queue](https://git.pleroma.social/pleroma/pleroma_job_queue) and `Pleroma.Web.Federator.RetryQueue` with [Oban](https://github.com/sorentwo/oban) (see [`docs/config.md`](docs/config.md) on migrating customized worker / retry settings)
 - Introduced [quantum](https://github.com/quantum-elixir/quantum-core) job scheduler
 - Enabled `:instance, extended_nickname_format` in the default config
 - Add `rel="ugc"` to all links in statuses, to prevent SEO spam
 - Extract RSS functionality from OStatus
 - MRF (Simple Policy): Also use `:accept`/`:reject` on the actors rather than only their activities
+- OStatus: Extract RSS functionality
+- Deprecated `User.Info` embedded schema (fields moved to `User`)
+- Store status data inside Flag activity
 <details>
   <summary>API Changes</summary>
 
+- **Breaking** Admin API: `PATCH /api/pleroma/admin/users/:nickname/force_password_reset` is now `PATCH /api/pleroma/admin/users/force_password_reset` (accepts `nicknames` array in the request body)
 - **Breaking:** Admin API: Return link alongside with token on password reset
+- **Breaking:** Admin API: `PUT /api/pleroma/admin/reports/:id` is now `PATCH /api/pleroma/admin/reports`, see admin_api.md for details
 - **Breaking:** `/api/pleroma/admin/users/invite_token` now uses `POST`, changed accepted params and returns full invite in json instead of only token string.
 - Admin API: Return `total` when querying for reports
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
 - Admin API: Return link alongside with token on password reset
+- Admin API: Support authentication via `x-admin-token` HTTP header
 - Mastodon API: Add `pleroma.direct_conversation_id` to the status endpoint (`GET /api/v1/statuses/:id`)
 - Mastodon API: `pleroma.thread_muted` to the Status entity
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
@@ -33,12 +40,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Refreshing poll results for remote polls
 - Authentication: Added rate limit for password-authorized actions / login existence checks
+- Static Frontend: Add the ability to render user profiles and notices server-side without requiring JS app.
 - Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
+- Mix task to list all users (`mix pleroma.user list`)
 - Support for `X-Forwarded-For` and similar HTTP headers which used by reverse proxies to pass a real user IP address to the backend. Must not be enabled unless your instance is behind at least one reverse proxy (such as Nginx, Apache HTTPD or Varnish Cache).
+- MRF: New module which handles incoming posts based on their age. By default, all incoming posts that are older than 2 days will be unlisted and not shown to their followers.
 <details>
   <summary>API Changes</summary>
 
 - Job queue stats to the healthcheck page
+- Admin API: Add ability to fetch reports, grouped by status `GET /api/pleroma/admin/grouped_reports`
 - Admin API: Add ability to require password reset
 - Mastodon API: Account entities now include `follow_requests_count` (planned Mastodon 3.x addition)
 - Pleroma API: `GET /api/v1/pleroma/accounts/:id/scrobbles` to get a list of recently scrobbled items
@@ -47,37 +58,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `pleroma.unread_conversation_count` to the Account entity
 - OAuth: support for hierarchical permissions / [Mastodon 2.4.3 OAuth permissions](https://docs.joinmastodon.org/api/permissions/)
 - Metadata Link: Atom syndication Feed
+- Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
 - Mastodon API: Add `exclude_visibilities` parameter to the timeline and notification endpoints
 - Admin API: `/users/:nickname/toggle_activation` endpoint is now deprecated in favor of: `/users/activate`, `/users/deactivate`, both accept `nicknames` array
-- Admin API: `POST/DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group` are deprecated in favor of: `POST/DELETE /api/pleroma/admin/users/permission_group/:permission_group` (both accept `nicknames` array), `DELETE /api/pleroma/admin/users` (`nickname` query param or `nickname` sent in JSON body) is deprecated in favor of: `DELETE /api/pleroma/admin/users` (`nicknames` query array param or `nicknames` sent in JSON body).
+- Admin API: Multiple endpoints now require `nicknames` array, instead of singe `nickname`:
+  - `POST/DELETE /api/pleroma/admin/users/:nickname/permission_group/:permission_group` are deprecated in favor of: `POST/DELETE /api/pleroma/admin/users/permission_group/:permission_group`
+  - `DELETE /api/pleroma/admin/users` (`nickname` query param or `nickname` sent in JSON body) is deprecated in favor of: `DELETE /api/pleroma/admin/users` (`nicknames` query array param or `nicknames` sent in JSON body)
 - Admin API: Add `GET /api/pleroma/admin/relay` endpoint - lists all followed relays
 - Pleroma API: `POST /api/v1/pleroma/conversations/read` to mark all conversations as read
+- ActivityPub: Support `Move` activities
 - Mastodon API: Add `/api/v1/markers` for managing timeline read markers
-
-### Changed
-- **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
-- **Breaking:** Admin API: Return link alongside with token on password reset
-- Replaced [pleroma_job_queue](https://git.pleroma.social/pleroma/pleroma_job_queue) and `Pleroma.Web.Federator.RetryQueue` with [Oban](https://github.com/sorentwo/oban) (see [`docs/config.md`](docs/config.md) on migrating customized worker / retry settings)
-- Introduced [quantum](https://github.com/quantum-elixir/quantum-core) job scheduler
-- Admin API: Return `total` when querying for reports
-- Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
-- Admin API: Return link alongside with token on password reset
-- MRF (Simple Policy): Also use `:accept`/`:reject` on the actors rather than only their activities
-- OStatus: Extract RSS functionality
-- Mastodon API: Add `pleroma.direct_conversation_id` to the status endpoint (`GET /api/v1/statuses/:id`)
-- Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
-- Deprecated `User.Info` embedded schema (fields moved to `User`)
-- Store status data inside Flag activity
+- Mastodon API: Add the `recipients` parameter to `GET /api/v1/conversations`
+- Configuration: `feed` option for user atom feed.
+- Pleroma API: Add Emoji reactions
+- Admin API: Add `/api/pleroma/admin/instances/:instance/statuses` - lists all statuses from a given instance
+- Admin API: `PATCH /api/pleroma/users/confirm_email` to confirm email for multiple users, `PATCH /api/pleroma/users/resend_confirmation_email` to resend confirmation email for multiple users
 </details>
 
 ### Fixed
 - Report emails now include functional links to profiles of remote user accounts
+- Not being able to log in to some third-party apps when logged in to MastoFE
 <details>
   <summary>API Changes</summary>
 
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
+- Admin API: Error when trying to update reports in the "old" format
 </details>
+
+## [1.1.6] - 2019-11-19
+### Fixed
+- Not being able to log into to third party apps when the browser is logged into mastofe
+- Email confirmation not being required even when enabled
+- Mastodon API: conversations API crashing when one status is malformed
+
+### Bundled Pleroma-FE Changes
+#### Added
+- About page
+- Meme arrows
+
+#### Fixed
+- Image modal not closing unless clicked outside of image
+- Attachment upload spinner not being centered
+- Showing follow counters being 0 when they are actually hidden
+
+## [1.1.5] - 2019-11-09
+### Fixed
+- Polls having different numbers in timelines/notifications/poll api endpoints due to cache desyncronization
+- Pleroma API: OAuth token endpoint not being found when ".json" suffix is appended
+
+### Changed
+- Frontend bundle updated to [044c9ad0](https://git.pleroma.social/pleroma/pleroma-fe/commit/044c9ad0562af059dd961d50961a3880fca9c642)
+
+## [1.1.4] - 2019-11-01
+### Fixed
+- Added a migration that fills up empty user.info fields to prevent breakage after previous unsafe migrations.
+- Failure to migrate from pre-1.0.0 versions
+- Mastodon API: Notification stream not including follow notifications
+
+## [1.1.3] - 2019-10-25
+### Fixed
+- Blocked users showing up in notifications collapsed as if they were muted
+- `pleroma_ctl` not working on Debian's default shell
 
 ## [1.1.2] - 2019-10-18
 ### Fixed

@@ -22,21 +22,39 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlugTest do
     assert conn == ret_conn
   end
 
-  test "with secret set and given in the 'admin_token' parameter, it assigns an admin user", %{
-    conn: conn
-  } do
-    Pleroma.Config.put(:admin_token, "password123")
+  describe "when secret set it assigns an admin user" do
+    test "with `admin_token` query parameter", %{conn: conn} do
+      Pleroma.Config.put(:admin_token, "password123")
 
-    conn =
-      %{conn | params: %{"admin_token" => "wrong_password"}}
-      |> AdminSecretAuthenticationPlug.call(%{})
+      conn =
+        %{conn | params: %{"admin_token" => "wrong_password"}}
+        |> AdminSecretAuthenticationPlug.call(%{})
 
-    refute conn.assigns[:user]
+      refute conn.assigns[:user]
 
-    conn =
-      %{conn | params: %{"admin_token" => "password123"}}
-      |> AdminSecretAuthenticationPlug.call(%{})
+      conn =
+        %{conn | params: %{"admin_token" => "password123"}}
+        |> AdminSecretAuthenticationPlug.call(%{})
 
-    assert conn.assigns[:user].is_admin
+      assert conn.assigns[:user].is_admin
+    end
+
+    test "with `x-admin-token` HTTP header", %{conn: conn} do
+      Pleroma.Config.put(:admin_token, "☕️")
+
+      conn =
+        conn
+        |> put_req_header("x-admin-token", "🥛")
+        |> AdminSecretAuthenticationPlug.call(%{})
+
+      refute conn.assigns[:user]
+
+      conn =
+        conn
+        |> put_req_header("x-admin-token", "☕️")
+        |> AdminSecretAuthenticationPlug.call(%{})
+
+      assert conn.assigns[:user].is_admin
+    end
   end
 end

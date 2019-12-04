@@ -63,7 +63,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :myhtmlex, :swarm],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :swarm],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -102,15 +102,13 @@ defmodule Pleroma.Mixfile do
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_sql, "~> 3.2"},
       {:postgrex, ">= 0.13.5"},
-      {:oban, "~> 0.8.1"},
+      {:oban, "~> 0.12.0"},
       {:quantum, "~> 2.3"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
       {:trailing_format_plug, "~> 0.0.7"},
-      {:fast_sanitize,
-       git: "https://git.pleroma.social/pleroma/fast_sanitize.git",
-       ref: "1af67547a02a104e26c99d03012383e8643bc4c2"},
+      {:fast_sanitize, "~> 0.1"},
       {:html_entities, "~> 0.5", override: true},
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},
@@ -157,7 +155,6 @@ defmodule Pleroma.Mixfile do
       {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
-      {:ex_rated, "~> 1.3"},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.11.1", only: :test},
@@ -197,26 +194,20 @@ defmodule Pleroma.Mixfile do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
     # Pre-release version, denoted from patch version with a hyphen
-    {git_tag, git_pre_release} =
+    git_pre_release =
       with {tag, 0} <-
              System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true),
-           tag = String.trim(tag),
-           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]),
-           describe = String.trim(describe),
-           ahead <- String.replace(describe, tag, ""),
-           ahead <- String.trim_leading(ahead, "-") do
-        {String.replace_prefix(tag, "v", ""), if(ahead != "", do: String.trim(ahead))}
+           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]) do
+        describe
+        |> String.trim()
+        |> String.replace(String.trim(tag), "")
+        |> String.trim_leading("-")
+        |> String.trim()
       else
         _ ->
           {commit_hash, 0} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
-          {nil, "0-g" <> String.trim(commit_hash)}
+          "0-g" <> String.trim(commit_hash)
       end
-
-    if git_tag && version != git_tag do
-      Mix.shell().error(
-        "Application version #{inspect(version)} does not match git tag #{inspect(git_tag)}"
-      )
-    end
 
     # Branch name as pre-release version component, denoted with a dot
     branch_name =

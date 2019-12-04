@@ -28,7 +28,8 @@ defmodule Pleroma.Activity do
     "Create" => "mention",
     "Follow" => "follow",
     "Announce" => "reblog",
-    "Like" => "favourite"
+    "Like" => "favourite",
+    "Move" => "move"
   }
 
   @mastodon_to_ap_notification_types for {k, v} <- @mastodon_notification_types,
@@ -41,6 +42,10 @@ defmodule Pleroma.Activity do
     field(:actor, :string)
     field(:recipients, {:array, :string}, default: [])
     field(:thread_muted?, :boolean, virtual: true)
+
+    # This is a fake relation,
+    # do not use outside of with_preloaded_user_actor/with_joined_user_actor
+    has_one(:user_actor, User, on_delete: :nothing, foreign_key: :id)
     # This is a fake relation, do not use outside of with_preloaded_bookmark/get_bookmark
     has_one(:bookmark, Bookmark)
     has_many(:notifications, Notification, on_delete: :delete_all)
@@ -84,6 +89,19 @@ defmodule Pleroma.Activity do
     |> has_named_binding?(:object)
     |> if(do: query, else: with_joined_object(query, join_type))
     |> preload([activity, object: object], object: object)
+  end
+
+  def with_joined_user_actor(query, join_type \\ :inner) do
+    join(query, join_type, [activity], u in User,
+      on: u.ap_id == activity.actor,
+      as: :user_actor
+    )
+  end
+
+  def with_preloaded_user_actor(query, join_type \\ :inner) do
+    query
+    |> with_joined_user_actor(join_type)
+    |> preload([activity, user_actor: user_actor], user_actor: user_actor)
   end
 
   def with_preloaded_bookmark(query, %User{} = user) do
@@ -286,4 +304,17 @@ defmodule Pleroma.Activity do
   end
 
   defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search
+
+  def direct_conversation_id(activity, for_user) do
+    alias Pleroma.Conversation.Participation
+
+    with %{data: %{"context" => context}} when is_binary(context) <- activity,
+         %Pleroma.Conversation{} = conversation <- Pleroma.Conversation.get_for_ap_id(context),
+         %Participation{id: participation_id} <-
+           Participation.for_user_and_conversation(for_user, conversation) do
+      participation_id
+    else
+      _ -> nil
+    end
+  end
 end
