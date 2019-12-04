@@ -495,4 +495,57 @@ defmodule Pleroma.LoadTesting.Fetcher do
       formatters: formatters()
     )
   end
+
+  def query_replies(user) do
+    public_params = %{
+      "type" => ["Create", "Announce"],
+      "local_only" => false,
+      "blocking_user" => user,
+      "muting_user" => user,
+      "count" => 20
+    }
+
+    Benchee.run(%{
+      "Public timeline without reply filtering" => fn ->
+        ActivityPub.fetch_public_activities(public_params)
+      end,
+      "Public timeline with reply filtering - following" => fn ->
+        public_params
+        |> Map.put("reply_visibility", "following")
+        |> Map.put("user", user)
+        |> ActivityPub.fetch_public_activities()
+      end,
+      "Public timeline with reply filtering - self" => fn ->
+        public_params
+        |> Map.put("reply_visibility", "self")
+        |> Map.put("user", user)
+        |> ActivityPub.fetch_public_activities()
+      end
+    })
+
+    private_params = %{
+      "type" => ["Create", "Announce"],
+      "blocking_user" => user,
+      "muting_user" => user,
+      "user" => user,
+      "count" => 20
+    }
+
+    recipients = [user.ap_id | User.following(user)]
+
+    Benchee.run(%{
+      "Home timeline without reply filtering" => fn ->
+        ActivityPub.fetch_activities(recipients, private_params)
+      end,
+      "Home timeline with reply filtering - following" => fn ->
+        private_params = Map.put(private_params, "reply_visibility", "following")
+
+        ActivityPub.fetch_activities(recipients, private_params)
+      end,
+      "Home timeline with reply filtering - self" => fn ->
+        private_params = Map.put(private_params, "reply_visibility", "self")
+        ActivityPub.fetch_activities(recipients, private_params)
+      end
+    })
+  end
 end

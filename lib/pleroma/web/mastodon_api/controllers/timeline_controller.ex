@@ -100,6 +100,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put("local_only", local_only)
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)
+        |> Map.put("user", user)
         |> ActivityPub.fetch_public_activities()
 
       conn
