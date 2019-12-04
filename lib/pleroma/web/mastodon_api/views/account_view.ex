@@ -162,6 +162,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_chat_token(user, opts[:for], opts)
     |> maybe_put_activation_status(user, opts[:for])
     |> maybe_put_follow_requests_count(user, opts[:for])
+    |> maybe_put_allow_following_move(user, opts[:for])
     |> maybe_put_unread_conversation_count(user, opts[:for])
   end
 
@@ -237,6 +238,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_notification_settings(data, _, _), do: data
+
+  defp maybe_put_allow_following_move(data, %User{id: user_id} = user, %User{id: user_id}) do
+    Kernel.put_in(data, [:pleroma, :allow_following_move], user.allow_following_move)
+  end
+
+  defp maybe_put_allow_following_move(data, _, _), do: data
 
   defp maybe_put_activation_status(data, user, %User{is_admin: true}) do
     Kernel.put_in(data, [:pleroma, :deactivated], user.deactivated)
