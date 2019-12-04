@@ -15,6 +15,7 @@ Some apps operate under the assumption that no more than 4 attachments can be re
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
 Adding the parameter `exclude_visibilities` to the timeline queries will exclude the statuses with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`), e.g., `exclude_visibilities[]=direct&exclude_visibilities[]=private`.
 Adding the parameter `reply_visibility` to the public and friends timelines quieries will filter replies. Possible values: without parameter (default) shows all replies, `following` - replies directed to you or users you follow, `self` - replies directed to you.
+
 ## Statuses
 
 - `visibility`: has an additional possible value `list`
