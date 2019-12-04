@@ -15,7 +15,8 @@ defmodule Pleroma.ScheduledActivityTest do
   end
 
   describe "creation" do
-    test "when daily user limit is exceeded" do
+    test "scheduled activities with jobs when ScheduledActivity enabled" do
+      Pleroma.Config.put([ScheduledActivity, :enabled], true)
       user = insert(:user)
 
       today =
@@ -31,6 +32,39 @@ defmodule Pleroma.ScheduledActivityTest do
         Repo.all(from(j in Oban.Job, where: j.queue == "scheduled_activities", select: j.args))
 
       assert jobs == [%{"activity_id" => sa1.id}, %{"activity_id" => sa2.id}]
+    end
+
+    test "scheduled activities without jobs when ScheduledActivity disabled" do
+      Pleroma.Config.put([ScheduledActivity, :enabled], false)
+      user = insert(:user)
+
+      today =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      attrs = %{params: %{}, scheduled_at: today}
+      {:ok, _sa1} = ScheduledActivity.create(user, attrs)
+      {:ok, _sa2} = ScheduledActivity.create(user, attrs)
+
+      jobs =
+        Repo.all(from(j in Oban.Job, where: j.queue == "scheduled_activities", select: j.args))
+
+      assert jobs == []
+    end
+
+    test "when daily user limit is exceeded" do
+      user = insert(:user)
+
+      today =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      attrs = %{params: %{}, scheduled_at: today}
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+
       {:error, changeset} = ScheduledActivity.create(user, attrs)
       assert changeset.errors == [scheduled_at: {"daily limit exceeded", []}]
     end

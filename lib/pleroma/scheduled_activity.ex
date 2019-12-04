@@ -119,11 +119,7 @@ defmodule Pleroma.ScheduledActivity do
   def create(%User{} = user, attrs) do
     Multi.new()
     |> Multi.insert(:scheduled_activity, new(user, attrs))
-    |> Multi.run(:scheduled_activity_job, fn _repo, %{scheduled_activity: activity} ->
-      %{activity_id: activity.id}
-      |> ScheduledActivityWorker.new(scheduled_at: activity.scheduled_at)
-      |> Oban.insert()
-    end)
+    |> maybe_add_jobs(Config.get([ScheduledActivity, :enabled]))
     |> Repo.transaction()
     |> case do
       {:ok, %{scheduled_activity: scheduled_activity}} ->
@@ -133,6 +129,17 @@ defmodule Pleroma.ScheduledActivity do
         {:error, changeset}
     end
   end
+
+  defp maybe_add_jobs(multi, true) do
+    multi
+    |> Multi.run(:scheduled_activity_job, fn _repo, %{scheduled_activity: activity} ->
+      %{activity_id: activity.id}
+      |> ScheduledActivityWorker.new(scheduled_at: activity.scheduled_at)
+      |> Oban.insert()
+    end)
+  end
+
+  defp maybe_add_jobs(multi, _), do: multi
 
   def get(%User{} = user, scheduled_activity_id) do
     ScheduledActivity

@@ -11,6 +11,8 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
   import Pleroma.Factory
   import Ecto.Query
 
+  clear_config([ScheduledActivity, :enabled])
+
   test "shows scheduled activities", %{conn: conn} do
     user = insert(:user)
     scheduled_activity_id1 = insert(:scheduled_activity, user: user).id |> to_string()
@@ -68,6 +70,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
   end
 
   test "updates a scheduled activity", %{conn: conn} do
+    Pleroma.Config.put([ScheduledActivity, :enabled], true)
     user = insert(:user)
 
     scheduled_at =
@@ -120,6 +123,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
   end
 
   test "deletes a scheduled activity", %{conn: conn} do
+    Pleroma.Config.put([ScheduledActivity, :enabled], true)
     user = insert(:user)
 
     {:ok, scheduled_activity} =
