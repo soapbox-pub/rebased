@@ -147,8 +147,6 @@ defmodule Pleroma.Application do
 
   defp oauth_cleanup_child(_), do: []
 
-  defp chat_child(:test, _), do: []
-
   defp chat_child(_env, true) do
     [Pleroma.Web.ChatChannel.ChatChannelState]
   end
