@@ -117,6 +117,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
     Pleroma.Tests.ObanHelpers.perform_all()
 
+    old_user = refresh_record(old_user)
+    new_user = refresh_record(new_user)
+
     [notification] = Notification.for_user(follower)
 
     expected = %{
