@@ -16,6 +16,8 @@ defmodule Pleroma.ScheduledActivity do
   import Ecto.Query
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{}
+
   @min_offset :timer.minutes(5)
 
   schema "scheduled_activities" do
