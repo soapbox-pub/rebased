@@ -4,8 +4,11 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   alias Pleroma.Activity
   alias Pleroma.Builders.ActivityBuilder
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -1553,6 +1556,81 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
       assert follow_info.hide_followers == false
       assert follow_info.hide_follows == true
+    end
+
+    test "detects hidden follows/followers for friendica" do
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:8080/followers/fuser3",
+          following_address: "http://localhost:8080/following/fuser3"
+        )
+
+      {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
+      assert follow_info.hide_followers == true
+      assert follow_info.follower_count == 296
+      assert follow_info.following_count == 32
+      assert follow_info.hide_follows == true
+    end
+  end
+
+  describe "Move activity" do
+    test "create" do
+      %{ap_id: old_ap_id} = old_user = insert(:user)
+      %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
+      follower = insert(:user)
+      follower_move_opted_out = insert(:user, allow_following_move: false)
+
+      User.follow(follower, old_user)
+      User.follow(follower_move_opted_out, old_user)
+
+      assert User.following?(follower, old_user)
+      assert User.following?(follower_move_opted_out, old_user)
+
+      assert {:ok, activity} = ActivityPub.move(old_user, new_user)
+
+      assert %Activity{
+               actor: ^old_ap_id,
+               data: %{
+                 "actor" => ^old_ap_id,
+                 "object" => ^old_ap_id,
+                 "target" => ^new_ap_id,
+                 "type" => "Move"
+               },
+               local: true
+             } = activity
+
+      params = %{
+        "op" => "move_following",
+        "origin_id" => old_user.id,
+        "target_id" => new_user.id
+      }
+
+      assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
+
+      Pleroma.Workers.BackgroundWorker.perform(params, nil)
+
+      refute User.following?(follower, old_user)
+      assert User.following?(follower, new_user)
+
+      assert User.following?(follower_move_opted_out, old_user)
+      refute User.following?(follower_move_opted_out, new_user)
+
+      activity = %Activity{activity | object: nil}
+
+      assert [%Notification{activity: ^activity}] =
+               Notification.for_user_since(follower, ~N[2019-04-13 11:22:33])
+
+      assert [%Notification{activity: ^activity}] =
+               Notification.for_user_since(follower_move_opted_out, ~N[2019-04-13 11:22:33])
+    end
+
+    test "old user must be in the new user's `also_known_as` list" do
+      old_user = insert(:user)
+      new_user = insert(:user)
+
+      assert {:error, "Target account must have the origin in `alsoKnownAs`"} =
+               ActivityPub.move(old_user, new_user)
     end
   end
 end

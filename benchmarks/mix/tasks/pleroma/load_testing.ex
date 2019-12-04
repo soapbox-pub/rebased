@@ -100,6 +100,10 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
 
     generate_remote_activities(user, remote_users)
 
+    generate_like_activities(
+      user, Pleroma.Repo.all(Pleroma.Activity.Queries.by_type("Create"))
+    )
+
     generate_dms(user, users, opts)
 
     {:ok, activity} = generate_long_thread(user, users, opts)

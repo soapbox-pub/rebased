@@ -1035,6 +1035,22 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("http://localhost:8080/followers/fuser3", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/users_mock/friendica_followers.json")
+     }}
+  end
+
+  def get("http://localhost:8080/following/fuser3", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/users_mock/friendica_following.json")
+     }}
+  end
+
   def get("http://localhost:4001/users/fuser2/followers", _, _, _) do
     {:ok,
      %Tesla.Env{
