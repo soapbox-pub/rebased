@@ -2926,6 +2926,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         content: "this is disgusting!"
       })
 
+      build_conn()
+      |> assign(:user, admin)
+      |> post("/api/pleroma/admin/reports/#{report_id}/notes", %{
+        content: "this is disgusting2!"
+      })
+
       %{
         admin_id: admin.id,
         report_id: report_id,
@@ -2947,12 +2953,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> assign(:user, admin)
         |> get("/api/pleroma/admin/reports")
 
-      reponse = json_response(conn, 200)
-      notes = hd(reponse["reports"])["notes"]
-      [note] = notes
+      response = json_response(conn, 200)
+      notes = hd(response["reports"])["notes"]
+      [note, _] = notes
 
       assert note["user"]["nickname"] == admin.nickname
       assert note["content"] == "this is disgusting!"
+      assert response["total"] == 1
     end
   end
 end
