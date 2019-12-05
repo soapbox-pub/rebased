@@ -68,7 +68,7 @@ defmodule Pleroma.Application do
     Supervisor.start_link(children, opts)
   end
 
-  def load_custom_modules() do
+  def load_custom_modules do
     dir = Pleroma.Config.get([:instance, :custom_modules_dir])
 
     if dir && File.exists?(dir) do
