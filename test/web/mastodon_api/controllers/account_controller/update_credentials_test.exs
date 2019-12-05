@@ -103,6 +103,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user["locked"] == true
     end
 
+    test "updates the user's allow_following_move", %{conn: conn} do
+      user = insert(:user)
+
+      assert user.allow_following_move == true
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{allow_following_move: "false"})
+
+      assert refresh_record(user).allow_following_move == false
+      assert user = json_response(conn, 200)
+      assert user["pleroma"]["allow_following_move"] == false
+    end
+
     test "updates the user's default scope", %{conn: conn} do
       user = insert(:user)
 

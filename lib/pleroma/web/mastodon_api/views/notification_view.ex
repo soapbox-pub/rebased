@@ -37,32 +37,24 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       }
 
       case mastodon_type do
-        "mention" ->
-          response
-          |> Map.merge(%{
-            status: StatusView.render("show.json", %{activity: activity, for: user})
-          })
-
-        "favourite" ->
-          response
-          |> Map.merge(%{
-            status: StatusView.render("show.json", %{activity: parent_activity, for: user})
-          })
-
-        "reblog" ->
-          response
-          |> Map.merge(%{
-            status: StatusView.render("show.json", %{activity: parent_activity, for: user})
-          })
-
-        "follow" ->
-          response
-
-        _ ->
-          nil
+        "mention" -> put_status(response, activity, user)
+        "favourite" -> put_status(response, parent_activity, user)
+        "reblog" -> put_status(response, parent_activity, user)
+        "move" -> put_target(response, activity, user)
+        "follow" -> response
+        _ -> nil
       end
     else
       _ -> nil
     end
+  end
+
+  defp put_status(response, activity, user) do
+    Map.put(response, :status, StatusView.render("show.json", %{activity: activity, for: user}))
+  end
+
+  defp put_target(response, activity, user) do
+    target = User.get_cached_by_ap_id(activity.data["target"])
+    Map.put(response, :target, AccountView.render("show.json", %{user: target, for: user}))
   end
 end
