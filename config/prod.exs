@@ -20,7 +20,8 @@ config :pleroma, Pleroma.Web.Endpoint,
 config :phoenix, serve_endpoints: true
 
 # Do not print debug messages in production
-config :logger, level: :warn
+config :logger, :console, level: :warn
+config :logger, :ex_syslogger, level: :warn
 
 # ## SSL Support
 #

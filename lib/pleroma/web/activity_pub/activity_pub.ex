@@ -541,6 +541,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def move(%User{} = origin, %User{} = target, local \\ true) do
+    params = %{
+      "type" => "Move",
+      "actor" => origin.ap_id,
+      "object" => origin.ap_id,
+      "target" => target.ap_id
+    }
+
+    with true <- origin.ap_id in target.also_known_as,
+         {:ok, activity} <- insert(params, local) do
+      maybe_federate(activity)
+
+      BackgroundWorker.enqueue("move_following", %{
+        "origin_id" => origin.id,
+        "target_id" => target.id
+      })
+
+      {:ok, activity}
+    else
+      false -> {:error, "Target account must have the origin in `alsoKnownAs`"}
+      err -> err
+    end
+  end
+
   defp fetch_activities_for_context_query(context, opts) do
     public = [Pleroma.Constants.as_public()]
 
@@ -731,6 +755,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       })
 
     fetch_activities(recipients, params)
+    |> Enum.reverse()
+  end
+
+  def fetch_instance_activities(params) do
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce"])
+      |> Map.put("instance", params["instance"])
+      |> Map.put("whole_db", true)
+
+    fetch_activities([Pleroma.Constants.as_public()], params, :offset)
     |> Enum.reverse()
   end
 
@@ -961,6 +996,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
+  defp restrict_instance(query, %{"instance" => instance}) do
+    users =
+      from(
+        u in User,
+        select: u.ap_id,
+        where: fragment("? LIKE ?", u.nickname, ^"%@#{instance}")
+      )
+      |> Repo.all()
+
+    from(activity in query, where: activity.actor in ^users)
+  end
+
+  defp restrict_instance(query, _), do: query
+
   defp exclude_poll_votes(query, %{"include_poll_votes" => true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1041,6 +1090,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
+    |> restrict_instance(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
     |> exclude_visibility(opts)
@@ -1145,7 +1195,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       name: data["name"],
       follower_address: data["followers"],
       following_address: data["following"],
-      bio: data["summary"]
+      bio: data["summary"],
+      also_known_as: Map.get(data, "alsoKnownAs", [])
     }
 
     # nickname can be nil because of virtual actors
@@ -1207,13 +1258,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp collection_private(data) do
-    if is_map(data["first"]) and
-         data["first"]["type"] in ["CollectionPage", "OrderedCollectionPage"] do
+  defp collection_private(%{"first" => first}) do
+    if is_map(first) and
+         first["type"] in ["CollectionPage", "OrderedCollectionPage"] do
       {:ok, false}
     else
       with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
-             Fetcher.fetch_and_contain_remote_object_from_id(data["first"]) do
+             Fetcher.fetch_and_contain_remote_object_from_id(first) do
         {:ok, false}
       else
         {:error, {:ok, %{status: code}}} when code in [401, 403] ->
@@ -1227,6 +1278,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end
     end
   end
+
+  defp collection_private(_data), do: {:ok, true}
 
   def user_data_from_user_object(data) do
     with {:ok, data} <- MRF.filter(data),

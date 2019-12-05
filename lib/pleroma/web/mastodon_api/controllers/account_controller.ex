@@ -152,6 +152,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :hide_favorites,
         :show_role,
         :skip_thread_containment,
+        :allow_following_move,
         :discoverable
       ]
       |> Enum.reduce(%{}, fn key, acc ->
@@ -238,7 +239,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   @doc "GET /api/v1/accounts/:id"
   def show(%{assigns: %{user: for_user}} = conn, %{"id" => nickname_or_id}) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id, for: for_user),
-         true <- User.auth_active?(user) || user.id == for_user.id || User.superuser?(for_user) do
+         true <- User.visible_for?(user, for_user) do
       render(conn, "show.json", user: user, for: for_user)
     else
       _e -> render_error(conn, :not_found, "Can't find user")

@@ -11,7 +11,6 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPubController
-  alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Metadata.PlayerView
@@ -38,11 +37,9 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     with id <- o_status_url(conn, :object, uuid),
          {_, %Activity{} = activity} <-
            {:activity, Activity.get_create_by_object_ap_id_with_object(id)},
-         {_, true} <- {:public?, Visibility.is_public?(activity)},
-         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+         {_, true} <- {:public?, Visibility.is_public?(activity)} do
       case format do
-        "html" -> redirect(conn, to: "/notice/#{activity.id}")
-        _ -> represent_activity(conn, nil, activity, user)
+        _ -> redirect(conn, to: "/notice/#{activity.id}")
       end
     else
       reason when reason in [{:public?, false}, {:activity, nil}] ->
@@ -61,11 +58,9 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   def activity(%{assigns: %{format: format}} = conn, %{"uuid" => uuid}) do
     with id <- o_status_url(conn, :activity, uuid),
          {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
-         {_, true} <- {:public?, Visibility.is_public?(activity)},
-         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+         {_, true} <- {:public?, Visibility.is_public?(activity)} do
       case format do
-        "html" -> redirect(conn, to: "/notice/#{activity.id}")
-        _ -> represent_activity(conn, format, activity, user)
+        _ -> redirect(conn, to: "/notice/#{activity.id}")
       end
     else
       reason when reason in [{:public?, false}, {:activity, nil}] ->
@@ -81,7 +76,15 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          {_, true} <- {:public?, Visibility.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       cond do
-        format == "html" && activity.data["type"] == "Create" ->
+        format in ["json", "activity+json"] ->
+          if activity.local do
+            %{data: %{"id" => redirect_url}} = Object.normalize(activity)
+            redirect(conn, external: redirect_url)
+          else
+            {:error, :not_found}
+          end
+
+        activity.data["type"] == "Create" ->
           %Object{} = object = Object.normalize(activity)
 
           RedirectController.redirector_with_meta(
@@ -94,11 +97,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
             }
           )
 
-        format == "html" ->
-          RedirectController.redirector(conn, nil)
-
         true ->
-          represent_activity(conn, format, activity, user)
+          RedirectController.redirector(conn, nil)
       end
     else
       reason when reason in [{:public?, false}, {:activity, nil}] ->
@@ -133,24 +133,6 @@ defmodule Pleroma.Web.OStatus.OStatusController do
         |> put_status(404)
         |> RedirectController.redirector(nil, 404)
     end
-  end
-
-  defp represent_activity(
-         conn,
-         "activity+json",
-         %Activity{data: %{"type" => "Create"}} = activity,
-         _user
-       ) do
-    object = Object.normalize(activity)
-
-    conn
-    |> put_resp_header("content-type", "application/activity+json")
-    |> put_view(ObjectView)
-    |> render("object.json", %{object: object})
-  end
-
-  defp represent_activity(_conn, _, _, _) do
-    {:error, :not_found}
   end
 
   def errors(conn, {:error, :not_found}) do

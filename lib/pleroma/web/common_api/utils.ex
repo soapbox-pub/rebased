@@ -451,6 +451,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     recipients ++ to
   end
 
+  def maybe_notify_to_recipients(recipients, _), do: recipients
+
   def maybe_notify_mentioned_recipients(
         recipients,
         %Activity{data: %{"to" => _to, "type" => type} = data} = activity
@@ -501,6 +503,17 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def maybe_notify_subscribers(recipients, _), do: recipients
+
+  def maybe_notify_followers(recipients, %Activity{data: %{"type" => "Move"}} = activity) do
+    with %User{} = user <- User.get_cached_by_ap_id(activity.actor) do
+      user
+      |> User.get_followers()
+      |> Enum.map(& &1.ap_id)
+      |> Enum.concat(recipients)
+    end
+  end
+
+  def maybe_notify_followers(recipients, _), do: recipients
 
   def maybe_extract_mentions(%{"tag" => tag}) do
     tag

@@ -71,18 +71,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
     image = User.avatar_url(user) |> MediaProxy.url()
     header = User.banner_url(user) |> MediaProxy.url()
-    user_info = User.get_cached_user_info(user)
 
     following_count =
       if !user.hide_follows_count or !user.hide_follows or opts[:for] == user do
-        user_info.following_count
+        user.following_count || 0
       else
         0
       end
 
     followers_count =
       if !user.hide_followers_count or !user.hide_followers or opts[:for] == user do
-        user_info.follower_count
+        user.follower_count || 0
       else
         0
       end
@@ -144,7 +143,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
       # Pleroma extension
       pleroma: %{
-        confirmation_pending: user_info.confirmation_pending,
+        confirmation_pending: user.confirmation_pending,
         tags: user.tags,
         hide_followers_count: user.hide_followers_count,
         hide_follows_count: user.hide_follows_count,
@@ -157,12 +156,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       }
     }
     |> maybe_put_role(user, opts[:for])
-    |> maybe_put_settings(user, opts[:for], user_info)
+    |> maybe_put_settings(user, opts[:for], opts)
     |> maybe_put_notification_settings(user, opts[:for])
     |> maybe_put_settings_store(user, opts[:for], opts)
     |> maybe_put_chat_token(user, opts[:for], opts)
     |> maybe_put_activation_status(user, opts[:for])
     |> maybe_put_follow_requests_count(user, opts[:for])
+    |> maybe_put_allow_following_move(user, opts[:for])
     |> maybe_put_unread_conversation_count(user, opts[:for])
   end
 
@@ -191,7 +191,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
          data,
          %User{id: user_id} = user,
          %User{id: user_id},
-         _user_info
+         _opts
        ) do
     data
     |> Kernel.put_in([:source, :privacy], user.default_scope)
@@ -238,6 +238,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_notification_settings(data, _, _), do: data
+
+  defp maybe_put_allow_following_move(data, %User{id: user_id} = user, %User{id: user_id}) do
+    Kernel.put_in(data, [:pleroma, :allow_following_move], user.allow_following_move)
+  end
+
+  defp maybe_put_allow_following_move(data, _, _), do: data
 
   defp maybe_put_activation_status(data, user, %User{is_admin: true}) do
     Kernel.put_in(data, [:pleroma, :deactivated], user.deactivated)

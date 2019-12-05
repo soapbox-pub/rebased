@@ -25,6 +25,25 @@ defmodule Pleroma.UserTest do
 
   clear_config([:instance, :account_activation_required])
 
+  describe "service actors" do
+    test "returns invisible actor" do
+      uri = "#{Pleroma.Web.Endpoint.url()}/internal/fetch-test"
+      followers_uri = "#{uri}/followers"
+      user = User.get_or_create_service_actor_by_ap_id(uri, "internal.fetch-test")
+
+      assert %User{
+               nickname: "internal.fetch-test",
+               invisible: true,
+               local: true,
+               ap_id: ^uri,
+               follower_address: ^followers_uri
+             } = user
+
+      user2 = User.get_or_create_service_actor_by_ap_id(uri, "internal.fetch-test")
+      assert user.id == user2.id
+    end
+  end
+
   describe "when tags are nil" do
     test "tagging a user" do
       user = insert(:user, %{tags: nil})
@@ -148,9 +167,10 @@ defmodule Pleroma.UserTest do
     {:ok, user} = User.follow(user, followed)
 
     user = User.get_cached_by_id(user.id)
-
     followed = User.get_cached_by_ap_id(followed.ap_id)
+
     assert followed.follower_count == 1
+    assert user.following_count == 1
 
     assert User.ap_followers(followed) in User.following(user)
   end
@@ -347,18 +367,6 @@ defmodule Pleroma.UserTest do
 
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
     end
-
-    test "it ensures info is not nil" do
-      changeset = User.register_changeset(%User{}, @full_user_data)
-
-      assert changeset.valid?
-
-      {:ok, user} =
-        changeset
-        |> Repo.insert()
-
-      refute is_nil(user.info)
-    end
   end
 
   describe "user registration, with :account_activation_required" do
@@ -412,8 +420,7 @@ defmodule Pleroma.UserTest do
           :user,
           local: false,
           nickname: "admin@mastodon.example.org",
-          ap_id: ap_id,
-          info: %{}
+          ap_id: ap_id
         )
 
       {:ok, fetched_user} = User.get_or_fetch(ap_id)
@@ -474,8 +481,7 @@ defmodule Pleroma.UserTest do
           local: false,
           nickname: "admin@mastodon.example.org",
           ap_id: "http://mastodon.example.org/users/admin",
-          last_refreshed_at: a_week_ago,
-          info: %{}
+          last_refreshed_at: a_week_ago
         )
 
       assert orig_user.last_refreshed_at == a_week_ago
@@ -516,7 +522,6 @@ defmodule Pleroma.UserTest do
       name: "Someone",
       nickname: "a@b.de",
       ap_id: "http...",
-      info: %{some: "info"},
       avatar: %{some: "avatar"}
     }
 
@@ -941,9 +946,9 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.follow(user, user2)
       {:ok, _user} = User.deactivate(user)
 
-      info = User.get_cached_user_info(user2)
+      user2 = User.get_cached_by_id(user2.id)
 
-      assert info.follower_count == 0
+      assert user2.follower_count == 0
       assert [] = User.get_followers(user2)
     end
 
@@ -952,13 +957,15 @@ defmodule Pleroma.UserTest do
       user2 = insert(:user)
 
       {:ok, user2} = User.follow(user2, user)
+      assert user2.following_count == 1
       assert User.following_count(user2) == 1
 
       {:ok, _user} = User.deactivate(user)
 
-      info = User.get_cached_user_info(user2)
+      user2 = User.get_cached_by_id(user2.id)
 
-      assert info.following_count == 0
+      assert refresh_record(user2).following_count == 0
+      assert user2.following_count == 0
       assert User.following_count(user2) == 0
       assert [] = User.get_friends(user2)
     end
@@ -1121,8 +1128,7 @@ defmodule Pleroma.UserTest do
         ap_id: user.ap_id,
         name: user.name,
         nickname: user.nickname,
-        bio: String.duplicate("h", current_max_length + 1),
-        info: %{}
+        bio: String.duplicate("h", current_max_length + 1)
       }
 
       assert {:ok, %User{}} = User.insert_or_update_user(data)
@@ -1135,8 +1141,7 @@ defmodule Pleroma.UserTest do
       data = %{
         ap_id: user.ap_id,
         name: String.duplicate("h", current_max_length + 1),
-        nickname: user.nickname,
-        info: %{}
+        nickname: user.nickname
       }
 
       assert {:ok, %User{}} = User.insert_or_update_user(data)
@@ -1160,13 +1165,12 @@ defmodule Pleroma.UserTest do
   describe "caching" do
     test "invalidate_cache works" do
       user = insert(:user)
-      _user_info = User.get_cached_user_info(user)
 
+      User.set_cache(user)
       User.invalidate_cache(user)
 
       {:ok, nil} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
       {:ok, nil} = Cachex.get(:user_cache, "nickname:#{user.nickname}")
-      {:ok, nil} = Cachex.get(:user_cache, "user_info:#{user.id}")
     end
 
     test "User.delete() plugs any possible zombie objects" do
@@ -1322,7 +1326,7 @@ defmodule Pleroma.UserTest do
 
     {:ok, user} = User.block(user, follower)
 
-    assert User.user_info(user).follower_count == 2
+    assert user.follower_count == 2
   end
 
   describe "list_inactive_users_query/1" do
@@ -1499,51 +1503,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "set_info_cache/2" do
-    setup do
-      user = insert(:user)
-      {:ok, user: user}
-    end
-
-    test "update from args", %{user: user} do
-      User.set_info_cache(user, %{following_count: 15, follower_count: 18})
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user)
-      assert followers == 18
-      assert following == 15
-    end
-
-    test "without args", %{user: user} do
-      User.set_info_cache(user, %{})
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user)
-      assert followers == 0
-      assert following == 0
-    end
-  end
-
-  describe "user_info/2" do
-    setup do
-      user = insert(:user)
-      {:ok, user: user}
-    end
-
-    test "update from args", %{user: user} do
-      %{follower_count: followers, following_count: following} =
-        User.user_info(user, %{following_count: 15, follower_count: 18})
-
-      assert followers == 18
-      assert following == 15
-    end
-
-    test "without args", %{user: user} do
-      %{follower_count: followers, following_count: following} = User.user_info(user)
-
-      assert followers == 0
-      assert following == 0
-    end
-  end
-
   describe "is_internal_user?/1" do
     test "non-internal user returns false" do
       user = insert(:user)
@@ -1600,14 +1559,14 @@ defmodule Pleroma.UserTest do
           ap_enabled: true
         )
 
-      assert User.user_info(other_user).following_count == 0
-      assert User.user_info(other_user).follower_count == 0
+      assert other_user.following_count == 0
+      assert other_user.follower_count == 0
 
       {:ok, user} = Pleroma.User.follow(user, other_user)
       other_user = Pleroma.User.get_by_id(other_user.id)
 
-      assert User.user_info(user).following_count == 1
-      assert User.user_info(other_user).follower_count == 1
+      assert user.following_count == 1
+      assert other_user.follower_count == 1
     end
 
     test "syncronizes the counters with the remote instance for the followed when enabled" do
@@ -1623,14 +1582,14 @@ defmodule Pleroma.UserTest do
           ap_enabled: true
         )
 
-      assert User.user_info(other_user).following_count == 0
-      assert User.user_info(other_user).follower_count == 0
+      assert other_user.following_count == 0
+      assert other_user.follower_count == 0
 
       Pleroma.Config.put([:instance, :external_user_synchronization], true)
       {:ok, _user} = User.follow(user, other_user)
       other_user = User.get_by_id(other_user.id)
 
-      assert User.user_info(other_user).follower_count == 437
+      assert other_user.follower_count == 437
     end
 
     test "syncronizes the counters with the remote instance for the follower when enabled" do
@@ -1646,13 +1605,13 @@ defmodule Pleroma.UserTest do
           ap_enabled: true
         )
 
-      assert User.user_info(other_user).following_count == 0
-      assert User.user_info(other_user).follower_count == 0
+      assert other_user.following_count == 0
+      assert other_user.follower_count == 0
 
       Pleroma.Config.put([:instance, :external_user_synchronization], true)
       {:ok, other_user} = User.follow(other_user, user)
 
-      assert User.user_info(other_user).following_count == 152
+      assert other_user.following_count == 152
     end
   end
 

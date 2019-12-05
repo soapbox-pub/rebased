@@ -8,6 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.Token
 
@@ -117,6 +118,28 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       acc_three = json_response(resp_three, 200)
       refute acc_one == acc_two
       assert acc_two == acc_three
+    end
+
+    test "returns 404 when user is invisible", %{conn: conn} do
+      user = insert(:user, %{invisible: true})
+
+      resp =
+        conn
+        |> get("/api/v1/accounts/#{user.nickname}")
+        |> json_response(404)
+
+      assert %{"error" => "Can't find user"} = resp
+    end
+
+    test "returns 404 for internal.fetch actor", %{conn: conn} do
+      %User{nickname: "internal.fetch"} = InternalFetchActor.get_actor()
+
+      resp =
+        conn
+        |> get("/api/v1/accounts/internal.fetch")
+        |> json_response(404)
+
+      assert %{"error" => "Can't find user"} = resp
     end
   end
 
