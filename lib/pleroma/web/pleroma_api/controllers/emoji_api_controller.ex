@@ -7,7 +7,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["admin:write", "write"]}
+    %{scopes: Pleroma.Config.oauth_admin_scopes("write")}
     when action in [
            :create,
            :delete,

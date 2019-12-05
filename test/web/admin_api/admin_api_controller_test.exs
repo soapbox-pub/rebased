@@ -1537,7 +1537,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> assign(:user, user)
         |> get("/api/pleroma/admin/reports")
 
-      assert json_response(conn, :forbidden) == %{"error" => "User is not admin."}
+      assert json_response(conn, :forbidden) ==
+               %{"error" => "User is not an admin or OAuth admin scope is not granted."}
     end
 
     test "returns 403 when requested by anonymous" do

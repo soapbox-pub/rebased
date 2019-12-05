@@ -83,7 +83,7 @@ defmodule Pleroma.Web.OAuth.Scopes do
     end
   end
 
-  defp contains_admin_scopes?(scopes) do
+  def contains_admin_scopes?(scopes) do
     scopes
     |> OAuthScopesPlug.filter_descendants(["admin"])
     |> Enum.any?()
