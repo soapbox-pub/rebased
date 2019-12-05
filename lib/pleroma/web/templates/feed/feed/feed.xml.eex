@@ -19,6 +19,6 @@
   <% end %>
 
   <%= for activity <- @activities do %>
-    <%= render @view_module, "_activity.xml", Map.merge(assigns, %{activity: activity, data: activity_object_data(activity)}) %>
+  <%= render @view_module, "_activity.xml", Map.merge(assigns, prepare_activity(activity)) %>
   <% end %>
 </feed>

@@ -42,6 +42,26 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
     }
   end
 
+  def render("index_grouped.json", %{groups: groups}) do
+    reports =
+      Enum.map(groups, fn group ->
+        %{
+          date: group[:date],
+          account: group[:account],
+          status: group[:status],
+          actors: Enum.map(group[:actors], &merge_account_views/1),
+          reports:
+            group[:reports]
+            |> Enum.map(&Report.extract_report_info(&1))
+            |> Enum.map(&render(__MODULE__, "show.json", &1))
+        }
+      end)
+
+    %{
+      reports: reports
+    }
+  end
+
   defp merge_account_views(%User{} = user) do
     Pleroma.Web.MastodonAPI.AccountView.render("show.json", %{user: user})
     |> Map.merge(Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user}))

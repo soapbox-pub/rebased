@@ -38,7 +38,8 @@ defmodule Pleroma.Object.Fetcher do
          data <- maybe_reinject_internal_fields(data, struct),
          changeset <- Object.change(struct, %{data: data}),
          changeset <- touch_changeset(changeset),
-         {:ok, object} <- Repo.insert_or_update(changeset) do
+         {:ok, object} <- Repo.insert_or_update(changeset),
+         {:ok, object} <- Object.set_cache(object) do
       {:ok, object}
     else
       e ->
@@ -48,12 +49,12 @@ defmodule Pleroma.Object.Fetcher do
   end
 
   def refetch_object(%Object{data: %{"id" => id}} = object) do
-    with {:local, false} <- {:local, String.starts_with?(id, Pleroma.Web.base_url() <> "/")},
+    with {:local, false} <- {:local, Object.local?(object)},
          {:ok, data} <- fetch_and_contain_remote_object_from_id(id),
          {:ok, object} <- reinject_object(object, data) do
       {:ok, object}
     else
-      {:local, true} -> object
+      {:local, true} -> {:ok, object}
       e -> {:error, e}
     end
   end

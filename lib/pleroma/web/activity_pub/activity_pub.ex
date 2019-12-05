@@ -322,6 +322,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def react_with_emoji(user, object, emoji, options \\ []) do
+    with local <- Keyword.get(options, :local, true),
+         activity_id <- Keyword.get(options, :activity_id, nil),
+         Pleroma.Emoji.is_unicode_emoji?(emoji),
+         reaction_data <- make_emoji_reaction_data(user, object, emoji, activity_id),
+         {:ok, activity} <- insert(reaction_data, local),
+         {:ok, object} <- add_emoji_reaction_to_object(activity, object),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity, object}
+    end
+  end
+
+  def unreact_with_emoji(user, reaction_id, options \\ []) do
+    with local <- Keyword.get(options, :local, true),
+         activity_id <- Keyword.get(options, :activity_id, nil),
+         user_ap_id <- user.ap_id,
+         %Activity{actor: ^user_ap_id} = reaction_activity <- Activity.get_by_ap_id(reaction_id),
+         object <- Object.normalize(reaction_activity),
+         unreact_data <- make_undo_data(user, reaction_activity, activity_id),
+         {:ok, activity} <- insert(unreact_data, local),
+         {:ok, object} <- remove_emoji_reaction_from_object(reaction_activity, object),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity, object}
+    end
+  end
+
   # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
   def like(
         %User{ap_id: ap_id} = user,
@@ -515,6 +541,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def move(%User{} = origin, %User{} = target, local \\ true) do
+    params = %{
+      "type" => "Move",
+      "actor" => origin.ap_id,
+      "object" => origin.ap_id,
+      "target" => target.ap_id
+    }
+
+    with true <- origin.ap_id in target.also_known_as,
+         {:ok, activity} <- insert(params, local) do
+      maybe_federate(activity)
+
+      BackgroundWorker.enqueue("move_following", %{
+        "origin_id" => origin.id,
+        "target_id" => target.id
+      })
+
+      {:ok, activity}
+    else
+      false -> {:error, "Target account must have the origin in `alsoKnownAs`"}
+      err -> err
+    end
+  end
+
   defp fetch_activities_for_context_query(context, opts) do
     public = [Pleroma.Constants.as_public()]
 
@@ -568,7 +618,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> fetch_activities_query(opts)
     |> restrict_unlisted()
     |> Pagination.fetch_paginated(opts, pagination)
-    |> Enum.reverse()
   end
 
   @valid_visibilities ~w[direct unlisted public private]
@@ -706,6 +755,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       })
 
     fetch_activities(recipients, params)
+    |> Enum.reverse()
+  end
+
+  def fetch_instance_activities(params) do
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce"])
+      |> Map.put("instance", params["instance"])
+      |> Map.put("whole_db", true)
+
+    fetch_activities([Pleroma.Constants.as_public()], params, :offset)
     |> Enum.reverse()
   end
 
@@ -936,6 +996,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
+  defp restrict_instance(query, %{"instance" => instance}) do
+    users =
+      from(
+        u in User,
+        select: u.ap_id,
+        where: fragment("? LIKE ?", u.nickname, ^"%@#{instance}")
+      )
+      |> Repo.all()
+
+    from(activity in query, where: activity.actor in ^users)
+  end
+
+  defp restrict_instance(query, _), do: query
+
   defp exclude_poll_votes(query, %{"include_poll_votes" => true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1016,6 +1090,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
+    |> restrict_instance(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
     |> exclude_visibility(opts)
@@ -1120,7 +1195,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       name: data["name"],
       follower_address: data["followers"],
       following_address: data["following"],
-      bio: data["summary"]
+      bio: data["summary"],
+      also_known_as: Map.get(data, "alsoKnownAs", [])
     }
 
     # nickname can be nil because of virtual actors
@@ -1182,13 +1258,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp collection_private(data) do
-    if is_map(data["first"]) and
-         data["first"]["type"] in ["CollectionPage", "OrderedCollectionPage"] do
+  defp collection_private(%{"first" => first}) do
+    if is_map(first) and
+         first["type"] in ["CollectionPage", "OrderedCollectionPage"] do
       {:ok, false}
     else
       with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
-             Fetcher.fetch_and_contain_remote_object_from_id(data["first"]) do
+             Fetcher.fetch_and_contain_remote_object_from_id(first) do
         {:ok, false}
       else
         {:error, {:ok, %{status: code}}} when code in [401, 403] ->
@@ -1202,6 +1278,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end
     end
   end
+
+  defp collection_private(_data), do: {:ok, true}
 
   def user_data_from_user_object(data) do
     with {:ok, data} <- MRF.filter(data),

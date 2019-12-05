@@ -1,0 +1,57 @@
+{
+  "_pleroma_theme_version": 2,
+  "name": "Mammal",
+  "theme": {
+    "shadows": {
+      "button": [],
+      "buttonHover": [
+        {
+          "x": "0",
+          "y": "0",
+          "blur": "0",
+          "spread": 1024,
+          "color": "#56a7e1",
+          "alpha": "1",
+          "inset": true
+        }
+      ],
+      "buttonPressed": [
+        {
+          "x": "0",
+          "y": "0",
+          "blur": "0",
+          "spread": 1024,
+          "color": "#56a7e1",
+          "alpha": "1",
+          "inset": true
+        }
+      ],
+      "panel": [],
+      "panelHeader": [],
+      "topBar": []
+    },
+    "opacity": { "input": "1" },
+    "colors": {
+      "bg": "#282c37",
+      "text": "#f8f8f8",
+      "link": "#9bacc8",
+      "fg": "#444b5d",
+      "input": "#FFFFFF",
+      "inputText": "#282c37",
+      "btn": "#2b90d9",
+      "btnText": "#FFFFFF",
+      "cRed": "#7f3142",
+      "cBlue": "#2b90d9",
+      "cGreen": "#2bd850",
+      "cOrange": "#ca8f04"
+    },
+    "radii": {
+      "btn": 4,
+      "input": 4,
+      "panel": "0",
+      "avatar": "4",
+      "avatarAlt": "4",
+      "attachment": "4"
+    }
+  }
+}

@@ -9,7 +9,11 @@
     "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
     "conversation": "ostatus:conversation",
     "toot": "http://joinmastodon.org/ns#",
-    "Emoji": "toot:Emoji"
+    "Emoji": "toot:Emoji",
+    "alsoKnownAs": {
+      "@id": "as:alsoKnownAs",
+      "@type": "@id"
+    }
   }],
   "id": "http://mastodon.example.org/users/admin",
   "type": "Person",
@@ -50,5 +54,6 @@
     "type": "Image",
     "mediaType": "image/png",
     "url": "https://cdn.niu.moe/accounts/headers/000/033/323/original/850b3448fa5fd477.png"
-  }
+  },
+  "alsoKnownAs": ["http://example.org/users/foo"]
 }

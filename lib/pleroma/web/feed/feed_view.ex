@@ -6,11 +6,22 @@ defmodule Pleroma.Web.Feed.FeedView do
   use Phoenix.HTML
   use Pleroma.Web, :view
 
+  alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
 
   require Pleroma.Constants
+
+  def prepare_activity(activity) do
+    object = activity_object(activity)
+
+    %{
+      activity: activity,
+      data: Map.get(object, :data),
+      object: object
+    }
+  end
 
   def most_recent_update(activities, user) do
     (List.first(activities) || user).updated_at
@@ -23,31 +34,23 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> MediaProxy.url()
   end
 
-  def last_activity(activities) do
-    List.last(activities)
+  def last_activity(activities), do: List.last(activities)
+
+  def activity_object(activity), do: Object.normalize(activity)
+
+  def activity_title(%{data: %{"content" => content}}, opts \\ %{}) do
+    content
+    |> Formatter.truncate(opts[:max_length], opts[:omission])
+    |> escape()
   end
 
-  def activity_object(activity) do
-    Object.normalize(activity)
-  end
-
-  def activity_object_data(activity) do
-    activity
-    |> activity_object()
-    |> Map.get(:data)
-  end
-
-  def activity_content(activity) do
-    content = activity_object_data(activity)["content"]
-
+  def activity_content(%{data: %{"content" => content}}) do
     content
     |> String.replace(~r/[\n\r]/, "")
     |> escape()
   end
 
-  def activity_context(activity) do
-    activity.data["context"]
-  end
+  def activity_context(activity), do: activity.data["context"]
 
   def attachment_href(attachment) do
     attachment["url"]

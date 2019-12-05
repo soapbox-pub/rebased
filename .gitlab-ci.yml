@@ -29,28 +29,13 @@ build:
   - mix deps.get
   - mix compile --force
 
-docs-build:
-  stage: build
-  only:
-  - master@pleroma/pleroma
-  - develop@pleroma/pleroma
-  variables:
-    MIX_ENV: dev
-    PLEROMA_BUILD_ENV: prod
-  script:
-    - mix deps.get
-    - mix compile
-    - mix docs
-  artifacts:
-    paths:
-      - priv/static/doc
-
 benchmark:
   stage: benchmark
+  when: manual
   variables:
     MIX_ENV: benchmark
   services:
-  - name: lainsoykaf/postgres-with-rum
+  - name: postgres:9.6
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
@@ -62,19 +47,32 @@ benchmark:
 unit-testing:
   stage: test
   services:
-  - name: lainsoykaf/postgres-with-rum
+  - name: postgres:9.6
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
-    - mix coveralls --trace --preload-modules
+    - mix coveralls --preload-modules
+
+federated-testing:
+  stage: test
+  services:
+  - name: minibikini/postgres-with-rum:12
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  script:
+    - mix deps.get
+    - mix ecto.create
+    - mix ecto.migrate
+    - epmd -daemon
+    - mix test --trace --only federated
 
 unit-testing-rum:
   stage: test
   services:
-  - name: lainsoykaf/postgres-with-rum
+  - name: minibikini/postgres-with-rum:12
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   variables:
@@ -84,7 +82,7 @@ unit-testing-rum:
     - mix ecto.create
     - mix ecto.migrate
     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
-    - mix test --trace --preload-modules
+    - mix test --preload-modules
 
 lint:
   stage: test
@@ -129,6 +127,7 @@ review_app:
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - ssh-keyscan -H "pleroma.online" >> ~/.ssh/known_hosts
     - (ssh -t dokku@pleroma.online -- apps:create "$CI_ENVIRONMENT_SLUG") || true
+    - (ssh -t dokku@pleroma.online -- git:set "$CI_ENVIRONMENT_SLUG" keep-git-dir true) || true
     - ssh -t dokku@pleroma.online -- config:set "$CI_ENVIRONMENT_SLUG" APP_NAME="$CI_ENVIRONMENT_SLUG" APP_HOST="$CI_ENVIRONMENT_SLUG.pleroma.online" MIX_ENV=dokku
     - (ssh -t dokku@pleroma.online -- postgres:create $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db) || true
     - (ssh -t dokku@pleroma.online -- postgres:link $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db "$CI_ENVIRONMENT_SLUG") || true
@@ -154,7 +153,7 @@ stop_review_app:
     - ssh -t dokku@pleroma.online -- --force postgres:destroy $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db
 
 amd64:
-  stage: release 
+  stage: release
   # TODO: Replace with upstream image when 1.9.0 comes out
   image: rinpatch/elixir:1.9.0-rc.0
   only: &release-only

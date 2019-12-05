@@ -4,8 +4,11 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   alias Pleroma.Activity
   alias Pleroma.Builders.ActivityBuilder
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -734,56 +737,54 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
 
     test "retrieves a maximum of 20 activities" do
-      activities = ActivityBuilder.insert_list(30)
-      last_expected = List.last(activities)
+      ActivityBuilder.insert_list(10)
+      expected_activities = ActivityBuilder.insert_list(20)
 
       activities = ActivityPub.fetch_public_activities()
-      last = List.last(activities)
 
+      assert collect_ids(activities) == collect_ids(expected_activities)
       assert length(activities) == 20
-      assert last == last_expected
     end
 
     test "retrieves ids starting from a since_id" do
       activities = ActivityBuilder.insert_list(30)
-      later_activities = ActivityBuilder.insert_list(10)
+      expected_activities = ActivityBuilder.insert_list(10)
       since_id = List.last(activities).id
-      last_expected = List.last(later_activities)
 
       activities = ActivityPub.fetch_public_activities(%{"since_id" => since_id})
-      last = List.last(activities)
 
+      assert collect_ids(activities) == collect_ids(expected_activities)
       assert length(activities) == 10
-      assert last == last_expected
     end
 
     test "retrieves ids up to max_id" do
-      _first_activities = ActivityBuilder.insert_list(10)
-      activities = ActivityBuilder.insert_list(20)
-      later_activities = ActivityBuilder.insert_list(10)
-      max_id = List.first(later_activities).id
-      last_expected = List.last(activities)
+      ActivityBuilder.insert_list(10)
+      expected_activities = ActivityBuilder.insert_list(20)
+
+      %{id: max_id} =
+        10
+        |> ActivityBuilder.insert_list()
+        |> List.first()
 
       activities = ActivityPub.fetch_public_activities(%{"max_id" => max_id})
-      last = List.last(activities)
 
       assert length(activities) == 20
-      assert last == last_expected
+      assert collect_ids(activities) == collect_ids(expected_activities)
     end
 
     test "paginates via offset/limit" do
-      _first_activities = ActivityBuilder.insert_list(10)
-      activities = ActivityBuilder.insert_list(10)
-      _later_activities = ActivityBuilder.insert_list(10)
-      first_expected = List.first(activities)
+      _first_part_activities = ActivityBuilder.insert_list(10)
+      second_part_activities = ActivityBuilder.insert_list(10)
+
+      later_activities = ActivityBuilder.insert_list(10)
 
       activities =
         ActivityPub.fetch_public_activities(%{"page" => "2", "page_size" => "20"}, :offset)
 
-      first = List.first(activities)
-
       assert length(activities) == 20
-      assert first == first_expected
+
+      assert collect_ids(activities) ==
+               collect_ids(second_part_activities) ++ collect_ids(later_activities)
     end
 
     test "doesn't return reblogs for users for whom reblogs have been muted" do
@@ -811,6 +812,78 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
 
       assert Enum.any?(activities, fn %{id: id} -> id == activity.id end)
+    end
+  end
+
+  describe "react to an object" do
+    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
+      Pleroma.Config.put([:instance, :federating], true)
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      assert called(Pleroma.Web.Federator.publish(reaction_activity))
+    end
+
+    test "adds an emoji reaction activity to the db" do
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      assert reaction_activity
+
+      assert reaction_activity.data["actor"] == reactor.ap_id
+      assert reaction_activity.data["type"] == "EmojiReaction"
+      assert reaction_activity.data["content"] == "🔥"
+      assert reaction_activity.data["object"] == object.data["id"]
+      assert reaction_activity.data["to"] == [User.ap_followers(reactor), activity.data["actor"]]
+      assert reaction_activity.data["context"] == object.data["context"]
+      assert object.data["reaction_count"] == 1
+      assert object.data["reactions"]["🔥"] == [reactor.ap_id]
+    end
+  end
+
+  describe "unreacting to an object" do
+    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
+      Pleroma.Config.put([:instance, :federating], true)
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      assert called(Pleroma.Web.Federator.publish(reaction_activity))
+
+      {:ok, unreaction_activity, _object} =
+        ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
+
+      assert called(Pleroma.Web.Federator.publish(unreaction_activity))
+    end
+
+    test "adds an undo activity to the db" do
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      {:ok, unreaction_activity, _object} =
+        ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
+
+      assert unreaction_activity.actor == reactor.ap_id
+      assert unreaction_activity.data["object"] == reaction_activity.data["id"]
+
+      object = Object.get_by_ap_id(object.data["id"])
+      assert object.data["reaction_count"] == 0
+      assert object.data["reactions"] == %{}
     end
   end
 
@@ -1483,6 +1556,81 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
       assert follow_info.hide_followers == false
       assert follow_info.hide_follows == true
+    end
+
+    test "detects hidden follows/followers for friendica" do
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:8080/followers/fuser3",
+          following_address: "http://localhost:8080/following/fuser3"
+        )
+
+      {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
+      assert follow_info.hide_followers == true
+      assert follow_info.follower_count == 296
+      assert follow_info.following_count == 32
+      assert follow_info.hide_follows == true
+    end
+  end
+
+  describe "Move activity" do
+    test "create" do
+      %{ap_id: old_ap_id} = old_user = insert(:user)
+      %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
+      follower = insert(:user)
+      follower_move_opted_out = insert(:user, allow_following_move: false)
+
+      User.follow(follower, old_user)
+      User.follow(follower_move_opted_out, old_user)
+
+      assert User.following?(follower, old_user)
+      assert User.following?(follower_move_opted_out, old_user)
+
+      assert {:ok, activity} = ActivityPub.move(old_user, new_user)
+
+      assert %Activity{
+               actor: ^old_ap_id,
+               data: %{
+                 "actor" => ^old_ap_id,
+                 "object" => ^old_ap_id,
+                 "target" => ^new_ap_id,
+                 "type" => "Move"
+               },
+               local: true
+             } = activity
+
+      params = %{
+        "op" => "move_following",
+        "origin_id" => old_user.id,
+        "target_id" => new_user.id
+      }
+
+      assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
+
+      Pleroma.Workers.BackgroundWorker.perform(params, nil)
+
+      refute User.following?(follower, old_user)
+      assert User.following?(follower, new_user)
+
+      assert User.following?(follower_move_opted_out, old_user)
+      refute User.following?(follower_move_opted_out, new_user)
+
+      activity = %Activity{activity | object: nil}
+
+      assert [%Notification{activity: ^activity}] =
+               Notification.for_user_since(follower, ~N[2019-04-13 11:22:33])
+
+      assert [%Notification{activity: ^activity}] =
+               Notification.for_user_since(follower_move_opted_out, ~N[2019-04-13 11:22:33])
+    end
+
+    test "old user must be in the new user's `also_known_as` list" do
+      old_user = insert(:user)
+      new_user = insert(:user)
+
+      assert {:error, "Target account must have the origin in `alsoKnownAs`"} =
+               ActivityPub.move(old_user, new_user)
     end
   end
 end

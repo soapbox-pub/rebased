@@ -5,7 +5,6 @@ CC-BY-SA-4.0
 COPYING
 *file
 elixir_buildpack.config
-docs/
 test/
 
 # Required to get version
