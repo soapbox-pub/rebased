@@ -509,14 +509,14 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "add a reblog mute", %{muter: muter, muted: muted} do
-      {:ok, muter} = CommonAPI.hide_reblogs(muter, muted)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(muter, muted)
 
       assert User.showing_reblogs?(muter, muted) == false
     end
 
     test "remove a reblog mute", %{muter: muter, muted: muted} do
-      {:ok, muter} = CommonAPI.hide_reblogs(muter, muted)
-      {:ok, muter} = CommonAPI.show_reblogs(muter, muted)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(muter, muted)
+      {:ok, _reblog_mute} = CommonAPI.show_reblogs(muter, muted)
 
       assert User.showing_reblogs?(muter, muted) == true
     end
@@ -526,7 +526,7 @@ defmodule Pleroma.Web.CommonAPITest do
     test "also unsubscribes a user" do
       [follower, followed] = insert_pair(:user)
       {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
-      {:ok, followed} = User.subscribe(follower, followed)
+      {:ok, _subscription} = User.subscribe(follower, followed)
 
       assert User.subscribed_to?(follower, followed)
 

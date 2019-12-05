@@ -494,7 +494,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     with %User{} = user <- User.get_cached_by_ap_id(actor) do
       subscriber_ids =
         user
-        |> User.subscribers()
+        |> User.subscriber_users()
         |> Enum.filter(&Visibility.visible_for_user?(activity, &1))
         |> Enum.map(& &1.ap_id)
 
