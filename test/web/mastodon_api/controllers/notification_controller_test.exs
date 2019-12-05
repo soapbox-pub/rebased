@@ -289,7 +289,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     assert length(json_response(conn, 200)) == 1
 
-    {:ok, user} = User.mute(user, user2)
+    {:ok, _user_relationships} = User.mute(user, user2)
 
     conn = assign(build_conn(), :user, user)
     conn = get(conn, "/api/v1/notifications")
@@ -310,7 +310,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     assert length(json_response(conn, 200)) == 1
 
-    {:ok, user} = User.mute(user, user2, false)
+    {:ok, _user_relationships} = User.mute(user, user2, false)
 
     conn = assign(build_conn(), :user, user)
     conn = get(conn, "/api/v1/notifications")
@@ -333,7 +333,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     assert length(json_response(conn, 200)) == 1
 
-    {:ok, user} = User.mute(user, user2)
+    {:ok, _user_relationships} = User.mute(user, user2)
 
     conn = assign(build_conn(), :user, user)
     conn = get(conn, "/api/v1/notifications", %{"with_muted" => "true"})

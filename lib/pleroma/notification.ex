@@ -21,6 +21,8 @@ defmodule Pleroma.Notification do
 
   @type t :: %__MODULE__{}
 
+  @include_muted_option :with_muted
+
   schema "notifications" do
     field(:seen, :boolean, default: false)
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
@@ -34,7 +36,25 @@ defmodule Pleroma.Notification do
     |> cast(attrs, [:seen])
   end
 
-  def for_user_query(user, opts \\ []) do
+  defp for_user_query_ap_id_opts(user, opts) do
+    ap_id_relations =
+      [:block] ++
+        if opts[@include_muted_option], do: [], else: [:notification_mute]
+
+    preloaded_ap_ids = User.outgoing_relations_ap_ids(user, ap_id_relations)
+
+    exclude_blocked_opts = Map.merge(%{blocked_users_ap_ids: preloaded_ap_ids[:block]}, opts)
+
+    exclude_notification_muted_opts =
+      Map.merge(%{notification_muted_users_ap_ids: preloaded_ap_ids[:notification_mute]}, opts)
+
+    {exclude_blocked_opts, exclude_notification_muted_opts}
+  end
+
+  def for_user_query(user, opts \\ %{}) do
+    {exclude_blocked_opts, exclude_notification_muted_opts} =
+      for_user_query_ap_id_opts(user, opts)
+
     Notification
     |> where(user_id: ^user.id)
     |> where(
@@ -54,27 +74,32 @@ defmodule Pleroma.Notification do
         )
     )
     |> preload([n, a, o], activity: {a, object: o})
-    |> exclude_muted(user, opts)
-    |> exclude_blocked(user)
+    |> exclude_notification_muted(user, exclude_notification_muted_opts)
+    |> exclude_blocked(user, exclude_blocked_opts)
     |> exclude_visibility(opts)
   end
 
-  defp exclude_blocked(query, user) do
+  defp exclude_blocked(query, user, opts) do
+    blocked_ap_ids = opts[:blocked_users_ap_ids] || User.blocked_users_ap_ids(user)
+
     query
-    |> where([n, a], a.actor not in ^user.blocks)
+    |> where([n, a], a.actor not in ^blocked_ap_ids)
     |> where(
       [n, a],
       fragment("substring(? from '.*://([^/]*)')", a.actor) not in ^user.domain_blocks
     )
   end
 
-  defp exclude_muted(query, _, %{with_muted: true}) do
+  defp exclude_notification_muted(query, _, %{@include_muted_option => true}) do
     query
   end
 
-  defp exclude_muted(query, user, _opts) do
+  defp exclude_notification_muted(query, user, opts) do
+    notification_muted_ap_ids =
+      opts[:notification_muted_users_ap_ids] || User.notification_muted_users_ap_ids(user)
+
     query
-    |> where([n, a], a.actor not in ^user.muted_notifications)
+    |> where([n, a], a.actor not in ^notification_muted_ap_ids)
     |> join(:left, [n, a], tm in Pleroma.ThreadMute,
       on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data)
     )
