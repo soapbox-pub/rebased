@@ -249,6 +249,7 @@ config :pleroma, :instance,
   quarantined_instances: [],
   managed_config: true,
   static_dir: "instance/static/",
+  custom_modules_dir: "instance/modules/",
   allowed_post_formats: [
     "text/plain",
     "text/html",

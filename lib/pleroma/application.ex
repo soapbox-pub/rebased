@@ -32,6 +32,7 @@ defmodule Pleroma.Application do
   def start(_type, _args) do
     Pleroma.Config.DeprecationWarnings.warn()
     setup_instrumenters()
+    load_custom_modules()
 
     # Define workers and child supervisors to be supervised
     children =
@@ -65,6 +66,29 @@ defmodule Pleroma.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  def load_custom_modules() do
+    dir = Pleroma.Config.get([:instance, :custom_modules_dir])
+
+    if dir && File.exists?(dir) do
+      dir
+      |> File.ls!()
+      |> Enum.map(&Path.join(dir, &1))
+      |> Kernel.ParallelCompiler.compile()
+      |> case do
+        {:error, _errors, _warnings} ->
+          raise "Invalid custom modules"
+
+        {:ok, modules, _warnings} ->
+          Enum.each(modules, fn mod ->
+            name = mod |> Atom.to_string() |> String.trim_leading("Elixir.")
+            IO.puts("Custom module loaded: #{name}")
+          end)
+
+          :ok
+      end
+    end
   end
 
   defp setup_instrumenters do
