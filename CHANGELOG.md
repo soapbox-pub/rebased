@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `pleroma.thread_muted` to the Status entity
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
 - Mastodon API, streaming: Add `pleroma.direct_conversation_id` to the `conversation` stream event payload.
+- Admin API: Render whole status in grouped reports
 </details>
 
 ### Added
@@ -83,6 +84,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Mastodon API: Fix private and direct statuses not being filtered out from the public timeline for an authenticated user (`GET /api/v1/timelines/public`)
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
+- AdminAPI: If some status received reports both in the "new" format and "old" format it was considered reports on two different statuses (in the context of grouped reports)
 - Admin API: Error when trying to update reports in the "old" format
 </details>
 
