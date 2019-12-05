@@ -71,4 +71,11 @@ defmodule Pleroma.Workers.BackgroundWorker do
     activity = Activity.get_by_id(activity_id)
     Pleroma.Web.RichMedia.Helpers.perform(:fetch, activity)
   end
+
+  def perform(%{"op" => "move_following", "origin_id" => origin_id, "target_id" => target_id}, _) do
+    origin = User.get_cached_by_id(origin_id)
+    target = User.get_cached_by_id(target_id)
+
+    Pleroma.FollowingRelationship.move_following(origin, target)
+  end
 end

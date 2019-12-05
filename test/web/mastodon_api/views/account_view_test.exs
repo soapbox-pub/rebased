@@ -96,7 +96,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     privacy = user.default_scope
 
     assert %{
-             pleroma: %{notification_settings: ^notification_settings},
+             pleroma: %{notification_settings: ^notification_settings, allow_following_move: true},
              source: %{privacy: ^privacy}
            } = AccountView.render("show.json", %{user: user, for: user})
   end

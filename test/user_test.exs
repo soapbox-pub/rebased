@@ -367,18 +367,6 @@ defmodule Pleroma.UserTest do
 
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
     end
-
-    test "it ensures info is not nil" do
-      changeset = User.register_changeset(%User{}, @full_user_data)
-
-      assert changeset.valid?
-
-      {:ok, user} =
-        changeset
-        |> Repo.insert()
-
-      refute is_nil(user.info)
-    end
   end
 
   describe "user registration, with :account_activation_required" do
@@ -432,8 +420,7 @@ defmodule Pleroma.UserTest do
           :user,
           local: false,
           nickname: "admin@mastodon.example.org",
-          ap_id: ap_id,
-          info: %{}
+          ap_id: ap_id
         )
 
       {:ok, fetched_user} = User.get_or_fetch(ap_id)
@@ -494,8 +481,7 @@ defmodule Pleroma.UserTest do
           local: false,
           nickname: "admin@mastodon.example.org",
           ap_id: "http://mastodon.example.org/users/admin",
-          last_refreshed_at: a_week_ago,
-          info: %{}
+          last_refreshed_at: a_week_ago
         )
 
       assert orig_user.last_refreshed_at == a_week_ago
@@ -536,7 +522,6 @@ defmodule Pleroma.UserTest do
       name: "Someone",
       nickname: "a@b.de",
       ap_id: "http...",
-      info: %{some: "info"},
       avatar: %{some: "avatar"}
     }
 
@@ -1143,8 +1128,7 @@ defmodule Pleroma.UserTest do
         ap_id: user.ap_id,
         name: user.name,
         nickname: user.nickname,
-        bio: String.duplicate("h", current_max_length + 1),
-        info: %{}
+        bio: String.duplicate("h", current_max_length + 1)
       }
 
       assert {:ok, %User{}} = User.insert_or_update_user(data)
@@ -1157,8 +1141,7 @@ defmodule Pleroma.UserTest do
       data = %{
         ap_id: user.ap_id,
         name: String.duplicate("h", current_max_length + 1),
-        nickname: user.nickname,
-        info: %{}
+        nickname: user.nickname
       }
 
       assert {:ok, %User{}} = User.insert_or_update_user(data)

@@ -103,7 +103,9 @@ defmodule Pleroma.User do
     field(:raw_fields, {:array, :map}, default: [])
     field(:discoverable, :boolean, default: false)
     field(:invisible, :boolean, default: false)
+    field(:allow_following_move, :boolean, default: true)
     field(:skip_thread_containment, :boolean, default: false)
+    field(:also_known_as, {:array, :string}, default: [])
 
     embeds_one(
       :notification_settings,
@@ -114,8 +116,6 @@ defmodule Pleroma.User do
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
     has_many(:deliveries, Delivery)
-
-    field(:info, :map, default: %{})
 
     timestamps()
   end
@@ -222,7 +222,6 @@ defmodule Pleroma.User do
 
     params =
       params
-      |> Map.put(:info, params[:info] || %{})
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
       |> truncate_fields_param()
@@ -251,7 +250,8 @@ defmodule Pleroma.User do
           :fields,
           :following_count,
           :discoverable,
-          :invisible
+          :invisible,
+          :also_known_as
         ]
       )
       |> validate_required([:name, :ap_id])
@@ -293,13 +293,15 @@ defmodule Pleroma.User do
         :hide_followers_count,
         :hide_follows_count,
         :hide_favorites,
+        :allow_following_move,
         :background,
         :show_role,
         :skip_thread_containment,
         :fields,
         :raw_fields,
         :pleroma_settings_store,
-        :discoverable
+        :discoverable,
+        :also_known_as
       ]
     )
     |> unique_constraint(:nickname)
@@ -337,9 +339,11 @@ defmodule Pleroma.User do
         :hide_follows,
         :fields,
         :hide_followers,
+        :allow_following_move,
         :discoverable,
         :hide_followers_count,
-        :hide_follows_count
+        :hide_follows_count,
+        :also_known_as
       ]
     )
     |> unique_constraint(:nickname)
@@ -1197,7 +1201,7 @@ defmodule Pleroma.User do
   def external_users(opts \\ []) do
     query =
       external_users_query()
-      |> select([u], struct(u, [:id, :ap_id, :info]))
+      |> select([u], struct(u, [:id, :ap_id]))
 
     query =
       if opts[:max_id],
