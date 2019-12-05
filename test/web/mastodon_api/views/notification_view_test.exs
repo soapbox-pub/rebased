@@ -117,6 +117,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
     Pleroma.Tests.ObanHelpers.perform_all()
 
+    old_user = refresh_record(old_user)
+    new_user = refresh_record(new_user)
+
     [notification] = Notification.for_user(follower, %{with_move: true})
 
     expected = %{
@@ -124,7 +127,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       pleroma: %{is_seen: false},
       type: "move",
       account: AccountView.render("show.json", %{user: old_user, for: follower}),
-      target: AccountView.render("show.json", %{user: refresh_record(new_user), for: follower}),
+      target: AccountView.render("show.json", %{user: new_user, for: follower}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
