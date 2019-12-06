@@ -2940,11 +2940,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "it creates report note", %{admin_id: admin_id, report_id: report_id} do
+      [note, _] = Repo.all(Pleroma.ReportNote)
+
       assert %{
                activity_id: ^report_id,
                content: "this is disgusting!",
                user_id: ^admin_id
-             } = Repo.one(Pleroma.ReportNote)
+             } = note
     end
 
     test "it returns reports with notes", %{admin: admin} do
@@ -2959,6 +2961,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert note["user"]["nickname"] == admin.nickname
       assert note["content"] == "this is disgusting!"
+      assert note["created_at"]
       assert response["total"] == 1
     end
   end
