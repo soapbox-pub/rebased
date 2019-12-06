@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 </details>
 
 ### Added
+- `:chat_limit` option to limit chat characters.
 - Refreshing poll results for remote polls
 - Authentication: Added rate limit for password-authorized actions / login existence checks
 - Static Frontend: Add the ability to render user profiles and notices server-side without requiring JS app.
