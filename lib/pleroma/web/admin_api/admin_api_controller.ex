@@ -778,71 +778,77 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> render("index.json", %{log: log})
   end
 
-  def migrate_to_db(conn, _params) do
-    Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
-    json(conn, %{})
-  end
-
-  def migrate_from_db(conn, _params) do
-    Mix.Tasks.Pleroma.Config.run([
-      "migrate_from_db",
-      "--env",
-      to_string(Pleroma.Config.get(:env)),
-      "-d"
-    ])
-
-    json(conn, %{})
-  end
-
   def config_descriptions(conn, _params) do
     conn
     |> Plug.Conn.put_resp_content_type("application/json")
     |> Plug.Conn.send_resp(200, @descriptions_json)
   end
 
-  def config_show(conn, _params) do
-    configs = Pleroma.Repo.all(Config)
+  def migrate_from_db(conn, _params) do
+    with :ok <- check_dynamic_configuration(conn) do
+      Mix.Tasks.Pleroma.Config.run([
+        "migrate_from_db",
+        "--env",
+        to_string(Pleroma.Config.get(:env)),
+        "-d"
+      ])
 
-    conn
-    |> put_view(ConfigView)
-    |> render("index.json", %{configs: configs})
+      json(conn, %{})
+    end
+  end
+
+  def config_show(conn, _params) do
+    with :ok <- check_dynamic_configuration(conn) do
+      configs = Pleroma.Repo.all(Config)
+
+      if configs == [] do
+        errors(conn, {:error, "To use dynamic configuration migrate your settings to database."})
+      else
+        conn
+        |> put_view(ConfigView)
+        |> render("index.json", %{configs: configs})
+      end
+    end
   end
 
   def config_update(conn, %{"configs" => configs}) do
-    updated =
-      if Pleroma.Config.get([:instance, :dynamic_configuration]) do
-        updated =
-          Enum.map(configs, fn
-            %{"group" => group, "key" => key, "delete" => "true"} = params ->
-              with {:ok, config} <-
-                     Config.delete(%{group: group, key: key, subkeys: params["subkeys"]}) do
-                config
-              end
+    with :ok <- check_dynamic_configuration(conn) do
+      updated =
+        Enum.map(configs, fn
+          %{"group" => group, "key" => key, "delete" => "true"} = params ->
+            with {:ok, config} <-
+                   Config.delete(%{group: group, key: key, subkeys: params["subkeys"]}) do
+              config
+            end
 
-            %{"group" => group, "key" => key, "value" => value} ->
-              with {:ok, config} <-
-                     Config.update_or_create(%{group: group, key: key, value: value}) do
-                config
-              end
-          end)
-          |> Enum.reject(&is_nil(&1))
+          %{"group" => group, "key" => key, "value" => value} ->
+            with {:ok, config} <-
+                   Config.update_or_create(%{group: group, key: key, value: value}) do
+              config
+            end
+        end)
+        |> Enum.reject(&is_nil(&1))
 
-        Pleroma.Config.TransferTask.load_and_update_env()
+      Pleroma.Config.TransferTask.load_and_update_env()
 
-        Mix.Tasks.Pleroma.Config.run([
-          "migrate_from_db",
-          "--env",
-          to_string(Pleroma.Config.get(:env))
-        ])
+      Mix.Tasks.Pleroma.Config.run([
+        "migrate_from_db",
+        "--env",
+        to_string(Pleroma.Config.get(:env))
+      ])
 
-        updated
-      else
-        []
-      end
+      conn
+      |> put_view(ConfigView)
+      |> render("index.json", %{configs: updated})
+    end
+  end
 
-    conn
-    |> put_view(ConfigView)
-    |> render("index.json", %{configs: updated})
+  defp check_dynamic_configuration(conn) do
+    if Pleroma.Config.get([:instance, :dynamic_configuration]) do
+      :ok
+    else
+      errors(conn, {:error, "To use this endpoint you need to enable dynamic configuration."})
+    end
   end
 
   def reload_emoji(conn, _params) do

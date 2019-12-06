@@ -24,8 +24,8 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
   end
 
   test "settings are migrated to db" do
-    initial = Application.get_all_env(:quack)
-    on_exit(fn -> Application.put_all_env([{:quack, initial}]) end)
+    initial = Application.get_env(:quack, :level)
+    on_exit(fn -> Application.put_env(:quack, :level, initial) end)
     assert Repo.all(Config) == []
 
     Application.put_env(:pleroma, :first_setting, key: "value", key2: [Repo])

@@ -665,19 +665,6 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 404 Not Found `"Not found"`
   - On success: 200 OK `{}`
 
-## `GET /api/pleroma/admin/config/migrate_to_db`
-
-### Run mix task pleroma.config migrate_to_db
-
-Copies `pleroma` environment settings to the database.
-
-- Params: none
-- Response:
-
-```json
-{}
-```
-
 ## `GET /api/pleroma/admin/config/migrate_from_db`
 
 ### Run mix task pleroma.config migrate_from_db
@@ -686,6 +673,8 @@ Copies all settings from database to `config/{env}.exported_from_db.secret.exs` 
 
 - Params: none
 - Response:
+  - On failure:
+    - 400 Bad Request `"To use this endpoint you need to enable dynamic configuration."`
 
 ```json
 {}
@@ -699,6 +688,9 @@ Copies all settings from database to `config/{env}.exported_from_db.secret.exs` 
 
 - Params: none
 - Response:
+  - On failure:
+    - 400 Bad Request `"To use this endpoint you need to enable dynamic configuration."`
+    - 400 Bad Request `"To use dynamic configuration migrate your settings to database."`
 
 ```json
 {
@@ -831,7 +823,8 @@ config :quack,
 ```
 
 - Response:
-
+  - On failure:
+    - 400 Bad Request `"To use this endpoint you need to enable dynamic configuration."`
 ```json
 {
   configs: [

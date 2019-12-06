@@ -1929,16 +1929,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "GET /api/pleroma/admin/config" do
+    clear_config([:instance, :dynamic_configuration]) do
+      Pleroma.Config.put([:instance, :dynamic_configuration], true)
+    end
+
     setup %{conn: conn} do
       admin = insert(:user, is_admin: true)
 
       %{conn: assign(conn, :user, admin)}
     end
 
+    test "when dynamic configuration is off", %{conn: conn} do
+      initial = Pleroma.Config.get([:instance, :dynamic_configuration])
+      Pleroma.Config.put([:instance, :dynamic_configuration], false)
+      on_exit(fn -> Pleroma.Config.put([:instance, :dynamic_configuration], initial) end)
+      conn = get(conn, "/api/pleroma/admin/config")
+
+      assert json_response(conn, 400) ==
+               "To use this endpoint you need to enable dynamic configuration."
+    end
+
     test "without any settings in db", %{conn: conn} do
       conn = get(conn, "/api/pleroma/admin/config")
 
-      assert json_response(conn, 200) == %{"configs" => []}
+      assert json_response(conn, 400) ==
+               "To use dynamic configuration migrate your settings to database."
     end
 
     test "with settings in db", %{conn: conn} do
@@ -1964,6 +1979,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert key1 == config1.key
       assert key2 == config2.key
     end
+  end
+
+  test "POST /api/pleroma/admin/config error" do
+    admin = insert(:user, is_admin: true)
+
+    conn =
+      build_conn()
+      |> assign(:user, admin)
+      |> post("/api/pleroma/admin/config", %{"configs" => []})
+
+    assert json_response(conn, 400) ==
+             "To use this endpoint you need to enable dynamic configuration."
   end
 
   describe "POST /api/pleroma/admin/config" do
@@ -2101,8 +2128,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "save config setting without key", %{conn: conn} do
-      initial = Application.get_all_env(:quack)
-      on_exit(fn -> Application.put_all_env([{:quack, initial}]) end)
+      level = Application.get_env(:quack, :level)
+      meta = Application.get_env(:quack, :meta)
+      webhook_url = Application.get_env(:quack, :webhook_url)
+
+      on_exit(fn ->
+        Application.put_env(:quack, :level, level)
+        Application.put_env(:quack, :meta, meta)
+        Application.put_env(:quack, :webhook_url, webhook_url)
+      end)
 
       conn =
         post(conn, "/api/pleroma/admin/config", %{
@@ -2640,16 +2674,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     setup %{conn: conn} do
       admin = insert(:user, is_admin: true)
 
-      temp_file = "config/test.exported_from_db.secret.exs"
-
       Mix.shell(Mix.Shell.Quiet)
 
       on_exit(fn ->
         Mix.shell(Mix.Shell.IO)
-        :ok = File.rm(temp_file)
       end)
 
-      %{conn: assign(conn, :user, admin), admin: admin}
+      %{conn: assign(conn, :user, admin)}
     end
 
     clear_config([:instance, :dynamic_configuration]) do
@@ -2660,19 +2691,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       Pleroma.Config.put([:feed, :post_title], %{max_length: 100, omission: "…"})
     end
 
-    test "transfer settings to DB and to file", %{conn: conn, admin: admin} do
+    test "transfer settings to DB and to file", %{conn: conn} do
+      on_exit(fn -> :ok = File.rm("config/test.exported_from_db.secret.exs") end)
       assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) == []
-      conn = get(conn, "/api/pleroma/admin/config/migrate_to_db")
-      assert json_response(conn, 200) == %{}
+      Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
       assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) > 0
 
-      conn =
-        build_conn()
-        |> assign(:user, admin)
-        |> get("/api/pleroma/admin/config/migrate_from_db")
+      conn = get(conn, "/api/pleroma/admin/config/migrate_from_db")
 
       assert json_response(conn, 200) == %{}
       assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) == []
+    end
+
+    test "returns error if dynamic configuration is off", %{conn: conn} do
+      initial = Pleroma.Config.get([:instance, :dynamic_configuration])
+      on_exit(fn -> Pleroma.Config.put([:instance, :dynamic_configuration], initial) end)
+      Pleroma.Config.put([:instance, :dynamic_configuration], false)
+
+      conn = get(conn, "/api/pleroma/admin/config/migrate_from_db")
+
+      assert json_response(conn, 400) ==
+               "To use this endpoint you need to enable dynamic configuration."
     end
   end
 
