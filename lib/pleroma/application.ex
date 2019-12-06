@@ -82,8 +82,7 @@ defmodule Pleroma.Application do
 
         {:ok, modules, _warnings} ->
           Enum.each(modules, fn mod ->
-            name = mod |> Atom.to_string() |> String.trim_leading("Elixir.")
-            IO.puts("Custom module loaded: #{name}")
+            IO.puts("Custom module loaded: #{inspect(mod)}")
           end)
 
           :ok
