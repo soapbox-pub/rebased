@@ -69,7 +69,7 @@ defmodule Pleroma.Application do
   end
 
   def load_custom_modules do
-    dir = Pleroma.Config.get([:instance, :custom_modules_dir])
+    dir = Pleroma.Config.get([:modules, :runtime_dir])
 
     if dir && File.exists?(dir) do
       dir

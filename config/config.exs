@@ -249,7 +249,6 @@ config :pleroma, :instance,
   quarantined_instances: [],
   managed_config: true,
   static_dir: "instance/static/",
-  custom_modules_dir: "instance/modules/",
   allowed_post_formats: [
     "text/plain",
     "text/html",
@@ -617,6 +616,8 @@ config :pleroma, :static_fe, enabled: false
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,
   activity_pub_question: 30_000
+
+config :pleroma, :modules, runtime_dir: "instance/modules"
 
 config :swarm, node_blacklist: [~r/myhtml_.*$/]
 # Import environment specific config. This must remain at the bottom
