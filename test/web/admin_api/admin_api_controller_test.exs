@@ -1970,8 +1970,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     setup %{conn: conn} do
       admin = insert(:user, is_admin: true)
 
-      temp_file = "config/test.exported_from_db.secret.exs"
-
       on_exit(fn ->
         Application.delete_env(:pleroma, :key1)
         Application.delete_env(:pleroma, :key2)
@@ -1981,7 +1979,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         Application.delete_env(:pleroma, :keyaa2)
         Application.delete_env(:pleroma, Pleroma.Web.Endpoint.NotReal)
         Application.delete_env(:pleroma, Pleroma.Captcha.NotReal)
-        :ok = File.rm(temp_file)
+        :ok = File.rm("config/test.exported_from_db.secret.exs")
       end)
 
       %{conn: assign(conn, :user, admin)}
@@ -2099,6 +2097,48 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
 
       assert Application.get_env(:idna, :key5) == {"string", Pleroma.Captcha.NotReal, []}
+    end
+
+    test "save config setting without key", %{conn: conn} do
+      initial = Application.get_all_env(:quack)
+      on_exit(fn -> Application.put_all_env([{:quack, initial}]) end)
+
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              group: ":quack",
+              key: ":level",
+              value: ":info"
+            },
+            %{
+              group: ":quack",
+              key: ":meta",
+              value: [":none"]
+            },
+            %{
+              group: ":quack",
+              key: ":webhook_url",
+              value: "https://hooks.slack.com/services/KEY"
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{"group" => ":quack", "key" => ":level", "value" => ":info"},
+                 %{"group" => ":quack", "key" => ":meta", "value" => [":none"]},
+                 %{
+                   "group" => ":quack",
+                   "key" => ":webhook_url",
+                   "value" => "https://hooks.slack.com/services/KEY"
+                 }
+               ]
+             }
+
+      assert Application.get_env(:quack, :level) == :info
+      assert Application.get_env(:quack, :meta) == [:none]
+      assert Application.get_env(:quack, :webhook_url) == "https://hooks.slack.com/services/KEY"
     end
 
     test "update config setting & delete", %{conn: conn} do

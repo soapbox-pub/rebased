@@ -76,10 +76,10 @@ defmodule Mix.Tasks.Pleroma.Config do
     |> Application.get_all_env()
     |> Enum.reject(fn {k, _v} -> k in [Pleroma.Repo, :env] end)
     |> Enum.each(fn {key, value} ->
-      key_str = inspect(key)
+      key = inspect(key)
+      {:ok, _} = Config.update_or_create(%{group: inspect(group), key: key, value: value})
 
-      {:ok, _} = Config.update_or_create(%{group: ":#{group}", key: key_str, value: value})
-      Mix.shell().info("settings for key #{key_str} migrated.")
+      Mix.shell().info("settings for key #{key} migrated.")
     end)
 
     Mix.shell().info("settings for group :#{group} migrated.")

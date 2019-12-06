@@ -5,6 +5,8 @@
 defmodule Pleroma.Config.TransferTaskTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Web.AdminAPI.Config
+
   clear_config([:instance, :dynamic_configuration]) do
     Pleroma.Config.put([:instance, :dynamic_configuration], true)
   end
@@ -12,32 +14,41 @@ defmodule Pleroma.Config.TransferTaskTest do
   test "transfer config values from db to env" do
     refute Application.get_env(:pleroma, :test_key)
     refute Application.get_env(:idna, :test_key)
+    refute Application.get_env(:quack, :test_key)
 
-    Pleroma.Web.AdminAPI.Config.create(%{
+    Config.create(%{
       group: ":pleroma",
       key: ":test_key",
       value: [live: 2, com: 3]
     })
 
-    Pleroma.Web.AdminAPI.Config.create(%{
+    Config.create(%{
       group: ":idna",
       key: ":test_key",
       value: [live: 15, com: 35]
+    })
+
+    Config.create(%{
+      group: ":quack",
+      key: ":test_key",
+      value: [:test_value1, :test_value2]
     })
 
     Pleroma.Config.TransferTask.start_link([])
 
     assert Application.get_env(:pleroma, :test_key) == [live: 2, com: 3]
     assert Application.get_env(:idna, :test_key) == [live: 15, com: 35]
+    assert Application.get_env(:quack, :test_key) == [:test_value1, :test_value2]
 
     on_exit(fn ->
       Application.delete_env(:pleroma, :test_key)
       Application.delete_env(:idna, :test_key)
+      Application.delete_env(:quack, :test_key)
     end)
   end
 
   test "non existing atom" do
-    Pleroma.Web.AdminAPI.Config.create(%{
+    Config.create(%{
       group: ":pleroma",
       key: ":undefined_atom_key",
       value: [live: 2, com: 3]
