@@ -456,17 +456,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     user = User.get_cached_by_ap_id(actor)
     to = (object.data["to"] || []) ++ (object.data["cc"] || [])
 
-    with {:ok, object, activity} <- Object.delete(object),
+    with create_activity <- Activity.get_create_by_object_ap_id(id),
          data <-
            %{
              "type" => "Delete",
              "actor" => actor,
              "object" => id,
              "to" => to,
-             "deleted_activity_id" => activity && activity.id
+             "deleted_activity_id" => create_activity && create_activity.id
            }
            |> maybe_put("id", activity_id),
          {:ok, activity} <- insert(data, local, false),
+         {:ok, object, _create_activity} <- Object.delete(object),
          stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
          {:ok, _actor} <- decrease_note_count_if_public(user, object),

@@ -1259,6 +1259,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 0
     end
+
+    test "it passes delete activity through MRF before deleting the object" do
+      rewrite_policy = Pleroma.Config.get([:instance, :rewrite_policy])
+      Pleroma.Config.put([:instance, :rewrite_policy], Pleroma.Web.ActivityPub.MRF.DropPolicy)
+
+      on_exit(fn -> Pleroma.Config.put([:instance, :rewrite_policy], rewrite_policy) end)
+
+      note = insert(:note_activity)
+      object = Object.normalize(note)
+
+      {:error, {:reject, _}} = ActivityPub.delete(object)
+
+      assert Activity.get_by_id(note.id)
+      assert Repo.get(Object, object.id).data["type"] == object.data["type"]
+    end
   end
 
   describe "timeline post-processing" do
