@@ -377,7 +377,13 @@ defmodule Pleroma.Factory do
 
   def config_factory do
     %Pleroma.Web.AdminAPI.Config{
-      key: sequence(:key, &":some_key_#{&1}"),
+      key:
+        sequence(:key, fn key ->
+          # Atom dynamic registration hack in tests
+          "some_key_#{key}"
+          |> String.to_atom()
+          |> inspect()
+        end),
       group: ":pleroma",
       value:
         sequence(

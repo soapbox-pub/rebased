@@ -764,6 +764,41 @@ Most of the settings will be applied in `runtime`, this means that you don't nee
 [subkey2: val2] \\ value after deletion
 ```
 
+*Most of the settings can be partially updated through merge old values with new values, except settings value of which is list or is not keyword.*
+
+Example of setting without keyword in value:
+```elixir
+config :tesla, :adapter, Tesla.Adapter.Hackney
+```
+
+List of settings which have list in value:
+```elixir
+@full_key_update [
+    {:pleroma, :ecto_repos},
+    {:quack, :meta},
+    {:mime, :types},
+    {:cors_plug, [:max_age, :methods, :expose, :headers]},
+    {:auto_linker, :opts},
+    {:swarm, :node_blacklist}
+  ]
+```
+
+*Settings without explicit key must be sended in separate config object params.*
+```elixir
+config :quack,
+  level: :debug,
+  meta: [:all],
+  ...
+```
+```json
+{
+  configs: [
+    {"group": ":quack", "key": ":level", "value": ":debug"},
+    {"group": ":quack", "key": ":meta", "value": [":all"]},
+    ...
+  ]
+}
+```
 - Request:
 
 ```json

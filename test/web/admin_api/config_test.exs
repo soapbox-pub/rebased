@@ -26,26 +26,92 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
     assert loaded == updated
   end
 
-  test "update_or_create/1" do
-    config = insert(:config)
-    key2 = "another_key"
+  describe "update_or_create/1" do
+    test "common" do
+      config = insert(:config)
+      key2 = "another_key"
 
-    params = [
-      %{group: "pleroma", key: key2, value: "another_value"},
-      %{group: config.group, key: config.key, value: "new_value"}
-    ]
+      params = [
+        %{group: "pleroma", key: key2, value: "another_value"},
+        %{group: config.group, key: config.key, value: "new_value"}
+      ]
 
-    assert Repo.all(Config) |> length() == 1
+      assert Repo.all(Config) |> length() == 1
 
-    Enum.each(params, &Config.update_or_create(&1))
+      Enum.each(params, &Config.update_or_create(&1))
 
-    assert Repo.all(Config) |> length() == 2
+      assert Repo.all(Config) |> length() == 2
 
-    config1 = Config.get_by_params(%{group: config.group, key: config.key})
-    config2 = Config.get_by_params(%{group: "pleroma", key: key2})
+      config1 = Config.get_by_params(%{group: config.group, key: config.key})
+      config2 = Config.get_by_params(%{group: "pleroma", key: key2})
 
-    assert config1.value == Config.transform("new_value")
-    assert config2.value == Config.transform("another_value")
+      assert config1.value == Config.transform("new_value")
+      assert config2.value == Config.transform("another_value")
+    end
+
+    test "partial update" do
+      config = insert(:config, value: Config.to_binary(key1: "val1", key2: :val2))
+
+      {:ok, _config} =
+        Config.update_or_create(%{
+          group: config.group,
+          key: config.key,
+          value: [key1: :val1, key3: :val3]
+        })
+
+      updated = Config.get_by_params(%{group: config.group, key: config.key})
+
+      value = Config.from_binary(updated.value)
+      assert length(value) == 3
+      assert value[:key1] == :val1
+      assert value[:key2] == :val2
+      assert value[:key3] == :val3
+    end
+
+    test "only full update for some keys" do
+      config1 = insert(:config, key: ":ecto_repos", value: Config.to_binary(repo: Pleroma.Repo))
+      config2 = insert(:config, group: ":cors_plug", key: ":max_age", value: Config.to_binary(18))
+
+      {:ok, _config} =
+        Config.update_or_create(%{
+          group: config1.group,
+          key: config1.key,
+          value: [another_repo: [Pleroma.Repo]]
+        })
+
+      {:ok, _config} =
+        Config.update_or_create(%{
+          group: config2.group,
+          key: config2.key,
+          value: 777
+        })
+
+      updated1 = Config.get_by_params(%{group: config1.group, key: config1.key})
+      updated2 = Config.get_by_params(%{group: config2.group, key: config2.key})
+
+      assert Config.from_binary(updated1.value) == [another_repo: [Pleroma.Repo]]
+      assert Config.from_binary(updated2.value) == 777
+    end
+
+    test "full update if value is not keyword" do
+      config =
+        insert(:config,
+          group: ":tesla",
+          key: ":adapter",
+          value: Config.to_binary(Tesla.Adapter.Hackney)
+        )
+
+      {:ok, _config} =
+        Config.update_or_create(%{
+          group: config.group,
+          key: config.key,
+          value: Tesla.Adapter.Httpc
+        })
+
+      updated = Config.get_by_params(%{group: config.group, key: config.key})
+
+      assert Config.from_binary(updated.value) == Tesla.Adapter.Httpc
+    end
   end
 
   test "delete/1" do

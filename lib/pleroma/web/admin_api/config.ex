@@ -46,14 +46,48 @@ defmodule Pleroma.Web.AdminAPI.Config do
     |> Repo.update()
   end
 
+  @full_key_update [
+    {:pleroma, :ecto_repos},
+    {:quack, :meta},
+    {:mime, :types},
+    {:cors_plug, [:max_age, :methods, :expose, :headers]},
+    {:auto_linker, :opts},
+    {:swarm, :node_blacklist}
+  ]
+
+  defp only_full_update?(%Config{} = config) do
+    config_group = Config.from_string(config.group)
+    config_key = Config.from_string(config.key)
+
+    Enum.any?(@full_key_update, fn
+      {group, key} when is_list(key) ->
+        config_group == group and config_key in key
+
+      {group, key} ->
+        config_group == group and config_key == key
+    end)
+  end
+
+  defp can_be_partially_updated?(%Config{} = config), do: not only_full_update?(config)
+
   @spec update_or_create(map()) :: {:ok, Config.t()} | {:error, Changeset.t()}
   def update_or_create(params) do
     search_opts = Map.take(params, [:group, :key])
 
-    with %Config{} = config <- Config.get_by_params(search_opts) do
-      Config.update(config, params)
+    with %Config{} = config <- Config.get_by_params(search_opts),
+         {:partial_update, true, config} <-
+           {:partial_update, can_be_partially_updated?(config), config},
+         old_value <- from_binary(config.value),
+         transformed_value <- do_transform(params[:value]),
+         {:can_be_merged, true, config} <- {:can_be_merged, is_list(transformed_value), config},
+         new_value <- Keyword.merge(old_value, transformed_value) do
+      Config.update(config, %{value: new_value, transformed?: true})
     else
-      nil -> Config.create(params)
+      {reason, false, config} when reason in [:partial_update, :can_be_merged] ->
+        Config.update(config, params)
+
+      nil ->
+        Config.create(params)
     end
   end
 
@@ -63,7 +97,7 @@ defmodule Pleroma.Web.AdminAPI.Config do
 
     with %Config{} = config <- Config.get_by_params(search_opts),
          {config, sub_keys} when is_list(sub_keys) <- {config, params[:subkeys]},
-         old_value <- :erlang.binary_to_term(config.value),
+         old_value <- from_binary(config.value),
          keys <- Enum.map(sub_keys, &do_transform_string(&1)),
          new_value <- Keyword.drop(old_value, keys) do
       Config.update(config, %{value: new_value})
@@ -129,10 +163,13 @@ defmodule Pleroma.Web.AdminAPI.Config do
   def transform(entity) when is_binary(entity) or is_map(entity) or is_list(entity) do
     entity
     |> do_transform()
-    |> :erlang.term_to_binary()
+    |> to_binary()
   end
 
-  def transform(entity), do: :erlang.term_to_binary(entity)
+  def transform(entity), do: to_binary(entity)
+
+  @spec to_binary(any()) :: binary()
+  def to_binary(entity), do: :erlang.term_to_binary(entity)
 
   defp do_transform(%Regex{} = entity), do: entity
 

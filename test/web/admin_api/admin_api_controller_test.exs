@@ -1979,6 +1979,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         Application.delete_env(:pleroma, :keyaa2)
         Application.delete_env(:pleroma, Pleroma.Web.Endpoint.NotReal)
         Application.delete_env(:pleroma, Pleroma.Captcha.NotReal)
+        Application.put_env(:tesla, :adapter, Tesla.Mock)
         :ok = File.rm("config/test.exported_from_db.secret.exs")
       end)
 
@@ -2141,14 +2142,64 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert Application.get_env(:quack, :webhook_url) == "https://hooks.slack.com/services/KEY"
     end
 
+    test "saving config with partial update", %{conn: conn} do
+      config = insert(:config, key: ":key1", value: :erlang.term_to_binary(key1: 1, key2: 2))
+
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{group: config.group, key: config.key, value: [%{"tuple" => [":key3", 3]}]}
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => ":pleroma",
+                   "key" => ":key1",
+                   "value" => [
+                     %{"tuple" => [":key1", 1]},
+                     %{"tuple" => [":key2", 2]},
+                     %{"tuple" => [":key3", 3]}
+                   ]
+                 }
+               ]
+             }
+    end
+
+    test "saving full setting if value is not keyword", %{conn: conn} do
+      config =
+        insert(:config,
+          group: ":tesla",
+          key: ":adapter",
+          value: :erlang.term_to_binary(Tesla.Adapter.Hackey)
+        )
+
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{group: config.group, key: config.key, value: "Tesla.Adapter.Httpc"}
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => ":tesla",
+                   "key" => ":adapter",
+                   "value" => "Tesla.Adapter.Httpc"
+                 }
+               ]
+             }
+    end
+
     test "update config setting & delete", %{conn: conn} do
       config1 = insert(:config, key: ":keyaa1")
       config2 = insert(:config, key: ":keyaa2")
 
       insert(:config,
         group: "ueberauth",
-        key: "Ueberauth.Strategy.Microsoft.OAuth",
-        value: :erlang.term_to_binary([])
+        key: "Ueberauth.Strategy.Microsoft.OAuth"
       )
 
       conn =
