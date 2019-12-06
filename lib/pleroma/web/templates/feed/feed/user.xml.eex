@@ -6,16 +6,16 @@
   xmlns:poco="http://portablecontacts.net/spec/1.0"
   xmlns:ostatus="http://ostatus.org/schema/1.0">
 
-  <id><%= feed_url(@conn, :feed, @user.nickname) <> ".atom" %></id>
+  <id><%= user_feed_url(@conn, :feed, @user.nickname) <> ".atom" %></id>
   <title><%= @user.nickname <> "'s timeline" %></title>
   <updated><%= most_recent_update(@activities, @user) %></updated>
   <logo><%= logo(@user) %></logo>
-  <link rel="self" href="<%= '#{feed_url(@conn, :feed, @user.nickname)}.atom' %>" type="application/atom+xml"/>
+  <link rel="self" href="<%= '#{user_feed_url(@conn, :feed, @user.nickname)}.atom' %>" type="application/atom+xml"/>
 
   <%= render @view_module, "_author.xml", assigns %>
 
   <%= if last_activity(@activities) do %>
-    <link rel="next" href="<%= '#{feed_url(@conn, :feed, @user.nickname)}.atom?max_id=#{last_activity(@activities).id}' %>" type="application/atom+xml"/>
+    <link rel="next" href="<%= '#{user_feed_url(@conn, :feed, @user.nickname)}.atom?max_id=#{last_activity(@activities).id}' %>" type="application/atom+xml"/>
   <% end %>
 
   <%= for activity <- @activities do %>

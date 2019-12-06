@@ -2,7 +2,7 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.Feed.FeedControllerTest do
+defmodule Pleroma.Web.Feed.UserControllerTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
