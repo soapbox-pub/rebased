@@ -81,9 +81,11 @@ defmodule Pleroma.Application do
           raise "Invalid custom modules"
 
         {:ok, modules, _warnings} ->
-          Enum.each(modules, fn mod ->
-            IO.puts("Custom module loaded: #{inspect(mod)}")
-          end)
+          if @env != :test do
+            Enum.each(modules, fn mod ->
+              IO.puts("Custom module loaded: #{inspect(mod)}")
+            end)
+          end
 
           :ok
       end
