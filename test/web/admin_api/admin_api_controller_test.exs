@@ -36,6 +36,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope" do
       user = insert(:user)
       admin = insert(:user, is_admin: true)
+      url = "/api/pleroma/admin/users/#{user.nickname}"
 
       good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
       good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
@@ -50,9 +51,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           build_conn()
           |> assign(:user, admin)
           |> assign(:token, good_token)
-          |> get("/api/pleroma/admin/users/#{user.nickname}")
+          |> get(url)
 
         assert json_response(conn, 200)
+      end
+
+      for good_token <- [good_token1, good_token2, good_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, nil)
+          |> assign(:token, good_token)
+          |> get(url)
+
+        assert json_response(conn, :forbidden)
       end
 
       for bad_token <- [bad_token1, bad_token2, bad_token3] do
@@ -60,7 +71,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           build_conn()
           |> assign(:user, admin)
           |> assign(:token, bad_token)
-          |> get("/api/pleroma/admin/users/#{user.nickname}")
+          |> get(url)
 
         assert json_response(conn, :forbidden)
       end

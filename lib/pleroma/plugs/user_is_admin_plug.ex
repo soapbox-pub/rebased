@@ -6,29 +6,37 @@ defmodule Pleroma.Plugs.UserIsAdminPlug do
   import Pleroma.Web.TranslationHelpers
   import Plug.Conn
 
+  alias Pleroma.User
   alias Pleroma.Web.OAuth
 
   def init(options) do
     options
   end
 
-  def call(%Plug.Conn{assigns: assigns} = conn, _) do
+  def call(%{assigns: %{user: %User{is_admin: true}} = assigns} = conn, _) do
     token = assigns[:token]
-    user = assigns[:user]
 
     cond do
+      not Pleroma.Config.enforce_oauth_admin_scope_usage?() ->
+        conn
+
       token && OAuth.Scopes.contains_admin_scopes?(token.scopes) ->
         # Note: checking for _any_ admin scope presence, not necessarily fitting requested action.
         #   Thus, controller must explicitly invoke OAuthScopesPlug to verify scope requirements.
         conn
 
-      user && user.is_admin && !Pleroma.Config.enforce_oauth_admin_scope_usage?() ->
-        conn
-
       true ->
-        conn
-        |> render_error(:forbidden, "User is not an admin or OAuth admin scope is not granted.")
-        |> halt()
+        fail(conn)
     end
+  end
+
+  def call(conn, _) do
+    fail(conn)
+  end
+
+  defp fail(conn) do
+    conn
+    |> render_error(:forbidden, "User is not an admin or OAuth admin scope is not granted.")
+    |> halt()
   end
 end
