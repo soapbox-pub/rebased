@@ -289,7 +289,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     assert length(json_response(conn, 200)) == 1
 
-    {:ok, user} = User.mute(user, user2)
+    {:ok, _user_relationships} = User.mute(user, user2)
 
     conn = assign(build_conn(), :user, user)
     conn = get(conn, "/api/v1/notifications")
@@ -310,7 +310,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     assert length(json_response(conn, 200)) == 1
 
-    {:ok, user} = User.mute(user, user2, false)
+    {:ok, _user_relationships} = User.mute(user, user2, false)
 
     conn = assign(build_conn(), :user, user)
     conn = get(conn, "/api/v1/notifications")
@@ -333,10 +333,36 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     assert length(json_response(conn, 200)) == 1
 
-    {:ok, user} = User.mute(user, user2)
+    {:ok, _user_relationships} = User.mute(user, user2)
 
     conn = assign(build_conn(), :user, user)
     conn = get(conn, "/api/v1/notifications", %{"with_muted" => "true"})
+
+    assert length(json_response(conn, 200)) == 1
+  end
+
+  test "see move notifications with `with_move` parameter", %{
+    conn: conn
+  } do
+    old_user = insert(:user)
+    new_user = insert(:user, also_known_as: [old_user.ap_id])
+    follower = insert(:user)
+
+    User.follow(follower, old_user)
+    Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
+    Pleroma.Tests.ObanHelpers.perform_all()
+
+    conn =
+      conn
+      |> assign(:user, follower)
+      |> get("/api/v1/notifications")
+
+    assert json_response(conn, 200) == []
+
+    conn =
+      build_conn()
+      |> assign(:user, follower)
+      |> get("/api/v1/notifications", %{"with_move" => "true"})
 
     assert length(json_response(conn, 200)) == 1
   end

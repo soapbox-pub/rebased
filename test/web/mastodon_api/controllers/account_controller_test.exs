@@ -144,6 +144,50 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "user timelines" do
+    test "respects blocks", %{conn: conn} do
+      user_one = insert(:user)
+      user_two = insert(:user)
+      user_three = insert(:user)
+
+      User.block(user_one, user_two)
+
+      {:ok, activity} = CommonAPI.post(user_two, %{"status" => "User one sux0rz"})
+      {:ok, repeat, _} = CommonAPI.repeat(activity.id, user_three)
+
+      resp =
+        conn
+        |> get("/api/v1/accounts/#{user_two.id}/statuses")
+
+      assert [%{"id" => id}] = json_response(resp, 200)
+      assert id == activity.id
+
+      # Even a blocked user will deliver the full user timeline, there would be
+      # no point in looking at a blocked users timeline otherwise
+      resp =
+        conn
+        |> assign(:user, user_one)
+        |> get("/api/v1/accounts/#{user_two.id}/statuses")
+
+      assert [%{"id" => id}] = json_response(resp, 200)
+      assert id == activity.id
+
+      resp =
+        conn
+        |> get("/api/v1/accounts/#{user_three.id}/statuses")
+
+      assert [%{"id" => id}] = json_response(resp, 200)
+      assert id == repeat.id
+
+      # When viewing a third user's timeline, the blocked users will NOT be
+      # shown.
+      resp =
+        conn
+        |> assign(:user, user_one)
+        |> get("/api/v1/accounts/#{user_three.id}/statuses")
+
+      assert [] = json_response(resp, 200)
+    end
+
     test "gets a users statuses", %{conn: conn} do
       user_one = insert(:user)
       user_two = insert(:user)
@@ -891,7 +935,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, user} = User.mute(user, other_user)
+    {:ok, _user_relationships} = User.mute(user, other_user)
 
     conn =
       conn
@@ -906,7 +950,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, user} = User.block(user, other_user)
+    {:ok, _user_relationship} = User.block(user, other_user)
 
     conn =
       conn

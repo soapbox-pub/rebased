@@ -129,16 +129,17 @@ defmodule Pleroma.Web.Streamer.Worker do
   end
 
   defp should_send?(%User{} = user, %Activity{} = item) do
-    blocks = user.blocks || []
-    mutes = user.mutes || []
-    reblog_mutes = user.muted_reblogs || []
-    recipient_blocks = MapSet.new(blocks ++ mutes)
+    %{block: blocked_ap_ids, mute: muted_ap_ids, reblog_mute: reblog_muted_ap_ids} =
+      User.outgoing_relations_ap_ids(user, [:block, :mute, :reblog_mute])
+
+    recipient_blocks = MapSet.new(blocked_ap_ids ++ muted_ap_ids)
     recipients = MapSet.new(item.recipients)
     domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.domain_blocks)
 
     with parent <- Object.normalize(item) || item,
-         true <- Enum.all?([blocks, mutes, reblog_mutes], &(item.actor not in &1)),
-         true <- Enum.all?([blocks, mutes], &(parent.data["actor"] not in &1)),
+         true <-
+           Enum.all?([blocked_ap_ids, muted_ap_ids, reblog_muted_ap_ids], &(item.actor not in &1)),
+         true <- Enum.all?([blocked_ap_ids, muted_ap_ids], &(parent.data["actor"] not in &1)),
          true <- MapSet.disjoint?(recipients, recipient_blocks),
          %{host: item_host} <- URI.parse(item.actor),
          %{host: parent_host} <- URI.parse(parent.data["actor"]),

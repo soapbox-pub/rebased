@@ -44,6 +44,56 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "AP ID user relationships" do
+    setup do
+      {:ok, user: insert(:user)}
+    end
+
+    test "outgoing_relations_ap_ids/1", %{user: user} do
+      rel_types = [:block, :mute, :notification_mute, :reblog_mute, :inverse_subscription]
+
+      ap_ids_by_rel =
+        Enum.into(
+          rel_types,
+          %{},
+          fn rel_type ->
+            rel_records =
+              insert_list(2, :user_relationship, %{source: user, relationship_type: rel_type})
+
+            ap_ids = Enum.map(rel_records, fn rr -> Repo.preload(rr, :target).target.ap_id end)
+            {rel_type, Enum.sort(ap_ids)}
+          end
+        )
+
+      assert ap_ids_by_rel[:block] == Enum.sort(User.blocked_users_ap_ids(user))
+      assert ap_ids_by_rel[:block] == Enum.sort(Enum.map(User.blocked_users(user), & &1.ap_id))
+
+      assert ap_ids_by_rel[:mute] == Enum.sort(User.muted_users_ap_ids(user))
+      assert ap_ids_by_rel[:mute] == Enum.sort(Enum.map(User.muted_users(user), & &1.ap_id))
+
+      assert ap_ids_by_rel[:notification_mute] ==
+               Enum.sort(User.notification_muted_users_ap_ids(user))
+
+      assert ap_ids_by_rel[:notification_mute] ==
+               Enum.sort(Enum.map(User.notification_muted_users(user), & &1.ap_id))
+
+      assert ap_ids_by_rel[:reblog_mute] == Enum.sort(User.reblog_muted_users_ap_ids(user))
+
+      assert ap_ids_by_rel[:reblog_mute] ==
+               Enum.sort(Enum.map(User.reblog_muted_users(user), & &1.ap_id))
+
+      assert ap_ids_by_rel[:inverse_subscription] == Enum.sort(User.subscriber_users_ap_ids(user))
+
+      assert ap_ids_by_rel[:inverse_subscription] ==
+               Enum.sort(Enum.map(User.subscriber_users(user), & &1.ap_id))
+
+      outgoing_relations_ap_ids = User.outgoing_relations_ap_ids(user, rel_types)
+
+      assert ap_ids_by_rel ==
+               Enum.into(outgoing_relations_ap_ids, %{}, fn {k, v} -> {k, Enum.sort(v)} end)
+    end
+  end
+
   describe "when tags are nil" do
     test "tagging a user" do
       user = insert(:user, %{tags: nil})
@@ -119,7 +169,7 @@ defmodule Pleroma.UserTest do
     CommonAPI.follow(follower, followed)
     assert [_activity] = User.get_follow_requests(followed)
 
-    {:ok, _follower} = User.block(followed, follower)
+    {:ok, _user_relationship} = User.block(followed, follower)
     assert [] = User.get_follow_requests(followed)
   end
 
@@ -132,8 +182,8 @@ defmodule Pleroma.UserTest do
     not_followed = insert(:user)
     reverse_blocked = insert(:user)
 
-    {:ok, user} = User.block(user, blocked)
-    {:ok, reverse_blocked} = User.block(reverse_blocked, user)
+    {:ok, _user_relationship} = User.block(user, blocked)
+    {:ok, _user_relationship} = User.block(reverse_blocked, user)
 
     {:ok, user} = User.follow(user, followed_zero)
 
@@ -186,7 +236,7 @@ defmodule Pleroma.UserTest do
     blocker = insert(:user)
     blockee = insert(:user)
 
-    {:ok, blocker} = User.block(blocker, blockee)
+    {:ok, _user_relationship} = User.block(blocker, blockee)
 
     {:error, _} = User.follow(blockee, blocker)
   end
@@ -195,7 +245,7 @@ defmodule Pleroma.UserTest do
     blocker = insert(:user)
     blocked = insert(:user)
 
-    {:ok, blocker} = User.block(blocker, blocked)
+    {:ok, _user_relationship} = User.block(blocker, blocked)
 
     {:error, _} = User.subscribe(blocked, blocker)
   end
@@ -678,7 +728,7 @@ defmodule Pleroma.UserTest do
       refute User.mutes?(user, muted_user)
       refute User.muted_notifications?(user, muted_user)
 
-      {:ok, user} = User.mute(user, muted_user)
+      {:ok, _user_relationships} = User.mute(user, muted_user)
 
       assert User.mutes?(user, muted_user)
       assert User.muted_notifications?(user, muted_user)
@@ -688,8 +738,8 @@ defmodule Pleroma.UserTest do
       user = insert(:user)
       muted_user = insert(:user)
 
-      {:ok, user} = User.mute(user, muted_user)
-      {:ok, user} = User.unmute(user, muted_user)
+      {:ok, _user_relationships} = User.mute(user, muted_user)
+      {:ok, _user_mute} = User.unmute(user, muted_user)
 
       refute User.mutes?(user, muted_user)
       refute User.muted_notifications?(user, muted_user)
@@ -702,7 +752,7 @@ defmodule Pleroma.UserTest do
       refute User.mutes?(user, muted_user)
       refute User.muted_notifications?(user, muted_user)
 
-      {:ok, user} = User.mute(user, muted_user, false)
+      {:ok, _user_relationships} = User.mute(user, muted_user, false)
 
       assert User.mutes?(user, muted_user)
       refute User.muted_notifications?(user, muted_user)
@@ -716,7 +766,7 @@ defmodule Pleroma.UserTest do
 
       refute User.blocks?(user, blocked_user)
 
-      {:ok, user} = User.block(user, blocked_user)
+      {:ok, _user_relationship} = User.block(user, blocked_user)
 
       assert User.blocks?(user, blocked_user)
     end
@@ -725,8 +775,8 @@ defmodule Pleroma.UserTest do
       user = insert(:user)
       blocked_user = insert(:user)
 
-      {:ok, user} = User.block(user, blocked_user)
-      {:ok, user} = User.unblock(user, blocked_user)
+      {:ok, _user_relationship} = User.block(user, blocked_user)
+      {:ok, _user_block} = User.unblock(user, blocked_user)
 
       refute User.blocks?(user, blocked_user)
     end
@@ -741,7 +791,7 @@ defmodule Pleroma.UserTest do
       assert User.following?(blocker, blocked)
       assert User.following?(blocked, blocker)
 
-      {:ok, blocker} = User.block(blocker, blocked)
+      {:ok, _user_relationship} = User.block(blocker, blocked)
       blocked = User.get_cached_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
@@ -759,7 +809,7 @@ defmodule Pleroma.UserTest do
       assert User.following?(blocker, blocked)
       refute User.following?(blocked, blocker)
 
-      {:ok, blocker} = User.block(blocker, blocked)
+      {:ok, _user_relationship} = User.block(blocker, blocked)
       blocked = User.get_cached_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
@@ -777,7 +827,7 @@ defmodule Pleroma.UserTest do
       refute User.following?(blocker, blocked)
       assert User.following?(blocked, blocker)
 
-      {:ok, blocker} = User.block(blocker, blocked)
+      {:ok, _user_relationship} = User.block(blocker, blocked)
       blocked = User.get_cached_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
@@ -790,12 +840,12 @@ defmodule Pleroma.UserTest do
       blocker = insert(:user)
       blocked = insert(:user)
 
-      {:ok, blocker} = User.subscribe(blocked, blocker)
+      {:ok, _subscription} = User.subscribe(blocked, blocker)
 
       assert User.subscribed_to?(blocked, blocker)
       refute User.subscribed_to?(blocker, blocked)
 
-      {:ok, blocker} = User.block(blocker, blocked)
+      {:ok, _user_relationship} = User.block(blocker, blocked)
 
       assert User.blocks?(blocker, blocked)
       refute User.subscribed_to?(blocker, blocked)
@@ -1324,7 +1374,8 @@ defmodule Pleroma.UserTest do
     {:ok, _follower2} = User.follow(follower2, user)
     {:ok, _follower3} = User.follow(follower3, user)
 
-    {:ok, user} = User.block(user, follower)
+    {:ok, _user_relationship} = User.block(user, follower)
+    user = refresh_record(user)
 
     assert user.follower_count == 2
   end
