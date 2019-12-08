@@ -749,6 +749,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put("whole_db", true)
       |> Map.put("pinned_activity_ids", user.pinned_activities)
 
+    params =
+      if User.blocks?(reading_user, user) do
+        params
+      else
+        params
+        |> Map.put("blocking_user", reading_user)
+        |> Map.put("muting_user", reading_user)
+      end
+
     recipients =
       user_activities_recipients(%{
         "godmode" => params["godmode"],

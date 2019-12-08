@@ -249,7 +249,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   @doc "GET /api/v1/accounts/:id/statuses"
   def statuses(%{assigns: %{user: reading_user}} = conn, params) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user) do
-      params = Map.put(params, "tag", params["tagged"])
+      params =
+        params
+        |> Map.put("tag", params["tagged"])
+        |> Map.delete("godmode")
+
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 
       conn
