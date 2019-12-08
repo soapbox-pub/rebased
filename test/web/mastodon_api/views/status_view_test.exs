@@ -183,7 +183,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, user} = User.mute(user, other_user)
+    {:ok, _user_relationships} = User.mute(user, other_user)
 
     {:ok, activity} = CommonAPI.post(other_user, %{"status" => "test"})
     status = StatusView.render("show.json", %{activity: activity})
@@ -199,7 +199,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, user} = User.mute(user, other_user)
+    {:ok, _user_relationships} = User.mute(user, other_user)
 
     {:ok, activity} = CommonAPI.post(other_user, %{"status" => "test"})
     status = StatusView.render("show.json", %{activity: activity, for: user})

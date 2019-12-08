@@ -135,8 +135,6 @@ defmodule Pleroma.Application do
     [Pleroma.Web.Streamer.supervisor()]
   end
 
-  defp chat_child(:test, _), do: []
-
   defp chat_child(_env, true) do
     [Pleroma.Web.ChatChannel.ChatChannelState]
   end

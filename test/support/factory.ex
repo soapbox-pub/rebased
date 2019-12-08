@@ -42,6 +42,18 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def user_relationship_factory(attrs \\ %{}) do
+    source = attrs[:source] || insert(:user)
+    target = attrs[:target] || insert(:user)
+    relationship_type = attrs[:relationship_type] || :block
+
+    %Pleroma.UserRelationship{
+      source_id: source.id,
+      target_id: target.id,
+      relationship_type: relationship_type
+    }
+  end
+
   def note_factory(attrs \\ %{}) do
     text = sequence(:text, &"This is :moominmamma: note #{&1}")
 

@@ -109,8 +109,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   end
 
   test "Move notification" do
-    %{ap_id: old_ap_id} = old_user = insert(:user)
-    %{ap_id: _new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
+    old_user = insert(:user)
+    new_user = insert(:user, also_known_as: [old_user.ap_id])
     follower = insert(:user)
 
     User.follow(follower, old_user)
@@ -120,7 +120,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     old_user = refresh_record(old_user)
     new_user = refresh_record(new_user)
 
-    [notification] = Notification.for_user(follower)
+    [notification] = Notification.for_user(follower, %{with_move: true})
 
     expected = %{
       id: to_string(notification.id),

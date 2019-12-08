@@ -7,6 +7,7 @@ defmodule Pleroma.User do
 
   import Ecto.Changeset
   import Ecto.Query
+  import Ecto, only: [assoc: 2]
 
   alias Comeonin.Pbkdf2
   alias Ecto.Multi
@@ -21,6 +22,7 @@ defmodule Pleroma.User do
   alias Pleroma.Repo
   alias Pleroma.RepoStreamer
   alias Pleroma.User
+  alias Pleroma.UserRelationship
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
@@ -42,6 +44,32 @@ defmodule Pleroma.User do
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
   @extended_local_nickname_regex ~r/^[a-zA-Z\d_-]+$/
 
+  # AP ID user relationships (blocks, mutes etc.)
+  # Format: [rel_type: [outgoing_rel: :outgoing_rel_target, incoming_rel: :incoming_rel_source]]
+  @user_relationships_config [
+    block: [
+      blocker_blocks: :blocked_users,
+      blockee_blocks: :blocker_users
+    ],
+    mute: [
+      muter_mutes: :muted_users,
+      mutee_mutes: :muter_users
+    ],
+    reblog_mute: [
+      reblog_muter_mutes: :reblog_muted_users,
+      reblog_mutee_mutes: :reblog_muter_users
+    ],
+    notification_mute: [
+      notification_muter_mutes: :notification_muted_users,
+      notification_mutee_mutes: :notification_muter_users
+    ],
+    # Note: `inverse_subscription` relationship is inverse: subscriber acts as relationship target
+    inverse_subscription: [
+      subscribee_subscriptions: :subscriber_users,
+      subscriber_subscriptions: :subscribee_users
+    ]
+  ]
+
   schema "users" do
     field(:bio, :string)
     field(:email, :string)
@@ -61,7 +89,6 @@ defmodule Pleroma.User do
     field(:tags, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime_usec)
     field(:last_digest_emailed_at, :naive_datetime)
-
     field(:banner, :map, default: %{})
     field(:background, :map, default: %{})
     field(:source_data, :map, default: %{})
@@ -73,12 +100,7 @@ defmodule Pleroma.User do
     field(:password_reset_pending, :boolean, default: false)
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
-    field(:blocks, {:array, :string}, default: [])
     field(:domain_blocks, {:array, :string}, default: [])
-    field(:mutes, {:array, :string}, default: [])
-    field(:muted_reblogs, {:array, :string}, default: [])
-    field(:muted_notifications, {:array, :string}, default: [])
-    field(:subscribers, {:array, :string}, default: [])
     field(:deactivated, :boolean, default: false)
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
@@ -120,7 +142,80 @@ defmodule Pleroma.User do
     has_many(:registrations, Registration)
     has_many(:deliveries, Delivery)
 
+    has_many(:outgoing_relationships, UserRelationship, foreign_key: :source_id)
+    has_many(:incoming_relationships, UserRelationship, foreign_key: :target_id)
+
+    for {relationship_type,
+         [
+           {outgoing_relation, outgoing_relation_target},
+           {incoming_relation, incoming_relation_source}
+         ]} <- @user_relationships_config do
+      # Definitions of `has_many :blocker_blocks`, `has_many :muter_mutes` etc.
+      has_many(outgoing_relation, UserRelationship,
+        foreign_key: :source_id,
+        where: [relationship_type: relationship_type]
+      )
+
+      # Definitions of `has_many :blockee_blocks`, `has_many :mutee_mutes` etc.
+      has_many(incoming_relation, UserRelationship,
+        foreign_key: :target_id,
+        where: [relationship_type: relationship_type]
+      )
+
+      # Definitions of `has_many :blocked_users`, `has_many :muted_users` etc.
+      has_many(outgoing_relation_target, through: [outgoing_relation, :target])
+
+      # Definitions of `has_many :blocker_users`, `has_many :muter_users` etc.
+      has_many(incoming_relation_source, through: [incoming_relation, :source])
+    end
+
+    # `:blocks` is deprecated (replaced with `blocked_users` relation)
+    field(:blocks, {:array, :string}, default: [])
+    # `:mutes` is deprecated (replaced with `muted_users` relation)
+    field(:mutes, {:array, :string}, default: [])
+    # `:muted_reblogs` is deprecated (replaced with `reblog_muted_users` relation)
+    field(:muted_reblogs, {:array, :string}, default: [])
+    # `:muted_notifications` is deprecated (replaced with `notification_muted_users` relation)
+    field(:muted_notifications, {:array, :string}, default: [])
+    # `:subscribers` is deprecated (replaced with `subscriber_users` relation)
+    field(:subscribers, {:array, :string}, default: [])
+
     timestamps()
+  end
+
+  for {_relationship_type, [{_outgoing_relation, outgoing_relation_target}, _]} <-
+        @user_relationships_config do
+    # Definitions of `blocked_users_relation/1`, `muted_users_relation/1`, etc.
+    def unquote(:"#{outgoing_relation_target}_relation")(user, restrict_deactivated? \\ false) do
+      target_users_query = assoc(user, unquote(outgoing_relation_target))
+
+      if restrict_deactivated? do
+        restrict_deactivated(target_users_query)
+      else
+        target_users_query
+      end
+    end
+
+    # Definitions of `blocked_users/1`, `muted_users/1`, etc.
+    def unquote(outgoing_relation_target)(user, restrict_deactivated? \\ false) do
+      __MODULE__
+      |> apply(unquote(:"#{outgoing_relation_target}_relation"), [
+        user,
+        restrict_deactivated?
+      ])
+      |> Repo.all()
+    end
+
+    # Definitions of `blocked_users_ap_ids/1`, `muted_users_ap_ids/1`, etc.
+    def unquote(:"#{outgoing_relation_target}_ap_ids")(user, restrict_deactivated? \\ false) do
+      __MODULE__
+      |> apply(unquote(:"#{outgoing_relation_target}_relation"), [
+        user,
+        restrict_deactivated?
+      ])
+      |> select([u], u.ap_id)
+      |> Repo.all()
+    end
   end
 
   @doc "Returns if the user should be allowed to authenticate"
@@ -946,34 +1041,45 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
-  @spec mute(User.t(), User.t(), boolean()) :: {:ok, User.t()} | {:error, String.t()}
-  def mute(muter, %User{ap_id: ap_id}, notifications? \\ true) do
-    add_to_mutes(muter, ap_id, notifications?)
+  @spec mute(User.t(), User.t(), boolean()) ::
+          {:ok, list(UserRelationship.t())} | {:error, String.t()}
+  def mute(%User{} = muter, %User{} = mutee, notifications? \\ true) do
+    add_to_mutes(muter, mutee, notifications?)
   end
 
-  def unmute(muter, %{ap_id: ap_id}) do
-    remove_from_mutes(muter, ap_id)
+  def unmute(%User{} = muter, %User{} = mutee) do
+    remove_from_mutes(muter, mutee)
   end
 
-  def subscribe(subscriber, %{ap_id: ap_id}) do
-    with %User{} = subscribed <- get_cached_by_ap_id(ap_id) do
-      deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
+  def subscribe(%User{} = subscriber, %User{} = target) do
+    deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
 
-      if blocks?(subscribed, subscriber) and deny_follow_blocked do
-        {:error, "Could not subscribe: #{subscribed.nickname} is blocking you"}
-      else
-        User.add_to_subscribers(subscribed, subscriber.ap_id)
-      end
+    if blocks?(target, subscriber) and deny_follow_blocked do
+      {:error, "Could not subscribe: #{target.nickname} is blocking you"}
+    else
+      # Note: the relationship is inverse: subscriber acts as relationship target
+      UserRelationship.create_inverse_subscription(target, subscriber)
     end
   end
 
-  def unsubscribe(unsubscriber, %{ap_id: ap_id}) do
+  def subscribe(%User{} = subscriber, %{ap_id: ap_id}) do
+    with %User{} = subscribee <- get_cached_by_ap_id(ap_id) do
+      subscribe(subscriber, subscribee)
+    end
+  end
+
+  def unsubscribe(%User{} = unsubscriber, %User{} = target) do
+    # Note: the relationship is inverse: subscriber acts as relationship target
+    UserRelationship.delete_inverse_subscription(target, unsubscriber)
+  end
+
+  def unsubscribe(%User{} = unsubscriber, %{ap_id: ap_id}) do
     with %User{} = user <- get_cached_by_ap_id(ap_id) do
-      User.remove_from_subscribers(user, unsubscriber.ap_id)
+      unsubscribe(unsubscriber, user)
     end
   end
 
-  def block(blocker, %User{ap_id: ap_id} = blocked) do
+  def block(%User{} = blocker, %User{} = blocked) do
     # sever any follow relationships to prevent leaks per activitypub (Pleroma issue #213)
     blocker =
       if following?(blocker, blocked) do
@@ -990,50 +1096,53 @@ defmodule Pleroma.User do
         nil -> blocked
       end
 
-    blocker =
-      if subscribed_to?(blocked, blocker) do
-        {:ok, blocker} = unsubscribe(blocked, blocker)
-        blocker
-      else
-        blocker
-      end
+    unsubscribe(blocked, blocker)
 
     if following?(blocked, blocker), do: unfollow(blocked, blocker)
 
     {:ok, blocker} = update_follower_count(blocker)
     {:ok, blocker, _} = Participation.mark_all_as_read(blocker, blocked)
-    add_to_block(blocker, ap_id)
+    add_to_block(blocker, blocked)
   end
 
   # helper to handle the block given only an actor's AP id
-  def block(blocker, %{ap_id: ap_id}) do
+  def block(%User{} = blocker, %{ap_id: ap_id}) do
     block(blocker, get_cached_by_ap_id(ap_id))
   end
 
-  def unblock(blocker, %{ap_id: ap_id}) do
-    remove_from_block(blocker, ap_id)
+  def unblock(%User{} = blocker, %User{} = blocked) do
+    remove_from_block(blocker, blocked)
+  end
+
+  # helper to handle the block given only an actor's AP id
+  def unblock(%User{} = blocker, %{ap_id: ap_id}) do
+    unblock(blocker, get_cached_by_ap_id(ap_id))
   end
 
   def mutes?(nil, _), do: false
-  def mutes?(user, %{ap_id: ap_id}), do: Enum.member?(user.mutes, ap_id)
+  def mutes?(%User{} = user, %User{} = target), do: mutes_user?(user, target)
+
+  def mutes_user?(%User{} = user, %User{} = target) do
+    UserRelationship.mute_exists?(user, target)
+  end
 
   @spec muted_notifications?(User.t() | nil, User.t() | map()) :: boolean()
   def muted_notifications?(nil, _), do: false
 
-  def muted_notifications?(user, %{ap_id: ap_id}),
-    do: Enum.member?(user.muted_notifications, ap_id)
-
-  def blocks?(%User{} = user, %User{} = target) do
-    blocks_ap_id?(user, target) || blocks_domain?(user, target)
-  end
+  def muted_notifications?(%User{} = user, %User{} = target),
+    do: UserRelationship.notification_mute_exists?(user, target)
 
   def blocks?(nil, _), do: false
 
-  def blocks_ap_id?(%User{} = user, %User{} = target) do
-    Enum.member?(user.blocks, target.ap_id)
+  def blocks?(%User{} = user, %User{} = target) do
+    blocks_user?(user, target) || blocks_domain?(user, target)
   end
 
-  def blocks_ap_id?(_, _), do: false
+  def blocks_user?(%User{} = user, %User{} = target) do
+    UserRelationship.block_exists?(user, target)
+  end
+
+  def blocks_user?(_, _), do: false
 
   def blocks_domain?(%User{} = user, %User{} = target) do
     domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.domain_blocks)
@@ -1043,28 +1152,41 @@ defmodule Pleroma.User do
 
   def blocks_domain?(_, _), do: false
 
-  def subscribed_to?(user, %{ap_id: ap_id}) do
+  def subscribed_to?(%User{} = user, %User{} = target) do
+    # Note: the relationship is inverse: subscriber acts as relationship target
+    UserRelationship.inverse_subscription_exists?(target, user)
+  end
+
+  def subscribed_to?(%User{} = user, %{ap_id: ap_id}) do
     with %User{} = target <- get_cached_by_ap_id(ap_id) do
-      Enum.member?(target.subscribers, user.ap_id)
+      subscribed_to?(user, target)
     end
   end
 
-  @spec muted_users(User.t()) :: [User.t()]
-  def muted_users(user) do
-    User.Query.build(%{ap_id: user.mutes, deactivated: false})
-    |> Repo.all()
-  end
+  @doc """
+  Returns map of outgoing (blocked, muted etc.) relations' user AP IDs by relation type.
+  E.g. `outgoing_relations_ap_ids(user, [:block])` -> `%{block: ["https://some.site/users/userapid"]}`
+  """
+  @spec outgoing_relations_ap_ids(User.t(), list(atom())) :: %{atom() => list(String.t())}
+  def outgoing_relations_ap_ids(_, []), do: %{}
 
-  @spec blocked_users(User.t()) :: [User.t()]
-  def blocked_users(user) do
-    User.Query.build(%{ap_id: user.blocks, deactivated: false})
-    |> Repo.all()
-  end
+  def outgoing_relations_ap_ids(%User{} = user, relationship_types)
+      when is_list(relationship_types) do
+    db_result =
+      user
+      |> assoc(:outgoing_relationships)
+      |> join(:inner, [user_rel], u in assoc(user_rel, :target))
+      |> where([user_rel, u], user_rel.relationship_type in ^relationship_types)
+      |> select([user_rel, u], [user_rel.relationship_type, fragment("array_agg(?)", u.ap_id)])
+      |> group_by([user_rel, u], user_rel.relationship_type)
+      |> Repo.all()
+      |> Enum.into(%{}, fn [k, v] -> {k, v} end)
 
-  @spec subscribers(User.t()) :: [User.t()]
-  def subscribers(user) do
-    User.Query.build(%{ap_id: user.subscribers, deactivated: false})
-    |> Repo.all()
+    Enum.into(
+      relationship_types,
+      %{},
+      fn rel_type -> {rel_type, db_result[rel_type] || []} end
+    )
   end
 
   def deactivate_async(user, status \\ true) do
@@ -1171,7 +1293,7 @@ defmodule Pleroma.User do
       blocked_identifiers,
       fn blocked_identifier ->
         with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
-             {:ok, blocker} <- block(blocker, blocked),
+             {:ok, _user_block} <- block(blocker, blocked),
              {:ok, _} <- ActivityPub.block(blocker, blocked) do
           blocked
         else
@@ -1485,7 +1607,7 @@ defmodule Pleroma.User do
   end
 
   def showing_reblogs?(%User{} = user, %User{} = target) do
-    target.ap_id not in user.muted_reblogs
+    not UserRelationship.reblog_mute_exists?(user, target)
   end
 
   @doc """
@@ -1808,23 +1930,6 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  defp set_subscribers(user, subscribers) do
-    params = %{subscribers: subscribers}
-
-    user
-    |> cast(params, [:subscribers])
-    |> validate_required([:subscribers])
-    |> update_and_set_cache()
-  end
-
-  def add_to_subscribers(user, subscribed) do
-    set_subscribers(user, Enum.uniq([subscribed | user.subscribers]))
-  end
-
-  def remove_from_subscribers(user, subscribed) do
-    set_subscribers(user, List.delete(user.subscribers, subscribed))
-  end
-
   defp set_domain_blocks(user, domain_blocks) do
     params = %{domain_blocks: domain_blocks}
 
@@ -1842,79 +1947,33 @@ defmodule Pleroma.User do
     set_domain_blocks(user, List.delete(user.domain_blocks, domain_blocked))
   end
 
-  defp set_blocks(user, blocks) do
-    params = %{blocks: blocks}
-
-    user
-    |> cast(params, [:blocks])
-    |> validate_required([:blocks])
-    |> update_and_set_cache()
+  @spec add_to_block(User.t(), User.t()) ::
+          {:ok, UserRelationship.t()} | {:error, Ecto.Changeset.t()}
+  defp add_to_block(%User{} = user, %User{} = blocked) do
+    UserRelationship.create_block(user, blocked)
   end
 
-  def add_to_block(user, blocked) do
-    set_blocks(user, Enum.uniq([blocked | user.blocks]))
+  @spec add_to_block(User.t(), User.t()) ::
+          {:ok, UserRelationship.t()} | {:ok, nil} | {:error, Ecto.Changeset.t()}
+  defp remove_from_block(%User{} = user, %User{} = blocked) do
+    UserRelationship.delete_block(user, blocked)
   end
 
-  def remove_from_block(user, blocked) do
-    set_blocks(user, List.delete(user.blocks, blocked))
-  end
-
-  defp set_mutes(user, mutes) do
-    params = %{mutes: mutes}
-
-    user
-    |> cast(params, [:mutes])
-    |> validate_required([:mutes])
-    |> update_and_set_cache()
-  end
-
-  def add_to_mutes(user, muted, notifications?) do
-    with {:ok, user} <- set_mutes(user, Enum.uniq([muted | user.mutes])) do
-      set_notification_mutes(
-        user,
-        Enum.uniq([muted | user.muted_notifications]),
-        notifications?
-      )
+  defp add_to_mutes(%User{} = user, %User{} = muted_user, notifications?) do
+    with {:ok, user_mute} <- UserRelationship.create_mute(user, muted_user),
+         {:ok, user_notification_mute} <-
+           (notifications? && UserRelationship.create_notification_mute(user, muted_user)) ||
+             {:ok, nil} do
+      {:ok, Enum.filter([user_mute, user_notification_mute], & &1)}
     end
   end
 
-  def remove_from_mutes(user, muted) do
-    with {:ok, user} <- set_mutes(user, List.delete(user.mutes, muted)) do
-      set_notification_mutes(
-        user,
-        List.delete(user.muted_notifications, muted),
-        true
-      )
+  defp remove_from_mutes(user, %User{} = muted_user) do
+    with {:ok, user_mute} <- UserRelationship.delete_mute(user, muted_user),
+         {:ok, user_notification_mute} <-
+           UserRelationship.delete_notification_mute(user, muted_user) do
+      {:ok, [user_mute, user_notification_mute]}
     end
-  end
-
-  defp set_notification_mutes(user, _muted_notifications, false = _notifications?) do
-    {:ok, user}
-  end
-
-  defp set_notification_mutes(user, muted_notifications, true = _notifications?) do
-    params = %{muted_notifications: muted_notifications}
-
-    user
-    |> cast(params, [:muted_notifications])
-    |> validate_required([:muted_notifications])
-    |> update_and_set_cache()
-  end
-
-  def add_reblog_mute(user, ap_id) do
-    params = %{muted_reblogs: user.muted_reblogs ++ [ap_id]}
-
-    user
-    |> cast(params, [:muted_reblogs])
-    |> update_and_set_cache()
-  end
-
-  def remove_reblog_mute(user, ap_id) do
-    params = %{muted_reblogs: List.delete(user.muted_reblogs, ap_id)}
-
-    user
-    |> cast(params, [:muted_reblogs])
-    |> update_and_set_cache()
   end
 
   def set_invisible(user, invisible) do

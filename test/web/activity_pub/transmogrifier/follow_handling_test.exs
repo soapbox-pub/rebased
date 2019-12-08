@@ -128,7 +128,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
       user = insert(:user)
       {:ok, target} = User.get_or_fetch("http://mastodon.example.org/users/admin")
 
-      {:ok, user} = User.block(user, target)
+      {:ok, _user_relationship} = User.block(user, target)
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")

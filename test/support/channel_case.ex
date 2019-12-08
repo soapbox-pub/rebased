@@ -23,6 +23,7 @@ defmodule Pleroma.Web.ChannelCase do
     quote do
       # Import conveniences for testing with channels
       use Phoenix.ChannelTest
+      use Pleroma.Tests.Helpers
 
       # The default endpoint for testing
       @endpoint Pleroma.Web.Endpoint
