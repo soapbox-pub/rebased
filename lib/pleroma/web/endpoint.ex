@@ -61,14 +61,7 @@ defmodule Pleroma.Web.Endpoint do
   plug(Plug.RequestId)
   plug(Plug.Logger)
 
-  plug(
-    Plug.Parsers,
-    parsers: [:urlencoded, :multipart, :json],
-    pass: ["*/*"],
-    json_decoder: Jason,
-    length: Pleroma.Config.get([:instance, :upload_limit]),
-    body_reader: {Pleroma.Web.Plugs.DigestPlug, :read_body, []}
-  )
+  plug(Pleroma.Plugs.Parsers)
 
   plug(Plug.MethodOverride)
   plug(Plug.Head)
