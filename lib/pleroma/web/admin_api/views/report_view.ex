@@ -69,13 +69,19 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
 
   def render("index_notes.json", _), do: []
 
-  def render("show_note.json", %{content: content, user_id: user_id, inserted_at: inserted_at}) do
+  def render("show_note.json", %{
+        id: id,
+        content: content,
+        user_id: user_id,
+        inserted_at: inserted_at
+      }) do
     user = User.get_by_id(user_id)
 
     %{
+      id: id,
       content: content,
       user: merge_account_views(user),
-      created_at: inserted_at
+      created_at: Utils.to_masto_date(inserted_at)
     }
   end
 

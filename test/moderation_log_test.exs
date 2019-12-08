@@ -214,7 +214,7 @@ defmodule Pleroma.ModerationLogTest do
       {:ok, _} =
         ModerationLog.insert_log(%{
           actor: moderator,
-          action: "report_response",
+          action: "report_note",
           subject: report,
           text: "look at this"
         })

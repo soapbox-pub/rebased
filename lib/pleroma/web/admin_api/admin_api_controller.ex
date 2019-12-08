@@ -691,15 +691,33 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def report_notes_create(%{assigns: %{user: user}} = conn, %{
-        "id" => status_id,
+        "id" => report_id,
         "content" => content
       }) do
-    with {:ok, _} <- ReportNote.create(user.id, status_id, content) do
+    with {:ok, _} <- ReportNote.create(user.id, report_id, content) do
       ModerationLog.insert_log(%{
-        action: "report_response",
+        action: "report_note",
         actor: user,
-        subject: Activity.get_by_id(status_id),
+        subject: Activity.get_by_id(report_id),
         text: content
+      })
+
+      json_response(conn, :no_content, "")
+    else
+      _ -> json_response(conn, :bad_request, "")
+    end
+  end
+
+  def report_notes_delete(%{assigns: %{user: user}} = conn, %{
+        "id" => note_id,
+        "report_id" => report_id
+      }) do
+    with {:ok, note} <- ReportNote.destroy(note_id) do
+      ModerationLog.insert_log(%{
+        action: "report_note_delete",
+        actor: user,
+        subject: Activity.get_by_id(report_id),
+        text: note.content
       })
 
       json_response(conn, :no_content, "")

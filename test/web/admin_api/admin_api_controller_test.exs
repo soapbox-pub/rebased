@@ -10,6 +10,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.HTML
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
+  alias Pleroma.ReportNote
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.UserInviteToken
@@ -2940,7 +2941,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "it creates report note", %{admin_id: admin_id, report_id: report_id} do
-      [note, _] = Repo.all(Pleroma.ReportNote)
+      [note, _] = Repo.all(ReportNote)
 
       assert %{
                activity_id: ^report_id,
@@ -2963,6 +2964,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert note["content"] == "this is disgusting!"
       assert note["created_at"]
       assert response["total"] == 1
+    end
+
+    test "it deletes the note", %{admin: admin, report_id: report_id} do
+      assert ReportNote |> Repo.all() |> length() == 2
+
+      [note, _] = Repo.all(ReportNote)
+
+      build_conn()
+      |> assign(:user, admin)
+      |> delete("/api/pleroma/admin/reports/#{report_id}/notes/#{note.id}")
+
+      assert ReportNote |> Repo.all() |> length() == 1
     end
   end
 end

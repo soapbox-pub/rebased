@@ -38,9 +38,11 @@ defmodule Pleroma.ReportNote do
     |> Repo.insert()
   end
 
-  def get_all_for_status(status_id) do
-    ReportNote
-    |> where(activity_id: ^status_id)
-    |> Repo.all()
+  @spec destroy(FlakeId.Ecto.CompatType.t()) ::
+          {:ok, ReportNote.t()} | {:error, Changeset.t()}
+  def destroy(id) do
+    from(r in ReportNote, where: r.id == ^id)
+    |> Repo.one()
+    |> Repo.delete()
   end
 end
