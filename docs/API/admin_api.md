@@ -609,11 +609,23 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ## `POST /api/pleroma/admin/reports/:id/notes`
 
-### Create a report note
+### Create report note
 
 - Params:
-  - `id`
+  - `id`: required, report id
   - `content`: required, the message
+- Response:
+  - On failure:
+    - 400 Bad Request `"Invalid parameters"` when `status` is missing
+  - On success: `204`, empty response
+
+## `POST /api/pleroma/admin/reports/:report_id/notes/:id`
+
+### Delete report note
+
+- Params:
+  - `report_id`: required, report id
+  - `id`: required, note id
 - Response:
   - On failure:
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
