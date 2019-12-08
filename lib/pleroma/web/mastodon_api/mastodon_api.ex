@@ -70,7 +70,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
       exclude_types: {:array, :string},
       exclude_visibilities: {:array, :string},
       reblogs: :boolean,
-      with_muted: :boolean
+      with_muted: :boolean,
+      with_move: :boolean
     }
 
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))

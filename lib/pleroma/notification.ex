@@ -77,6 +77,7 @@ defmodule Pleroma.Notification do
     |> exclude_notification_muted(user, exclude_notification_muted_opts)
     |> exclude_blocked(user, exclude_blocked_opts)
     |> exclude_visibility(opts)
+    |> exclude_move(opts)
   end
 
   defp exclude_blocked(query, user, opts) do
@@ -104,6 +105,14 @@ defmodule Pleroma.Notification do
       on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data)
     )
     |> where([n, a, o, tm], is_nil(tm.user_id))
+  end
+
+  defp exclude_move(query, %{with_move: true}) do
+    query
+  end
+
+  defp exclude_move(query, _opts) do
+    where(query, [n, a], fragment("?->>'type' != 'Move'", a.data))
   end
 
   @valid_visibilities ~w[direct unlisted public private]
