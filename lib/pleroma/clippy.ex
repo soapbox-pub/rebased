@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Clippy do
   @moduledoc false
+
   # No software is complete until they have a Clippy implementation.
   # A ballmer peak _may_ be required to change this module.
 

@@ -194,7 +194,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       blocker = insert(:user)
       blocked = insert(:user)
       user = insert(:user)
-      {:ok, blocker} = User.block(blocker, blocked)
+      {:ok, _user_relationship} = User.block(blocker, blocked)
 
       {:ok, _blocked_direct} =
         CommonAPI.post(blocked, %{

@@ -163,6 +163,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   require FastSanitize.Sanitizer.Meta
   alias FastSanitize.Sanitizer.Meta
+
   # credo:disable-for-previous-line
   # No idea how to fix this one…
 
