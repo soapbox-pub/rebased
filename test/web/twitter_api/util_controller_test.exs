@@ -159,11 +159,31 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       user = Repo.get(User, user.id)
 
-      assert %{
-               "followers" => false,
-               "follows" => true,
-               "non_follows" => true,
-               "non_followers" => true
+      assert %Pleroma.User.NotificationSetting{
+               followers: false,
+               follows: true,
+               non_follows: true,
+               non_followers: true,
+               privacy_option: false
+             } == user.notification_settings
+    end
+
+    test "it update notificatin privacy option", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> put("/api/pleroma/notification_settings", %{"privacy_option" => "1"})
+      |> json_response(:ok)
+
+      user = refresh_record(user)
+
+      assert %Pleroma.User.NotificationSetting{
+               followers: true,
+               follows: true,
+               non_follows: true,
+               non_followers: true,
+               privacy_option: true
              } == user.notification_settings
     end
   end

@@ -22,8 +22,8 @@ defmodule Pleroma.Web.Push.Impl do
   @spec perform(Notification.t()) :: list(any) | :error
   def perform(
         %{
-          activity: %{data: %{"type" => activity_type}, id: activity_id} = activity,
-          user_id: user_id
+          activity: %{data: %{"type" => activity_type}} = activity,
+          user: %User{id: user_id}
         } = notif
       )
       when activity_type in @types do
@@ -39,18 +39,17 @@ defmodule Pleroma.Web.Push.Impl do
     for subscription <- fetch_subsriptions(user_id),
         get_in(subscription.data, ["alerts", type]) do
       %{
-        title: format_title(notif),
         access_token: subscription.token.token,
-        body: format_body(notif, actor, object),
         notification_id: notif.id,
         notification_type: type,
         icon: avatar_url,
         preferred_locale: "en",
         pleroma: %{
-          activity_id: activity_id,
+          activity_id: notif.activity.id,
           direct_conversation_id: direct_conversation_id
         }
       }
+      |> Map.merge(build_content(notif, actor, object))
       |> Jason.encode!()
       |> push_message(build_sub(subscription), gcm_api_key, subscription)
     end
@@ -97,6 +96,24 @@ defmodule Pleroma.Web.Push.Impl do
         auth: subscription.key_auth
       },
       endpoint: subscription.endpoint
+    }
+  end
+
+  def build_content(
+        %{
+          activity: %{data: %{"directMessage" => true}},
+          user: %{notification_settings: %{privacy_option: true}}
+        },
+        actor,
+        _
+      ) do
+    %{title: "New Direct Message", body: "@#{actor.nickname}"}
+  end
+
+  def build_content(notif, actor, object) do
+    %{
+      title: format_title(notif),
+      body: format_body(notif, actor, object)
     }
   end
 

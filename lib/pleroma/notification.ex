@@ -347,7 +347,7 @@ defmodule Pleroma.Notification do
   def skip?(
         :followers,
         activity,
-        %{notification_settings: %{"followers" => false}} = user
+        %{notification_settings: %{followers: false}} = user
       ) do
     actor = activity.data["actor"]
     follower = User.get_cached_by_ap_id(actor)
@@ -357,14 +357,14 @@ defmodule Pleroma.Notification do
   def skip?(
         :non_followers,
         activity,
-        %{notification_settings: %{"non_followers" => false}} = user
+        %{notification_settings: %{non_followers: false}} = user
       ) do
     actor = activity.data["actor"]
     follower = User.get_cached_by_ap_id(actor)
     !User.following?(follower, user)
   end
 
-  def skip?(:follows, activity, %{notification_settings: %{"follows" => false}} = user) do
+  def skip?(:follows, activity, %{notification_settings: %{follows: false}} = user) do
     actor = activity.data["actor"]
     followed = User.get_cached_by_ap_id(actor)
     User.following?(user, followed)
@@ -373,7 +373,7 @@ defmodule Pleroma.Notification do
   def skip?(
         :non_follows,
         activity,
-        %{notification_settings: %{"non_follows" => false}} = user
+        %{notification_settings: %{non_follows: false}} = user
       ) do
     actor = activity.data["actor"]
     followed = User.get_cached_by_ap_id(actor)
