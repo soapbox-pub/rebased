@@ -1,30 +1,33 @@
 # Managing relays
 
-Every command should be ran with a prefix, in case of OTP releases it is `./bin/pleroma_ctl relay` and in case of source installs it's `mix pleroma.relay`.
+{! backend/administration/CLI_tasks/general_cli_task_info.include !}
 
 ## Follow a relay
-```sh
-$PREFIX follow <relay_url>
+
+```sh tab="OTP"
+./bin/pleroma_ctl relay follow <relay_url>
 ```
 
-Example:
-```sh
-$PREFIX follow https://example.org/relay
+```sh tab="From Source"
+mix pleroma.relay follow <relay_url>
 ```
 
 ## Unfollow a remote relay
 
-```sh
-$PREFIX unfollow <relay_url>
+```sh tab="OTP"
+./bin/pleroma_ctl relay unfollow <relay_url>
 ```
 
-Example:
-```sh
-$PREFIX unfollow https://example.org/relay
+```sh tab="From Source"
+mix pleroma.relay unfollow <relay_url>
 ```
 
 ## List relay subscriptions
 
-```sh
-$PREFIX list
+```sh tab="OTP"
+./bin/pleroma_ctl relay list
+```
+
+```sh tab="From Source"
+mix pleroma.relay list
 ```

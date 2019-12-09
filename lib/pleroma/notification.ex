@@ -121,10 +121,28 @@ defmodule Pleroma.Notification do
        when is_list(visibility) do
     if Enum.all?(visibility, &(&1 in @valid_visibilities)) do
       query
+      |> join(:left, [n, a], mutated_activity in Pleroma.Activity,
+        on:
+          fragment("?->>'context'", a.data) ==
+            fragment("?->>'context'", mutated_activity.data) and
+            fragment("(?->>'type' = 'Like' or ?->>'type' = 'Announce')", a.data, a.data) and
+            fragment("?->>'type'", mutated_activity.data) == "Create",
+        as: :mutated_activity
+      )
       |> where(
-        [n, a],
+        [n, a, mutated_activity: mutated_activity],
         not fragment(
-          "activity_visibility(?, ?, ?) = ANY (?)",
+          """
+          CASE WHEN (?->>'type') = 'Like' or (?->>'type') = 'Announce'
+            THEN (activity_visibility(?, ?, ?) = ANY (?))
+            ELSE (activity_visibility(?, ?, ?) = ANY (?)) END
+          """,
+          a.data,
+          a.data,
+          mutated_activity.actor,
+          mutated_activity.recipients,
+          mutated_activity.data,
+          ^visibility,
           a.actor,
           a.recipients,
           a.data,
@@ -139,17 +157,7 @@ defmodule Pleroma.Notification do
 
   defp exclude_visibility(query, %{exclude_visibilities: visibility})
        when visibility in @valid_visibilities do
-    query
-    |> where(
-      [n, a],
-      not fragment(
-        "activity_visibility(?, ?, ?) = (?)",
-        a.actor,
-        a.recipients,
-        a.data,
-        ^visibility
-      )
-    )
+    exclude_visibility(query, [visibility])
   end
 
   defp exclude_visibility(query, %{exclude_visibilities: visibility})
@@ -347,7 +355,7 @@ defmodule Pleroma.Notification do
   def skip?(
         :followers,
         activity,
-        %{notification_settings: %{"followers" => false}} = user
+        %{notification_settings: %{followers: false}} = user
       ) do
     actor = activity.data["actor"]
     follower = User.get_cached_by_ap_id(actor)
@@ -357,14 +365,14 @@ defmodule Pleroma.Notification do
   def skip?(
         :non_followers,
         activity,
-        %{notification_settings: %{"non_followers" => false}} = user
+        %{notification_settings: %{non_followers: false}} = user
       ) do
     actor = activity.data["actor"]
     follower = User.get_cached_by_ap_id(actor)
     !User.following?(follower, user)
   end
 
-  def skip?(:follows, activity, %{notification_settings: %{"follows" => false}} = user) do
+  def skip?(:follows, activity, %{notification_settings: %{follows: false}} = user) do
     actor = activity.data["actor"]
     followed = User.get_cached_by_ap_id(actor)
     User.following?(user, followed)
@@ -373,7 +381,7 @@ defmodule Pleroma.Notification do
   def skip?(
         :non_follows,
         activity,
-        %{notification_settings: %{"non_follows" => false}} = user
+        %{notification_settings: %{non_follows: false}} = user
       ) do
     actor = activity.data["actor"]
     followed = User.get_cached_by_ap_id(actor)

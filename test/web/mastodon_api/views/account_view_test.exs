@@ -92,13 +92,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   test "Represent the user account for the account owner" do
     user = insert(:user)
 
-    notification_settings = %{
-      "followers" => true,
-      "follows" => true,
-      "non_follows" => true,
-      "non_followers" => true
-    }
-
+    notification_settings = %Pleroma.User.NotificationSetting{}
     privacy = user.default_scope
 
     assert %{

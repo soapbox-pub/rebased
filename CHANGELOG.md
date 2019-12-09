@@ -48,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix task to list all users (`mix pleroma.user list`)
 - Support for `X-Forwarded-For` and similar HTTP headers which used by reverse proxies to pass a real user IP address to the backend. Must not be enabled unless your instance is behind at least one reverse proxy (such as Nginx, Apache HTTPD or Varnish Cache).
 - MRF: New module which handles incoming posts based on their age. By default, all incoming posts that are older than 2 days will be unlisted and not shown to their followers.
+- User notification settings: Add `privacy_option` option.
 <details>
   <summary>API Changes</summary>
 
@@ -82,6 +83,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Report emails now include functional links to profiles of remote user accounts
 - Not being able to log in to some third-party apps when logged in to MastoFE
 - MRF: `Delete` activities being exempt from MRF policies
+- OTP releases: Not being able to configure OAuth expired token cleanup interval
+- OTP releases: Not being able to configure HTML sanitization policy
 <details>
   <summary>API Changes</summary>
 

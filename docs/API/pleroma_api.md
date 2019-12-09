@@ -302,6 +302,7 @@ See [Admin-API](admin_api.md)
     * `follows`: BOOLEAN field, receives notifications from people the user follows
     * `remote`: BOOLEAN field, receives notifications from people on remote instances
     * `local`: BOOLEAN field, receives notifications from people on the local instance
+    * `privacy_option`: BOOLEAN field. When set to true, it removes the contents of a message from the push notification.
 * Response: JSON. Returns `{"status": "success"}` if the update was successful, otherwise returns `{"error": "error_msg"}`
 
 ## `/api/pleroma/healthcheck`
