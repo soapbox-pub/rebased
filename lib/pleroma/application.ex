@@ -5,6 +5,7 @@
 defmodule Pleroma.Application do
   import Cachex.Spec
   use Application
+  require Logger
 
   @name Mix.Project.config()[:name]
   @version Mix.Project.config()[:version]
@@ -81,7 +82,7 @@ defmodule Pleroma.Application do
         {:ok, modules, _warnings} ->
           if @env != :test do
             Enum.each(modules, fn mod ->
-              IO.puts("Custom module loaded: #{inspect(mod)}")
+              Logger.info("Custom module loaded: #{inspect(mod)}")
             end)
           end
 
