@@ -73,9 +73,7 @@ defmodule Pleroma.Application do
 
     if dir && File.exists?(dir) do
       dir
-      |> File.ls!()
-      |> Enum.map(&Path.join(dir, &1))
-      |> Kernel.ParallelCompiler.compile()
+      |> Pleroma.Utils.compile_dir()
       |> case do
         {:error, _errors, _warnings} ->
           raise "Invalid custom modules"
