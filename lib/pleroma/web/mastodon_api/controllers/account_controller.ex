@@ -249,7 +249,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   @doc "GET /api/v1/accounts/:id/statuses"
   def statuses(%{assigns: %{user: reading_user}} = conn, params) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user) do
-      params = Map.put(params, "tag", params["tagged"])
+      params =
+        params
+        |> Map.put("tag", params["tagged"])
+        |> Map.delete("godmode")
+
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 
       conn
@@ -324,7 +328,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   def mute(%{assigns: %{user: muter, account: muted}} = conn, params) do
     notifications? = params |> Map.get("notifications", true) |> truthy_param?()
 
-    with {:ok, muter} <- User.mute(muter, muted, notifications?) do
+    with {:ok, _user_relationships} <- User.mute(muter, muted, notifications?) do
       render(conn, "relationship.json", user: muter, target: muted)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
@@ -333,7 +337,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/unmute"
   def unmute(%{assigns: %{user: muter, account: muted}} = conn, _params) do
-    with {:ok, muter} <- User.unmute(muter, muted) do
+    with {:ok, _user_relationships} <- User.unmute(muter, muted) do
       render(conn, "relationship.json", user: muter, target: muted)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
@@ -342,7 +346,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/block"
   def block(%{assigns: %{user: blocker, account: blocked}} = conn, _params) do
-    with {:ok, blocker} <- User.block(blocker, blocked),
+    with {:ok, _user_block} <- User.block(blocker, blocked),
          {:ok, _activity} <- ActivityPub.block(blocker, blocked) do
       render(conn, "relationship.json", user: blocker, target: blocked)
     else
@@ -352,7 +356,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/unblock"
   def unblock(%{assigns: %{user: blocker, account: blocked}} = conn, _params) do
-    with {:ok, blocker} <- User.unblock(blocker, blocked),
+    with {:ok, _user_block} <- User.unblock(blocker, blocked),
          {:ok, _activity} <- ActivityPub.unblock(blocker, blocked) do
       render(conn, "relationship.json", user: blocker, target: blocked)
     else
@@ -374,12 +378,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "GET /api/v1/mutes"
   def mutes(%{assigns: %{user: user}} = conn, _) do
-    render(conn, "index.json", users: User.muted_users(user), for: user, as: :user)
+    users = User.muted_users(user, _restrict_deactivated = true)
+    render(conn, "index.json", users: users, for: user, as: :user)
   end
 
   @doc "GET /api/v1/blocks"
   def blocks(%{assigns: %{user: user}} = conn, _) do
-    render(conn, "index.json", users: User.blocked_users(user), for: user, as: :user)
+    users = User.blocked_users(user, _restrict_deactivated = true)
+    render(conn, "index.json", users: users, for: user, as: :user)
   end
 
   @doc "GET /api/v1/endorsements"

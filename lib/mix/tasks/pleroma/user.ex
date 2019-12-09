@@ -373,9 +373,9 @@ defmodule Mix.Tasks.Pleroma.User do
       users
       |> Enum.each(fn user ->
         shell_info(
-          "#{user.nickname} moderator: #{user.info.is_moderator}, admin: #{user.info.is_admin}, locked: #{
-            user.info.locked
-          }, deactivated: #{user.info.deactivated}"
+          "#{user.nickname} moderator: #{user.is_moderator}, admin: #{user.is_admin}, locked: #{
+            user.locked
+          }, deactivated: #{user.deactivated}"
         )
       end)
     end)

@@ -10,6 +10,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Object
   alias Pleroma.ThreadMute
   alias Pleroma.User
+  alias Pleroma.UserRelationship
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -32,7 +33,7 @@ defmodule Pleroma.Web.CommonAPI do
   def unfollow(follower, unfollowed) do
     with {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
          {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed),
-         {:ok, _unfollowed} <- User.unsubscribe(follower, unfollowed) do
+         {:ok, _subscription} <- User.unsubscribe(follower, unfollowed) do
       {:ok, follower}
     end
   end
@@ -420,15 +421,11 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp set_visibility(activity, _), do: {:ok, activity}
 
-  def hide_reblogs(user, %{ap_id: ap_id} = _muted) do
-    if ap_id not in user.muted_reblogs do
-      User.add_reblog_mute(user, ap_id)
-    end
+  def hide_reblogs(%User{} = user, %User{} = target) do
+    UserRelationship.create_reblog_mute(user, target)
   end
 
-  def show_reblogs(user, %{ap_id: ap_id} = _muted) do
-    if ap_id in user.muted_reblogs do
-      User.remove_reblog_mute(user, ap_id)
-    end
+  def show_reblogs(%User{} = user, %User{} = target) do
+    UserRelationship.delete_reblog_mute(user, target)
   end
 end

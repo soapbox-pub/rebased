@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ChatChannel do
   def handle_in("new_msg", %{"text" => text}, %{assigns: %{user_name: user_name}} = socket) do
     text = String.trim(text)
 
-    if String.length(text) > 0 do
+    if String.length(text) in 1..Pleroma.Config.get([:instance, :chat_limit]) do
       author = User.get_cached_by_nickname(user_name)
       author = Pleroma.Web.MastodonAPI.AccountView.render("show.json", user: author)
       message = ChatChannelState.add_message(%{text: text, author: author})
