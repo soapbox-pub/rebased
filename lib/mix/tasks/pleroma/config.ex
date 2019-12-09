@@ -52,7 +52,9 @@ defmodule Mix.Tasks.Pleroma.Config do
       |> Enum.each(fn config ->
         IO.write(
           file,
-          "config :#{config.group}, #{config.key}, #{inspect(Config.from_binary(config.value))}\r\n\r\n"
+          "config :#{config.group}, #{config.key}, #{
+            inspect(Config.from_binary(config.value), limit: :infinity)
+          }\r\n\r\n"
         )
 
         if delete? do
