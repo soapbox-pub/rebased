@@ -103,6 +103,7 @@ The `type` value is `move`. Has an additional field:
 Accepts additional parameters:
 
 - `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
+- `with_move`: boolean, when set to `true` will include Move notifications. `false` by default.
 
 ## POST `/api/v1/statuses`
 
