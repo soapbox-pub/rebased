@@ -82,6 +82,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Report emails now include functional links to profiles of remote user accounts
 - Not being able to log in to some third-party apps when logged in to MastoFE
 - MRF: `Delete` activities being exempt from MRF policies
+- OTP releases: Not being able to configure HTML sanitization policy
 <details>
   <summary>API Changes</summary>
 
