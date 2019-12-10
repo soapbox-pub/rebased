@@ -915,9 +915,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_blocked(query, %{"blocking_user" => %User{} = user}) do
     blocks = user.blocks || []
     domain_blocks = user.domain_blocks || []
+
     following_ap_ids =
-        user
-        |> User.get_friends_ap_ids()
+      user
+      |> User.get_friends_ap_ids()
 
     query =
       if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
@@ -933,8 +934,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.data,
           ^blocks
         ),
-      where: fragment("(not (split_part(?, '/', 3) = ANY(?))) or ? = ANY(?)", activity.actor, ^domain_blocks, activity.actor, ^following_ap_ids),
-      where: fragment("(not (split_part(?->>'actor', '/', 3) = ANY(?))) or (?->>'actor') = ANY(?)", o.data, ^domain_blocks, o.data, ^following_ap_ids)
+      where:
+        fragment(
+          "(not (split_part(?, '/', 3) = ANY(?))) or ? = ANY(?)",
+          activity.actor,
+          ^domain_blocks,
+          activity.actor,
+          ^following_ap_ids
+        ),
+      where:
+        fragment(
+          "(not (split_part(?->>'actor', '/', 3) = ANY(?))) or (?->>'actor') = ANY(?)",
+          o.data,
+          ^domain_blocks,
+          o.data,
+          ^following_ap_ids
+        )
     )
   end
 
