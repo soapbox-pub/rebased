@@ -625,7 +625,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     assert activity in activities
 
-    # And check that if the guy we DO follow boosts someone else from their domain, that should be hidden
+    # And check that if the guy we DO follow boosts someone else from their domain,
+    # that should be hidden
     another_user = insert(:user, %{ap_id: "https://#{domain}/@meanie2"})
     bad_note = insert(:note, %{data: %{"actor" => another_user.ap_id}})
     bad_activity = insert(:note_activity, %{note: bad_note})
