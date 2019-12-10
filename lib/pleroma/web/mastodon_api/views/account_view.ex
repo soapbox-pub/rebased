@@ -86,7 +86,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         0
       end
 
-    bot = (user.source_data["type"] || "Person") in ["Application", "Service"]
+    bot = user.actor_type in ["Application", "Service"]
 
     emojis =
       (user.source_data["tag"] || [])
@@ -137,7 +137,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
-          discoverable: user.discoverable
+          discoverable: user.discoverable,
+          actor_type: user.actor_type
         }
       },
 

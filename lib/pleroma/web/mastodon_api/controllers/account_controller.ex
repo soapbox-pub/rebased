@@ -188,6 +188,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         {:ok, Map.merge(user.pleroma_settings_store, value)}
       end)
       |> add_if_present(params, "default_scope", :default_scope)
+      |> add_if_present(params, "actor_type", :actor_type)
 
     emojis_text = (user_params["display_name"] || "") <> (user_params["note"] || "")
 
