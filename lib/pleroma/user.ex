@@ -1143,7 +1143,7 @@ defmodule Pleroma.User do
   def blocks?(nil, _), do: false
 
   def blocks?(%User{} = user, %User{} = target) do
-    blocks_ap_id?(user, target) ||
+    blocks_user?(user, target) ||
       (!User.following?(user, target) && blocks_domain?(user, target))
   end
 
