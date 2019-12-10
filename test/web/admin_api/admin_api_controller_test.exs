@@ -25,6 +25,60 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     :ok
   end
 
+  clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
+    Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], false)
+  end
+
+  describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
+    clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
+      Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], true)
+    end
+
+    test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope" do
+      user = insert(:user)
+      admin = insert(:user, is_admin: true)
+      url = "/api/pleroma/admin/users/#{user.nickname}"
+
+      good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
+      good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
+      good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
+
+      bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
+      bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
+      bad_token3 = nil
+
+      for good_token <- [good_token1, good_token2, good_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, admin)
+          |> assign(:token, good_token)
+          |> get(url)
+
+        assert json_response(conn, 200)
+      end
+
+      for good_token <- [good_token1, good_token2, good_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, nil)
+          |> assign(:token, good_token)
+          |> get(url)
+
+        assert json_response(conn, :forbidden)
+      end
+
+      for bad_token <- [bad_token1, bad_token2, bad_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, admin)
+          |> assign(:token, bad_token)
+          |> get(url)
+
+        assert json_response(conn, :forbidden)
+      end
+    end
+  end
+
   describe "DELETE /api/pleroma/admin/users" do
     test "single user" do
       admin = insert(:user, is_admin: true)
@@ -98,7 +152,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert ["lain", "lain2"] -- Enum.map(log_entry.data["subjects"], & &1["nickname"]) == []
     end
 
-    test "Cannot create user with exisiting email" do
+    test "Cannot create user with existing email" do
       admin = insert(:user, is_admin: true)
       user = insert(:user)
 
@@ -129,7 +183,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              ]
     end
 
-    test "Cannot create user with exisiting nickname" do
+    test "Cannot create user with existing nickname" do
       admin = insert(:user, is_admin: true)
       user = insert(:user)
 
@@ -1560,7 +1614,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> assign(:user, user)
         |> get("/api/pleroma/admin/reports")
 
-      assert json_response(conn, :forbidden) == %{"error" => "User is not admin."}
+      assert json_response(conn, :forbidden) ==
+               %{"error" => "User is not an admin or OAuth admin scope is not granted."}
     end
 
     test "returns 403 when requested by anonymous" do

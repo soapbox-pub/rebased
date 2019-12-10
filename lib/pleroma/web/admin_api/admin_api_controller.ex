@@ -30,13 +30,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:accounts"]}
+    %{scopes: ["read:accounts"], admin: true}
     when action in [:list_users, :user_show, :right_get, :invites]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:accounts"]}
+    %{scopes: ["write:accounts"], admin: true}
     when action in [
            :get_invite_token,
            :revoke_invite,
@@ -58,35 +58,37 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:reports"]} when action in [:list_reports, :report_show]
+    %{scopes: ["read:reports"], admin: true}
+    when action in [:list_reports, :report_show]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:reports"]}
+    %{scopes: ["write:reports"], admin: true}
     when action in [:report_update_state, :report_respond]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:statuses"]} when action == :list_user_statuses
+    %{scopes: ["read:statuses"], admin: true}
+    when action == :list_user_statuses
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:statuses"]}
+    %{scopes: ["write:statuses"], admin: true}
     when action in [:status_update, :status_delete]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read"]}
+    %{scopes: ["read"], admin: true}
     when action in [:config_show, :migrate_to_db, :migrate_from_db, :list_log]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write"]}
+    %{scopes: ["write"], admin: true}
     when action in [:relay_follow, :relay_unfollow, :config_update]
   )
 

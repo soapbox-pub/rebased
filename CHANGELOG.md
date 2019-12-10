@@ -51,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF: New module which handles incoming posts based on their age. By default, all incoming posts that are older than 2 days will be unlisted and not shown to their followers.
 - User notification settings: Add `privacy_option` option.
 - User settings: Add _This account is a_ option.
+- OAuth: admin scopes support (relevant setting: `[:auth, :enforce_oauth_admin_scope_usage]`).
 <details>
   <summary>API Changes</summary>
 
