@@ -90,7 +90,23 @@ config :pleroma, :config_description, [
               %{
                 key: :adapter,
                 type: :keyword,
-                description: "Adapter specific options"
+                description: "Adapter specific options",
+                children: [
+                  %{
+                    key: :ssl_options,
+                    type: :keyword,
+                    label: "SSL Options",
+                    description: "SSL options for HTTP adapter",
+                    children: [
+                      %{
+                        key: :versions,
+                        type: {:list, :atom},
+                        descriptions: "List of TLS version to use",
+                        suggestions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+                      }
+                    ]
+                  }
+                ]
               },
               %{
                 key: :proxy_url,
@@ -1463,7 +1479,23 @@ config :pleroma, :config_description, [
               %{
                 key: :adapter,
                 type: :keyword,
-                description: "Adapter specific options"
+                description: "Adapter specific options",
+                children: [
+                  %{
+                    key: :ssl_options,
+                    type: :keyword,
+                    label: "SSL Options",
+                    description: "SSL options for HTTP adapter",
+                    children: [
+                      %{
+                        key: :versions,
+                        type: {:list, :atom},
+                        descriptions: "List of TLS version to use",
+                        suggestions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+                      }
+                    ]
+                  }
+                ]
               },
               %{
                 key: :proxy_url,
@@ -2760,7 +2792,23 @@ config :pleroma, :config_description, [
         key: :adapter,
         type: :keyword,
         description: "Adapter specific options",
-        suggestions: []
+        suggestions: [],
+        children: [
+          %{
+            key: :ssl_options,
+            type: :keyword,
+            label: "SSL Options",
+            description: "SSL options for HTTP adapter",
+            children: [
+              %{
+                key: :versions,
+                type: {:list, :atom},
+                descriptions: "List of TLS version to use",
+                suggestions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+              }
+            ]
+          }
+        ]
       }
     ]
   },
