@@ -1,0 +1,5 @@
+Every command should be ran as the `pleroma` user from it's home directory. For example if you are superuser, you would have to wrap the command in `su pleroma -s $SHELL -lc "$COMMAND"`.
+
+??? note "From source note about `MIX_ENV`"
+
+     The `mix` command should be prefixed with the name of environment your Pleroma server is running in, usually it's `MIX_ENV=prod`

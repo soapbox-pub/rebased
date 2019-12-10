@@ -1,11 +1,16 @@
 # Managing instance configuration
 
-Every command should be ran with a prefix, in case of OTP releases it is `./bin/pleroma_ctl instance` and in case of source installs it's `mix pleroma.instance`.
+{! backend/administration/CLI_tasks/general_cli_task_info.include !}
 
 ## Generate a new configuration file
-```sh
-$PREFIX gen [<options>]
+```sh tab="OTP"
+ ./bin/pleroma_ctl instance gen [<options>]
 ```
+
+```sh tab="From Source"
+mix pleroma.instance gen [<options>]
+```
+
 
 If any of the options are left unspecified, you will be prompted interactively.
 

@@ -636,47 +636,4 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       assert updated_object.data["announcement_count"] == 1
     end
   end
-
-  describe "get_reports_grouped_by_status/1" do
-    setup do
-      [reporter, target_user] = insert_pair(:user)
-      first_status = insert(:note_activity, user: target_user)
-      second_status = insert(:note_activity, user: target_user)
-
-      CommonAPI.report(reporter, %{
-        "account_id" => target_user.id,
-        "comment" => "I feel offended",
-        "status_ids" => [first_status.id]
-      })
-
-      CommonAPI.report(reporter, %{
-        "account_id" => target_user.id,
-        "comment" => "I feel offended2",
-        "status_ids" => [second_status.id]
-      })
-
-      data = [%{activity: first_status.data["id"]}, %{activity: second_status.data["id"]}]
-
-      {:ok,
-       %{
-         first_status: first_status,
-         second_status: second_status,
-         data: data
-       }}
-    end
-
-    test "works for deprecated reports format", %{
-      first_status: first_status,
-      second_status: second_status,
-      data: data
-    } do
-      groups = Utils.get_reports_grouped_by_status(data).groups
-
-      first_group = Enum.find(groups, &(&1.status.id == first_status.data["id"]))
-      second_group = Enum.find(groups, &(&1.status.id == second_status.data["id"]))
-
-      assert first_group.status.id == first_status.data["id"]
-      assert second_group.status.id == second_status.data["id"]
-    end
-  end
 end

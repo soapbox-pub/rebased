@@ -252,7 +252,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
       assert User.get_cached_by_id(blocker.id).unread_conversation_count == 4
 
-      {:ok, blocker} = User.block(blocker, blocked)
+      {:ok, _user_relationship} = User.block(blocker, blocked)
 
       # The conversations with the blocked user are marked as read
       assert [%{read: true}, %{read: true}, %{read: true}, %{read: false}] =
@@ -274,7 +274,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
       blocked = insert(:user)
       third_user = insert(:user)
 
-      {:ok, blocker} = User.block(blocker, blocked)
+      {:ok, _user_relationship} = User.block(blocker, blocked)
 
       # When the blocked user is the author
       {:ok, _direct1} =
@@ -311,7 +311,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
           "visibility" => "direct"
         })
 
-      {:ok, blocker} = User.block(blocker, blocked)
+      {:ok, _user_relationship} = User.block(blocker, blocked)
       assert [%{read: true}] = Participation.for_user(blocker)
       assert User.get_cached_by_id(blocker.id).unread_conversation_count == 0
 

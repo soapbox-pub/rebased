@@ -86,7 +86,7 @@ defmodule Pleroma.Activity.Search do
          {:ok, object} <- Fetcher.fetch_object_from_id(search_query),
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user) do
-      activities ++ [activity]
+      [activity | activities]
     else
       _ -> activities
     end

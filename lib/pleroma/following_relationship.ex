@@ -121,8 +121,12 @@ defmodule Pleroma.FollowingRelationship do
       Pleroma.Web.CommonAPI.follow(following_relationship.follower, target)
     end)
     |> case do
-      [] -> :ok
-      _ -> move_following(origin, target)
+      [] ->
+        User.update_follower_count(origin)
+        :ok
+
+      _ ->
+        move_following(origin, target)
     end
   end
 end

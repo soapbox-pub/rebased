@@ -31,7 +31,8 @@ defmodule Pleroma.Factory do
       nickname: sequence(:nickname, &"nick#{&1}"),
       password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
       bio: sequence(:bio, &"Tester Number #{&1}"),
-      last_digest_emailed_at: NaiveDateTime.utc_now()
+      last_digest_emailed_at: NaiveDateTime.utc_now(),
+      notification_settings: %Pleroma.User.NotificationSetting{}
     }
 
     %{
@@ -39,6 +40,18 @@ defmodule Pleroma.Factory do
       | ap_id: User.ap_id(user),
         follower_address: User.ap_followers(user),
         following_address: User.ap_following(user)
+    }
+  end
+
+  def user_relationship_factory(attrs \\ %{}) do
+    source = attrs[:source] || insert(:user)
+    target = attrs[:target] || insert(:user)
+    relationship_type = attrs[:relationship_type] || :block
+
+    %Pleroma.UserRelationship{
+      source_id: source.id,
+      target_id: target.id,
+      relationship_type: relationship_type
     }
   end
 

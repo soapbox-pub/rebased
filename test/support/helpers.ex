@@ -75,6 +75,23 @@ defmodule Pleroma.Tests.Helpers do
         |> Poison.decode!()
       end
 
+      def stringify_keys(nil), do: nil
+
+      def stringify_keys(key) when key in [true, false], do: key
+      def stringify_keys(key) when is_atom(key), do: Atom.to_string(key)
+
+      def stringify_keys(map) when is_map(map) do
+        map
+        |> Enum.map(fn {k, v} -> {stringify_keys(k), stringify_keys(v)} end)
+        |> Enum.into(%{})
+      end
+
+      def stringify_keys([head | rest] = list) when is_list(list) do
+        [stringify_keys(head) | stringify_keys(rest)]
+      end
+
+      def stringify_keys(key), do: key
+
       defmacro guards_config(config_path) do
         quote do
           initial_setting = Pleroma.Config.get(config_path)
