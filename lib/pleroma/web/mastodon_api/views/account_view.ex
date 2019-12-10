@@ -50,8 +50,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       id: to_string(target.id),
       following: User.following?(user, target),
       followed_by: User.following?(target, user),
-      blocking: User.blocks_ap_id?(user, target),
-      blocked_by: User.blocks_ap_id?(target, user),
+      blocking: User.blocks_user?(user, target),
+      blocked_by: User.blocks_user?(target, user),
       muting: User.mutes?(user, target),
       muting_notifications: User.muted_notifications?(user, target),
       subscribing: User.subscribed_to?(user, target),
@@ -86,7 +86,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         0
       end
 
-    bot = (user.source_data["type"] || "Person") in ["Application", "Service"]
+    bot = user.actor_type in ["Application", "Service"]
 
     emojis =
       (user.source_data["tag"] || [])
@@ -137,7 +137,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
-          discoverable: user.discoverable
+          discoverable: user.discoverable,
+          actor_type: user.actor_type
         }
       },
 
@@ -162,6 +163,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_chat_token(user, opts[:for], opts)
     |> maybe_put_activation_status(user, opts[:for])
     |> maybe_put_follow_requests_count(user, opts[:for])
+    |> maybe_put_allow_following_move(user, opts[:for])
     |> maybe_put_unread_conversation_count(user, opts[:for])
   end
 
@@ -237,6 +239,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_notification_settings(data, _, _), do: data
+
+  defp maybe_put_allow_following_move(data, %User{id: user_id} = user, %User{id: user_id}) do
+    Kernel.put_in(data, [:pleroma, :allow_following_move], user.allow_following_move)
+  end
+
+  defp maybe_put_allow_following_move(data, _, _), do: data
 
   defp maybe_put_activation_status(data, user, %User{is_admin: true}) do
     Kernel.put_in(data, [:pleroma, :deactivated], user.deactivated)

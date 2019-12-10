@@ -1,13 +1,24 @@
 # Managing digest emails
-Every command should be ran with a prefix, in case of OTP releases it is `./bin/pleroma_ctl digest` and in case of source installs it's `mix pleroma.digest`.
+
+{! backend/administration/CLI_tasks/general_cli_task_info.include !}
 
 ## Send digest email since given date (user registration date by default) ignoring user activity status.
 
-```sh
-$PREFIX test <nickname> [<since_date>]
+```sh tab="OTP"
+ ./bin/pleroma_ctl digest test <nickname> [<since_date>]
 ```
 
-Example: 
-```sh
-$PREFIX test donaldtheduck 2019-05-20
+```sh tab="From Source"
+mix pleroma.digest test <nickname> [<since_date>]
 ```
+
+
+Example: 
+```sh tab="OTP"
+ ./bin/pleroma_ctl digest test donaldtheduck 2019-05-20
+```
+
+```sh tab="From Source"
+mix pleroma.digest test donaldtheduck 2019-05-20
+```
+

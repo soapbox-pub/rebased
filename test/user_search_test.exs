@@ -174,6 +174,7 @@ defmodule Pleroma.UserSearchTest do
         |> Map.put(:search_rank, nil)
         |> Map.put(:search_type, nil)
         |> Map.put(:last_digest_emailed_at, nil)
+        |> Map.put(:notification_settings, nil)
 
       assert user == expected
     end

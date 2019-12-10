@@ -222,7 +222,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:user_active, true} <- {:user_active, !user.deactivated},
          {:password_reset_pending, false} <-
            {:password_reset_pending, user.password_reset_pending},
-         {:ok, scopes} <- validate_scopes(app, params),
+         {:ok, scopes} <- validate_scopes(app, params, user),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:ok, token} <- Token.exchange_token(app, auth) do
       json(conn, Token.Response.build(user, token))
@@ -471,7 +471,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
            {:get_user, (user && {:ok, user}) || Authenticator.get_user(conn)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
-         {:ok, scopes} <- validate_scopes(app, auth_attrs),
+         {:ok, scopes} <- validate_scopes(app, auth_attrs, user),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)} do
       Authorization.create_authorization(app, user, scopes)
     end
@@ -487,12 +487,12 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   defp put_session_registration_id(%Plug.Conn{} = conn, registration_id),
     do: put_session(conn, :registration_id, registration_id)
 
-  @spec validate_scopes(App.t(), map()) ::
+  @spec validate_scopes(App.t(), map(), User.t()) ::
           {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}
-  defp validate_scopes(app, params) do
+  defp validate_scopes(%App{} = app, params, %User{} = user) do
     params
     |> Scopes.fetch_scopes(app.scopes)
-    |> Scopes.validate(app.scopes)
+    |> Scopes.validate(app.scopes, user)
   end
 
   def default_redirect_uri(%App{} = app) do

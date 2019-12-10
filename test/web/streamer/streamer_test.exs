@@ -15,7 +15,7 @@ defmodule Pleroma.Web.StreamerTest do
   alias Pleroma.Web.Streamer.StreamerSocket
   alias Pleroma.Web.Streamer.Worker
 
-  @moduletag needs_streamer: true
+  @moduletag needs_streamer: true, capture_log: true
   clear_config_all([:instance, :skip_thread_containment])
 
   describe "user streams" do
@@ -59,7 +59,7 @@ defmodule Pleroma.Web.StreamerTest do
       user: user
     } do
       blocked = insert(:user)
-      {:ok, user} = User.block(user, blocked)
+      {:ok, _user_relationship} = User.block(user, blocked)
 
       task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
 
@@ -259,7 +259,7 @@ defmodule Pleroma.Web.StreamerTest do
     test "it doesn't send messages involving blocked users" do
       user = insert(:user)
       blocked_user = insert(:user)
-      {:ok, user} = User.block(user, blocked_user)
+      {:ok, _user_relationship} = User.block(user, blocked_user)
 
       task =
         Task.async(fn ->
@@ -301,7 +301,7 @@ defmodule Pleroma.Web.StreamerTest do
         "public" => [fake_socket]
       }
 
-      {:ok, blocker} = User.block(blocker, blockee)
+      {:ok, _user_relationship} = User.block(blocker, blockee)
 
       {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey! @#{blockee.nickname}"})
 

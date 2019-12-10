@@ -4,8 +4,11 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   alias Pleroma.Activity
   alias Pleroma.Builders.ActivityBuilder
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -484,7 +487,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activity_five = insert(:note_activity)
       user = insert(:user)
 
-      {:ok, user} = User.block(user, %{ap_id: activity_five.data["actor"]})
+      {:ok, _user_relationship} = User.block(user, %{ap_id: activity_five.data["actor"]})
 
       activities = ActivityPub.fetch_activities_for_context("2hu", %{"blocking_user" => user})
       assert activities == [activity_two, activity]
@@ -497,7 +500,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activity_three = insert(:note_activity)
     user = insert(:user)
     booster = insert(:user)
-    {:ok, user} = User.block(user, %{ap_id: activity_one.data["actor"]})
+    {:ok, _user_relationship} = User.block(user, %{ap_id: activity_one.data["actor"]})
 
     activities =
       ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
@@ -506,7 +509,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_three)
     refute Enum.member?(activities, activity_one)
 
-    {:ok, user} = User.unblock(user, %{ap_id: activity_one.data["actor"]})
+    {:ok, _user_block} = User.unblock(user, %{ap_id: activity_one.data["actor"]})
 
     activities =
       ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
@@ -515,7 +518,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_three)
     assert Enum.member?(activities, activity_one)
 
-    {:ok, user} = User.block(user, %{ap_id: activity_three.data["actor"]})
+    {:ok, _user_relationship} = User.block(user, %{ap_id: activity_three.data["actor"]})
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Activity.get_by_id(activity_three.id)
@@ -542,7 +545,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     blockee = insert(:user)
     friend = insert(:user)
 
-    {:ok, blocker} = User.block(blocker, blockee)
+    {:ok, _user_relationship} = User.block(blocker, blockee)
 
     {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey!"})
 
@@ -565,7 +568,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     blockee = insert(:user)
     friend = insert(:user)
 
-    {:ok, blocker} = User.block(blocker, blockee)
+    {:ok, _user_relationship} = User.block(blocker, blockee)
 
     {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey!"})
 
@@ -644,7 +647,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activity_three = insert(:note_activity)
     user = insert(:user)
     booster = insert(:user)
-    {:ok, user} = User.mute(user, %User{ap_id: activity_one.data["actor"]})
+
+    activity_one_actor = User.get_by_ap_id(activity_one.data["actor"])
+    {:ok, _user_relationships} = User.mute(user, activity_one_actor)
 
     activities =
       ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
@@ -665,7 +670,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_three)
     assert Enum.member?(activities, activity_one)
 
-    {:ok, user} = User.unmute(user, %User{ap_id: activity_one.data["actor"]})
+    {:ok, _user_mute} = User.unmute(user, activity_one_actor)
 
     activities =
       ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
@@ -674,7 +679,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_three)
     assert Enum.member?(activities, activity_one)
 
-    {:ok, user} = User.mute(user, %User{ap_id: activity_three.data["actor"]})
+    activity_three_actor = User.get_by_ap_id(activity_three.data["actor"])
+    {:ok, _user_relationships} = User.mute(user, activity_three_actor)
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Activity.get_by_id(activity_three.id)
@@ -821,7 +827,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activity = insert(:note_activity)
       user = insert(:user)
       booster = insert(:user)
-      {:ok, user} = CommonAPI.hide_reblogs(user, booster)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, booster)
 
       {:ok, activity, _} = CommonAPI.repeat(activity.id, booster)
 
@@ -834,8 +840,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activity = insert(:note_activity)
       user = insert(:user)
       booster = insert(:user)
-      {:ok, user} = CommonAPI.hide_reblogs(user, booster)
-      {:ok, user} = CommonAPI.show_reblogs(user, booster)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, booster)
+      {:ok, _reblog_mute} = CommonAPI.show_reblogs(user, booster)
 
       {:ok, activity, _} = CommonAPI.repeat(activity.id, booster)
 
@@ -1286,6 +1292,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 0
     end
+
+    test "it passes delete activity through MRF before deleting the object" do
+      rewrite_policy = Pleroma.Config.get([:instance, :rewrite_policy])
+      Pleroma.Config.put([:instance, :rewrite_policy], Pleroma.Web.ActivityPub.MRF.DropPolicy)
+
+      on_exit(fn -> Pleroma.Config.put([:instance, :rewrite_policy], rewrite_policy) end)
+
+      note = insert(:note_activity)
+      object = Object.normalize(note)
+
+      {:error, {:reject, _}} = ActivityPub.delete(object)
+
+      assert Activity.get_by_id(note.id)
+      assert Repo.get(Object, object.id).data["type"] == object.data["type"]
+    end
   end
 
   describe "timeline post-processing" do
@@ -1586,6 +1607,81 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
       assert follow_info.hide_followers == false
       assert follow_info.hide_follows == true
+    end
+
+    test "detects hidden follows/followers for friendica" do
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:8080/followers/fuser3",
+          following_address: "http://localhost:8080/following/fuser3"
+        )
+
+      {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
+      assert follow_info.hide_followers == true
+      assert follow_info.follower_count == 296
+      assert follow_info.following_count == 32
+      assert follow_info.hide_follows == true
+    end
+  end
+
+  describe "Move activity" do
+    test "create" do
+      %{ap_id: old_ap_id} = old_user = insert(:user)
+      %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
+      follower = insert(:user)
+      follower_move_opted_out = insert(:user, allow_following_move: false)
+
+      User.follow(follower, old_user)
+      User.follow(follower_move_opted_out, old_user)
+
+      assert User.following?(follower, old_user)
+      assert User.following?(follower_move_opted_out, old_user)
+
+      assert {:ok, activity} = ActivityPub.move(old_user, new_user)
+
+      assert %Activity{
+               actor: ^old_ap_id,
+               data: %{
+                 "actor" => ^old_ap_id,
+                 "object" => ^old_ap_id,
+                 "target" => ^new_ap_id,
+                 "type" => "Move"
+               },
+               local: true
+             } = activity
+
+      params = %{
+        "op" => "move_following",
+        "origin_id" => old_user.id,
+        "target_id" => new_user.id
+      }
+
+      assert_enqueued(worker: Pleroma.Workers.BackgroundWorker, args: params)
+
+      Pleroma.Workers.BackgroundWorker.perform(params, nil)
+
+      refute User.following?(follower, old_user)
+      assert User.following?(follower, new_user)
+
+      assert User.following?(follower_move_opted_out, old_user)
+      refute User.following?(follower_move_opted_out, new_user)
+
+      activity = %Activity{activity | object: nil}
+
+      assert [%Notification{activity: ^activity}] =
+               Notification.for_user(follower, %{with_move: true})
+
+      assert [%Notification{activity: ^activity}] =
+               Notification.for_user(follower_move_opted_out, %{with_move: true})
+    end
+
+    test "old user must be in the new user's `also_known_as` list" do
+      old_user = insert(:user)
+      new_user = insert(:user)
+
+      assert {:error, "Target account must have the origin in `alsoKnownAs`"} =
+               ActivityPub.move(old_user, new_user)
     end
   end
 end

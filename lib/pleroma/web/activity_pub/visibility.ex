@@ -14,6 +14,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   @spec is_public?(Object.t() | Activity.t() | map()) :: boolean()
   def is_public?(%Object{data: %{"type" => "Tombstone"}}), do: false
   def is_public?(%Object{data: data}), do: is_public?(data)
+  def is_public?(%Activity{data: %{"type" => "Move"}}), do: true
   def is_public?(%Activity{data: data}), do: is_public?(data)
   def is_public?(%{"directMessage" => true}), do: false
   def is_public?(data), do: Utils.label_in_message?(Pleroma.Constants.as_public(), data)

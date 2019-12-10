@@ -13,7 +13,7 @@ defmodule Pleroma.Workers.WebPusherWorker do
     notification =
       Notification
       |> Repo.get(notification_id)
-      |> Repo.preload([:activity])
+      |> Repo.preload([:activity, :user])
 
     Pleroma.Web.Push.Impl.perform(notification)
   end

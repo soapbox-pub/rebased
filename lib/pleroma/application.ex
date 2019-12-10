@@ -30,6 +30,7 @@ defmodule Pleroma.Application do
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
+    Pleroma.HTML.compile_scrubbers()
     Pleroma.Config.DeprecationWarnings.warn()
     setup_instrumenters()
 
@@ -146,8 +147,6 @@ defmodule Pleroma.Application do
     do: [Pleroma.Web.OAuth.Token.CleanWorker]
 
   defp oauth_cleanup_child(_), do: []
-
-  defp chat_child(:test, _), do: []
 
   defp chat_child(_env, true) do
     [Pleroma.Web.ChatChannel.ChatChannelState]

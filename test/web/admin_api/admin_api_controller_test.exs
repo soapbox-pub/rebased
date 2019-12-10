@@ -15,6 +15,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
   import Pleroma.Factory
 
@@ -22,6 +23,60 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
     :ok
+  end
+
+  clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
+    Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], false)
+  end
+
+  describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
+    clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
+      Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], true)
+    end
+
+    test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope" do
+      user = insert(:user)
+      admin = insert(:user, is_admin: true)
+      url = "/api/pleroma/admin/users/#{user.nickname}"
+
+      good_token1 = insert(:oauth_token, user: admin, scopes: ["admin"])
+      good_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read"])
+      good_token3 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts"])
+
+      bad_token1 = insert(:oauth_token, user: admin, scopes: ["read:accounts"])
+      bad_token2 = insert(:oauth_token, user: admin, scopes: ["admin:read:accounts:partial"])
+      bad_token3 = nil
+
+      for good_token <- [good_token1, good_token2, good_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, admin)
+          |> assign(:token, good_token)
+          |> get(url)
+
+        assert json_response(conn, 200)
+      end
+
+      for good_token <- [good_token1, good_token2, good_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, nil)
+          |> assign(:token, good_token)
+          |> get(url)
+
+        assert json_response(conn, :forbidden)
+      end
+
+      for bad_token <- [bad_token1, bad_token2, bad_token3] do
+        conn =
+          build_conn()
+          |> assign(:user, admin)
+          |> assign(:token, bad_token)
+          |> get(url)
+
+        assert json_response(conn, :forbidden)
+      end
+    end
   end
 
   describe "DELETE /api/pleroma/admin/users" do
@@ -97,7 +152,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert ["lain", "lain2"] -- Enum.map(log_entry.data["subjects"], & &1["nickname"]) == []
     end
 
-    test "Cannot create user with exisiting email" do
+    test "Cannot create user with existing email" do
       admin = insert(:user, is_admin: true)
       user = insert(:user)
 
@@ -128,7 +183,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              ]
     end
 
-    test "Cannot create user with exisiting nickname" do
+    test "Cannot create user with existing nickname" do
       admin = insert(:user, is_admin: true)
       user = insert(:user)
 
@@ -1559,7 +1614,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> assign(:user, user)
         |> get("/api/pleroma/admin/reports")
 
-      assert json_response(conn, :forbidden) == %{"error" => "User is not admin."}
+      assert json_response(conn, :forbidden) ==
+               %{"error" => "User is not an admin or OAuth admin scope is not granted."}
     end
 
     test "returns 403 when requested by anonymous" do
@@ -1612,6 +1668,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         first_status: Activity.get_by_ap_id_with_object(first_status.data["id"]),
         second_status: Activity.get_by_ap_id_with_object(second_status.data["id"]),
         third_status: Activity.get_by_ap_id_with_object(third_status.data["id"]),
+        first_report: first_report,
         first_status_reports: [first_report, second_report, third_report],
         second_status_reports: [first_report, second_report],
         third_status_reports: [first_report],
@@ -1638,14 +1695,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert length(response["reports"]) == 3
 
-      first_group =
-        Enum.find(response["reports"], &(&1["status"]["id"] == first_status.data["id"]))
+      first_group = Enum.find(response["reports"], &(&1["status"]["id"] == first_status.id))
 
-      second_group =
-        Enum.find(response["reports"], &(&1["status"]["id"] == second_status.data["id"]))
+      second_group = Enum.find(response["reports"], &(&1["status"]["id"] == second_status.id))
 
-      third_group =
-        Enum.find(response["reports"], &(&1["status"]["id"] == third_status.data["id"]))
+      third_group = Enum.find(response["reports"], &(&1["status"]["id"] == third_status.id))
 
       assert length(first_group["reports"]) == 3
       assert length(second_group["reports"]) == 2
@@ -1656,13 +1710,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  NaiveDateTime.from_iso8601!(act.data["published"])
                end).data["published"]
 
-      assert first_group["status"] == %{
-               "id" => first_status.data["id"],
-               "content" => first_status.object.data["content"],
-               "published" => first_status.object.data["published"]
-             }
+      assert first_group["status"] ==
+               Map.put(
+                 stringify_keys(StatusView.render("show.json", %{activity: first_status})),
+                 "deleted",
+                 false
+               )
 
-      assert first_group["account"]["id"] == target_user.id
+      assert(first_group["account"]["id"] == target_user.id)
 
       assert length(first_group["actors"]) == 1
       assert hd(first_group["actors"])["id"] == reporter.id
@@ -1675,11 +1730,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  NaiveDateTime.from_iso8601!(act.data["published"])
                end).data["published"]
 
-      assert second_group["status"] == %{
-               "id" => second_status.data["id"],
-               "content" => second_status.object.data["content"],
-               "published" => second_status.object.data["published"]
-             }
+      assert second_group["status"] ==
+               Map.put(
+                 stringify_keys(StatusView.render("show.json", %{activity: second_status})),
+                 "deleted",
+                 false
+               )
 
       assert second_group["account"]["id"] == target_user.id
 
@@ -1694,11 +1750,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  NaiveDateTime.from_iso8601!(act.data["published"])
                end).data["published"]
 
-      assert third_group["status"] == %{
-               "id" => third_status.data["id"],
-               "content" => third_status.object.data["content"],
-               "published" => third_status.object.data["published"]
-             }
+      assert third_group["status"] ==
+               Map.put(
+                 stringify_keys(StatusView.render("show.json", %{activity: third_status})),
+                 "deleted",
+                 false
+               )
 
       assert third_group["account"]["id"] == target_user.id
 
@@ -1707,6 +1764,70 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert Enum.map(third_group["reports"], & &1["id"]) --
                Enum.map(third_status_reports, & &1.id) == []
+    end
+
+    test "reopened report renders status data", %{
+      conn: conn,
+      first_report: first_report,
+      first_status: first_status
+    } do
+      {:ok, _} = CommonAPI.update_report_state(first_report.id, "resolved")
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/grouped_reports")
+        |> json_response(:ok)
+
+      first_group = Enum.find(response["reports"], &(&1["status"]["id"] == first_status.id))
+
+      assert first_group["status"] ==
+               Map.put(
+                 stringify_keys(StatusView.render("show.json", %{activity: first_status})),
+                 "deleted",
+                 false
+               )
+    end
+
+    test "reopened report does not render status data if status has been deleted", %{
+      conn: conn,
+      first_report: first_report,
+      first_status: first_status,
+      target_user: target_user
+    } do
+      {:ok, _} = CommonAPI.update_report_state(first_report.id, "resolved")
+      {:ok, _} = CommonAPI.delete(first_status.id, target_user)
+
+      refute Activity.get_by_ap_id(first_status.id)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/grouped_reports")
+        |> json_response(:ok)
+
+      assert Enum.find(response["reports"], &(&1["status"]["deleted"] == true))["status"][
+               "deleted"
+             ] == true
+
+      assert length(Enum.filter(response["reports"], &(&1["status"]["deleted"] == false))) == 2
+    end
+
+    test "account not empty if status was deleted", %{
+      conn: conn,
+      first_report: first_report,
+      first_status: first_status,
+      target_user: target_user
+    } do
+      {:ok, _} = CommonAPI.update_report_state(first_report.id, "resolved")
+      {:ok, _} = CommonAPI.delete(first_status.id, target_user)
+
+      refute Activity.get_by_ap_id(first_status.id)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/grouped_reports")
+        |> json_response(:ok)
+
+      assert Enum.find(response["reports"], &(&1["status"]["deleted"] == true))["account"]
     end
   end
 
@@ -1923,6 +2044,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       Pleroma.Config.put([:instance, :dynamic_configuration], true)
     end
 
+    @tag capture_log: true
     test "create new config setting in db", %{conn: conn} do
       conn =
         post(conn, "/api/pleroma/admin/config", %{

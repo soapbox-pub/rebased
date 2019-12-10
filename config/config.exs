@@ -225,6 +225,7 @@ config :pleroma, :instance,
   notify_email: "noreply@example.com",
   description: "A Pleroma instance, an alternative fediverse server",
   limit: 5_000,
+  chat_limit: 5_000,
   remote_limit: 100_000,
   upload_limit: 16_000_000,
   avatar_upload_limit: 2_000_000,
@@ -562,7 +563,10 @@ config :ueberauth,
        base_path: "/oauth",
        providers: ueberauth_providers
 
-config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
+config :pleroma,
+       :auth,
+       enforce_oauth_admin_scope_usage: false,
+       oauth_consumer_strategies: oauth_consumer_strategies
 
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
 
