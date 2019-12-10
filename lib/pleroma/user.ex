@@ -762,6 +762,13 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
+  def get_friends_ap_ids(user) do
+    user
+    |> get_friends_query(nil)
+    |> select([u], u.ap_id)
+    |> Repo.all()
+  end
+
   def get_friends_ids(user, page \\ nil) do
     user
     |> get_friends_query(page)
