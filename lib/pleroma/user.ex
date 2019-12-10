@@ -127,6 +127,7 @@ defmodule Pleroma.User do
     field(:invisible, :boolean, default: false)
     field(:allow_following_move, :boolean, default: true)
     field(:skip_thread_containment, :boolean, default: false)
+    field(:actor_type, :string, default: "Person")
     field(:also_known_as, {:array, :string}, default: [])
 
     embeds_one(
@@ -346,6 +347,7 @@ defmodule Pleroma.User do
           :following_count,
           :discoverable,
           :invisible,
+          :actor_type,
           :also_known_as
         ]
       )
@@ -396,6 +398,7 @@ defmodule Pleroma.User do
         :raw_fields,
         :pleroma_settings_store,
         :discoverable,
+        :actor_type,
         :also_known_as
       ]
     )
@@ -438,6 +441,7 @@ defmodule Pleroma.User do
         :discoverable,
         :hide_followers_count,
         :hide_follows_count,
+        :actor_type,
         :also_known_as
       ]
     )
