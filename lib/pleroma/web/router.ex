@@ -528,7 +528,10 @@ defmodule Pleroma.Web.Router do
 
     get("/users/:nickname/feed", Feed.FeedController, :feed)
     get("/users/:nickname", Feed.FeedController, :feed_redirect)
+  end
 
+  scope "/", Pleroma.Web do
+    pipe_through(:browser)
     get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end
 
