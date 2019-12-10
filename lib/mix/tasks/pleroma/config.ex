@@ -74,7 +74,9 @@ defmodule Mix.Tasks.Pleroma.Config do
   defp load_and_create(group) do
     group
     |> Application.get_all_env()
-    |> Enum.reject(fn {k, _v} -> k in [Pleroma.Repo, :env] end)
+    |> Enum.reject(fn {k, _v} ->
+      k in [Pleroma.Repo, :env] or (group == :phoenix and k == :serve_endpoints)
+    end)
     |> Enum.each(fn {key, value} ->
       key = inspect(key)
       {:ok, _} = Config.update_or_create(%{group: inspect(group), key: key, value: value})

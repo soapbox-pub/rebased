@@ -37,7 +37,9 @@ defmodule Pleroma.Config.TransferTask do
       group = Config.from_string(setting.group)
       value = Config.from_binary(setting.value)
 
-      :ok = Application.put_env(group, key, value)
+      if group != :phoenix and key != :serve_endpoints do
+        :ok = Application.put_env(group, key, value)
+      end
 
       group
     rescue
