@@ -158,6 +158,9 @@ defmodule Pleroma.Mixfile do
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.11.1", only: :test},
       {:flake_id, "~> 0.1.0"},
+      {:captcha,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
+       ref: "c3c795c55f6b49d79d6ac70a0f91e525099fc3e2"},
       {:mox, "~> 0.5", only: :test}
     ] ++ oauth_deps()
   end

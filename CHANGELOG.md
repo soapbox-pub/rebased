@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.7] - 2019-12-13
+### Added
+- Integrated captcha provider
+
+### Changed
+- Captcha enabled by default
+- Default Captcha provider changed from `Pleroma.Captcha.Kocaptcha` to `Pleroma.Captcha.Native`
+
 ## [1.1.6] - 2019-11-19
 ### Fixed
 - Not being able to log into to third party apps when the browser is logged into mastofe
