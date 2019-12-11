@@ -223,7 +223,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     public = is_public?(activity)
 
     if public && Config.get([:instance, :allow_relay]) do
-      Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
+      Logger.debug(fn -> "Relaying #{activity.data["id"]} out" end)
       Relay.publish(activity)
     end
 
