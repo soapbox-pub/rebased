@@ -7,6 +7,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Activity
   alias Pleroma.ModerationLog
   alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.ReportNote
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -643,9 +644,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def list_reports(conn, params) do
     {page, page_size} = page_params(params)
 
+    reports = Utils.get_reports(params, page, page_size)
+
     conn
     |> put_view(ReportView)
-    |> render("index.json", %{reports: Utils.get_reports(params, page, page_size)})
+    |> render("index.json", %{reports: reports})
   end
 
   def list_grouped_reports(conn, _params) do
@@ -689,32 +692,39 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def report_respond(%{assigns: %{user: user}} = conn, %{"id" => id} = params) do
-    with false <- is_nil(params["status"]),
-         %Activity{} <- Activity.get_by_id(id) do
-      params =
-        params
-        |> Map.put("in_reply_to_status_id", id)
-        |> Map.put("visibility", "direct")
-
-      {:ok, activity} = CommonAPI.post(user, params)
-
+  def report_notes_create(%{assigns: %{user: user}} = conn, %{
+        "id" => report_id,
+        "content" => content
+      }) do
+    with {:ok, _} <- ReportNote.create(user.id, report_id, content) do
       ModerationLog.insert_log(%{
-        action: "report_response",
+        action: "report_note",
         actor: user,
-        subject: activity,
-        text: params["status"]
+        subject: Activity.get_by_id(report_id),
+        text: content
       })
 
-      conn
-      |> put_view(StatusView)
-      |> render("show.json", %{activity: activity})
+      json_response(conn, :no_content, "")
     else
-      true ->
-        {:param_cast, nil}
+      _ -> json_response(conn, :bad_request, "")
+    end
+  end
 
-      nil ->
-        {:error, :not_found}
+  def report_notes_delete(%{assigns: %{user: user}} = conn, %{
+        "id" => note_id,
+        "report_id" => report_id
+      }) do
+    with {:ok, note} <- ReportNote.destroy(note_id) do
+      ModerationLog.insert_log(%{
+        action: "report_note_delete",
+        actor: user,
+        subject: Activity.get_by_id(report_id),
+        text: note.content
+      })
+
+      json_response(conn, :no_content, "")
+    else
+      _ -> json_response(conn, :bad_request, "")
     end
   end
 

@@ -1068,6 +1068,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_preloaded_bookmark(opts["user"])
   end
 
+  defp maybe_preload_report_notes(query, %{"preload_report_notes" => true}) do
+    query
+    |> Activity.with_preloaded_report_notes()
+  end
+
+  defp maybe_preload_report_notes(query, _), do: query
+
   defp maybe_set_thread_muted_field(query, %{"skip_preload" => true}), do: query
 
   defp maybe_set_thread_muted_field(query, opts) do
@@ -1121,6 +1128,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Activity
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
+    |> maybe_preload_report_notes(opts)
     |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
