@@ -107,4 +107,31 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     assert [] ==
              NotificationView.render("index.json", %{notifications: [notification], for: followed})
   end
+
+  test "Move notification" do
+    old_user = insert(:user)
+    new_user = insert(:user, also_known_as: [old_user.ap_id])
+    follower = insert(:user)
+
+    User.follow(follower, old_user)
+    Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
+    Pleroma.Tests.ObanHelpers.perform_all()
+
+    old_user = refresh_record(old_user)
+    new_user = refresh_record(new_user)
+
+    [notification] = Notification.for_user(follower, %{with_move: true})
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false},
+      type: "move",
+      account: AccountView.render("show.json", %{user: old_user, for: follower}),
+      target: AccountView.render("show.json", %{user: new_user, for: follower}),
+      created_at: Utils.to_masto_date(notification.inserted_at)
+    }
+
+    assert [expected] ==
+             NotificationView.render("index.json", %{notifications: [notification], for: follower})
+  end
 end

@@ -387,7 +387,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(%{"id" => nil}, _options), do: :error
   def handle_incoming(%{"id" => ""}, _options), do: :error
   # length of https:// = 8, should validate better, but good enough for now.
-  def handle_incoming(%{"id" => id}, _options) when not (is_binary(id) and length(id) > 8),
+  def handle_incoming(%{"id" => id}, _options) when is_binary(id) and byte_size(id) < 8,
     do: :error
 
   # TODO: validate those with a Ecto scheme
@@ -669,7 +669,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
       update_data =
         new_user_data
-        |> Map.take([:avatar, :banner, :bio, :name])
+        |> Map.take([:avatar, :banner, :bio, :name, :also_known_as])
         |> Map.put(:fields, fields)
         |> Map.put(:locked, locked)
         |> Map.put(:invisible, invisible)
@@ -852,6 +852,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       activity
       |> Map.put("object", data)
       |> handle_incoming(options)
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "Move",
+          "actor" => origin_actor,
+          "object" => origin_actor,
+          "target" => target_actor
+        },
+        _options
+      ) do
+    with %User{} = origin_user <- User.get_cached_by_ap_id(origin_actor),
+         {:ok, %User{} = target_user} <- User.get_or_fetch_by_ap_id(target_actor),
+         true <- origin_actor in target_user.also_known_as do
+      ActivityPub.move(origin_user, target_user, false)
     else
       _e -> :error
     end

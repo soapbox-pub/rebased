@@ -29,7 +29,8 @@ defmodule Pleroma.Activity do
     "Create" => "mention",
     "Follow" => "follow",
     "Announce" => "reblog",
-    "Like" => "favourite"
+    "Like" => "favourite",
+    "Move" => "move"
   }
 
   @mastodon_to_ap_notification_types for {k, v} <- @mastodon_notification_types,
@@ -253,9 +254,10 @@ defmodule Pleroma.Activity do
   def normalize(ap_id) when is_binary(ap_id), do: get_by_ap_id_with_object(ap_id)
   def normalize(_), do: nil
 
-  def delete_by_ap_id(id) when is_binary(id) do
+  def delete_all_by_object_ap_id(id) when is_binary(id) do
     id
     |> Queries.by_object_id()
+    |> Queries.exclude_type("Delete")
     |> select([u], u)
     |> Repo.delete_all()
     |> elem(1)
@@ -267,7 +269,7 @@ defmodule Pleroma.Activity do
     |> purge_web_resp_cache()
   end
 
-  def delete_by_ap_id(_), do: nil
+  def delete_all_by_object_ap_id(_), do: nil
 
   defp purge_web_resp_cache(%Activity{} = activity) do
     %{path: path} = URI.parse(activity.data["id"])

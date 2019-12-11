@@ -456,17 +456,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     user = User.get_cached_by_ap_id(actor)
     to = (object.data["to"] || []) ++ (object.data["cc"] || [])
 
-    with {:ok, object, activity} <- Object.delete(object),
+    with create_activity <- Activity.get_create_by_object_ap_id(id),
          data <-
            %{
              "type" => "Delete",
              "actor" => actor,
              "object" => id,
              "to" => to,
-             "deleted_activity_id" => activity && activity.id
+             "deleted_activity_id" => create_activity && create_activity.id
            }
            |> maybe_put("id", activity_id),
          {:ok, activity} <- insert(data, local, false),
+         {:ok, object, _create_activity} <- Object.delete(object),
          stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
          {:ok, _actor} <- decrease_note_count_if_public(user, object),
@@ -538,6 +539,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
       {:ok, activity}
+    end
+  end
+
+  def move(%User{} = origin, %User{} = target, local \\ true) do
+    params = %{
+      "type" => "Move",
+      "actor" => origin.ap_id,
+      "object" => origin.ap_id,
+      "target" => target.ap_id
+    }
+
+    with true <- origin.ap_id in target.also_known_as,
+         {:ok, activity} <- insert(params, local) do
+      maybe_federate(activity)
+
+      BackgroundWorker.enqueue("move_following", %{
+        "origin_id" => origin.id,
+        "target_id" => target.id
+      })
+
+      {:ok, activity}
+    else
+      false -> {:error, "Target account must have the origin in `alsoKnownAs`"}
+      err -> err
     end
   end
 
@@ -724,6 +749,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put("whole_db", true)
       |> Map.put("pinned_activity_ids", user.pinned_activities)
 
+    params =
+      if User.blocks?(reading_user, user) do
+        params
+      else
+        params
+        |> Map.put("blocking_user", reading_user)
+        |> Map.put("muting_user", reading_user)
+      end
+
     recipients =
       user_activities_recipients(%{
         "godmode" => params["godmode"],
@@ -895,7 +929,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_muted(query, %{"with_muted" => val}) when val in [true, "true", "1"], do: query
 
   defp restrict_muted(query, %{"muting_user" => %User{} = user} = opts) do
-    mutes = user.mutes
+    mutes = opts["muted_users_ap_ids"] || User.muted_users_ap_ids(user)
 
     query =
       from([activity] in query,
@@ -912,26 +946,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted(query, _), do: query
 
-  defp restrict_blocked(query, %{"blocking_user" => %User{} = user}) do
-    blocks = user.blocks || []
+  defp restrict_blocked(query, %{"blocking_user" => %User{} = user} = opts) do
+    blocked_ap_ids = opts["blocked_users_ap_ids"] || User.blocked_users_ap_ids(user)
     domain_blocks = user.domain_blocks || []
+
+    following_ap_ids = User.get_friends_ap_ids(user)
 
     query =
       if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
 
     from(
       [activity, object: o] in query,
-      where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
-      where: fragment("not (? && ?)", activity.recipients, ^blocks),
+      where: fragment("not (? = ANY(?))", activity.actor, ^blocked_ap_ids),
+      where: fragment("not (? && ?)", activity.recipients, ^blocked_ap_ids),
       where:
         fragment(
           "not (?->>'type' = 'Announce' and ?->'to' \\?| ?)",
           activity.data,
           activity.data,
-          ^blocks
+          ^blocked_ap_ids
         ),
-      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks),
-      where: fragment("not (split_part(?->>'actor', '/', 3) = ANY(?))", o.data, ^domain_blocks)
+      where:
+        fragment(
+          "(not (split_part(?, '/', 3) = ANY(?))) or ? = ANY(?)",
+          activity.actor,
+          ^domain_blocks,
+          activity.actor,
+          ^following_ap_ids
+        ),
+      where:
+        fragment(
+          "(not (split_part(?->>'actor', '/', 3) = ANY(?))) or (?->>'actor') = ANY(?)",
+          o.data,
+          ^domain_blocks,
+          o.data,
+          ^following_ap_ids
+        )
     )
   end
 
@@ -955,8 +1005,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_pinned(query, _), do: query
 
-  defp restrict_muted_reblogs(query, %{"muting_user" => %User{} = user}) do
-    muted_reblogs = user.muted_reblogs || []
+  defp restrict_muted_reblogs(query, %{"muting_user" => %User{} = user} = opts) do
+    muted_reblogs = opts["reblog_muted_users_ap_ids"] || User.reblog_muted_users_ap_ids(user)
 
     from(
       activity in query,
@@ -1044,7 +1094,33 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp maybe_order(query, _), do: query
 
+  defp fetch_activities_query_ap_ids_ops(opts) do
+    source_user = opts["muting_user"]
+    ap_id_relations = if source_user, do: [:mute, :reblog_mute], else: []
+
+    ap_id_relations =
+      ap_id_relations ++
+        if opts["blocking_user"] && opts["blocking_user"] == source_user do
+          [:block]
+        else
+          []
+        end
+
+    preloaded_ap_ids = User.outgoing_relations_ap_ids(source_user, ap_id_relations)
+
+    restrict_blocked_opts = Map.merge(%{"blocked_users_ap_ids" => preloaded_ap_ids[:block]}, opts)
+    restrict_muted_opts = Map.merge(%{"muted_users_ap_ids" => preloaded_ap_ids[:mute]}, opts)
+
+    restrict_muted_reblogs_opts =
+      Map.merge(%{"reblog_muted_users_ap_ids" => preloaded_ap_ids[:reblog_mute]}, opts)
+
+    {restrict_blocked_opts, restrict_muted_opts, restrict_muted_reblogs_opts}
+  end
+
   def fetch_activities_query(recipients, opts \\ %{}) do
+    {restrict_blocked_opts, restrict_muted_opts, restrict_muted_reblogs_opts} =
+      fetch_activities_query_ap_ids_ops(opts)
+
     config = %{
       skip_thread_containment: Config.get([:instance, :skip_thread_containment])
     }
@@ -1065,15 +1141,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_type(opts)
     |> restrict_state(opts)
     |> restrict_favorited_by(opts)
-    |> restrict_blocked(opts)
-    |> restrict_muted(opts)
+    |> restrict_blocked(restrict_blocked_opts)
+    |> restrict_muted(restrict_muted_opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
     |> restrict_thread_visibility(opts, config)
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
-    |> restrict_muted_reblogs(opts)
+    |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
     |> restrict_instance(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
@@ -1087,6 +1163,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
     |> maybe_update_cc(list_memberships, opts["user"])
+  end
+
+  @doc """
+  Fetch favorites activities of user with order by sort adds to favorites
+  """
+  @spec fetch_favourites(User.t(), map(), atom()) :: list(Activity.t())
+  def fetch_favourites(user, params \\ %{}, pagination \\ :keyset) do
+    user.ap_id
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_type("Like")
+    |> Activity.with_joined_object()
+    |> Object.with_joined_activity()
+    |> select([_like, object, activity], %{activity | object: object})
+    |> order_by([like, _, _], desc: like.id)
+    |> Pagination.fetch_paginated(
+      Map.merge(params, %{"skip_order" => true}),
+      pagination,
+      :object_activity
+    )
   end
 
   defp maybe_update_cc(activities, list_memberships, %User{ap_id: user_ap_id})
@@ -1165,6 +1260,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
+    actor_type = data["type"] || "Person"
 
     user_data = %{
       ap_id: data["id"],
@@ -1179,7 +1275,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       name: data["name"],
       follower_address: data["followers"],
       following_address: data["following"],
-      bio: data["summary"]
+      bio: data["summary"],
+      actor_type: actor_type,
+      also_known_as: Map.get(data, "alsoKnownAs", [])
     }
 
     # nickname can be nil because of virtual actors

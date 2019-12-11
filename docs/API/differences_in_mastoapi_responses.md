@@ -57,6 +57,7 @@ Has these additional fields under the `pleroma` object:
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
 - `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
 - `deactivated`: boolean, true when the user is deactivated
+- `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
 
 ### Source
@@ -65,6 +66,8 @@ Has these additional fields under the `pleroma` object:
 
 - `show_role`: boolean, nullable, true when the user wants his role (e.g admin, moderator) to be shown
 - `no_rich_text` - boolean, nullable, true when html tags are stripped from all statuses requested from the API
+- `discoverable`: boolean, true when the user allows discovery of the account in search results and other services.
+- `actor_type`: string, the type of this account.
 
 ## Conversations
 
@@ -91,11 +94,18 @@ Has these additional fields under the `pleroma` object:
 
 - `is_seen`: true if the notification was read by the user
 
+### Move Notification
+
+The `type` value is `move`. Has an additional field:
+
+- `target`: new account
+
 ## GET `/api/v1/notifications`
 
 Accepts additional parameters:
 
 - `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
+- `with_move`: boolean, when set to `true` will include Move notifications. `false` by default.
 
 ## POST `/api/v1/statuses`
 
@@ -136,7 +146,10 @@ Additional parameters can be added to the JSON body/Form data:
 - `default_scope` - the scope returned under `privacy` key in Source subentity
 - `pleroma_settings_store` - Opaque user settings to be saved on the backend.
 - `skip_thread_containment` - if true, skip filtering out broken threads
+- `allow_following_move` - if true, allows automatically follow moved following accounts
 - `pleroma_background_image` - sets the background image of the user.
+- `discoverable` - if true, discovery of this account in search results and other services is allowed.
+- `actor_type` - the type of this account.
 
 ### Pleroma Settings Store
 Pleroma has mechanism that allows frontends to save blobs of json for each user on the backend. This can be used to save frontend-specific settings for a user that the backend does not need to know about.

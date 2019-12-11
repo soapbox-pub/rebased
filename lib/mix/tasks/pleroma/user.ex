@@ -8,7 +8,6 @@ defmodule Mix.Tasks.Pleroma.User do
   alias Ecto.Changeset
   alias Pleroma.User
   alias Pleroma.UserInviteToken
-  alias Pleroma.Web.OAuth
 
   @shortdoc "Manages Pleroma users"
   @moduledoc File.read!("docs/administration/CLI_tasks/user.md")
@@ -354,8 +353,7 @@ defmodule Mix.Tasks.Pleroma.User do
     start_pleroma()
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      OAuth.Token.delete_user_tokens(user)
-      OAuth.Authorization.delete_user_authorizations(user)
+      User.global_sign_out(user)
 
       shell_info("#{nickname} signed out from all apps.")
     else
@@ -373,9 +371,9 @@ defmodule Mix.Tasks.Pleroma.User do
       users
       |> Enum.each(fn user ->
         shell_info(
-          "#{user.nickname} moderator: #{user.info.is_moderator}, admin: #{user.info.is_admin}, locked: #{
-            user.info.locked
-          }, deactivated: #{user.info.deactivated}"
+          "#{user.nickname} moderator: #{user.is_moderator}, admin: #{user.is_admin}, locked: #{
+            user.locked
+          }, deactivated: #{user.deactivated}"
         )
       end)
     end)
@@ -393,10 +391,7 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   defp set_admin(user, value) do
-    {:ok, user} =
-      user
-      |> Changeset.change(%{is_admin: value})
-      |> User.update_and_set_cache()
+    {:ok, user} = User.admin_api_update(user, %{is_admin: value})
 
     shell_info("Admin status of #{user.nickname}: #{user.is_admin}")
     user
