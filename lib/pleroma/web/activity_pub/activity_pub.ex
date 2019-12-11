@@ -950,9 +950,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     blocked_ap_ids = opts["blocked_users_ap_ids"] || User.blocked_users_ap_ids(user)
     domain_blocks = user.domain_blocks || []
 
-    following_ap_ids =
-      user
-      |> User.get_friends_ap_ids()
+    following_ap_ids = User.get_friends_ap_ids(user)
 
     query =
       if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
