@@ -1157,6 +1157,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_update_cc(list_memberships, opts["user"])
   end
 
+  @doc """
+  Fetch favorites activities of user with order by sort adds to favorites
+  """
+  @spec fetch_favourites(User.t(), map(), atom()) :: list(Activity.t())
+  def fetch_favourites(user, params \\ %{}, pagination \\ :keyset) do
+    user.ap_id
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_type("Like")
+    |> Activity.with_joined_object()
+    |> Object.with_joined_activity()
+    |> select([_like, object, activity], %{activity | object: object})
+    |> order_by([like, _, _], desc: like.id)
+    |> Pagination.fetch_paginated(
+      Map.merge(params, %{"skip_order" => true}),
+      pagination,
+      :object_activity
+    )
+  end
+
   defp maybe_update_cc(activities, list_memberships, %User{ap_id: user_ap_id})
        when is_list(list_memberships) and length(list_memberships) > 0 do
     Enum.map(activities, fn

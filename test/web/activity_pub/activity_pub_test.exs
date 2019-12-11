@@ -1625,6 +1625,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "fetch_favourites/3" do
+    test "returns a favourite activities sorted by adds to favorite" do
+      user = insert(:user)
+      other_user = insert(:user)
+      user1 = insert(:user)
+      user2 = insert(:user)
+      {:ok, a1} = CommonAPI.post(user1, %{"status" => "bla"})
+      {:ok, _a2} = CommonAPI.post(user2, %{"status" => "traps are happy"})
+      {:ok, a3} = CommonAPI.post(user2, %{"status" => "Trees Are "})
+      {:ok, a4} = CommonAPI.post(user2, %{"status" => "Agent Smith "})
+      {:ok, a5} = CommonAPI.post(user1, %{"status" => "Red or Blue "})
+
+      {:ok, _, _} = CommonAPI.favorite(a4.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a3.id, other_user)
+      Process.sleep(1000)
+      {:ok, _, _} = CommonAPI.favorite(a3.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a5.id, other_user)
+      Process.sleep(1000)
+      {:ok, _, _} = CommonAPI.favorite(a5.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a4.id, other_user)
+      Process.sleep(1000)
+      {:ok, _, _} = CommonAPI.favorite(a1.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a1.id, other_user)
+      result = ActivityPub.fetch_favourites(user)
+
+      assert Enum.map(result, & &1.id) == [a1.id, a5.id, a3.id, a4.id]
+
+      result = ActivityPub.fetch_favourites(user, %{"limit" => 2})
+      assert Enum.map(result, & &1.id) == [a1.id, a5.id]
+    end
+  end
+
   describe "Move activity" do
     test "create" do
       %{ap_id: old_ap_id} = old_user = insert(:user)
