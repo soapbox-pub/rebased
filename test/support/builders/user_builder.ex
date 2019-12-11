@@ -10,7 +10,8 @@ defmodule Pleroma.Builders.UserBuilder do
       password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
       bio: "A tester.",
       ap_id: "some id",
-      last_digest_emailed_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+      last_digest_emailed_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
+      notification_settings: %Pleroma.User.NotificationSetting{}
     }
 
     Map.merge(user, data)

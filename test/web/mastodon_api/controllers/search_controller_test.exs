@@ -165,15 +165,20 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       assert status["id"] == to_string(activity.id)
     end
 
-    test "search fetches remote statuses", %{conn: conn} do
+    test "search fetches remote statuses and prefers them over other results", %{conn: conn} do
       capture_log(fn ->
+        {:ok, %{id: activity_id}} =
+          CommonAPI.post(insert(:user), %{
+            "status" => "check out https://shitposter.club/notice/2827873"
+          })
+
         conn =
           conn
           |> get("/api/v1/search", %{"q" => "https://shitposter.club/notice/2827873"})
 
         assert results = json_response(conn, 200)
 
-        [status] = results["statuses"]
+        [status, %{"id" => ^activity_id}] = results["statuses"]
 
         assert status["uri"] ==
                  "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"

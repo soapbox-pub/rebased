@@ -1,0 +1,102 @@
+.with-load-more-footer {
+  padding: 10px;
+  text-align: center;
+  border-top: 1px solid;
+  border-top-color: #222;
+  border-top-color: var(--border, #222);
+}
+.with-load-more-footer .error {
+  font-size: 14px;
+}
+.tab-switcher {
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-direction: column;
+      flex-direction: column;
+}
+.tab-switcher .contents {
+  -ms-flex: 1 0 auto;
+      flex: 1 0 auto;
+  min-height: 0px;
+}
+.tab-switcher .contents .hidden {
+  display: none;
+}
+.tab-switcher .contents.scrollable-tabs {
+  -ms-flex-preferred-size: 0;
+      flex-basis: 0;
+  overflow-y: auto;
+}
+.tab-switcher .tabs {
+  display: -ms-flexbox;
+  display: flex;
+  position: relative;
+  width: 100%;
+  overflow-y: hidden;
+  overflow-x: auto;
+  padding-top: 5px;
+  box-sizing: border-box;
+}
+.tab-switcher .tabs::after, .tab-switcher .tabs::before {
+  display: block;
+  content: "";
+  -ms-flex: 1 1 auto;
+      flex: 1 1 auto;
+  border-bottom: 1px solid;
+  border-bottom-color: #222;
+  border-bottom-color: var(--border, #222);
+}
+.tab-switcher .tabs .tab-wrapper {
+  height: 28px;
+  position: relative;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex: 0 0 auto;
+      flex: 0 0 auto;
+}
+.tab-switcher .tabs .tab-wrapper .tab {
+  width: 100%;
+  min-width: 1px;
+  position: relative;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding: 6px 1em;
+  padding-bottom: 99px;
+  margin-bottom: -93px;
+  white-space: nowrap;
+}
+.tab-switcher .tabs .tab-wrapper .tab:not(.active) {
+  z-index: 4;
+}
+.tab-switcher .tabs .tab-wrapper .tab:not(.active):hover {
+  z-index: 6;
+}
+.tab-switcher .tabs .tab-wrapper .tab.active {
+  background: transparent;
+  z-index: 5;
+}
+.tab-switcher .tabs .tab-wrapper .tab img {
+  max-height: 26px;
+  vertical-align: top;
+  margin-top: -5px;
+}
+.tab-switcher .tabs .tab-wrapper:not(.active)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 7;
+  border-bottom: 1px solid;
+  border-bottom-color: #222;
+  border-bottom-color: var(--border, #222);
+}
+.with-subscription-loading {
+  padding: 10px;
+  text-align: center;
+}
+.with-subscription-loading .error {
+  font-size: 14px;
+}
+
+/*# sourceMappingURL=app.ae04505b31bb0ee2765e.css.map*/
