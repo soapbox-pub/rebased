@@ -82,3 +82,11 @@ config :pleroma, :database, rum_enabled: rum_enabled
 IO.puts("RUM enabled: #{rum_enabled}")
 
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
+
+if File.exists?("./config/test.secret.exs") do
+  import_config "test.secret.exs"
+else
+  IO.puts(
+    "You may want to create test.secret.exs to declare custom database connection parameters."
+  )
+end
