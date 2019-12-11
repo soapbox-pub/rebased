@@ -608,6 +608,39 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute repeat_activity in activities
   end
 
+  test "does return activities from followed users on blocked domains" do
+    domain = "meanies.social"
+    domain_user = insert(:user, %{ap_id: "https://#{domain}/@pundit"})
+    blocker = insert(:user)
+
+    {:ok, blocker} = User.follow(blocker, domain_user)
+    {:ok, blocker} = User.block_domain(blocker, domain)
+
+    assert User.following?(blocker, domain_user)
+    assert User.blocks_domain?(blocker, domain_user)
+    refute User.blocks?(blocker, domain_user)
+
+    note = insert(:note, %{data: %{"actor" => domain_user.ap_id}})
+    activity = insert(:note_activity, %{note: note})
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => blocker, "skip_preload" => true})
+
+    assert activity in activities
+
+    # And check that if the guy we DO follow boosts someone else from their domain,
+    # that should be hidden
+    another_user = insert(:user, %{ap_id: "https://#{domain}/@meanie2"})
+    bad_note = insert(:note, %{data: %{"actor" => another_user.ap_id}})
+    bad_activity = insert(:note_activity, %{note: bad_note})
+    {:ok, repeat_activity, _} = CommonAPI.repeat(bad_activity.id, domain_user)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => blocker, "skip_preload" => true})
+
+    refute repeat_activity in activities
+  end
+
   test "doesn't return muted activities" do
     activity_one = insert(:note_activity)
     activity_two = insert(:note_activity)
