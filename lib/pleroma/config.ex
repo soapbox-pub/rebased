@@ -68,8 +68,13 @@ defmodule Pleroma.Config do
 
   def enforce_oauth_admin_scope_usage?, do: !!get([:auth, :enforce_oauth_admin_scope_usage])
 
-  def oauth_admin_scopes(scope) do
-    ["admin:#{scope}"] ++
-      if enforce_oauth_admin_scope_usage?(), do: [], else: [scope]
+  def oauth_admin_scopes(scopes) when is_list(scopes) do
+    Enum.flat_map(
+      scopes,
+      fn scope ->
+        ["admin:#{scope}"] ++
+          if enforce_oauth_admin_scope_usage?(), do: [], else: [scope]
+      end
+    )
   end
 end

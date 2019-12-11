@@ -17,13 +17,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
     op = options[:op] || :|
     token = assigns[:token]
 
-    scopes =
-      if options[:admin] do
-        Config.oauth_admin_scopes(scopes)
-      else
-        scopes
-      end
-
+    scopes = transform_scopes(scopes, options)
     matched_scopes = token && filter_descendants(scopes, token.scopes)
 
     cond do
@@ -67,6 +61,15 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
         )
       end
     )
+  end
+
+  @doc "Transforms scopes by applying supported options (e.g. :admin)"
+  def transform_scopes(scopes, options) do
+    if options[:admin] do
+      Config.oauth_admin_scopes(scopes)
+    else
+      scopes
+    end
   end
 
   defp maybe_perform_instance_privacy_check(%Plug.Conn{} = conn, options) do
