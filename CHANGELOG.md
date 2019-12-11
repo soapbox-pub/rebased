@@ -84,6 +84,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub: Configurable `type` field of the actors.
 - Mastodon API: `/api/v1/accounts/:id` has `source/pleroma/actor_type` field.
 - Mastodon API: `/api/v1/update_credentials` accepts `actor_type` field.
+- Captcha: Support native provider
+- Captcha: Enable by default
 </details>
 
 ### Fixed
