@@ -241,7 +241,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       })
 
     conn
-    |> put_view(StatusView)
+    |> put_view(Pleroma.Web.AdminAPI.StatusView)
     |> render("index.json", %{activities: activities, as: :activity})
   end
 
