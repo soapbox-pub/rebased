@@ -807,7 +807,7 @@ config :quack,
         {"tuple": [":proxy_opts", [
           {"tuple": [":redirect_on_failure", false]},
           {"tuple": [":max_body_length", 1048576]},
-          {"tuple": [":http": [
+          {"tuple": [":http", [
             {"tuple": [":follow_redirect", true]},
             {"tuple": [":pool", ":upload"]},
           ]]}
