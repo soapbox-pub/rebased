@@ -66,9 +66,9 @@ config :pleroma, Pleroma.Scheduler,
   jobs: scheduled_jobs
 
 config :pleroma, Pleroma.Captcha,
-  enabled: false,
+  enabled: true,
   seconds_valid: 60,
-  method: Pleroma.Captcha.Kocaptcha
+  method: Pleroma.Captcha.Native
 
 config :pleroma, :hackney_pools,
   federation: [
@@ -83,8 +83,6 @@ config :pleroma, :hackney_pools,
     max_connections: 25,
     timeout: 300_000
   ]
-
-config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
 
 # Upload configuration
 config :pleroma, Pleroma.Upload,
