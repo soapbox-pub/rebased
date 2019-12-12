@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Admin API: Return link alongside with token on password reset
 - **Breaking:** Admin API: `PUT /api/pleroma/admin/reports/:id` is now `PATCH /api/pleroma/admin/reports`, see admin_api.md for details
 - **Breaking:** `/api/pleroma/admin/users/invite_token` now uses `POST`, changed accepted params and returns full invite in json instead of only token string.
+- **Breaking** replying to reports is now "report notes", enpoint changed from `POST /api/pleroma/admin/reports/:id/respond` to `POST /api/pleroma/admin/reports/:id/notes`
 - Admin API: Return `total` when querying for reports
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
 - Admin API: Return link alongside with token on password reset
@@ -53,6 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - User notification settings: Add `privacy_option` option.
 - Support for custom Elixir modules (such as MRF policies)
 - User settings: Add _This account is a_ option.
+- OAuth: admin scopes support (relevant setting: `[:auth, :enforce_oauth_admin_scope_usage]`).
 <details>
   <summary>API Changes</summary>
 
@@ -84,6 +86,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub: Configurable `type` field of the actors.
 - Mastodon API: `/api/v1/accounts/:id` has `source/pleroma/actor_type` field.
 - Mastodon API: `/api/v1/update_credentials` accepts `actor_type` field.
+- Captcha: Support native provider
+- Captcha: Enable by default
 </details>
 
 ### Fixed
@@ -92,6 +96,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF: `Delete` activities being exempt from MRF policies
 - OTP releases: Not being able to configure OAuth expired token cleanup interval
 - OTP releases: Not being able to configure HTML sanitization policy
+- Favorites timeline now ordered by favorite date instead of post date
 <details>
   <summary>API Changes</summary>
 

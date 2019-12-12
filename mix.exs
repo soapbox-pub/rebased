@@ -163,6 +163,9 @@ defmodule Pleroma.Mixfile do
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
        ref: "825dc00aaba5a1b7c4202a532b696b595dd3bcb3"},
+      {:captcha,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
+       ref: "c3c795c55f6b49d79d6ac70a0f91e525099fc3e2"},
       {:mox, "~> 0.5", only: :test}
     ] ++ oauth_deps()
   end

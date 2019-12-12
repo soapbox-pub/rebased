@@ -379,13 +379,19 @@ For each pool, the options are:
 ## Captcha
 
 ### Pleroma.Captcha
+
 * `enabled`: Whether the captcha should be shown on registration.
 * `method`: The method/service to use for captcha.
 * `seconds_valid`: The time in seconds for which the captcha is valid.
 
 ### Captcha providers
 
+#### Pleroma.Captcha.Native
+
+A built-in captcha provider. Enabled by default.
+
 #### Pleroma.Captcha.Kocaptcha
+
 Kocaptcha is a very simple captcha service with a single API endpoint,
 the source code is here: https://github.com/koto-bank/kocaptcha. The default endpoint
 `https://captcha.kotobank.ch` is hosted by the developer.

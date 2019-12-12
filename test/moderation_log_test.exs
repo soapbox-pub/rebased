@@ -214,7 +214,7 @@ defmodule Pleroma.ModerationLogTest do
       {:ok, _} =
         ModerationLog.insert_log(%{
           actor: moderator,
-          action: "report_response",
+          action: "report_note",
           subject: report,
           text: "look at this"
         })
@@ -222,7 +222,7 @@ defmodule Pleroma.ModerationLogTest do
       log = Repo.one(ModerationLog)
 
       assert log.data["message"] ==
-               "@#{moderator.nickname} responded with 'look at this' to report ##{report.id}"
+               "@#{moderator.nickname} added note 'look at this' to report ##{report.id}"
     end
 
     test "logging status sensitivity update", %{moderator: moderator} do

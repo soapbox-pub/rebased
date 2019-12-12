@@ -7,6 +7,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Activity
   alias Pleroma.ModerationLog
   alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.ReportNote
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -30,13 +31,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:accounts"]}
+    %{scopes: ["read:accounts"], admin: true}
     when action in [:list_users, :user_show, :right_get, :invites]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:accounts"]}
+    %{scopes: ["write:accounts"], admin: true}
     when action in [
            :get_invite_token,
            :revoke_invite,
@@ -58,35 +59,37 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:reports"]} when action in [:list_reports, :report_show]
+    %{scopes: ["read:reports"], admin: true}
+    when action in [:list_reports, :report_show]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:reports"]}
+    %{scopes: ["write:reports"], admin: true}
     when action in [:report_update_state, :report_respond]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:statuses"]} when action == :list_user_statuses
+    %{scopes: ["read:statuses"], admin: true}
+    when action == :list_user_statuses
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:statuses"]}
+    %{scopes: ["write:statuses"], admin: true}
     when action in [:status_update, :status_delete]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read"]}
+    %{scopes: ["read"], admin: true}
     when action in [:config_show, :migrate_to_db, :migrate_from_db, :list_log]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write"]}
+    %{scopes: ["write"], admin: true}
     when action in [:relay_follow, :relay_unfollow, :config_update]
   )
 
@@ -238,7 +241,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       })
 
     conn
-    |> put_view(StatusView)
+    |> put_view(Pleroma.Web.AdminAPI.StatusView)
     |> render("index.json", %{activities: activities, as: :activity})
   end
 
@@ -641,9 +644,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def list_reports(conn, params) do
     {page, page_size} = page_params(params)
 
+    reports = Utils.get_reports(params, page, page_size)
+
     conn
     |> put_view(ReportView)
-    |> render("index.json", %{reports: Utils.get_reports(params, page, page_size)})
+    |> render("index.json", %{reports: reports})
   end
 
   def list_grouped_reports(conn, _params) do
@@ -687,32 +692,39 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def report_respond(%{assigns: %{user: user}} = conn, %{"id" => id} = params) do
-    with false <- is_nil(params["status"]),
-         %Activity{} <- Activity.get_by_id(id) do
-      params =
-        params
-        |> Map.put("in_reply_to_status_id", id)
-        |> Map.put("visibility", "direct")
-
-      {:ok, activity} = CommonAPI.post(user, params)
-
+  def report_notes_create(%{assigns: %{user: user}} = conn, %{
+        "id" => report_id,
+        "content" => content
+      }) do
+    with {:ok, _} <- ReportNote.create(user.id, report_id, content) do
       ModerationLog.insert_log(%{
-        action: "report_response",
+        action: "report_note",
         actor: user,
-        subject: activity,
-        text: params["status"]
+        subject: Activity.get_by_id(report_id),
+        text: content
       })
 
-      conn
-      |> put_view(StatusView)
-      |> render("show.json", %{activity: activity})
+      json_response(conn, :no_content, "")
     else
-      true ->
-        {:param_cast, nil}
+      _ -> json_response(conn, :bad_request, "")
+    end
+  end
 
-      nil ->
-        {:error, :not_found}
+  def report_notes_delete(%{assigns: %{user: user}} = conn, %{
+        "id" => note_id,
+        "report_id" => report_id
+      }) do
+    with {:ok, note} <- ReportNote.destroy(note_id) do
+      ModerationLog.insert_log(%{
+        action: "report_note_delete",
+        actor: user,
+        subject: Activity.get_by_id(report_id),
+        text: note.content
+      })
+
+      json_response(conn, :no_content, "")
+    else
+      _ -> json_response(conn, :bad_request, "")
     end
   end
 
