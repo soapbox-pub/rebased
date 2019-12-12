@@ -79,7 +79,9 @@ defmodule Pleroma.Web.OAuth.Scopes do
     if user.is_admin || !contains_admin_scopes?(scopes) || !contains_admin_scopes?(app_scopes) do
       {:ok, scopes}
     else
-      {:error, :unsupported_scopes}
+      # Gracefully dropping admin scopes from requested scopes if user isn't an admin (not raising)
+      scopes = scopes -- OAuthScopesPlug.filter_descendants(scopes, ["admin"])
+      validate(scopes, app_scopes, user)
     end
   end
 
