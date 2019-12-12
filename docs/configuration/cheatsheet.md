@@ -834,9 +834,3 @@ config :auto_linker,
 ## Custom Runtime Modules (`:modules`)
 
 * `runtime_dir`: A path to custom Elixir modules (such as MRF policies).
-
-Example:
-
-```elixir
-config :pleroma, :modules, runtime_dir: "/var/lib/pleroma/modules"
-```
