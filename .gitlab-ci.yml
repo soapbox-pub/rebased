@@ -47,19 +47,19 @@ docs-build:
 unit-testing:
   stage: test
   services:
-  - name: lainsoykaf/postgres-with-rum
+  - name: postgres:9.6
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
-    - mix coveralls --trace --preload-modules
+    - mix coveralls --preload-modules
 
 unit-testing-rum:
   stage: test
   services:
-  - name: lainsoykaf/postgres-with-rum
+  - name: minibikini/postgres-with-rum:12
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   variables:
@@ -69,7 +69,7 @@ unit-testing-rum:
     - mix ecto.create
     - mix ecto.migrate
     - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
-    - mix test --trace --preload-modules
+    - mix test --preload-modules
 
 lint:
   stage: test
