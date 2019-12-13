@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Deprecated `User.Info` embedded schema (fields moved to `User`)
 - Store status data inside Flag activity
 - Deprecated (reorganized as `UserRelationship` entity) User fields with user AP IDs (`blocks`, `mutes`, `muted_reblogs`, `muted_notifications`, `subscribers`).
+- Rate limiter is now disabled for localhost/socket (unless remoteip plug is enabled)
 <details>
   <summary>API Changes</summary>
 
