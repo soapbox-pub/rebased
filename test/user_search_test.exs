@@ -51,13 +51,6 @@ defmodule Pleroma.UserSearchTest do
       end)
     end
 
-    test "finds users, preferring nickname matches over name matches" do
-      u1 = insert(:user, %{name: "lain", nickname: "nick1"})
-      u2 = insert(:user, %{nickname: "lain", name: "nick1"})
-
-      assert [u2.id, u1.id] == Enum.map(User.search("lain"), & &1.id)
-    end
-
     test "finds users, considering density of matched tokens" do
       u1 = insert(:user, %{name: "Bar Bar plus Word Word"})
       u2 = insert(:user, %{name: "Word Word Bar Bar Bar"})
