@@ -16,6 +16,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Default Captcha provider changed from `Pleroma.Captcha.Kocaptcha` to `Pleroma.Captcha.Native`
 - Better `Cache-Control` header for static content
 
+### Bundled Pleroma-FE Changes
+#### Added
+- Icons in the navigation panel
+
+#### Fixed
+- Improved support unauthenticated view of private instances
+
+#### Removed
+- Whitespace hack on empty post content 
+
 ## [1.1.6] - 2019-11-19
 ### Fixed
 - Not being able to log into to third party apps when the browser is logged into mastofe
