@@ -4,12 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.1.7] - 2019-12-13
+### Fixed
+- OTP: Inability to set the upload limit
+- OTP: Inability to override node name/distribution type to run 2 Pleroma instances on the same machine
+
 ### Added
 - Integrated captcha provider
 
 ### Changed
 - Captcha enabled by default
 - Default Captcha provider changed from `Pleroma.Captcha.Kocaptcha` to `Pleroma.Captcha.Native`
+- Better `Cache-Control` header for static content
 
 ## [1.1.6] - 2019-11-19
 ### Fixed
