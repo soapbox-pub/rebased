@@ -93,3 +93,5 @@ else
     "You may want to create test.secret.exs to declare custom database connection parameters."
   )
 end
+
+config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
