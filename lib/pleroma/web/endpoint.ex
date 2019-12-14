@@ -12,7 +12,7 @@ defmodule Pleroma.Web.Endpoint do
   plug(Pleroma.Plugs.HTTPSecurityPlug)
   plug(Pleroma.Plugs.UploadedMedia)
 
-  @static_cache_control "public, no-cache"
+  @static_cache_control "public max-age=86400 must-revalidate"
 
   # InstanceStatic needs to be before Plug.Static to be able to override shipped-static files
   # If you're adding new paths to `only:` you'll need to configure them in InstanceStatic as well
@@ -61,14 +61,7 @@ defmodule Pleroma.Web.Endpoint do
   plug(Plug.RequestId)
   plug(Plug.Logger)
 
-  plug(
-    Plug.Parsers,
-    parsers: [:urlencoded, :multipart, :json],
-    pass: ["*/*"],
-    json_decoder: Jason,
-    length: Pleroma.Config.get([:instance, :upload_limit]),
-    body_reader: {Pleroma.Web.Plugs.DigestPlug, :read_body, []}
-  )
+  plug(Pleroma.Plugs.Parsers)
 
   plug(Plug.MethodOverride)
   plug(Plug.Head)

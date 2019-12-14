@@ -9,7 +9,7 @@ defmodule Pleroma.Web.CacheControlTest do
   test "Verify Cache-Control header on static assets", %{conn: conn} do
     conn = get(conn, "/index.html")
 
-    assert Conn.get_resp_header(conn, "cache-control") == ["public, no-cache"]
+    assert Conn.get_resp_header(conn, "cache-control") == ["public max-age=86400 must-revalidate"]
   end
 
   test "Verify Cache-Control header on the API", %{conn: conn} do
