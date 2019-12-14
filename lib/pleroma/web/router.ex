@@ -187,7 +187,8 @@ defmodule Pleroma.Web.Router do
     get("/grouped_reports", AdminAPIController, :list_grouped_reports)
     get("/reports/:id", AdminAPIController, :report_show)
     patch("/reports", AdminAPIController, :reports_update)
-    post("/reports/:id/respond", AdminAPIController, :report_respond)
+    post("/reports/:id/notes", AdminAPIController, :report_notes_create)
+    delete("/reports/:report_id/notes/:id", AdminAPIController, :report_notes_delete)
 
     put("/statuses/:id", AdminAPIController, :status_update)
     delete("/statuses/:id", AdminAPIController, :status_delete)
@@ -528,7 +529,10 @@ defmodule Pleroma.Web.Router do
 
     get("/users/:nickname/feed", Feed.FeedController, :feed)
     get("/users/:nickname", Feed.FeedController, :feed_redirect)
+  end
 
+  scope "/", Pleroma.Web do
+    pipe_through(:browser)
     get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end
 

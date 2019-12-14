@@ -128,17 +128,35 @@ defmodule Pleroma.ModerationLog do
           {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
-        action: "report_response",
+        action: "report_note",
         subject: %Activity{} = subject,
         text: text
       }) do
     %ModerationLog{
       data: %{
         "actor" => user_to_map(actor),
-        "action" => "report_response",
+        "action" => "report_note",
         "subject" => report_to_map(subject),
-        "text" => text,
-        "message" => ""
+        "text" => text
+      }
+    }
+    |> insert_log_entry_with_message()
+  end
+
+  @spec insert_log(%{actor: User, subject: Activity, action: String.t(), text: String.t()}) ::
+          {:ok, ModerationLog} | {:error, any}
+  def insert_log(%{
+        actor: %User{} = actor,
+        action: "report_note_delete",
+        subject: %Activity{} = subject,
+        text: text
+      }) do
+    %ModerationLog{
+      data: %{
+        "actor" => user_to_map(actor),
+        "action" => "report_note_delete",
+        "subject" => report_to_map(subject),
+        "text" => text
       }
     }
     |> insert_log_entry_with_message()
@@ -556,12 +574,24 @@ defmodule Pleroma.ModerationLog do
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
-          "action" => "report_response",
+          "action" => "report_note",
           "subject" => %{"id" => subject_id, "type" => "report"},
           "text" => text
         }
       }) do
-    "@#{actor_nickname} responded with '#{text}' to report ##{subject_id}"
+    "@#{actor_nickname} added note '#{text}' to report ##{subject_id}"
+  end
+
+  @spec get_log_entry_message(ModerationLog) :: String.t()
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "report_note_delete",
+          "subject" => %{"id" => subject_id, "type" => "report"},
+          "text" => text
+        }
+      }) do
+    "@#{actor_nickname} deleted note '#{text}' from report ##{subject_id}"
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()

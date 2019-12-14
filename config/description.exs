@@ -2095,6 +2095,15 @@ config :pleroma, :config_description, [
     description: "Authentication / authorization settings",
     children: [
       %{
+        key: :enforce_oauth_admin_scope_usage,
+        type: :boolean,
+        description:
+          "OAuth admin scope requirement toggle. " <>
+            "If `true`, admin actions explicitly demand admin OAuth scope(s) presence in OAuth token " <>
+            "(client app must support admin scopes). If `false` and token doesn't have admin scope(s)," <>
+            "`is_admin` user flag grants access to admin-specific actions."
+      },
+      %{
         key: :auth_template,
         type: :string,
         description:
