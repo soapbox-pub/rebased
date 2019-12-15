@@ -99,7 +99,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
     assert participation.user_id == user.id
     assert participation.conversation_id == conversation.id
-    
+
     # Needed because updated_at is accurate down to a second
     :timer.sleep(1000)
 
