@@ -1639,13 +1639,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, _, _} = CommonAPI.favorite(a4.id, user)
       {:ok, _, _} = CommonAPI.favorite(a3.id, other_user)
-      Process.sleep(1000)
       {:ok, _, _} = CommonAPI.favorite(a3.id, user)
       {:ok, _, _} = CommonAPI.favorite(a5.id, other_user)
-      Process.sleep(1000)
       {:ok, _, _} = CommonAPI.favorite(a5.id, user)
       {:ok, _, _} = CommonAPI.favorite(a4.id, other_user)
-      Process.sleep(1000)
       {:ok, _, _} = CommonAPI.favorite(a1.id, user)
       {:ok, _, _} = CommonAPI.favorite(a1.id, other_user)
       result = ActivityPub.fetch_favourites(user)
