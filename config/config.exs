@@ -70,6 +70,8 @@ config :pleroma, Pleroma.Captcha,
   seconds_valid: 60,
   method: Pleroma.Captcha.Native
 
+config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
+
 config :pleroma, :hackney_pools,
   federation: [
     max_connections: 50,

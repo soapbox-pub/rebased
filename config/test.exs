@@ -97,8 +97,6 @@ config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 
 config :pleroma, :modules, runtime_dir: "test/fixtures/modules"
 
-config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
-
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else
