@@ -53,7 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - User notification settings: Add `privacy_option` option.
 - User settings: Add _This account is a_ option.
 - OAuth: admin scopes support (relevant setting: `[:auth, :enforce_oauth_admin_scope_usage]`).
-- Add an option `authorized_fetch_mode` to require HTTP Signatures for AP fetches.
+- Add an option `authorized_fetch_mode` to require HTTP signatures for AP fetches.
 <details>
   <summary>API Changes</summary>
 
