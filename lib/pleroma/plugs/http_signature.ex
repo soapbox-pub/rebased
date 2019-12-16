@@ -15,30 +15,45 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
   end
 
   def call(conn, _opts) do
-    headers = get_req_header(conn, "signature")
-    signature = Enum.at(headers, 0)
+    conn
+    |> maybe_assign_valid_signature()
+    |> maybe_require_signature()
+  end
 
-    if signature do
+  defp maybe_assign_valid_signature(conn) do
+    if has_signature_header?(conn) do
       # set (request-target) header to the appropriate value
       # we also replace the digest header with the one we computed
-      conn =
-        conn
-        |> put_req_header(
-          "(request-target)",
-          String.downcase("#{conn.method}") <> " #{conn.request_path}"
-        )
+      request_target = String.downcase("#{conn.method}") <> " #{conn.request_path}"
 
       conn =
-        if conn.assigns[:digest] do
-          conn
-          |> put_req_header("digest", conn.assigns[:digest])
-        else
-          conn
+        conn
+        |> put_req_header("(request-target)", request_target)
+        |> case do
+          %{assigns: %{digest: digest}} = conn -> put_req_header(conn, "digest", digest)
+          conn -> conn
         end
 
       assign(conn, :valid_signature, HTTPSignatures.validate_conn(conn))
     else
       Logger.debug("No signature header!")
+      conn
+    end
+  end
+
+  defp has_signature_header?(conn) do
+    conn |> get_req_header("signature") |> Enum.at(0, false)
+  end
+
+  defp maybe_require_signature(%{assigns: %{valid_signature: true}} = conn), do: conn
+
+  defp maybe_require_signature(conn) do
+    if Pleroma.Config.get([:activitypub, :authorized_fetch_mode], false) do
+      conn
+      |> put_status(:unauthorized)
+      |> Phoenix.Controller.text("Request not signed")
+      |> halt()
+    else
       conn
     end
   end
