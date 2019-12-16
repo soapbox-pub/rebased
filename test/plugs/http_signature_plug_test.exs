@@ -28,7 +28,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
     end
   end
 
-  describe "requries a signature when `authorized_fetch_mode` is enabled" do
+  describe "requires a signature when `authorized_fetch_mode` is enabled" do
     setup do
       Pleroma.Config.put([:activitypub, :authorized_fetch_mode], true)
 
