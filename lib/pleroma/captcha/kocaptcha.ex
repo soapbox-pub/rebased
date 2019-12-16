@@ -5,13 +5,11 @@
 defmodule Pleroma.Captcha.Kocaptcha do
   import Pleroma.Web.Gettext
   alias Pleroma.Captcha.Service
-
   @behaviour Service
-  @default_endpoint "https://captcha.kotobank.ch"
 
   @impl Service
   def new do
-    endpoint = Pleroma.Config.get([__MODULE__, :endpoint], @default_endpoint)
+    endpoint = Pleroma.Config.get!([__MODULE__, :endpoint])
 
     case Tesla.get(endpoint <> "/new") do
       {:error, _} ->
