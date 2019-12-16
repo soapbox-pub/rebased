@@ -701,12 +701,10 @@ config :pleroma, :config_description, [
         type: {:list, :string},
         description: "MIME-type list of formats allowed to be posted (transformed into HTML)",
         suggestions: [
-          [
-            "text/plain",
-            "text/html",
-            "text/markdown",
-            "text/bbcode"
-          ]
+          "text/plain",
+          "text/html",
+          "text/markdown",
+          "text/bbcode"
         ]
       },
       %{
@@ -1990,10 +1988,8 @@ config :pleroma, :config_description, [
         type: {:keyword, :integer},
         description: "Max retry attempts for failed jobs, per `Oban` queue",
         suggestions: [
-          [
-            federator_incoming: 5,
-            federator_outgoing: 5
-          ]
+          federator_incoming: 5,
+          federator_outgoing: 5
         ]
       }
     ]
