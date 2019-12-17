@@ -9,20 +9,24 @@ defmodule Pleroma.Web.Feed.TagController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.Feed.FeedView
 
-  def feed(conn, %{"tag" => tag} = params) do
+  import Pleroma.Web.ControllerHelper, only: [put_in_if_exist: 3]
+
+  def feed(conn, %{"tag" => raw_tag} = params) do
+    tag = parse_tag(raw_tag)
+
     activities =
-      %{
-        "type" => ["Create"],
-        "whole_db" => true,
-        "tag" => parse_tag(tag)
-      }
-      |> Map.merge(Map.take(params, ["max_id"]))
+      %{"type" => ["Create"], "whole_db" => true, "tag" => tag}
+      |> put_in_if_exist("max_id", params["max_id"])
       |> ActivityPub.fetch_public_activities()
 
     conn
     |> put_resp_content_type("application/atom+xml")
     |> put_view(FeedView)
-    |> render("tag.xml", activities: activities, feed_config: Config.get([:feed]))
+    |> render("tag.xml",
+      activities: activities,
+      tag: tag,
+      feed_config: Config.get([:feed])
+    )
   end
 
   defp parse_tag(raw_tag) when is_binary(raw_tag) do

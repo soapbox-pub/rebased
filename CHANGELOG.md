@@ -86,6 +86,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `/api/v1/update_credentials` accepts `actor_type` field.
 - Captcha: Support native provider
 - Captcha: Enable by default
+- Configuration: `feed.logo` option for tag feed.
+- Tag feed: `/tags/:tag.rss` - list public statuses by hashtag.
 </details>
 
 ### Fixed
