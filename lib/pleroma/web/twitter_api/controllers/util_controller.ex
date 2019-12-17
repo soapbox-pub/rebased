@@ -104,7 +104,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   defp is_status?(acct) do
     case Pleroma.Object.Fetcher.fetch_and_contain_remote_object_from_id(acct) do
-      {:ok, %{"type" => type}} when type in ["Article", "Note", "Video", "Page", "Question"] ->
+      {:ok, %{"type" => type}}
+      when type in ["Article", "Event", "Note", "Video", "Page", "Question"] ->
         true
 
       _ ->

@@ -394,6 +394,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert length(represented[:media_attachments]) == 1
   end
 
+  test "a Mobilizon event" do
+    user = insert(:user)
+
+    {:ok, object} =
+      Pleroma.Object.Fetcher.fetch_object_from_id(
+        "https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39"
+      )
+
+    %Activity{} = activity = Activity.get_create_by_object_ap_id(object.data["id"])
+
+    represented = StatusView.render("show.json", %{for: user, activity: activity})
+
+    assert represented[:id] == to_string(activity.id)
+  end
+
   describe "build_tags/1" do
     test "it returns a a dictionary tags" do
       object_tags = [
