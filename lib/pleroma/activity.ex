@@ -12,6 +12,7 @@ defmodule Pleroma.Activity do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ReportNote
   alias Pleroma.ThreadMute
   alias Pleroma.User
 
@@ -48,6 +49,8 @@ defmodule Pleroma.Activity do
     has_one(:user_actor, User, on_delete: :nothing, foreign_key: :id)
     # This is a fake relation, do not use outside of with_preloaded_bookmark/get_bookmark
     has_one(:bookmark, Bookmark)
+    # This is a fake relation, do not use outside of with_preloaded_report_notes
+    has_many(:report_notes, ReportNote)
     has_many(:notifications, Notification, on_delete: :delete_all)
 
     # Attention: this is a fake relation, don't try to preload it blindly and expect it to work!
@@ -113,6 +116,16 @@ defmodule Pleroma.Activity do
   end
 
   def with_preloaded_bookmark(query, _), do: query
+
+  def with_preloaded_report_notes(query) do
+    from([a] in query,
+      left_join: r in ReportNote,
+      on: a.id == r.activity_id,
+      preload: [report_notes: r]
+    )
+  end
+
+  def with_preloaded_report_notes(query, _), do: query
 
   def with_set_thread_muted_field(query, %User{} = user) do
     from([a] in query,
@@ -241,9 +254,10 @@ defmodule Pleroma.Activity do
   def normalize(ap_id) when is_binary(ap_id), do: get_by_ap_id_with_object(ap_id)
   def normalize(_), do: nil
 
-  def delete_by_ap_id(id) when is_binary(id) do
+  def delete_all_by_object_ap_id(id) when is_binary(id) do
     id
     |> Queries.by_object_id()
+    |> Queries.exclude_type("Delete")
     |> select([u], u)
     |> Repo.delete_all()
     |> elem(1)
@@ -255,7 +269,7 @@ defmodule Pleroma.Activity do
     |> purge_web_resp_cache()
   end
 
-  def delete_by_ap_id(_), do: nil
+  def delete_all_by_object_ap_id(_), do: nil
 
   defp purge_web_resp_cache(%Activity{} = activity) do
     %{path: path} = URI.parse(activity.data["id"])

@@ -12,6 +12,7 @@ You shouldn't edit the base config directly to avoid breakages and merge conflic
 * `notify_email`: Email used for notifications.
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
+* `chat_limit`: Character limit of the instance chat messages.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner).
 * `avatar_upload_limit`: File size limit of user’s profile avatars.
@@ -378,13 +379,19 @@ For each pool, the options are:
 ## Captcha
 
 ### Pleroma.Captcha
+
 * `enabled`: Whether the captcha should be shown on registration.
 * `method`: The method/service to use for captcha.
 * `seconds_valid`: The time in seconds for which the captcha is valid.
 
 ### Captcha providers
 
+#### Pleroma.Captcha.Native
+
+A built-in captcha provider. Enabled by default.
+
 #### Pleroma.Captcha.Kocaptcha
+
 Kocaptcha is a very simple captcha service with a single API endpoint,
 the source code is here: https://github.com/koto-bank/kocaptcha. The default endpoint
 `https://captcha.kotobank.ch` is hosted by the developer.

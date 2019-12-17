@@ -127,15 +127,13 @@ defmodule Pleroma.User do
     field(:invisible, :boolean, default: false)
     field(:allow_following_move, :boolean, default: true)
     field(:skip_thread_containment, :boolean, default: false)
+    field(:actor_type, :string, default: "Person")
     field(:also_known_as, {:array, :string}, default: [])
 
-    field(:notification_settings, :map,
-      default: %{
-        "followers" => true,
-        "follows" => true,
-        "non_follows" => true,
-        "non_followers" => true
-      }
+    embeds_one(
+      :notification_settings,
+      Pleroma.User.NotificationSetting,
+      on_replace: :update
     )
 
     has_many(:notifications, Notification)
@@ -349,6 +347,7 @@ defmodule Pleroma.User do
           :following_count,
           :discoverable,
           :invisible,
+          :actor_type,
           :also_known_as
         ]
       )
@@ -399,6 +398,7 @@ defmodule Pleroma.User do
         :raw_fields,
         :pleroma_settings_store,
         :discoverable,
+        :actor_type,
         :also_known_as
       ]
     )
@@ -441,6 +441,7 @@ defmodule Pleroma.User do
         :discoverable,
         :hide_followers_count,
         :hide_follows_count,
+        :actor_type,
         :also_known_as
       ]
     )
@@ -861,6 +862,13 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
+  def get_friends_ap_ids(user) do
+    user
+    |> get_friends_query(nil)
+    |> select([u], u.ap_id)
+    |> Repo.all()
+  end
+
   def get_friends_ids(user, page \\ nil) do
     user
     |> get_friends_query(page)
@@ -1135,7 +1143,8 @@ defmodule Pleroma.User do
   def blocks?(nil, _), do: false
 
   def blocks?(%User{} = user, %User{} = target) do
-    blocks_user?(user, target) || blocks_domain?(user, target)
+    blocks_user?(user, target) ||
+      (!User.following?(user, target) && blocks_domain?(user, target))
   end
 
   def blocks_user?(%User{} = user, %User{} = target) do
@@ -1221,20 +1230,9 @@ defmodule Pleroma.User do
   end
 
   def update_notification_settings(%User{} = user, settings) do
-    settings =
-      settings
-      |> Enum.map(fn {k, v} -> {k, v in [true, "true", "True", "1"]} end)
-      |> Map.new()
-
-    notification_settings =
-      user.notification_settings
-      |> Map.merge(settings)
-      |> Map.take(["followers", "follows", "non_follows", "non_followers"])
-
-    params = %{notification_settings: notification_settings}
-
     user
-    |> cast(params, [:notification_settings])
+    |> cast(%{notification_settings: settings}, [])
+    |> cast_embed(:notification_settings)
     |> validate_required([:notification_settings])
     |> update_and_set_cache()
   end
@@ -1849,13 +1847,28 @@ defmodule Pleroma.User do
   end
 
   def admin_api_update(user, params) do
-    user
-    |> cast(params, [
-      :is_moderator,
-      :is_admin,
-      :show_role
-    ])
-    |> update_and_set_cache()
+    changeset =
+      cast(user, params, [
+        :is_moderator,
+        :is_admin,
+        :show_role
+      ])
+
+    with {:ok, updated_user} <- update_and_set_cache(changeset) do
+      if user.is_admin && !updated_user.is_admin do
+        # Tokens & authorizations containing any admin scopes must be revoked (revoking all).
+        # This is an extra safety measure (tokens' admin scopes won't be accepted for non-admins).
+        global_sign_out(user)
+      end
+
+      {:ok, updated_user}
+    end
+  end
+
+  @doc "Signs user out of all applications"
+  def global_sign_out(user) do
+    OAuth.Authorization.delete_user_authorizations(user)
+    OAuth.Token.delete_user_tokens(user)
   end
 
   def mascot_update(user, url) do

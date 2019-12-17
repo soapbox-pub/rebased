@@ -608,6 +608,39 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute repeat_activity in activities
   end
 
+  test "does return activities from followed users on blocked domains" do
+    domain = "meanies.social"
+    domain_user = insert(:user, %{ap_id: "https://#{domain}/@pundit"})
+    blocker = insert(:user)
+
+    {:ok, blocker} = User.follow(blocker, domain_user)
+    {:ok, blocker} = User.block_domain(blocker, domain)
+
+    assert User.following?(blocker, domain_user)
+    assert User.blocks_domain?(blocker, domain_user)
+    refute User.blocks?(blocker, domain_user)
+
+    note = insert(:note, %{data: %{"actor" => domain_user.ap_id}})
+    activity = insert(:note_activity, %{note: note})
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => blocker, "skip_preload" => true})
+
+    assert activity in activities
+
+    # And check that if the guy we DO follow boosts someone else from their domain,
+    # that should be hidden
+    another_user = insert(:user, %{ap_id: "https://#{domain}/@meanie2"})
+    bad_note = insert(:note, %{data: %{"actor" => another_user.ap_id}})
+    bad_activity = insert(:note_activity, %{note: bad_note})
+    {:ok, repeat_activity, _} = CommonAPI.repeat(bad_activity.id, domain_user)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => blocker, "skip_preload" => true})
+
+    refute repeat_activity in activities
+  end
+
   test "doesn't return muted activities" do
     activity_one = insert(:note_activity)
     activity_two = insert(:note_activity)
@@ -1259,6 +1292,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 0
     end
+
+    test "it passes delete activity through MRF before deleting the object" do
+      rewrite_policy = Pleroma.Config.get([:instance, :rewrite_policy])
+      Pleroma.Config.put([:instance, :rewrite_policy], Pleroma.Web.ActivityPub.MRF.DropPolicy)
+
+      on_exit(fn -> Pleroma.Config.put([:instance, :rewrite_policy], rewrite_policy) end)
+
+      note = insert(:note_activity)
+      object = Object.normalize(note)
+
+      {:error, {:reject, _}} = ActivityPub.delete(object)
+
+      assert Activity.get_by_id(note.id)
+      assert Repo.get(Object, object.id).data["type"] == object.data["type"]
+    end
   end
 
   describe "timeline post-processing" do
@@ -1577,6 +1625,35 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "fetch_favourites/3" do
+    test "returns a favourite activities sorted by adds to favorite" do
+      user = insert(:user)
+      other_user = insert(:user)
+      user1 = insert(:user)
+      user2 = insert(:user)
+      {:ok, a1} = CommonAPI.post(user1, %{"status" => "bla"})
+      {:ok, _a2} = CommonAPI.post(user2, %{"status" => "traps are happy"})
+      {:ok, a3} = CommonAPI.post(user2, %{"status" => "Trees Are "})
+      {:ok, a4} = CommonAPI.post(user2, %{"status" => "Agent Smith "})
+      {:ok, a5} = CommonAPI.post(user1, %{"status" => "Red or Blue "})
+
+      {:ok, _, _} = CommonAPI.favorite(a4.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a3.id, other_user)
+      {:ok, _, _} = CommonAPI.favorite(a3.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a5.id, other_user)
+      {:ok, _, _} = CommonAPI.favorite(a5.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a4.id, other_user)
+      {:ok, _, _} = CommonAPI.favorite(a1.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a1.id, other_user)
+      result = ActivityPub.fetch_favourites(user)
+
+      assert Enum.map(result, & &1.id) == [a1.id, a5.id, a3.id, a4.id]
+
+      result = ActivityPub.fetch_favourites(user, %{"limit" => 2})
+      assert Enum.map(result, & &1.id) == [a1.id, a5.id]
+    end
+  end
+
   describe "Move activity" do
     test "create" do
       %{ap_id: old_ap_id} = old_user = insert(:user)
@@ -1622,10 +1699,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activity = %Activity{activity | object: nil}
 
       assert [%Notification{activity: ^activity}] =
-               Notification.for_user_since(follower, ~N[2019-04-13 11:22:33])
+               Notification.for_user(follower, %{with_move: true})
 
       assert [%Notification{activity: ^activity}] =
-               Notification.for_user_since(follower_move_opted_out, ~N[2019-04-13 11:22:33])
+               Notification.for_user(follower_move_opted_out, %{with_move: true})
     end
 
     test "old user must be in the new user's `also_known_as` list" do

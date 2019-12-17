@@ -64,4 +64,12 @@ defmodule Pleroma.Activity.Queries do
       where: fragment("(?)->>'type' = ?", activity.data, ^activity_type)
     )
   end
+
+  @spec exclude_type(query, String.t()) :: query
+  def exclude_type(query \\ Activity, activity_type) do
+    from(
+      activity in query,
+      where: fragment("(?)->>'type' != ?", activity.data, ^activity_type)
+    )
+  end
 end

@@ -188,6 +188,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         {:ok, Map.merge(user.pleroma_settings_store, value)}
       end)
       |> add_if_present(params, "default_scope", :default_scope)
+      |> add_if_present(params, "actor_type", :actor_type)
 
     emojis_text = (user_params["display_name"] || "") <> (user_params["note"] || "")
 
@@ -249,7 +250,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   @doc "GET /api/v1/accounts/:id/statuses"
   def statuses(%{assigns: %{user: reading_user}} = conn, params) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user) do
-      params = Map.put(params, "tag", params["tagged"])
+      params =
+        params
+        |> Map.put("tag", params["tagged"])
+        |> Map.delete("godmode")
+
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 
       conn

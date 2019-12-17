@@ -567,33 +567,41 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   end
 
   describe "POST /oauth/authorize" do
-    test "redirects with oauth authorization" do
-      user = insert(:user)
-      app = insert(:oauth_app, scopes: ["read", "write", "follow"])
+    test "redirects with oauth authorization, " <>
+           "keeping only non-admin scopes for non-admin user" do
+      app = insert(:oauth_app, scopes: ["read", "write", "admin"])
       redirect_uri = OAuthController.default_redirect_uri(app)
 
-      conn =
-        build_conn()
-        |> post("/oauth/authorize", %{
-          "authorization" => %{
-            "name" => user.nickname,
-            "password" => "test",
-            "client_id" => app.client_id,
-            "redirect_uri" => redirect_uri,
-            "scope" => "read:subscope write",
-            "state" => "statepassed"
-          }
-        })
+      non_admin = insert(:user, is_admin: false)
+      admin = insert(:user, is_admin: true)
 
-      target = redirected_to(conn)
-      assert target =~ redirect_uri
+      for {user, expected_scopes} <- %{
+            non_admin => ["read:subscope", "write"],
+            admin => ["read:subscope", "write", "admin"]
+          } do
+        conn =
+          build_conn()
+          |> post("/oauth/authorize", %{
+            "authorization" => %{
+              "name" => user.nickname,
+              "password" => "test",
+              "client_id" => app.client_id,
+              "redirect_uri" => redirect_uri,
+              "scope" => "read:subscope write admin",
+              "state" => "statepassed"
+            }
+          })
 
-      query = URI.parse(target).query |> URI.query_decoder() |> Map.new()
+        target = redirected_to(conn)
+        assert target =~ redirect_uri
 
-      assert %{"state" => "statepassed", "code" => code} = query
-      auth = Repo.get_by(Authorization, token: code)
-      assert auth
-      assert auth.scopes == ["read:subscope", "write"]
+        query = URI.parse(target).query |> URI.query_decoder() |> Map.new()
+
+        assert %{"state" => "statepassed", "code" => code} = query
+        auth = Repo.get_by(Authorization, token: code)
+        assert auth
+        assert auth.scopes == expected_scopes
+      end
     end
 
     test "returns 401 for wrong credentials", %{conn: conn} do
@@ -623,31 +631,34 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert result =~ "Invalid Username/Password"
     end
 
-    test "returns 401 for missing scopes", %{conn: conn} do
-      user = insert(:user)
-      app = insert(:oauth_app)
+    test "returns 401 for missing scopes " <>
+           "(including all admin-only scopes for non-admin user)" do
+      user = insert(:user, is_admin: false)
+      app = insert(:oauth_app, scopes: ["read", "write", "admin"])
       redirect_uri = OAuthController.default_redirect_uri(app)
 
-      result =
-        conn
-        |> post("/oauth/authorize", %{
-          "authorization" => %{
-            "name" => user.nickname,
-            "password" => "test",
-            "client_id" => app.client_id,
-            "redirect_uri" => redirect_uri,
-            "state" => "statepassed",
-            "scope" => ""
-          }
-        })
-        |> html_response(:unauthorized)
+      for scope_param <- ["", "admin:read admin:write"] do
+        result =
+          build_conn()
+          |> post("/oauth/authorize", %{
+            "authorization" => %{
+              "name" => user.nickname,
+              "password" => "test",
+              "client_id" => app.client_id,
+              "redirect_uri" => redirect_uri,
+              "state" => "statepassed",
+              "scope" => scope_param
+            }
+          })
+          |> html_response(:unauthorized)
 
-      # Keep the details
-      assert result =~ app.client_id
-      assert result =~ redirect_uri
+        # Keep the details
+        assert result =~ app.client_id
+        assert result =~ redirect_uri
 
-      # Error message
-      assert result =~ "This action is outside the authorized scopes"
+        # Error message
+        assert result =~ "This action is outside the authorized scopes"
+      end
     end
 
     test "returns 401 for scopes beyond app scopes hierarchy", %{conn: conn} do

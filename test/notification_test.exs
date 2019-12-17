@@ -136,7 +136,10 @@ defmodule Pleroma.NotificationTest do
 
     test "it disables notifications from followers" do
       follower = insert(:user)
-      followed = insert(:user, notification_settings: %{"followers" => false})
+
+      followed =
+        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{followers: false})
+
       User.follow(follower, followed)
       {:ok, activity} = CommonAPI.post(follower, %{"status" => "hey @#{followed.nickname}"})
       refute Notification.create_notification(activity, followed)
@@ -144,13 +147,20 @@ defmodule Pleroma.NotificationTest do
 
     test "it disables notifications from non-followers" do
       follower = insert(:user)
-      followed = insert(:user, notification_settings: %{"non_followers" => false})
+
+      followed =
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{non_followers: false}
+        )
+
       {:ok, activity} = CommonAPI.post(follower, %{"status" => "hey @#{followed.nickname}"})
       refute Notification.create_notification(activity, followed)
     end
 
     test "it disables notifications from people the user follows" do
-      follower = insert(:user, notification_settings: %{"follows" => false})
+      follower =
+        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{follows: false})
+
       followed = insert(:user)
       User.follow(follower, followed)
       follower = Repo.get(User, follower.id)
@@ -159,7 +169,9 @@ defmodule Pleroma.NotificationTest do
     end
 
     test "it disables notifications from people the user does not follow" do
-      follower = insert(:user, notification_settings: %{"non_follows" => false})
+      follower =
+        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{non_follows: false})
+
       followed = insert(:user)
       {:ok, activity} = CommonAPI.post(followed, %{"status" => "hey @#{follower.nickname}"})
       refute Notification.create_notification(activity, follower)
@@ -643,13 +655,7 @@ defmodule Pleroma.NotificationTest do
       Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
       ObanHelpers.perform_all()
 
-      assert [
-               %{
-                 activity: %{
-                   data: %{"type" => "Move", "actor" => ^old_ap_id, "target" => ^new_ap_id}
-                 }
-               }
-             ] = Notification.for_user(follower)
+      assert [] = Notification.for_user(follower)
 
       assert [
                %{
@@ -657,7 +663,17 @@ defmodule Pleroma.NotificationTest do
                    data: %{"type" => "Move", "actor" => ^old_ap_id, "target" => ^new_ap_id}
                  }
                }
-             ] = Notification.for_user(other_follower)
+             ] = Notification.for_user(follower, %{with_move: true})
+
+      assert [] = Notification.for_user(other_follower)
+
+      assert [
+               %{
+                 activity: %{
+                   data: %{"type" => "Move", "actor" => ^old_ap_id, "target" => ^new_ap_id}
+                 }
+               }
+             ] = Notification.for_user(other_follower, %{with_move: true})
     end
   end
 

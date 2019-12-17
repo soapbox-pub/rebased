@@ -298,7 +298,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn1, :ok)
       assert Enum.any?(conn1.resp_headers, &(&1 == {"x-cache", "MISS from Pleroma"}))
 
-      Activity.delete_by_ap_id(activity.object.data["id"])
+      Activity.delete_all_by_object_ap_id(activity.object.data["id"])
 
       conn2 =
         conn
