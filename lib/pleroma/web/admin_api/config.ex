@@ -145,6 +145,33 @@ defmodule Pleroma.Web.AdminAPI.Config do
     for {k, v} <- entity, into: %{}, do: {do_convert(k), do_convert(v)}
   end
 
+  defp do_convert({:proxy_url, {type, :localhost, port}}) do
+    %{"tuple" => [":proxy_url", %{"tuple" => [do_convert(type), "localhost", port]}]}
+  end
+
+  defp do_convert({:proxy_url, {type, host, port}}) when is_tuple(host) do
+    ip =
+      host
+      |> :inet_parse.ntoa()
+      |> to_string()
+
+    %{
+      "tuple" => [
+        ":proxy_url",
+        %{"tuple" => [do_convert(type), ip, port]}
+      ]
+    }
+  end
+
+  defp do_convert({:proxy_url, {type, host, port}}) do
+    %{
+      "tuple" => [
+        ":proxy_url",
+        %{"tuple" => [do_convert(type), to_string(host), port]}
+      ]
+    }
+  end
+
   defp do_convert({:dispatch, [entity]}), do: %{"tuple" => [":dispatch", [inspect(entity)]]}
   # TODO: will become useless after removing hackney
   defp do_convert({:partial_chain, entity}), do: %{"tuple" => [":partial_chain", inspect(entity)]}
@@ -172,6 +199,10 @@ defmodule Pleroma.Web.AdminAPI.Config do
   def to_binary(entity), do: :erlang.term_to_binary(entity)
 
   defp do_transform(%Regex{} = entity), do: entity
+
+  defp do_transform(%{"tuple" => [":proxy_url", %{"tuple" => [type, host, port]}]}) do
+    {:proxy_url, {do_transform_string(type), parse_host(host), port}}
+  end
 
   defp do_transform(%{"tuple" => [":dispatch", [entity]]}) do
     {dispatch_settings, []} = do_eval(entity)
@@ -203,6 +234,20 @@ defmodule Pleroma.Web.AdminAPI.Config do
   end
 
   defp do_transform(entity), do: entity
+
+  defp parse_host("localhost"), do: :localhost
+
+  defp parse_host(host) do
+    charlist = to_charlist(host)
+
+    case :inet.parse_address(charlist) do
+      {:error, :einval} ->
+        charlist
+
+      {:ok, ip} ->
+        ip
+    end
+  end
 
   @delimiters ["/", "|", "\"", "'", {"(", ")"}, {"[", "]"}, {"{", "}"}, {"<", ">"}]
 

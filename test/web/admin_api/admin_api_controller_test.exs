@@ -1997,6 +1997,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     setup %{conn: conn} do
       admin = insert(:user, is_admin: true)
 
+      http = Application.get_env(:pleroma, :http)
+
       on_exit(fn ->
         Application.delete_env(:pleroma, :key1)
         Application.delete_env(:pleroma, :key2)
@@ -2006,6 +2008,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         Application.delete_env(:pleroma, :keyaa2)
         Application.delete_env(:pleroma, Pleroma.Web.Endpoint.NotReal)
         Application.delete_env(:pleroma, Pleroma.Captcha.NotReal)
+        Application.put_env(:pleroma, :http, http)
         Application.put_env(:tesla, :adapter, Tesla.Mock)
         :ok = File.rm("config/test.exported_from_db.secret.exs")
       end)
@@ -2656,17 +2659,102 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           ]
         })
 
-      assert(
-        json_response(conn, 200) == %{
-          "configs" => [
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => ":pleroma",
+                   "key" => ":keyaa1",
+                   "value" => [%{"tuple" => [":subkey2", "val2"]}]
+                 }
+               ]
+             }
+    end
+
+    test "proxy tuple localhost", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
             %{
-              "group" => ":pleroma",
-              "key" => ":keyaa1",
-              "value" => [%{"tuple" => [":subkey2", "val2"]}]
+              group: ":pleroma",
+              key: ":http",
+              value: [
+                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]},
+                %{"tuple" => [":send_user_agent", false]}
+              ]
             }
           ]
-        }
-      )
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => ":pleroma",
+                   "key" => ":http",
+                   "value" => [
+                     %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]},
+                     %{"tuple" => [":send_user_agent", false]}
+                   ]
+                 }
+               ]
+             }
+    end
+
+    test "proxy tuple domain", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              group: ":pleroma",
+              key: ":http",
+              value: [
+                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]},
+                %{"tuple" => [":send_user_agent", false]}
+              ]
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => ":pleroma",
+                   "key" => ":http",
+                   "value" => [
+                     %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]},
+                     %{"tuple" => [":send_user_agent", false]}
+                   ]
+                 }
+               ]
+             }
+    end
+
+    test "proxy tuple ip", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              group: ":pleroma",
+              key: ":http",
+              value: [
+                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]},
+                %{"tuple" => [":send_user_agent", false]}
+              ]
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => ":pleroma",
+                   "key" => ":http",
+                   "value" => [
+                     %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]},
+                     %{"tuple" => [":send_user_agent", false]}
+                   ]
+                 }
+               ]
+             }
     end
   end
 

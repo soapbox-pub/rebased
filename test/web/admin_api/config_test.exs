@@ -217,6 +217,36 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
       assert Config.from_binary(binary) == {"v1", :v2}
     end
 
+    test "proxy tuple with localhost" do
+      binary =
+        Config.transform(%{
+          "tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]
+        })
+
+      assert binary == :erlang.term_to_binary({:proxy_url, {:socks5, :localhost, 1234}})
+      assert Config.from_binary(binary) == {:proxy_url, {:socks5, :localhost, 1234}}
+    end
+
+    test "proxy tuple with domain" do
+      binary =
+        Config.transform(%{
+          "tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]
+        })
+
+      assert binary == :erlang.term_to_binary({:proxy_url, {:socks5, 'domain.com', 1234}})
+      assert Config.from_binary(binary) == {:proxy_url, {:socks5, 'domain.com', 1234}}
+    end
+
+    test "proxy tuple with ip" do
+      binary =
+        Config.transform(%{
+          "tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]
+        })
+
+      assert binary == :erlang.term_to_binary({:proxy_url, {:socks5, {127, 0, 0, 1}, 1234}})
+      assert Config.from_binary(binary) == {:proxy_url, {:socks5, {127, 0, 0, 1}, 1234}}
+    end
+
     test "tuple with n childs" do
       binary =
         Config.transform(%{
