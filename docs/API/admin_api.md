@@ -614,78 +614,29 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
   - On success: `204`, empty response
 
-## `POST /api/pleroma/admin/reports/:id/respond`
+## `POST /api/pleroma/admin/reports/:id/notes`
 
-### Respond to a report
+### Create report note
 
 - Params:
-  - `id`
-  - `status`: required, the message
+  - `id`: required, report id
+  - `content`: required, the message
 - Response:
   - On failure:
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
-    - 403 Forbidden `{"error": "error_msg"}`
-    - 404 Not Found `"Not found"`
-  - On success: JSON, created Mastodon Status entity
+  - On success: `204`, empty response
 
-```json
-{
-  "account": { ... },
-  "application": {
-    "name": "Web",
-    "website": null
-  },
-  "bookmarked": false,
-  "card": null,
-  "content": "Your claim is going to be closed",
-  "created_at": "2019-05-11T17:13:03.000Z",
-  "emojis": [],
-  "favourited": false,
-  "favourites_count": 0,
-  "id": "9ihuiSL1405I65TmEq",
-  "in_reply_to_account_id": null,
-  "in_reply_to_id": null,
-  "language": null,
-  "media_attachments": [],
-  "mentions": [
-    {
-      "acct": "user",
-      "id": "9i6dAJqSGSKMzLG2Lo",
-      "url": "https://pleroma.example.org/users/user",
-      "username": "user"
-    },
-    {
-      "acct": "admin",
-      "id": "9hEkA5JsvAdlSrocam",
-      "url": "https://pleroma.example.org/users/admin",
-      "username": "admin"
-    }
-  ],
-  "muted": false,
-  "pinned": false,
-  "pleroma": {
-    "content": {
-      "text/plain": "Your claim is going to be closed"
-    },
-    "conversation_id": 35,
-    "in_reply_to_account_acct": null,
-    "local": true,
-    "spoiler_text": {
-      "text/plain": ""
-    }
-  },
-  "reblog": null,
-  "reblogged": false,
-  "reblogs_count": 0,
-  "replies_count": 0,
-  "sensitive": false,
-  "spoiler_text": "",
-  "tags": [],
-  "uri": "https://pleroma.example.org/objects/cab0836d-9814-46cd-a0ea-529da9db5fcb",
-  "url": "https://pleroma.example.org/notice/9ihuiSL1405I65TmEq",
-  "visibility": "direct"
-}
-```
+## `POST /api/pleroma/admin/reports/:report_id/notes/:id`
+
+### Delete report note
+
+- Params:
+  - `report_id`: required, report id
+  - `id`: required, note id
+- Response:
+  - On failure:
+    - 400 Bad Request `"Invalid parameters"` when `status` is missing
+  - On success: `204`, empty response
 
 ## `PUT /api/pleroma/admin/statuses/:id`
 

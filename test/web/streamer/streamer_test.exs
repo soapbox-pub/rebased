@@ -16,6 +16,10 @@ defmodule Pleroma.Web.StreamerTest do
   alias Pleroma.Web.Streamer.Worker
 
   @moduletag needs_streamer: true, capture_log: true
+
+  @streamer_timeout 150
+  @streamer_start_wait 10
+
   clear_config_all([:instance, :skip_thread_containment])
 
   describe "user streams" do
@@ -28,7 +32,7 @@ defmodule Pleroma.Web.StreamerTest do
     test "it sends notify to in the 'user' stream", %{user: user, notify: notify} do
       task =
         Task.async(fn ->
-          assert_receive {:text, _}, 4_000
+          assert_receive {:text, _}, @streamer_timeout
         end)
 
       Streamer.add_socket(
@@ -43,7 +47,7 @@ defmodule Pleroma.Web.StreamerTest do
     test "it sends notify to in the 'user:notification' stream", %{user: user, notify: notify} do
       task =
         Task.async(fn ->
-          assert_receive {:text, _}, 4_000
+          assert_receive {:text, _}, @streamer_timeout
         end)
 
       Streamer.add_socket(
@@ -61,7 +65,7 @@ defmodule Pleroma.Web.StreamerTest do
       blocked = insert(:user)
       {:ok, _user_relationship} = User.block(user, blocked)
 
-      task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
+      task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
       Streamer.add_socket(
         "user:notification",
@@ -79,7 +83,7 @@ defmodule Pleroma.Web.StreamerTest do
       user: user
     } do
       user2 = insert(:user)
-      task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
+      task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
       Streamer.add_socket(
         "user:notification",
@@ -97,7 +101,7 @@ defmodule Pleroma.Web.StreamerTest do
       user: user
     } do
       user2 = insert(:user, %{ap_id: "https://hecking-lewd-place.com/user/meanie"})
-      task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
+      task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
       Streamer.add_socket(
         "user:notification",
@@ -116,7 +120,9 @@ defmodule Pleroma.Web.StreamerTest do
       user: user
     } do
       user2 = insert(:user)
-      task = Task.async(fn -> assert_receive {:text, _}, 4_000 end)
+      task = Task.async(fn -> assert_receive {:text, _}, @streamer_timeout end)
+
+      Process.sleep(@streamer_start_wait)
 
       Streamer.add_socket(
         "user:notification",
@@ -137,7 +143,7 @@ defmodule Pleroma.Web.StreamerTest do
 
     task =
       Task.async(fn ->
-        assert_receive {:text, _}, 4_000
+        assert_receive {:text, _}, @streamer_timeout
       end)
 
     fake_socket = %StreamerSocket{
@@ -164,7 +170,7 @@ defmodule Pleroma.Web.StreamerTest do
           }
           |> Jason.encode!()
 
-        assert_receive {:text, received_event}, 4_000
+        assert_receive {:text, received_event}, @streamer_timeout
         assert received_event == expected_event
       end)
 
@@ -458,9 +464,7 @@ defmodule Pleroma.Web.StreamerTest do
 
     {:ok, activity} = CommonAPI.add_mute(user2, activity)
 
-    task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
-
-    Process.sleep(4000)
+    task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
     Streamer.add_socket(
       "user",
@@ -482,7 +486,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       task =
         Task.async(fn ->
-          assert_receive {:text, received_event}, 4_000
+          assert_receive {:text, received_event}, @streamer_timeout
 
           assert %{"event" => "conversation", "payload" => received_payload} =
                    Jason.decode!(received_event)
@@ -518,13 +522,13 @@ defmodule Pleroma.Web.StreamerTest do
 
       task =
         Task.async(fn ->
-          assert_receive {:text, received_event}, 4_000
+          assert_receive {:text, received_event}, @streamer_timeout
           assert %{"event" => "delete", "payload" => _} = Jason.decode!(received_event)
 
-          refute_receive {:text, _}, 4_000
+          refute_receive {:text, _}, @streamer_timeout
         end)
 
-      Process.sleep(1000)
+      Process.sleep(@streamer_start_wait)
 
       Streamer.add_socket(
         "direct",
@@ -555,10 +559,10 @@ defmodule Pleroma.Web.StreamerTest do
 
       task =
         Task.async(fn ->
-          assert_receive {:text, received_event}, 4_000
+          assert_receive {:text, received_event}, @streamer_timeout
           assert %{"event" => "delete", "payload" => _} = Jason.decode!(received_event)
 
-          assert_receive {:text, received_event}, 4_000
+          assert_receive {:text, received_event}, @streamer_timeout
 
           assert %{"event" => "conversation", "payload" => received_payload} =
                    Jason.decode!(received_event)
@@ -567,7 +571,7 @@ defmodule Pleroma.Web.StreamerTest do
           assert last_status["id"] == to_string(create_activity.id)
         end)
 
-      Process.sleep(1000)
+      Process.sleep(@streamer_start_wait)
 
       Streamer.add_socket(
         "direct",

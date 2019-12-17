@@ -10,6 +10,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.HTML
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
+  alias Pleroma.ReportNote
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.UserInviteToken
@@ -1831,61 +1832,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "POST /api/pleroma/admin/reports/:id/respond" do
-    setup %{conn: conn} do
-      admin = insert(:user, is_admin: true)
-
-      %{conn: assign(conn, :user, admin), admin: admin}
-    end
-
-    test "returns created dm", %{conn: conn, admin: admin} do
-      [reporter, target_user] = insert_pair(:user)
-      activity = insert(:note_activity, user: target_user)
-
-      {:ok, %{id: report_id}} =
-        CommonAPI.report(reporter, %{
-          "account_id" => target_user.id,
-          "comment" => "I feel offended",
-          "status_ids" => [activity.id]
-        })
-
-      response =
-        conn
-        |> post("/api/pleroma/admin/reports/#{report_id}/respond", %{
-          "status" => "I will check it out"
-        })
-        |> json_response(:ok)
-
-      recipients = Enum.map(response["mentions"], & &1["username"])
-
-      assert reporter.nickname in recipients
-      assert response["content"] == "I will check it out"
-      assert response["visibility"] == "direct"
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} responded with 'I will check it out' to report ##{
-                 response["id"]
-               }"
-    end
-
-    test "returns 400 when status is missing", %{conn: conn} do
-      conn = post(conn, "/api/pleroma/admin/reports/test/respond")
-
-      assert json_response(conn, :bad_request) == "Invalid parameters"
-    end
-
-    test "returns 404 when report id is invalid", %{conn: conn} do
-      conn =
-        post(conn, "/api/pleroma/admin/reports/test/respond", %{
-          "status" => "foo"
-        })
-
-      assert json_response(conn, :not_found) == "Not found"
-    end
-  end
-
   describe "PUT /api/pleroma/admin/statuses/:id" do
     setup %{conn: conn} do
       admin = insert(:user, is_admin: true)
@@ -3080,6 +3026,77 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} re-sent confirmation email for users: @#{first_user.nickname}, @#{
                  second_user.nickname
                }"
+    end
+  end
+
+  describe "POST /reports/:id/notes" do
+    setup do
+      admin = insert(:user, is_admin: true)
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel offended",
+          "status_ids" => [activity.id]
+        })
+
+      build_conn()
+      |> assign(:user, admin)
+      |> post("/api/pleroma/admin/reports/#{report_id}/notes", %{
+        content: "this is disgusting!"
+      })
+
+      build_conn()
+      |> assign(:user, admin)
+      |> post("/api/pleroma/admin/reports/#{report_id}/notes", %{
+        content: "this is disgusting2!"
+      })
+
+      %{
+        admin_id: admin.id,
+        report_id: report_id,
+        admin: admin
+      }
+    end
+
+    test "it creates report note", %{admin_id: admin_id, report_id: report_id} do
+      [note, _] = Repo.all(ReportNote)
+
+      assert %{
+               activity_id: ^report_id,
+               content: "this is disgusting!",
+               user_id: ^admin_id
+             } = note
+    end
+
+    test "it returns reports with notes", %{admin: admin} do
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/reports")
+
+      response = json_response(conn, 200)
+      notes = hd(response["reports"])["notes"]
+      [note, _] = notes
+
+      assert note["user"]["nickname"] == admin.nickname
+      assert note["content"] == "this is disgusting!"
+      assert note["created_at"]
+      assert response["total"] == 1
+    end
+
+    test "it deletes the note", %{admin: admin, report_id: report_id} do
+      assert ReportNote |> Repo.all() |> length() == 2
+
+      [note, _] = Repo.all(ReportNote)
+
+      build_conn()
+      |> assign(:user, admin)
+      |> delete("/api/pleroma/admin/reports/#{report_id}/notes/#{note.id}")
+
+      assert ReportNote |> Repo.all() |> length() == 1
     end
   end
 end

@@ -38,7 +38,10 @@ defmodule Pleroma.Pagination do
   end
 
   def fetch_paginated(query, %{"total" => true} = params, :offset, table_binding) do
-    total = Repo.aggregate(query, :count, :id)
+    total =
+      query
+      |> Ecto.Query.exclude(:left_join)
+      |> Repo.aggregate(:count, :id)
 
     %{
       total: total,

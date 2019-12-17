@@ -787,6 +787,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       params
       |> Map.put("type", "Flag")
       |> Map.put("skip_preload", true)
+      |> Map.put("preload_report_notes", true)
       |> Map.put("total", true)
       |> Map.put("limit", page_size)
       |> Map.put("offset", (page - 1) * page_size)
