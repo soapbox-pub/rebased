@@ -43,6 +43,7 @@ defmodule Pleroma.StatsTest do
     test "it returns total number of statuses" do
       data = Pleroma.Stats.get_stat_data()
 
+      assert data.stats.status_count.all == 10
       assert data.stats.status_count.public == 1
       assert data.stats.status_count.unlisted == 2
       assert data.stats.status_count.direct == 3
