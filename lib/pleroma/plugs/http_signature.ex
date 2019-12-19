@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
   import Plug.Conn
+  import Phoenix.Controller, only: [get_format: 1, text: 2]
   require Logger
 
   def init(options) do
@@ -15,9 +16,13 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
   end
 
   def call(conn, _opts) do
-    conn
-    |> maybe_assign_valid_signature()
-    |> maybe_require_signature()
+    if get_format(conn) == "activity+json" do
+      conn
+      |> maybe_assign_valid_signature()
+      |> maybe_require_signature()
+    else
+      conn
+    end
   end
 
   defp maybe_assign_valid_signature(conn) do
@@ -51,7 +56,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
     if Pleroma.Config.get([:activitypub, :authorized_fetch_mode], false) do
       conn
       |> put_status(:unauthorized)
-      |> Phoenix.Controller.text("Request not signed")
+      |> text("Request not signed")
       |> halt()
     else
       conn

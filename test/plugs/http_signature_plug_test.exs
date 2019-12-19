@@ -7,6 +7,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
   alias Pleroma.Web.Plugs.HTTPSignaturePlug
 
   import Plug.Conn
+  import Phoenix.Controller, only: [put_format: 2]
   import Mock
 
   test "it call HTTPSignatures to check validity if the actor sighed it" do
@@ -20,6 +21,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
           "signature",
           "keyId=\"http://mastodon.example.org/users/admin#main-key"
         )
+        |> put_format("activity+json")
         |> HTTPSignaturePlug.call(%{})
 
       assert conn.assigns.valid_signature == true
@@ -37,7 +39,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
       end)
 
       params = %{"actor" => "http://mastodon.example.org/users/admin"}
-      conn = build_conn(:get, "/doesntmattter", params)
+      conn = build_conn(:get, "/doesntmattter", params) |> put_format("activity+json")
 
       [conn: conn]
     end
