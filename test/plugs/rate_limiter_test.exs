@@ -145,9 +145,9 @@ defmodule Pleroma.Plugs.RateLimiterTest do
     test "can have limits seperate from unauthenticated connections" do
       limiter_name = :test_authenticated
 
-      scale = 1000
+      scale = 50
       limit = 5
-      Pleroma.Config.put([:rate_limit, limiter_name], [{1, 10}, {scale, limit}])
+      Pleroma.Config.put([:rate_limit, limiter_name], [{1000, 1}, {scale, limit}])
 
       opts = RateLimiter.init(name: limiter_name)
 
@@ -164,16 +164,6 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
       assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
       assert conn.halted
-
-      Process.sleep(1550)
-
-      conn = conn(:get, "/") |> assign(:user, user)
-      conn = RateLimiter.call(conn, opts)
-      assert {1, 4} = RateLimiter.inspect_bucket(conn, limiter_name, opts)
-
-      refute conn.status == Plug.Conn.Status.code(:too_many_requests)
-      refute conn.resp_body
-      refute conn.halted
     end
 
     test "diffrerent users are counted independently" do

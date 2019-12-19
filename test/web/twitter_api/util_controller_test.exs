@@ -898,8 +898,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> post("/api/pleroma/delete_account", %{"password" => "test"})
 
       assert json_response(conn, 200) == %{"status" => "success"}
-      # Wait a second for the started task to end
-      :timer.sleep(1000)
     end
   end
 end

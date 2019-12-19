@@ -1068,6 +1068,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_preloaded_bookmark(opts["user"])
   end
 
+  defp maybe_preload_report_notes(query, %{"preload_report_notes" => true}) do
+    query
+    |> Activity.with_preloaded_report_notes()
+  end
+
+  defp maybe_preload_report_notes(query, _), do: query
+
   defp maybe_set_thread_muted_field(query, %{"skip_preload" => true}), do: query
 
   defp maybe_set_thread_muted_field(query, opts) do
@@ -1121,6 +1128,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Activity
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
+    |> maybe_preload_report_notes(opts)
     |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
@@ -1155,6 +1163,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
     |> maybe_update_cc(list_memberships, opts["user"])
+  end
+
+  @doc """
+  Fetch favorites activities of user with order by sort adds to favorites
+  """
+  @spec fetch_favourites(User.t(), map(), atom()) :: list(Activity.t())
+  def fetch_favourites(user, params \\ %{}, pagination \\ :keyset) do
+    user.ap_id
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_type("Like")
+    |> Activity.with_joined_object()
+    |> Object.with_joined_activity()
+    |> select([_like, object, activity], %{activity | object: object})
+    |> order_by([like, _, _], desc: like.id)
+    |> Pagination.fetch_paginated(
+      Map.merge(params, %{"skip_order" => true}),
+      pagination,
+      :object_activity
+    )
   end
 
   defp maybe_update_cc(activities, list_memberships, %User{ap_id: user_ap_id})

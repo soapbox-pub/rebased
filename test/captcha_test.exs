@@ -8,6 +8,7 @@ defmodule Pleroma.CaptchaTest do
   import Tesla.Mock
 
   alias Pleroma.Captcha.Kocaptcha
+  alias Pleroma.Captcha.Native
 
   @ets_options [:ordered_set, :private, :named_table, {:read_concurrency, true}]
 
@@ -41,6 +42,23 @@ defmodule Pleroma.CaptchaTest do
                "7oEy8c",
                new[:answer_data]
              ) == :ok
+    end
+  end
+
+  describe "Native" do
+    test "new and validate" do
+      new = Native.new()
+
+      assert %{
+               answer_data: answer,
+               token: token,
+               type: :native,
+               url: "data:image/png;base64," <> _
+             } = new
+
+      assert is_binary(answer)
+      assert :ok = Native.validate(token, answer, answer)
+      assert {:error, "Invalid CAPTCHA"} == Native.validate(token, answer, answer <> "foobar")
     end
   end
 end

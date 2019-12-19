@@ -68,7 +68,9 @@ config :pleroma, Oban,
   queues: false,
   prune: :disabled
 
-config :pleroma, Pleroma.Scheduler, jobs: []
+config :pleroma, Pleroma.Scheduler,
+  jobs: [],
+  global: false
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 2,
