@@ -18,6 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEController do
     conn =
       conn
       |> assign(:user, user)
+      |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:accounts"]))
       |> put("/api/web/settings", %{"data" => %{"programming" => "socks"}})
 
     assert _result = json_response(conn, 200)
@@ -63,12 +64,12 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEController do
     end
 
     test "does not redirect logged in users to the login page", %{conn: conn, path: path} do
-      token = insert(:oauth_token)
+      token = insert(:oauth_token, scopes: ["read"])
 
       conn =
         conn
         |> assign(:user, token.user)
-        |> put_session(:oauth_token, token.token)
+        |> assign(:token, token)
         |> get(path)
 
       assert conn.status == 200

@@ -39,9 +39,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
 
   test "listing remote packs" do
     admin = insert(:user, is_admin: true)
-    conn = build_conn() |> assign(:user, admin)
+    %{conn: conn} = oauth_access(["admin:write"], user: admin)
 
-    resp = conn |> get(emoji_api_path(conn, :list_packs)) |> json_response(200)
+    resp =
+      build_conn()
+      |> get(emoji_api_path(conn, :list_packs))
+      |> json_response(200)
 
     mock(fn
       %{method: :get, url: "https://example.com/.well-known/nodeinfo"} ->
@@ -123,7 +126,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
 
     admin = insert(:user, is_admin: true)
 
-    conn = build_conn() |> assign(:user, admin)
+    conn =
+      build_conn()
+      |> assign(:user, admin)
+      |> assign(:token, insert(:oauth_admin_token, user: admin, scopes: ["admin:write"]))
 
     assert (conn
             |> put_req_header("content-type", "application/json")
@@ -168,8 +174,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
 
     # non-shared, downloaded from the fallback URL
 
-    conn = build_conn() |> assign(:user, admin)
-
     assert conn
            |> put_req_header("content-type", "application/json")
            |> post(
@@ -205,8 +209,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
         File.write!(pack_file, original_content)
       end)
 
+      admin = insert(:user, is_admin: true)
+      %{conn: conn} = oauth_access(["admin:write"], user: admin)
+
       {:ok,
-       admin: insert(:user, is_admin: true),
+       admin: admin,
+       conn: conn,
        pack_file: pack_file,
        new_data: %{
          "license" => "Test license changed",
@@ -217,10 +225,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     end
 
     test "for a pack without a fallback source", ctx do
-      conn = build_conn()
+      conn = ctx[:conn]
 
       assert conn
-             |> assign(:user, ctx[:admin])
              |> post(
                emoji_api_path(conn, :update_metadata, "test_pack"),
                %{
@@ -250,10 +257,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
           "74409E2674DAA06C072729C6C8426C4CB3B7E0B85ED77792DB7A436E11D76DAF"
         )
 
-      conn = build_conn()
+      conn = ctx[:conn]
 
       assert conn
-             |> assign(:user, ctx[:admin])
              |> post(
                emoji_api_path(conn, :update_metadata, "test_pack"),
                %{
@@ -277,10 +283,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
 
       new_data = Map.put(ctx[:new_data], "fallback-src", "https://nonshared-pack")
 
-      conn = build_conn()
+      conn = ctx[:conn]
 
       assert (conn
-              |> assign(:user, ctx[:admin])
               |> post(
                 emoji_api_path(conn, :update_metadata, "test_pack"),
                 %{
@@ -304,8 +309,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     end)
 
     admin = insert(:user, is_admin: true)
-
-    conn = build_conn()
+    %{conn: conn} = oauth_access(["admin:write"], user: admin)
 
     same_name = %{
       "action" => "add",
@@ -318,8 +322,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     }
 
     different_name = %{same_name | "shortcode" => "blank_2"}
-
-    conn = conn |> assign(:user, admin)
 
     assert (conn
             |> post(emoji_api_path(conn, :update_file, "test_pack"), same_name)
@@ -392,8 +394,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     end)
 
     admin = insert(:user, is_admin: true)
-
-    conn = build_conn() |> assign(:user, admin)
+    %{conn: conn} = oauth_access(["admin:write"], user: admin)
 
     assert conn
            |> put_req_header("content-type", "application/json")
@@ -432,9 +433,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     refute Map.has_key?(resp, "test_pack_for_import")
 
     admin = insert(:user, is_admin: true)
+    %{conn: conn} = oauth_access(["admin:write"], user: admin)
 
     assert conn
-           |> assign(:user, admin)
            |> post(emoji_api_path(conn, :import_from_fs))
            |> json_response(200) == ["test_pack_for_import"]
 
@@ -449,11 +450,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     File.write!("#{@emoji_dir_path}/test_pack_for_import/emoji.txt", emoji_txt_content)
 
     assert conn
-           |> assign(:user, admin)
            |> post(emoji_api_path(conn, :import_from_fs))
            |> json_response(200) == ["test_pack_for_import"]
 
-    resp = conn |> get(emoji_api_path(conn, :list_packs)) |> json_response(200)
+    resp = build_conn() |> get(emoji_api_path(conn, :list_packs)) |> json_response(200)
 
     assert resp["test_pack_for_import"]["files"] == %{
              "blank" => "blank.png",

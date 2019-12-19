@@ -9,23 +9,17 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
-  import Pleroma.Factory
+  setup do: oauth_access(["write:media"])
 
   describe "media upload" do
     setup do
-      user = insert(:user)
-
-      conn =
-        build_conn()
-        |> assign(:user, user)
-
       image = %Plug.Upload{
         content_type: "image/jpg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
 
-      [conn: conn, image: image]
+      [image: image]
     end
 
     clear_config([:media_proxy])
@@ -49,9 +43,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
   end
 
   describe "PUT /api/v1/media/:id" do
-    setup do
-      actor = insert(:user)
-
+    setup %{user: actor} do
       file = %Plug.Upload{
         content_type: "image/jpg",
         path: Path.absname("test/fixtures/image.jpg"),
@@ -65,13 +57,12 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
           description: "test-m"
         )
 
-      [actor: actor, object: object]
+      [object: object]
     end
 
-    test "updates name of media", %{conn: conn, actor: actor, object: object} do
+    test "updates name of media", %{conn: conn, object: object} do
       media =
         conn
-        |> assign(:user, actor)
         |> put("/api/v1/media/#{object.id}", %{"description" => "test-media"})
         |> json_response(:ok)
 
@@ -79,10 +70,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert refresh_record(object).data["name"] == "test-media"
     end
 
-    test "returns error wheb request is bad", %{conn: conn, actor: actor, object: object} do
+    test "returns error when request is bad", %{conn: conn, object: object} do
       media =
         conn
-        |> assign(:user, actor)
         |> put("/api/v1/media/#{object.id}", %{})
         |> json_response(400)
 

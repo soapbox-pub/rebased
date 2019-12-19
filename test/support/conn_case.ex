@@ -30,14 +30,14 @@ defmodule Pleroma.Web.ConnCase do
       @endpoint Pleroma.Web.Endpoint
 
       # Sets up OAuth access with specified scopes
-      defp oauth_access(scopes, opts \\ %{}) do
+      defp oauth_access(scopes, opts \\ []) do
         user =
-          Map.get_lazy(opts, :user, fn ->
+          Keyword.get_lazy(opts, :user, fn ->
             Pleroma.Factory.insert(:user)
           end)
 
         token =
-          Map.get_lazy(opts, :oauth_token, fn ->
+          Keyword.get_lazy(opts, :oauth_token, fn ->
             Pleroma.Factory.insert(:oauth_token, user: user, scopes: scopes)
           end)
 
