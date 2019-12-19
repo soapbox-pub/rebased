@@ -1623,6 +1623,44 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert follow_info.following_count == 32
       assert follow_info.hide_follows == true
     end
+
+    test "doesn't crash when follower and following counters are hidden" do
+      mock(fn env ->
+        case env.url do
+          "http://localhost:4001/users/masto_hidden_counters/following" ->
+            json(%{
+              "@context" => "https://www.w3.org/ns/activitystreams",
+              "id" => "http://localhost:4001/users/masto_hidden_counters/followers"
+            })
+
+          "http://localhost:4001/users/masto_hidden_counters/following?page=1" ->
+            %Tesla.Env{status: 403, body: ""}
+
+          "http://localhost:4001/users/masto_hidden_counters/followers" ->
+            json(%{
+              "@context" => "https://www.w3.org/ns/activitystreams",
+              "id" => "http://localhost:4001/users/masto_hidden_counters/following"
+            })
+
+          "http://localhost:4001/users/masto_hidden_counters/followers?page=1" ->
+            %Tesla.Env{status: 403, body: ""}
+        end
+      end)
+
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_hidden_counters/followers",
+          following_address: "http://localhost:4001/users/masto_hidden_counters/following"
+        )
+
+      {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
+
+      assert follow_info.hide_followers == true
+      assert follow_info.follower_count == 0
+      assert follow_info.hide_follows == true
+      assert follow_info.following_count == 0
+    end
   end
 
   describe "fetch_favourites/3" do
