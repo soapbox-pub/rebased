@@ -478,11 +478,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
                |> get("/api/v1/notifications", %{account_id: account_id})
                |> json_response(200)
 
-      assert [] =
+      assert %{"error" => "Account is not found"} =
                conn
                |> assign(:user, user)
                |> get("/api/v1/notifications", %{account_id: "cofe"})
-               |> json_response(200)
+               |> json_response(404)
     end
   end
 
