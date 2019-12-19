@@ -82,7 +82,7 @@ defmodule Pleroma.Stats do
 
   defp status_count do
     %{
-      all: get_all_statuses_count(),
+      all: all_statuses_query() |> Repo.aggregate(:count, :id),
       public: public_statuses_query() |> Repo.aggregate(:count, :id),
       unlisted: unlisted_statuses_query() |> Repo.aggregate(:count, :id),
       direct: direct_statuses_query() |> Repo.aggregate(:count, :id),
@@ -90,8 +90,8 @@ defmodule Pleroma.Stats do
     }
   end
 
-  defp get_all_statuses_count do
-    Repo.aggregate(User.Query.build(%{local: true}), :sum, :note_count)
+  defp all_statuses_query do
+    from(o in Object, where: fragment("(?)->>'type' = 'Note'", o.data))
   end
 
   def public_statuses_query do
