@@ -2204,6 +2204,42 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
     end
 
+    test "saving full setting if value is in full_key_update list", %{conn: conn} do
+      backends = Application.get_env(:logger, :backends)
+      on_exit(fn -> Application.put_env(:logger, :backends, backends) end)
+
+      config =
+        insert(:config,
+          group: ":logger",
+          key: ":backends",
+          value: :erlang.term_to_binary([])
+        )
+
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{group: config.group, key: config.key, value: [":console"]}
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => ":logger",
+                   "key" => ":backends",
+                   "value" => [":console"]
+                 }
+               ]
+             }
+
+      assert Application.get_env(:logger, :backends) == [:console]
+
+      ExUnit.CaptureLog.capture_log(fn ->
+        require Logger
+        Logger.warn("Ooops...")
+      end) =~ "Ooops..."
+    end
+
     test "saving full setting if value is not keyword", %{conn: conn} do
       config =
         insert(:config,

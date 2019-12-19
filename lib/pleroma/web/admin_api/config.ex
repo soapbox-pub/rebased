@@ -52,7 +52,8 @@ defmodule Pleroma.Web.AdminAPI.Config do
     {:mime, :types},
     {:cors_plug, [:max_age, :methods, :expose, :headers]},
     {:auto_linker, :opts},
-    {:swarm, :node_blacklist}
+    {:swarm, :node_blacklist},
+    {:logger, :backends}
   ]
 
   defp only_full_update?(%Config{} = config) do
