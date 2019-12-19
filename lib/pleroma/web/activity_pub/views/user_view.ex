@@ -201,7 +201,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     %{
       "id" => "#{user.ap_id}/followers",
       "type" => "OrderedCollection",
-      "totalItems" => total,
       "first" =>
         if showing_items do
           collection(followers, "#{user.ap_id}/followers", 1, showing_items, total)
@@ -209,6 +208,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
           "#{user.ap_id}/followers?page=1"
         end
     }
+    |> maybe_put_total_items(showing_count, total)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -249,6 +249,12 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "next" => "#{iri}?max_id=#{min_id}&page=true"
     }
     |> Map.merge(Utils.make_json_ld_header())
+  end
+
+  defp maybe_put_total_items(map, false, _total), do: map
+
+  defp maybe_put_total_items(map, true, total) do
+    Map.put(map, "totalItems", total)
   end
 
   def collection(collection, iri, page, show_items \\ true, total \\ nil) do

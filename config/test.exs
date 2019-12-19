@@ -95,8 +95,6 @@ config :joken, default_signer: "yU8uHKq+yyAkZ11Hx//jcdacWc8yQ1bxAAGrplzB0Zwwjkp3
 
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 
-config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
-
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else
