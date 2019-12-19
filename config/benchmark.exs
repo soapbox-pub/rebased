@@ -83,10 +83,10 @@ IO.puts("RUM enabled: #{rum_enabled}")
 
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 
-if File.exists?("./config/test.secret.exs") do
-  import_config "test.secret.exs"
+if File.exists?("./config/benchmark.secret.exs") do
+  import_config "benchmark.secret.exs"
 else
   IO.puts(
-    "You may want to create test.secret.exs to declare custom database connection parameters."
+    "You may want to create benchmark.secret.exs to declare custom database connection parameters."
   )
 end
