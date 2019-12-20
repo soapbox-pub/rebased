@@ -3,11 +3,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Stats do
+  use GenServer
+
   import Ecto.Query
+
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
 
-  use GenServer
+  require Pleroma.Constants
 
   @interval 1000 * 60 * 60
 
@@ -56,7 +60,7 @@ defmodule Pleroma.Stats do
     %{peers: [], stats: %{}}
   end
 
-  defp get_stat_data do
+  def get_stat_data do
     peers =
       from(
         u in User,
@@ -68,13 +72,71 @@ defmodule Pleroma.Stats do
 
     domain_count = Enum.count(peers)
 
-    status_count = Repo.aggregate(User.Query.build(%{local: true}), :sum, :note_count)
-
     user_count = Repo.aggregate(User.Query.build(%{local: true, active: true}), :count, :id)
 
     %{
       peers: peers,
-      stats: %{domain_count: domain_count, status_count: status_count, user_count: user_count}
+      stats: %{domain_count: domain_count, status_count: status_count(), user_count: user_count}
     }
+  end
+
+  defp status_count do
+    %{
+      all: all_statuses_query() |> Repo.aggregate(:count, :id),
+      public: public_statuses_query() |> Repo.aggregate(:count, :id),
+      unlisted: unlisted_statuses_query() |> Repo.aggregate(:count, :id),
+      direct: direct_statuses_query() |> Repo.aggregate(:count, :id),
+      private: private_statuses_query() |> Repo.aggregate(:count, :id)
+    }
+  end
+
+  defp all_statuses_query do
+    from(o in Object, where: fragment("(?)->>'type' = 'Note'", o.data))
+  end
+
+  def public_statuses_query do
+    from(o in Object,
+      where: fragment("(?)->'to' \\? ?", o.data, ^Pleroma.Constants.as_public())
+    )
+  end
+
+  def unlisted_statuses_query do
+    from(o in Object,
+      where: not fragment("(?)->'to' \\? ?", o.data, ^Pleroma.Constants.as_public()),
+      where: fragment("(?)->'cc' \\? ?", o.data, ^Pleroma.Constants.as_public())
+    )
+  end
+
+  def direct_statuses_query do
+    private_statuses_ids = from(p in private_statuses_query(), select: p.id) |> Repo.all()
+
+    from(o in Object,
+      where:
+        fragment(
+          "? \\? 'directMessage' AND (?->>'directMessage')::boolean = true",
+          o.data,
+          o.data
+        ) or
+          (not fragment("(?)->'to' \\? ?", o.data, ^Pleroma.Constants.as_public()) and
+             not fragment("(?)->'cc' \\? ?", o.data, ^Pleroma.Constants.as_public()) and
+             o.id not in ^private_statuses_ids)
+    )
+  end
+
+  def private_statuses_query do
+    from(o in subquery(recipients_query()),
+      where: ilike(o.recipients, "%/followers%")
+    )
+  end
+
+  defp recipients_query do
+    from(o in Object,
+      select: %{
+        id: o.id,
+        recipients: fragment("jsonb_array_elements_text((?)->'to')", o.data)
+      },
+      where: not fragment("(?)->'to' \\? ?", o.data, ^Pleroma.Constants.as_public()),
+      where: not fragment("(?)->'cc' \\? ?", o.data, ^Pleroma.Constants.as_public())
+    )
   end
 end
