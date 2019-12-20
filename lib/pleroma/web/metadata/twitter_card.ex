@@ -31,7 +31,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
       if attachments == [] or Metadata.activity_nsfw?(object) do
         [
           image_tag(user),
-          {:meta, [property: "twitter:card", content: "summary_large_image"], []}
+          {:meta, [property: "twitter:card", content: "summary"], []}
         ]
       else
         attachments
