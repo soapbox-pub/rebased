@@ -238,7 +238,8 @@ config :pleroma, :config_description, [
           Swoosh.Adapters.AmazonSES,
           Swoosh.Adapters.Dyn,
           Swoosh.Adapters.SocketLabs,
-          Swoosh.Adapters.Gmail
+          Swoosh.Adapters.Gmail,
+          Swoosh.Adapters.Local
         ]
       },
       %{
@@ -446,6 +447,26 @@ config :pleroma, :config_description, [
         key: :access_token,
         type: :string,
         description: "`Swoosh.Adapters.Gmail` adapter specific setting"
+      }
+    ]
+  },
+  %{
+    group: :swoosh,
+    type: :group,
+    description: "`Swoosh.Adapters.Local` adapter specific settings",
+    children: [
+      %{
+        group: {:subgroup, Swoosh.Adapters.Local},
+        key: :serve_mailbox,
+        type: :boolean,
+        description: "Run the preview server together as part of your app"
+      },
+      %{
+        group: {:subgroup, Swoosh.Adapters.Local},
+        key: :preview_port,
+        type: :integer,
+        description: "The preview server port",
+        suggestions: [4001]
       }
     ]
   },

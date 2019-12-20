@@ -207,5 +207,12 @@ defmodule Pleroma.Docs.GeneratorTest do
       child = Enum.at(children, 7)
       assert child[:key] == "application/xml"
     end
+
+    test "subgroup with module name" do
+      [%{children: children} | _] = Generator.convert_to_strings(@descriptions)
+
+      %{group: subgroup} = Enum.at(children, 6)
+      assert subgroup == {":subgroup", "Swoosh.Adapters.SMTP"}
+    end
   end
 end

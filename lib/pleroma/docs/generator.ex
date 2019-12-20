@@ -58,14 +58,22 @@ defmodule Pleroma.Docs.Generator do
     entity
     |> Map.put(:suggestions, format_suggestions(suggestions))
     |> format_key()
+    |> format_group()
     |> format_children()
   end
 
   defp format_child(entity) do
     entity
     |> format_key()
+    |> format_group()
     |> format_children()
   end
+
+  defp format_group(%{group: group} = entity) do
+    Map.put(entity, :group, format_suggestion(group))
+  end
+
+  defp format_group(entity), do: entity
 
   defp atom_to_string(entity) when is_binary(entity), do: entity
 
