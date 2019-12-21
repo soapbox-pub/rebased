@@ -175,6 +175,18 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
       assert Config.from_binary(binary) == Tesla.Adapter.Hackney
     end
 
+    test "ExSyslogger module" do
+      binary = Config.transform("ExSyslogger")
+      assert binary == :erlang.term_to_binary(ExSyslogger)
+      assert Config.from_binary(binary) == ExSyslogger
+    end
+
+    test "Quack.Logger module" do
+      binary = Config.transform("Quack.Logger")
+      assert binary == :erlang.term_to_binary(Quack.Logger)
+      assert Config.from_binary(binary) == Quack.Logger
+    end
+
     test "sigil" do
       binary = Config.transform("~r[comp[lL][aA][iI][nN]er]")
       assert binary == :erlang.term_to_binary(~r/comp[lL][aA][iI][nN]er/)

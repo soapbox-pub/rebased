@@ -295,7 +295,8 @@ defmodule Pleroma.Web.AdminAPI.Config do
 
   @spec is_module_name?(String.t()) :: boolean()
   def is_module_name?(string) do
-    Regex.match?(~r/^(Pleroma|Phoenix|Tesla)\./, string) or string in ["Oban", "Ueberauth"]
+    Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Quack)\./, string) or
+      string in ["Oban", "Ueberauth", "ExSyslogger"]
   end
 
   defp do_eval(entity) do

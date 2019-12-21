@@ -2218,7 +2218,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         post(conn, "/api/pleroma/admin/config", %{
           configs: [
-            %{group: config.group, key: config.key, value: [":console"]}
+            %{
+              group: config.group,
+              key: config.key,
+              value: [":console", %{"tuple" => ["ExSyslogger", ":ex_syslogger"]}]
+            }
           ]
         })
 
@@ -2227,12 +2231,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "group" => ":logger",
                    "key" => ":backends",
-                   "value" => [":console"]
+                   "value" => [
+                     ":console",
+                     %{"tuple" => ["ExSyslogger", ":ex_syslogger"]}
+                   ]
                  }
                ]
              }
 
-      assert Application.get_env(:logger, :backends) == [:console]
+      assert Application.get_env(:logger, :backends) == [
+               :console,
+               {ExSyslogger, :ex_syslogger}
+             ]
 
       ExUnit.CaptureLog.capture_log(fn ->
         require Logger
