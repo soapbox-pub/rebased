@@ -621,6 +621,8 @@ config :pleroma, :web_cache_ttl,
   activity_pub: nil,
   activity_pub_question: 30_000
 
+config :pleroma, :modules, runtime_dir: "instance/modules"
+
 config :swarm, node_blacklist: [~r/myhtml_.*$/]
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -836,3 +836,7 @@ config :auto_linker,
     rel: "ugc"
   ]
 ```
+
+## Custom Runtime Modules (`:modules`)
+
+* `runtime_dir`: A path to custom Elixir modules (such as MRF policies).
