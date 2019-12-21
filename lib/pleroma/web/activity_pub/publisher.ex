@@ -48,7 +48,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   * `id`: the ActivityStreams URI of the message
   """
   def publish_one(%{inbox: inbox, json: json, actor: %User{} = actor, id: id} = params) do
-    Logger.info("Federating #{id} to #{inbox}")
+    Logger.debug("Federating #{id} to #{inbox}")
     %{host: host, path: path} = URI.parse(inbox)
 
     digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
@@ -228,7 +228,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     public = is_public?(activity)
 
     if public && Config.get([:instance, :allow_relay]) do
-      Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
+      Logger.debug(fn -> "Relaying #{activity.data["id"]} out" end)
       Relay.publish(activity)
     end
 

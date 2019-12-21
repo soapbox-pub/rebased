@@ -308,6 +308,24 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39", _, _,
+        Accept: "application/activity+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mobilizon.org-event.json")
+     }}
+  end
+
+  def get("https://mobilizon.org/@tcit", _, _, Accept: "application/activity+json") do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mobilizon.org-user.json")
+     }}
+  end
+
   def get("https://baptiste.gelez.xyz/@/BaptisteGelez", _, _, _) do
     {:ok,
      %Tesla.Env{
