@@ -58,15 +58,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
     assert stats
     assert stats["user_count"] == 1
-
-    assert stats["status_count"] == %{
-             "all" => 1,
-             "direct" => 0,
-             "private" => 0,
-             "public" => 1,
-             "unlisted" => 0
-           }
-
+    assert stats["status_count"] == 1
     assert stats["domain_count"] == 2
   end
 
