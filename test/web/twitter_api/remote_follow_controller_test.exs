@@ -21,19 +21,19 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
 
   describe "GET /ostatus_subscribe - remote_follow/2" do
     test "adds status to pleroma instance if the `acct` is a status", %{conn: conn} do
-      conn =
-        get(
-          conn,
-          "/ostatus_subscribe?acct=https://mastodon.social/users/emelie/statuses/101849165031453009"
-        )
-
-      assert redirected_to(conn) =~ "/notice/"
+      assert conn
+             |> get(
+               remote_follow_path(conn, :follow, %{
+                 acct: "https://mastodon.social/users/emelie/statuses/101849165031453009"
+               })
+             )
+             |> redirected_to() =~ "/notice/"
     end
 
     test "show follow account page if the `acct` is a account link", %{conn: conn} do
       response =
         conn
-        |> get("/ostatus_subscribe?acct=https://mastodon.social/users/emelie")
+        |> get(remote_follow_path(conn, :follow, %{acct: "https://mastodon.social/users/emelie"}))
         |> html_response(200)
 
       assert response =~ "Log in to follow"
@@ -45,7 +45,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       response =
         conn
         |> assign(:user, user)
-        |> get("/ostatus_subscribe?acct=https://mastodon.social/users/emelie")
+        |> get(remote_follow_path(conn, :follow, %{acct: "https://mastodon.social/users/emelie"}))
         |> html_response(200)
 
       assert response =~ "Remote follow"
@@ -58,9 +58,14 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
                response =
                  conn
                  |> assign(:user, user)
-                 |> get("/ostatus_subscribe?acct=https://mastodon.social/users/not_found")
+                 |> get(
+                   remote_follow_path(conn, :follow, %{
+                     acct: "https://mastodon.social/users/not_found"
+                   })
+                 )
+                 |> html_response(200)
 
-               assert html_response(response, 200) =~ "Error fetching user"
+               assert response =~ "Error fetching user"
              end) =~ "Object has been deleted"
     end
   end
@@ -73,7 +78,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       response =
         conn
         |> assign(:user, user)
-        |> post("/ostatus_subscribe", %{"user" => %{"id" => user2.id}})
+        |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
         |> response(200)
 
       assert response =~ "Account followed!"
@@ -87,7 +92,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       response =
         conn
         |> assign(:user, user)
-        |> post("/ostatus_subscribe", %{"user" => %{"id" => user2.id}})
+        |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
         |> response(200)
 
       assert response =~ "Error following account"
@@ -103,7 +108,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       response =
         conn
         |> assign(:user, user)
-        |> post("/ostatus_subscribe", %{"user" => %{"id" => user2.id}})
+        |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
         |> response(200)
 
       assert response =~ "Error following account"
@@ -115,7 +120,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       response =
         conn
         |> assign(:user, user)
-        |> post("/ostatus_subscribe", %{"user" => %{"id" => "jimm"}})
+        |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => "jimm"}})
         |> response(200)
 
       assert response =~ "Error following account"
@@ -129,7 +134,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       response =
         conn
         |> assign(:user, refresh_record(user))
-        |> post("/ostatus_subscribe", %{"user" => %{"id" => user2.id}})
+        |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
         |> response(200)
 
       assert response =~ "Account followed!"
@@ -143,7 +148,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
 
       response =
         conn
-        |> post("/ostatus_subscribe", %{
+        |> post(remote_follow_path(conn, :do_follow), %{
           "authorization" => %{"name" => user.nickname, "password" => "test", "id" => user2.id}
         })
         |> response(200)
@@ -157,7 +162,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
 
       response =
         conn
-        |> post("/ostatus_subscribe", %{
+        |> post(remote_follow_path(conn, :do_follow), %{
           "authorization" => %{"name" => user.nickname, "password" => "test", "id" => "jimm"}
         })
         |> response(200)
@@ -170,7 +175,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
 
       response =
         conn
-        |> post("/ostatus_subscribe", %{
+        |> post(remote_follow_path(conn, :do_follow), %{
           "authorization" => %{"name" => "jimm", "password" => "test", "id" => user.id}
         })
         |> response(200)
@@ -184,7 +189,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
 
       response =
         conn
-        |> post("/ostatus_subscribe", %{
+        |> post(remote_follow_path(conn, :do_follow), %{
           "authorization" => %{"name" => user.nickname, "password" => "42", "id" => user2.id}
         })
         |> response(200)
@@ -200,7 +205,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
 
       response =
         conn
-        |> post("/ostatus_subscribe", %{
+        |> post(remote_follow_path(conn, :do_follow), %{
           "authorization" => %{"name" => user.nickname, "password" => "test", "id" => user2.id}
         })
         |> response(200)
