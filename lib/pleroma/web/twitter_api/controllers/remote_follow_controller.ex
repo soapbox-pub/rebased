@@ -30,7 +30,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
   defp follow_status(conn, _user, acct) do
     with {:ok, object} <- Fetcher.fetch_object_from_id(acct),
          %Activity{id: activity_id} <- Activity.get_create_by_object_ap_id(object.data["id"]) do
-      redirect(conn, to: "/notice/#{activity_id}")
+      redirect(conn, to: o_status_path(conn, :notice, activity_id))
     else
       error ->
         handle_follow_error(conn, error)
