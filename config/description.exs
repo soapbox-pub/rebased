@@ -101,8 +101,8 @@ config :pleroma, :config_description, [
                       %{
                         key: :versions,
                         type: {:list, :atom},
-                        descriptions: "List of TLS version to use",
-                        suggestions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+                        description: "List of TLS version to use",
+                        suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
                       }
                     ]
                   }
@@ -1509,8 +1509,8 @@ config :pleroma, :config_description, [
                       %{
                         key: :versions,
                         type: {:list, :atom},
-                        descriptions: "List of TLS version to use",
-                        suggestions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+                        description: "List of TLS version to use",
+                        suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
                       }
                     ]
                   }
@@ -2820,8 +2820,8 @@ config :pleroma, :config_description, [
               %{
                 key: :versions,
                 type: {:list, :atom},
-                descriptions: "List of TLS version to use",
-                suggestions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+                description: "List of TLS version to use",
+                suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
               }
             ]
           }

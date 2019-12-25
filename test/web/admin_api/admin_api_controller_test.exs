@@ -2204,6 +2204,47 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
     end
 
+    test "saving special atoms", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          "configs" => [
+            %{
+              "group" => ":pleroma",
+              "key" => ":key1",
+              "value" => [
+                %{
+                  "tuple" => [
+                    ":ssl_options",
+                    [%{"tuple" => [":versions", [":tlsv1", ":tlsv1.1", ":tlsv1.2"]]}]
+                  ]
+                }
+              ]
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => ":pleroma",
+                   "key" => ":key1",
+                   "value" => [
+                     %{
+                       "tuple" => [
+                         ":ssl_options",
+                         [%{"tuple" => [":versions", [":tlsv1", ":tlsv1.1", ":tlsv1.2"]]}]
+                       ]
+                     }
+                   ]
+                 }
+               ]
+             }
+
+      assert Application.get_env(:pleroma, :key1) == [
+               ssl_options: [versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]]
+             ]
+    end
+
     test "saving full setting if value is in full_key_update list", %{conn: conn} do
       backends = Application.get_env(:logger, :backends)
       on_exit(fn -> Application.put_env(:logger, :backends, backends) end)

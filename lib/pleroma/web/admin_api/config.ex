@@ -183,6 +183,11 @@ defmodule Pleroma.Web.AdminAPI.Config do
   defp do_convert(entity) when is_boolean(entity) or is_number(entity) or is_nil(entity),
     do: entity
 
+  defp do_convert(entity)
+       when is_atom(entity) and entity in [:"tlsv1.1", :"tlsv1.2", :"tlsv1.3"] do
+    ":#{to_string(entity)}"
+  end
+
   defp do_convert(entity) when is_atom(entity), do: inspect(entity)
 
   defp do_convert(entity) when is_binary(entity), do: entity

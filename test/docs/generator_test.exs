@@ -85,6 +85,12 @@ defmodule Pleroma.Docs.GeneratorTest do
           key: "application/xml",
           type: {:list, :string},
           suggestions: ["xml"]
+        },
+        %{
+          key: :versions,
+          type: {:list, :atom},
+          description: "List of TLS version to use",
+          suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
         }
       ]
     },
@@ -206,6 +212,12 @@ defmodule Pleroma.Docs.GeneratorTest do
       [%{children: children} | _] = Generator.convert_to_strings(@descriptions)
       child = Enum.at(children, 7)
       assert child[:key] == "application/xml"
+    end
+
+    test "suggestion for tls versions" do
+      [%{children: children} | _] = Generator.convert_to_strings(@descriptions)
+      child = Enum.at(children, 8)
+      assert child[:suggestions] == [":tlsv1", ":tlsv1.1", ":tlsv1.2"]
     end
 
     test "subgroup with module name" do

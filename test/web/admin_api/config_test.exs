@@ -151,6 +151,12 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
       assert Config.from_binary(binary) == :atom
     end
 
+    test "ssl options" do
+      binary = Config.transform([":tlsv1", ":tlsv1.1", ":tlsv1.2"])
+      assert binary == :erlang.term_to_binary([:tlsv1, :"tlsv1.1", :"tlsv1.2"])
+      assert Config.from_binary(binary) == [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+    end
+
     test "pleroma module" do
       binary = Config.transform("Pleroma.Bookmark")
       assert binary == :erlang.term_to_binary(Pleroma.Bookmark)
