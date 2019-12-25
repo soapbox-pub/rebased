@@ -70,7 +70,24 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     end
   end
 
-  describe "POST /ostatus_subscribe - do_remote_follow/2 with assigned user " do
+  describe "POST /ostatus_subscribe - do_follow/2 with assigned user " do
+    test "required `follow | write:follows` scope", %{conn: conn} do
+      user = insert(:user)
+      user2 = insert(:user)
+      read_token = insert(:oauth_token, user: user, scopes: ["read"])
+
+      assert capture_log(fn ->
+               response =
+                 conn
+                 |> assign(:user, user)
+                 |> assign(:token, read_token)
+                 |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
+                 |> response(200)
+
+               assert response =~ "Error following account"
+             end) =~ "Insufficient permissions: follow | write:follows."
+    end
+
     test "follows user", %{conn: conn} do
       user = insert(:user)
       user2 = insert(:user)
@@ -141,7 +158,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     end
   end
 
-  describe "POST /ostatus_subscribe - do_remote_follow/2 without assigned user " do
+  describe "POST /ostatus_subscribe - follow/2 without assigned user " do
     test "follows", %{conn: conn} do
       user = insert(:user)
       user2 = insert(:user)

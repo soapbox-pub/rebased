@@ -16,7 +16,12 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
 
   @status_types ["Article", "Event", "Note", "Video", "Page", "Question"]
 
-  plug(OAuthScopesPlug, %{scopes: ["follow", "write:follows"]} when action in [:do_follow])
+  # Note: follower can submit the form (with password auth) not being signed in (having no token)
+  plug(
+    OAuthScopesPlug,
+    %{fallback: :proceed_unauthenticated, scopes: ["follow", "write:follows"]}
+    when action in [:do_follow]
+  )
 
   # GET /ostatus_subscribe
   #
@@ -61,6 +66,16 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
 
   # POST  /ostatus_subscribe
   #
+  def do_follow(%{assigns: %{user: %User{} = user}} = conn, %{"user" => %{"id" => id}}) do
+    with {:fetch_user, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
+         {:ok, _, _, _} <- CommonAPI.follow(user, followee) do
+      render(conn, "followed.html", %{error: false})
+    else
+      error ->
+        handle_follow_error(conn, error)
+    end
+  end
+
   def do_follow(conn, %{"authorization" => %{"name" => _, "password" => _, "id" => id}}) do
     with {:fetch_user, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
          {_, {:ok, user}, _} <- {:auth, Authenticator.get_user(conn), followee},
@@ -72,14 +87,9 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
     end
   end
 
-  def do_follow(%{assigns: %{user: user}} = conn, %{"user" => %{"id" => id}}) do
-    with {:fetch_user, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
-         {:ok, _, _, _} <- CommonAPI.follow(user, followee) do
-      render(conn, "followed.html", %{error: false})
-    else
-      error ->
-        handle_follow_error(conn, error)
-    end
+  def do_follow(%{assigns: %{user: nil}} = conn, _) do
+    Logger.debug("Insufficient permissions: follow | write:follows.")
+    render(conn, "followed.html", %{error: "Insufficient permissions: follow | write:follows."})
   end
 
   defp handle_follow_error(conn, {:auth, _, followee} = _) do
