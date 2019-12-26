@@ -815,7 +815,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with :ok <- check_dynamic_configuration(conn) do
       updated =
         Enum.map(configs, fn
-          %{"group" => group, "key" => key, "delete" => "true"} = params ->
+          %{"group" => group, "key" => key, "delete" => true} = params ->
             with {:ok, config} <-
                    Config.delete(%{group: group, key: key, subkeys: params["subkeys"]}) do
               config

@@ -2330,11 +2330,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         post(conn, "/api/pleroma/admin/config", %{
           configs: [
             %{group: config1.group, key: config1.key, value: "another_value"},
-            %{group: config2.group, key: config2.key, delete: "true"},
+            %{group: config2.group, key: config2.key, delete: true},
             %{
               group: "ueberauth",
               key: "Ueberauth.Strategy.Microsoft.OAuth",
-              delete: "true"
+              delete: true
             }
           ]
         })
@@ -2741,7 +2741,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
               group: config.group,
               key: config.key,
               subkeys: [":subkey1", ":subkey3"],
-              delete: "true"
+              delete: true
             }
           ]
         })
