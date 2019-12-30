@@ -749,9 +749,18 @@ defmodule Pleroma.User do
     Cachex.del(:user_cache, "nickname:#{user.nickname}")
   end
 
+  @spec get_cached_by_ap_id(String.t()) :: User.t() | nil
   def get_cached_by_ap_id(ap_id) do
     key = "ap_id:#{ap_id}"
-    Cachex.fetch!(:user_cache, key, fn _ -> get_by_ap_id(ap_id) end)
+
+    with {:ok, nil} <- Cachex.get(:user_cache, key),
+         user when not is_nil(user) <- get_by_ap_id(ap_id),
+         {:ok, true} <- Cachex.put(:user_cache, key, user) do
+      user
+    else
+      {:ok, user} -> user
+      nil -> nil
+    end
   end
 
   def get_cached_by_id(id) do
