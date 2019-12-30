@@ -5,15 +5,15 @@
 defmodule Pleroma.Object do
   use Ecto.Schema
 
+  import Ecto.Query
+  import Ecto.Changeset
+
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
   alias Pleroma.ObjectTombstone
   alias Pleroma.Repo
   alias Pleroma.User
-
-  import Ecto.Query
-  import Ecto.Changeset
 
   require Logger
 
