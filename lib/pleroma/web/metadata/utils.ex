@@ -14,6 +14,7 @@ defmodule Pleroma.Web.Metadata.Utils do
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.get_cached_stripped_html_for_activity(object, "metadata")
     |> Formatter.demojify()
+    |> HtmlEntities.decode()
     |> Formatter.truncate()
   end
 
@@ -24,6 +25,7 @@ defmodule Pleroma.Web.Metadata.Utils do
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.strip_tags()
     |> Formatter.demojify()
+    |> HtmlEntities.decode()
     |> Formatter.truncate(max_length)
   end
 
