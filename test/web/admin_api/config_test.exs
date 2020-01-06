@@ -68,6 +68,26 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
       assert value[:key3] == :val3
     end
 
+    test "deep merge" do
+      config = insert(:config, value: Config.to_binary(key1: "val1", key2: [k1: :v1, k2: "v2"]))
+
+      {:ok, config} =
+        Config.update_or_create(%{
+          group: config.group,
+          key: config.key,
+          value: [key1: :val1, key2: [k2: :v2, k3: :v3], key3: :val3]
+        })
+
+      updated = Config.get_by_params(%{group: config.group, key: config.key})
+
+      assert config.value == updated.value
+
+      value = Config.from_binary(updated.value)
+      assert value[:key1] == :val1
+      assert value[:key2] == [k1: :v1, k2: :v2, k3: :v3]
+      assert value[:key3] == :val3
+    end
+
     test "only full update for some keys" do
       config1 = insert(:config, key: ":ecto_repos", value: Config.to_binary(repo: Pleroma.Repo))
       config2 = insert(:config, group: ":cors_plug", key: ":max_age", value: Config.to_binary(18))

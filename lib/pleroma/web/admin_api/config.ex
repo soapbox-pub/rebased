@@ -81,7 +81,7 @@ defmodule Pleroma.Web.AdminAPI.Config do
          old_value <- from_binary(config.value),
          transformed_value <- do_transform(params[:value]),
          {:can_be_merged, true, config} <- {:can_be_merged, is_list(transformed_value), config},
-         new_value <- Keyword.merge(old_value, transformed_value) do
+         new_value <- DeepMerge.deep_merge(old_value, transformed_value) do
       Config.update(config, %{value: new_value, transformed?: true})
     else
       {reason, false, config} when reason in [:partial_update, :can_be_merged] ->

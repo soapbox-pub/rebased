@@ -2204,6 +2204,56 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
     end
 
+    test "saving config with nested merge", %{conn: conn} do
+      config =
+        insert(:config, key: ":key1", value: :erlang.term_to_binary(key1: 1, key2: [k1: 1, k2: 2]))
+
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              group: config.group,
+              key: config.key,
+              value: [
+                %{"tuple" => [":key3", 3]},
+                %{
+                  "tuple" => [
+                    ":key2",
+                    [
+                      %{"tuple" => [":k2", 1]},
+                      %{"tuple" => [":k3", 3]}
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => ":pleroma",
+                   "key" => ":key1",
+                   "value" => [
+                     %{"tuple" => [":key1", 1]},
+                     %{"tuple" => [":key3", 3]},
+                     %{
+                       "tuple" => [
+                         ":key2",
+                         [
+                           %{"tuple" => [":k1", 1]},
+                           %{"tuple" => [":k2", 1]},
+                           %{"tuple" => [":k3", 3]}
+                         ]
+                       ]
+                     }
+                   ]
+                 }
+               ]
+             }
+    end
+
     test "saving special atoms", %{conn: conn} do
       conn =
         post(conn, "/api/pleroma/admin/config", %{
