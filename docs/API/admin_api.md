@@ -939,3 +939,20 @@ Loads json generated from `config/descriptions.exs`.
 - Params:
   - `nicknames`
 - Response: Array of user nicknames
+
+## `GET /api/pleroma/admin/stats`
+
+### Stats
+
+- Response:
+
+```json
+{
+  "status_visibility": {
+    "direct": 739,
+    "private": 9,
+    "public": 17,
+    "unlisted": 14
+  }
+}
+```
