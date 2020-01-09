@@ -67,7 +67,7 @@ config :pleroma, Pleroma.Scheduler,
 
 config :pleroma, Pleroma.Captcha,
   enabled: true,
-  seconds_valid: 3000,
+  seconds_valid: 300,
   method: Pleroma.Captcha.Native
 
 config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
