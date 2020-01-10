@@ -546,6 +546,14 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :chat_limit,
+        type: :integer,
+        description: "Character limit of the instance chat messages",
+        suggestions: [
+          5_000
+        ]
+      },
+      %{
         key: :remote_limit,
         type: :integer,
         description: "Hard character limit beyond which remote posts will be dropped",
@@ -1840,7 +1848,7 @@ config :pleroma, :config_description, [
         key: :method,
         type: :module,
         description: "The method/service to use for captcha",
-        suggestions: [Pleroma.Captcha.Kocaptcha]
+        suggestions: [Pleroma.Captcha.Kocaptcha, Pleroma.Captcha.Native]
       },
       %{
         key: :seconds_valid,
@@ -2028,7 +2036,8 @@ config :pleroma, :config_description, [
         suggestions: [
           Pleroma.Web.Metadata.Providers.OpenGraph,
           Pleroma.Web.Metadata.Providers.TwitterCard,
-          Pleroma.Web.Metadata.Providers.RelMe
+          Pleroma.Web.Metadata.Providers.RelMe,
+          Pleroma.Web.Metadata.Providers.Feed
         ]
       },
       %{
@@ -2806,6 +2815,13 @@ config :pleroma, :config_description, [
         type: :boolean
       },
       %{
+        key: :user_agent,
+        type: [:string, :atom],
+        desctiption:
+          "what user agent should we use? (default: `:default`), must be string or `:default`",
+        suggestions: ["Pleroma", :default]
+      },
+      %{
         key: :adapter,
         type: :keyword,
         description: "Adapter specific options",
@@ -3016,6 +3032,83 @@ config :pleroma, :config_description, [
         description:
           "activity pub routes (question activities). Defaults to `30_000` (30 seconds).",
         suggestions: [30_000]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :static_fe,
+    type: :group,
+    description:
+      "Render profiles and posts using server-generated HTML that is viewable without using JavaScript.",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "Enables the rendering of static HTML. Defaults to `false`."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :feed,
+    type: :group,
+    description: "Configure feed rendering.",
+    children: [
+      %{
+        key: :post_title,
+        type: :map,
+        description: "Configure title rendering.",
+        children: [
+          %{
+            key: :max_length,
+            type: :integer,
+            description: "Maximum number of characters before truncating title.",
+            suggestions: [100]
+          },
+          %{
+            key: :omission,
+            type: :string,
+            description: "Replacement which will be used after truncating string.",
+            suggestions: ["..."]
+          }
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :mrf_object_age,
+    type: :group,
+    description: "Rejects or delists posts based on their age when received.",
+    children: [
+      %{
+        key: :threshold,
+        type: :integer,
+        description: "Required age (in seconds) of a post before actions are taken.",
+        suggestions: [172_800]
+      },
+      %{
+        key: :actions,
+        type: {:list, :atom},
+        description:
+          "A list of actions to apply to the post. `:delist` removes the post from public timelines; " <>
+            "`:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines; " <>
+            "`:reject` rejects the message entirely",
+        suggestions: [:delist, :strip_followers, :reject]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :modules,
+    type: :group,
+    description: "Custom Runtime Modules.",
+    children: [
+      %{
+        key: :runtime_dir,
+        type: :string,
+        description: "A path to custom Elixir modules (such as MRF policies)."
       }
     ]
   }
