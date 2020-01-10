@@ -22,7 +22,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["follow", "write:follows"]}
-    when action in [:do_remote_follow, :follow_import]
+    when action == :follow_import
+  )
+
+  # Note: follower can submit the form (with password auth) not being signed in (having no token)
+  plug(
+    OAuthScopesPlug,
+    %{fallback: :proceed_unauthenticated, scopes: ["follow", "write:follows"]}
+    when action == :do_remote_follow
   )
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks_import)
@@ -113,6 +120,28 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  def do_remote_follow(%{assigns: %{user: user}} = conn, %{"user" => %{"id" => id}})
+      when not is_nil(user) do
+    with {:fetch_user, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
+         {:ok, _follower, _followee, _activity} <- CommonAPI.follow(user, followee) do
+      conn
+      |> render("followed.html", %{error: false})
+    else
+      # Was already following user
+      {:error, "Could not follow user:" <> _rest} ->
+        render(conn, "followed.html", %{error: "Error following account"})
+
+      {:fetch_user, error} ->
+        Logger.debug("Remote follow failed with error #{inspect(error)}")
+        render(conn, "followed.html", %{error: "Could not find user"})
+
+      e ->
+        Logger.debug("Remote follow failed with error #{inspect(e)}")
+        render(conn, "followed.html", %{error: "Something went wrong."})
+    end
+  end
+
+  # Note: "id" is the id of followee user, disregard incorrect placing under "authorization"
   def do_remote_follow(conn, %{
         "authorization" => %{"name" => username, "password" => password, "id" => id}
       }) do
@@ -146,24 +175,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def do_remote_follow(%{assigns: %{user: user}} = conn, %{"user" => %{"id" => id}}) do
-    with {:fetch_user, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
-         {:ok, _follower, _followee, _activity} <- CommonAPI.follow(user, followee) do
-      conn
-      |> render("followed.html", %{error: false})
-    else
-      # Was already following user
-      {:error, "Could not follow user:" <> _rest} ->
-        render(conn, "followed.html", %{error: "Error following account"})
+  def do_remote_follow(%{assigns: %{user: nil}} = conn, _) do
+    render(conn, "followed.html", %{error: "Insufficient permissions: follow | write:follows."})
+  end
 
-      {:fetch_user, error} ->
-        Logger.debug("Remote follow failed with error #{inspect(error)}")
-        render(conn, "followed.html", %{error: "Could not find user"})
-
-      e ->
-        Logger.debug("Remote follow failed with error #{inspect(e)}")
-        render(conn, "followed.html", %{error: "Something went wrong."})
-    end
+  def do_remote_follow(conn, _) do
+    render(conn, "followed.html", %{error: "Something went wrong."})
   end
 
   def notifications_read(%{assigns: %{user: user}} = conn, %{"id" => notification_id}) do
@@ -346,7 +363,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def delete_account(%{assigns: %{user: user}} = conn, params) do
-    case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
+    password = params["password"] || ""
+
+    case CommonAPI.Utils.confirm_current_password(user, password) do
       {:ok, user} ->
         User.delete(user)
         json(conn, %{status: "success"})

@@ -1855,9 +1855,9 @@ defmodule Pleroma.User do
       ])
 
     with {:ok, updated_user} <- update_and_set_cache(changeset) do
-      if user.is_admin && !updated_user.is_admin do
-        # Tokens & authorizations containing any admin scopes must be revoked (revoking all).
-        # This is an extra safety measure (tokens' admin scopes won't be accepted for non-admins).
+      if user.is_admin != updated_user.is_admin do
+        # Admin status change results in change of accessible OAuth scopes, and instead of changing
+        #   already issued tokens we revoke them, requiring user to sign in again
         global_sign_out(user)
       end
 
