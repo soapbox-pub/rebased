@@ -3,7 +3,7 @@
 Authentication is required and the user must be an admin.
 
 Configuration options:
- 
+
 * `[:auth, :enforce_oauth_admin_scope_usage]` — OAuth admin scope requirement toggle.
     If `true`, admin actions explicitly demand admin OAuth scope(s) presence in OAuth token (client app must support admin scopes).
     If `false` and token doesn't have admin scope(s), `is_admin` user flag grants access to admin-specific actions.
@@ -763,15 +763,17 @@ Example of setting without keyword in value:
 config :tesla, :adapter, Tesla.Adapter.Hackney
 ```
 
-List of settings which have list in value:
+List of settings which support only full update:
 ```elixir
 @full_key_update [
     {:pleroma, :ecto_repos},
+    {:pleroma, :assets},
     {:quack, :meta},
     {:mime, :types},
     {:cors_plug, [:max_age, :methods, :expose, :headers]},
     {:auto_linker, :opts},
-    {:swarm, :node_blacklist}
+    {:swarm, :node_blacklist},
+    {:logger, :backends}
   ]
 ```
 

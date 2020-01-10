@@ -48,6 +48,7 @@ defmodule Pleroma.Web.AdminAPI.Config do
 
   @full_key_update [
     {:pleroma, :ecto_repos},
+    {:pleroma, :assets},
     {:quack, :meta},
     {:mime, :types},
     {:cors_plug, [:max_age, :methods, :expose, :headers]},
