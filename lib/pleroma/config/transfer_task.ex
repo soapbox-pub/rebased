@@ -17,7 +17,7 @@ defmodule Pleroma.Config.TransferTask do
   end
 
   def load_and_update_env do
-    with true <- Pleroma.Config.get([:instance, :dynamic_configuration]),
+    with true <- Pleroma.Config.get([:configurable_from_database]),
          true <- Ecto.Adapters.SQL.table_exists?(Repo, "config"),
          started_applications <- Application.started_applications() do
       # We need to restart applications for loaded settings take effect

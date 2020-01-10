@@ -584,7 +584,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert json_response(conn, :no_content)
 
-      token_record = List.last(Pleroma.Repo.all(Pleroma.UserInviteToken))
+      token_record = List.last(Repo.all(Pleroma.UserInviteToken))
       assert token_record
       refute token_record.used
 
@@ -1929,8 +1929,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "GET /api/pleroma/admin/config" do
-    clear_config([:instance, :dynamic_configuration]) do
-      Pleroma.Config.put([:instance, :dynamic_configuration], true)
+    clear_config([:configurable_from_database]) do
+      Pleroma.Config.put([:configurable_from_database], true)
     end
 
     setup %{conn: conn} do
@@ -1940,9 +1940,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "when dynamic configuration is off", %{conn: conn} do
-      initial = Pleroma.Config.get([:instance, :dynamic_configuration])
-      Pleroma.Config.put([:instance, :dynamic_configuration], false)
-      on_exit(fn -> Pleroma.Config.put([:instance, :dynamic_configuration], initial) end)
+      initial = Pleroma.Config.get([:configurable_from_database])
+      Pleroma.Config.put([:configurable_from_database], false)
+      on_exit(fn -> Pleroma.Config.put([:configurable_from_database], initial) end)
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response(conn, 400) ==
@@ -2016,8 +2016,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       %{conn: assign(conn, :user, admin)}
     end
 
-    clear_config([:instance, :dynamic_configuration]) do
-      Pleroma.Config.put([:instance, :dynamic_configuration], true)
+    clear_config([:configurable_from_database]) do
+      Pleroma.Config.put([:configurable_from_database], true)
     end
 
     @tag capture_log: true
@@ -2908,8 +2908,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       %{conn: assign(conn, :user, admin)}
     end
 
-    clear_config([:instance, :dynamic_configuration]) do
-      Pleroma.Config.put([:instance, :dynamic_configuration], true)
+    clear_config([:configurable_from_database]) do
+      Pleroma.Config.put([:configurable_from_database], true)
     end
 
     clear_config([:feed, :post_title]) do
@@ -2918,20 +2918,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "transfer settings to DB and to file", %{conn: conn} do
       on_exit(fn -> :ok = File.rm("config/test.exported_from_db.secret.exs") end)
-      assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) == []
+      assert Repo.all(Pleroma.Web.AdminAPI.Config) == []
       Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
-      assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) > 0
+      assert Repo.aggregate(Pleroma.Web.AdminAPI.Config, :count, :id) > 0
 
       conn = get(conn, "/api/pleroma/admin/config/migrate_from_db")
 
       assert json_response(conn, 200) == %{}
-      assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) == []
+      assert Repo.all(Pleroma.Web.AdminAPI.Config) == []
     end
 
     test "returns error if dynamic configuration is off", %{conn: conn} do
-      initial = Pleroma.Config.get([:instance, :dynamic_configuration])
-      on_exit(fn -> Pleroma.Config.put([:instance, :dynamic_configuration], initial) end)
-      Pleroma.Config.put([:instance, :dynamic_configuration], false)
+      initial = Pleroma.Config.get([:configurable_from_database])
+      on_exit(fn -> Pleroma.Config.put([:configurable_from_database], initial) end)
+      Pleroma.Config.put([:configurable_from_database], false)
 
       conn = get(conn, "/api/pleroma/admin/config/migrate_from_db")
 

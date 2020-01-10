@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Pleroma.Config do
   def run(["migrate_to_db"]) do
     start_pleroma()
 
-    if Pleroma.Config.get([:instance, :dynamic_configuration]) do
+    if Pleroma.Config.get([:configurable_from_database]) do
       Enum.each(@groups, &load_and_create(&1))
     else
       Mix.shell().info(
@@ -48,7 +48,8 @@ defmodule Mix.Tasks.Pleroma.Config do
         aliases: [d: :delete_from_db]
       )
 
-    with {:active?, true} <- {:active?, Pleroma.Config.get([:instance, :dynamic_configuration])},
+    with {:active?, true} <-
+           {:active?, Pleroma.Config.get([:configurable_from_database])},
          env_path when is_binary(env_path) <- opts[:env],
          config_path <- "config/#{env_path}.exported_from_db.secret.exs",
          {:ok, file} <- File.open(config_path, [:write, :utf8]) do

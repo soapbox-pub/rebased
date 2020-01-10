@@ -868,12 +868,6 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :dynamic_configuration,
-        type: :boolean,
-        description:
-          "Allow transferring configuration to DB with the subsequent customization from Admin api. Defaults to `false`"
-      },
-      %{
         key: :max_account_fields,
         type: :integer,
         description: "The maximum number of custom fields in the user profile (default: 10)",
@@ -3109,6 +3103,19 @@ config :pleroma, :config_description, [
         key: :runtime_dir,
         type: :string,
         description: "A path to custom Elixir modules (such as MRF policies)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    type: :group,
+    description: "Allow instance configuration from database.",
+    children: [
+      %{
+        key: :configurable_from_database,
+        type: :boolean,
+        description:
+          "Allow transferring configuration to DB with the subsequent customization from Admin api. Defaults to `false`"
       }
     ]
   }

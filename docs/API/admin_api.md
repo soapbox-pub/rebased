@@ -684,7 +684,7 @@ Copies all settings from database to `config/{env}.exported_from_db.secret.exs` 
 
 ### Get saved config settings
 
-**Only works when `:dynamic_configuration` is `true`.**
+**Only works when configuration from database is enabled.**
 
 - Params: none
 - Response:
@@ -708,7 +708,7 @@ Copies all settings from database to `config/{env}.exported_from_db.secret.exs` 
 
 ### Update config settings
 
-**Only works when `:dynamic_configuration` is `true`.**
+**Only works when configuration from database is enabled.**
 
 Some modifications are necessary to save the config settings correctly:
 

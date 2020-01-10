@@ -785,7 +785,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def migrate_from_db(conn, _params) do
-    with :ok <- check_dynamic_configuration(conn) do
+    with :ok <- configurable_from_database(conn) do
       Mix.Tasks.Pleroma.Config.run([
         "migrate_from_db",
         "--env",
@@ -798,7 +798,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def config_show(conn, _params) do
-    with :ok <- check_dynamic_configuration(conn) do
+    with :ok <- configurable_from_database(conn) do
       configs = Pleroma.Repo.all(Config)
 
       if configs == [] do
@@ -812,7 +812,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def config_update(conn, %{"configs" => configs}) do
-    with :ok <- check_dynamic_configuration(conn) do
+    with :ok <- configurable_from_database(conn) do
       updated =
         Enum.map(configs, fn
           %{"group" => group, "key" => key, "delete" => true} = params ->
@@ -843,8 +843,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  defp check_dynamic_configuration(conn) do
-    if Pleroma.Config.get([:instance, :dynamic_configuration]) do
+  defp configurable_from_database(conn) do
+    if Pleroma.Config.get([:configurable_from_database]) do
       :ok
     else
       errors(conn, {:error, "To use this endpoint you need to enable dynamic configuration."})

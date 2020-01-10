@@ -70,11 +70,6 @@ You shouldn't edit the base config directly to avoid breakages and merge conflic
 * `account_field_value_length`: An account field value maximum length (default: `2048`).
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 
-!!! danger
-    This is a Work In Progress, not usable just yet
-
-* `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
-
 ## Federation
 ### MRF policies
 
@@ -841,3 +836,7 @@ config :auto_linker,
 ## Custom Runtime Modules (`:modules`)
 
 * `runtime_dir`: A path to custom Elixir modules (such as MRF policies).
+
+
+## :configurable_from_database
+Enable/disable configuration from database.

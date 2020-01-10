@@ -1,9 +1,8 @@
 # Configuring instance
-You can configure your instance from admin interface. You need account with admin rights and little change in config file, which will allow settings dynamic configuration from database.
+You can configure your instance from admin interface. You need account with admin rights and little change in config file, which will allow settings configuration from database.
 
 ```elixir
-config :pleroma, :instance,
-  dynamic_configuration: true
+config :pleroma, configurable_from_database: true
 ```
 
 ## How it works
@@ -48,10 +47,9 @@ rm -rf config/prod.exported_from_db.exs
 ```
 *If you don't want to backup settings, you can skip step with `cp` command.*
 
-3. Set dynamic configuration to `false`.
+3. Set configurable_from_database to `false`.
 ```elixir
-config :pleroma, :instance,
-  dynamic_configuration: false
+config :pleroma, configurable_from_database: false
 ```
 4. Restart pleroma instance
 ```bash

@@ -7,8 +7,8 @@ defmodule Pleroma.Config.TransferTaskTest do
 
   alias Pleroma.Web.AdminAPI.Config
 
-  clear_config([:instance, :dynamic_configuration]) do
-    Pleroma.Config.put([:instance, :dynamic_configuration], true)
+  clear_config([:configurable_from_database]) do
+    Pleroma.Config.put([:configurable_from_database], true)
   end
 
   test "transfer config values from db to env" do
