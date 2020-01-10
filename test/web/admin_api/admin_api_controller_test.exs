@@ -1939,21 +1939,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       %{conn: assign(conn, :user, admin)}
     end
 
-    test "when dynamic configuration is off", %{conn: conn} do
+    test "when configuration from database is off", %{conn: conn} do
       initial = Pleroma.Config.get([:configurable_from_database])
       Pleroma.Config.put([:configurable_from_database], false)
       on_exit(fn -> Pleroma.Config.put([:configurable_from_database], initial) end)
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response(conn, 400) ==
-               "To use this endpoint you need to enable dynamic configuration."
+               "To use this endpoint you need to enable configuration from database."
     end
 
     test "without any settings in db", %{conn: conn} do
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response(conn, 400) ==
-               "To use dynamic configuration migrate your settings to database."
+               "To use configuration from database migrate your settings to database."
     end
 
     test "with settings in db", %{conn: conn} do
@@ -1990,7 +1990,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       |> post("/api/pleroma/admin/config", %{"configs" => []})
 
     assert json_response(conn, 400) ==
-             "To use this endpoint you need to enable dynamic configuration."
+             "To use this endpoint you need to enable configuration from database."
   end
 
   describe "POST /api/pleroma/admin/config" do
@@ -2928,7 +2928,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert Repo.all(Pleroma.Web.AdminAPI.Config) == []
     end
 
-    test "returns error if dynamic configuration is off", %{conn: conn} do
+    test "returns error if configuration from database is off", %{conn: conn} do
       initial = Pleroma.Config.get([:configurable_from_database])
       on_exit(fn -> Pleroma.Config.put([:configurable_from_database], initial) end)
       Pleroma.Config.put([:configurable_from_database], false)
@@ -2936,7 +2936,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = get(conn, "/api/pleroma/admin/config/migrate_from_db")
 
       assert json_response(conn, 400) ==
-               "To use this endpoint you need to enable dynamic configuration."
+               "To use this endpoint you need to enable configuration from database."
     end
   end
 

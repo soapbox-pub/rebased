@@ -674,7 +674,7 @@ Copies all settings from database to `config/{env}.exported_from_db.secret.exs` 
 - Params: none
 - Response:
   - On failure:
-    - 400 Bad Request `"To use this endpoint you need to enable dynamic configuration."`
+    - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
 
 ```json
 {}
@@ -689,8 +689,8 @@ Copies all settings from database to `config/{env}.exported_from_db.secret.exs` 
 - Params: none
 - Response:
   - On failure:
-    - 400 Bad Request `"To use this endpoint you need to enable dynamic configuration."`
-    - 400 Bad Request `"To use dynamic configuration migrate your settings to database."`
+    - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
+    - 400 Bad Request `"To use configuration from database migrate your settings to database."`
 
 ```json
 {
@@ -826,7 +826,7 @@ config :quack,
 
 - Response:
   - On failure:
-    - 400 Bad Request `"To use this endpoint you need to enable dynamic configuration."`
+    - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
 ```json
 {
   configs: [

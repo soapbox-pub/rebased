@@ -802,7 +802,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       configs = Pleroma.Repo.all(Config)
 
       if configs == [] do
-        errors(conn, {:error, "To use dynamic configuration migrate your settings to database."})
+        errors(
+          conn,
+          {:error, "To use configuration from database migrate your settings to database."}
+        )
       else
         conn
         |> put_view(ConfigView)
@@ -847,7 +850,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     if Pleroma.Config.get([:configurable_from_database]) do
       :ok
     else
-      errors(conn, {:error, "To use this endpoint you need to enable dynamic configuration."})
+      errors(
+        conn,
+        {:error, "To use this endpoint you need to enable configuration from database."}
+      )
     end
   end
 
