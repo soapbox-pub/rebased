@@ -1847,22 +1847,13 @@ defmodule Pleroma.User do
   end
 
   def admin_api_update(user, params) do
-    changeset =
-      cast(user, params, [
-        :is_moderator,
-        :is_admin,
-        :show_role
-      ])
-
-    with {:ok, updated_user} <- update_and_set_cache(changeset) do
-      if user.is_admin && !updated_user.is_admin do
-        # Tokens & authorizations containing any admin scopes must be revoked (revoking all).
-        # This is an extra safety measure (tokens' admin scopes won't be accepted for non-admins).
-        global_sign_out(user)
-      end
-
-      {:ok, updated_user}
-    end
+    user
+    |> cast(params, [
+      :is_moderator,
+      :is_admin,
+      :show_role
+    ])
+    |> update_and_set_cache()
   end
 
   @doc "Signs user out of all applications"

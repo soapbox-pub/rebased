@@ -8,7 +8,6 @@ defmodule Pleroma.Web.OAuth.Scopes do
   """
 
   alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.User
 
   @doc """
   Fetch scopes from request params.
@@ -56,32 +55,15 @@ defmodule Pleroma.Web.OAuth.Scopes do
   @doc """
   Validates scopes.
   """
-  @spec validate(list() | nil, list(), User.t()) ::
+  @spec validate(list() | nil, list()) ::
           {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}
-  def validate(blank_scopes, _app_scopes, _user) when blank_scopes in [nil, []],
+  def validate(blank_scopes, _app_scopes) when blank_scopes in [nil, []],
     do: {:error, :missing_scopes}
 
-  def validate(scopes, app_scopes, %User{} = user) do
-    with {:ok, _} <- ensure_scopes_support(scopes, app_scopes),
-         {:ok, scopes} <- authorize_admin_scopes(scopes, app_scopes, user) do
-      {:ok, scopes}
-    end
-  end
-
-  defp ensure_scopes_support(scopes, app_scopes) do
+  def validate(scopes, app_scopes) do
     case OAuthScopesPlug.filter_descendants(scopes, app_scopes) do
       ^scopes -> {:ok, scopes}
       _ -> {:error, :unsupported_scopes}
-    end
-  end
-
-  defp authorize_admin_scopes(scopes, app_scopes, %User{} = user) do
-    if user.is_admin || !contains_admin_scopes?(scopes) || !contains_admin_scopes?(app_scopes) do
-      {:ok, scopes}
-    else
-      # Gracefully dropping admin scopes from requested scopes if user isn't an admin (not raising)
-      scopes = scopes -- OAuthScopesPlug.filter_descendants(scopes, ["admin"])
-      validate(scopes, app_scopes, user)
     end
   end
 
