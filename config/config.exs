@@ -53,8 +53,10 @@ config :pleroma, Pleroma.Repo,
 
 config :pleroma, Pleroma.Captcha,
   enabled: true,
-  seconds_valid: 60,
+  seconds_valid: 300,
   method: Pleroma.Captcha.Native
+
+config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
 
 config :pleroma, :hackney_pools,
   federation: [

@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("1.1.7"),
+      version: version("1.1.8"),
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -160,7 +160,7 @@ defmodule Pleroma.Mixfile do
       {:flake_id, "~> 0.1.0"},
       {:captcha,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
-       ref: "c3c795c55f6b49d79d6ac70a0f91e525099fc3e2"},
+       ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:mox, "~> 0.5", only: :test}
     ] ++ oauth_deps()
   end

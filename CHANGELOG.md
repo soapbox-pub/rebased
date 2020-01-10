@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.8] - 2020-01-10
+### Fixed
+- Captcha generation issues
+- Returned Kocaptcha endpoint to configuration
+- Captcha validity is now 5 minutes
+
 ## [1.1.7] - 2019-12-13
 ### Fixed
 - OTP: Inability to set the upload limit
