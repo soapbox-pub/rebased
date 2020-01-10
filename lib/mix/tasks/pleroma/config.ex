@@ -21,7 +21,6 @@ defmodule Mix.Tasks.Pleroma.Config do
     :auto_linker,
     :esshd,
     :ueberauth,
-    :prometheus,
     :http_signatures,
     :web_push_encryption,
     :joken
