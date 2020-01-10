@@ -6,18 +6,24 @@ variables: &global_variables
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
   MIX_ENV: test
+  DOCKER_DRIVER: overlay2
+  DOCKER_HOST: unix:///var/run/docker.sock
+  DOCKER_IMAGE: $CI_REGISTRY_IMAGE:latest
+  DOCKER_IMAGE_SHA: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
 
 cache: &global_cache_policy
   key: ${CI_COMMIT_REF_SLUG}
   paths:
-          - deps
-          - _build
+    - deps
+    - _build
+
 stages:
   - build
   - test
   - benchmark
   - deploy
   - release
+  - docker
 
 before_script:
   - mix local.hex --force
@@ -264,3 +270,20 @@ arm64-musl:
   variables: *release-variables
   before_script: *before-release-musl
   script: *release
+
+docker:
+  stage: docker
+  image: docker:latest
+  tags:
+    - dind
+  before_script: &before-docker
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - export CI_JOB_TIMESTAMP=$(date --utc -Iseconds)
+    - export CI_VCS_REF=$CI_COMMIT_SHORT_SHA
+  script:
+    - docker pull $DOCKER_IMAGE || true
+    - docker build --cache-from $DOCKER_IMAGE --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $DOCKER_IMAGE_SHA -t $DOCKER_IMAGE .
+    - docker push $DOCKER_IMAGE_SHA
+    - docker push $DOCKER_IMAGE
+  only:
+    - develop
