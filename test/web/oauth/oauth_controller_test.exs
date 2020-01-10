@@ -450,7 +450,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
     test "renders authentication page if user is already authenticated but `force_login` is tru-ish",
          %{app: app, conn: conn} do
-      token = insert(:oauth_token, app_id: app.id)
+      token = insert(:oauth_token, app: app)
 
       conn =
         conn
@@ -474,7 +474,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      token = insert(:oauth_token, app_id: app.id)
+      token = insert(:oauth_token, app: app)
 
       conn =
         conn
@@ -497,7 +497,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      token = insert(:oauth_token, app_id: app.id)
+      token = insert(:oauth_token, app: app)
 
       conn =
         conn
@@ -523,7 +523,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            conn: conn
          } do
       unlisted_redirect_uri = "http://cross-site-request.com"
-      token = insert(:oauth_token, app_id: app.id)
+      token = insert(:oauth_token, app: app)
 
       conn =
         conn
@@ -547,7 +547,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      token = insert(:oauth_token, app_id: app.id)
+      token = insert(:oauth_token, app: app)
 
       conn =
         conn

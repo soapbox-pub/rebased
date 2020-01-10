@@ -52,7 +52,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
   @doc """
   Lists the packs available on the instance as JSON.
 
-  The information is public and does not require authentification. The format is
+  The information is public and does not require authentication. The format is
   a map of "pack directory name" to pack.json contents.
   """
   def list_packs(conn, _params) do
