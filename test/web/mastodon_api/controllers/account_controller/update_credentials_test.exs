@@ -12,13 +12,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
   clear_config([:instance, :max_account_fields])
 
   describe "updating credentials" do
-    test "sets user settings in a generic way", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["write:accounts"])
 
+    test "sets user settings in a generic way", %{conn: conn} do
       res_conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{
+        patch(conn, "/api/v1/accounts/update_credentials", %{
           "pleroma_settings_store" => %{
             pleroma_fe: %{
               theme: "bla"
@@ -26,10 +24,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
           }
         })
 
-      assert user = json_response(res_conn, 200)
-      assert user["pleroma"]["settings_store"] == %{"pleroma_fe" => %{"theme" => "bla"}}
+      assert user_data = json_response(res_conn, 200)
+      assert user_data["pleroma"]["settings_store"] == %{"pleroma_fe" => %{"theme" => "bla"}}
 
-      user = Repo.get(User, user["id"])
+      user = Repo.get(User, user_data["id"])
 
       res_conn =
         conn
@@ -42,15 +40,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
           }
         })
 
-      assert user = json_response(res_conn, 200)
+      assert user_data = json_response(res_conn, 200)
 
-      assert user["pleroma"]["settings_store"] ==
+      assert user_data["pleroma"]["settings_store"] ==
                %{
                  "pleroma_fe" => %{"theme" => "bla"},
                  "masto_fe" => %{"theme" => "bla"}
                }
 
-      user = Repo.get(User, user["id"])
+      user = Repo.get(User, user_data["id"])
 
       res_conn =
         conn
@@ -63,9 +61,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
           }
         })
 
-      assert user = json_response(res_conn, 200)
+      assert user_data = json_response(res_conn, 200)
 
-      assert user["pleroma"]["settings_store"] ==
+      assert user_data["pleroma"]["settings_store"] ==
                %{
                  "pleroma_fe" => %{"theme" => "bla"},
                  "masto_fe" => %{"theme" => "blub"}
@@ -73,97 +71,67 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
     end
 
     test "updates the user's bio", %{conn: conn} do
-      user = insert(:user)
       user2 = insert(:user)
 
       conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{
+        patch(conn, "/api/v1/accounts/update_credentials", %{
           "note" => "I drink #cofe with @#{user2.nickname}"
         })
 
-      assert user = json_response(conn, 200)
+      assert user_data = json_response(conn, 200)
 
-      assert user["note"] ==
+      assert user_data["note"] ==
                ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a data-user="#{
                  user2.id
                }" class="u-url mention" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span>)
     end
 
     test "updates the user's locking status", %{conn: conn} do
-      user = insert(:user)
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{locked: "true"})
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{locked: "true"})
-
-      assert user = json_response(conn, 200)
-      assert user["locked"] == true
+      assert user_data = json_response(conn, 200)
+      assert user_data["locked"] == true
     end
 
-    test "updates the user's allow_following_move", %{conn: conn} do
-      user = insert(:user)
-
+    test "updates the user's allow_following_move", %{user: user, conn: conn} do
       assert user.allow_following_move == true
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{allow_following_move: "false"})
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{allow_following_move: "false"})
 
       assert refresh_record(user).allow_following_move == false
-      assert user = json_response(conn, 200)
-      assert user["pleroma"]["allow_following_move"] == false
+      assert user_data = json_response(conn, 200)
+      assert user_data["pleroma"]["allow_following_move"] == false
     end
 
     test "updates the user's default scope", %{conn: conn} do
-      user = insert(:user)
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{default_scope: "cofe"})
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{default_scope: "cofe"})
-
-      assert user = json_response(conn, 200)
-      assert user["source"]["privacy"] == "cofe"
+      assert user_data = json_response(conn, 200)
+      assert user_data["source"]["privacy"] == "cofe"
     end
 
     test "updates the user's hide_followers status", %{conn: conn} do
-      user = insert(:user)
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{hide_followers: "true"})
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{hide_followers: "true"})
-
-      assert user = json_response(conn, 200)
-      assert user["pleroma"]["hide_followers"] == true
+      assert user_data = json_response(conn, 200)
+      assert user_data["pleroma"]["hide_followers"] == true
     end
 
     test "updates the user's hide_followers_count and hide_follows_count", %{conn: conn} do
-      user = insert(:user)
-
       conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{
+        patch(conn, "/api/v1/accounts/update_credentials", %{
           hide_followers_count: "true",
           hide_follows_count: "true"
         })
 
-      assert user = json_response(conn, 200)
-      assert user["pleroma"]["hide_followers_count"] == true
-      assert user["pleroma"]["hide_follows_count"] == true
+      assert user_data = json_response(conn, 200)
+      assert user_data["pleroma"]["hide_followers_count"] == true
+      assert user_data["pleroma"]["hide_follows_count"] == true
     end
 
-    test "updates the user's skip_thread_containment option", %{conn: conn} do
-      user = insert(:user)
-
+    test "updates the user's skip_thread_containment option", %{user: user, conn: conn} do
       response =
         conn
-        |> assign(:user, user)
         |> patch("/api/v1/accounts/update_credentials", %{skip_thread_containment: "true"})
         |> json_response(200)
 
@@ -172,104 +140,68 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
     end
 
     test "updates the user's hide_follows status", %{conn: conn} do
-      user = insert(:user)
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{hide_follows: "true"})
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{hide_follows: "true"})
-
-      assert user = json_response(conn, 200)
-      assert user["pleroma"]["hide_follows"] == true
+      assert user_data = json_response(conn, 200)
+      assert user_data["pleroma"]["hide_follows"] == true
     end
 
     test "updates the user's hide_favorites status", %{conn: conn} do
-      user = insert(:user)
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{hide_favorites: "true"})
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{hide_favorites: "true"})
-
-      assert user = json_response(conn, 200)
-      assert user["pleroma"]["hide_favorites"] == true
+      assert user_data = json_response(conn, 200)
+      assert user_data["pleroma"]["hide_favorites"] == true
     end
 
     test "updates the user's show_role status", %{conn: conn} do
-      user = insert(:user)
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{show_role: "false"})
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{show_role: "false"})
-
-      assert user = json_response(conn, 200)
-      assert user["source"]["pleroma"]["show_role"] == false
+      assert user_data = json_response(conn, 200)
+      assert user_data["source"]["pleroma"]["show_role"] == false
     end
 
     test "updates the user's no_rich_text status", %{conn: conn} do
-      user = insert(:user)
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{no_rich_text: "true"})
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{no_rich_text: "true"})
-
-      assert user = json_response(conn, 200)
-      assert user["source"]["pleroma"]["no_rich_text"] == true
+      assert user_data = json_response(conn, 200)
+      assert user_data["source"]["pleroma"]["no_rich_text"] == true
     end
 
     test "updates the user's name", %{conn: conn} do
-      user = insert(:user)
-
       conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{"display_name" => "markorepairs"})
+        patch(conn, "/api/v1/accounts/update_credentials", %{"display_name" => "markorepairs"})
 
-      assert user = json_response(conn, 200)
-      assert user["display_name"] == "markorepairs"
+      assert user_data = json_response(conn, 200)
+      assert user_data["display_name"] == "markorepairs"
     end
 
-    test "updates the user's avatar", %{conn: conn} do
-      user = insert(:user)
-
+    test "updates the user's avatar", %{user: user, conn: conn} do
       new_avatar = %Plug.Upload{
         content_type: "image/jpg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
 
       assert user_response = json_response(conn, 200)
       assert user_response["avatar"] != User.avatar_url(user)
     end
 
-    test "updates the user's banner", %{conn: conn} do
-      user = insert(:user)
-
+    test "updates the user's banner", %{user: user, conn: conn} do
       new_header = %Plug.Upload{
         content_type: "image/jpg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{"header" => new_header})
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"header" => new_header})
 
       assert user_response = json_response(conn, 200)
       assert user_response["header"] != User.banner_url(user)
     end
 
     test "updates the user's background", %{conn: conn} do
-      user = insert(:user)
-
       new_header = %Plug.Upload{
         content_type: "image/jpg",
         path: Path.absname("test/fixtures/image.jpg"),
@@ -277,9 +209,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       }
 
       conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{
+        patch(conn, "/api/v1/accounts/update_credentials", %{
           "pleroma_background_image" => new_header
         })
 
@@ -287,13 +217,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user_response["pleroma"]["background_image"]
     end
 
-    test "requires 'write:accounts' permission", %{conn: conn} do
+    test "requires 'write:accounts' permission" do
       token1 = insert(:oauth_token, scopes: ["read"])
       token2 = insert(:oauth_token, scopes: ["write", "follow"])
 
       for token <- [token1, token2] do
         conn =
-          conn
+          build_conn()
           |> put_req_header("authorization", "Bearer #{token.token}")
           |> patch("/api/v1/accounts/update_credentials", %{})
 
@@ -306,53 +236,44 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       end
     end
 
-    test "updates profile emojos", %{conn: conn} do
-      user = insert(:user)
-
+    test "updates profile emojos", %{user: user, conn: conn} do
       note = "*sips :blank:*"
       name = "I am :firefox:"
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{
+      ret_conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
           "note" => note,
           "display_name" => name
         })
 
-      assert json_response(conn, 200)
+      assert json_response(ret_conn, 200)
 
-      conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}")
+      conn = get(conn, "/api/v1/accounts/#{user.id}")
 
-      assert user = json_response(conn, 200)
+      assert user_data = json_response(conn, 200)
 
-      assert user["note"] == note
-      assert user["display_name"] == name
-      assert [%{"shortcode" => "blank"}, %{"shortcode" => "firefox"}] = user["emojis"]
+      assert user_data["note"] == note
+      assert user_data["display_name"] == name
+      assert [%{"shortcode" => "blank"}, %{"shortcode" => "firefox"}] = user_data["emojis"]
     end
 
     test "update fields", %{conn: conn} do
-      user = insert(:user)
-
       fields = [
         %{"name" => "<a href=\"http://google.com\">foo</a>", "value" => "<script>bar</script>"},
         %{"name" => "link", "value" => "cofe.io"}
       ]
 
-      account =
+      account_data =
         conn
-        |> assign(:user, user)
         |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
         |> json_response(200)
 
-      assert account["fields"] == [
+      assert account_data["fields"] == [
                %{"name" => "foo", "value" => "bar"},
                %{"name" => "link", "value" => ~S(<a href="http://cofe.io" rel="ugc">cofe.io</a>)}
              ]
 
-      assert account["source"]["fields"] == [
+      assert account_data["source"]["fields"] == [
                %{
                  "name" => "<a href=\"http://google.com\">foo</a>",
                  "value" => "<script>bar</script>"
@@ -372,7 +293,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       account =
         conn
         |> put_req_header("content-type", "application/x-www-form-urlencoded")
-        |> assign(:user, user)
         |> patch("/api/v1/accounts/update_credentials", fields)
         |> json_response(200)
 
@@ -398,7 +318,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       assert %{"error" => "Invalid request"} ==
                conn
-               |> assign(:user, user)
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
                |> json_response(403)
 
@@ -408,7 +327,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       assert %{"error" => "Invalid request"} ==
                conn
-               |> assign(:user, user)
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
                |> json_response(403)
 
@@ -421,7 +339,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       assert %{"error" => "Invalid request"} ==
                conn
-               |> assign(:user, user)
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
                |> json_response(403)
 
@@ -432,7 +349,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       account =
         conn
-        |> assign(:user, user)
         |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
         |> json_response(200)
 

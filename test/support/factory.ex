@@ -296,7 +296,7 @@ defmodule Pleroma.Factory do
     %Pleroma.Web.OAuth.App{
       client_name: "Some client",
       redirect_uris: "https://example.com/callback",
-      scopes: ["read", "write", "follow", "push"],
+      scopes: ["read", "write", "follow", "push", "admin"],
       website: "https://example.com",
       client_id: Ecto.UUID.generate(),
       client_secret: "aaa;/&bbb"
@@ -310,17 +310,35 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def oauth_token_factory do
-    oauth_app = insert(:oauth_app)
+  def oauth_token_factory(attrs \\ %{}) do
+    scopes = Map.get(attrs, :scopes, ["read"])
+    oauth_app = Map.get_lazy(attrs, :app, fn -> insert(:oauth_app, scopes: scopes) end)
+    user = Map.get_lazy(attrs, :user, fn -> build(:user) end)
+
+    valid_until =
+      Map.get(attrs, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10))
 
     %Pleroma.Web.OAuth.Token{
       token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
-      scopes: ["read"],
       refresh_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
-      user: build(:user),
-      app_id: oauth_app.id,
-      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)
+      scopes: scopes,
+      user: user,
+      app: oauth_app,
+      valid_until: valid_until
     }
+  end
+
+  def oauth_admin_token_factory(attrs \\ %{}) do
+    user = Map.get_lazy(attrs, :user, fn -> build(:user, is_admin: true) end)
+
+    scopes =
+      attrs
+      |> Map.get(:scopes, ["admin"])
+      |> Kernel.++(["admin"])
+      |> Enum.uniq()
+
+    attrs = Map.merge(attrs, %{user: user, scopes: scopes})
+    oauth_token_factory(attrs)
   end
 
   def oauth_authorization_factory do

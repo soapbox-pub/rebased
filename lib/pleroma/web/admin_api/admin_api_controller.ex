@@ -88,7 +88,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read"], admin: true}
-    when action in [:config_show, :migrate_to_db, :migrate_from_db, :list_log]
+    when action in [:config_show, :migrate_from_db, :list_log]
   )
 
   plug(

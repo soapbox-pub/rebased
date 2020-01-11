@@ -10,8 +10,9 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
   import Pleroma.Factory
 
-  test "returns a list of conversations", %{conn: conn} do
-    user_one = insert(:user)
+  setup do: oauth_access(["read:statuses"])
+
+  test "returns a list of conversations", %{user: user_one, conn: conn} do
     user_two = insert(:user)
     user_three = insert(:user)
 
@@ -33,10 +34,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
         "visibility" => "private"
       })
 
-    res_conn =
-      conn
-      |> assign(:user, user_one)
-      |> get("/api/v1/conversations")
+    res_conn = get(conn, "/api/v1/conversations")
 
     assert response = json_response(res_conn, 200)
 
@@ -59,8 +57,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
   end
 
-  test "filters conversations by recipients", %{conn: conn} do
-    user_one = insert(:user)
+  test "filters conversations by recipients", %{user: user_one, conn: conn} do
     user_two = insert(:user)
     user_three = insert(:user)
 
@@ -96,7 +93,6 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     [conversation1, conversation2] =
       conn
-      |> assign(:user, user_one)
       |> get("/api/v1/conversations", %{"recipients" => [user_two.id]})
       |> json_response(200)
 
@@ -105,15 +101,13 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     [conversation1] =
       conn
-      |> assign(:user, user_one)
       |> get("/api/v1/conversations", %{"recipients" => [user_two.id, user_three.id]})
       |> json_response(200)
 
     assert conversation1["last_status"]["id"] == direct3.id
   end
 
-  test "updates the last_status on reply", %{conn: conn} do
-    user_one = insert(:user)
+  test "updates the last_status on reply", %{user: user_one, conn: conn} do
     user_two = insert(:user)
 
     {:ok, direct} =
@@ -131,15 +125,13 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     [%{"last_status" => res_last_status}] =
       conn
-      |> assign(:user, user_one)
       |> get("/api/v1/conversations")
       |> json_response(200)
 
     assert res_last_status["id"] == direct_reply.id
   end
 
-  test "the user marks a conversation as read", %{conn: conn} do
-    user_one = insert(:user)
+  test "the user marks a conversation as read", %{user: user_one, conn: conn} do
     user_two = insert(:user)
 
     {:ok, direct} =
@@ -151,15 +143,21 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
     assert User.get_cached_by_id(user_two.id).unread_conversation_count == 1
 
-    [%{"id" => direct_conversation_id, "unread" => true}] =
-      conn
+    user_two_conn =
+      build_conn()
       |> assign(:user, user_two)
+      |> assign(
+        :token,
+        insert(:oauth_token, user: user_two, scopes: ["read:statuses", "write:conversations"])
+      )
+
+    [%{"id" => direct_conversation_id, "unread" => true}] =
+      user_two_conn
       |> get("/api/v1/conversations")
       |> json_response(200)
 
     %{"unread" => false} =
-      conn
-      |> assign(:user, user_two)
+      user_two_conn
       |> post("/api/v1/conversations/#{direct_conversation_id}/read")
       |> json_response(200)
 
@@ -176,7 +174,6 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     [%{"unread" => true}] =
       conn
-      |> assign(:user, user_one)
       |> get("/api/v1/conversations")
       |> json_response(200)
 
@@ -195,8 +192,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
   end
 
-  test "(vanilla) Mastodon frontend behaviour", %{conn: conn} do
-    user_one = insert(:user)
+  test "(vanilla) Mastodon frontend behaviour", %{user: user_one, conn: conn} do
     user_two = insert(:user)
 
     {:ok, direct} =
@@ -205,10 +201,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
         "visibility" => "direct"
       })
 
-    res_conn =
-      conn
-      |> assign(:user, user_one)
-      |> get("/api/v1/statuses/#{direct.id}/context")
+    res_conn = get(conn, "/api/v1/statuses/#{direct.id}/context")
 
     assert %{"ancestors" => [], "descendants" => []} == json_response(res_conn, 200)
   end

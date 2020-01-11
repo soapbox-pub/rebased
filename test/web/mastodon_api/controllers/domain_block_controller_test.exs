@@ -9,31 +9,25 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockControllerTest do
 
   import Pleroma.Factory
 
-  test "blocking / unblocking a domain", %{conn: conn} do
-    user = insert(:user)
+  test "blocking / unblocking a domain" do
+    %{user: user, conn: conn} = oauth_access(["write:blocks"])
     other_user = insert(:user, %{ap_id: "https://dogwhistle.zone/@pundit"})
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
+    ret_conn = post(conn, "/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
 
-    assert %{} = json_response(conn, 200)
+    assert %{} = json_response(ret_conn, 200)
     user = User.get_cached_by_ap_id(user.ap_id)
     assert User.blocks?(user, other_user)
 
-    conn =
-      build_conn()
-      |> assign(:user, user)
-      |> delete("/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
+    ret_conn = delete(conn, "/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
 
-    assert %{} = json_response(conn, 200)
+    assert %{} = json_response(ret_conn, 200)
     user = User.get_cached_by_ap_id(user.ap_id)
     refute User.blocks?(user, other_user)
   end
 
-  test "getting a list of domain blocks", %{conn: conn} do
-    user = insert(:user)
+  test "getting a list of domain blocks" do
+    %{user: user, conn: conn} = oauth_access(["read:blocks"])
 
     {:ok, user} = User.block_domain(user, "bad.site")
     {:ok, user} = User.block_domain(user, "even.worse.site")

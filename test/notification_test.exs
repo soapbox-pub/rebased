@@ -98,7 +98,7 @@ defmodule Pleroma.NotificationTest do
       assert Notification.create_notification(activity, user)
     end
 
-    test "it creates a notificatin for the user if the user mutes the activity author" do
+    test "it creates a notification for the user if the user mutes the activity author" do
       muter = insert(:user)
       muted = insert(:user)
       {:ok, _} = User.mute(muter, muted)

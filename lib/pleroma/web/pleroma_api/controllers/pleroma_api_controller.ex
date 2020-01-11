@@ -22,7 +22,14 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:statuses"]} when action in [:conversation, :conversation_statuses]
+    %{scopes: ["read:statuses"]}
+    when action in [:conversation, :conversation_statuses, :emoji_reactions_by]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:statuses"]}
+    when action in [:react_with_emoji, :unreact_with_emoji]
   )
 
   plug(

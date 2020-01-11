@@ -33,7 +33,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
     test "resend account confirmation email", %{conn: conn, user: user} do
       conn
-      |> assign(:user, user)
       |> post("/api/v1/pleroma/accounts/confirmation_resend?email=#{user.email}")
       |> json_response(:no_content)
 
@@ -52,14 +51,12 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
   end
 
   describe "PATCH /api/v1/pleroma/accounts/update_avatar" do
-    test "user avatar can be set", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["write:accounts"])
+
+    test "user avatar can be set", %{user: user, conn: conn} do
       avatar_image = File.read!("test/fixtures/avatar_data_uri")
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/pleroma/accounts/update_avatar", %{img: avatar_image})
+      conn = patch(conn, "/api/v1/pleroma/accounts/update_avatar", %{img: avatar_image})
 
       user = refresh_record(user)
 
@@ -78,13 +75,8 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       assert %{"url" => _} = json_response(conn, 200)
     end
 
-    test "user avatar can be reset", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/pleroma/accounts/update_avatar", %{img: ""})
+    test "user avatar can be reset", %{user: user, conn: conn} do
+      conn = patch(conn, "/api/v1/pleroma/accounts/update_avatar", %{img: ""})
 
       user = User.get_cached_by_id(user.id)
 
@@ -95,13 +87,10 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
   end
 
   describe "PATCH /api/v1/pleroma/accounts/update_banner" do
-    test "can set profile banner", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["write:accounts"])
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => @image})
+    test "can set profile banner", %{user: user, conn: conn} do
+      conn = patch(conn, "/api/v1/pleroma/accounts/update_banner", %{"banner" => @image})
 
       user = refresh_record(user)
       assert user.banner["type"] == "Image"
@@ -109,13 +98,8 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       assert %{"url" => _} = json_response(conn, 200)
     end
 
-    test "can reset profile banner", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => ""})
+    test "can reset profile banner", %{user: user, conn: conn} do
+      conn = patch(conn, "/api/v1/pleroma/accounts/update_banner", %{"banner" => ""})
 
       user = refresh_record(user)
       assert user.banner == %{}
@@ -125,26 +109,18 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
   end
 
   describe "PATCH /api/v1/pleroma/accounts/update_background" do
-    test "background image can be set", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["write:accounts"])
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => @image})
+    test "background image can be set", %{user: user, conn: conn} do
+      conn = patch(conn, "/api/v1/pleroma/accounts/update_background", %{"img" => @image})
 
       user = refresh_record(user)
       assert user.background["type"] == "Image"
       assert %{"url" => _} = json_response(conn, 200)
     end
 
-    test "background image can be reset", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => ""})
+    test "background image can be reset", %{user: user, conn: conn} do
+      conn = patch(conn, "/api/v1/pleroma/accounts/update_background", %{"img" => ""})
 
       user = refresh_record(user)
       assert user.background == %{}
@@ -155,12 +131,12 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
   describe "getting favorites timeline of specified user" do
     setup do
       [current_user, user] = insert_pair(:user, hide_favorites: false)
-      [current_user: current_user, user: user]
+      %{user: current_user, conn: conn} = oauth_access(["read:favourites"], user: current_user)
+      [current_user: current_user, user: user, conn: conn]
     end
 
     test "returns list of statuses favorited by specified user", %{
       conn: conn,
-      current_user: current_user,
       user: user
     } do
       [activity | _] = insert_pair(:note_activity)
@@ -168,7 +144,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       response =
         conn
-        |> assign(:user, current_user)
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
         |> json_response(:ok)
 
@@ -178,23 +153,18 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       assert like["id"] == activity.id
     end
 
-    test "returns favorites for specified user_id when user is not logged in", %{
-      conn: conn,
+    test "does not return favorites for specified user_id when user is not logged in", %{
       user: user
     } do
       activity = insert(:note_activity)
       CommonAPI.favorite(activity.id, user)
 
-      response =
-        conn
-        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-        |> json_response(:ok)
-
-      assert length(response) == 1
+      build_conn()
+      |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+      |> json_response(403)
     end
 
     test "returns favorited DM only when user is logged in and he is one of recipients", %{
-      conn: conn,
       current_user: current_user,
       user: user
     } do
@@ -206,25 +176,24 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       CommonAPI.favorite(direct.id, user)
 
-      response =
-        conn
-        |> assign(:user, current_user)
-        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-        |> json_response(:ok)
+      for u <- [user, current_user] do
+        response =
+          build_conn()
+          |> assign(:user, u)
+          |> assign(:token, insert(:oauth_token, user: u, scopes: ["read:favourites"]))
+          |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+          |> json_response(:ok)
 
-      assert length(response) == 1
+        assert length(response) == 1
+      end
 
-      anonymous_response =
-        conn
-        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-        |> json_response(:ok)
-
-      assert Enum.empty?(anonymous_response)
+      build_conn()
+      |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+      |> json_response(403)
     end
 
     test "does not return others' favorited DM when user is not one of recipients", %{
       conn: conn,
-      current_user: current_user,
       user: user
     } do
       user_two = insert(:user)
@@ -239,7 +208,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       response =
         conn
-        |> assign(:user, current_user)
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
         |> json_response(:ok)
 
@@ -248,7 +216,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
     test "paginates favorites using since_id and max_id", %{
       conn: conn,
-      current_user: current_user,
       user: user
     } do
       activities = insert_list(10, :note_activity)
@@ -262,7 +229,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       response =
         conn
-        |> assign(:user, current_user)
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites", %{
           since_id: third_activity.id,
           max_id: seventh_activity.id
@@ -276,7 +242,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
     test "limits favorites using limit parameter", %{
       conn: conn,
-      current_user: current_user,
       user: user
     } do
       7
@@ -287,7 +252,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       response =
         conn
-        |> assign(:user, current_user)
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites", %{limit: "3"})
         |> json_response(:ok)
 
@@ -296,12 +260,10 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
     test "returns empty response when user does not have any favorited statuses", %{
       conn: conn,
-      current_user: current_user,
       user: user
     } do
       response =
         conn
-        |> assign(:user, current_user)
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
         |> json_response(:ok)
 
@@ -314,79 +276,61 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       assert json_response(conn, 404) == %{"error" => "Record not found"}
     end
 
-    test "returns 403 error when user has hidden own favorites", %{
-      conn: conn,
-      current_user: current_user
-    } do
+    test "returns 403 error when user has hidden own favorites", %{conn: conn} do
       user = insert(:user, hide_favorites: true)
       activity = insert(:note_activity)
       CommonAPI.favorite(activity.id, user)
 
-      conn =
-        conn
-        |> assign(:user, current_user)
-        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+      conn = get(conn, "/api/v1/pleroma/accounts/#{user.id}/favourites")
 
       assert json_response(conn, 403) == %{"error" => "Can't get favorites"}
     end
 
-    test "hides favorites for new users by default", %{conn: conn, current_user: current_user} do
+    test "hides favorites for new users by default", %{conn: conn} do
       user = insert(:user)
       activity = insert(:note_activity)
       CommonAPI.favorite(activity.id, user)
 
-      conn =
-        conn
-        |> assign(:user, current_user)
-        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-
       assert user.hide_favorites
+      conn = get(conn, "/api/v1/pleroma/accounts/#{user.id}/favourites")
+
       assert json_response(conn, 403) == %{"error" => "Can't get favorites"}
     end
   end
 
   describe "subscribing / unsubscribing" do
-    test "subscribing / unsubscribing to a user", %{conn: conn} do
-      user = insert(:user)
+    test "subscribing / unsubscribing to a user" do
+      %{user: user, conn: conn} = oauth_access(["follow"])
       subscription_target = insert(:user)
 
-      conn =
+      ret_conn =
         conn
         |> assign(:user, user)
         |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/subscribe")
 
-      assert %{"id" => _id, "subscribing" => true} = json_response(conn, 200)
+      assert %{"id" => _id, "subscribing" => true} = json_response(ret_conn, 200)
 
-      conn =
-        build_conn()
-        |> assign(:user, user)
-        |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/unsubscribe")
+      conn = post(conn, "/api/v1/pleroma/accounts/#{subscription_target.id}/unsubscribe")
 
       assert %{"id" => _id, "subscribing" => false} = json_response(conn, 200)
     end
   end
 
   describe "subscribing" do
-    test "returns 404 when subscription_target not found", %{conn: conn} do
-      user = insert(:user)
+    test "returns 404 when subscription_target not found" do
+      %{conn: conn} = oauth_access(["write:follows"])
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/pleroma/accounts/target_id/subscribe")
+      conn = post(conn, "/api/v1/pleroma/accounts/target_id/subscribe")
 
       assert %{"error" => "Record not found"} = json_response(conn, 404)
     end
   end
 
   describe "unsubscribing" do
-    test "returns 404 when subscription_target not found", %{conn: conn} do
-      user = insert(:user)
+    test "returns 404 when subscription_target not found" do
+      %{conn: conn} = oauth_access(["follow"])
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/pleroma/accounts/target_id/unsubscribe")
+      conn = post(conn, "/api/v1/pleroma/accounts/target_id/unsubscribe")
 
       assert %{"error" => "Record not found"} = json_response(conn, 404)
     end
