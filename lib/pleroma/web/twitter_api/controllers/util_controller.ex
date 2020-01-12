@@ -20,7 +20,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["follow", "write:follows"]}
-    when action in [:do_remote_follow, :follow_import]
+    when action == :follow_import
+  )
+
+  # Note: follower can submit the form (with password auth) not being signed in (having no token)
+  plug(
+    OAuthScopesPlug,
+    %{fallback: :proceed_unauthenticated, scopes: ["follow", "write:follows"]}
+    when action == :do_remote_follow
   )
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks_import)
@@ -255,7 +262,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def delete_account(%{assigns: %{user: user}} = conn, params) do
-    case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
+    password = params["password"] || ""
+
+    case CommonAPI.Utils.confirm_current_password(user, password) do
       {:ok, user} ->
         User.delete(user)
         json(conn, %{status: "success"})

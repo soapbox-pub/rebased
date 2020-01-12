@@ -453,6 +453,7 @@ An example for Sendgrid adapter:
 
 ```elixir
 config :pleroma, Pleroma.Emails.Mailer,
+  enabled: true,
   adapter: Swoosh.Adapters.Sendgrid,
   api_key: "YOUR_API_KEY"
 ```
@@ -461,13 +462,13 @@ An example for SMTP adapter:
 
 ```elixir
 config :pleroma, Pleroma.Emails.Mailer,
+  enabled: true,
   adapter: Swoosh.Adapters.SMTP,
   relay: "smtp.gmail.com",
   username: "YOUR_USERNAME@gmail.com",
   password: "YOUR_SMTP_PASSWORD",
   port: 465,
   ssl: true,
-  tls: :always,
   auth: :always
 ```
 
@@ -836,3 +837,7 @@ config :auto_linker,
     rel: "ugc"
   ]
 ```
+
+## Custom Runtime Modules (`:modules`)
+
+* `runtime_dir`: A path to custom Elixir modules (such as MRF policies).

@@ -67,7 +67,7 @@ config :pleroma, Pleroma.Scheduler,
 
 config :pleroma, Pleroma.Captcha,
   enabled: true,
-  seconds_valid: 60,
+  seconds_valid: 300,
   method: Pleroma.Captcha.Native
 
 config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
@@ -107,10 +107,6 @@ config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
   streaming_enabled: true,
   public_endpoint: "https://s3.amazonaws.com"
-
-config :pleroma, Pleroma.Uploaders.MDII,
-  cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
-  files: "https://mdii.sakura.ne.jp"
 
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
@@ -620,6 +616,8 @@ config :pleroma, :static_fe, enabled: false
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,
   activity_pub_question: 30_000
+
+config :pleroma, :modules, runtime_dir: "instance/modules"
 
 config :swarm, node_blacklist: [~r/myhtml_.*$/]
 # Import environment specific config. This must remain at the bottom

@@ -9,10 +9,12 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   alias Pleroma.Web.ActivityPub.ActivityPub
   require Logger
 
+  @relay_nickname "relay"
+
   def get_actor do
     actor =
       relay_ap_id()
-      |> User.get_or_create_service_actor_by_ap_id()
+      |> User.get_or_create_service_actor_by_ap_id(@relay_nickname)
 
     actor
   end

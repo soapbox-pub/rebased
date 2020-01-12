@@ -18,16 +18,13 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
     token = assigns[:token]
 
     scopes = transform_scopes(scopes, options)
-    matched_scopes = token && filter_descendants(scopes, token.scopes)
+    matched_scopes = (token && filter_descendants(scopes, token.scopes)) || []
 
     cond do
-      is_nil(token) ->
-        maybe_perform_instance_privacy_check(conn, options)
-
-      op == :| && Enum.any?(matched_scopes) ->
+      token && op == :| && Enum.any?(matched_scopes) ->
         conn
 
-      op == :& && matched_scopes == scopes ->
+      token && op == :& && matched_scopes == scopes ->
         conn
 
       options[:fallback] == :proceed_unauthenticated ->

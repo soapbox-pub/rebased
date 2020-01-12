@@ -16,34 +16,6 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
     :ok
   end
 
-  describe "when `assigns[:token]` is nil, " do
-    test "with :skip_instance_privacy_check option, proceeds with no op", %{conn: conn} do
-      conn =
-        conn
-        |> assign(:user, insert(:user))
-        |> OAuthScopesPlug.call(%{scopes: ["read"], skip_instance_privacy_check: true})
-
-      refute conn.halted
-      assert conn.assigns[:user]
-
-      refute called(EnsurePublicOrAuthenticatedPlug.call(conn, :_))
-    end
-
-    test "without :skip_instance_privacy_check option, calls EnsurePublicOrAuthenticatedPlug", %{
-      conn: conn
-    } do
-      conn =
-        conn
-        |> assign(:user, insert(:user))
-        |> OAuthScopesPlug.call(%{scopes: ["read"]})
-
-      refute conn.halted
-      assert conn.assigns[:user]
-
-      assert called(EnsurePublicOrAuthenticatedPlug.call(conn, :_))
-    end
-  end
-
   test "if `token.scopes` fulfills specified 'any of' conditions, " <>
          "proceeds with no op",
        %{conn: conn} do
@@ -75,64 +47,56 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
   end
 
   describe "with `fallback: :proceed_unauthenticated` option, " do
-    test "if `token.scopes` doesn't fulfill specified 'any of' conditions, " <>
-           "clears `assigns[:user]` and calls EnsurePublicOrAuthenticatedPlug",
+    test "if `token.scopes` doesn't fulfill specified conditions, " <>
+           "clears :user and :token assigns and calls EnsurePublicOrAuthenticatedPlug",
          %{conn: conn} do
-      token = insert(:oauth_token, scopes: ["read", "write"]) |> Repo.preload(:user)
+      user = insert(:user)
+      token1 = insert(:oauth_token, scopes: ["read", "write"], user: user)
 
-      conn =
-        conn
-        |> assign(:user, token.user)
-        |> assign(:token, token)
-        |> OAuthScopesPlug.call(%{scopes: ["follow"], fallback: :proceed_unauthenticated})
+      for token <- [token1, nil], op <- [:|, :&] do
+        ret_conn =
+          conn
+          |> assign(:user, user)
+          |> assign(:token, token)
+          |> OAuthScopesPlug.call(%{
+            scopes: ["follow"],
+            op: op,
+            fallback: :proceed_unauthenticated
+          })
 
-      refute conn.halted
-      refute conn.assigns[:user]
+        refute ret_conn.halted
+        refute ret_conn.assigns[:user]
+        refute ret_conn.assigns[:token]
 
-      assert called(EnsurePublicOrAuthenticatedPlug.call(conn, :_))
-    end
-
-    test "if `token.scopes` doesn't fulfill specified 'all of' conditions, " <>
-           "clears `assigns[:user] and calls EnsurePublicOrAuthenticatedPlug",
-         %{conn: conn} do
-      token = insert(:oauth_token, scopes: ["read", "write"]) |> Repo.preload(:user)
-
-      conn =
-        conn
-        |> assign(:user, token.user)
-        |> assign(:token, token)
-        |> OAuthScopesPlug.call(%{
-          scopes: ["read", "follow"],
-          op: :&,
-          fallback: :proceed_unauthenticated
-        })
-
-      refute conn.halted
-      refute conn.assigns[:user]
-
-      assert called(EnsurePublicOrAuthenticatedPlug.call(conn, :_))
+        assert called(EnsurePublicOrAuthenticatedPlug.call(ret_conn, :_))
+      end
     end
 
     test "with :skip_instance_privacy_check option, " <>
            "if `token.scopes` doesn't fulfill specified conditions, " <>
-           "clears `assigns[:user]` and does not call EnsurePublicOrAuthenticatedPlug",
+           "clears :user and :token assigns and does NOT call EnsurePublicOrAuthenticatedPlug",
          %{conn: conn} do
-      token = insert(:oauth_token, scopes: ["read:statuses", "write"]) |> Repo.preload(:user)
+      user = insert(:user)
+      token1 = insert(:oauth_token, scopes: ["read:statuses", "write"], user: user)
 
-      conn =
-        conn
-        |> assign(:user, token.user)
-        |> assign(:token, token)
-        |> OAuthScopesPlug.call(%{
-          scopes: ["read"],
-          fallback: :proceed_unauthenticated,
-          skip_instance_privacy_check: true
-        })
+      for token <- [token1, nil], op <- [:|, :&] do
+        ret_conn =
+          conn
+          |> assign(:user, user)
+          |> assign(:token, token)
+          |> OAuthScopesPlug.call(%{
+            scopes: ["read"],
+            op: op,
+            fallback: :proceed_unauthenticated,
+            skip_instance_privacy_check: true
+          })
 
-      refute conn.halted
-      refute conn.assigns[:user]
+        refute ret_conn.halted
+        refute ret_conn.assigns[:user]
+        refute ret_conn.assigns[:token]
 
-      refute called(EnsurePublicOrAuthenticatedPlug.call(conn, :_))
+        refute called(EnsurePublicOrAuthenticatedPlug.call(ret_conn, :_))
+      end
     end
   end
 
@@ -140,39 +104,42 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
     test "if `token.scopes` does not fulfill specified 'any of' conditions, " <>
            "returns 403 and halts",
          %{conn: conn} do
-      token = insert(:oauth_token, scopes: ["read", "write"])
-      any_of_scopes = ["follow"]
+      for token <- [insert(:oauth_token, scopes: ["read", "write"]), nil] do
+        any_of_scopes = ["follow", "push"]
 
-      conn =
-        conn
-        |> assign(:token, token)
-        |> OAuthScopesPlug.call(%{scopes: any_of_scopes})
+        ret_conn =
+          conn
+          |> assign(:token, token)
+          |> OAuthScopesPlug.call(%{scopes: any_of_scopes})
 
-      assert conn.halted
-      assert 403 == conn.status
+        assert ret_conn.halted
+        assert 403 == ret_conn.status
 
-      expected_error = "Insufficient permissions: #{Enum.join(any_of_scopes, ", ")}."
-      assert Jason.encode!(%{error: expected_error}) == conn.resp_body
+        expected_error = "Insufficient permissions: #{Enum.join(any_of_scopes, " | ")}."
+        assert Jason.encode!(%{error: expected_error}) == ret_conn.resp_body
+      end
     end
 
     test "if `token.scopes` does not fulfill specified 'all of' conditions, " <>
            "returns 403 and halts",
          %{conn: conn} do
-      token = insert(:oauth_token, scopes: ["read", "write"])
-      all_of_scopes = ["write", "follow"]
+      for token <- [insert(:oauth_token, scopes: ["read", "write"]), nil] do
+        token_scopes = (token && token.scopes) || []
+        all_of_scopes = ["write", "follow"]
 
-      conn =
-        conn
-        |> assign(:token, token)
-        |> OAuthScopesPlug.call(%{scopes: all_of_scopes, op: :&})
+        conn =
+          conn
+          |> assign(:token, token)
+          |> OAuthScopesPlug.call(%{scopes: all_of_scopes, op: :&})
 
-      assert conn.halted
-      assert 403 == conn.status
+        assert conn.halted
+        assert 403 == conn.status
 
-      expected_error =
-        "Insufficient permissions: #{Enum.join(all_of_scopes -- token.scopes, ", ")}."
+        expected_error =
+          "Insufficient permissions: #{Enum.join(all_of_scopes -- token_scopes, " & ")}."
 
-      assert Jason.encode!(%{error: expected_error}) == conn.resp_body
+        assert Jason.encode!(%{error: expected_error}) == conn.resp_body
+      end
     end
   end
 

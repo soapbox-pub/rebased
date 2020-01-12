@@ -47,7 +47,7 @@ defmodule Pleroma.Web.Federator.Publisher do
     Config.get([:instance, :federation_publisher_modules])
     |> Enum.each(fn module ->
       if module.is_representable?(activity) do
-        Logger.info("Publishing #{activity.data["id"]} using #{inspect(module)}")
+        Logger.debug("Publishing #{activity.data["id"]} using #{inspect(module)}")
         module.publish(user, activity)
       end
     end)

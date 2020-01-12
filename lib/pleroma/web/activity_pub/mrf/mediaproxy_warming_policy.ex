@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
   ]
 
   def perform(:prefetch, url) do
-    Logger.info("Prefetching #{inspect(url)}")
+    Logger.debug("Prefetching #{inspect(url)}")
 
     url
     |> MediaProxy.url()
