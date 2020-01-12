@@ -95,6 +95,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       response =
         conn
         |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:follows"]))
         |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
         |> response(200)
 
@@ -151,6 +152,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       response =
         conn
         |> assign(:user, refresh_record(user))
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:follows"]))
         |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
         |> response(200)
 
