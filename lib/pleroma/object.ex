@@ -17,6 +17,8 @@ defmodule Pleroma.Object do
 
   require Logger
 
+  @type t() :: %__MODULE__{}
+
   schema "objects" do
     field(:data, :map)
 
@@ -77,6 +79,20 @@ defmodule Pleroma.Object do
 
   def get_by_ap_id(ap_id) do
     Repo.one(from(object in Object, where: fragment("(?)->>'id' = ?", object.data, ^ap_id)))
+  end
+
+  @doc """
+  Get a single attachment by it's name and href
+  """
+  @spec get_attachment_by_name_and_href(String.t(), String.t()) :: Object.t() | nil
+  def get_attachment_by_name_and_href(name, href) do
+    query =
+      from(o in Object,
+        where: fragment("(?)->>'name' = ?", o.data, ^name),
+        where: fragment("(?)->>'href' = ?", o.data, ^href)
+      )
+
+    Repo.one(query)
   end
 
   defp warn_on_no_object_preloaded(ap_id) do
@@ -164,12 +180,84 @@ defmodule Pleroma.Object do
 
   def delete(%Object{data: %{"id" => id}} = object) do
     with {:ok, _obj} = swap_object_with_tombstone(object),
+         :ok <- delete_attachments(object),
          deleted_activity = Activity.delete_all_by_object_ap_id(id),
          {:ok, true} <- Cachex.del(:object_cache, "object:#{id}"),
          {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path) do
       {:ok, object, deleted_activity}
     end
   end
+
+  defp delete_attachments(%{data: %{"attachment" => [_ | _] = attachments, "actor" => actor}}) do
+    hrefs =
+      Enum.flat_map(attachments, fn attachment ->
+        Enum.map(attachment["url"], & &1["href"])
+      end)
+
+    names = Enum.map(attachments, & &1["name"])
+
+    uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
+
+    # find all objects for copies of the attachments, name and actor doesn't matter here
+    delete_ids =
+      from(o in Object,
+        where:
+          fragment(
+            "to_jsonb(array(select jsonb_array_elements((?)#>'{url}') ->> 'href'))::jsonb \\?| (?)",
+            o.data,
+            ^hrefs
+          )
+      )
+      |> Repo.all()
+      # we should delete 1 object for any given attachment, but don't delete files if
+      # there are more than 1 object for it
+      |> Enum.reduce(%{}, fn %{
+                               id: id,
+                               data: %{
+                                 "url" => [%{"href" => href}],
+                                 "actor" => obj_actor,
+                                 "name" => name
+                               }
+                             },
+                             acc ->
+        Map.update(acc, href, %{id: id, count: 1}, fn val ->
+          case obj_actor == actor and name in names do
+            true ->
+              # set id of the actor's object that will be deleted
+              %{val | id: id, count: val.count + 1}
+
+            false ->
+              # another actor's object, just increase count to not delete file
+              %{val | count: val.count + 1}
+          end
+        end)
+      end)
+      |> Enum.map(fn {href, %{id: id, count: count}} ->
+        # only delete files that have single instance
+        with 1 <- count do
+          prefix =
+            case Pleroma.Config.get([Pleroma.Upload, :base_url]) do
+              nil -> "media"
+              _ -> ""
+            end
+
+          base_url = Pleroma.Config.get([__MODULE__, :base_url], Pleroma.Web.base_url())
+
+          file_path = String.trim_leading(href, "#{base_url}/#{prefix}")
+
+          uploader.delete_file(file_path)
+        end
+
+        id
+      end)
+
+    from(o in Object, where: o.id in ^delete_ids)
+    |> Repo.delete_all()
+
+    :ok
+  end
+
+  defp delete_attachments(%{data: _data}), do: :ok
 
   def prune(%Object{data: %{"id" => id}} = object) do
     with {:ok, object} <- Repo.delete(object),
