@@ -77,13 +77,11 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
   describe ".account_search" do
     test "account search", %{conn: conn} do
-      user = insert(:user)
       user_two = insert(:user, %{nickname: "shp@shitposter.club"})
       user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
 
       results =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/accounts/search", %{"q" => "shp"})
         |> json_response(200)
 
@@ -94,7 +92,6 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/accounts/search", %{"q" => "2hu"})
         |> json_response(200)
 
@@ -104,11 +101,10 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     end
 
     test "returns account if query contains a space", %{conn: conn} do
-      user = insert(:user, %{nickname: "shp@shitposter.club"})
+      insert(:user, %{nickname: "shp@shitposter.club"})
 
       results =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/accounts/search", %{"q" => "shp@shitposter.club xxx "})
         |> json_response(200)
 
@@ -209,6 +205,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       conn =
         conn
         |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["read"]))
         |> get("/api/v1/search", %{"q" => "mike@osada.macgirvin.com", "resolve" => "true"})
 
       assert results = json_response(conn, 200)

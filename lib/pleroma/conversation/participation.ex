@@ -64,11 +64,13 @@ defmodule Pleroma.Conversation.Participation do
   end
 
   def mark_as_read(participation) do
-    participation
-    |> read_cng(%{read: true})
-    |> Repo.update()
+    __MODULE__
+    |> where(id: ^participation.id)
+    |> update(set: [read: true])
+    |> select([p], p)
+    |> Repo.update_all([])
     |> case do
-      {:ok, participation} ->
+      {1, [participation]} ->
         participation = Repo.preload(participation, :user)
         User.set_unread_conversation_count(participation.user)
         {:ok, participation}
