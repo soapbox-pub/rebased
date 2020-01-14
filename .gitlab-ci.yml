@@ -271,6 +271,7 @@ docker:
   stage: docker
   image: docker:latest
   cache: {}
+  dependencies: []
   variables: &docker-variables
     DOCKER_DRIVER: overlay2
     DOCKER_HOST: unix:///var/run/docker.sock
@@ -293,11 +294,13 @@ docker:
     - dind
   only:
     - develop
+    - features/docker-updates
 
 docker-stable:
   stage: docker
   image: docker:latest
   cache: {}
+  dependencies: []
   variables: *docker-variables
   before_script: *before-docker
   allow_failure: true
