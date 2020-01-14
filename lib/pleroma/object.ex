@@ -203,7 +203,8 @@ defmodule Pleroma.Object do
       from(o in Object,
         where:
           fragment(
-            "to_jsonb(array(select jsonb_array_elements((?)#>'{url}') ->> 'href'))::jsonb \\?| (?)",
+            "to_jsonb(array(select jsonb_array_elements((?)#>'{url}') ->> 'href' where jsonb_typeof((?)#>'{url}') = 'array'))::jsonb \\?| (?)",
+            o.data,
             o.data,
             ^hrefs
           )
