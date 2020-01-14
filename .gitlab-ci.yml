@@ -282,6 +282,7 @@ docker:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - export CI_JOB_TIMESTAMP=$(date --utc -Iseconds)
     - export CI_VCS_REF=$CI_COMMIT_SHORT_SHA
+  allow_failure: true
   script:
     - docker pull $IMAGE_TAG_SLUG || true
     - docker build --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg                       BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST .
@@ -292,7 +293,6 @@ docker:
     - dind
   only:
     - develop
-    - features/docker-updates
 
 docker-stable:
   stage: docker
@@ -300,6 +300,7 @@ docker-stable:
   cache: {}
   variables: *docker-variables
   before_script: *before-docker
+  allow_failure: true
   script:
     - docker pull $IMAGE_TAG_SLUG || true
     - docker build --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg                               BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST_STABLE .
