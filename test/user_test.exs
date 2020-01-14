@@ -17,6 +17,7 @@ defmodule Pleroma.UserTest do
 
   import Mock
   import Pleroma.Factory
+  import ExUnit.CaptureLog
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -26,6 +27,42 @@ defmodule Pleroma.UserTest do
   clear_config([:instance, :account_activation_required])
 
   describe "service actors" do
+    test "returns updated invisible actor" do
+      uri = "#{Pleroma.Web.Endpoint.url()}/relay"
+      followers_uri = "#{uri}/followers"
+
+      insert(
+        :user,
+        %{
+          nickname: "relay",
+          invisible: false,
+          local: true,
+          ap_id: uri,
+          follower_address: followers_uri
+        }
+      )
+
+      actor = User.get_or_create_service_actor_by_ap_id(uri, "relay")
+      assert actor.invisible
+    end
+
+    test "returns relay user" do
+      uri = "#{Pleroma.Web.Endpoint.url()}/relay"
+      followers_uri = "#{uri}/followers"
+
+      assert %User{
+               nickname: "relay",
+               invisible: true,
+               local: true,
+               ap_id: ^uri,
+               follower_address: ^followers_uri
+             } = User.get_or_create_service_actor_by_ap_id(uri, "relay")
+
+      assert capture_log(fn ->
+               refute User.get_or_create_service_actor_by_ap_id("/relay", "relay")
+             end) =~ "Cannot create service actor:"
+    end
+
     test "returns invisible actor" do
       uri = "#{Pleroma.Web.Endpoint.url()}/internal/fetch-test"
       followers_uri = "#{uri}/followers"

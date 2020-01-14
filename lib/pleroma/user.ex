@@ -1430,20 +1430,47 @@ defmodule Pleroma.User do
   Creates an internal service actor by URI if missing.
   Optionally takes nickname for addressing.
   """
-  def get_or_create_service_actor_by_ap_id(uri, nickname \\ nil) do
-    with user when is_nil(user) <- get_cached_by_ap_id(uri) do
-      {:ok, user} =
-        %User{
-          invisible: true,
-          local: true,
-          ap_id: uri,
-          nickname: nickname,
-          follower_address: uri <> "/followers"
-        }
-        |> Repo.insert()
+  @spec get_or_create_service_actor_by_ap_id(String.t(), String.t()) :: User.t() | nil
+  def get_or_create_service_actor_by_ap_id(uri, nickname) do
+    {_, user} =
+      case get_cached_by_ap_id(uri) do
+        nil ->
+          with {:error, %{errors: errors}} <- create_service_actor(uri, nickname) do
+            Logger.error("Cannot create service actor: #{uri}/.\n#{inspect(errors)}")
+            {:error, nil}
+          end
 
-      user
-    end
+        %User{invisible: false} = user ->
+          set_invisible(user)
+
+        user ->
+          {:ok, user}
+      end
+
+    user
+  end
+
+  @spec set_invisible(User.t()) :: {:ok, User.t()}
+  defp set_invisible(user) do
+    user
+    |> change(%{invisible: true})
+    |> update_and_set_cache()
+  end
+
+  @spec create_service_actor(String.t(), String.t()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  defp create_service_actor(uri, nickname) do
+    %User{
+      invisible: true,
+      local: true,
+      ap_id: uri,
+      nickname: nickname,
+      follower_address: uri <> "/followers"
+    }
+    |> change
+    |> unique_constraint(:nickname)
+    |> Repo.insert()
+    |> set_cache()
   end
 
   # AP style
@@ -1855,9 +1882,9 @@ defmodule Pleroma.User do
       ])
 
     with {:ok, updated_user} <- update_and_set_cache(changeset) do
-      if user.is_admin && !updated_user.is_admin do
-        # Tokens & authorizations containing any admin scopes must be revoked (revoking all).
-        # This is an extra safety measure (tokens' admin scopes won't be accepted for non-admins).
+      if user.is_admin != updated_user.is_admin do
+        # Admin status change results in change of accessible OAuth scopes, and instead of changing
+        #   already issued tokens we revoke them, requiring user to sign in again
         global_sign_out(user)
       end
 

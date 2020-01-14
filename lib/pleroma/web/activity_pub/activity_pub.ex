@@ -1298,27 +1298,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def fetch_follow_information_for_user(user) do
     with {:ok, following_data} <-
            Fetcher.fetch_and_contain_remote_object_from_id(user.following_address),
-         following_count when is_integer(following_count) <- following_data["totalItems"],
          {:ok, hide_follows} <- collection_private(following_data),
          {:ok, followers_data} <-
            Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address),
-         followers_count when is_integer(followers_count) <- followers_data["totalItems"],
          {:ok, hide_followers} <- collection_private(followers_data) do
       {:ok,
        %{
          hide_follows: hide_follows,
-         follower_count: followers_count,
-         following_count: following_count,
+         follower_count: normalize_counter(followers_data["totalItems"]),
+         following_count: normalize_counter(following_data["totalItems"]),
          hide_followers: hide_followers
        }}
     else
-      {:error, _} = e ->
-        e
-
-      e ->
-        {:error, e}
+      {:error, _} = e -> e
+      e -> {:error, e}
     end
   end
+
+  defp normalize_counter(counter) when is_integer(counter), do: counter
+  defp normalize_counter(_), do: 0
 
   defp maybe_update_follow_information(data) do
     with {:enabled, true} <-
@@ -1339,24 +1337,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp collection_private(%{"first" => %{"type" => type}})
+       when type in ["CollectionPage", "OrderedCollectionPage"],
+       do: {:ok, false}
+
   defp collection_private(%{"first" => first}) do
-    if is_map(first) and
-         first["type"] in ["CollectionPage", "OrderedCollectionPage"] do
+    with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
+           Fetcher.fetch_and_contain_remote_object_from_id(first) do
       {:ok, false}
     else
-      with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
-             Fetcher.fetch_and_contain_remote_object_from_id(first) do
-        {:ok, false}
-      else
-        {:error, {:ok, %{status: code}}} when code in [401, 403] ->
-          {:ok, true}
-
-        {:error, _} = e ->
-          e
-
-        e ->
-          {:error, e}
-      end
+      {:error, {:ok, %{status: code}}} when code in [401, 403] -> {:ok, true}
+      {:error, _} = e -> e
+      e -> {:error, e}
     end
   end
 

@@ -6,16 +6,13 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.CommonAPI
-  import Pleroma.Factory
 
   describe "POST /api/v1/pleroma/scrobble" do
-    test "works correctly", %{conn: conn} do
-      user = insert(:user)
+    test "works correctly" do
+      %{conn: conn} = oauth_access(["write"])
 
       conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/pleroma/scrobble", %{
+        post(conn, "/api/v1/pleroma/scrobble", %{
           "title" => "lain radio episode 1",
           "artist" => "lain",
           "album" => "lain radio",
@@ -27,8 +24,8 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleControllerTest do
   end
 
   describe "GET /api/v1/pleroma/accounts/:id/scrobbles" do
-    test "works correctly", %{conn: conn} do
-      user = insert(:user)
+    test "works correctly" do
+      %{user: user, conn: conn} = oauth_access(["read"])
 
       {:ok, _activity} =
         CommonAPI.listen(user, %{
@@ -51,9 +48,7 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleControllerTest do
           "album" => "lain radio"
         })
 
-      conn =
-        conn
-        |> get("/api/v1/pleroma/accounts/#{user.id}/scrobbles")
+      conn = get(conn, "/api/v1/pleroma/accounts/#{user.id}/scrobbles")
 
       result = json_response(conn, 200)
 

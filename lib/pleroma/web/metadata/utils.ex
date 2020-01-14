@@ -15,6 +15,7 @@ defmodule Pleroma.Web.Metadata.Utils do
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.get_cached_stripped_html_for_activity(object, "metadata")
     |> Emoji.Formatter.demojify()
+    |> HtmlEntities.decode()
     |> Formatter.truncate()
   end
 
@@ -22,6 +23,7 @@ defmodule Pleroma.Web.Metadata.Utils do
     content
     |> scrub_html
     |> Emoji.Formatter.demojify()
+    |> HtmlEntities.decode()
     |> Formatter.truncate(max_length)
   end
 

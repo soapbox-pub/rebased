@@ -1,0 +1,14 @@
+<%= if @error do %>
+<h2><%= @error %></h2>
+<% end %>
+<h2>Log in to follow</h2>
+<p><%= @followee.nickname %></p>
+<img height="128" width="128" src="<%= avatar_url(@followee) %>">
+<%= form_for @conn, remote_follow_path(@conn, :do_follow), [as: "authorization"], fn f -> %>
+<%= text_input f, :name, placeholder: "Username", required: true %>
+<br>
+<%= password_input f, :password, placeholder: "Password", required: true %>
+<br>
+<%= hidden_input f, :id, value: @followee.id %>
+<%= submit "Authorize" %>
+<% end %>

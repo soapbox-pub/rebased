@@ -85,5 +85,17 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
              HtmlEntities.decode(FeedView.activity_content(obj2)),
              HtmlEntities.decode(FeedView.activity_content(obj1))
            ]
+
+    response =
+      conn
+      |> put_req_header("content-type", "application/atom+xml")
+      |> get(tag_feed_path(conn, :feed, "pleromaart"))
+      |> response(200)
+
+    xml = parse(response)
+    assert xpath(xml, ~x"//channel/title/text()") == '#pleromaart'
+
+    assert xpath(xml, ~x"//channel/description/text()"s) ==
+             "These are public toots tagged with #pleromaart. You can interact with them if you have an account anywhere in the fediverse."
   end
 end
