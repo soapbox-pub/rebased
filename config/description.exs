@@ -2774,25 +2774,6 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.Uploaders.MDII,
-    description:
-      "Uploader for https://github.com/hakaba-hitoyo/minimal-digital-image-infrastructure",
-    type: :group,
-    children: [
-      %{
-        key: :cgi,
-        type: :string,
-        suggestions: ["https://mdii.sakura.ne.jp/mdii-post.cgi"]
-      },
-      %{
-        key: :files,
-        type: :string,
-        suggestions: ["https://mdii.sakura.ne.jp"]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
     key: :http,
     type: :group,
     description: "HTTP settings",

@@ -264,6 +264,10 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         "rel" => "self",
         "type" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
         "href" => user.ap_id
+      },
+      %{
+        "rel" => "http://ostatus.org/schema/1.0/subscribe",
+        "template" => "#{Pleroma.Web.base_url()}/ostatus_subscribe?acct={uri}"
       }
     ]
   end

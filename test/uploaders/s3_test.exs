@@ -79,4 +79,11 @@ defmodule Pleroma.Uploaders.S3Test do
       end
     end
   end
+
+  describe "delete_file/1" do
+    test_with_mock "deletes file", ExAws, request: fn _req -> {:ok, %{status_code: 204}} end do
+      assert :ok = S3.delete_file("image.jpg")
+      assert_called(ExAws.request(:_))
+    end
+  end
 end
