@@ -654,6 +654,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :federation_incoming_replies_max_depth,
+        label: "Fed. incoming replies max depth",
         type: :integer,
         description:
           "Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while" <>
@@ -664,6 +665,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :federation_reachability_timeout_days,
+        label: "Fed. reachability timeout days",
         type: :integer,
         description:
           "Timeout (in days) of each external federation target being unreachable prior to pausing federating to it",
@@ -1822,7 +1824,7 @@ config :pleroma, :config_description, [
       %{
         key: :private_key,
         type: :string,
-        description: "VAPID private keyn",
+        description: "VAPID private key",
         suggestions: ["Private key"]
       }
     ]
@@ -2511,7 +2513,6 @@ config :pleroma, :config_description, [
           "Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname" <>
             " and the value the location or array of locations. * can be used as a wildcard",
         suggestions: [
-          # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
           Custom: ["/emoji/*.png", "/emoji/**/*.png"]
         ]
       },
@@ -2525,6 +2526,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :shared_pack_cache_seconds_per_file,
+        label: "Shared pack cache s/file",
         type: :integer,
         descpiption:
           "When an emoji pack is shared, the archive is created and cached in memory" <>
@@ -2792,8 +2794,8 @@ config :pleroma, :config_description, [
       %{
         key: :user_agent,
         type: [:string, :atom],
-        desctiption:
-          "what user agent should we use? (default: `:default`), must be string or `:default`",
+        description:
+          "What user agent to use. Must be a string or an atom `:default`. Default value is `:default`",
         suggestions: ["Pleroma", :default]
       },
       %{
