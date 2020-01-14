@@ -8,9 +8,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.Web.CommonAPI
 
-  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Mock
 
