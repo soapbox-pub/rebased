@@ -294,7 +294,6 @@ docker:
     - dind
   only:
     - develop
-    - features/docker-updates
 
 docker-stable:
   stage: docker
