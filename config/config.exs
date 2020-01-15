@@ -561,7 +561,7 @@ config :ueberauth,
 
 config :pleroma,
        :auth,
-       enforce_oauth_admin_scope_usage: false,
+       enforce_oauth_admin_scope_usage: true,
        oauth_consumer_strategies: oauth_consumer_strategies
 
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false

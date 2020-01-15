@@ -568,29 +568,34 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
   describe "POST /oauth/authorize" do
     test "redirects with oauth authorization, " <>
-           "keeping only non-admin scopes for non-admin user" do
-      app = insert(:oauth_app, scopes: ["read", "write", "admin"])
+           "granting requested app-supported scopes to both admin- and non-admin users" do
+      app_scopes = ["read", "write", "admin", "secret_scope"]
+      app = insert(:oauth_app, scopes: app_scopes)
       redirect_uri = OAuthController.default_redirect_uri(app)
 
       non_admin = insert(:user, is_admin: false)
       admin = insert(:user, is_admin: true)
+      scopes_subset = ["read:subscope", "write", "admin"]
 
-      for {user, expected_scopes} <- %{
-            non_admin => ["read:subscope", "write"],
-            admin => ["read:subscope", "write", "admin"]
-          } do
+      # In case scope param is missing, expecting _all_ app-supported scopes to be granted
+      for user <- [non_admin, admin],
+          {requested_scopes, expected_scopes} <-
+            %{scopes_subset => scopes_subset, nil => app_scopes} do
         conn =
-          build_conn()
-          |> post("/oauth/authorize", %{
-            "authorization" => %{
-              "name" => user.nickname,
-              "password" => "test",
-              "client_id" => app.client_id,
-              "redirect_uri" => redirect_uri,
-              "scope" => "read:subscope write admin",
-              "state" => "statepassed"
+          post(
+            build_conn(),
+            "/oauth/authorize",
+            %{
+              "authorization" => %{
+                "name" => user.nickname,
+                "password" => "test",
+                "client_id" => app.client_id,
+                "redirect_uri" => redirect_uri,
+                "scope" => requested_scopes,
+                "state" => "statepassed"
+              }
             }
-          })
+          )
 
         target = redirected_to(conn)
         assert target =~ redirect_uri
@@ -631,34 +636,31 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert result =~ "Invalid Username/Password"
     end
 
-    test "returns 401 for missing scopes " <>
-           "(including all admin-only scopes for non-admin user)" do
+    test "returns 401 for missing scopes" do
       user = insert(:user, is_admin: false)
       app = insert(:oauth_app, scopes: ["read", "write", "admin"])
       redirect_uri = OAuthController.default_redirect_uri(app)
 
-      for scope_param <- ["", "admin:read admin:write"] do
-        result =
-          build_conn()
-          |> post("/oauth/authorize", %{
-            "authorization" => %{
-              "name" => user.nickname,
-              "password" => "test",
-              "client_id" => app.client_id,
-              "redirect_uri" => redirect_uri,
-              "state" => "statepassed",
-              "scope" => scope_param
-            }
-          })
-          |> html_response(:unauthorized)
+      result =
+        build_conn()
+        |> post("/oauth/authorize", %{
+          "authorization" => %{
+            "name" => user.nickname,
+            "password" => "test",
+            "client_id" => app.client_id,
+            "redirect_uri" => redirect_uri,
+            "state" => "statepassed",
+            "scope" => ""
+          }
+        })
+        |> html_response(:unauthorized)
 
-        # Keep the details
-        assert result =~ app.client_id
-        assert result =~ redirect_uri
+      # Keep the details
+      assert result =~ app.client_id
+      assert result =~ redirect_uri
 
-        # Error message
-        assert result =~ "This action is outside the authorized scopes"
-      end
+      # Error message
+      assert result =~ "This action is outside the authorized scopes"
     end
 
     test "returns 401 for scopes beyond app scopes hierarchy", %{conn: conn} do
