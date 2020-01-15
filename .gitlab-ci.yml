@@ -293,7 +293,9 @@ docker:
   tags:
     - dind
   only:
-    - develop
+    - develop@pleroma/pleroma
+    - /^maint/.*$/@pleroma/pleroma
+    - /^ci\/.*$/@jp/pleroma
 
 docker-stable:
   stage: docker
@@ -312,4 +314,5 @@ docker-stable:
   tags:
     - dind
   only:
-    - stable
+    - stable@pleroma/pleroma
+    - /^release/.*$/@pleroma/pleroma
