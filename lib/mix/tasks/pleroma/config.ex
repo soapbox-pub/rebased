@@ -27,7 +27,8 @@ defmodule Mix.Tasks.Pleroma.Config do
   ]
 
   def run(["migrate_to_db"]) do
-    start_pleroma()
+    # we want to save original logger level
+    start_pleroma(false)
 
     if Pleroma.Config.get([:configurable_from_database]) do
       Enum.each(@groups, &load_and_create(&1))
@@ -75,7 +76,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     group
     |> Application.get_all_env()
     |> Enum.reject(fn {k, _v} ->
-      k in [Pleroma.Repo, :env, :configurable_from_database] or
+      k in [Pleroma.Repo, Pleroma.Web.Endpoint, :env, :configurable_from_database] or
         (group == :phoenix and k == :serve_endpoints)
     end)
     |> Enum.each(fn {key, value} ->
