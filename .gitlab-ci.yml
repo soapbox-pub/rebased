@@ -294,8 +294,6 @@ docker:
     - dind
   only:
     - develop@pleroma/pleroma
-    - /^maint/.*$/@pleroma/pleroma
-    - /^ci\/.*$/@jp/pleroma
 
 docker-stable:
   stage: docker
