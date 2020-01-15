@@ -458,8 +458,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
   end
 
   describe "from specified user" do
-    test "account_id", %{conn: conn} do
-      user = insert(:user)
+    test "account_id" do
+      %{user: user, conn: conn} = oauth_access(["read:notifications"])
+
       %{id: account_id} = other_user1 = insert(:user)
       other_user2 = insert(:user)
 
