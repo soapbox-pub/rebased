@@ -90,6 +90,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `/api/v1/update_credentials` accepts `actor_type` field.
 - Captcha: Support native provider
 - Captcha: Enable by default
+- Mastodon API: Add support for `account_id` param to filter notifications by the account
 </details>
 
 ### Fixed

@@ -457,6 +457,30 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     end
   end
 
+  describe "from specified user" do
+    test "account_id" do
+      %{user: user, conn: conn} = oauth_access(["read:notifications"])
+
+      %{id: account_id} = other_user1 = insert(:user)
+      other_user2 = insert(:user)
+
+      {:ok, _activity} = CommonAPI.post(other_user1, %{"status" => "hi @#{user.nickname}"})
+      {:ok, _activity} = CommonAPI.post(other_user2, %{"status" => "bye @#{user.nickname}"})
+
+      assert [%{"account" => %{"id" => ^account_id}}] =
+               conn
+               |> assign(:user, user)
+               |> get("/api/v1/notifications", %{account_id: account_id})
+               |> json_response(200)
+
+      assert %{"error" => "Account is not found"} =
+               conn
+               |> assign(:user, user)
+               |> get("/api/v1/notifications", %{account_id: "cofe"})
+               |> json_response(404)
+    end
+  end
+
   defp get_notification_id_by_activity(%{id: id}) do
     Notification
     |> Repo.get_by(activity_id: id)

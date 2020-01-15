@@ -56,6 +56,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     user
     |> Notification.for_user_query(options)
     |> restrict(:exclude_types, options)
+    |> restrict(:account_ap_id, options)
     |> Pagination.fetch_paginated(params)
   end
 
@@ -71,7 +72,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
       exclude_visibilities: {:array, :string},
       reblogs: :boolean,
       with_muted: :boolean,
-      with_move: :boolean
+      with_move: :boolean,
+      account_ap_id: :string
     }
 
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))
@@ -86,6 +88,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
 
     query
     |> where([q, a], not fragment("? @> ARRAY[?->>'type']::varchar[]", ^ap_types, a.data))
+  end
+
+  defp restrict(query, :account_ap_id, %{account_ap_id: account_ap_id}) do
+    where(query, [n, a], a.actor == ^account_ap_id)
   end
 
   defp restrict(query, _, _), do: query
