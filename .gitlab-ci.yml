@@ -286,7 +286,7 @@ docker:
   allow_failure: true
   script:
     - docker pull $IMAGE_TAG_SLUG || true
-    - docker build --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg                       BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST .
+    - docker build --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST .
     - docker push $IMAGE_TAG
     - docker push $IMAGE_TAG_SLUG
     - docker push $IMAGE_TAG_LATEST
@@ -305,7 +305,7 @@ docker-stable:
   allow_failure: true
   script:
     - docker pull $IMAGE_TAG_SLUG || true
-    - docker build --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg                               BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST_STABLE .
+    - docker build --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST_STABLE .
     - docker push $IMAGE_TAG
     - docker push $IMAGE_TAG_SLUG
     - docker push $IMAGE_TAG_LATEST_STABLE
