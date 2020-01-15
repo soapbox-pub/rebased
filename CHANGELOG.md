@@ -7,8 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - **Breaking**: Removed 1.0+ deprecated configurations `Pleroma.Upload, :strip_exif` and `:instance, :dedupe_media`
 - **Breaking**: OStatus protocol support
+- **Breaking**: MDII uploader
 
 ### Changed
+- **Breaking:** attachments are removed along with statuses when there are no other references to it
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
 - **Breaking:** attachment links (`config :pleroma, :instance, no_attachment_links` and `config :pleroma, Pleroma.Upload, link_name`) disabled by default
 - **Breaking:** OAuth: defaulted `[:auth, :enforce_oauth_admin_scope_usage]` setting to `true` which demands `admin` OAuth scope to perform admin actions (in addition to `is_admin` flag on User); make sure to use bundled or newer versions of AdminFE & PleromaFE to access admin / moderator features.
@@ -89,6 +91,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `/api/v1/update_credentials` accepts `actor_type` field.
 - Captcha: Support native provider
 - Captcha: Enable by default
+- Mastodon API: Add support for `account_id` param to filter notifications by the account
 </details>
 
 ### Fixed
@@ -105,6 +108,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
 - AdminAPI: If some status received reports both in the "new" format and "old" format it was considered reports on two different statuses (in the context of grouped reports)
 - Admin API: Error when trying to update reports in the "old" format
+- Mastodon API: Marking a conversation as read (`POST /api/v1/conversations/:id/read`) now no longer brings it to the top in the user's direct conversation list
 </details>
 
 ## [1.1.6] - 2019-11-19

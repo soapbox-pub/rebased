@@ -125,9 +125,10 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
   test "it marks a participation as read" do
     participation = insert(:participation, %{read: false})
-    {:ok, participation} = Participation.mark_as_read(participation)
+    {:ok, updated_participation} = Participation.mark_as_read(participation)
 
-    assert participation.read
+    assert updated_participation.read
+    assert updated_participation.updated_at == participation.updated_at
   end
 
   test "it marks a participation as unread" do

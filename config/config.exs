@@ -108,10 +108,6 @@ config :pleroma, Pleroma.Uploaders.S3,
   streaming_enabled: true,
   public_endpoint: "https://s3.amazonaws.com"
 
-config :pleroma, Pleroma.Uploaders.MDII,
-  cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
-  files: "https://mdii.sakura.ne.jp"
-
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   pack_extensions: [".png", ".gif"],

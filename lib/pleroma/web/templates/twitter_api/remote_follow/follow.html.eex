@@ -1,0 +1,11 @@
+<%= if @error == :error do %>
+    <h2>Error fetching user</h2>
+<% else %>
+    <h2>Remote follow</h2>
+    <img height="128" width="128" src="<%= avatar_url(@followee) %>">
+    <p><%= @followee.nickname %></p>
+    <%= form_for @conn, remote_follow_path(@conn, :do_follow), [as: "user"], fn f -> %>
+    <%= hidden_input f, :id, value: @followee.id %>
+    <%= submit "Authorize" %>
+    <% end %>
+<% end %>

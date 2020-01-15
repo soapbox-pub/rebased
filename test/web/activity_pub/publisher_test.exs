@@ -23,6 +23,27 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     :ok
   end
 
+  describe "gather_webfinger_links/1" do
+    test "it returns links" do
+      user = insert(:user)
+
+      expected_links = [
+        %{"href" => user.ap_id, "rel" => "self", "type" => "application/activity+json"},
+        %{
+          "href" => user.ap_id,
+          "rel" => "self",
+          "type" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+        },
+        %{
+          "rel" => "http://ostatus.org/schema/1.0/subscribe",
+          "template" => "#{Pleroma.Web.base_url()}/ostatus_subscribe?acct={uri}"
+        }
+      ]
+
+      assert expected_links == Publisher.gather_webfinger_links(user)
+    end
+  end
+
   describe "determine_inbox/2" do
     test "it returns sharedInbox for messages involving as:Public in to" do
       user =
