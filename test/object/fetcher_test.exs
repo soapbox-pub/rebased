@@ -77,6 +77,15 @@ defmodule Pleroma.Object.FetcherTest do
       assert object
     end
 
+    test "it can fetch Mobilizon events" do
+      {:ok, object} =
+        Fetcher.fetch_object_from_id(
+          "https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39"
+        )
+
+      assert object
+    end
+
     test "it can fetch wedistribute articles" do
       {:ok, object} =
         Fetcher.fetch_object_from_id("https://wedistribute.org/wp-json/pterotype/v1/object/85810")

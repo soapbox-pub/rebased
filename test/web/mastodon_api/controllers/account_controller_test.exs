@@ -87,6 +87,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       conn =
         build_conn()
         |> assign(:user, reading_user)
+        |> assign(:token, insert(:oauth_token, user: reading_user, scopes: ["read:accounts"]))
         |> get("/api/v1/accounts/#{user.nickname}")
 
       Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local)
@@ -144,8 +145,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "user timelines" do
-    test "respects blocks", %{conn: conn} do
-      user_one = insert(:user)
+    setup do: oauth_access(["read:statuses"])
+
+    test "respects blocks", %{user: user_one, conn: conn} do
       user_two = insert(:user)
       user_three = insert(:user)
 
@@ -154,46 +156,35 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       {:ok, activity} = CommonAPI.post(user_two, %{"status" => "User one sux0rz"})
       {:ok, repeat, _} = CommonAPI.repeat(activity.id, user_three)
 
-      resp =
-        conn
-        |> get("/api/v1/accounts/#{user_two.id}/statuses")
+      resp = get(conn, "/api/v1/accounts/#{user_two.id}/statuses")
 
       assert [%{"id" => id}] = json_response(resp, 200)
       assert id == activity.id
 
       # Even a blocked user will deliver the full user timeline, there would be
-      # no point in looking at a blocked users timeline otherwise
-      resp =
-        conn
-        |> assign(:user, user_one)
-        |> get("/api/v1/accounts/#{user_two.id}/statuses")
+      #   no point in looking at a blocked users timeline otherwise
+      resp = get(conn, "/api/v1/accounts/#{user_two.id}/statuses")
 
       assert [%{"id" => id}] = json_response(resp, 200)
       assert id == activity.id
 
-      resp =
-        conn
-        |> get("/api/v1/accounts/#{user_three.id}/statuses")
-
+      # Third user's timeline includes the repeat when viewed by unauthenticated user
+      resp = get(build_conn(), "/api/v1/accounts/#{user_three.id}/statuses")
       assert [%{"id" => id}] = json_response(resp, 200)
       assert id == repeat.id
 
-      # When viewing a third user's timeline, the blocked users will NOT be
-      # shown.
-      resp =
-        conn
-        |> assign(:user, user_one)
-        |> get("/api/v1/accounts/#{user_three.id}/statuses")
+      # When viewing a third user's timeline, the blocked users' statuses will NOT be shown
+      resp = get(conn, "/api/v1/accounts/#{user_three.id}/statuses")
 
       assert [] = json_response(resp, 200)
     end
 
-    test "gets a users statuses", %{conn: conn} do
+    test "gets users statuses", %{conn: conn} do
       user_one = insert(:user)
       user_two = insert(:user)
       user_three = insert(:user)
 
-      {:ok, user_three} = User.follow(user_three, user_one)
+      {:ok, _user_three} = User.follow(user_three, user_one)
 
       {:ok, activity} = CommonAPI.post(user_one, %{"status" => "HI!!!"})
 
@@ -206,9 +197,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       {:ok, private_activity} =
         CommonAPI.post(user_one, %{"status" => "private", "visibility" => "private"})
 
-      resp =
-        conn
-        |> get("/api/v1/accounts/#{user_one.id}/statuses")
+      resp = get(conn, "/api/v1/accounts/#{user_one.id}/statuses")
 
       assert [%{"id" => id}] = json_response(resp, 200)
       assert id == to_string(activity.id)
@@ -216,6 +205,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       resp =
         conn
         |> assign(:user, user_two)
+        |> assign(:token, insert(:oauth_token, user: user_two, scopes: ["read:statuses"]))
         |> get("/api/v1/accounts/#{user_one.id}/statuses")
 
       assert [%{"id" => id_one}, %{"id" => id_two}] = json_response(resp, 200)
@@ -225,6 +215,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       resp =
         conn
         |> assign(:user, user_three)
+        |> assign(:token, insert(:oauth_token, user: user_three, scopes: ["read:statuses"]))
         |> get("/api/v1/accounts/#{user_one.id}/statuses")
 
       assert [%{"id" => id_one}, %{"id" => id_two}] = json_response(resp, 200)
@@ -236,9 +227,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       note = insert(:note_activity)
       user = User.get_cached_by_ap_id(note.data["actor"])
 
-      conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?pinned=true")
 
       assert json_response(conn, 200) == []
     end
@@ -257,63 +246,51 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       {:ok, image_post} = CommonAPI.post(user, %{"status" => "cofe", "media_ids" => [media_id]})
 
-      conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/statuses", %{"only_media" => "true"})
+      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses", %{"only_media" => "true"})
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(image_post.id)
 
-      conn =
-        build_conn()
-        |> get("/api/v1/accounts/#{user.id}/statuses", %{"only_media" => "1"})
+      conn = get(build_conn(), "/api/v1/accounts/#{user.id}/statuses", %{"only_media" => "1"})
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(image_post.id)
     end
 
-    test "gets a user's statuses without reblogs", %{conn: conn} do
-      user = insert(:user)
+    test "gets a user's statuses without reblogs", %{user: user, conn: conn} do
       {:ok, post} = CommonAPI.post(user, %{"status" => "HI!!!"})
       {:ok, _, _} = CommonAPI.repeat(post.id, user)
 
-      conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/statuses", %{"exclude_reblogs" => "true"})
+      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses", %{"exclude_reblogs" => "true"})
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(post.id)
 
-      conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/statuses", %{"exclude_reblogs" => "1"})
+      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses", %{"exclude_reblogs" => "1"})
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(post.id)
     end
 
-    test "filters user's statuses by a hashtag", %{conn: conn} do
-      user = insert(:user)
+    test "filters user's statuses by a hashtag", %{user: user, conn: conn} do
       {:ok, post} = CommonAPI.post(user, %{"status" => "#hashtag"})
       {:ok, _post} = CommonAPI.post(user, %{"status" => "hashtag"})
 
-      conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/statuses", %{"tagged" => "hashtag"})
+      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses", %{"tagged" => "hashtag"})
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(post.id)
     end
 
-    test "the user views their own timelines and excludes direct messages", %{conn: conn} do
-      user = insert(:user)
+    test "the user views their own timelines and excludes direct messages", %{
+      user: user,
+      conn: conn
+    } do
       {:ok, public_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
       {:ok, _direct_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
 
       conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/accounts/#{user.id}/statuses", %{"exclude_visibilities" => ["direct"]})
+        get(conn, "/api/v1/accounts/#{user.id}/statuses", %{"exclude_visibilities" => ["direct"]})
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(public_activity.id)
@@ -321,46 +298,42 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "followers" do
-    test "getting followers", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["read:accounts"])
+
+    test "getting followers", %{user: user, conn: conn} do
       other_user = insert(:user)
       {:ok, user} = User.follow(user, other_user)
 
-      conn =
-        conn
-        |> get("/api/v1/accounts/#{other_user.id}/followers")
+      conn = get(conn, "/api/v1/accounts/#{other_user.id}/followers")
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(user.id)
     end
 
-    test "getting followers, hide_followers", %{conn: conn} do
-      user = insert(:user)
+    test "getting followers, hide_followers", %{user: user, conn: conn} do
       other_user = insert(:user, hide_followers: true)
       {:ok, _user} = User.follow(user, other_user)
 
-      conn =
-        conn
-        |> get("/api/v1/accounts/#{other_user.id}/followers")
+      conn = get(conn, "/api/v1/accounts/#{other_user.id}/followers")
 
       assert [] == json_response(conn, 200)
     end
 
-    test "getting followers, hide_followers, same user requesting", %{conn: conn} do
+    test "getting followers, hide_followers, same user requesting" do
       user = insert(:user)
       other_user = insert(:user, hide_followers: true)
       {:ok, _user} = User.follow(user, other_user)
 
       conn =
-        conn
+        build_conn()
         |> assign(:user, other_user)
+        |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["read:accounts"]))
         |> get("/api/v1/accounts/#{other_user.id}/followers")
 
       refute [] == json_response(conn, 200)
     end
 
-    test "getting followers, pagination", %{conn: conn} do
-      user = insert(:user)
+    test "getting followers, pagination", %{user: user, conn: conn} do
       follower1 = insert(:user)
       follower2 = insert(:user)
       follower3 = insert(:user)
@@ -368,29 +341,19 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       {:ok, _} = User.follow(follower2, user)
       {:ok, _} = User.follow(follower3, user)
 
-      conn =
-        conn
-        |> assign(:user, user)
-
-      res_conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/followers?since_id=#{follower1.id}")
+      res_conn = get(conn, "/api/v1/accounts/#{user.id}/followers?since_id=#{follower1.id}")
 
       assert [%{"id" => id3}, %{"id" => id2}] = json_response(res_conn, 200)
       assert id3 == follower3.id
       assert id2 == follower2.id
 
-      res_conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/followers?max_id=#{follower3.id}")
+      res_conn = get(conn, "/api/v1/accounts/#{user.id}/followers?max_id=#{follower3.id}")
 
       assert [%{"id" => id2}, %{"id" => id1}] = json_response(res_conn, 200)
       assert id2 == follower2.id
       assert id1 == follower1.id
 
-      res_conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/followers?limit=1&max_id=#{follower3.id}")
+      res_conn = get(conn, "/api/v1/accounts/#{user.id}/followers?limit=1&max_id=#{follower3.id}")
 
       assert [%{"id" => id2}] = json_response(res_conn, 200)
       assert id2 == follower2.id
@@ -402,46 +365,47 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "following" do
-    test "getting following", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["read:accounts"])
+
+    test "getting following", %{user: user, conn: conn} do
       other_user = insert(:user)
       {:ok, user} = User.follow(user, other_user)
 
-      conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/following")
+      conn = get(conn, "/api/v1/accounts/#{user.id}/following")
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(other_user.id)
     end
 
-    test "getting following, hide_follows", %{conn: conn} do
+    test "getting following, hide_follows, other user requesting" do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
       {:ok, user} = User.follow(user, other_user)
 
       conn =
-        conn
+        build_conn()
+        |> assign(:user, other_user)
+        |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["read:accounts"]))
         |> get("/api/v1/accounts/#{user.id}/following")
 
       assert [] == json_response(conn, 200)
     end
 
-    test "getting following, hide_follows, same user requesting", %{conn: conn} do
+    test "getting following, hide_follows, same user requesting" do
       user = insert(:user, hide_follows: true)
       other_user = insert(:user)
       {:ok, user} = User.follow(user, other_user)
 
       conn =
-        conn
+        build_conn()
         |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["read:accounts"]))
         |> get("/api/v1/accounts/#{user.id}/following")
 
       refute [] == json_response(conn, 200)
     end
 
-    test "getting following, pagination", %{conn: conn} do
-      user = insert(:user)
+    test "getting following, pagination", %{user: user, conn: conn} do
       following1 = insert(:user)
       following2 = insert(:user)
       following3 = insert(:user)
@@ -449,29 +413,20 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       {:ok, _} = User.follow(user, following2)
       {:ok, _} = User.follow(user, following3)
 
-      conn =
-        conn
-        |> assign(:user, user)
-
-      res_conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/following?since_id=#{following1.id}")
+      res_conn = get(conn, "/api/v1/accounts/#{user.id}/following?since_id=#{following1.id}")
 
       assert [%{"id" => id3}, %{"id" => id2}] = json_response(res_conn, 200)
       assert id3 == following3.id
       assert id2 == following2.id
 
-      res_conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/following?max_id=#{following3.id}")
+      res_conn = get(conn, "/api/v1/accounts/#{user.id}/following?max_id=#{following3.id}")
 
       assert [%{"id" => id2}, %{"id" => id1}] = json_response(res_conn, 200)
       assert id2 == following2.id
       assert id1 == following1.id
 
       res_conn =
-        conn
-        |> get("/api/v1/accounts/#{user.id}/following?limit=1&max_id=#{following3.id}")
+        get(conn, "/api/v1/accounts/#{user.id}/following?limit=1&max_id=#{following3.id}")
 
       assert [%{"id" => id2}] = json_response(res_conn, 200)
       assert id2 == following2.id
@@ -483,82 +438,52 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "follow/unfollow" do
+    setup do: oauth_access(["follow"])
+
     test "following / unfollowing a user", %{conn: conn} do
-      user = insert(:user)
       other_user = insert(:user)
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/accounts/#{other_user.id}/follow")
+      ret_conn = post(conn, "/api/v1/accounts/#{other_user.id}/follow")
 
-      assert %{"id" => _id, "following" => true} = json_response(conn, 200)
+      assert %{"id" => _id, "following" => true} = json_response(ret_conn, 200)
 
-      user = User.get_cached_by_id(user.id)
+      ret_conn = post(conn, "/api/v1/accounts/#{other_user.id}/unfollow")
 
-      conn =
-        build_conn()
-        |> assign(:user, user)
-        |> post("/api/v1/accounts/#{other_user.id}/unfollow")
+      assert %{"id" => _id, "following" => false} = json_response(ret_conn, 200)
 
-      assert %{"id" => _id, "following" => false} = json_response(conn, 200)
-
-      user = User.get_cached_by_id(user.id)
-
-      conn =
-        build_conn()
-        |> assign(:user, user)
-        |> post("/api/v1/follows", %{"uri" => other_user.nickname})
+      conn = post(conn, "/api/v1/follows", %{"uri" => other_user.nickname})
 
       assert %{"id" => id} = json_response(conn, 200)
       assert id == to_string(other_user.id)
     end
 
     test "following without reblogs" do
-      follower = insert(:user)
+      %{conn: conn} = oauth_access(["follow", "read:statuses"])
       followed = insert(:user)
       other_user = insert(:user)
 
-      conn =
-        build_conn()
-        |> assign(:user, follower)
-        |> post("/api/v1/accounts/#{followed.id}/follow?reblogs=false")
+      ret_conn = post(conn, "/api/v1/accounts/#{followed.id}/follow?reblogs=false")
 
-      assert %{"showing_reblogs" => false} = json_response(conn, 200)
+      assert %{"showing_reblogs" => false} = json_response(ret_conn, 200)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hey"})
       {:ok, reblog, _} = CommonAPI.repeat(activity.id, followed)
 
-      conn =
-        build_conn()
-        |> assign(:user, User.get_cached_by_id(follower.id))
-        |> get("/api/v1/timelines/home")
+      ret_conn = get(conn, "/api/v1/timelines/home")
 
-      assert [] == json_response(conn, 200)
+      assert [] == json_response(ret_conn, 200)
 
-      conn =
-        build_conn()
-        |> assign(:user, User.get_cached_by_id(follower.id))
-        |> post("/api/v1/accounts/#{followed.id}/follow?reblogs=true")
+      ret_conn = post(conn, "/api/v1/accounts/#{followed.id}/follow?reblogs=true")
 
-      assert %{"showing_reblogs" => true} = json_response(conn, 200)
+      assert %{"showing_reblogs" => true} = json_response(ret_conn, 200)
 
-      conn =
-        build_conn()
-        |> assign(:user, User.get_cached_by_id(follower.id))
-        |> get("/api/v1/timelines/home")
+      conn = get(conn, "/api/v1/timelines/home")
 
       expected_activity_id = reblog.id
       assert [%{"id" => ^expected_activity_id}] = json_response(conn, 200)
     end
 
-    test "following / unfollowing errors" do
-      user = insert(:user)
-
-      conn =
-        build_conn()
-        |> assign(:user, user)
-
+    test "following / unfollowing errors", %{user: user, conn: conn} do
       # self follow
       conn_res = post(conn, "/api/v1/accounts/#{user.id}/follow")
       assert %{"error" => "Record not found"} = json_response(conn_res, 404)
@@ -588,47 +513,34 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "mute/unmute" do
+    setup do: oauth_access(["write:mutes"])
+
     test "with notifications", %{conn: conn} do
-      user = insert(:user)
       other_user = insert(:user)
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/accounts/#{other_user.id}/mute")
+      ret_conn = post(conn, "/api/v1/accounts/#{other_user.id}/mute")
 
-      response = json_response(conn, 200)
+      response = json_response(ret_conn, 200)
 
       assert %{"id" => _id, "muting" => true, "muting_notifications" => true} = response
-      user = User.get_cached_by_id(user.id)
 
-      conn =
-        build_conn()
-        |> assign(:user, user)
-        |> post("/api/v1/accounts/#{other_user.id}/unmute")
+      conn = post(conn, "/api/v1/accounts/#{other_user.id}/unmute")
 
       response = json_response(conn, 200)
       assert %{"id" => _id, "muting" => false, "muting_notifications" => false} = response
     end
 
     test "without notifications", %{conn: conn} do
-      user = insert(:user)
       other_user = insert(:user)
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/v1/accounts/#{other_user.id}/mute", %{"notifications" => "false"})
+      ret_conn =
+        post(conn, "/api/v1/accounts/#{other_user.id}/mute", %{"notifications" => "false"})
 
-      response = json_response(conn, 200)
+      response = json_response(ret_conn, 200)
 
       assert %{"id" => _id, "muting" => true, "muting_notifications" => false} = response
-      user = User.get_cached_by_id(user.id)
 
-      conn =
-        build_conn()
-        |> assign(:user, user)
-        |> post("/api/v1/accounts/#{other_user.id}/unmute")
+      conn = post(conn, "/api/v1/accounts/#{other_user.id}/unmute")
 
       response = json_response(conn, 200)
       assert %{"id" => _id, "muting" => false, "muting_notifications" => false} = response
@@ -639,8 +551,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     setup do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      %{conn: conn} = oauth_access(["read:statuses"], user: user)
 
-      [user: user, activity: activity]
+      [conn: conn, user: user, activity: activity]
     end
 
     test "returns pinned statuses", %{conn: conn, user: user, activity: activity} do
@@ -648,7 +561,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       result =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
         |> json_response(200)
 
@@ -658,23 +570,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
   end
 
-  test "blocking / unblocking a user", %{conn: conn} do
-    user = insert(:user)
+  test "blocking / unblocking a user" do
+    %{conn: conn} = oauth_access(["follow"])
     other_user = insert(:user)
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/accounts/#{other_user.id}/block")
+    ret_conn = post(conn, "/api/v1/accounts/#{other_user.id}/block")
 
-    assert %{"id" => _id, "blocking" => true} = json_response(conn, 200)
+    assert %{"id" => _id, "blocking" => true} = json_response(ret_conn, 200)
 
-    user = User.get_cached_by_id(user.id)
-
-    conn =
-      build_conn()
-      |> assign(:user, user)
-      |> post("/api/v1/accounts/#{other_user.id}/unblock")
+    conn = post(conn, "/api/v1/accounts/#{other_user.id}/unblock")
 
     assert %{"id" => _id, "blocking" => false} = json_response(conn, 200)
   end
@@ -693,8 +597,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "Account registration via Application", %{conn: conn} do
       conn =
-        conn
-        |> post("/api/v1/apps", %{
+        post(conn, "/api/v1/apps", %{
           client_name: "client_name",
           redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
           scopes: "read, write, follow"
@@ -711,8 +614,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       } = json_response(conn, 200)
 
       conn =
-        conn
-        |> post("/oauth/token", %{
+        post(conn, "/oauth/token", %{
           grant_type: "client_credentials",
           client_id: client_id,
           client_secret: client_secret
@@ -769,13 +671,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       app_token = insert(:oauth_token, user: nil)
 
       conn =
-        put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+        conn
+        |> put_req_header("authorization", "Bearer " <> app_token.token)
         |> Map.put(:remote_ip, {15, 15, 15, 15})
 
       for i <- 1..5 do
         conn =
-          conn
-          |> post("/api/v1/accounts", %{
+          post(conn, "/api/v1/accounts", %{
             username: "#{i}lain",
             email: "#{i}lain@example.org",
             password: "PlzDontHackLain",
@@ -798,8 +700,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       end
 
       conn =
-        conn
-        |> post("/api/v1/accounts", %{
+        post(conn, "/api/v1/accounts", %{
           username: "6lain",
           email: "6lain@example.org",
           password: "PlzDontHackLain",
@@ -815,9 +716,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     } do
       app_token = insert(:oauth_token, user: nil)
 
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer " <> app_token.token)
+      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
 
       res = post(conn, "/api/v1/accounts", valid_params)
       assert json_response(res, 200)
@@ -836,9 +735,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "returns forbidden if token is invalid", %{conn: conn, valid_params: valid_params} do
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer " <> "invalid-token")
+      conn = put_req_header(conn, "authorization", "Bearer " <> "invalid-token")
 
       res = post(conn, "/api/v1/accounts", valid_params)
       assert json_response(res, 403) == %{"error" => "Invalid credentials"}
@@ -846,15 +743,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "GET /api/v1/accounts/:id/lists - account_lists" do
-    test "returns lists to which the account belongs", %{conn: conn} do
-      user = insert(:user)
+    test "returns lists to which the account belongs" do
+      %{user: user, conn: conn} = oauth_access(["read:lists"])
       other_user = insert(:user)
       assert {:ok, %Pleroma.List{} = list} = Pleroma.List.create("Test List", user)
       {:ok, %{following: _following}} = Pleroma.List.follow(list, other_user)
 
       res =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/accounts/#{other_user.id}/lists")
         |> json_response(200)
 
@@ -863,13 +759,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "verify_credentials" do
-    test "verify_credentials", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/accounts/verify_credentials")
+    test "verify_credentials" do
+      %{user: user, conn: conn} = oauth_access(["read:accounts"])
+      conn = get(conn, "/api/v1/accounts/verify_credentials")
 
       response = json_response(conn, 200)
 
@@ -878,25 +770,21 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert id == to_string(user.id)
     end
 
-    test "verify_credentials default scope unlisted", %{conn: conn} do
+    test "verify_credentials default scope unlisted" do
       user = insert(:user, default_scope: "unlisted")
+      %{conn: conn} = oauth_access(["read:accounts"], user: user)
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/accounts/verify_credentials")
+      conn = get(conn, "/api/v1/accounts/verify_credentials")
 
       assert %{"id" => id, "source" => %{"privacy" => "unlisted"}} = json_response(conn, 200)
       assert id == to_string(user.id)
     end
 
-    test "locked accounts", %{conn: conn} do
+    test "locked accounts" do
       user = insert(:user, default_scope: "private")
+      %{conn: conn} = oauth_access(["read:accounts"], user: user)
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/accounts/verify_credentials")
+      conn = get(conn, "/api/v1/accounts/verify_credentials")
 
       assert %{"id" => id, "source" => %{"privacy" => "private"}} = json_response(conn, 200)
       assert id == to_string(user.id)
@@ -904,15 +792,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "user relationships" do
-    test "returns the relationships for the current user", %{conn: conn} do
-      user = insert(:user)
-      other_user = insert(:user)
-      {:ok, user} = User.follow(user, other_user)
+    setup do: oauth_access(["read:follows"])
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/accounts/relationships", %{"id" => [other_user.id]})
+    test "returns the relationships for the current user", %{user: user, conn: conn} do
+      other_user = insert(:user)
+      {:ok, _user} = User.follow(user, other_user)
+
+      conn = get(conn, "/api/v1/accounts/relationships", %{"id" => [other_user.id]})
 
       assert [relationship] = json_response(conn, 200)
 
@@ -920,34 +806,26 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "returns an empty list on a bad request", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> get("/api/v1/accounts/relationships", %{})
+      conn = get(conn, "/api/v1/accounts/relationships", %{})
 
       assert [] = json_response(conn, 200)
     end
   end
 
-  test "getting a list of mutes", %{conn: conn} do
-    user = insert(:user)
+  test "getting a list of mutes" do
+    %{user: user, conn: conn} = oauth_access(["read:mutes"])
     other_user = insert(:user)
 
     {:ok, _user_relationships} = User.mute(user, other_user)
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> get("/api/v1/mutes")
+    conn = get(conn, "/api/v1/mutes")
 
     other_user_id = to_string(other_user.id)
     assert [%{"id" => ^other_user_id}] = json_response(conn, 200)
   end
 
-  test "getting a list of blocks", %{conn: conn} do
-    user = insert(:user)
+  test "getting a list of blocks" do
+    %{user: user, conn: conn} = oauth_access(["read:blocks"])
     other_user = insert(:user)
 
     {:ok, _user_relationship} = User.block(user, other_user)

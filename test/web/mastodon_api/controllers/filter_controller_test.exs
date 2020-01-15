@@ -7,20 +7,15 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
 
   alias Pleroma.Web.MastodonAPI.FilterView
 
-  import Pleroma.Factory
-
-  test "creating a filter", %{conn: conn} do
-    user = insert(:user)
+  test "creating a filter" do
+    %{conn: conn} = oauth_access(["write:filters"])
 
     filter = %Pleroma.Filter{
       phrase: "knights",
       context: ["home"]
     }
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/filters", %{"phrase" => filter.phrase, context: filter.context})
+    conn = post(conn, "/api/v1/filters", %{"phrase" => filter.phrase, context: filter.context})
 
     assert response = json_response(conn, 200)
     assert response["phrase"] == filter.phrase
@@ -30,8 +25,8 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
     assert response["id"] != ""
   end
 
-  test "fetching a list of filters", %{conn: conn} do
-    user = insert(:user)
+  test "fetching a list of filters" do
+    %{user: user, conn: conn} = oauth_access(["read:filters"])
 
     query_one = %Pleroma.Filter{
       user_id: user.id,
@@ -52,7 +47,6 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
 
     response =
       conn
-      |> assign(:user, user)
       |> get("/api/v1/filters")
       |> json_response(200)
 
@@ -64,8 +58,8 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
              )
   end
 
-  test "get a filter", %{conn: conn} do
-    user = insert(:user)
+  test "get a filter" do
+    %{user: user, conn: conn} = oauth_access(["read:filters"])
 
     query = %Pleroma.Filter{
       user_id: user.id,
@@ -76,16 +70,13 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
 
     {:ok, filter} = Pleroma.Filter.create(query)
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> get("/api/v1/filters/#{filter.filter_id}")
+    conn = get(conn, "/api/v1/filters/#{filter.filter_id}")
 
     assert _response = json_response(conn, 200)
   end
 
-  test "update a filter", %{conn: conn} do
-    user = insert(:user)
+  test "update a filter" do
+    %{user: user, conn: conn} = oauth_access(["write:filters"])
 
     query = %Pleroma.Filter{
       user_id: user.id,
@@ -102,9 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
     }
 
     conn =
-      conn
-      |> assign(:user, user)
-      |> put("/api/v1/filters/#{query.filter_id}", %{
+      put(conn, "/api/v1/filters/#{query.filter_id}", %{
         phrase: new.phrase,
         context: new.context
       })
@@ -114,8 +103,8 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
     assert response["context"] == new.context
   end
 
-  test "delete a filter", %{conn: conn} do
-    user = insert(:user)
+  test "delete a filter" do
+    %{user: user, conn: conn} = oauth_access(["write:filters"])
 
     query = %Pleroma.Filter{
       user_id: user.id,
@@ -126,10 +115,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
 
     {:ok, filter} = Pleroma.Filter.create(query)
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> delete("/api/v1/filters/#{filter.filter_id}")
+    conn = delete(conn, "/api/v1/filters/#{filter.filter_id}")
 
     assert response = json_response(conn, 200)
     assert response == %{}

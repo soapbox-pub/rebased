@@ -59,7 +59,7 @@ defmodule Pleroma.Web.Endpoint do
 
   plug(Pleroma.Plugs.TrailingFormatPlug)
   plug(Plug.RequestId)
-  plug(Plug.Logger)
+  plug(Plug.Logger, log: :debug)
 
   plug(Pleroma.Plugs.Parsers)
 

@@ -10,9 +10,7 @@ defmodule Pleroma.HTML do
     dir = Path.join(:code.priv_dir(:pleroma), "scrubbers")
 
     dir
-    |> File.ls!()
-    |> Enum.map(&Path.join(dir, &1))
-    |> Kernel.ParallelCompiler.compile()
+    |> Pleroma.Utils.compile_dir()
     |> case do
       {:error, _errors, _warnings} ->
         raise "Compiling scrubbers failed"

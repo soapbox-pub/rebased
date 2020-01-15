@@ -2,6 +2,7 @@ import Config
 
 config :pleroma, :instance, static_dir: "/var/lib/pleroma/static"
 config :pleroma, Pleroma.Uploaders.Local, uploads: "/var/lib/pleroma/uploads"
+config :pleroma, :modules, runtime_dir: "/var/lib/pleroma/modules"
 
 config_path = System.get_env("PLEROMA_CONFIG_PATH") || "/etc/pleroma/config.exs"
 
