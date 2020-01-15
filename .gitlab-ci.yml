@@ -329,4 +329,3 @@ docker-release:
     - dind
   only:
     - /^release/.*$/@pleroma/pleroma
-    - /^ci\/.*$/@jp/pleroma
