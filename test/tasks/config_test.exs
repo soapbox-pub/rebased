@@ -19,8 +19,8 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     :ok
   end
 
-  clear_config_all([:configurable_from_database]) do
-    Pleroma.Config.put([:configurable_from_database], true)
+  clear_config_all(:configurable_from_database) do
+    Pleroma.Config.put(:configurable_from_database, true)
   end
 
   test "settings are migrated to db" do

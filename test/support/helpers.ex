@@ -6,6 +6,7 @@ defmodule Pleroma.Tests.Helpers do
   @moduledoc """
   Helpers for use in tests.
   """
+  alias Pleroma.Config
 
   defmacro clear_config(config_path) do
     quote do
@@ -17,9 +18,9 @@ defmodule Pleroma.Tests.Helpers do
   defmacro clear_config(config_path, do: yield) do
     quote do
       setup do
-        initial_setting = Pleroma.Config.get(unquote(config_path))
+        initial_setting = Config.get(unquote(config_path))
         unquote(yield)
-        on_exit(fn -> Pleroma.Config.put(unquote(config_path), initial_setting) end)
+        on_exit(fn -> Config.put(unquote(config_path), initial_setting) end)
         :ok
       end
     end
@@ -35,9 +36,9 @@ defmodule Pleroma.Tests.Helpers do
   defmacro clear_config_all(config_path, do: yield) do
     quote do
       setup_all do
-        initial_setting = Pleroma.Config.get(unquote(config_path))
+        initial_setting = Config.get(unquote(config_path))
         unquote(yield)
-        on_exit(fn -> Pleroma.Config.put(unquote(config_path), initial_setting) end)
+        on_exit(fn -> Config.put(unquote(config_path), initial_setting) end)
         :ok
       end
     end
@@ -94,10 +95,10 @@ defmodule Pleroma.Tests.Helpers do
 
       defmacro guards_config(config_path) do
         quote do
-          initial_setting = Pleroma.Config.get(config_path)
+          initial_setting = Config.get(config_path)
 
-          Pleroma.Config.put(config_path, true)
-          on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
+          Config.put(config_path, true)
+          on_exit(fn -> Config.put(config_path, initial_setting) end)
         end
       end
     end

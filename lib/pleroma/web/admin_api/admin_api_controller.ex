@@ -847,7 +847,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   defp configurable_from_database(conn) do
-    if Pleroma.Config.get([:configurable_from_database]) do
+    if Pleroma.Config.get(:configurable_from_database) do
       :ok
     else
       errors(

@@ -1860,14 +1860,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "GET /api/pleroma/admin/config" do
-    clear_config([:configurable_from_database]) do
-      Pleroma.Config.put([:configurable_from_database], true)
+    clear_config(:configurable_from_database) do
+      Pleroma.Config.put(:configurable_from_database, true)
     end
 
     test "when configuration from database is off", %{conn: conn} do
-      initial = Pleroma.Config.get([:configurable_from_database])
-      Pleroma.Config.put([:configurable_from_database], false)
-      on_exit(fn -> Pleroma.Config.put([:configurable_from_database], initial) end)
+      initial = Pleroma.Config.get(:configurable_from_database)
+      Pleroma.Config.put(:configurable_from_database, false)
+      on_exit(fn -> Pleroma.Config.put(:configurable_from_database, initial) end)
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response(conn, 400) ==
@@ -1932,8 +1932,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       end)
     end
 
-    clear_config([:configurable_from_database]) do
-      Pleroma.Config.put([:configurable_from_database], true)
+    clear_config(:configurable_from_database) do
+      Pleroma.Config.put(:configurable_from_database, true)
     end
 
     @tag capture_log: true
@@ -2822,8 +2822,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       :ok
     end
 
-    clear_config([:configurable_from_database]) do
-      Pleroma.Config.put([:configurable_from_database], true)
+    clear_config(:configurable_from_database) do
+      Pleroma.Config.put(:configurable_from_database, true)
     end
 
     clear_config([:feed, :post_title]) do
@@ -2843,9 +2843,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "returns error if configuration from database is off", %{conn: conn} do
-      initial = Pleroma.Config.get([:configurable_from_database])
-      on_exit(fn -> Pleroma.Config.put([:configurable_from_database], initial) end)
-      Pleroma.Config.put([:configurable_from_database], false)
+      initial = Pleroma.Config.get(:configurable_from_database)
+      on_exit(fn -> Pleroma.Config.put(:configurable_from_database, initial) end)
+      Pleroma.Config.put(:configurable_from_database, false)
 
       conn = get(conn, "/api/pleroma/admin/config/migrate_from_db")
 
