@@ -5,8 +5,8 @@
 defmodule Mix.Tasks.Pleroma.Config do
   use Mix.Task
   import Mix.Pleroma
+  alias Pleroma.ConfigDB
   alias Pleroma.Repo
-  alias Pleroma.Web.AdminAPI.Config
   @shortdoc "Manages the location of the config"
   @moduledoc File.read!("docs/administration/CLI_tasks/config.md")
 
@@ -55,7 +55,7 @@ defmodule Mix.Tasks.Pleroma.Config do
          {:ok, file} <- File.open(config_path, [:write, :utf8]) do
       IO.write(file, "use Mix.Config\r\n")
 
-      Config
+      ConfigDB
       |> Repo.all()
       |> Enum.each(&write_to_file_with_deletion(&1, file, opts[:delete_from_db]))
 
@@ -81,7 +81,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     end)
     |> Enum.each(fn {key, value} ->
       key = inspect(key)
-      {:ok, _} = Config.update_or_create(%{group: inspect(group), key: key, value: value})
+      {:ok, _} = ConfigDB.update_or_create(%{group: inspect(group), key: key, value: value})
 
       Mix.shell().info("settings for key #{key} migrated.")
     end)
@@ -93,7 +93,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     IO.write(
       file,
       "config #{config.group}, #{config.key}, #{
-        inspect(Config.from_binary(config.value), limit: :infinity)
+        inspect(ConfigDB.from_binary(config.value), limit: :infinity)
       }\r\n\r\n"
     )
 

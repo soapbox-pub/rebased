@@ -2,7 +2,7 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.AdminAPI.Config do
+defmodule Pleroma.ConfigDB do
   use Ecto.Schema
   import Ecto.Changeset
   import Pleroma.Web.Gettext
@@ -19,10 +19,10 @@ defmodule Pleroma.Web.AdminAPI.Config do
     timestamps()
   end
 
-  @spec get_by_params(map()) :: Config.t() | nil
-  def get_by_params(params), do: Repo.get_by(Config, params)
+  @spec get_by_params(map()) :: ConfigDB.t() | nil
+  def get_by_params(params), do: Repo.get_by(ConfigDB, params)
 
-  @spec changeset(Config.t(), map()) :: Changeset.t()
+  @spec changeset(ConfigDB.t(), map()) :: Changeset.t()
   def changeset(config, params \\ %{}) do
     params = Map.put(params, :value, transform(params[:value]))
 
@@ -32,15 +32,15 @@ defmodule Pleroma.Web.AdminAPI.Config do
     |> unique_constraint(:key, name: :config_group_key_index)
   end
 
-  @spec create(map()) :: {:ok, Config.t()} | {:error, Changeset.t()}
+  @spec create(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
   def create(params) do
-    %Config{}
+    %ConfigDB{}
     |> changeset(params)
     |> Repo.insert()
   end
 
-  @spec update(Config.t(), map()) :: {:ok, Config} | {:error, Changeset.t()}
-  def update(%Config{} = config, %{value: value}) do
+  @spec update(ConfigDB.t(), map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
+  def update(%ConfigDB{} = config, %{value: value}) do
     config
     |> changeset(%{value: value})
     |> Repo.update()
@@ -57,9 +57,9 @@ defmodule Pleroma.Web.AdminAPI.Config do
     {:logger, :backends}
   ]
 
-  defp only_full_update?(%Config{} = config) do
-    config_group = Config.from_string(config.group)
-    config_key = Config.from_string(config.key)
+  defp only_full_update?(%ConfigDB{} = config) do
+    config_group = ConfigDB.from_string(config.group)
+    config_key = ConfigDB.from_string(config.key)
 
     Enum.any?(@full_key_update, fn
       {group, key} when is_list(key) ->
@@ -70,39 +70,39 @@ defmodule Pleroma.Web.AdminAPI.Config do
     end)
   end
 
-  defp can_be_partially_updated?(%Config{} = config), do: not only_full_update?(config)
+  defp can_be_partially_updated?(%ConfigDB{} = config), do: not only_full_update?(config)
 
-  @spec update_or_create(map()) :: {:ok, Config.t()} | {:error, Changeset.t()}
+  @spec update_or_create(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
   def update_or_create(params) do
     search_opts = Map.take(params, [:group, :key])
 
-    with %Config{} = config <- Config.get_by_params(search_opts),
+    with %ConfigDB{} = config <- ConfigDB.get_by_params(search_opts),
          {:partial_update, true, config} <-
            {:partial_update, can_be_partially_updated?(config), config},
          old_value <- from_binary(config.value),
          transformed_value <- do_transform(params[:value]),
          {:can_be_merged, true, config} <- {:can_be_merged, is_list(transformed_value), config},
          new_value <- DeepMerge.deep_merge(old_value, transformed_value) do
-      Config.update(config, %{value: new_value, transformed?: true})
+      ConfigDB.update(config, %{value: new_value, transformed?: true})
     else
       {reason, false, config} when reason in [:partial_update, :can_be_merged] ->
-        Config.update(config, params)
+        ConfigDB.update(config, params)
 
       nil ->
-        Config.create(params)
+        ConfigDB.create(params)
     end
   end
 
-  @spec delete(map()) :: {:ok, Config.t()} | {:error, Changeset.t()} | {:ok, nil}
+  @spec delete(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()} | {:ok, nil}
   def delete(params) do
     search_opts = Map.delete(params, :subkeys)
 
-    with %Config{} = config <- Config.get_by_params(search_opts),
+    with %ConfigDB{} = config <- ConfigDB.get_by_params(search_opts),
          {config, sub_keys} when is_list(sub_keys) <- {config, params[:subkeys]},
          old_value <- from_binary(config.value),
          keys <- Enum.map(sub_keys, &do_transform_string(&1)),
          new_value <- Keyword.drop(old_value, keys) do
-      Config.update(config, %{value: new_value})
+      ConfigDB.update(config, %{value: new_value})
     else
       {config, nil} ->
         Repo.delete(config)

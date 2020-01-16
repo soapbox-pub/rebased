@@ -394,7 +394,7 @@ defmodule Pleroma.Factory do
   end
 
   def config_factory do
-    %Pleroma.Web.AdminAPI.Config{
+    %Pleroma.ConfigDB{
       key:
         sequence(:key, fn key ->
           # Atom dynamic registration hack in tests

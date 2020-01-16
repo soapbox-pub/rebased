@@ -8,6 +8,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   alias Pleroma.Activity
+  alias Pleroma.ConfigDB
   alias Pleroma.ModerationLog
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.ReportNote
@@ -17,7 +18,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
-  alias Pleroma.Web.AdminAPI.Config
   alias Pleroma.Web.AdminAPI.ConfigView
   alias Pleroma.Web.AdminAPI.ModerationLogView
   alias Pleroma.Web.AdminAPI.Report
@@ -799,7 +799,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   def config_show(conn, _params) do
     with :ok <- configurable_from_database(conn) do
-      configs = Pleroma.Repo.all(Config)
+      configs = Pleroma.Repo.all(ConfigDB)
 
       if configs == [] do
         errors(
@@ -820,13 +820,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         Enum.map(configs, fn
           %{"group" => group, "key" => key, "delete" => true} = params ->
             with {:ok, config} <-
-                   Config.delete(%{group: group, key: key, subkeys: params["subkeys"]}) do
+                   ConfigDB.delete(%{group: group, key: key, subkeys: params["subkeys"]}) do
               config
             end
 
           %{"group" => group, "key" => key, "value" => value} ->
             with {:ok, config} <-
-                   Config.update_or_create(%{group: group, key: key, value: value}) do
+                   ConfigDB.update_or_create(%{group: group, key: key, value: value}) do
               config
             end
         end)

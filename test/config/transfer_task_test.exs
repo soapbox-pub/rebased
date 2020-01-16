@@ -5,7 +5,7 @@
 defmodule Pleroma.Config.TransferTaskTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.AdminAPI.Config
+  alias Pleroma.ConfigDB
 
   clear_config(:configurable_from_database) do
     Pleroma.Config.put(:configurable_from_database, true)
@@ -16,19 +16,19 @@ defmodule Pleroma.Config.TransferTaskTest do
     refute Application.get_env(:idna, :test_key)
     refute Application.get_env(:quack, :test_key)
 
-    Config.create(%{
+    ConfigDB.create(%{
       group: ":pleroma",
       key: ":test_key",
       value: [live: 2, com: 3]
     })
 
-    Config.create(%{
+    ConfigDB.create(%{
       group: ":idna",
       key: ":test_key",
       value: [live: 15, com: 35]
     })
 
-    Config.create(%{
+    ConfigDB.create(%{
       group: ":quack",
       key: ":test_key",
       value: [:test_value1, :test_value2]
@@ -48,7 +48,7 @@ defmodule Pleroma.Config.TransferTaskTest do
   end
 
   test "non existing atom" do
-    Config.create(%{
+    ConfigDB.create(%{
       group: ":pleroma",
       key: ":undefined_atom_key",
       value: [live: 2, com: 3]

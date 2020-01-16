@@ -5,10 +5,10 @@
 defmodule Pleroma.Config.TransferTask do
   use Task
 
-  require Logger
-
+  alias Pleroma.ConfigDB
   alias Pleroma.Repo
-  alias Pleroma.Web.AdminAPI.Config
+
+  require Logger
 
   def start_link(_) do
     load_and_update_env()
@@ -21,7 +21,7 @@ defmodule Pleroma.Config.TransferTask do
          true <- Ecto.Adapters.SQL.table_exists?(Repo, "config"),
          started_applications <- Application.started_applications() do
       # We need to restart applications for loaded settings take effect
-      Config
+      ConfigDB
       |> Repo.all()
       |> Enum.map(&update_env(&1))
       |> Enum.uniq()
@@ -33,9 +33,9 @@ defmodule Pleroma.Config.TransferTask do
 
   defp update_env(setting) do
     try do
-      key = Config.from_string(setting.key)
-      group = Config.from_string(setting.group)
-      value = Config.from_binary(setting.value)
+      key = ConfigDB.from_string(setting.key)
+      group = ConfigDB.from_string(setting.group)
+      value = ConfigDB.from_binary(setting.value)
 
       if group != :phoenix and key != :serve_endpoints do
         :ok = Application.put_env(group, key, value)

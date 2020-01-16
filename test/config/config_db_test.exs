@@ -2,27 +2,27 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.AdminAPI.ConfigTest do
+defmodule Pleroma.ConfigDBTest do
   use Pleroma.DataCase, async: true
   import Pleroma.Factory
-  alias Pleroma.Web.AdminAPI.Config
+  alias Pleroma.ConfigDB
 
   test "get_by_key/1" do
     config = insert(:config)
     insert(:config)
 
-    assert config == Config.get_by_params(%{group: config.group, key: config.key})
+    assert config == ConfigDB.get_by_params(%{group: config.group, key: config.key})
   end
 
   test "create/1" do
-    {:ok, config} = Config.create(%{group: "pleroma", key: "some_key", value: "some_value"})
-    assert config == Config.get_by_params(%{group: "pleroma", key: "some_key"})
+    {:ok, config} = ConfigDB.create(%{group: "pleroma", key: "some_key", value: "some_value"})
+    assert config == ConfigDB.get_by_params(%{group: "pleroma", key: "some_key"})
   end
 
   test "update/1" do
     config = insert(:config)
-    {:ok, updated} = Config.update(config, %{value: "some_value"})
-    loaded = Config.get_by_params(%{group: config.group, key: config.key})
+    {:ok, updated} = ConfigDB.update(config, %{value: "some_value"})
+    loaded = ConfigDB.get_by_params(%{group: config.group, key: config.key})
     assert loaded == updated
   end
 
@@ -36,32 +36,32 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
         %{group: config.group, key: config.key, value: "new_value"}
       ]
 
-      assert Repo.all(Config) |> length() == 1
+      assert Repo.all(ConfigDB) |> length() == 1
 
-      Enum.each(params, &Config.update_or_create(&1))
+      Enum.each(params, &ConfigDB.update_or_create(&1))
 
-      assert Repo.all(Config) |> length() == 2
+      assert Repo.all(ConfigDB) |> length() == 2
 
-      config1 = Config.get_by_params(%{group: config.group, key: config.key})
-      config2 = Config.get_by_params(%{group: "pleroma", key: key2})
+      config1 = ConfigDB.get_by_params(%{group: config.group, key: config.key})
+      config2 = ConfigDB.get_by_params(%{group: "pleroma", key: key2})
 
-      assert config1.value == Config.transform("new_value")
-      assert config2.value == Config.transform("another_value")
+      assert config1.value == ConfigDB.transform("new_value")
+      assert config2.value == ConfigDB.transform("another_value")
     end
 
     test "partial update" do
-      config = insert(:config, value: Config.to_binary(key1: "val1", key2: :val2))
+      config = insert(:config, value: ConfigDB.to_binary(key1: "val1", key2: :val2))
 
       {:ok, _config} =
-        Config.update_or_create(%{
+        ConfigDB.update_or_create(%{
           group: config.group,
           key: config.key,
           value: [key1: :val1, key3: :val3]
         })
 
-      updated = Config.get_by_params(%{group: config.group, key: config.key})
+      updated = ConfigDB.get_by_params(%{group: config.group, key: config.key})
 
-      value = Config.from_binary(updated.value)
+      value = ConfigDB.from_binary(updated.value)
       assert length(value) == 3
       assert value[:key1] == :val1
       assert value[:key2] == :val2
@@ -69,48 +69,50 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
     end
 
     test "deep merge" do
-      config = insert(:config, value: Config.to_binary(key1: "val1", key2: [k1: :v1, k2: "v2"]))
+      config = insert(:config, value: ConfigDB.to_binary(key1: "val1", key2: [k1: :v1, k2: "v2"]))
 
       {:ok, config} =
-        Config.update_or_create(%{
+        ConfigDB.update_or_create(%{
           group: config.group,
           key: config.key,
           value: [key1: :val1, key2: [k2: :v2, k3: :v3], key3: :val3]
         })
 
-      updated = Config.get_by_params(%{group: config.group, key: config.key})
+      updated = ConfigDB.get_by_params(%{group: config.group, key: config.key})
 
       assert config.value == updated.value
 
-      value = Config.from_binary(updated.value)
+      value = ConfigDB.from_binary(updated.value)
       assert value[:key1] == :val1
       assert value[:key2] == [k1: :v1, k2: :v2, k3: :v3]
       assert value[:key3] == :val3
     end
 
     test "only full update for some keys" do
-      config1 = insert(:config, key: ":ecto_repos", value: Config.to_binary(repo: Pleroma.Repo))
-      config2 = insert(:config, group: ":cors_plug", key: ":max_age", value: Config.to_binary(18))
+      config1 = insert(:config, key: ":ecto_repos", value: ConfigDB.to_binary(repo: Pleroma.Repo))
+
+      config2 =
+        insert(:config, group: ":cors_plug", key: ":max_age", value: ConfigDB.to_binary(18))
 
       {:ok, _config} =
-        Config.update_or_create(%{
+        ConfigDB.update_or_create(%{
           group: config1.group,
           key: config1.key,
           value: [another_repo: [Pleroma.Repo]]
         })
 
       {:ok, _config} =
-        Config.update_or_create(%{
+        ConfigDB.update_or_create(%{
           group: config2.group,
           key: config2.key,
           value: 777
         })
 
-      updated1 = Config.get_by_params(%{group: config1.group, key: config1.key})
-      updated2 = Config.get_by_params(%{group: config2.group, key: config2.key})
+      updated1 = ConfigDB.get_by_params(%{group: config1.group, key: config1.key})
+      updated2 = ConfigDB.get_by_params(%{group: config2.group, key: config2.key})
 
-      assert Config.from_binary(updated1.value) == [another_repo: [Pleroma.Repo]]
-      assert Config.from_binary(updated2.value) == 777
+      assert ConfigDB.from_binary(updated1.value) == [another_repo: [Pleroma.Repo]]
+      assert ConfigDB.from_binary(updated2.value) == 777
     end
 
     test "full update if value is not keyword" do
@@ -118,176 +120,176 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
         insert(:config,
           group: ":tesla",
           key: ":adapter",
-          value: Config.to_binary(Tesla.Adapter.Hackney)
+          value: ConfigDB.to_binary(Tesla.Adapter.Hackney)
         )
 
       {:ok, _config} =
-        Config.update_or_create(%{
+        ConfigDB.update_or_create(%{
           group: config.group,
           key: config.key,
           value: Tesla.Adapter.Httpc
         })
 
-      updated = Config.get_by_params(%{group: config.group, key: config.key})
+      updated = ConfigDB.get_by_params(%{group: config.group, key: config.key})
 
-      assert Config.from_binary(updated.value) == Tesla.Adapter.Httpc
+      assert ConfigDB.from_binary(updated.value) == Tesla.Adapter.Httpc
     end
   end
 
   test "delete/1" do
     config = insert(:config)
-    {:ok, _} = Config.delete(%{key: config.key, group: config.group})
-    refute Config.get_by_params(%{key: config.key, group: config.group})
+    {:ok, _} = ConfigDB.delete(%{key: config.key, group: config.group})
+    refute ConfigDB.get_by_params(%{key: config.key, group: config.group})
   end
 
   describe "transform/1" do
     test "string" do
-      binary = Config.transform("value as string")
+      binary = ConfigDB.transform("value as string")
       assert binary == :erlang.term_to_binary("value as string")
-      assert Config.from_binary(binary) == "value as string"
+      assert ConfigDB.from_binary(binary) == "value as string"
     end
 
     test "boolean" do
-      binary = Config.transform(false)
+      binary = ConfigDB.transform(false)
       assert binary == :erlang.term_to_binary(false)
-      assert Config.from_binary(binary) == false
+      assert ConfigDB.from_binary(binary) == false
     end
 
     test "nil" do
-      binary = Config.transform(nil)
+      binary = ConfigDB.transform(nil)
       assert binary == :erlang.term_to_binary(nil)
-      assert Config.from_binary(binary) == nil
+      assert ConfigDB.from_binary(binary) == nil
     end
 
     test "integer" do
-      binary = Config.transform(150)
+      binary = ConfigDB.transform(150)
       assert binary == :erlang.term_to_binary(150)
-      assert Config.from_binary(binary) == 150
+      assert ConfigDB.from_binary(binary) == 150
     end
 
     test "atom" do
-      binary = Config.transform(":atom")
+      binary = ConfigDB.transform(":atom")
       assert binary == :erlang.term_to_binary(:atom)
-      assert Config.from_binary(binary) == :atom
+      assert ConfigDB.from_binary(binary) == :atom
     end
 
     test "ssl options" do
-      binary = Config.transform([":tlsv1", ":tlsv1.1", ":tlsv1.2"])
+      binary = ConfigDB.transform([":tlsv1", ":tlsv1.1", ":tlsv1.2"])
       assert binary == :erlang.term_to_binary([:tlsv1, :"tlsv1.1", :"tlsv1.2"])
-      assert Config.from_binary(binary) == [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+      assert ConfigDB.from_binary(binary) == [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
     end
 
     test "pleroma module" do
-      binary = Config.transform("Pleroma.Bookmark")
+      binary = ConfigDB.transform("Pleroma.Bookmark")
       assert binary == :erlang.term_to_binary(Pleroma.Bookmark)
-      assert Config.from_binary(binary) == Pleroma.Bookmark
+      assert ConfigDB.from_binary(binary) == Pleroma.Bookmark
     end
 
     test "pleroma string" do
-      binary = Config.transform("Pleroma")
+      binary = ConfigDB.transform("Pleroma")
       assert binary == :erlang.term_to_binary("Pleroma")
-      assert Config.from_binary(binary) == "Pleroma"
+      assert ConfigDB.from_binary(binary) == "Pleroma"
     end
 
     test "phoenix module" do
-      binary = Config.transform("Phoenix.Socket.V1.JSONSerializer")
+      binary = ConfigDB.transform("Phoenix.Socket.V1.JSONSerializer")
       assert binary == :erlang.term_to_binary(Phoenix.Socket.V1.JSONSerializer)
-      assert Config.from_binary(binary) == Phoenix.Socket.V1.JSONSerializer
+      assert ConfigDB.from_binary(binary) == Phoenix.Socket.V1.JSONSerializer
     end
 
     test "tesla module" do
-      binary = Config.transform("Tesla.Adapter.Hackney")
+      binary = ConfigDB.transform("Tesla.Adapter.Hackney")
       assert binary == :erlang.term_to_binary(Tesla.Adapter.Hackney)
-      assert Config.from_binary(binary) == Tesla.Adapter.Hackney
+      assert ConfigDB.from_binary(binary) == Tesla.Adapter.Hackney
     end
 
     test "ExSyslogger module" do
-      binary = Config.transform("ExSyslogger")
+      binary = ConfigDB.transform("ExSyslogger")
       assert binary == :erlang.term_to_binary(ExSyslogger)
-      assert Config.from_binary(binary) == ExSyslogger
+      assert ConfigDB.from_binary(binary) == ExSyslogger
     end
 
     test "Quack.Logger module" do
-      binary = Config.transform("Quack.Logger")
+      binary = ConfigDB.transform("Quack.Logger")
       assert binary == :erlang.term_to_binary(Quack.Logger)
-      assert Config.from_binary(binary) == Quack.Logger
+      assert ConfigDB.from_binary(binary) == Quack.Logger
     end
 
     test "sigil" do
-      binary = Config.transform("~r[comp[lL][aA][iI][nN]er]")
+      binary = ConfigDB.transform("~r[comp[lL][aA][iI][nN]er]")
       assert binary == :erlang.term_to_binary(~r/comp[lL][aA][iI][nN]er/)
-      assert Config.from_binary(binary) == ~r/comp[lL][aA][iI][nN]er/
+      assert ConfigDB.from_binary(binary) == ~r/comp[lL][aA][iI][nN]er/
     end
 
     test "link sigil" do
-      binary = Config.transform("~r/https:\/\/example.com/")
+      binary = ConfigDB.transform("~r/https:\/\/example.com/")
       assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/)
-      assert Config.from_binary(binary) == ~r/https:\/\/example.com/
+      assert ConfigDB.from_binary(binary) == ~r/https:\/\/example.com/
     end
 
     test "link sigil with um modifiers" do
-      binary = Config.transform("~r/https:\/\/example.com/um")
+      binary = ConfigDB.transform("~r/https:\/\/example.com/um")
       assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/um)
-      assert Config.from_binary(binary) == ~r/https:\/\/example.com/um
+      assert ConfigDB.from_binary(binary) == ~r/https:\/\/example.com/um
     end
 
     test "link sigil with i modifier" do
-      binary = Config.transform("~r/https:\/\/example.com/i")
+      binary = ConfigDB.transform("~r/https:\/\/example.com/i")
       assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/i)
-      assert Config.from_binary(binary) == ~r/https:\/\/example.com/i
+      assert ConfigDB.from_binary(binary) == ~r/https:\/\/example.com/i
     end
 
     test "link sigil with s modifier" do
-      binary = Config.transform("~r/https:\/\/example.com/s")
+      binary = ConfigDB.transform("~r/https:\/\/example.com/s")
       assert binary == :erlang.term_to_binary(~r/https:\/\/example.com/s)
-      assert Config.from_binary(binary) == ~r/https:\/\/example.com/s
+      assert ConfigDB.from_binary(binary) == ~r/https:\/\/example.com/s
     end
 
     test "raise if valid delimiter not found" do
       assert_raise ArgumentError, "valid delimiter for Regex expression not found", fn ->
-        Config.transform("~r/https://[]{}<>\"'()|example.com/s")
+        ConfigDB.transform("~r/https://[]{}<>\"'()|example.com/s")
       end
     end
 
     test "2 child tuple" do
-      binary = Config.transform(%{"tuple" => ["v1", ":v2"]})
+      binary = ConfigDB.transform(%{"tuple" => ["v1", ":v2"]})
       assert binary == :erlang.term_to_binary({"v1", :v2})
-      assert Config.from_binary(binary) == {"v1", :v2}
+      assert ConfigDB.from_binary(binary) == {"v1", :v2}
     end
 
     test "proxy tuple with localhost" do
       binary =
-        Config.transform(%{
+        ConfigDB.transform(%{
           "tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]
         })
 
       assert binary == :erlang.term_to_binary({:proxy_url, {:socks5, :localhost, 1234}})
-      assert Config.from_binary(binary) == {:proxy_url, {:socks5, :localhost, 1234}}
+      assert ConfigDB.from_binary(binary) == {:proxy_url, {:socks5, :localhost, 1234}}
     end
 
     test "proxy tuple with domain" do
       binary =
-        Config.transform(%{
+        ConfigDB.transform(%{
           "tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]
         })
 
       assert binary == :erlang.term_to_binary({:proxy_url, {:socks5, 'domain.com', 1234}})
-      assert Config.from_binary(binary) == {:proxy_url, {:socks5, 'domain.com', 1234}}
+      assert ConfigDB.from_binary(binary) == {:proxy_url, {:socks5, 'domain.com', 1234}}
     end
 
     test "proxy tuple with ip" do
       binary =
-        Config.transform(%{
+        ConfigDB.transform(%{
           "tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]
         })
 
       assert binary == :erlang.term_to_binary({:proxy_url, {:socks5, {127, 0, 0, 1}, 1234}})
-      assert Config.from_binary(binary) == {:proxy_url, {:socks5, {127, 0, 0, 1}, 1234}}
+      assert ConfigDB.from_binary(binary) == {:proxy_url, {:socks5, {127, 0, 0, 1}, 1234}}
     end
 
     test "tuple with n childs" do
       binary =
-        Config.transform(%{
+        ConfigDB.transform(%{
           "tuple" => [
             "v1",
             ":v2",
@@ -303,12 +305,12 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
                  {"v1", :v2, Pleroma.Bookmark, 150, false, Phoenix.Socket.V1.JSONSerializer}
                )
 
-      assert Config.from_binary(binary) ==
+      assert ConfigDB.from_binary(binary) ==
                {"v1", :v2, Pleroma.Bookmark, 150, false, Phoenix.Socket.V1.JSONSerializer}
     end
 
     test "tuple with dispatch key" do
-      binary = Config.transform(%{"tuple" => [":dispatch", ["{:_,
+      binary = ConfigDB.transform(%{"tuple" => [":dispatch", ["{:_,
        [
          {\"/api/v1/streaming\", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
          {\"/websocket\", Phoenix.Endpoint.CowboyWebSocket,
@@ -332,7 +334,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
                   ]}
                )
 
-      assert Config.from_binary(binary) ==
+      assert ConfigDB.from_binary(binary) ==
                {:dispatch,
                 [
                   {:_,
@@ -347,38 +349,38 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
     end
 
     test "map with string key" do
-      binary = Config.transform(%{"key" => "value"})
+      binary = ConfigDB.transform(%{"key" => "value"})
       assert binary == :erlang.term_to_binary(%{"key" => "value"})
-      assert Config.from_binary(binary) == %{"key" => "value"}
+      assert ConfigDB.from_binary(binary) == %{"key" => "value"}
     end
 
     test "map with atom key" do
-      binary = Config.transform(%{":key" => "value"})
+      binary = ConfigDB.transform(%{":key" => "value"})
       assert binary == :erlang.term_to_binary(%{key: "value"})
-      assert Config.from_binary(binary) == %{key: "value"}
+      assert ConfigDB.from_binary(binary) == %{key: "value"}
     end
 
     test "list of strings" do
-      binary = Config.transform(["v1", "v2", "v3"])
+      binary = ConfigDB.transform(["v1", "v2", "v3"])
       assert binary == :erlang.term_to_binary(["v1", "v2", "v3"])
-      assert Config.from_binary(binary) == ["v1", "v2", "v3"]
+      assert ConfigDB.from_binary(binary) == ["v1", "v2", "v3"]
     end
 
     test "list of modules" do
-      binary = Config.transform(["Pleroma.Repo", "Pleroma.Activity"])
+      binary = ConfigDB.transform(["Pleroma.Repo", "Pleroma.Activity"])
       assert binary == :erlang.term_to_binary([Pleroma.Repo, Pleroma.Activity])
-      assert Config.from_binary(binary) == [Pleroma.Repo, Pleroma.Activity]
+      assert ConfigDB.from_binary(binary) == [Pleroma.Repo, Pleroma.Activity]
     end
 
     test "list of atoms" do
-      binary = Config.transform([":v1", ":v2", ":v3"])
+      binary = ConfigDB.transform([":v1", ":v2", ":v3"])
       assert binary == :erlang.term_to_binary([:v1, :v2, :v3])
-      assert Config.from_binary(binary) == [:v1, :v2, :v3]
+      assert ConfigDB.from_binary(binary) == [:v1, :v2, :v3]
     end
 
     test "list of mixed values" do
       binary =
-        Config.transform([
+        ConfigDB.transform([
           "v1",
           ":v2",
           "Pleroma.Repo",
@@ -397,7 +399,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
                  false
                ])
 
-      assert Config.from_binary(binary) == [
+      assert ConfigDB.from_binary(binary) == [
                "v1",
                :v2,
                Pleroma.Repo,
@@ -408,23 +410,23 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
     end
 
     test "simple keyword" do
-      binary = Config.transform([%{"tuple" => [":key", "value"]}])
+      binary = ConfigDB.transform([%{"tuple" => [":key", "value"]}])
       assert binary == :erlang.term_to_binary([{:key, "value"}])
-      assert Config.from_binary(binary) == [{:key, "value"}]
-      assert Config.from_binary(binary) == [key: "value"]
+      assert ConfigDB.from_binary(binary) == [{:key, "value"}]
+      assert ConfigDB.from_binary(binary) == [key: "value"]
     end
 
     test "keyword with partial_chain key" do
       binary =
-        Config.transform([%{"tuple" => [":partial_chain", "&:hackney_connect.partial_chain/1"]}])
+        ConfigDB.transform([%{"tuple" => [":partial_chain", "&:hackney_connect.partial_chain/1"]}])
 
       assert binary == :erlang.term_to_binary(partial_chain: &:hackney_connect.partial_chain/1)
-      assert Config.from_binary(binary) == [partial_chain: &:hackney_connect.partial_chain/1]
+      assert ConfigDB.from_binary(binary) == [partial_chain: &:hackney_connect.partial_chain/1]
     end
 
     test "keyword" do
       binary =
-        Config.transform([
+        ConfigDB.transform([
           %{"tuple" => [":types", "Pleroma.PostgresTypes"]},
           %{"tuple" => [":telemetry_event", ["Pleroma.Repo.Instrumenter"]]},
           %{"tuple" => [":migration_lock", nil]},
@@ -441,7 +443,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
                  key2: "string"
                )
 
-      assert Config.from_binary(binary) == [
+      assert ConfigDB.from_binary(binary) == [
                types: Pleroma.PostgresTypes,
                telemetry_event: [Pleroma.Repo.Instrumenter],
                migration_lock: nil,
@@ -452,7 +454,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
 
     test "complex keyword with nested mixed childs" do
       binary =
-        Config.transform([
+        ConfigDB.transform([
           %{"tuple" => [":uploader", "Pleroma.Uploaders.Local"]},
           %{"tuple" => [":filters", ["Pleroma.Upload.Filter.Dedupe"]]},
           %{"tuple" => [":link_name", true]},
@@ -492,7 +494,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
                  ]
                )
 
-      assert Config.from_binary(binary) ==
+      assert ConfigDB.from_binary(binary) ==
                [
                  uploader: Pleroma.Uploaders.Local,
                  filters: [Pleroma.Upload.Filter.Dedupe],
@@ -512,7 +514,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
 
     test "common keyword" do
       binary =
-        Config.transform([
+        ConfigDB.transform([
           %{"tuple" => [":level", ":warn"]},
           %{"tuple" => [":meta", [":all"]]},
           %{"tuple" => [":path", ""]},
@@ -529,7 +531,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
                  webhook_url: "https://hooks.slack.com/services/YOUR-KEY-HERE"
                )
 
-      assert Config.from_binary(binary) == [
+      assert ConfigDB.from_binary(binary) == [
                level: :warn,
                meta: [:all],
                path: "",
@@ -540,7 +542,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
 
     test "complex keyword with sigil" do
       binary =
-        Config.transform([
+        ConfigDB.transform([
           %{"tuple" => [":federated_timeline_removal", []]},
           %{"tuple" => [":reject", ["~r/comp[lL][aA][iI][nN]er/"]]},
           %{"tuple" => [":replace", []]}
@@ -553,13 +555,13 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
                  replace: []
                )
 
-      assert Config.from_binary(binary) ==
+      assert ConfigDB.from_binary(binary) ==
                [federated_timeline_removal: [], reject: [~r/comp[lL][aA][iI][nN]er/], replace: []]
     end
 
     test "complex keyword with tuples with more than 2 values" do
       binary =
-        Config.transform([
+        ConfigDB.transform([
           %{
             "tuple" => [
               ":http",
@@ -630,7 +632,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
                  ]
                )
 
-      assert Config.from_binary(binary) == [
+      assert ConfigDB.from_binary(binary) == [
                http: [
                  key1: [
                    {:_,

@@ -2832,14 +2832,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "transfer settings to DB and to file", %{conn: conn} do
       on_exit(fn -> :ok = File.rm("config/test.exported_from_db.secret.exs") end)
-      assert Repo.all(Pleroma.Web.AdminAPI.Config) == []
+      assert Repo.all(Pleroma.ConfigDB) == []
       Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
-      assert Repo.aggregate(Pleroma.Web.AdminAPI.Config, :count, :id) > 0
+      assert Repo.aggregate(Pleroma.ConfigDB, :count, :id) > 0
 
       conn = get(conn, "/api/pleroma/admin/config/migrate_from_db")
 
       assert json_response(conn, 200) == %{}
-      assert Repo.all(Pleroma.Web.AdminAPI.Config) == []
+      assert Repo.all(Pleroma.ConfigDB) == []
     end
 
     test "returns error if configuration from database is off", %{conn: conn} do
@@ -2852,7 +2852,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert json_response(conn, 400) ==
                "To use this endpoint you need to enable configuration from database."
 
-      assert Repo.all(Pleroma.Web.AdminAPI.Config) == []
+      assert Repo.all(Pleroma.ConfigDB) == []
     end
   end
 
