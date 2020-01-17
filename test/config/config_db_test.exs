@@ -330,45 +330,6 @@ defmodule Pleroma.ConfigDBTest do
                {"v1", :v2, Pleroma.Bookmark, 150, false, Phoenix.Socket.V1.JSONSerializer}
     end
 
-    test "tuple with dispatch key" do
-      binary = ConfigDB.transform(%{"tuple" => [":dispatch", ["{:_,
-       [
-         {\"/api/v1/streaming\", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-         {\"/websocket\", Phoenix.Endpoint.CowboyWebSocket,
-          {Phoenix.Transports.WebSocket,
-           {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, [path: \"/websocket\"]}}},
-         {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
-       ]}"]]})
-
-      assert binary ==
-               :erlang.term_to_binary(
-                 {:dispatch,
-                  [
-                    {:_,
-                     [
-                       {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-                       {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
-                        {Phoenix.Transports.WebSocket,
-                         {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, [path: "/websocket"]}}},
-                       {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
-                     ]}
-                  ]}
-               )
-
-      assert ConfigDB.from_binary(binary) ==
-               {:dispatch,
-                [
-                  {:_,
-                   [
-                     {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-                     {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
-                      {Phoenix.Transports.WebSocket,
-                       {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, [path: "/websocket"]}}},
-                     {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
-                   ]}
-                ]}
-    end
-
     test "map with string key" do
       binary = ConfigDB.transform(%{"key" => "value"})
       assert binary == :erlang.term_to_binary(%{"key" => "value"})

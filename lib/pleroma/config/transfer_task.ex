@@ -48,7 +48,20 @@ defmodule Pleroma.Config.TransferTask do
           end
 
         :ok = Application.put_env(group, key, merged_value)
-        group
+
+        if group != :logger do
+          group
+        else
+          # change logger configuration in runtime, without restart
+          if Keyword.keyword?(merged_value) and
+               key not in [:compile_time_application, :backends, :compile_time_purge_matching] do
+            Logger.configure_backend(key, merged_value)
+          else
+            Logger.configure([{key, merged_value}])
+          end
+
+          nil
+        end
       end
     rescue
       e ->

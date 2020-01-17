@@ -3,19 +3,28 @@ defmodule Pleroma.Config.Loader do
   if Code.ensure_loaded?(Config.Reader) do
     @spec load() :: map()
     def load do
-      config = Config.Reader.read!("config/config.exs")
-      env_config = Config.Reader.read!("config/#{Mix.env()}.exs")
+      config = load("config/config.exs")
+      env_config = load("config/#{Mix.env()}.exs")
 
       Config.Reader.merge(config, env_config)
     end
+
+    @spec load(Path.t()) :: keyword()
+    def load(path), do: Config.Reader.read!(path)
   else
     # support for Elixir less than 1.9
     @spec load() :: map()
     def load do
-      {config, _paths} = Mix.Config.eval!("config/config.exs")
-      {env_config, _paths} = Mix.Config.eval!("config/#{Mix.env()}.exs")
+      {config, _paths} = load("config/config.exs")
+      {env_config, _paths} = load("config/#{Mix.env()}.exs")
 
       Mix.Config.merge(config, env_config)
+    end
+
+    @spec load(Path.t()) :: keyword()
+    def load(path) do
+      {config, _paths} = Mix.Config.eval!(path)
+      config
     end
   end
 end

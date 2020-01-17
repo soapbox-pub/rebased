@@ -16,7 +16,6 @@ defmodule Mix.Tasks.Pleroma.Config do
   @moduledoc File.read!("docs/administration/CLI_tasks/config.md")
 
   def run(["migrate_to_db"]) do
-    # we want to save original logger level
     start_pleroma()
     migrate_to_db()
   end

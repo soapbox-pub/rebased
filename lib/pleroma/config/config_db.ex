@@ -192,7 +192,6 @@ defmodule Pleroma.ConfigDB do
     }
   end
 
-  defp do_convert({:dispatch, [entity]}), do: %{"tuple" => [":dispatch", [inspect(entity)]]}
   # TODO: will become useless after removing hackney
   defp do_convert({:partial_chain, entity}), do: %{"tuple" => [":partial_chain", inspect(entity)]}
 
@@ -229,14 +228,13 @@ defmodule Pleroma.ConfigDB do
     {:proxy_url, {do_transform_string(type), parse_host(host), port}}
   end
 
-  defp do_transform(%{"tuple" => [":dispatch", [entity]]}) do
-    {dispatch_settings, []} = do_eval(entity)
-    {:dispatch, [dispatch_settings]}
-  end
-
   # TODO: will become useless after removing hackney
   defp do_transform(%{"tuple" => [":partial_chain", entity]}) do
-    {partial_chain, []} = do_eval(entity)
+    {partial_chain, []} =
+      entity
+      |> String.replace(~r/[^\w|^{:,[|^,|^[|^\]^}|^\/|^\.|^"]^\s/, "")
+      |> Code.eval_string()
+
     {:partial_chain, partial_chain}
   end
 
@@ -321,10 +319,5 @@ defmodule Pleroma.ConfigDB do
   def is_module_name?(string) do
     Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Quack)\./, string) or
       string in ["Oban", "Ueberauth", "ExSyslogger"]
-  end
-
-  defp do_eval(entity) do
-    cleaned_string = String.replace(entity, ~r/[^\w|^{:,[|^,|^[|^\]^}|^\/|^\.|^"]^\s/, "")
-    Code.eval_string(cleaned_string)
   end
 end

@@ -2632,69 +2632,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                }
     end
 
-    test "dispatch setting", %{conn: conn} do
-      conn =
-        post(conn, "/api/pleroma/admin/config", %{
-          configs: [
-            %{
-              "group" => ":pleroma",
-              "key" => "Pleroma.Web.Endpoint.NotReal",
-              "value" => [
-                %{
-                  "tuple" => [
-                    ":http",
-                    [
-                      %{"tuple" => [":ip", %{"tuple" => [127, 0, 0, 1]}]},
-                      %{"tuple" => [":dispatch", ["{:_,
-       [
-         {\"/api/v1/streaming\", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-         {\"/websocket\", Phoenix.Endpoint.CowboyWebSocket,
-          {Phoenix.Transports.WebSocket,
-           {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, [path: \"/websocket\"]}}},
-         {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
-       ]}"]]}
-                    ]
-                  ]
-                }
-              ]
-            }
-          ]
-        })
-
-      dispatch_string =
-        "{:_, [{\"/api/v1/streaming\", Pleroma.Web.MastodonAPI.WebsocketHandler, []}, " <>
-          "{\"/websocket\", Phoenix.Endpoint.CowboyWebSocket, {Phoenix.Transports.WebSocket, " <>
-          "{Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, [path: \"/websocket\"]}}}, " <>
-          "{:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}]}"
-
-      assert json_response(conn, 200) == %{
-               "configs" => [
-                 %{
-                   "group" => ":pleroma",
-                   "key" => "Pleroma.Web.Endpoint.NotReal",
-                   "value" => [
-                     %{
-                       "tuple" => [
-                         ":http",
-                         [
-                           %{"tuple" => [":ip", %{"tuple" => [127, 0, 0, 1]}]},
-                           %{
-                             "tuple" => [
-                               ":dispatch",
-                               [
-                                 dispatch_string
-                               ]
-                             ]
-                           }
-                         ]
-                       ]
-                     }
-                   ]
-                 }
-               ]
-             }
-    end
-
     test "queues key as atom", %{conn: conn} do
       conn =
         post(conn, "/api/pleroma/admin/config", %{
