@@ -7,6 +7,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
+  alias Pleroma.ConfigDB
   alias Pleroma.HTML
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
@@ -1881,11 +1882,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "To use configuration from database migrate your settings to database."
     end
 
-    test "with settings in db", %{conn: conn} do
+    test "with settings only in db", %{conn: conn} do
       config1 = insert(:config)
       config2 = insert(:config)
 
-      conn = get(conn, "/api/pleroma/admin/config")
+      conn = get(conn, "/api/pleroma/admin/config", %{"only_db" => true})
 
       %{
         "configs" => [
@@ -1895,6 +1896,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "value" => _
           },
           %{
+            "group" => ":pleroma",
             "key" => key2,
             "value" => _
           }
@@ -1903,6 +1905,45 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert key1 == config1.key
       assert key2 == config2.key
+    end
+
+    test "merged default setting with db settings", %{conn: conn} do
+      config1 = insert(:config)
+      config2 = insert(:config)
+
+      config3 =
+        insert(:config,
+          value: ConfigDB.to_binary(k1: :v1, k2: :v2)
+        )
+
+      conn = get(conn, "/api/pleroma/admin/config")
+
+      %{"configs" => configs} = json_response(conn, 200)
+
+      assert length(configs) > 3
+
+      received_configs =
+        Enum.filter(configs, fn %{"group" => group, "key" => key} ->
+          group == ":pleroma" and key in [config1.key, config2.key, config3.key]
+        end)
+
+      assert length(received_configs) == 3
+
+      db_keys =
+        config3.value
+        |> ConfigDB.from_binary()
+        |> Keyword.keys()
+        |> ConfigDB.convert()
+
+      Enum.each(received_configs, fn %{"value" => value, "db" => db} ->
+        assert db in [config1.key, config2.key, db_keys]
+
+        assert value in [
+                 ConfigDB.from_binary_with_convert(config1.value),
+                 ConfigDB.from_binary_with_convert(config2.value),
+                 ConfigDB.from_binary_with_convert(config3.value)
+               ]
+      end)
     end
   end
 
@@ -2831,9 +2872,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "transfer settings to DB and to file", %{conn: conn} do
-      on_exit(fn -> :ok = File.rm("config/test.exported_from_db.secret.exs") end)
       assert Repo.all(Pleroma.ConfigDB) == []
-      Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
+      Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
       assert Repo.aggregate(Pleroma.ConfigDB, :count, :id) > 0
 
       conn = get(conn, "/api/pleroma/admin/config/migrate_from_db")

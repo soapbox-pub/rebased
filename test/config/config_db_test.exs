@@ -15,8 +15,8 @@ defmodule Pleroma.ConfigDBTest do
   end
 
   test "create/1" do
-    {:ok, config} = ConfigDB.create(%{group: "pleroma", key: "some_key", value: "some_value"})
-    assert config == ConfigDB.get_by_params(%{group: "pleroma", key: "some_key"})
+    {:ok, config} = ConfigDB.create(%{group: ":pleroma", key: ":some_key", value: "some_value"})
+    assert config == ConfigDB.get_by_params(%{group: ":pleroma", key: ":some_key"})
   end
 
   test "update/1" do
@@ -24,6 +24,27 @@ defmodule Pleroma.ConfigDBTest do
     {:ok, updated} = ConfigDB.update(config, %{value: "some_value"})
     loaded = ConfigDB.get_by_params(%{group: config.group, key: config.key})
     assert loaded == updated
+  end
+
+  test "get_all_as_keyword/0" do
+    insert(:config)
+    insert(:config, group: ":quack", key: ":level", value: ConfigDB.to_binary(:info))
+    insert(:config, group: ":quack", key: ":meta", value: ConfigDB.to_binary([:none]))
+
+    insert(:config,
+      group: ":quack",
+      key: ":webhook_url",
+      value: ConfigDB.to_binary("https://hooks.slack.com/services/KEY/some_val")
+    )
+
+    assert [
+             pleroma: [{_, %{another: _, another_key: _}}],
+             quack: [
+               level: :info,
+               meta: [:none],
+               webhook_url: "https://hooks.slack.com/services/KEY/some_val"
+             ]
+           ] = ConfigDB.get_all_as_keyword()
   end
 
   describe "update_or_create/1" do

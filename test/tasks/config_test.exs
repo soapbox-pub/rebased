@@ -4,6 +4,9 @@
 
 defmodule Mix.Tasks.Pleroma.ConfigTest do
   use Pleroma.DataCase
+
+  import ExUnit.CaptureLog
+
   alias Pleroma.ConfigDB
   alias Pleroma.Repo
 
@@ -23,16 +26,17 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     Pleroma.Config.put(:configurable_from_database, true)
   end
 
+  test "warning if file with custom settings doesn't exist" do
+    assert capture_log(fn -> Mix.Tasks.Pleroma.Config.run(["migrate_to_db"]) end) =~
+             "to migrate settings, you must define custom settings in config/test.secret.exs"
+  end
+
   test "settings are migrated to db" do
     initial = Application.get_env(:quack, :level)
     on_exit(fn -> Application.put_env(:quack, :level, initial) end)
     assert Repo.all(ConfigDB) == []
 
-    Application.put_env(:pleroma, :first_setting, key: "value", key2: [Repo])
-    Application.put_env(:pleroma, :second_setting, key: "value2", key2: ["Activity"])
-    Application.put_env(:quack, :level, :info)
-
-    Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
+    Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
 
     config1 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":first_setting"})
     config2 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":second_setting"})

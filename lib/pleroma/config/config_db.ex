@@ -5,6 +5,7 @@
 defmodule Pleroma.ConfigDB do
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query
   import Pleroma.Web.Gettext
   alias __MODULE__
   alias Pleroma.Repo
@@ -17,6 +18,20 @@ defmodule Pleroma.ConfigDB do
     field(:value, :binary)
 
     timestamps()
+  end
+
+  @spec get_all_as_keyword() :: keyword()
+  def get_all_as_keyword do
+    ConfigDB
+    |> select([c], {c.group, c.key, c.value})
+    |> Repo.all()
+    |> Enum.reduce([], fn {group, key, value}, acc ->
+      group = ConfigDB.from_string(group)
+      key = ConfigDB.from_string(key)
+      value = from_binary(value)
+
+      Keyword.update(acc, group, [{key, value}], &Keyword.merge(&1, [{key, value}]))
+    end)
   end
 
   @spec get_by_params(map()) :: ConfigDB.t() | nil
@@ -136,6 +151,9 @@ defmodule Pleroma.ConfigDB do
       entity
     end
   end
+
+  @spec convert(any()) :: any()
+  def convert(entity), do: do_convert(entity)
 
   defp do_convert(entity) when is_list(entity) do
     for v <- entity, into: [], do: do_convert(v)

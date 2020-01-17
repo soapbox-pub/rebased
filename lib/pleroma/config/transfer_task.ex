@@ -38,10 +38,18 @@ defmodule Pleroma.Config.TransferTask do
       value = ConfigDB.from_binary(setting.value)
 
       if group != :phoenix and key != :serve_endpoints do
-        :ok = Application.put_env(group, key, value)
-      end
+        default = Pleroma.Config.Holder.config(group, key)
 
-      group
+        merged_value =
+          if can_be_merged?(default, value) do
+            DeepMerge.deep_merge(default, value)
+          else
+            value
+          end
+
+        :ok = Application.put_env(group, key, merged_value)
+        group
+      end
     rescue
       e ->
         Logger.warn(
@@ -61,4 +69,12 @@ defmodule Pleroma.Config.TransferTask do
       error -> Logger.warn(inspect(error))
     end
   end
+
+  defp can_be_merged?(val1, val2) when is_map(val1) and is_map(val2), do: true
+
+  defp can_be_merged?(val1, val2) when is_list(val1) and is_list(val2) do
+    Keyword.keyword?(val1) and Keyword.keyword?(val2)
+  end
+
+  defp can_be_merged?(_val1, _val2), do: false
 end

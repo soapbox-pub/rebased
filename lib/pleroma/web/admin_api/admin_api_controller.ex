@@ -797,7 +797,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def config_show(conn, _params) do
+  def config_show(conn, %{"only_db" => true}) do
     with :ok <- configurable_from_database(conn) do
       configs = Pleroma.Repo.all(ConfigDB)
 
@@ -810,6 +810,46 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         conn
         |> put_view(ConfigView)
         |> render("index.json", %{configs: configs})
+      end
+    end
+  end
+
+  def config_show(conn, _params) do
+    with :ok <- configurable_from_database(conn) do
+      configs = ConfigDB.get_all_as_keyword()
+
+      if configs == [] do
+        errors(
+          conn,
+          {:error, "To use configuration from database migrate your settings to database."}
+        )
+      else
+        merged =
+          Pleroma.Config.Holder.config()
+          |> DeepMerge.deep_merge(configs)
+          |> Enum.map(fn {group, value} ->
+            Enum.map(value, fn {key, value} ->
+              db =
+                if configs[group][key] do
+                  if Keyword.keyword?(value) do
+                    Keyword.keys(value) |> Enum.map(fn key -> ConfigDB.convert(key) end)
+                  else
+                    ConfigDB.convert(key)
+                  end
+                end
+
+              setting = %{
+                group: ConfigDB.convert(group),
+                key: ConfigDB.convert(key),
+                value: ConfigDB.convert(value)
+              }
+
+              if db, do: Map.put(setting, :db, db), else: setting
+            end)
+          end)
+          |> List.flatten()
+
+        json(conn, %{configs: merged})
       end
     end
   end

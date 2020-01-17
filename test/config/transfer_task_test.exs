@@ -47,6 +47,35 @@ defmodule Pleroma.Config.TransferTaskTest do
     end)
   end
 
+  test "transfer config values for 1 group and some keys" do
+    level = Application.get_env(:quack, :level)
+    meta = Application.get_env(:quack, :meta)
+
+    ConfigDB.create(%{
+      group: ":quack",
+      key: ":level",
+      value: :info
+    })
+
+    ConfigDB.create(%{
+      group: ":quack",
+      key: ":meta",
+      value: [:none]
+    })
+
+    Pleroma.Config.TransferTask.start_link([])
+
+    assert Application.get_env(:quack, :level) == :info
+    assert Application.get_env(:quack, :meta) == [:none]
+    default = Pleroma.Config.Holder.config(:quack, :webhook_url)
+    assert Application.get_env(:quack, :webhook_url) == default
+
+    on_exit(fn ->
+      Application.put_env(:quack, :level, level)
+      Application.put_env(:quack, :meta, meta)
+    end)
+  end
+
   test "non existing atom" do
     ConfigDB.create(%{
       group: ":pleroma",

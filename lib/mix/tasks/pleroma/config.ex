@@ -4,42 +4,25 @@
 
 defmodule Mix.Tasks.Pleroma.Config do
   use Mix.Task
+
   import Mix.Pleroma
+
   alias Pleroma.ConfigDB
   alias Pleroma.Repo
+
+  require Logger
+
   @shortdoc "Manages the location of the config"
   @moduledoc File.read!("docs/administration/CLI_tasks/config.md")
-
-  @groups [
-    :pleroma,
-    :logger,
-    :quack,
-    :mime,
-    :tesla,
-    :phoenix,
-    :cors_plug,
-    :auto_linker,
-    :esshd,
-    :ueberauth,
-    :http_signatures,
-    :web_push_encryption,
-    :joken
-  ]
 
   def run(["migrate_to_db"]) do
     # we want to save original logger level
     start_pleroma(false)
-
-    if Pleroma.Config.get([:configurable_from_database]) do
-      Enum.each(@groups, &load_and_create(&1))
-    else
-      Mix.shell().info(
-        "Migration is not allowed by config. You can change this behavior in instance settings."
-      )
-    end
+    migrate_to_db()
   end
 
   def run(["migrate_from_db" | options]) do
+    # TODO: add support for releases
     start_pleroma()
 
     {opts, _} =
@@ -72,10 +55,36 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  defp load_and_create(group) do
-    group
-    |> Application.get_all_env()
-    |> Enum.reject(fn {k, _v} ->
+  @spec migrate_to_db(Path.t() | nil) :: any()
+  def migrate_to_db(file_path \\ nil) do
+    if Pleroma.Config.get([:configurable_from_database]) do
+      # TODO: add support for releases
+      config_file = file_path || "config/#{Pleroma.Config.get(:env)}.secret.exs"
+      do_migrate_to_db(config_file)
+    else
+      Mix.shell().info(
+        "migration is not allowed by config. You can change this behavior in instance settings."
+      )
+    end
+  end
+
+  defp do_migrate_to_db(config_file) do
+    if File.exists?(config_file) do
+      {custom_config, _paths} =
+        if Code.ensure_loaded?(Config.Reader),
+          do: Config.Reader.read_imports!(config_file),
+          else: Mix.Config.eval!(config_file)
+
+      custom_config
+      |> Keyword.keys()
+      |> Enum.each(&create(&1, custom_config[&1]))
+    else
+      Logger.warn("to migrate settings, you must define custom settings in #{config_file}")
+    end
+  end
+
+  defp create(group, settings) do
+    Enum.reject(settings, fn {k, _v} ->
       k in [Pleroma.Repo, Pleroma.Web.Endpoint, :env, :configurable_from_database] or
         (group == :phoenix and k == :serve_endpoints)
     end)
