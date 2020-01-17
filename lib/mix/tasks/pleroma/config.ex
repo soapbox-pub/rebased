@@ -17,7 +17,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   def run(["migrate_to_db"]) do
     # we want to save original logger level
-    start_pleroma(false)
+    start_pleroma()
     migrate_to_db()
   end
 

@@ -4,12 +4,11 @@
 
 defmodule Mix.Pleroma do
   @doc "Common functions to be reused in mix tasks"
-  def start_pleroma(change_logger_level \\ true) do
+  def start_pleroma do
     Application.put_env(:phoenix, :serve_endpoints, false, persistent: true)
 
-    if Pleroma.Config.get(:env) != :test and change_logger_level do
-      require Logger
-      Logger.configure(:console, level: :debug)
+    if Pleroma.Config.get(:env) != :test do
+      Application.put_env(:logger, :console, level: :debug)
     end
 
     {:ok, _} = Application.ensure_all_started(:pleroma)
