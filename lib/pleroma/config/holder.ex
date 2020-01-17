@@ -12,8 +12,8 @@ defmodule Pleroma.Config.Loader do
     # support for Elixir less than 1.9
     @spec load() :: map()
     def load do
-      config = Mix.Config.eval!("config/config.exs")
-      env_config = Mix.Config.eval!("config/#{Mix.env()}.exs")
+      {config, _paths} = Mix.Config.eval!("config/config.exs")
+      {env_config, _paths} = Mix.Config.eval!("config/#{Mix.env()}.exs")
 
       Mix.Config.merge(config, env_config)
     end
