@@ -9,7 +9,7 @@ defmodule Mix.Pleroma do
 
     if Pleroma.Config.get(:env) != :test and change_logger_level do
       require Logger
-      Logger.configure(level: :debug)
+      Logger.configure(:console, level: :debug)
     end
 
     {:ok, _} = Application.ensure_all_started(:pleroma)
