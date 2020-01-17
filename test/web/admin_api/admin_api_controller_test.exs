@@ -1936,7 +1936,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> ConfigDB.convert()
 
       Enum.each(received_configs, fn %{"value" => value, "db" => db} ->
-        assert db in [config1.key, config2.key, db_keys]
+        assert db in [[config1.key], [config2.key], db_keys]
 
         assert value in [
                  ConfigDB.from_binary_with_convert(config1.value),
@@ -1985,7 +1985,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             %{group: ":pleroma", key: ":key1", value: "value1"},
             %{
               group: ":ueberauth",
-              key: "Ueberauth.Strategy.Twitter.OAuth",
+              key: "Ueberauth",
               value: [%{"tuple" => [":consumer_secret", "aaaa"]}]
             },
             %{
@@ -2025,12 +2025,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "group" => ":pleroma",
                    "key" => ":key1",
-                   "value" => "value1"
+                   "value" => "value1",
+                   "db" => [":key1"]
                  },
                  %{
                    "group" => ":ueberauth",
-                   "key" => "Ueberauth.Strategy.Twitter.OAuth",
-                   "value" => [%{"tuple" => [":consumer_secret", "aaaa"]}]
+                   "key" => "Ueberauth",
+                   "value" => [%{"tuple" => [":consumer_secret", "aaaa"]}],
+                   "db" => [":consumer_secret"]
                  },
                  %{
                    "group" => ":pleroma",
@@ -2041,7 +2043,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                        %{":nested_22" => "nested_value222"},
                        %{":nested_33" => %{":nested_44" => "nested_444"}}
                      ]
-                   }
+                   },
+                   "db" => [":key2"]
                  },
                  %{
                    "group" => ":pleroma",
@@ -2049,17 +2052,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "value" => [
                      %{"nested_3" => ":nested_3", "nested_33" => "nested_33"},
                      %{"nested_4" => true}
-                   ]
+                   ],
+                   "db" => [":key3"]
                  },
                  %{
                    "group" => ":pleroma",
                    "key" => ":key4",
-                   "value" => %{"endpoint" => "https://example.com", ":nested_5" => ":upload"}
+                   "value" => %{"endpoint" => "https://example.com", ":nested_5" => ":upload"},
+                   "db" => [":key4"]
                  },
                  %{
                    "group" => ":idna",
                    "key" => ":key5",
-                   "value" => %{"tuple" => ["string", "Pleroma.Captcha.NotReal", []]}
+                   "value" => %{"tuple" => ["string", "Pleroma.Captcha.NotReal", []]},
+                   "db" => [":key5"]
                  }
                ]
              }
@@ -2121,12 +2127,23 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert json_response(conn, 200) == %{
                "configs" => [
-                 %{"group" => ":quack", "key" => ":level", "value" => ":info"},
-                 %{"group" => ":quack", "key" => ":meta", "value" => [":none"]},
+                 %{
+                   "group" => ":quack",
+                   "key" => ":level",
+                   "value" => ":info",
+                   "db" => [":level"]
+                 },
+                 %{
+                   "group" => ":quack",
+                   "key" => ":meta",
+                   "value" => [":none"],
+                   "db" => [":meta"]
+                 },
                  %{
                    "group" => ":quack",
                    "key" => ":webhook_url",
-                   "value" => "https://hooks.slack.com/services/KEY"
+                   "value" => "https://hooks.slack.com/services/KEY",
+                   "db" => [":webhook_url"]
                  }
                ]
              }
@@ -2155,7 +2172,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                      %{"tuple" => [":key1", 1]},
                      %{"tuple" => [":key2", 2]},
                      %{"tuple" => [":key3", 3]}
-                   ]
+                   ],
+                   "db" => [":key1", ":key2", ":key3"]
                  }
                ]
              }
@@ -2205,7 +2223,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                          ]
                        ]
                      }
-                   ]
+                   ],
+                   "db" => [":key1", ":key3", ":key2"]
                  }
                ]
              }
@@ -2242,7 +2261,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                          [%{"tuple" => [":versions", [":tlsv1", ":tlsv1.1", ":tlsv1.2"]]}]
                        ]
                      }
-                   ]
+                   ],
+                   "db" => [":ssl_options"]
                  }
                ]
              }
@@ -2282,7 +2302,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "value" => [
                      ":console",
                      %{"tuple" => ["ExSyslogger", ":ex_syslogger"]}
-                   ]
+                   ],
+                   "db" => [":backends"]
                  }
                ]
              }
@@ -2318,7 +2339,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "group" => ":tesla",
                    "key" => ":adapter",
-                   "value" => "Tesla.Adapter.Httpc"
+                   "value" => "Tesla.Adapter.Httpc",
+                   "db" => [":adapter"]
                  }
                ]
              }
@@ -2351,7 +2373,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "group" => ":pleroma",
                    "key" => config1.key,
-                   "value" => "another_value"
+                   "value" => "another_value",
+                   "db" => [":keyaa1"]
                  }
                ]
              }
@@ -2384,7 +2407,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                 %{"tuple" => [":name", "Pleroma"]}
               ]
             },
-            %{"group" => ":tesla", "key" => ":adapter", "value" => "Tesla.Adapter.Httpc"}
+            %{
+              "group" => ":tesla",
+              "key" => ":adapter",
+              "value" => "Tesla.Adapter.Httpc"
+            }
           ]
         })
 
@@ -2408,9 +2435,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                      %{"tuple" => [":regex3", "~r/https:\\/\\/example.com/i"]},
                      %{"tuple" => [":regex4", "~r/https:\\/\\/example.com/s"]},
                      %{"tuple" => [":name", "Pleroma"]}
+                   ],
+                   "db" => [
+                     ":enabled",
+                     ":method",
+                     ":seconds_valid",
+                     ":path",
+                     ":key1",
+                     ":partial_chain",
+                     ":regex1",
+                     ":regex2",
+                     ":regex3",
+                     ":regex4",
+                     ":name"
                    ]
                  },
-                 %{"group" => ":tesla", "key" => ":adapter", "value" => "Tesla.Adapter.Httpc"}
+                 %{
+                   "group" => ":tesla",
+                   "key" => ":adapter",
+                   "value" => "Tesla.Adapter.Httpc",
+                   "db" => [":adapter"]
+                 }
                ]
              }
     end
@@ -2540,7 +2585,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                          ]
                        ]
                      }
-                   ]
+                   ],
+                   "db" => [":http"]
                  }
                ]
              }
@@ -2602,7 +2648,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                            }
                          ]
                        }
-                     ]
+                     ],
+                     "db" => [":key2", ":key3"]
                    }
                  ]
                }
@@ -2626,7 +2673,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    %{
                      "group" => ":pleroma",
                      "key" => ":key1",
-                     "value" => %{"key" => "some_val"}
+                     "value" => %{"key" => "some_val"},
+                     "db" => [":key1"]
                    }
                  ]
                }
@@ -2665,6 +2713,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                      %{"tuple" => [":transmogrifier", 20]},
                      %{"tuple" => [":scheduled_activities", 10]},
                      %{"tuple" => [":background", 5]}
+                   ],
+                   "db" => [
+                     ":federator_incoming",
+                     ":federator_outgoing",
+                     ":web_push",
+                     ":mailer",
+                     ":transmogrifier",
+                     ":scheduled_activities",
+                     ":background"
                    ]
                  }
                ]
@@ -2695,7 +2752,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "group" => ":pleroma",
                    "key" => ":keyaa1",
-                   "value" => [%{"tuple" => [":subkey2", "val2"]}]
+                   "value" => [%{"tuple" => [":subkey2", "val2"]}],
+                   "db" => [":subkey2"]
                  }
                ]
              }
@@ -2724,7 +2782,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "value" => [
                      %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]},
                      %{"tuple" => [":send_user_agent", false]}
-                   ]
+                   ],
+                   "db" => [":proxy_url", ":send_user_agent"]
                  }
                ]
              }
@@ -2753,7 +2812,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "value" => [
                      %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]},
                      %{"tuple" => [":send_user_agent", false]}
-                   ]
+                   ],
+                   "db" => [":proxy_url", ":send_user_agent"]
                  }
                ]
              }
@@ -2782,7 +2842,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "value" => [
                      %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]},
                      %{"tuple" => [":send_user_agent", false]}
-                   ]
+                   ],
+                   "db" => [":proxy_url", ":send_user_agent"]
                  }
                ]
              }

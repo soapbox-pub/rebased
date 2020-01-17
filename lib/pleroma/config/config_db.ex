@@ -16,6 +16,7 @@ defmodule Pleroma.ConfigDB do
     field(:key, :string)
     field(:group, :string)
     field(:value, :binary)
+    field(:db, {:array, :string}, virtual: true, default: [])
 
     timestamps()
   end
@@ -59,6 +60,22 @@ defmodule Pleroma.ConfigDB do
     config
     |> changeset(%{value: value})
     |> Repo.update()
+  end
+
+  @spec get_db_keys(ConfigDB.t()) :: [String.t()]
+  def get_db_keys(%ConfigDB{} = config) do
+    config.value
+    |> ConfigDB.from_binary()
+    |> get_db_keys(config.key)
+  end
+
+  @spec get_db_keys(keyword() | any()) :: [String.t()]
+  def get_db_keys(value, key) do
+    if Keyword.keyword?(value) do
+      value |> Keyword.keys() |> Enum.map(&convert(&1))
+    else
+      [convert(key)]
+    end
   end
 
   @full_key_update [
@@ -317,7 +334,7 @@ defmodule Pleroma.ConfigDB do
 
   @spec is_module_name?(String.t()) :: boolean()
   def is_module_name?(string) do
-    Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Quack)\./, string) or
+    Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Quack|Ueberauth)\./, string) or
       string in ["Oban", "Ueberauth", "ExSyslogger"]
   end
 end

@@ -827,15 +827,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         merged =
           Pleroma.Config.Holder.config()
           |> DeepMerge.deep_merge(configs)
-          |> Enum.map(fn {group, value} ->
-            Enum.map(value, fn {key, value} ->
+          |> Enum.map(fn {group, values} ->
+            Enum.map(values, fn {key, value} ->
               db =
                 if configs[group][key] do
-                  if Keyword.keyword?(value) do
-                    Keyword.keys(value) |> Enum.map(fn key -> ConfigDB.convert(key) end)
-                  else
-                    ConfigDB.convert(key)
-                  end
+                  ConfigDB.get_db_keys(value, key)
                 end
 
               setting = %{
@@ -871,6 +867,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
             end
         end)
         |> Enum.reject(&is_nil(&1))
+        |> Enum.map(fn config ->
+          Map.put(config, :db, ConfigDB.get_db_keys(config))
+        end)
 
       Pleroma.Config.TransferTask.load_and_update_env()
 

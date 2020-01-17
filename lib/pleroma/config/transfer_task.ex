@@ -66,7 +66,9 @@ defmodule Pleroma.Config.TransferTask do
     rescue
       e ->
         Logger.warn(
-          "updating env causes error, key: #{inspect(setting.key)}, error: #{inspect(e)}"
+          "updating env causes error, group: #{inspect(setting.group)}, key: #{
+            inspect(setting.key)
+          }, value: #{inspect(ConfigDB.from_binary(setting.value))}, error: #{inspect(e)}"
         )
 
         nil
