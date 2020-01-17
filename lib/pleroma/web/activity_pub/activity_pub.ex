@@ -613,7 +613,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   @spec unblock(User.t(), User.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t()} | {:error, any()}
+          {:ok, Activity.t()} | {:error, any()} | nil
   def unblock(blocker, blocked, activity_id \\ nil, local \\ true) do
     with {:ok, result} <-
            Repo.transaction(fn -> do_unblock(blocker, blocked, activity_id, local) end) do
