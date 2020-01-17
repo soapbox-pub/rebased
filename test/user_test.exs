@@ -1286,23 +1286,35 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  test "auth_active?/1 works correctly" do
-    Pleroma.Config.put([:instance, :account_activation_required], true)
+  describe "account_status/1" do
+    clear_config([:instance, :account_activation_required])
 
-    local_user = insert(:user, local: true, confirmation_pending: true)
-    confirmed_user = insert(:user, local: true, confirmation_pending: false)
-    remote_user = insert(:user, local: false)
+    test "return confirmation_pending for unconfirm user" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+      user = insert(:user, confirmation_pending: true)
+      assert User.account_status(user) == :confirmation_pending
+    end
 
-    refute User.auth_active?(local_user)
-    assert User.auth_active?(confirmed_user)
-    assert User.auth_active?(remote_user)
+    test "return active for confirmed user" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+      user = insert(:user, confirmation_pending: false)
+      assert User.account_status(user) == :active
+    end
 
-    # also shows unactive for deactivated users
+    test "return active for remote user" do
+      user = insert(:user, local: false)
+      assert User.account_status(user) == :active
+    end
 
-    deactivated_but_confirmed =
-      insert(:user, local: true, confirmation_pending: false, deactivated: true)
+    test "returns :password_reset_pending for user with reset password" do
+      user = insert(:user, password_reset_pending: true)
+      assert User.account_status(user) == :password_reset_pending
+    end
 
-    refute User.auth_active?(deactivated_but_confirmed)
+    test "returns :deactivated for deactivated user" do
+      user = insert(:user, local: true, confirmation_pending: false, deactivated: true)
+      assert User.account_status(user) == :deactivated
+    end
   end
 
   describe "superuser?/1" do
