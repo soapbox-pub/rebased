@@ -68,12 +68,15 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
+  if Code.ensure_loaded?(Config.Reader) do
+    defp read_file(config_file), do: Config.Reader.read_imports!(config_file)
+  else
+    defp read_file(config_file), do: Mix.Config.eval!(config_file)
+  end
+
   defp do_migrate_to_db(config_file) do
     if File.exists?(config_file) do
-      {custom_config, _paths} =
-        if Code.ensure_loaded?(Config.Reader),
-          do: Config.Reader.read_imports!(config_file),
-          else: Mix.Config.eval!(config_file)
+      {custom_config, _paths} = read_file(config_file)
 
       custom_config
       |> Keyword.keys()
