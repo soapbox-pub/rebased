@@ -5,8 +5,6 @@
 defmodule Mix.Tasks.Pleroma.ConfigTest do
   use Pleroma.DataCase
 
-  import ExUnit.CaptureLog
-
   alias Pleroma.ConfigDB
   alias Pleroma.Repo
 
@@ -26,9 +24,14 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     Pleroma.Config.put(:configurable_from_database, true)
   end
 
-  test "warning if file with custom settings doesn't exist" do
-    assert capture_log(fn -> Mix.Tasks.Pleroma.Config.run(["migrate_to_db"]) end) =~
-             "to migrate settings, you must define custom settings in config/test.secret.exs"
+  test "error if file with custom settings doesn't exist" do
+    Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
+
+    assert_receive {:mix_shell, :info,
+                    [
+                      "To migrate settings, you must define custom settings in config/test.secret.exs."
+                    ]},
+                   15
   end
 
   test "settings are migrated to db" do
@@ -159,8 +162,15 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       assert File.exists?(temp_file)
       {:ok, file} = File.read(temp_file)
 
+      header =
+        if Code.ensure_loaded?(Config.Reader) do
+          "import Config"
+        else
+          "use Mix.Config"
+        end
+
       assert file ==
-               "use Mix.Config\n\nconfig :pleroma, :instance,\n  name: \"Pleroma\",\n  email: \"example@example.com\",\n  notify_email: \"noreply@example.com\",\n  description: \"A Pleroma instance, an alternative fediverse server\",\n  limit: 5000,\n  chat_limit: 5000,\n  remote_limit: 100_000,\n  upload_limit: 16_000_000,\n  avatar_upload_limit: 2_000_000,\n  background_upload_limit: 4_000_000,\n  banner_upload_limit: 4_000_000,\n  poll_limits: %{\n    max_expiration: 31_536_000,\n    max_option_chars: 200,\n    max_options: 20,\n    min_expiration: 0\n  },\n  registrations_open: true,\n  federating: true,\n  federation_incoming_replies_max_depth: 100,\n  federation_reachability_timeout_days: 7,\n  federation_publisher_modules: [Pleroma.Web.ActivityPub.Publisher],\n  allow_relay: true,\n  rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,\n  public: true,\n  quarantined_instances: [],\n  managed_config: true,\n  static_dir: \"instance/static/\",\n  allowed_post_formats: [\"text/plain\", \"text/html\", \"text/markdown\", \"text/bbcode\"],\n  mrf_transparency: true,\n  mrf_transparency_exclusions: [],\n  autofollowed_nicknames: [],\n  max_pinned_statuses: 1,\n  no_attachment_links: true,\n  welcome_user_nickname: nil,\n  welcome_message: nil,\n  max_report_comment_size: 1000,\n  safe_dm_mentions: false,\n  healthcheck: false,\n  remote_post_retention_days: 90,\n  skip_thread_containment: true,\n  limit_to_local_content: :unauthenticated,\n  user_bio_length: 5000,\n  user_name_length: 100,\n  max_account_fields: 10,\n  max_remote_account_fields: 20,\n  account_field_name_length: 512,\n  account_field_value_length: 2048,\n  external_user_synchronization: true,\n  extended_nickname_format: true,\n  multi_factor_authentication: [\n    totp: [digits: 6, period: 30],\n    backup_codes: [number: 2, length: 6]\n  ]\n"
+               "#{header}\n\nconfig :pleroma, :instance,\n  name: \"Pleroma\",\n  email: \"example@example.com\",\n  notify_email: \"noreply@example.com\",\n  description: \"A Pleroma instance, an alternative fediverse server\",\n  limit: 5000,\n  chat_limit: 5000,\n  remote_limit: 100_000,\n  upload_limit: 16_000_000,\n  avatar_upload_limit: 2_000_000,\n  background_upload_limit: 4_000_000,\n  banner_upload_limit: 4_000_000,\n  poll_limits: %{\n    max_expiration: 31_536_000,\n    max_option_chars: 200,\n    max_options: 20,\n    min_expiration: 0\n  },\n  registrations_open: true,\n  federating: true,\n  federation_incoming_replies_max_depth: 100,\n  federation_reachability_timeout_days: 7,\n  federation_publisher_modules: [Pleroma.Web.ActivityPub.Publisher],\n  allow_relay: true,\n  rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,\n  public: true,\n  quarantined_instances: [],\n  managed_config: true,\n  static_dir: \"instance/static/\",\n  allowed_post_formats: [\"text/plain\", \"text/html\", \"text/markdown\", \"text/bbcode\"],\n  mrf_transparency: true,\n  mrf_transparency_exclusions: [],\n  autofollowed_nicknames: [],\n  max_pinned_statuses: 1,\n  no_attachment_links: true,\n  welcome_user_nickname: nil,\n  welcome_message: nil,\n  max_report_comment_size: 1000,\n  safe_dm_mentions: false,\n  healthcheck: false,\n  remote_post_retention_days: 90,\n  skip_thread_containment: true,\n  limit_to_local_content: :unauthenticated,\n  user_bio_length: 5000,\n  user_name_length: 100,\n  max_account_fields: 10,\n  max_remote_account_fields: 20,\n  account_field_name_length: 512,\n  account_field_value_length: 2048,\n  external_user_synchronization: true,\n  extended_nickname_format: true,\n  multi_factor_authentication: [\n    totp: [digits: 6, period: 30],\n    backup_codes: [number: 2, length: 6]\n  ]\n"
     end
   end
 end

@@ -10,8 +10,6 @@ defmodule Mix.Tasks.Pleroma.Config do
   alias Pleroma.ConfigDB
   alias Pleroma.Repo
 
-  require Logger
-
   @shortdoc "Manages the location of the config"
   @moduledoc File.read!("docs/administration/CLI_tasks/config.md")
 
@@ -32,10 +30,10 @@ defmodule Mix.Tasks.Pleroma.Config do
 
     with {:active?, true} <-
            {:active?, Pleroma.Config.get([:configurable_from_database])},
-         env_path when is_binary(env_path) <- opts[:env],
-         config_path <- "config/#{env_path}.exported_from_db.secret.exs",
+         env when is_binary(env) <- opts[:env] || "prod",
+         config_path <- config_path(env),
          {:ok, file} <- File.open(config_path, [:write, :utf8]) do
-      IO.write(file, "use Mix.Config\r\n")
+      IO.write(file, config_header())
 
       ConfigDB
       |> Repo.all()
@@ -45,31 +43,50 @@ defmodule Mix.Tasks.Pleroma.Config do
       System.cmd("mix", ["format", config_path])
     else
       {:active?, false} ->
-        Mix.shell().info(
-          "migration is not allowed by config. You can change this behavior in instance settings."
+        shell_info(
+          "Migration is not allowed by config. You can change this behavior in instance settings."
         )
 
       error ->
-        Mix.shell().info("error occuried while opening file. #{inspect(error)}")
+        shell_info("Error occuried while opening file. #{inspect(error)}")
     end
+  end
+
+  defp config_path(env) do
+    path =
+      if Pleroma.Config.get(:release) do
+        :config_path
+        |> Pleroma.Config.get()
+        |> Path.dirname()
+      else
+        "config"
+      end
+
+    Path.join(path, "#{env}.exported_from_db.secret.exs")
   end
 
   @spec migrate_to_db(Path.t() | nil) :: any()
   def migrate_to_db(file_path \\ nil) do
     if Pleroma.Config.get([:configurable_from_database]) do
-      # TODO: add support for releases
-      config_file = file_path || "config/#{Pleroma.Config.get(:env)}.secret.exs"
+      user_config_file =
+        if Pleroma.Config.get(:release),
+          do: Pleroma.Config.get(:config_path),
+          else: "config/#{Pleroma.Config.get(:env)}.secret.exs"
+
+      config_file = file_path || user_config_file
       do_migrate_to_db(config_file)
     else
-      Mix.shell().info(
-        "migration is not allowed by config. You can change this behavior in instance settings."
+      shell_info(
+        "Migration is not allowed by config. You can change this behavior in instance settings."
       )
     end
   end
 
   if Code.ensure_loaded?(Config.Reader) do
+    defp config_header, do: "import Config\r\n\r\n"
     defp read_file(config_file), do: Config.Reader.read_imports!(config_file)
   else
+    defp config_header, do: "use Mix.Config\r\n\r\n"
     defp read_file(config_file), do: Mix.Config.eval!(config_file)
   end
 
@@ -81,7 +98,7 @@ defmodule Mix.Tasks.Pleroma.Config do
       |> Keyword.keys()
       |> Enum.each(&create(&1, custom_config[&1]))
     else
-      Logger.warn("to migrate settings, you must define custom settings in #{config_file}")
+      shell_info("To migrate settings, you must define custom settings in #{config_file}.")
     end
   end
 
@@ -94,10 +111,10 @@ defmodule Mix.Tasks.Pleroma.Config do
       key = inspect(key)
       {:ok, _} = ConfigDB.update_or_create(%{group: inspect(group), key: key, value: value})
 
-      Mix.shell().info("settings for key #{key} migrated.")
+      shell_info("Settings for key #{key} migrated.")
     end)
 
-    Mix.shell().info("settings for group :#{group} migrated.")
+    shell_info("Settings for group :#{group} migrated.")
   end
 
   defp write_to_file_with_deletion(config, file, with_deletion) do
@@ -110,7 +127,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
     if with_deletion do
       {:ok, _} = Repo.delete(config)
-      Mix.shell().info("#{config.key} deleted from DB.")
+      shell_info("#{config.key} deleted from DB.")
     end
   end
 end

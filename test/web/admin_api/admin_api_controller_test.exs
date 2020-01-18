@@ -1965,13 +1965,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> get("/api/pleroma/admin/config")
         |> json_response(200)
 
-      [%{"key" => ":emoji", "value" => emoji_val}, %{"key" => ":assets", "value" => assets_val}] =
+      vals =
         Enum.filter(configs, fn %{"group" => group, "key" => key} ->
           group == ":pleroma" and key in [config1.key, config2.key]
         end)
 
-      emoji_val = ConfigDB.transform_with_out_binary(emoji_val)
-      assets_val = ConfigDB.transform_with_out_binary(assets_val)
+      emoji = Enum.find(vals, fn %{"key" => key} -> key == ":emoji" end)
+      assets = Enum.find(vals, fn %{"key" => key} -> key == ":assets" end)
+
+      emoji_val = ConfigDB.transform_with_out_binary(emoji["value"])
+      assets_val = ConfigDB.transform_with_out_binary(assets["value"])
 
       assert emoji_val[:groups] == [a: 1, b: 2]
       assert assets_val[:mascots] == [a: 1, b: 2]

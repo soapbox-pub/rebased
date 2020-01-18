@@ -1,36 +1,5 @@
-defmodule Pleroma.Config.Loader do
-  # TODO: add support for releases
-  if Code.ensure_loaded?(Config.Reader) do
-    @spec load() :: map()
-    def load do
-      config = load("config/config.exs")
-      env_config = load("config/#{Mix.env()}.exs")
-
-      Config.Reader.merge(config, env_config)
-    end
-
-    @spec load(Path.t()) :: keyword()
-    def load(path), do: Config.Reader.read!(path)
-  else
-    # support for Elixir less than 1.9
-    @spec load() :: map()
-    def load do
-      config = load("config/config.exs")
-      env_config = load("config/#{Mix.env()}.exs")
-
-      Mix.Config.merge(config, env_config)
-    end
-
-    @spec load(Path.t()) :: keyword()
-    def load(path) do
-      {config, _paths} = Mix.Config.eval!(path)
-      config
-    end
-  end
-end
-
 defmodule Pleroma.Config.Holder do
-  @config Pleroma.Config.Loader.load()
+  @config Pleroma.Config.Loader.load_and_merge()
 
   @spec config() :: keyword()
   def config do
