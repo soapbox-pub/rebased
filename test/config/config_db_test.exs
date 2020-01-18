@@ -155,6 +155,40 @@ defmodule Pleroma.ConfigDBTest do
 
       assert ConfigDB.from_binary(updated.value) == Tesla.Adapter.Httpc
     end
+
+    test "only full update for some subkeys" do
+      config1 =
+        insert(:config,
+          key: ":emoji",
+          value: ConfigDB.to_binary(groups: [a: 1, b: 2], key: [a: 1])
+        )
+
+      config2 =
+        insert(:config,
+          key: ":assets",
+          value: ConfigDB.to_binary(mascots: [a: 1, b: 2], key: [a: 1])
+        )
+
+      {:ok, _config} =
+        ConfigDB.update_or_create(%{
+          group: config1.group,
+          key: config1.key,
+          value: [groups: [c: 3, d: 4], key: [b: 2]]
+        })
+
+      {:ok, _config} =
+        ConfigDB.update_or_create(%{
+          group: config2.group,
+          key: config2.key,
+          value: [mascots: [c: 3, d: 4], key: [b: 2]]
+        })
+
+      updated1 = ConfigDB.get_by_params(%{group: config1.group, key: config1.key})
+      updated2 = ConfigDB.get_by_params(%{group: config2.group, key: config2.key})
+
+      assert ConfigDB.from_binary(updated1.value) == [groups: [c: 3, d: 4], key: [a: 1, b: 2]]
+      assert ConfigDB.from_binary(updated2.value) == [mascots: [c: 3, d: 4], key: [a: 1, b: 2]]
+    end
   end
 
   test "delete/1" do

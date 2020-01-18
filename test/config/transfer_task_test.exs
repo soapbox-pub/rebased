@@ -5,6 +5,7 @@
 defmodule Pleroma.Config.TransferTaskTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Config.TransferTask
   alias Pleroma.ConfigDB
 
   clear_config(:configurable_from_database) do
@@ -34,7 +35,7 @@ defmodule Pleroma.Config.TransferTaskTest do
       value: [:test_value1, :test_value2]
     })
 
-    Pleroma.Config.TransferTask.start_link([])
+    TransferTask.start_link([])
 
     assert Application.get_env(:pleroma, :test_key) == [live: 2, com: 3]
     assert Application.get_env(:idna, :test_key) == [live: 15, com: 35]
@@ -63,7 +64,7 @@ defmodule Pleroma.Config.TransferTaskTest do
       value: [:none]
     })
 
-    Pleroma.Config.TransferTask.start_link([])
+    TransferTask.start_link([])
 
     assert Application.get_env(:quack, :level) == :info
     assert Application.get_env(:quack, :meta) == [:none]
@@ -76,6 +77,35 @@ defmodule Pleroma.Config.TransferTaskTest do
     end)
   end
 
+  test "transfer config values with full subkey update" do
+    emoji = Application.get_env(:pleroma, :emoji)
+    assets = Application.get_env(:pleroma, :assets)
+
+    ConfigDB.create(%{
+      group: ":pleroma",
+      key: ":emoji",
+      value: [groups: [a: 1, b: 2]]
+    })
+
+    ConfigDB.create(%{
+      group: ":pleroma",
+      key: ":assets",
+      value: [mascots: [a: 1, b: 2]]
+    })
+
+    TransferTask.start_link([])
+
+    emoji_env = Application.get_env(:pleroma, :emoji)
+    assert emoji_env[:groups] == [a: 1, b: 2]
+    assets_env = Application.get_env(:pleroma, :assets)
+    assert assets_env[:mascots] == [a: 1, b: 2]
+
+    on_exit(fn ->
+      Application.put_env(:pleroma, :emoji, emoji)
+      Application.put_env(:pleroma, :assets, assets)
+    end)
+  end
+
   test "non existing atom" do
     ConfigDB.create(%{
       group: ":pleroma",
@@ -84,7 +114,7 @@ defmodule Pleroma.Config.TransferTaskTest do
     })
 
     assert ExUnit.CaptureLog.capture_log(fn ->
-             Pleroma.Config.TransferTask.start_link([])
+             TransferTask.start_link([])
            end) =~
              "updating env causes error, group: \":pleroma\", key: \":undefined_atom_key\", value: [live: 2, com: 3], error: %ArgumentError{message: \"argument error\"}"
   end

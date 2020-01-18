@@ -112,7 +112,6 @@ config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   pack_extensions: [".png", ".gif"],
   groups: [
-    # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
     Custom: ["/emoji/*.png", "/emoji/**/*.png"]
   ],
   default_manifest: "https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json",

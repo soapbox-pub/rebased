@@ -69,7 +69,7 @@ defmodule Pleroma.ConfigDB do
     |> get_db_keys(config.key)
   end
 
-  @spec get_db_keys(keyword() | any()) :: [String.t()]
+  @spec get_db_keys(keyword(), any()) :: [String.t()]
   def get_db_keys(value, key) do
     if Keyword.keyword?(value) do
       value |> Keyword.keys() |> Enum.map(&convert(&1))
@@ -78,9 +78,57 @@ defmodule Pleroma.ConfigDB do
     end
   end
 
+  @full_subkey_update [
+    {:pleroma, :assets, :mascots},
+    {:pleroma, :emoji, :groups},
+    {:pleroma, :workers, :retries},
+    {:pleroma, :mrf_subchain, :match_actor},
+    {:pleroma, :mrf_keyword, :replace}
+  ]
+
+  @spec deep_merge(atom(), atom(), keyword(), keyword()) :: keyword()
+  def deep_merge(group, key, old_value, new_value) do
+    old_keys =
+      old_value
+      |> Keyword.keys()
+      |> MapSet.new()
+
+    new_keys =
+      new_value
+      |> Keyword.keys()
+      |> MapSet.new()
+
+    intersect_keys = old_keys |> MapSet.intersection(new_keys) |> MapSet.to_list()
+
+    subkeys = sub_key_full_update(group, key, intersect_keys)
+
+    merged_value = DeepMerge.deep_merge(old_value, new_value)
+
+    Enum.reduce(subkeys, merged_value, fn subkey, acc ->
+      Keyword.put(acc, subkey, new_value[subkey])
+    end)
+  end
+
+  @spec sub_key_full_update?(atom(), atom(), [Keyword.key()]) :: boolean()
+  def sub_key_full_update?(group, key, subkeys) do
+    Enum.any?(@full_subkey_update, fn {g, k, subkey} ->
+      g == group and k == key and subkey in subkeys
+    end)
+  end
+
+  defp sub_key_full_update(group, key, subkeys) do
+    Enum.map(@full_subkey_update, fn
+      {g, k, subkey} when g == group and k == key ->
+        if subkey in subkeys, do: subkey, else: []
+
+      _ ->
+        []
+    end)
+    |> List.flatten()
+  end
+
   @full_key_update [
     {:pleroma, :ecto_repos},
-    {:pleroma, :assets},
     {:quack, :meta},
     {:mime, :types},
     {:cors_plug, [:max_age, :methods, :expose, :headers]},
@@ -114,8 +162,14 @@ defmodule Pleroma.ConfigDB do
          old_value <- from_binary(config.value),
          transformed_value <- do_transform(params[:value]),
          {:can_be_merged, true, config} <- {:can_be_merged, is_list(transformed_value), config},
-         new_value <- DeepMerge.deep_merge(old_value, transformed_value) do
-      ConfigDB.update(config, %{value: new_value, transformed?: true})
+         new_value <-
+           deep_merge(
+             ConfigDB.from_string(config.group),
+             ConfigDB.from_string(config.key),
+             old_value,
+             transformed_value
+           ) do
+      ConfigDB.update(config, %{value: new_value})
     else
       {reason, false, config} when reason in [:partial_update, :can_be_merged] ->
         ConfigDB.update(config, params)
@@ -235,6 +289,9 @@ defmodule Pleroma.ConfigDB do
   end
 
   def transform(entity), do: to_binary(entity)
+
+  @spec transform_with_out_binary(any()) :: any()
+  def transform_with_out_binary(entity), do: do_transform(entity)
 
   @spec to_binary(any()) :: binary()
   def to_binary(entity), do: :erlang.term_to_binary(entity)

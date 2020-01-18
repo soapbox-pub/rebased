@@ -834,10 +834,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
                   ConfigDB.get_db_keys(value, key)
                 end
 
+              db_value = configs[group][key]
+
+              merged_value =
+                if !is_nil(db_value) and Keyword.keyword?(db_value) and
+                     ConfigDB.sub_key_full_update?(group, key, Keyword.keys(db_value)) do
+                  ConfigDB.deep_merge(group, key, value, db_value)
+                else
+                  value
+                end
+
               setting = %{
                 group: ConfigDB.convert(group),
                 key: ConfigDB.convert(key),
-                value: ConfigDB.convert(value)
+                value: ConfigDB.convert(merged_value)
               }
 
               if db, do: Map.put(setting, :db, db), else: setting

@@ -1916,9 +1916,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           value: ConfigDB.to_binary(k1: :v1, k2: :v2)
         )
 
-      conn = get(conn, "/api/pleroma/admin/config")
-
-      %{"configs" => configs} = json_response(conn, 200)
+      %{"configs" => configs} =
+        conn
+        |> get("/api/pleroma/admin/config")
+        |> json_response(200)
 
       assert length(configs) > 3
 
@@ -1944,6 +1945,36 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  ConfigDB.from_binary_with_convert(config3.value)
                ]
       end)
+    end
+
+    test "subkeys with full update right merge", %{conn: conn} do
+      config1 =
+        insert(:config,
+          key: ":emoji",
+          value: ConfigDB.to_binary(groups: [a: 1, b: 2], key: [a: 1])
+        )
+
+      config2 =
+        insert(:config,
+          key: ":assets",
+          value: ConfigDB.to_binary(mascots: [a: 1, b: 2], key: [a: 1])
+        )
+
+      %{"configs" => configs} =
+        conn
+        |> get("/api/pleroma/admin/config")
+        |> json_response(200)
+
+      [%{"key" => ":emoji", "value" => emoji_val}, %{"key" => ":assets", "value" => assets_val}] =
+        Enum.filter(configs, fn %{"group" => group, "key" => key} ->
+          group == ":pleroma" and key in [config1.key, config2.key]
+        end)
+
+      emoji_val = ConfigDB.transform_with_out_binary(emoji_val)
+      assets_val = ConfigDB.transform_with_out_binary(assets_val)
+
+      assert emoji_val[:groups] == [a: 1, b: 2]
+      assert assets_val[:mascots] == [a: 1, b: 2]
     end
   end
 

@@ -42,7 +42,7 @@ defmodule Pleroma.Config.TransferTask do
 
         merged_value =
           if can_be_merged?(default, value) do
-            DeepMerge.deep_merge(default, value)
+            ConfigDB.deep_merge(group, key, default, value)
           else
             value
           end
