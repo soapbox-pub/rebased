@@ -35,10 +35,11 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
             ^hrefs
           )
       )
-      # The query above can be time consumptive on large instances until we refactor how uploads are stored
+      # The query above can be time consumptive on large instances until we
+      # refactor how uploads are stored
       |> Repo.all(timout: :infinity)
-      # we should delete 1 object for any given attachment, but don't delete files if
-      # there are more than 1 object for it
+      # we should delete 1 object for any given attachment, but don't delete
+      # files if there are more than 1 object for it
       |> Enum.reduce(%{}, fn %{
                                id: id,
                                data: %{
