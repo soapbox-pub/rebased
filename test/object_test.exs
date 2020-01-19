@@ -4,12 +4,14 @@
 
 defmodule Pleroma.ObjectTest do
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
   import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.CommonAPI
 
   setup do
@@ -99,6 +101,8 @@ defmodule Pleroma.ObjectTest do
 
       Object.delete(note)
 
+      ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
+
       assert Object.get_by_id(attachment.id) == nil
 
       assert {:ok, []} == File.ls("#{uploads_dir}/#{path}")
@@ -132,6 +136,8 @@ defmodule Pleroma.ObjectTest do
       assert filename in files
 
       Object.delete(note)
+
+      ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
 
       assert Object.get_by_id(attachment.id) == nil
       assert {:ok, files} = File.ls(uploads_dir)
