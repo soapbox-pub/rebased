@@ -75,7 +75,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:reports"], admin: true}
-    when action in [:report_update_state, :report_respond]
+    when action in [:reports_update]
   )
 
   plug(
