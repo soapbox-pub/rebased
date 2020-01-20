@@ -284,22 +284,22 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, %Activity{}, _} = CommonAPI.favorite(activity.id, user)
     end
 
-    test "retweeting a status twice returns an error" do
+    test "retweeting a status twice returns the status" do
       user = insert(:user)
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
-      {:ok, %Activity{}, _object} = CommonAPI.repeat(activity.id, user)
-      {:error, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, %Activity{} = activity, object} = CommonAPI.repeat(activity.id, user)
+      {:ok, ^activity, ^object} = CommonAPI.repeat(activity.id, user)
     end
 
-    test "favoriting a status twice returns an error" do
+    test "favoriting a status twice returns the status" do
       user = insert(:user)
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
-      {:ok, %Activity{}, _object} = CommonAPI.favorite(activity.id, user)
-      {:error, _} = CommonAPI.favorite(activity.id, user)
+      {:ok, %Activity{} = activity, object} = CommonAPI.favorite(activity.id, user)
+      {:ok, ^activity, ^object} = CommonAPI.favorite(activity.id, user)
     end
   end
 
