@@ -57,11 +57,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> assign(:token, insert(:oauth_token, user: user, scopes: ["read:statuses"]))
-
     result =
       conn
       |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
