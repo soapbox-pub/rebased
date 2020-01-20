@@ -2864,7 +2864,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       response = json_response(ret_conn, 200)
 
-      assert length(response) == 0
+      assert Enum.empty?(response)
     end
   end
 
