@@ -124,7 +124,7 @@ defmodule Pleroma.Mixfile do
       {:earmark, "~> 1.3"},
       {:bbcode, "~> 0.1.1"},
       {:ex_machina, "~> 2.3", only: :test},
-      {:credo, "~> 0.9.3", only: [:dev, :test]},
+      {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.3", only: :test},
       {:crypt,
        git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
