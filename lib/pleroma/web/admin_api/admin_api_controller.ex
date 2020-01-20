@@ -639,7 +639,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def force_password_reset(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
     users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
 
-    Enum.map(users, &User.force_password_reset_async/1)
+    Enum.each(users, &User.force_password_reset_async/1)
 
     ModerationLog.insert_log(%{
       actor: admin,
