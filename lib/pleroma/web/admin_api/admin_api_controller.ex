@@ -826,7 +826,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       else
         merged =
           Pleroma.Config.Holder.config()
-          |> DeepMerge.deep_merge(configs)
+          |> ConfigDB.merge(configs)
           |> Enum.map(fn {group, values} ->
             Enum.map(values, fn {key, value} ->
               db =

@@ -102,7 +102,7 @@ defmodule Pleroma.ConfigDB do
 
     subkeys = sub_key_full_update(group, key, intersect_keys)
 
-    merged_value = DeepMerge.deep_merge(old_value, new_value)
+    merged_value = ConfigDB.merge(old_value, new_value)
 
     Enum.reduce(subkeys, merged_value, fn subkey, acc ->
       Keyword.put(acc, subkey, new_value[subkey])
@@ -125,6 +125,24 @@ defmodule Pleroma.ConfigDB do
         []
     end)
     |> List.flatten()
+  end
+
+  def merge(config1, config2) when is_list(config1) and is_list(config2) do
+    Keyword.merge(config1, config2, fn _, app1, app2 ->
+      if Keyword.keyword?(app1) and Keyword.keyword?(app2) do
+        Keyword.merge(app1, app2, &deep_merge/3)
+      else
+        app2
+      end
+    end)
+  end
+
+  defp deep_merge(_key, value1, value2) do
+    if Keyword.keyword?(value1) and Keyword.keyword?(value2) do
+      Keyword.merge(value1, value2, &deep_merge/3)
+    else
+      value2
+    end
   end
 
   @full_key_update [
