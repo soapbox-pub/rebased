@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: MDII uploader
 
 ### Changed
+- **Breaking:** Pleroma won't start if it detects unapplied migrations
 - **Breaking:** attachments are removed along with statuses when there are no other references to it
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
 - **Breaking:** attachment links (`config :pleroma, :instance, no_attachment_links` and `config :pleroma, Pleroma.Upload, link_name`) disabled by default
