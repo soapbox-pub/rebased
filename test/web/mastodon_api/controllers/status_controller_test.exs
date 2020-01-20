@@ -642,7 +642,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       activity = insert(:note_activity)
 
       post(conn, "/api/v1/statuses/#{activity.id}/favourite")
-      assert post(conn, "/api/v2/statuses/#{activity.id}/favourite") |> json_response(200)
+      assert post(conn, "/api/v1/statuses/#{activity.id}/favourite") |> json_response(200)
     end
 
     test "returns 400 error for a wrong id", %{conn: conn} do
