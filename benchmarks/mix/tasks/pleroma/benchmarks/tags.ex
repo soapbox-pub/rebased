@@ -33,6 +33,36 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Tags do
 
     Benchee.run(
       %{
+        "Hashtag fetching, any" => fn tags ->
+          Pleroma.Web.MastodonAPI.TimelineController.hashtag_fetching(
+            %{
+              "any" => tags
+            },
+            user,
+            false
+          )
+        end,
+        # Will always return zero results because no overlapping hashtags are generated.
+        "Hashtag fetching, all" => fn tags ->
+          Pleroma.Web.MastodonAPI.TimelineController.hashtag_fetching(
+            %{
+              "all" => tags
+            },
+            user,
+            false
+          )
+        end
+      },
+      inputs:
+        tags
+        |> Enum.map(fn {_, v} -> v end)
+        |> Enum.chunk_every(2)
+        |> Enum.map(fn tags -> {"For #{inspect(tags)}", tags} end),
+      time: 5
+    )
+
+    Benchee.run(
+      %{
         "Hashtag fetching" => fn tag ->
           Pleroma.Web.MastodonAPI.TimelineController.hashtag_fetching(
             %{
