@@ -831,7 +831,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
             Enum.map(values, fn {key, value} ->
               db =
                 if configs[group][key] do
-                  ConfigDB.get_db_keys(value, key)
+                  ConfigDB.get_db_keys(configs[group][key], key)
                 end
 
               db_value = configs[group][key]

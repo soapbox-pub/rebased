@@ -205,9 +205,14 @@ defmodule Pleroma.ConfigDB do
          {config, sub_keys} when is_list(sub_keys) <- {config, params[:subkeys]},
          old_value <- from_binary(config.value),
          keys <- Enum.map(sub_keys, &do_transform_string(&1)),
-         new_value <- Keyword.drop(old_value, keys) do
+         {:partial_remove, config, new_value} when new_value != [] <-
+           {:partial_remove, config, Keyword.drop(old_value, keys)} do
       ConfigDB.update(config, %{value: new_value})
     else
+      {:partial_remove, config, []} ->
+        Repo.delete(config)
+        {:ok, nil}
+
       {config, nil} ->
         Repo.delete(config)
         {:ok, nil}

@@ -1907,6 +1907,22 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert key2 == config2.key
     end
 
+    test "db is added to settings that are in db", %{conn: conn} do
+      _config = insert(:config, key: ":instance", value: ConfigDB.to_binary(name: "Some name"))
+
+      %{"configs" => configs} =
+        conn
+        |> get("/api/pleroma/admin/config")
+        |> json_response(200)
+
+      [instance_config] =
+        Enum.filter(configs, fn %{"group" => group, "key" => key} ->
+          group == ":pleroma" and key == ":instance"
+        end)
+
+      assert instance_config["db"] == [":name"]
+    end
+
     test "merged default setting with db settings", %{conn: conn} do
       config1 = insert(:config)
       config2 = insert(:config)
