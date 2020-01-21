@@ -21,7 +21,10 @@ else
   IO.puts(warning)
 end
 
-exported_config = Path.join([Path.dirname(config_path), "prod.exported_from_db.secret.exs"])
+exported_config =
+  config_path
+  |> Path.dirname()
+  |> Path.join("prod.exported_from_db.secret.exs")
 
 if File.exists?(exported_config) do
   import_config exported_config

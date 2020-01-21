@@ -848,7 +848,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
               merged_value =
                 if !is_nil(db_value) and Keyword.keyword?(db_value) and
                      ConfigDB.sub_key_full_update?(group, key, Keyword.keys(db_value)) do
-                  ConfigDB.deep_merge(group, key, value, db_value)
+                  ConfigDB.merge_group(group, key, value, db_value)
                 else
                   value
                 end

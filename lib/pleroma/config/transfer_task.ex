@@ -37,31 +37,29 @@ defmodule Pleroma.Config.TransferTask do
       group = ConfigDB.from_string(setting.group)
       value = ConfigDB.from_binary(setting.value)
 
-      if group != :phoenix and key != :serve_endpoints do
-        default = Pleroma.Config.Holder.config(group, key)
+      default = Pleroma.Config.Holder.config(group, key)
 
-        merged_value =
-          if can_be_merged?(default, value) do
-            ConfigDB.deep_merge(group, key, default, value)
-          else
-            value
-          end
-
-        :ok = Application.put_env(group, key, merged_value)
-
-        if group != :logger do
-          group
+      merged_value =
+        if can_be_merged?(default, value) do
+          ConfigDB.merge_group(group, key, default, value)
         else
-          # change logger configuration in runtime, without restart
-          if Keyword.keyword?(merged_value) and
-               key not in [:compile_time_application, :backends, :compile_time_purge_matching] do
-            Logger.configure_backend(key, merged_value)
-          else
-            Logger.configure([{key, merged_value}])
-          end
-
-          nil
+          value
         end
+
+      :ok = Application.put_env(group, key, merged_value)
+
+      if group != :logger do
+        group
+      else
+        # change logger configuration in runtime, without restart
+        if Keyword.keyword?(merged_value) and
+             key not in [:compile_time_application, :backends, :compile_time_purge_matching] do
+          Logger.configure_backend(key, merged_value)
+        else
+          Logger.configure([{key, merged_value}])
+        end
+
+        nil
       end
     rescue
       e ->
@@ -80,12 +78,15 @@ defmodule Pleroma.Config.TransferTask do
          :ok <- Application.stop(app) do
       :ok = Application.start(app)
     else
-      nil -> Logger.warn("#{app} is not started.")
-      error -> Logger.warn(inspect(error))
+      nil ->
+        Logger.warn("#{app} is not started.")
+
+      error ->
+        error
+        |> inspect()
+        |> Logger.warn()
     end
   end
-
-  defp can_be_merged?(val1, val2) when is_map(val1) and is_map(val2), do: true
 
   defp can_be_merged?(val1, val2) when is_list(val1) and is_list(val2) do
     Keyword.keyword?(val1) and Keyword.keyword?(val2)

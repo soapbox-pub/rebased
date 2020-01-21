@@ -4,13 +4,37 @@
 
 defmodule Pleroma.ConfigDB do
   use Ecto.Schema
+
   import Ecto.Changeset
   import Ecto.Query
   import Pleroma.Web.Gettext
+
   alias __MODULE__
   alias Pleroma.Repo
 
   @type t :: %__MODULE__{}
+
+  @full_key_update [
+    {:pleroma, :ecto_repos},
+    {:quack, :meta},
+    {:mime, :types},
+    {:cors_plug, [:max_age, :methods, :expose, :headers]},
+    {:auto_linker, :opts},
+    {:swarm, :node_blacklist},
+    {:logger, :backends}
+  ]
+
+  @full_subkey_update [
+    {:pleroma, :assets, :mascots},
+    {:pleroma, :emoji, :groups},
+    {:pleroma, :workers, :retries},
+    {:pleroma, :mrf_subchain, :match_actor},
+    {:pleroma, :mrf_keyword, :replace}
+  ]
+
+  @regex ~r/^~r(?'delimiter'[\/|"'([{<]{1})(?'pattern'.+)[\/|"')\]}>]{1}(?'modifier'[uismxfU]*)/u
+
+  @delimiters ["/", "|", "\"", "'", {"(", ")"}, {"[", "]"}, {"{", "}"}, {"<", ">"}]
 
   schema "config" do
     field(:key, :string)
@@ -78,35 +102,33 @@ defmodule Pleroma.ConfigDB do
     end
   end
 
-  @full_subkey_update [
-    {:pleroma, :assets, :mascots},
-    {:pleroma, :emoji, :groups},
-    {:pleroma, :workers, :retries},
-    {:pleroma, :mrf_subchain, :match_actor},
-    {:pleroma, :mrf_keyword, :replace}
-  ]
+  @spec merge_group(atom(), atom(), keyword(), keyword()) :: keyword()
+  def merge_group(group, key, old_value, new_value) do
+    new_keys = to_map_set(new_value)
 
-  @spec deep_merge(atom(), atom(), keyword(), keyword()) :: keyword()
-  def deep_merge(group, key, old_value, new_value) do
-    old_keys =
-      old_value
-      |> Keyword.keys()
-      |> MapSet.new()
-
-    new_keys =
-      new_value
-      |> Keyword.keys()
-      |> MapSet.new()
-
-    intersect_keys = old_keys |> MapSet.intersection(new_keys) |> MapSet.to_list()
-
-    subkeys = sub_key_full_update(group, key, intersect_keys)
+    intersect_keys =
+      old_value |> to_map_set() |> MapSet.intersection(new_keys) |> MapSet.to_list()
 
     merged_value = ConfigDB.merge(old_value, new_value)
 
-    Enum.reduce(subkeys, merged_value, fn subkey, acc ->
+    @full_subkey_update
+    |> Enum.map(fn
+      {g, k, subkey} when g == group and k == key ->
+        if subkey in intersect_keys, do: subkey, else: []
+
+      _ ->
+        []
+    end)
+    |> List.flatten()
+    |> Enum.reduce(merged_value, fn subkey, acc ->
       Keyword.put(acc, subkey, new_value[subkey])
     end)
+  end
+
+  defp to_map_set(keyword) do
+    keyword
+    |> Keyword.keys()
+    |> MapSet.new()
   end
 
   @spec sub_key_full_update?(atom(), atom(), [Keyword.key()]) :: boolean()
@@ -116,17 +138,7 @@ defmodule Pleroma.ConfigDB do
     end)
   end
 
-  defp sub_key_full_update(group, key, subkeys) do
-    Enum.map(@full_subkey_update, fn
-      {g, k, subkey} when g == group and k == key ->
-        if subkey in subkeys, do: subkey, else: []
-
-      _ ->
-        []
-    end)
-    |> List.flatten()
-  end
-
+  @spec merge(keyword(), keyword()) :: keyword()
   def merge(config1, config2) when is_list(config1) and is_list(config2) do
     Keyword.merge(config1, config2, fn _, app1, app2 ->
       if Keyword.keyword?(app1) and Keyword.keyword?(app2) do
@@ -145,31 +157,6 @@ defmodule Pleroma.ConfigDB do
     end
   end
 
-  @full_key_update [
-    {:pleroma, :ecto_repos},
-    {:quack, :meta},
-    {:mime, :types},
-    {:cors_plug, [:max_age, :methods, :expose, :headers]},
-    {:auto_linker, :opts},
-    {:swarm, :node_blacklist},
-    {:logger, :backends}
-  ]
-
-  defp only_full_update?(%ConfigDB{} = config) do
-    config_group = ConfigDB.from_string(config.group)
-    config_key = ConfigDB.from_string(config.key)
-
-    Enum.any?(@full_key_update, fn
-      {group, key} when is_list(key) ->
-        config_group == group and config_key in key
-
-      {group, key} ->
-        config_group == group and config_key == key
-    end)
-  end
-
-  defp can_be_partially_updated?(%ConfigDB{} = config), do: not only_full_update?(config)
-
   @spec update_or_create(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
   def update_or_create(params) do
     search_opts = Map.take(params, [:group, :key])
@@ -181,7 +168,7 @@ defmodule Pleroma.ConfigDB do
          transformed_value <- do_transform(params[:value]),
          {:can_be_merged, true, config} <- {:can_be_merged, is_list(transformed_value), config},
          new_value <-
-           deep_merge(
+           merge_group(
              ConfigDB.from_string(config.group),
              ConfigDB.from_string(config.key),
              old_value,
@@ -195,6 +182,21 @@ defmodule Pleroma.ConfigDB do
       nil ->
         ConfigDB.create(params)
     end
+  end
+
+  defp can_be_partially_updated?(%ConfigDB{} = config), do: not only_full_update?(config)
+
+  defp only_full_update?(%ConfigDB{} = config) do
+    config_group = ConfigDB.from_string(config.group)
+    config_key = ConfigDB.from_string(config.key)
+
+    Enum.any?(@full_key_update, fn
+      {group, key} when is_list(key) ->
+        config_group == group and config_key in key
+
+      {group, key} ->
+        config_group == group and config_key == key
+    end)
   end
 
   @spec delete(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()} | {:ok, nil}
@@ -286,18 +288,24 @@ defmodule Pleroma.ConfigDB do
     }
   end
 
-  # TODO: will become useless after removing hackney
   defp do_convert({:partial_chain, entity}), do: %{"tuple" => [":partial_chain", inspect(entity)]}
 
-  defp do_convert(entity) when is_tuple(entity),
-    do: %{"tuple" => do_convert(Tuple.to_list(entity))}
+  defp do_convert(entity) when is_tuple(entity) do
+    value =
+      entity
+      |> Tuple.to_list()
+      |> do_convert()
 
-  defp do_convert(entity) when is_boolean(entity) or is_number(entity) or is_nil(entity),
-    do: entity
+    %{"tuple" => value}
+  end
+
+  defp do_convert(entity) when is_boolean(entity) or is_number(entity) or is_nil(entity) do
+    entity
+  end
 
   defp do_convert(entity)
        when is_atom(entity) and entity in [:"tlsv1.1", :"tlsv1.2", :"tlsv1.3"] do
-    ":#{to_string(entity)}"
+    ":#{entity}"
   end
 
   defp do_convert(entity) when is_atom(entity), do: inspect(entity)
@@ -325,7 +333,6 @@ defmodule Pleroma.ConfigDB do
     {:proxy_url, {do_transform_string(type), parse_host(host), port}}
   end
 
-  # TODO: will become useless after removing hackney
   defp do_transform(%{"tuple" => [":partial_chain", entity]}) do
     {partial_chain, []} =
       entity
@@ -369,10 +376,9 @@ defmodule Pleroma.ConfigDB do
     end
   end
 
-  @delimiters ["/", "|", "\"", "'", {"(", ")"}, {"[", "]"}, {"{", "}"}, {"<", ">"}]
-
-  defp find_valid_delimiter([], _string, _),
-    do: raise(ArgumentError, message: "valid delimiter for Regex expression not found")
+  defp find_valid_delimiter([], _string, _) do
+    raise(ArgumentError, message: "valid delimiter for Regex expression not found")
+  end
 
   defp find_valid_delimiter([{leading, closing} = delimiter | others], pattern, regex_delimiter)
        when is_tuple(delimiter) do
@@ -391,11 +397,9 @@ defmodule Pleroma.ConfigDB do
     end
   end
 
-  @regex_parts ~r/^~r(?'delimiter'[\/|"'([{<]{1})(?'pattern'.+)[\/|"')\]}>]{1}(?'modifier'[uismxfU]*)/u
-
   defp do_transform_string("~r" <> _pattern = regex) do
     with %{"modifier" => modifier, "pattern" => pattern, "delimiter" => regex_delimiter} <-
-           Regex.named_captures(@regex_parts, regex),
+           Regex.named_captures(@regex, regex),
          {:ok, {leading, closing}} <- find_valid_delimiter(@delimiters, pattern, regex_delimiter),
          {result, _} <- Code.eval_string("~r#{leading}#{pattern}#{closing}#{modifier}") do
       result
