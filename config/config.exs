@@ -502,7 +502,8 @@ config :pleroma, Oban,
     mailer: 10,
     transmogrifier: 20,
     scheduled_activities: 10,
-    background: 5
+    background: 5,
+    attachments_cleanup: 5
   ]
 
 config :pleroma, :workers,
