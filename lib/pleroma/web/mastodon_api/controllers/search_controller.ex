@@ -43,7 +43,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     result =
       default_values
       |> Enum.map(fn {resource, default_value} ->
-        if params["type"] == nil or params["type"] == resource do
+        if params["type"] in [nil, resource] do
           {resource, fn -> resource_search(version, resource, query, options) end}
         else
           {resource, fn -> default_value end}
