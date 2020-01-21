@@ -8,6 +8,8 @@ defmodule Pleroma.Repo do
     adapter: Ecto.Adapters.Postgres,
     migration_timestamps: [type: :naive_datetime_usec]
 
+  require Logger
+
   defmodule Instrumenter do
     use Prometheus.EctoInstrumenter
   end
@@ -47,4 +49,37 @@ defmodule Pleroma.Repo do
       _ -> {:error, :not_found}
     end
   end
+
+  def check_migrations_applied!() do
+    unless Pleroma.Config.get(
+             [:i_am_aware_this_may_cause_data_loss, :disable_migration_check],
+             false
+           ) do
+      Ecto.Migrator.with_repo(__MODULE__, fn repo ->
+        down_migrations =
+          Ecto.Migrator.migrations(repo)
+          |> Enum.reject(fn
+            {:up, _, _} -> true
+            {:down, _, _} -> false
+          end)
+
+        if length(down_migrations) > 0 do
+          down_migrations_text =
+            Enum.map(down_migrations, fn {:down, id, name} -> "- #{name} (#{id})\n" end)
+
+          Logger.error(
+            "The following migrations were not applied:\n#{down_migrations_text}If you want to start Pleroma anyway, set\nconfig :pleroma, :i_am_aware_this_may_cause_data_loss, disable_migration_check: true"
+          )
+
+          raise Pleroma.Repo.UnappliedMigrationsError
+        end
+      end)
+    else
+      :ok
+    end
+  end
+end
+
+defmodule Pleroma.Repo.UnappliedMigrationsError do
+  defexception message: "Unapplied Migrations detected"
 end

@@ -36,19 +36,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:accounts"], admin: true}
-    when action in [:list_users, :user_show, :right_get, :invites]
+    when action in [:list_users, :user_show, :right_get]
   )
 
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:accounts"], admin: true}
     when action in [
-           :get_invite_token,
-           :revoke_invite,
-           :email_invite,
            :get_password_reset,
-           :user_follow,
-           :user_unfollow,
            :user_delete,
            :users_create,
            :user_toggle_activation,
@@ -61,6 +56,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          ]
   )
 
+  plug(OAuthScopesPlug, %{scopes: ["read:invites"], admin: true} when action == :invites)
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:invites"], admin: true}
+    when action in [:create_invite_token, :revoke_invite, :email_invite]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:follows"], admin: true}
+    when action in [:user_follow, :user_unfollow, :relay_follow, :relay_unfollow]
+  )
+
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:reports"], admin: true}
@@ -70,7 +79,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:reports"], admin: true}
-    when action in [:report_update_state, :report_respond]
+    when action in [:reports_update]
   )
 
   plug(
@@ -94,7 +103,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["write"], admin: true}
-    when action in [:relay_follow, :relay_unfollow, :config_update]
+    when action == :config_update
   )
 
   action_fallback(:errors)
@@ -632,7 +641,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def force_password_reset(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
     users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
 
-    Enum.map(users, &User.force_password_reset_async/1)
+    Enum.each(users, &User.force_password_reset_async/1)
 
     ModerationLog.insert_log(%{
       actor: admin,

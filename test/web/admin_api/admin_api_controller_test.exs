@@ -1364,6 +1364,30 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       }
     end
 
+    test "requires admin:write:reports scope", %{conn: conn, id: id, admin: admin} do
+      read_token = insert(:oauth_token, user: admin, scopes: ["admin:read"])
+      write_token = insert(:oauth_token, user: admin, scopes: ["admin:write:reports"])
+
+      response =
+        conn
+        |> assign(:token, read_token)
+        |> patch("/api/pleroma/admin/reports", %{
+          "reports" => [%{"state" => "resolved", "id" => id}]
+        })
+        |> json_response(403)
+
+      assert response == %{
+               "error" => "Insufficient permissions: admin:write:reports."
+             }
+
+      conn
+      |> assign(:token, write_token)
+      |> patch("/api/pleroma/admin/reports", %{
+        "reports" => [%{"state" => "resolved", "id" => id}]
+      })
+      |> json_response(:no_content)
+    end
+
     test "mark report as resolved", %{conn: conn, id: id, admin: admin} do
       conn
       |> patch("/api/pleroma/admin/reports", %{
@@ -3294,7 +3318,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       response = json_response(ret_conn, 200)
 
-      assert length(response) == 0
+      assert Enum.empty?(response)
     end
   end
 

@@ -1,11 +1,11 @@
 @font-face {
 	font-family: "Icons";
-	src: url("./font/fontello.1576166651574.eot");
-	src: url("./font/fontello.1576166651574.eot") format("embedded-opentype"),
-		url("./font/fontello.1576166651574.woff2") format("woff2"),
-		url("./font/fontello.1576166651574.woff") format("woff"),
-		url("./font/fontello.1576166651574.ttf") format("truetype"),
-		url("./font/fontello.1576166651574.svg") format("svg");
+	src: url("./font/fontello.1579102213354.eot");
+	src: url("./font/fontello.1579102213354.eot") format("embedded-opentype"),
+		url("./font/fontello.1579102213354.woff2") format("woff2"),
+		url("./font/fontello.1579102213354.woff") format("woff"),
+		url("./font/fontello.1579102213354.ttf") format("truetype"),
+		url("./font/fontello.1579102213354.svg") format("svg");
 	font-weight: normal;
 	font-style: normal;
 }
@@ -122,3 +122,15 @@
 .icon-zoom-in::before { content: "\e81c"; }
 
 .icon-gauge::before { content: "\f0e4"; }
+
+.icon-users::before { content: "\e81d"; }
+
+.icon-info-circled::before { content: "\e81f"; }
+
+.icon-home-2::before { content: "\e821"; }
+
+.icon-chat::before { content: "\e81e"; }
+
+.icon-login::before { content: "\e820"; }
+
+.icon-arrow-curved::before { content: "\e822"; }

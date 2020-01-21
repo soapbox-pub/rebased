@@ -23,6 +23,23 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
   plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   # GET /api/v1/notifications
+  def index(conn, %{"account_id" => account_id} = params) do
+    case Pleroma.User.get_cached_by_id(account_id) do
+      %{ap_id: account_ap_id} ->
+        params =
+          params
+          |> Map.delete("account_id")
+          |> Map.put("account_ap_id", account_ap_id)
+
+        index(conn, params)
+
+      _ ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{"error" => "Account is not found"})
+    end
+  end
+
   def index(%{assigns: %{user: user}} = conn, params) do
     notifications = MastodonAPI.get_notifications(user, params)
 
