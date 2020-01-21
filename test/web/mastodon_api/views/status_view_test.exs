@@ -24,6 +24,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     :ok
   end
 
+  test "has an emoji reaction list" do
+    user = insert(:user)
+    other_user = insert(:user)
+    third_user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "dae cofe??"})
+
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, user, "☕")
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, third_user, "🍵")
+    activity = Repo.get(Activity, activity.id)
+    status = StatusView.render("show.json", activity: activity)
+
+    assert status[:pleroma][:emoji_reactions]["🍵"] == 1
+    assert status[:pleroma][:emoji_reactions]["☕"] == 2
+  end
+
   test "loads and returns the direct conversation id when given the `with_direct_conversation_id` option" do
     user = insert(:user)
 
@@ -172,7 +188,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
         expires_at: nil,
         direct_conversation_id: nil,
-        thread_muted: false
+        thread_muted: false,
+        emoji_reactions: %{}
       }
     }
 
