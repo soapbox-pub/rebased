@@ -307,7 +307,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "private", nil)
       assert length(to) == 2
-      assert length(cc) == 0
+      assert Enum.empty?(cc)
 
       assert mentioned_user.ap_id in to
       assert user.follower_address in to
@@ -323,7 +323,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "private", nil)
 
       assert length(to) == 3
-      assert length(cc) == 0
+      assert Enum.empty?(cc)
 
       assert mentioned_user.ap_id in to
       assert third_user.ap_id in to
@@ -338,7 +338,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "direct", nil)
 
       assert length(to) == 1
-      assert length(cc) == 0
+      assert Enum.empty?(cc)
 
       assert mentioned_user.ap_id in to
     end
@@ -353,7 +353,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "direct", nil)
 
       assert length(to) == 2
-      assert length(cc) == 0
+      assert Enum.empty?(cc)
 
       assert mentioned_user.ap_id in to
       assert third_user.ap_id in to

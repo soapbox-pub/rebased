@@ -55,7 +55,7 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
 
       user = refresh_record(user)
       assert Comeonin.Pbkdf2.checkpw("test", user.password_hash)
-      assert length(Token.get_user_tokens(user)) == 0
+      assert Enum.empty?(Token.get_user_tokens(user))
     end
 
     test "it sets password_reset_pending to false", %{conn: conn} do
