@@ -11,7 +11,7 @@
 	<!--[if !mso]><!-->
 	<meta content="IE=edge" http-equiv="X-UA-Compatible" />
 	<!--<![endif]-->
-	<title><%= @email.subject %><</title>
+	<title><%= @email.subject %></title>
 	<!--[if !mso]><!-->
 	<!--<![endif]-->
 	<style type="text/css">
