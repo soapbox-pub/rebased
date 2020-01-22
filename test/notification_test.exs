@@ -15,6 +15,18 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.Streamer
 
   describe "create_notifications" do
+    test "creates a notification for an emoji reaction" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "yeah"})
+      {:ok, activity, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      assert notification.user_id == user.id
+    end
+
     test "notifies someone when they are directly addressed" do
       user = insert(:user)
       other_user = insert(:user)

@@ -134,4 +134,31 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     assert [expected] ==
              NotificationView.render("index.json", %{notifications: [notification], for: follower})
   end
+
+  test "EmojiReaction notification" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+    {:ok, _activity, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+
+    activity = Repo.get(Activity, activity.id)
+
+    [notification] = Notification.for_user(user)
+
+    assert notification
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false},
+      type: "pleroma:emoji_reaction",
+      emoji: "☕",
+      account: AccountView.render("show.json", %{user: other_user, for: user}),
+      status: StatusView.render("show.json", %{activity: activity, for: user}),
+      created_at: Utils.to_masto_date(notification.inserted_at)
+    }
+
+    assert expected ==
+             NotificationView.render("show.json", %{notification: notification, for: user})
+  end
 end
