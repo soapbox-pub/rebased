@@ -312,19 +312,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Map.put("content", emoji)
   end
 
-  @spec update_element_in_object(String.t(), list(any), Object.t()) ::
+  @spec update_element_in_object(String.t(), list(any), Object.t(), integer() | nil) ::
           {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
-  def update_element_in_object(property, element, object) do
+  def update_element_in_object(property, element, object, count \\ nil) do
     length =
-      if is_map(element) do
-        element
-        |> Map.values()
-        |> List.flatten()
-        |> length()
-      else
-        element
-        |> length()
-      end
+      count ||
+        length(element)
 
     data =
       Map.merge(
@@ -344,29 +337,52 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"content" => emoji, "actor" => actor}},
         object
       ) do
-    reactions = object.data["reactions"] || %{}
-    emoji_actors = reactions[emoji] || []
-    new_emoji_actors = [actor | emoji_actors] |> Enum.uniq()
-    new_reactions = Map.put(reactions, emoji, new_emoji_actors)
-    update_element_in_object("reaction", new_reactions, object)
+    reactions = object.data["reactions"] || []
+
+    new_reactions =
+      case Enum.find_index(reactions, fn [candidate, _] -> emoji == candidate end) do
+        nil ->
+          reactions ++ [[emoji, [actor]]]
+
+        index ->
+          List.update_at(
+            reactions,
+            index,
+            fn [emoji, users] -> [emoji, Enum.uniq([actor | users])] end
+          )
+      end
+
+    count = emoji_count(new_reactions)
+
+    update_element_in_object("reaction", new_reactions, object, count)
+  end
+
+  def emoji_count(reactions_list) do
+    Enum.reduce(reactions_list, 0, fn [_, users], acc -> acc + length(users) end)
   end
 
   def remove_emoji_reaction_from_object(
         %Activity{data: %{"content" => emoji, "actor" => actor}},
         object
       ) do
-    reactions = object.data["reactions"] || %{}
-    emoji_actors = reactions[emoji] || []
-    new_emoji_actors = List.delete(emoji_actors, actor)
+    reactions = object.data["reactions"] || []
 
     new_reactions =
-      if new_emoji_actors == [] do
-        Map.delete(reactions, emoji)
-      else
-        Map.put(reactions, emoji, new_emoji_actors)
+      case Enum.find_index(reactions, fn [candidate, _] -> emoji == candidate end) do
+        nil ->
+          reactions
+
+        index ->
+          List.update_at(
+            reactions,
+            index,
+            fn [emoji, users] -> [emoji, List.delete(users, actor)] end
+          )
+          |> Enum.reject(fn [_, users] -> Enum.empty?(users) end)
       end
 
-    update_element_in_object("reaction", new_reactions, object)
+    count = emoji_count(new_reactions)
+    update_element_in_object("reaction", new_reactions, object, count)
   end
 
   @spec add_like_to_object(Activity.t(), Object.t()) ::
