@@ -1369,6 +1369,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          data <- maybe_update_follow_information(data) do
       {:ok, data}
     else
+      {:error, "Object has been deleted"} = e ->
+        Logger.debug("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
+        {:error, e}
+
       e ->
         Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
         {:error, e}
