@@ -303,6 +303,42 @@
       "css": "gauge",
       "code": 61668,
       "src": "fontawesome"
+    },
+    {
+      "uid": "31972e4e9d080eaa796290349ae6c1fd",
+      "css": "users",
+      "code": 59421,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "e82cedfa1d5f15b00c5a81c9bd731ea2",
+      "css": "info-circled",
+      "code": 59423,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "w3nzesrlbezu6f30q7ytyq919p6gdlb6",
+      "css": "home-2",
+      "code": 59425,
+      "src": "typicons"
+    },
+    {
+      "uid": "dcedf50ab1ede3283d7a6c70e2fe32f3",
+      "css": "chat",
+      "code": 59422,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "3a00327e61b997b58518bd43ed83c3df",
+      "css": "login",
+      "code": 59424,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "f3ebd6751c15a280af5cc5f4a764187d",
+      "css": "arrow-curved",
+      "code": 59426,
+      "src": "iconic"
     }
   ]
 }

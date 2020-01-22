@@ -488,7 +488,8 @@ config :pleroma, Oban,
     mailer: 10,
     transmogrifier: 20,
     scheduled_activities: 10,
-    background: 5
+    background: 5,
+    attachments_cleanup: 5
   ],
   crontab: [
     {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
@@ -553,7 +554,7 @@ config :ueberauth,
 
 config :pleroma,
        :auth,
-       enforce_oauth_admin_scope_usage: false,
+       enforce_oauth_admin_scope_usage: true,
        oauth_consumer_strategies: oauth_consumer_strategies
 
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false

@@ -23,7 +23,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"]}
-    when action in [:conversation, :conversation_statuses, :emoji_reactions_by]
+    when action in [:conversation, :conversation_statuses]
   )
 
   plug(

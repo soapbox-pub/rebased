@@ -77,10 +77,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     |> render("index.json", activities: activities, for: user, as: :activity)
   end
 
-  # GET /api/v1/timelines/tag/:tag
-  def hashtag(%{assigns: %{user: user}} = conn, params) do
-    local_only = truthy_param?(params["local"])
-
+  def hashtag_fetching(params, user, local_only) do
     tags =
       [params["tag"], params["any"]]
       |> List.flatten()
@@ -98,7 +95,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.get("none", [])
       |> Enum.map(&String.downcase(&1))
 
-    activities =
+    _activities =
       params
       |> Map.put("type", "Create")
       |> Map.put("local_only", local_only)
@@ -109,6 +106,13 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put("tag_all", tag_all)
       |> Map.put("tag_reject", tag_reject)
       |> ActivityPub.fetch_public_activities()
+  end
+
+  # GET /api/v1/timelines/tag/:tag
+  def hashtag(%{assigns: %{user: user}} = conn, params) do
+    local_only = truthy_param?(params["local"])
+
+    activities = hashtag_fetching(params, user, local_only)
 
     conn
     |> add_link_headers(activities, %{"local" => local_only})

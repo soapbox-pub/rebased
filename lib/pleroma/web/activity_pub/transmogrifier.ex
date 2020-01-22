@@ -658,24 +658,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{ap_id: ^actor_id} = actor <- User.get_cached_by_ap_id(object["id"]) do
       {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
 
-      locked = new_user_data[:locked] || false
-      attachment = get_in(new_user_data, [:source_data, "attachment"]) || []
-      invisible = new_user_data[:invisible] || false
-
-      fields =
-        attachment
-        |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
-        |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
-
-      update_data =
-        new_user_data
-        |> Map.take([:avatar, :banner, :bio, :name, :also_known_as])
-        |> Map.put(:fields, fields)
-        |> Map.put(:locked, locked)
-        |> Map.put(:invisible, invisible)
-
       actor
-      |> User.upgrade_changeset(update_data, true)
+      |> User.upgrade_changeset(new_user_data, true)
       |> User.update_and_set_cache()
 
       ActivityPub.update(%{

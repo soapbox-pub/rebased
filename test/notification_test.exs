@@ -745,7 +745,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(blocked, %{"status" => "hey @#{user.nickname}"})
 
-      assert length(Notification.for_user(user, %{with_muted: true})) == 0
+      assert Enum.empty?(Notification.for_user(user, %{with_muted: true}))
     end
 
     test "it doesn't return notifications from a domain-blocked user when with_muted is set" do
@@ -755,7 +755,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(blocked, %{"status" => "hey @#{user.nickname}"})
 
-      assert length(Notification.for_user(user, %{with_muted: true})) == 0
+      assert Enum.empty?(Notification.for_user(user, %{with_muted: true}))
     end
 
     test "it returns notifications from muted threads when with_muted is set" do
