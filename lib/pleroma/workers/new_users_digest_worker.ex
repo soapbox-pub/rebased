@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.NewUsersDigestWorker do
-  alias Pleroma.User
-  alias Pleroma.Repo
   alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   import Ecto.Query
 

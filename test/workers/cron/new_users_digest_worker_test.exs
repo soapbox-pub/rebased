@@ -6,9 +6,9 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
   use Pleroma.DataCase
   import Pleroma.Factory
 
-  alias Pleroma.Workers.NewUsersDigestWorker
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Workers.NewUsersDigestWorker
 
   test "it sends new users digest emails" do
     yesterday = NaiveDateTime.utc_now() |> Timex.shift(days: -1)
