@@ -112,7 +112,6 @@ config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   pack_extensions: [".png", ".gif"],
   groups: [
-    # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
     Custom: ["/emoji/*.png", "/emoji/**/*.png"]
   ],
   default_manifest: "https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json",
@@ -265,7 +264,6 @@ config :pleroma, :instance,
   remote_post_retention_days: 90,
   skip_thread_containment: true,
   limit_to_local_content: :unauthenticated,
-  dynamic_configuration: false,
   user_bio_length: 5000,
   user_name_length: 100,
   max_account_fields: 10,
@@ -619,6 +617,8 @@ config :pleroma, :web_cache_ttl,
   activity_pub_question: 30_000
 
 config :pleroma, :modules, runtime_dir: "instance/modules"
+
+config :pleroma, configurable_from_database: false
 
 config :swarm, node_blacklist: [~r/myhtml_.*$/]
 # Import environment specific config. This must remain at the bottom

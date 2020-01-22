@@ -12,10 +12,16 @@ defmodule Pleroma.Web.AdminAPI.ConfigView do
   end
 
   def render("show.json", %{config: config}) do
-    %{
+    map = %{
       key: config.key,
       group: config.group,
-      value: Pleroma.Web.AdminAPI.Config.from_binary_with_convert(config.value)
+      value: Pleroma.ConfigDB.from_binary_with_convert(config.value)
     }
+
+    if config.db != [] do
+      Map.put(map, :db, config.db)
+    else
+      map
+    end
   end
 end
