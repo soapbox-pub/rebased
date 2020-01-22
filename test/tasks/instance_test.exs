@@ -78,7 +78,7 @@ defmodule Pleroma.InstanceTest do
     assert generated_config =~ "database: \"dbname\""
     assert generated_config =~ "username: \"dbuser\""
     assert generated_config =~ "password: \"dbpass\""
-    assert generated_config =~ "dynamic_configuration: true"
+    assert generated_config =~ "configurable_from_database: true"
     assert generated_config =~ "http: [ip: {127, 0, 0, 1}, port: 4000]"
     assert File.read!(tmp_path() <> "setup.psql") == generated_setup_psql()
   end
