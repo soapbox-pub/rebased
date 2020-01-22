@@ -3,18 +3,22 @@ defmodule Pleroma.Docs.JSON do
 
   @spec process(keyword()) :: {:ok, String.t()}
   def process(descriptions) do
-    config_path = "docs/generate_config.json"
-
-    with {:ok, file} <- File.open(config_path, [:write, :utf8]),
-         json <- generate_json(descriptions),
+    with path <- "docs/generated_config.json",
+         {:ok, file} <- File.open(path, [:write, :utf8]),
+         formatted_descriptions <-
+           Pleroma.Docs.Generator.convert_to_strings(descriptions),
+         json <- Jason.encode!(formatted_descriptions),
          :ok <- IO.write(file, json),
          :ok <- File.close(file) do
-      {:ok, config_path}
+      {:ok, path}
     end
   end
 
-  @spec generate_json([keyword()]) :: String.t()
-  def generate_json(descriptions) do
-    Jason.encode!(descriptions)
+  def compile do
+    with config <- Pleroma.Config.Loader.load("config/description.exs") do
+      config[:pleroma][:config_description]
+      |> Pleroma.Docs.Generator.convert_to_strings()
+      |> Jason.encode!()
+    end
   end
 end
