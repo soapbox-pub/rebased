@@ -581,6 +581,8 @@ config :pleroma, Pleroma.Emails.UserEmail,
     text_muted_color: "#b9b9ba"
   }
 
+config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: false
+
 config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
 
 config :pleroma, Pleroma.ScheduledActivity,
