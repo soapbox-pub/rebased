@@ -871,26 +871,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   def config_update(conn, %{"configs" => configs}) do
     with :ok <- configurable_from_database(conn) do
-      updated =
+      {_errors, results} =
         Enum.map(configs, fn
           %{"group" => group, "key" => key, "delete" => true} = params ->
-            with {:ok, config} <-
-                   ConfigDB.delete(%{group: group, key: key, subkeys: params["subkeys"]}) do
-              config
-            end
+            ConfigDB.delete(%{group: group, key: key, subkeys: params["subkeys"]})
 
           %{"group" => group, "key" => key, "value" => value} ->
-            with {:ok, config} <-
-                   ConfigDB.update_or_create(%{group: group, key: key, value: value}) do
-              config
-            end
+            ConfigDB.update_or_create(%{group: group, key: key, value: value})
         end)
-        |> Enum.reject(&is_nil(&1))
-        |> Enum.map(fn config ->
+        |> Enum.split_with(fn result -> elem(result, 0) == :error end)
+
+      {deleted, updated} =
+        results
+        |> Enum.map(fn {:ok, config} ->
           Map.put(config, :db, ConfigDB.get_db_keys(config))
         end)
+        |> Enum.split_with(fn config ->
+          Ecto.get_meta(config, :state) == :deleted
+        end)
 
-      Pleroma.Config.TransferTask.load_and_update_env()
+      Pleroma.Config.TransferTask.load_and_update_env(deleted)
 
       Mix.Tasks.Pleroma.Config.run([
         "migrate_from_db",

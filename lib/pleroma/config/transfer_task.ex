@@ -16,37 +16,36 @@ defmodule Pleroma.Config.TransferTask do
     :ignore
   end
 
-  def load_and_update_env do
+  @spec load_and_update_env([ConfigDB.t()]) :: :ok | false
+  def load_and_update_env(deleted \\ []) do
     with true <- Pleroma.Config.get(:configurable_from_database),
          true <- Ecto.Adapters.SQL.table_exists?(Repo, "config"),
          started_applications <- Application.started_applications() do
       # We need to restart applications for loaded settings take effect
-      ConfigDB
-      |> Repo.all()
-      |> Enum.map(&update_env(&1))
+      in_db = Repo.all(ConfigDB)
+
+      with_deleted = in_db ++ deleted
+
+      with_deleted
+      |> Enum.map(&merge_and_update(&1))
       |> Enum.uniq()
       # TODO: some problem with prometheus after restart!
       |> Enum.reject(&(&1 in [:pleroma, nil, :prometheus]))
       |> Enum.each(&restart(started_applications, &1))
+
+      :ok
     end
   end
 
-  defp update_env(setting) do
+  defp merge_and_update(setting) do
     try do
       key = ConfigDB.from_string(setting.key)
       group = ConfigDB.from_string(setting.group)
-      value = ConfigDB.from_binary(setting.value)
 
       default = Pleroma.Config.Holder.config(group, key)
+      merged_value = merge_value(setting, default, group, key)
 
-      merged_value =
-        if can_be_merged?(default, value) do
-          ConfigDB.merge_group(group, key, default, value)
-        else
-          value
-        end
-
-      :ok = Application.put_env(group, key, merged_value)
+      :ok = update_env(group, key, merged_value)
 
       if group != :logger do
         group
@@ -62,16 +61,35 @@ defmodule Pleroma.Config.TransferTask do
         nil
       end
     rescue
-      e ->
-        Logger.warn(
-          "updating env causes error, group: #{inspect(setting.group)}, key: #{
-            inspect(setting.key)
-          }, value: #{inspect(ConfigDB.from_binary(setting.value))}, error: #{inspect(e)}"
-        )
+      error ->
+        error_msg =
+          "updating env causes error, group: " <>
+            inspect(setting.group) <>
+            " key: " <>
+            inspect(setting.key) <>
+            " value: " <>
+            inspect(ConfigDB.from_binary(setting.value)) <> " error: " <> inspect(error)
+
+        Logger.warn(error_msg)
 
         nil
     end
   end
+
+  defp merge_value(%{__meta__: %{state: :deleted}}, default, _group, _key), do: default
+
+  defp merge_value(setting, default, group, key) do
+    value = ConfigDB.from_binary(setting.value)
+
+    if can_be_merged?(default, value) do
+      ConfigDB.merge_group(group, key, default, value)
+    else
+      value
+    end
+  end
+
+  defp update_env(group, key, nil), do: Application.delete_env(group, key)
+  defp update_env(group, key, value), do: Application.put_env(group, key, value)
 
   defp restart(started_applications, app) do
     with {^app, _, _} <- List.keyfind(started_applications, app, 0),

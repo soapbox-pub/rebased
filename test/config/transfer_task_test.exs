@@ -116,6 +116,6 @@ defmodule Pleroma.Config.TransferTaskTest do
     assert ExUnit.CaptureLog.capture_log(fn ->
              TransferTask.start_link([])
            end) =~
-             "updating env causes error, group: \":pleroma\", key: \":undefined_atom_key\", value: [live: 2, com: 3], error: %ArgumentError{message: \"argument error\"}"
+             "updating env causes error, group: \":pleroma\" key: \":undefined_atom_key\" value: [live: 2, com: 3] error: %ArgumentError{message: \"argument error\"}"
   end
 end

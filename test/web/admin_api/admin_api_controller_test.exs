@@ -2053,6 +2053,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     @tag capture_log: true
     test "create new config setting in db", %{conn: conn} do
+      ueberauth = Application.get_env(:ueberauth, Ueberauth)
+      on_exit(fn -> Application.put_env(:ueberauth, Ueberauth, ueberauth) end)
+
       conn =
         post(conn, "/api/pleroma/admin/config", %{
           configs: [
@@ -2420,25 +2423,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
     end
 
-    test "update config setting & delete", %{conn: conn} do
+    test "update config setting & delete with fallback to default value", %{
+      conn: conn,
+      admin: admin,
+      token: token
+    } do
+      ueberauth = Application.get_env(:ueberauth, Ueberauth)
       config1 = insert(:config, key: ":keyaa1")
       config2 = insert(:config, key: ":keyaa2")
 
-      insert(:config,
-        group: "ueberauth",
-        key: "Ueberauth.Strategy.Microsoft.OAuth"
-      )
+      config3 =
+        insert(:config,
+          group: ":ueberauth",
+          key: "Ueberauth"
+        )
 
       conn =
         post(conn, "/api/pleroma/admin/config", %{
           configs: [
             %{group: config1.group, key: config1.key, value: "another_value"},
-            %{group: config2.group, key: config2.key, delete: true},
-            %{
-              group: "ueberauth",
-              key: "Ueberauth.Strategy.Microsoft.OAuth",
-              delete: true
-            }
+            %{group: config2.group, key: config2.key, value: "another_value"}
           ]
         })
 
@@ -2449,12 +2453,41 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "key" => config1.key,
                    "value" => "another_value",
                    "db" => [":keyaa1"]
+                 },
+                 %{
+                   "group" => ":pleroma",
+                   "key" => config2.key,
+                   "value" => "another_value",
+                   "db" => [":keyaa2"]
                  }
                ]
              }
 
       assert Application.get_env(:pleroma, :keyaa1) == "another_value"
-      refute Application.get_env(:pleroma, :keyaa2)
+      assert Application.get_env(:pleroma, :keyaa2) == "another_value"
+      assert Application.get_env(:ueberauth, Ueberauth) == ConfigDB.from_binary(config3.value)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> assign(:token, token)
+        |> post("/api/pleroma/admin/config", %{
+          configs: [
+            %{group: config2.group, key: config2.key, delete: true},
+            %{
+              group: ":ueberauth",
+              key: "Ueberauth",
+              delete: true
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => []
+             }
+
+      assert Application.get_env(:ueberauth, Ueberauth) == ueberauth
+      refute Keyword.has_key?(Application.get_all_env(:pleroma), :keyaa2)
     end
 
     test "common config example", %{conn: conn} do

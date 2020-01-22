@@ -199,7 +199,7 @@ defmodule Pleroma.ConfigDB do
     end)
   end
 
-  @spec delete(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()} | {:ok, nil}
+  @spec delete(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
   def delete(params) do
     search_opts = Map.delete(params, :subkeys)
 
@@ -213,11 +213,9 @@ defmodule Pleroma.ConfigDB do
     else
       {:partial_remove, config, []} ->
         Repo.delete(config)
-        {:ok, nil}
 
       {config, nil} ->
         Repo.delete(config)
-        {:ok, nil}
 
       nil ->
         err =

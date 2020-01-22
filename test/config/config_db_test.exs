@@ -27,7 +27,7 @@ defmodule Pleroma.ConfigDBTest do
   end
 
   test "get_all_as_keyword/0" do
-    insert(:config)
+    saved = insert(:config)
     insert(:config, group: ":quack", key: ":level", value: ConfigDB.to_binary(:info))
     insert(:config, group: ":quack", key: ":meta", value: ConfigDB.to_binary([:none]))
 
@@ -37,14 +37,17 @@ defmodule Pleroma.ConfigDBTest do
       value: ConfigDB.to_binary("https://hooks.slack.com/services/KEY/some_val")
     )
 
-    assert [
-             pleroma: [{_, %{another: _, another_key: _}}],
-             quack: [
-               level: :info,
-               meta: [:none],
-               webhook_url: "https://hooks.slack.com/services/KEY/some_val"
-             ]
-           ] = ConfigDB.get_all_as_keyword()
+    config = ConfigDB.get_all_as_keyword()
+
+    assert config[:pleroma] == [
+             {ConfigDB.from_string(saved.key), ConfigDB.from_binary(saved.value)}
+           ]
+
+    assert config[:quack] == [
+             level: :info,
+             meta: [:none],
+             webhook_url: "https://hooks.slack.com/services/KEY/some_val"
+           ]
   end
 
   describe "update_or_create/1" do
@@ -191,10 +194,44 @@ defmodule Pleroma.ConfigDBTest do
     end
   end
 
-  test "delete/1" do
-    config = insert(:config)
-    {:ok, _} = ConfigDB.delete(%{key: config.key, group: config.group})
-    refute ConfigDB.get_by_params(%{key: config.key, group: config.group})
+  describe "delete/1" do
+    test "error on deleting non existing setting" do
+      {:error, error} = ConfigDB.delete(%{group: ":pleroma", key: ":key"})
+      assert error =~ "Config with params %{group: \":pleroma\", key: \":key\"} not found"
+    end
+
+    test "full delete" do
+      config = insert(:config)
+      {:ok, deleted} = ConfigDB.delete(%{group: config.group, key: config.key})
+      assert Ecto.get_meta(deleted, :state) == :deleted
+      refute ConfigDB.get_by_params(%{group: config.group, key: config.key})
+    end
+
+    test "partial subkeys delete" do
+      config = insert(:config, value: ConfigDB.to_binary(groups: [a: 1, b: 2], key: [a: 1]))
+
+      {:ok, deleted} =
+        ConfigDB.delete(%{group: config.group, key: config.key, subkeys: [":groups"]})
+
+      assert Ecto.get_meta(deleted, :state) == :loaded
+
+      assert deleted.value == ConfigDB.to_binary(key: [a: 1])
+
+      updated = ConfigDB.get_by_params(%{group: config.group, key: config.key})
+
+      assert updated.value == deleted.value
+    end
+
+    test "full delete if remaining value after subkeys deletion is empty list" do
+      config = insert(:config, value: ConfigDB.to_binary(groups: [a: 1, b: 2]))
+
+      {:ok, deleted} =
+        ConfigDB.delete(%{group: config.group, key: config.key, subkeys: [":groups"]})
+
+      assert Ecto.get_meta(deleted, :state) == :deleted
+
+      refute ConfigDB.get_by_params(%{group: config.group, key: config.key})
+    end
   end
 
   describe "transform/1" do
