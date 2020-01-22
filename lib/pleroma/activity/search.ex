@@ -26,17 +26,22 @@ defmodule Pleroma.Activity.Search do
     |> query_with(index_type, search_query)
     |> maybe_restrict_local(user)
     |> maybe_restrict_author(author)
+    |> maybe_restrict_blocked(user)
     |> Pagination.fetch_paginated(%{"offset" => offset, "limit" => limit}, :offset)
     |> maybe_fetch(user, search_query)
   end
 
   def maybe_restrict_author(query, %User{} = author) do
-    from([a, o] in query,
-      where: a.actor == ^author.ap_id
-    )
+    Activity.Queries.by_author(query, author)
   end
 
   def maybe_restrict_author(query, _), do: query
+
+  def maybe_restrict_blocked(query, %User{} = user) do
+    Activity.Queries.exclude_authors(query, User.blocked_users_ap_ids(user))
+  end
+
+  def maybe_restrict_blocked(query, _), do: query
 
   defp restrict_public(q) do
     from([a, o] in q,

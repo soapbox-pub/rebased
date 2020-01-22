@@ -94,6 +94,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Captcha: Support native provider
 - Captcha: Enable by default
 - Mastodon API: Add support for `account_id` param to filter notifications by the account
+- Mastodon API: Add `emoji_reactions` property to Statuses
 </details>
 
 ### Fixed
