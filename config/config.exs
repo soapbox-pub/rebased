@@ -620,6 +620,10 @@ config :pleroma, :modules, runtime_dir: "instance/modules"
 
 config :pleroma, configurable_from_database: false
 
+config :pleroma, :mastodon_compatibility,
+  # https://git.pleroma.social/pleroma/pleroma/issues/1505
+  federated_note_replies_limit: 5
+
 config :swarm, node_blacklist: [~r/myhtml_.*$/]
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

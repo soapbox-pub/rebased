@@ -3091,6 +3091,20 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :mastodon_compatibility,
+    type: :group,
+    description: "Mastodon compatibility-related settings.",
+    children: [
+      %{
+        key: :federated_note_replies_limit,
+        type: :integer,
+        description:
+          "The number of Note self-reply URIs to be included with outgoing federation (`5` to mimic Mastodon hardcoded value, `0` to disable)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     type: :group,
     description: "Allow instance configuration from database.",
     children: [

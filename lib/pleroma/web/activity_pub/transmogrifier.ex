@@ -903,6 +903,49 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def set_reply_to_uri(obj), do: obj
 
+  @doc """
+  Serialized Mastodon-compatible `replies` collection containing _self-replies_.
+  Based on Mastodon's ActivityPub::NoteSerializer#replies.
+  """
+  def set_replies(obj) do
+    limit = Pleroma.Config.get([:mastodon_compatibility, :federated_note_replies_limit], 0)
+
+    replies_uris =
+      with true <- limit > 0 || nil,
+           %Activity{} = activity <- Activity.get_create_by_object_ap_id(obj["id"]) do
+        activity
+        |> Activity.self_replies()
+        |> select([a], fragment("?->>'id'", a.data))
+        |> limit(^limit)
+        |> Repo.all()
+      end
+
+    set_replies(obj, replies_uris || [])
+  end
+
+  defp set_replies(obj, replies_uris) when replies_uris in [nil, []] do
+    obj
+  end
+
+  defp set_replies(obj, replies_uris) do
+    # Note: stubs (Mastodon doesn't make separate requests via those URIs in FetchRepliesService)
+    masto_replies_uri = nil
+    masto_replies_next_page_uri = nil
+
+    replies_collection = %{
+      "type" => "Collection",
+      "id" => masto_replies_uri,
+      "first" => %{
+        "type" => "Collection",
+        "part_of" => masto_replies_uri,
+        "items" => replies_uris,
+        "next" => masto_replies_next_page_uri
+      }
+    }
+
+    Map.merge(obj, %{"replies" => replies_collection})
+  end
+
   # Prepares the object of an outgoing create activity.
   def prepare_object(object) do
     object
@@ -914,6 +957,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
+    |> set_replies
     |> strip_internal_fields
     |> strip_internal_tags
     |> set_type

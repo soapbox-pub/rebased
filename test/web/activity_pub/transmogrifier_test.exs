@@ -2027,4 +2027,51 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
              }
     end
   end
+
+  describe "set_replies/1" do
+    clear_config([:mastodon_compatibility, :federated_note_replies_limit]) do
+      Pleroma.Config.put([:mastodon_compatibility, :federated_note_replies_limit], 2)
+    end
+
+    test "returns unmodified object if activity doesn't have self-replies" do
+      data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
+      assert Transmogrifier.set_replies(data) == data
+    end
+
+    test "sets `replies` collection with a limited number of self-replies" do
+      [user, another_user] = insert_list(2, :user)
+
+      {:ok, %{id: id1} = activity} = CommonAPI.post(user, %{"status" => "1"})
+
+      {:ok, %{id: id2} = self_reply1} =
+        CommonAPI.post(user, %{"status" => "self-reply 1", "in_reply_to_status_id" => id1})
+
+      {:ok, self_reply2} =
+        CommonAPI.post(user, %{"status" => "self-reply 2", "in_reply_to_status_id" => id1})
+
+      # Assuming to _not_ be present in `replies` due to :federated_note_replies_limit is set to 2
+      {:ok, _} =
+        CommonAPI.post(user, %{"status" => "self-reply 3", "in_reply_to_status_id" => id1})
+
+      {:ok, _} =
+        CommonAPI.post(user, %{
+          "status" => "self-reply to self-reply",
+          "in_reply_to_status_id" => id2
+        })
+
+      {:ok, _} =
+        CommonAPI.post(another_user, %{
+          "status" => "another user's reply",
+          "in_reply_to_status_id" => id1
+        })
+
+      object = Object.normalize(activity)
+      replies_uris = Enum.map([self_reply1, self_reply2], fn a -> a.data["id"] end)
+
+      assert %{
+               "type" => "Collection",
+               "first" => %{"type" => "Collection", "items" => ^replies_uris}
+             } = Transmogrifier.set_replies(object.data)["replies"]
+    end
+  end
 end

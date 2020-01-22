@@ -329,4 +329,23 @@ defmodule Pleroma.Activity do
       _ -> nil
     end
   end
+
+  def replies(activity, opts \\ []) do
+    object = Object.normalize(activity)
+
+    query =
+      Activity
+      |> Queries.by_type("Create")
+      |> Queries.by_object_in_reply_to_id(object.data["id"], skip_preloading: true)
+      |> order_by([activity], asc: activity.id)
+
+    if opts[:self_only] do
+      where(query, [a], a.actor == ^activity.actor)
+    else
+      query
+    end
+  end
+
+  def self_replies(activity, opts \\ []),
+    do: replies(activity, Keyword.put(opts, :self_only, true))
 end
