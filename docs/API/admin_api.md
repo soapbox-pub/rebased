@@ -722,11 +722,11 @@ Some modifications are necessary to save the config settings correctly:
 ```
 ":pleroma" -> :pleroma
 ```
-- objects with `tuple` key and array value will be converted to atoms;
+- objects with `tuple` key and array value will be converted to tuples;
 ```
 {"tuple": ["string", "Pleroma.Upload", []]} -> {"string", Pleroma.Upload, []}
 ```
-- arrays with *tuple objects* and 2 childs in array will be converted to keywords;
+- arrays with *tuple objects* will be converted to keywords;
 ```
 [{"tuple": [":key1", "value"]}, {"tuple": [":key2", "value"]}] -> [key1: "value", key2: "value"]
 ```
