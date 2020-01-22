@@ -682,11 +682,12 @@ Copies all settings from database to `config/{env}.exported_from_db.secret.exs` 
 
 ## `GET /api/pleroma/admin/config`
 
-### Get saved config settings
+### Get list of merged default settings with saved in database.
 
 **Only works when configuration from database is enabled.**
 
-- Params: none
+- Params:
+  - `only_db`: true (*optional*, get only saved in database settings)
 - Response:
   - On failure:
     - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
@@ -734,7 +735,6 @@ Most of the settings will be applied in `runtime`, this means that you don't nee
 - all settings inside these keys:
   - `:hackney_pools`
   - `:chat`
-  - `Pleroma.Web.Endpoint`
 - partially settings inside these keys:
   - `:seconds_valid` in `Pleroma.Captcha`
   - `:proxy_remote` in `Pleroma.Upload`
@@ -763,17 +763,27 @@ Example of setting without keyword in value:
 config :tesla, :adapter, Tesla.Adapter.Hackney
 ```
 
-List of settings which support only full update:
+List of settings which support only full update by key:
 ```elixir
 @full_key_update [
     {:pleroma, :ecto_repos},
-    {:pleroma, :assets},
     {:quack, :meta},
     {:mime, :types},
     {:cors_plug, [:max_age, :methods, :expose, :headers]},
     {:auto_linker, :opts},
     {:swarm, :node_blacklist},
     {:logger, :backends}
+  ]
+```
+
+List of settings which support only full update by subkey:
+```elixir
+@full_subkey_update [
+    {:pleroma, :assets, :mascots},
+    {:pleroma, :emoji, :groups},
+    {:pleroma, :workers, :retries},
+    {:pleroma, :mrf_subchain, :match_actor},
+    {:pleroma, :mrf_keyword, :replace}
   ]
 ```
 
