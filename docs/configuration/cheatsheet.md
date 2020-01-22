@@ -515,7 +515,7 @@ Pleroma has the following queues:
 
 #### Oban.Cron
 
-Pleroma has the periodic jobs:
+Pleroma has these periodic job workers:
 
 `Pleroma.Workers.Cron.ClearOauthTokenWorker` - the job to clean an expired oauth tokens.
 
