@@ -23,7 +23,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"]}
-    when action in [:conversation, :conversation_statuses, :emoji_reactions_by]
+    when action in [:conversation, :conversation_statuses]
   )
 
   plug(
@@ -43,21 +43,21 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   def emoji_reactions_by(%{assigns: %{user: user}} = conn, %{"id" => activity_id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
-         %Object{data: %{"reactions" => emoji_reactions}} <- Object.normalize(activity) do
+         %Object{data: %{"reactions" => emoji_reactions}} when is_list(emoji_reactions) <-
+           Object.normalize(activity) do
       reactions =
         emoji_reactions
-        |> Enum.map(fn {emoji, users} ->
+        |> Enum.map(fn [emoji, users] ->
           users = Enum.map(users, &User.get_cached_by_ap_id/1)
           {emoji, AccountView.render("index.json", %{users: users, for: user, as: :user})}
         end)
-        |> Enum.into(%{})
 
       conn
       |> json(reactions)
     else
       _e ->
         conn
-        |> json(%{})
+        |> json([])
     end
   end
 

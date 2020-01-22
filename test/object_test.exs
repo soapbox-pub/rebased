@@ -4,12 +4,14 @@
 
 defmodule Pleroma.ObjectTest do
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
   import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.CommonAPI
 
   setup do
@@ -99,6 +101,8 @@ defmodule Pleroma.ObjectTest do
 
       Object.delete(note)
 
+      ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
+
       assert Object.get_by_id(attachment.id) == nil
 
       assert {:ok, []} == File.ls("#{uploads_dir}/#{path}")
@@ -133,9 +137,45 @@ defmodule Pleroma.ObjectTest do
 
       Object.delete(note)
 
+      ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
+
       assert Object.get_by_id(attachment.id) == nil
       assert {:ok, files} = File.ls(uploads_dir)
       refute filename in files
+    end
+
+    test "with objects that have legacy data.url attribute" do
+      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      user = insert(:user)
+
+      {:ok, %Object{} = attachment} =
+        Pleroma.Web.ActivityPub.ActivityPub.upload(file, actor: user.ap_id)
+
+      {:ok, %Object{}} = Object.create(%{url: "https://google.com", actor: user.ap_id})
+
+      %{data: %{"attachment" => [%{"url" => [%{"href" => href}]}]}} =
+        note = insert(:note, %{user: user, data: %{"attachment" => [attachment.data]}})
+
+      uploads_dir = Pleroma.Config.get!([Pleroma.Uploaders.Local, :uploads])
+
+      path = href |> Path.dirname() |> Path.basename()
+
+      assert {:ok, ["an_image.jpg"]} == File.ls("#{uploads_dir}/#{path}")
+
+      Object.delete(note)
+
+      ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
+
+      assert Object.get_by_id(attachment.id) == nil
+
+      assert {:ok, []} == File.ls("#{uploads_dir}/#{path}")
     end
   end
 
