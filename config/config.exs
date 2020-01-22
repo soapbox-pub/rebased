@@ -502,7 +502,11 @@ config :pleroma, Oban,
     mailer: 10,
     transmogrifier: 20,
     scheduled_activities: 10,
-    background: 5
+    background: 5,
+    new_users_digest: 1
+  ],
+  crontab: [
+    {"0 0 * * *", Pleroma.Workers.NewUsersDigestWorker}
   ]
 
 config :pleroma, :workers,
