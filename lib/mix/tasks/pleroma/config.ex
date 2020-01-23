@@ -52,6 +52,8 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp do_migrate_to_db(config_file) do
     if File.exists?(config_file) do
+      Ecto.Adapters.SQL.query!(Repo, "TRUNCATE config;")
+
       custom_config =
         config_file
         |> read_file()

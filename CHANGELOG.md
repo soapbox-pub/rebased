@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Store status data inside Flag activity
 - Deprecated (reorganized as `UserRelationship` entity) User fields with user AP IDs (`blocks`, `mutes`, `muted_reblogs`, `muted_notifications`, `subscribers`).
 - Logger: default log level changed from `warn` to `info`.
+- Config mix task `migrate_to_db` truncates `config` table before migrating the config file.
 <details>
   <summary>API Changes</summary>
 
