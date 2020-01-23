@@ -34,21 +34,41 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
                    15
   end
 
-  test "settings are migrated to db" do
-    initial = Application.get_env(:quack, :level)
-    on_exit(fn -> Application.put_env(:quack, :level, initial) end)
-    assert Repo.all(ConfigDB) == []
+  describe "migrate_to_db/1" do
+    setup do
+      initial = Application.get_env(:quack, :level)
+      on_exit(fn -> Application.put_env(:quack, :level, initial) end)
+    end
 
-    Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
+    test "settings are migrated to db" do
+      assert Repo.all(ConfigDB) == []
 
-    config1 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":first_setting"})
-    config2 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":second_setting"})
-    config3 = ConfigDB.get_by_params(%{group: ":quack", key: ":level"})
-    refute ConfigDB.get_by_params(%{group: ":pleroma", key: "Pleroma.Repo"})
+      Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
 
-    assert ConfigDB.from_binary(config1.value) == [key: "value", key2: [Repo]]
-    assert ConfigDB.from_binary(config2.value) == [key: "value2", key2: ["Activity"]]
-    assert ConfigDB.from_binary(config3.value) == :info
+      config1 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":first_setting"})
+      config2 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":second_setting"})
+      config3 = ConfigDB.get_by_params(%{group: ":quack", key: ":level"})
+      refute ConfigDB.get_by_params(%{group: ":pleroma", key: "Pleroma.Repo"})
+
+      assert ConfigDB.from_binary(config1.value) == [key: "value", key2: [Repo]]
+      assert ConfigDB.from_binary(config2.value) == [key: "value2", key2: ["Activity"]]
+      assert ConfigDB.from_binary(config3.value) == :info
+    end
+
+    test "config table is truncated before migration" do
+      ConfigDB.create(%{
+        group: ":pleroma",
+        key: ":first_setting",
+        value: [key: "value", key2: ["Activity"]]
+      })
+
+      assert Repo.aggregate(ConfigDB, :count, :id) == 1
+
+      Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
+
+      config = ConfigDB.get_by_params(%{group: ":pleroma", key: ":first_setting"})
+      assert ConfigDB.from_binary(config.value) == [key: "value", key2: [Repo]]
+    end
   end
 
   describe "with deletion temp file" do
