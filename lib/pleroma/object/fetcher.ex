@@ -117,6 +117,9 @@ defmodule Pleroma.Object.Fetcher do
       {:error, %Tesla.Mock.Error{}} ->
         nil
 
+      {:error, "Object has been deleted"} ->
+        nil
+
       e ->
         Logger.error("Error while fetching #{id}: #{inspect(e)}")
         nil

@@ -451,11 +451,11 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 * Method: `GET`
 * Authentication: optional
 * Params: None
-* Response: JSON, a map of emoji to account list mappings.
+* Response: JSON, a list of emoji/account list tuples, sorted by emoji insertion date, in ascending order, e.g, the first emoji in the list is the oldest.
 * Example Response:
 ```json
-{
-  "😀" => [{"id" => "xyz.."...}, {"id" => "zyx..."}],
-  "🗡" => [{"id" => "abc..."}] 
-}
+[
+  ["😀", [{"id" => "xyz.."...}, {"id" => "zyx..."}]],
+  ["☕", [{"id" => "abc..."}]]
+]
 ```
