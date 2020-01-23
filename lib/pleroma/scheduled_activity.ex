@@ -121,13 +121,7 @@ defmodule Pleroma.ScheduledActivity do
     |> Multi.insert(:scheduled_activity, new(user, attrs))
     |> maybe_add_jobs(Config.get([ScheduledActivity, :enabled]))
     |> Repo.transaction()
-    |> case do
-      {:ok, %{scheduled_activity: scheduled_activity}} ->
-        {:ok, scheduled_activity}
-
-      {:error, _, changeset, _} ->
-        {:error, changeset}
-    end
+    |> transaction_response
   end
 
   defp maybe_add_jobs(multi, true) do
@@ -159,34 +153,32 @@ defmodule Pleroma.ScheduledActivity do
         set: [scheduled_at: get_field(changeset, :scheduled_at)]
       )
       |> Repo.transaction()
-      |> case do
-        {:ok, %{scheduled_activity: scheduled_activity}} ->
-          {:ok, scheduled_activity}
-
-        {:error, _, changeset, _} ->
-          {:error, changeset}
-      end
+      |> transaction_response
     end
   end
 
-  def delete_job(%ScheduledActivity{id: id} = _scheduled_activity) do
-    id
-    |> job_query
-    |> Repo.delete_all()
-  end
-
-  def delete(%ScheduledActivity{} = scheduled_activity) do
-    Repo.delete(scheduled_activity)
+  @doc "Deletes a ScheduledActivity and linked jobs."
+  @spec delete(ScheduledActivity.t() | binary() | integer) ::
+          {:ok, ScheduledActivity.t()} | {:error, Ecto.Changeset.t()}
+  def delete(%ScheduledActivity{id: id} = scheduled_activity) do
+    Multi.new()
+    |> Multi.delete(:scheduled_activity, scheduled_activity, stale_error_field: :id)
+    |> Multi.delete_all(:jobs, job_query(id))
+    |> Repo.transaction()
+    |> transaction_response
   end
 
   def delete(id) when is_binary(id) or is_integer(id) do
-    ScheduledActivity
-    |> where(id: ^id)
-    |> select([sa], sa)
-    |> Repo.delete_all()
-    |> case do
-      {1, [scheduled_activity]} -> {:ok, scheduled_activity}
-      _ -> :error
+    delete(%__MODULE__{id: id})
+  end
+
+  defp transaction_response(result) do
+    case result do
+      {:ok, %{scheduled_activity: scheduled_activity}} ->
+        {:ok, scheduled_activity}
+
+      {:error, _, changeset, _} ->
+        {:error, changeset}
     end
   end
 
