@@ -30,7 +30,8 @@ defmodule Pleroma.Activity do
     "Follow" => "follow",
     "Announce" => "reblog",
     "Like" => "favourite",
-    "Move" => "move"
+    "Move" => "move",
+    "EmojiReaction" => "pleroma:emoji_reaction"
   }
 
   @mastodon_to_ap_notification_types for {k, v} <- @mastodon_notification_types,
