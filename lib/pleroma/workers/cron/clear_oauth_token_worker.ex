@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Workers.Cron.ClearOauthTokenWorker do
   @moduledoc """
-  The worker to clean an expired oauth tokens.
+  The worker to cleanup expired oAuth tokens.
   """
 
   use Oban.Worker, queue: "background"
