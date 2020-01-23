@@ -156,7 +156,7 @@ defmodule Pleroma.ScheduledActivity do
       Multi.new()
       |> Multi.update(:scheduled_activity, changeset)
       |> Multi.update_all(:scheduled_job, job_query(id),
-        set: [scheduled_at: changeset.changes[:scheduled_at]]
+        set: [scheduled_at: get_field(changeset, :scheduled_at)]
       )
       |> Repo.transaction()
       |> case do

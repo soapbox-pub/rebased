@@ -29,12 +29,12 @@ defmodule Pleroma.Workers.ScheduledActivityWorker do
     end
   end
 
-  defp post_activity(%ScheduledActivity{} = scheduled_activity) do
-    try do
-      {:ok, scheduled_activity} = ScheduledActivity.delete(scheduled_activity)
-      %User{} = user = User.get_cached_by_id(scheduled_activity.user_id)
-      {:ok, _result} = CommonAPI.post(user, scheduled_activity.params)
-    rescue
+  defp post_activity(%ScheduledActivity{user_id: user_id, params: params} = scheduled_activity) do
+    with {:delete, {:ok, _}} <- {:delete, ScheduledActivity.delete(scheduled_activity)},
+         {:user, %User{} = user} <- {:user, User.get_cached_by_id(user_id)},
+         {:post, {:ok, _}} <- {:post, CommonAPI.post(user, params)} do
+      :ok
+    else
       error ->
         Logger.error(
           "#{__MODULE__} Couldn't create a status from the scheduled activity: #{inspect(error)}"

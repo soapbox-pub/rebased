@@ -26,14 +26,21 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker do
     end
   end
 
-  def delete_activity(expiration) do
-    try do
-      activity = Activity.get_by_id_with_object(expiration.activity_id)
-      user = User.get_by_ap_id(activity.object.data["actor"])
+  def delete_activity(%ActivityExpiration{activity_id: activity_id}) do
+    with {:activity, %Activity{} = activity} <-
+           {:activity, Activity.get_by_id_with_object(activity_id)},
+         {:user, %User{} = user} <- {:user, User.get_by_ap_id(activity.object.data["actor"])} do
       CommonAPI.delete(activity.id, user)
-    rescue
-      error ->
-        Logger.error("#{__MODULE__} Couldn't delete expired activity: #{inspect(error)}")
+    else
+      {:activity, _} ->
+        Logger.error(
+          "#{__MODULE__} Couldn't delete expired activity: not found activity ##{activity_id}"
+        )
+
+      {:user, _} ->
+        Logger.error(
+          "#{__MODULE__} Couldn't delete expired activity: not found actorof ##{activity_id}"
+        )
     end
   end
 end
