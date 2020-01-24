@@ -236,15 +236,7 @@ defmodule Pleroma.ConfigDB do
   end
 
   @spec from_string(String.t()) :: atom() | no_return()
-  def from_string(":" <> entity), do: String.to_existing_atom(entity)
-
-  def from_string(entity) when is_binary(entity) do
-    if is_module_name?(entity) do
-      String.to_existing_atom("Elixir.#{entity}")
-    else
-      entity
-    end
-  end
+  def from_string(string), do: do_transform_string(string)
 
   @spec convert(any()) :: any()
   def convert(entity), do: do_convert(entity)
