@@ -12,7 +12,60 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
 
   clear_config([:feed])
 
-  test "gets a feed", %{conn: conn} do
+  test "gets a feed (ATOM)", %{conn: conn} do
+    Pleroma.Config.put(
+      [:feed, :post_title],
+      %{max_length: 25, omission: "..."}
+    )
+
+    user = insert(:user)
+    {:ok, activity1} = Pleroma.Web.CommonAPI.post(user, %{"status" => "yeah #PleromaArt"})
+
+    object = Pleroma.Object.normalize(activity1)
+
+    object_data =
+      Map.put(object.data, "attachment", [
+        %{
+          "url" => [
+            %{
+              "href" =>
+                "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
+              "mediaType" => "video/mp4",
+              "type" => "Link"
+            }
+          ]
+        }
+      ])
+
+    object
+    |> Ecto.Changeset.change(data: object_data)
+    |> Pleroma.Repo.update()
+
+    {:ok, _activity2} =
+      Pleroma.Web.CommonAPI.post(user, %{"status" => "42 This is :moominmamma #PleromaArt"})
+
+    {:ok, _activity3} = Pleroma.Web.CommonAPI.post(user, %{"status" => "This is :moominmamma"})
+
+    response =
+      conn
+      |> put_req_header("content-type", "application/atom+xml")
+      |> get(tag_feed_path(conn, :feed, "pleromaart.atom"))
+      |> response(200)
+
+    xml = parse(response)
+
+    assert xpath(xml, ~x"//feed/title/text()") == '#pleromaart'
+
+    assert xpath(xml, ~x"//feed/entry/title/text()"l) == [
+             '42 This is :moominmamm...',
+             'yeah #PleromaArt'
+           ]
+
+    assert xpath(xml, ~x"//feed/entry/author/name/text()"ls) == [user.nickname, user.nickname]
+    assert xpath(xml, ~x"//feed/entry/author/id/text()"ls) == [user.ap_id, user.ap_id]
+  end
+
+  test "gets a feed (RSS)", %{conn: conn} do
     Pleroma.Config.put(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}

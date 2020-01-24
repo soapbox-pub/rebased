@@ -12,7 +12,7 @@ defmodule Pleroma.Web.Feed.TagController do
   import Pleroma.Web.ControllerHelper, only: [put_in_if_exist: 3]
 
   def feed(conn, %{"tag" => raw_tag} = params) do
-    tag = parse_tag(raw_tag)
+    {format, tag} = parse_tag(raw_tag)
 
     activities =
       %{"type" => ["Create"], "whole_db" => true, "tag" => tag}
@@ -22,19 +22,20 @@ defmodule Pleroma.Web.Feed.TagController do
     conn
     |> put_resp_content_type("application/atom+xml")
     |> put_view(FeedView)
-    |> render("tag.xml",
+    |> render("tag.#{format}",
       activities: activities,
       tag: tag,
       feed_config: Config.get([:feed])
     )
   end
 
+  @spec parse_tag(binary() | any()) :: {format :: String.t(), tag :: String.t()}
   defp parse_tag(raw_tag) when is_binary(raw_tag) do
     case Enum.reverse(String.split(raw_tag, ".")) do
-      [format | tag] when format in ["atom", "rss"] -> Enum.join(tag, ".")
-      _ -> raw_tag
+      [format | tag] when format in ["atom", "rss"] -> {format, Enum.join(tag, ".")}
+      _ -> {"rss", raw_tag}
     end
   end
 
-  defp parse_tag(raw_tag), do: raw_tag
+  defp parse_tag(raw_tag), do: {"rss", raw_tag}
 end

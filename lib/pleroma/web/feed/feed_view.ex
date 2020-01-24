@@ -22,14 +22,26 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   def pub_date(%DateTime{} = date), do: Timex.format!(date, "{RFC822}")
 
-  def prepare_activity(activity) do
+  def prepare_activity(activity, opts \\ []) do
     object = activity_object(activity)
+
+    actor =
+      if opts[:actor] do
+        Pleroma.User.get_cached_by_ap_id(activity.actor)
+      end
 
     %{
       activity: activity,
       data: Map.get(object, :data),
-      object: object
+      object: object,
+      actor: actor
     }
+  end
+
+  def most_recent_update(activities) do
+    with %{updated_at: updated_at} <- List.first(activities) do
+      NaiveDateTime.to_iso8601(updated_at)
+    end
   end
 
   def most_recent_update(activities, user) do
