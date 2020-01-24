@@ -25,11 +25,11 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
   end
 
   test "error if file with custom settings doesn't exist" do
-    Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
+    Mix.Tasks.Pleroma.Config.migrate_to_db("config/not_existance_config_file.exs")
 
     assert_receive {:mix_shell, :info,
                     [
-                      "To migrate settings, you must define custom settings in config/test.secret.exs."
+                      "To migrate settings, you must define custom settings in config/not_existance_config_file.exs."
                     ]},
                    15
   end
