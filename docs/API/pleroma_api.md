@@ -455,7 +455,7 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 * Example Response:
 ```json
 [
-  ["😀", [{"id" => "xyz.."...}, {"id" => "zyx..."}]],
-  ["☕", [{"id" => "abc..."}]]
+  {"emoji": "😀", "count": 2, "accounts": [{"id" => "xyz.."...}, {"id" => "zyx..."}]},
+  {"emoji": "☕", "count": 1, "accounts": [{"id" => "abc..."}]}
 ]
 ```

@@ -98,6 +98,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `emoji_reactions` property to Statuses
 - Mastodon API: Change emoji reaction reply format
 - Notifications: Added `pleroma:emoji_reaction` notification type
+- Mastodon API: Change emoji reaction reply format once more
 </details>
 
 ### Fixed
