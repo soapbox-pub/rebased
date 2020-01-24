@@ -23,7 +23,7 @@ config :pleroma, :config_description, [
         key: :uploader,
         type: :module,
         description: "Module which will be used for uploads",
-        suggestions: [Pleroma.Uploaders.Local, Pleroma.Uploaders.MDII, Pleroma.Uploaders.S3]
+        suggestions: [Pleroma.Uploaders.Local, Pleroma.Uploaders.S3]
       },
       %{
         key: :filters,
@@ -515,6 +515,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :email,
+        label: "Admin Email Address",
         type: :string,
         description: "Email used to reach an Administrator/Moderator of the instance",
         suggestions: [
@@ -523,8 +524,9 @@ config :pleroma, :config_description, [
       },
       %{
         key: :notify_email,
+        label: "Sender Email Address",
         type: :string,
-        description: "Email used for notifications",
+        description: "Envelope FROM address for mail sent via Pleroma",
         suggestions: [
           "notify@example.com"
         ]

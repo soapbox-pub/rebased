@@ -71,7 +71,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
       |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
       |> json_response(200)
 
-    [["🎅", [represented_user]]] = result
+    [%{"emoji" => "🎅", "count" => 1, "accounts" => [represented_user]}] = result
     assert represented_user["id"] == other_user.id
   end
 
