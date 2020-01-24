@@ -23,7 +23,7 @@ config :pleroma, :config_description, [
         key: :uploader,
         type: :module,
         description: "Module which will be used for uploads",
-        suggestions: [Pleroma.Uploaders.Local, Pleroma.Uploaders.MDII, Pleroma.Uploaders.S3]
+        suggestions: [Pleroma.Uploaders.Local, Pleroma.Uploaders.S3]
       },
       %{
         key: :filters,
