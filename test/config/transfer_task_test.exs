@@ -119,7 +119,10 @@ defmodule Pleroma.Config.TransferTaskTest do
         value: [groups: [a: 1, b: 2]]
       })
 
-      assert capture_log(fn -> TransferTask.start_link([]) end) =~ ""
+      refute String.contains?(
+               capture_log(fn -> TransferTask.start_link([]) end),
+               "pleroma restarted"
+             )
     end
 
     test "restart pleroma on reboot time key" do
