@@ -2043,7 +2043,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         Application.delete_env(:pleroma, Pleroma.Captcha.NotReal)
         Application.put_env(:pleroma, :http, http)
         Application.put_env(:tesla, :adapter, Tesla.Mock)
-        :ok = File.rm("config/test.exported_from_db.secret.exs")
       end)
     end
 
@@ -2170,7 +2169,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert Application.get_env(:idna, :key5) == {"string", Pleroma.Captcha.NotReal, []}
     end
 
-    test "save config setting without key", %{conn: conn} do
+    test "save configs setting without explicit key", %{conn: conn} do
       level = Application.get_env(:quack, :level)
       meta = Application.get_env(:quack, :meta)
       webhook_url = Application.get_env(:quack, :webhook_url)
@@ -2253,6 +2252,34 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "db" => [":key1", ":key2", ":key3"]
                  }
                ]
+             }
+    end
+
+    test "saving config which need pleroma reboot", %{conn: conn} do
+      chat = Pleroma.Config.get(:chat)
+      on_exit(fn -> Pleroma.Config.put(:chat, chat) end)
+
+      conn =
+        post(
+          conn,
+          "/api/pleroma/admin/config",
+          %{
+            configs: [
+              %{group: ":pleroma", key: ":chat", value: [%{"tuple" => [":enabled", true]}]}
+            ]
+          }
+        )
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "db" => [":enabled"],
+                   "group" => ":pleroma",
+                   "key" => ":chat",
+                   "value" => [%{"tuple" => [":enabled", true]}]
+                 }
+               ],
+               "need_reboot" => true
              }
     end
 
@@ -2998,6 +3025,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "To use this endpoint you need to enable configuration from database."
 
       assert Repo.all(Pleroma.ConfigDB) == []
+    end
+  end
+
+  describe "GET /api/pleroma/admin/restart" do
+    clear_config(:configurable_from_database) do
+      Pleroma.Config.put(:configurable_from_database, true)
+    end
+
+    test "pleroma restarts", %{conn: conn} do
+      ExUnit.CaptureLog.capture_log(fn ->
+        assert conn |> get("/api/pleroma/admin/restart") |> json_response(200) == %{}
+      end) =~ "pleroma restarted"
     end
   end
 

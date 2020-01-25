@@ -890,17 +890,36 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
           Ecto.get_meta(config, :state) == :deleted
         end)
 
-      Pleroma.Config.TransferTask.load_and_update_env(deleted)
+      Pleroma.Config.TransferTask.load_and_update_env(deleted, false)
 
-      Mix.Tasks.Pleroma.Config.run([
-        "migrate_from_db",
-        "--env",
-        to_string(Pleroma.Config.get(:env))
-      ])
+      need_reboot? =
+        Enum.any?(updated, fn config ->
+          group = ConfigDB.from_string(config.group)
+          key = ConfigDB.from_string(config.key)
+          value = ConfigDB.from_binary(config.value)
+          Pleroma.Config.TransferTask.pleroma_need_restart?(group, key, value)
+        end)
+
+      response = %{configs: updated}
+
+      response =
+        if need_reboot?, do: Map.put(response, :need_reboot, need_reboot?), else: response
 
       conn
       |> put_view(ConfigView)
-      |> render("index.json", %{configs: updated})
+      |> render("index.json", response)
+    end
+  end
+
+  def restart(conn, _params) do
+    with :ok <- configurable_from_database(conn) do
+      if Pleroma.Config.get(:env) == :test do
+        Logger.warn("pleroma restarted")
+      else
+        send(Restarter.Pleroma, {:restart, 50})
+      end
+
+      json(conn, %{})
     end
   end
 
