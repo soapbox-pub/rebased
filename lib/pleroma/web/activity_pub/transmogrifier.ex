@@ -424,7 +424,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           ])
       }
 
-      ActivityPub.create(params)
+      with {:ok, created_activity} <- ActivityPub.create(params) do
+        for reply_id <- replies(object) do
+          Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{"id" => reply_id})
+        end
+
+        {:ok, created_activity}
+      end
     else
       %Activity{} = activity -> {:ok, activity}
       _e -> :error
@@ -945,6 +951,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     Map.merge(obj, %{"replies" => replies_collection})
   end
+
+  def replies(%{"replies" => replies = %{}}) do
+    replies = with %{} <- replies["first"], do: replies["first"], else: (_ -> replies)
+    replies["items"] || []
+  end
+
+  def replies(_), do: []
 
   # Prepares the object of an outgoing create activity.
   def prepare_object(object) do

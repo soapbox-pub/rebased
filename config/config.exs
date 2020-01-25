@@ -501,6 +501,7 @@ config :pleroma, Oban,
     transmogrifier: 20,
     scheduled_activities: 10,
     background: 5,
+    remote_fetcher: 2,
     attachments_cleanup: 5
   ]
 

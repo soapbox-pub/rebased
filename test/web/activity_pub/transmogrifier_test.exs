@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
+  use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.DataCase
+
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
@@ -1326,6 +1328,52 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity.data["object"] == old_user.ap_id
       assert activity.data["target"] == new_user.ap_id
       assert activity.data["type"] == "Move"
+    end
+  end
+
+  describe "handle_incoming:`replies` handling" do
+    setup do
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+
+      items = ["https://shitposter.club/notice/2827873", "https://shitposter.club/notice/7387606"]
+      collection = %{"items" => items}
+      %{data: data, items: items, collection: collection}
+    end
+
+    test "it schedules background fetching of wrapped `replies` collection items", %{
+      data: data,
+      items: items,
+      collection: collection
+    } do
+      replies = %{"first" => collection}
+
+      object = Map.put(data["object"], "replies", replies)
+      data = Map.put(data, "object", object)
+      {:ok, _activity} = Transmogrifier.handle_incoming(data)
+
+      for id <- items do
+        job_args = %{"op" => "fetch_remote", "id" => id}
+        assert_enqueued(worker: Pleroma.Workers.RemoteFetcherWorker, args: job_args)
+      end
+    end
+
+    test "it schedules background fetching of unwrapped `replies` collection items", %{
+      data: data,
+      items: items,
+      collection: collection
+    } do
+      replies = collection
+
+      object = Map.put(data["object"], "replies", replies)
+      data = Map.put(data, "object", object)
+      {:ok, _activity} = Transmogrifier.handle_incoming(data)
+
+      for id <- items do
+        job_args = %{"op" => "fetch_remote", "id" => id}
+        assert_enqueued(worker: Pleroma.Workers.RemoteFetcherWorker, args: job_args)
+      end
     end
   end
 
