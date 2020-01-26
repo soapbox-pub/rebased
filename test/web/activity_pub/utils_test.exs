@@ -636,4 +636,17 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       assert updated_object.data["announcement_count"] == 1
     end
   end
+
+  describe "get_cached_emoji_reactions/1" do
+    test "returns the data or an emtpy list" do
+      object = insert(:note)
+      assert Utils.get_cached_emoji_reactions(object) == []
+
+      object = insert(:note, data: %{"reactions" => [["x", ["lain"]]]})
+      assert Utils.get_cached_emoji_reactions(object) == [["x", ["lain"]]]
+
+      object = insert(:note, data: %{"reactions" => %{}})
+      assert Utils.get_cached_emoji_reactions(object) == []
+    end
+  end
 end

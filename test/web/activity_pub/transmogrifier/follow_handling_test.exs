@@ -78,7 +78,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
         )
         |> Repo.all()
 
-      assert length(accepts) == 0
+      assert Enum.empty?(accepts)
     end
 
     test "it works for follow requests when you are already followed, creating a new accept activity" do

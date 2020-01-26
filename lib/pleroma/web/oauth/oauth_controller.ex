@@ -14,10 +14,10 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
   alias Pleroma.Web.OAuth.Token.Strategy.Revoke, as: RevokeToken
-  alias Pleroma.Web.OAuth.Scopes
 
   require Logger
 

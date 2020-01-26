@@ -15,6 +15,18 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.Streamer
 
   describe "create_notifications" do
+    test "creates a notification for an emoji reaction" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "yeah"})
+      {:ok, activity, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      assert notification.user_id == user.id
+    end
+
     test "notifies someone when they are directly addressed" do
       user = insert(:user)
       other_user = insert(:user)
@@ -745,7 +757,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(blocked, %{"status" => "hey @#{user.nickname}"})
 
-      assert length(Notification.for_user(user, %{with_muted: true})) == 0
+      assert Enum.empty?(Notification.for_user(user, %{with_muted: true}))
     end
 
     test "it doesn't return notifications from a domain-blocked user when with_muted is set" do
@@ -755,7 +767,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(blocked, %{"status" => "hey @#{user.nickname}"})
 
-      assert length(Notification.for_user(user, %{with_muted: true})) == 0
+      assert Enum.empty?(Notification.for_user(user, %{with_muted: true}))
     end
 
     test "it returns notifications from muted threads when with_muted is set" do

@@ -70,11 +70,6 @@ You shouldn't edit the base config directly to avoid breakages and merge conflic
 * `account_field_value_length`: An account field value maximum length (default: `2048`).
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 
-!!! danger
-    This is a Work In Progress, not usable just yet
-
-* `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
-
 ## Federation
 ### MRF policies
 
@@ -355,7 +350,7 @@ Available caches:
 
 * `proxy_url`: an upstream proxy to fetch posts and/or media with, (default: `nil`)
 * `send_user_agent`: should we include a user agent with HTTP requests? (default: `true`)
-* `user_agent`: what user agent should  we use? (default: `:default`), must be string or `:default`
+* `user_agent`: what user agent should we use? (default: `:default`), must be string or `:default`
 * `adapter`: array of hackney options
 
 
@@ -841,3 +836,7 @@ config :auto_linker,
 ## Custom Runtime Modules (`:modules`)
 
 * `runtime_dir`: A path to custom Elixir modules (such as MRF policies).
+
+
+## :configurable_from_database
+Enable/disable configuration from database.

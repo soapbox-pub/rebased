@@ -1,1 +1,1 @@
-{"version":3,"sources":["webpack:///app/javascript/builds/pleroma/mastofe/app/javascript/core/mailer.js"],"names":["__webpack_require__","r","__webpack_exports__"],"mappings":"0FAAAA,EAAAC,EAAAC,GAAAF,EAAA","file":"core/mailer.js","sourcesContent":["import 'styles/mailer.scss';\n"],"sourceRoot":""}
+{"version":3,"sources":["webpack:///app/javascript/tank/sources/git/git.pleroma.social/pleroma/mastofe/app/javascript/core/mailer.js"],"names":[],"mappings":"0FAAA,e","file":"core/mailer.js","sourcesContent":["import 'styles/mailer.scss';\n"],"sourceRoot":""}

@@ -57,17 +57,12 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> assign(:token, insert(:oauth_token, user: user, scopes: ["read:statuses"]))
-
     result =
       conn
       |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
       |> json_response(200)
 
-    assert result == %{}
+    assert result == []
 
     {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
 
@@ -76,7 +71,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
       |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
       |> json_response(200)
 
-    [represented_user] = result["🎅"]
+    [%{"emoji" => "🎅", "count" => 1, "accounts" => [represented_user]}] = result
     assert represented_user["id"] == other_user.id
   end
 
