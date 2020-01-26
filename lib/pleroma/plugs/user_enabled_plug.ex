@@ -11,11 +11,9 @@ defmodule Pleroma.Plugs.UserEnabledPlug do
   end
 
   def call(%{assigns: %{user: %User{} = user}} = conn, _) do
-    if User.auth_active?(user) do
-      conn
-    else
-      conn
-      |> assign(:user, nil)
+    case User.account_status(user) do
+      :active -> conn
+      _ -> assign(conn, :user, nil)
     end
   end
 
