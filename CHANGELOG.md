@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: Removed 1.0+ deprecated configurations `Pleroma.Upload, :strip_exif` and `:instance, :dedupe_media`
 - **Breaking**: OStatus protocol support
 - **Breaking**: MDII uploader
+- **Breaking**: Using third party engines for user recommendation
 
 ### Changed
 - **Breaking:** Pleroma won't start if it detects unapplied migrations

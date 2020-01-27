@@ -2749,43 +2749,6 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :pleroma,
-    key: :suggestions,
-    type: :group,
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Enables suggestions"
-      },
-      %{
-        key: :third_party_engine,
-        type: :string,
-        description: "URL for third party engine",
-        suggestions: [
-          "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}"
-        ]
-      },
-      %{
-        key: :timeout,
-        type: :integer,
-        description: "Request timeout to third party engine",
-        suggestions: [300_000]
-      },
-      %{
-        key: :limit,
-        type: :integer,
-        description: "Limit for suggestions",
-        suggestions: [40]
-      },
-      %{
-        key: :web,
-        type: :string,
-        suggestions: ["https://vinayaka.distsn.org"]
-      }
-    ]
-  },
-  %{
     group: :prometheus,
     key: Pleroma.Web.Endpoint.MetricsExporter,
     type: :group,
