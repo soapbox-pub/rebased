@@ -1167,7 +1167,7 @@ config :pleroma, :config_description, [
             label: "Logo margin",
             type: :string,
             description:
-              "allows you to adjust vertical margins between logo boundary and navbar borders. " <>
+              "Allows you to adjust vertical margins between logo boundary and navbar borders. " <>
                 "The idea is that to have logo's image without any extra margins and instead adjust them to your need in layout.",
             suggestions: [".1em"]
           },
@@ -1960,7 +1960,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :verbose,
-        type: :atom,
+        type: [:atom, false],
         description: "Logs verbose mode",
         suggestions: [false, :error, :warn, :info, :debug]
       },
