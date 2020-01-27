@@ -7,10 +7,6 @@ defmodule Pleroma.Web.MastodonAPI.AppView do
 
   alias Pleroma.Web.OAuth.App
 
-  @vapid_key :web_push_encryption
-             |> Application.get_env(:vapid_details, [])
-             |> Keyword.get(:public_key)
-
   def render("show.json", %{app: %App{} = app}) do
     %{
       id: app.id |> to_string,
@@ -32,8 +28,10 @@ defmodule Pleroma.Web.MastodonAPI.AppView do
   end
 
   defp with_vapid_key(data) do
-    if @vapid_key do
-      Map.put(data, "vapid_key", @vapid_key)
+    vapid_key = Application.get_env(:web_push_encryption, :vapid_details, [])[:public_key]
+
+    if vapid_key do
+      Map.put(data, "vapid_key", vapid_key)
     else
       data
     end

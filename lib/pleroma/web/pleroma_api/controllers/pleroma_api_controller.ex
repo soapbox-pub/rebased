@@ -49,7 +49,12 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
         emoji_reactions
         |> Enum.map(fn [emoji, users] ->
           users = Enum.map(users, &User.get_cached_by_ap_id/1)
-          {emoji, AccountView.render("index.json", %{users: users, for: user, as: :user})}
+
+          %{
+            emoji: emoji,
+            count: length(users),
+            accounts: AccountView.render("index.json", %{users: users, for: user, as: :user})
+          }
         end)
 
       conn
