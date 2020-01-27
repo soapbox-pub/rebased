@@ -58,7 +58,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def perform(:incoming_ap_doc, params) do
-    Logger.info("Handling incoming AP activity")
+    Logger.debug("Handling incoming AP activity")
 
     params = Utils.normalize_params(params)
 
@@ -71,13 +71,13 @@ defmodule Pleroma.Web.Federator do
       {:ok, activity}
     else
       %Activity{} ->
-        Logger.info("Already had #{params["id"]}")
+        Logger.debug("Already had #{params["id"]}")
         :error
 
       _e ->
         # Just drop those for now
-        Logger.info("Unhandled activity")
-        Logger.info(Jason.encode!(params, pretty: true))
+        Logger.debug("Unhandled activity")
+        Logger.debug(Jason.encode!(params, pretty: true))
         :error
     end
   end

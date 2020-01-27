@@ -15,6 +15,18 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.Streamer
 
   describe "create_notifications" do
+    test "creates a notification for an emoji reaction" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "yeah"})
+      {:ok, activity, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      assert notification.user_id == user.id
+    end
+
     test "notifies someone when they are directly addressed" do
       user = insert(:user)
       other_user = insert(:user)
@@ -101,7 +113,7 @@ defmodule Pleroma.NotificationTest do
       assert Notification.create_notification(activity, user)
     end
 
-    test "it creates a notificatin for the user if the user mutes the activity author" do
+    test "it creates a notification for the user if the user mutes the activity author" do
       muter = insert(:user)
       muted = insert(:user)
       {:ok, _} = User.mute(muter, muted)
@@ -139,7 +151,10 @@ defmodule Pleroma.NotificationTest do
 
     test "it disables notifications from followers" do
       follower = insert(:user)
-      followed = insert(:user, notification_settings: %{"followers" => false})
+
+      followed =
+        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{followers: false})
+
       User.follow(follower, followed)
       {:ok, activity} = CommonAPI.post(follower, %{"status" => "hey @#{followed.nickname}"})
       refute Notification.create_notification(activity, followed)
@@ -147,13 +162,20 @@ defmodule Pleroma.NotificationTest do
 
     test "it disables notifications from non-followers" do
       follower = insert(:user)
-      followed = insert(:user, notification_settings: %{"non_followers" => false})
+
+      followed =
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{non_followers: false}
+        )
+
       {:ok, activity} = CommonAPI.post(follower, %{"status" => "hey @#{followed.nickname}"})
       refute Notification.create_notification(activity, followed)
     end
 
     test "it disables notifications from people the user follows" do
-      follower = insert(:user, notification_settings: %{"follows" => false})
+      follower =
+        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{follows: false})
+
       followed = insert(:user)
       User.follow(follower, followed)
       follower = Repo.get(User, follower.id)
@@ -162,7 +184,9 @@ defmodule Pleroma.NotificationTest do
     end
 
     test "it disables notifications from people the user does not follow" do
-      follower = insert(:user, notification_settings: %{"non_follows" => false})
+      follower =
+        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{non_follows: false})
+
       followed = insert(:user)
       {:ok, activity} = CommonAPI.post(followed, %{"status" => "hey @#{follower.nickname}"})
       refute Notification.create_notification(activity, follower)
@@ -743,7 +767,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(blocked, %{"status" => "hey @#{user.nickname}"})
 
-      assert length(Notification.for_user(user, %{with_muted: true})) == 0
+      assert Enum.empty?(Notification.for_user(user, %{with_muted: true}))
     end
 
     test "it doesn't return notifications from a domain-blocked user when with_muted is set" do
@@ -753,7 +777,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(blocked, %{"status" => "hey @#{user.nickname}"})
 
-      assert length(Notification.for_user(user, %{with_muted: true})) == 0
+      assert Enum.empty?(Notification.for_user(user, %{with_muted: true}))
     end
 
     test "it returns notifications from muted threads when with_muted is set" do

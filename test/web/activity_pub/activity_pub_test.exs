@@ -608,6 +608,39 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute repeat_activity in activities
   end
 
+  test "does return activities from followed users on blocked domains" do
+    domain = "meanies.social"
+    domain_user = insert(:user, %{ap_id: "https://#{domain}/@pundit"})
+    blocker = insert(:user)
+
+    {:ok, blocker} = User.follow(blocker, domain_user)
+    {:ok, blocker} = User.block_domain(blocker, domain)
+
+    assert User.following?(blocker, domain_user)
+    assert User.blocks_domain?(blocker, domain_user)
+    refute User.blocks?(blocker, domain_user)
+
+    note = insert(:note, %{data: %{"actor" => domain_user.ap_id}})
+    activity = insert(:note_activity, %{note: note})
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => blocker, "skip_preload" => true})
+
+    assert activity in activities
+
+    # And check that if the guy we DO follow boosts someone else from their domain,
+    # that should be hidden
+    another_user = insert(:user, %{ap_id: "https://#{domain}/@meanie2"})
+    bad_note = insert(:note, %{data: %{"actor" => another_user.ap_id}})
+    bad_activity = insert(:note_activity, %{note: bad_note})
+    {:ok, repeat_activity, _} = CommonAPI.repeat(bad_activity.id, domain_user)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => blocker, "skip_preload" => true})
+
+    refute repeat_activity in activities
+  end
+
   test "doesn't return muted activities" do
     activity_one = insert(:note_activity)
     activity_two = insert(:note_activity)
@@ -834,6 +867,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "adds an emoji reaction activity to the db" do
       user = insert(:user)
       reactor = insert(:user)
+      third_user = insert(:user)
+      fourth_user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
       assert object = Object.normalize(activity)
 
@@ -848,7 +883,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert reaction_activity.data["to"] == [User.ap_followers(reactor), activity.data["actor"]]
       assert reaction_activity.data["context"] == object.data["context"]
       assert object.data["reaction_count"] == 1
-      assert object.data["reactions"]["🔥"] == [reactor.ap_id]
+      assert object.data["reactions"] == [["🔥", [reactor.ap_id]]]
+
+      {:ok, _reaction_activity, object} = ActivityPub.react_with_emoji(third_user, object, "☕")
+
+      assert object.data["reaction_count"] == 2
+      assert object.data["reactions"] == [["🔥", [reactor.ap_id]], ["☕", [third_user.ap_id]]]
+
+      {:ok, _reaction_activity, object} = ActivityPub.react_with_emoji(fourth_user, object, "🔥")
+
+      assert object.data["reaction_count"] == 3
+
+      assert object.data["reactions"] == [
+               ["🔥", [fourth_user.ap_id, reactor.ap_id]],
+               ["☕", [third_user.ap_id]]
+             ]
     end
   end
 
@@ -886,7 +935,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       object = Object.get_by_ap_id(object.data["id"])
       assert object.data["reaction_count"] == 0
-      assert object.data["reactions"] == %{}
+      assert object.data["reactions"] == []
     end
   end
 
@@ -1589,6 +1638,73 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert follow_info.follower_count == 296
       assert follow_info.following_count == 32
       assert follow_info.hide_follows == true
+    end
+
+    test "doesn't crash when follower and following counters are hidden" do
+      mock(fn env ->
+        case env.url do
+          "http://localhost:4001/users/masto_hidden_counters/following" ->
+            json(%{
+              "@context" => "https://www.w3.org/ns/activitystreams",
+              "id" => "http://localhost:4001/users/masto_hidden_counters/followers"
+            })
+
+          "http://localhost:4001/users/masto_hidden_counters/following?page=1" ->
+            %Tesla.Env{status: 403, body: ""}
+
+          "http://localhost:4001/users/masto_hidden_counters/followers" ->
+            json(%{
+              "@context" => "https://www.w3.org/ns/activitystreams",
+              "id" => "http://localhost:4001/users/masto_hidden_counters/following"
+            })
+
+          "http://localhost:4001/users/masto_hidden_counters/followers?page=1" ->
+            %Tesla.Env{status: 403, body: ""}
+        end
+      end)
+
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_hidden_counters/followers",
+          following_address: "http://localhost:4001/users/masto_hidden_counters/following"
+        )
+
+      {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
+
+      assert follow_info.hide_followers == true
+      assert follow_info.follower_count == 0
+      assert follow_info.hide_follows == true
+      assert follow_info.following_count == 0
+    end
+  end
+
+  describe "fetch_favourites/3" do
+    test "returns a favourite activities sorted by adds to favorite" do
+      user = insert(:user)
+      other_user = insert(:user)
+      user1 = insert(:user)
+      user2 = insert(:user)
+      {:ok, a1} = CommonAPI.post(user1, %{"status" => "bla"})
+      {:ok, _a2} = CommonAPI.post(user2, %{"status" => "traps are happy"})
+      {:ok, a3} = CommonAPI.post(user2, %{"status" => "Trees Are "})
+      {:ok, a4} = CommonAPI.post(user2, %{"status" => "Agent Smith "})
+      {:ok, a5} = CommonAPI.post(user1, %{"status" => "Red or Blue "})
+
+      {:ok, _, _} = CommonAPI.favorite(a4.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a3.id, other_user)
+      {:ok, _, _} = CommonAPI.favorite(a3.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a5.id, other_user)
+      {:ok, _, _} = CommonAPI.favorite(a5.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a4.id, other_user)
+      {:ok, _, _} = CommonAPI.favorite(a1.id, user)
+      {:ok, _, _} = CommonAPI.favorite(a1.id, other_user)
+      result = ActivityPub.fetch_favourites(user)
+
+      assert Enum.map(result, & &1.id) == [a1.id, a5.id, a3.id, a4.id]
+
+      result = ActivityPub.fetch_favourites(user, %{"limit" => 2})
+      assert Enum.map(result, & &1.id) == [a1.id, a5.id]
     end
   end
 

@@ -5,6 +5,7 @@
 defmodule Pleroma.Application do
   import Cachex.Spec
   use Application
+  require Logger
 
   @name Mix.Project.config()[:name]
   @version Mix.Project.config()[:version]
@@ -30,8 +31,11 @@ defmodule Pleroma.Application do
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
+    Pleroma.HTML.compile_scrubbers()
     Pleroma.Config.DeprecationWarnings.warn()
+    Pleroma.Repo.check_migrations_applied!()
     setup_instrumenters()
+    load_custom_modules()
 
     # Define workers and child supervisors to be supervised
     children =
@@ -65,6 +69,28 @@ defmodule Pleroma.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  def load_custom_modules do
+    dir = Pleroma.Config.get([:modules, :runtime_dir])
+
+    if dir && File.exists?(dir) do
+      dir
+      |> Pleroma.Utils.compile_dir()
+      |> case do
+        {:error, _errors, _warnings} ->
+          raise "Invalid custom modules"
+
+        {:ok, modules, _warnings} ->
+          if @env != :test do
+            Enum.each(modules, fn mod ->
+              Logger.info("Custom module loaded: #{inspect(mod)}")
+            end)
+          end
+
+          :ok
+      end
+    end
   end
 
   defp setup_instrumenters do

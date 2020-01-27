@@ -66,6 +66,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         note: "valid html",
         sensitive: false,
         pleroma: %{
+          actor_type: "Person",
           discoverable: false
         },
         fields: []
@@ -92,13 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   test "Represent the user account for the account owner" do
     user = insert(:user)
 
-    notification_settings = %{
-      "followers" => true,
-      "follows" => true,
-      "non_follows" => true,
-      "non_followers" => true
-    }
-
+    notification_settings = %Pleroma.User.NotificationSetting{}
     privacy = user.default_scope
 
     assert %{
@@ -112,7 +107,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       insert(:user, %{
         follower_count: 3,
         note_count: 5,
-        source_data: %{"type" => "Service"},
+        source_data: %{},
+        actor_type: "Service",
         nickname: "shp@shitposter.club",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
       })
@@ -140,6 +136,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         note: user.bio,
         sensitive: false,
         pleroma: %{
+          actor_type: "Service",
           discoverable: false
         },
         fields: []
@@ -284,7 +281,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       insert(:user, %{
         follower_count: 0,
         note_count: 5,
-        source_data: %{"type" => "Service"},
+        source_data: %{},
+        actor_type: "Service",
         nickname: "shp@shitposter.club",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
       })
@@ -317,6 +315,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         note: user.bio,
         sensitive: false,
         pleroma: %{
+          actor_type: "Service",
           discoverable: false
         },
         fields: []

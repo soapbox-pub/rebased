@@ -7,6 +7,8 @@ defmodule Pleroma.Web.OAuth.Scopes do
   Functions for dealing with scopes.
   """
 
+  alias Pleroma.Plugs.OAuthScopesPlug
+
   @doc """
   Fetch scopes from request params.
 
@@ -55,13 +57,19 @@ defmodule Pleroma.Web.OAuth.Scopes do
   """
   @spec validate(list() | nil, list()) ::
           {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}
-  def validate([], _app_scopes), do: {:error, :missing_scopes}
-  def validate(nil, _app_scopes), do: {:error, :missing_scopes}
+  def validate(blank_scopes, _app_scopes) when blank_scopes in [nil, []],
+    do: {:error, :missing_scopes}
 
   def validate(scopes, app_scopes) do
-    case Pleroma.Plugs.OAuthScopesPlug.filter_descendants(scopes, app_scopes) do
+    case OAuthScopesPlug.filter_descendants(scopes, app_scopes) do
       ^scopes -> {:ok, scopes}
       _ -> {:error, :unsupported_scopes}
     end
+  end
+
+  def contains_admin_scopes?(scopes) do
+    scopes
+    |> OAuthScopesPlug.filter_descendants(["admin"])
+    |> Enum.any?()
   end
 end

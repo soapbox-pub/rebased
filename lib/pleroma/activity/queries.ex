@@ -12,6 +12,7 @@ defmodule Pleroma.Activity.Queries do
   @type query :: Ecto.Queryable.t() | Activity.t()
 
   alias Pleroma.Activity
+  alias Pleroma.User
 
   @spec by_ap_id(query, String.t()) :: query
   def by_ap_id(query \\ Activity, ap_id) do
@@ -27,6 +28,11 @@ defmodule Pleroma.Activity.Queries do
       activity in query,
       where: fragment("(?)->>'actor' = ?", activity.data, ^actor)
     )
+  end
+
+  @spec by_author(query, String.t()) :: query
+  def by_author(query \\ Activity, %User{ap_id: ap_id}) do
+    from(a in query, where: a.actor == ^ap_id)
   end
 
   @spec by_object_id(query, String.t() | [String.t()]) :: query
@@ -71,5 +77,9 @@ defmodule Pleroma.Activity.Queries do
       activity in query,
       where: fragment("(?)->>'type' != ?", activity.data, ^activity_type)
     )
+  end
+
+  def exclude_authors(query \\ Activity, actors) do
+    from(activity in query, where: activity.actor not in ^actors)
   end
 end

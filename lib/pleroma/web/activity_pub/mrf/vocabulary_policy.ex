@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicy do
     with accepted_vocabulary <- Pleroma.Config.get([:mrf_vocabulary, :accept]),
          rejected_vocabulary <- Pleroma.Config.get([:mrf_vocabulary, :reject]),
          true <-
-           length(accepted_vocabulary) == 0 || Enum.member?(accepted_vocabulary, message_type),
+           Enum.empty?(accepted_vocabulary) || Enum.member?(accepted_vocabulary, message_type),
          false <-
            length(rejected_vocabulary) > 0 && Enum.member?(rejected_vocabulary, message_type),
          {:ok, _} <- filter(message["object"]) do

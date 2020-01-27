@@ -68,7 +68,9 @@ config :pleroma, Oban,
   queues: false,
   prune: :disabled
 
-config :pleroma, Pleroma.Scheduler, jobs: []
+config :pleroma, Pleroma.Scheduler,
+  jobs: [],
+  global: false
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 2,
@@ -92,6 +94,8 @@ IO.puts("RUM enabled: #{rum_enabled}")
 config :joken, default_signer: "yU8uHKq+yyAkZ11Hx//jcdacWc8yQ1bxAAGrplzB0Zwwjkp35v0RK9SO8WTPr6QZ"
 
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
+
+config :pleroma, :modules, runtime_dir: "test/fixtures/modules"
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

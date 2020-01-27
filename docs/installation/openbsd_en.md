@@ -1,6 +1,6 @@
 # Installing on OpenBSD
 
-This guide describes the installation and configuration of pleroma (and the required software to run it) on a single OpenBSD 6.4 server.
+This guide describes the installation and configuration of pleroma (and the required software to run it) on a single OpenBSD 6.6 server.
 
 For any additional information regarding commands and configuration files mentioned here, check the man pages [online](https://man.openbsd.org/) or directly on your server with the man command.
 
@@ -40,7 +40,12 @@ Enter a shell as the \_pleroma user. As root, run `su _pleroma -;cd`. Then clone
 
 #### PostgreSQL
 Start a shell as the \_postgresql user (as root run `su _postgresql -` then run the `initdb` command to initialize postgresql:
-If you wish to not use the default location for postgresql's data (/var/postgresql/data), add the following switch at the end of the command: `-D <path>` and modify the `datadir` variable in the /etc/rc.d/postgresql script.
+You will need to specify pgdata directory to the default (/var/postgresql/data) with the `-D <path>` and set the user to postgres with the `-U <username>` flag. This can be done as follows:
+
+```
+initdb -D /var/postgresql/data -U postgres
+```
+If you are not using the default directory, you will have to update the `datadir` variable in the /etc/rc.d/postgresql script.
 
 When this is done, enable postgresql so that it starts on boot and start it. As root, run:
 ```
@@ -81,7 +86,6 @@ server "default" {
 }
 
 types {
-	include "/usr/share/misc/mime.types"
 }
 ```
 Do not forget to change *<IPv4/6 address\>* to your server's address(es). If httpd should only listen on one protocol family, comment one of the two first *listen* options.
@@ -103,7 +107,7 @@ Insert the following configuration in /etc/acme-client.conf:
 
 authority letsencrypt-<domain name> {
 	#agreement url "https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf"
-	api url "https://acme-v01.api.letsencrypt.org/directory"
+	api url "https://acme-v02.api.letsencrypt.org/directory"
 	account key "/etc/acme/letsencrypt-privkey-<domain name>.pem"
 }
 
@@ -222,7 +226,7 @@ Then follow the main installation guide:
   * run `mix deps.get`
   * run `mix pleroma.instance gen` and enter your instance's information when asked
   * copy config/generated\_config.exs to config/prod.secret.exs. The default values should be sufficient but you should edit it and check that everything seems OK.
-  * exit your current shell back to a root one and run `psql -U postgres -f /home/_pleroma/config/setup_db.psql` to setup the database.
+  * exit your current shell back to a root one and run `psql -U postgres -f /home/_pleroma/pleroma/config/setup_db.psql` to setup the database.
   * return to a \_pleroma shell into pleroma's installation directory (`su _pleroma -;cd ~/pleroma`) and run `MIX_ENV=prod mix ecto.migrate`
 
 As \_pleroma in /home/\_pleroma/pleroma, you can now run `LC_ALL=en_US.UTF-8 MIX_ENV=prod mix phx.server` to start your instance.
@@ -230,3 +234,11 @@ In another SSH session/tmux window, check that it is working properly by running
 
 ##### Starting pleroma at boot
 An rc script to automatically start pleroma at boot hasn't been written yet, it can be run in a tmux session (tmux is in base).
+
+
+#### Create administrative user
+
+If your instance is up and running, you can create your first user with administrative rights with the following command as the \_pleroma user.
+```
+LC_ALL=en_US.UTF-8 MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress> --admin
+```

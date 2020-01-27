@@ -53,7 +53,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       {:ok, _} = CommonAPI.post(user_two, %{"status" => "This isn't"})
 
       results =
-        get(conn, "/api/v2/search", %{"q" => "2hu #private"})
+        conn
+        |> get("/api/v2/search", %{"q" => "2hu #private"})
         |> json_response(200)
 
       [account | _] = results["accounts"]
@@ -73,17 +74,39 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       [status] = results["statuses"]
       assert status["id"] == to_string(activity.id)
     end
+
+    test "excludes a blocked users from search results", %{conn: conn} do
+      user = insert(:user)
+      user_smith = insert(:user, %{nickname: "Agent", name: "I love 2hu"})
+      user_neo = insert(:user, %{nickname: "Agent Neo", name: "Agent"})
+
+      {:ok, act1} = CommonAPI.post(user, %{"status" => "This is about 2hu private 天子"})
+      {:ok, act2} = CommonAPI.post(user_smith, %{"status" => "Agent Smith"})
+      {:ok, act3} = CommonAPI.post(user_neo, %{"status" => "Agent Smith"})
+      Pleroma.User.block(user, user_smith)
+
+      results =
+        conn
+        |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["read"]))
+        |> get("/api/v2/search", %{"q" => "Agent"})
+        |> json_response(200)
+
+      status_ids = Enum.map(results["statuses"], fn g -> g["id"] end)
+
+      assert act3.id in status_ids
+      refute act2.id in status_ids
+      refute act1.id in status_ids
+    end
   end
 
   describe ".account_search" do
     test "account search", %{conn: conn} do
-      user = insert(:user)
       user_two = insert(:user, %{nickname: "shp@shitposter.club"})
       user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
 
       results =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/accounts/search", %{"q" => "shp"})
         |> json_response(200)
 
@@ -94,7 +117,6 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/accounts/search", %{"q" => "2hu"})
         |> json_response(200)
 
@@ -104,11 +126,10 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     end
 
     test "returns account if query contains a space", %{conn: conn} do
-      user = insert(:user, %{nickname: "shp@shitposter.club"})
+      insert(:user, %{nickname: "shp@shitposter.club"})
 
       results =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/accounts/search", %{"q" => "shp@shitposter.club xxx "})
         |> json_response(200)
 
@@ -150,11 +171,10 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       {:ok, _} = CommonAPI.post(user_two, %{"status" => "This isn't"})
 
-      conn =
+      results =
         conn
         |> get("/api/v1/search", %{"q" => "2hu"})
-
-      assert results = json_response(conn, 200)
+        |> json_response(200)
 
       [account | _] = results["accounts"]
       assert account["id"] == to_string(user_three.id)
@@ -165,15 +185,19 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       assert status["id"] == to_string(activity.id)
     end
 
-    test "search fetches remote statuses", %{conn: conn} do
+    test "search fetches remote statuses and prefers them over other results", %{conn: conn} do
       capture_log(fn ->
-        conn =
+        {:ok, %{id: activity_id}} =
+          CommonAPI.post(insert(:user), %{
+            "status" => "check out https://shitposter.club/notice/2827873"
+          })
+
+        results =
           conn
           |> get("/api/v1/search", %{"q" => "https://shitposter.club/notice/2827873"})
+          |> json_response(200)
 
-        assert results = json_response(conn, 200)
-
-        [status] = results["statuses"]
+        [status, %{"id" => ^activity_id}] = results["statuses"]
 
         assert status["uri"] ==
                  "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
@@ -188,11 +212,10 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         })
 
       capture_log(fn ->
-        conn =
+        results =
           conn
           |> get("/api/v1/search", %{"q" => Object.normalize(activity).data["id"]})
-
-        assert results = json_response(conn, 200)
+          |> json_response(200)
 
         [] = results["statuses"]
       end)
@@ -201,22 +224,23 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     test "search fetches remote accounts", %{conn: conn} do
       user = insert(:user)
 
-      conn =
+      results =
         conn
         |> assign(:user, user)
+        |> assign(:token, insert(:oauth_token, user: user, scopes: ["read"]))
         |> get("/api/v1/search", %{"q" => "mike@osada.macgirvin.com", "resolve" => "true"})
+        |> json_response(200)
 
-      assert results = json_response(conn, 200)
       [account] = results["accounts"]
       assert account["acct"] == "mike@osada.macgirvin.com"
     end
 
     test "search doesn't fetch remote accounts if resolve is false", %{conn: conn} do
-      conn =
+      results =
         conn
         |> get("/api/v1/search", %{"q" => "mike@osada.macgirvin.com", "resolve" => "false"})
+        |> json_response(200)
 
-      assert results = json_response(conn, 200)
       assert [] == results["accounts"]
     end
 

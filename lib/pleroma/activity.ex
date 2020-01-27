@@ -12,6 +12,7 @@ defmodule Pleroma.Activity do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ReportNote
   alias Pleroma.ThreadMute
   alias Pleroma.User
 
@@ -29,7 +30,8 @@ defmodule Pleroma.Activity do
     "Follow" => "follow",
     "Announce" => "reblog",
     "Like" => "favourite",
-    "Move" => "move"
+    "Move" => "move",
+    "EmojiReaction" => "pleroma:emoji_reaction"
   }
 
   @mastodon_to_ap_notification_types for {k, v} <- @mastodon_notification_types,
@@ -48,6 +50,8 @@ defmodule Pleroma.Activity do
     has_one(:user_actor, User, on_delete: :nothing, foreign_key: :id)
     # This is a fake relation, do not use outside of with_preloaded_bookmark/get_bookmark
     has_one(:bookmark, Bookmark)
+    # This is a fake relation, do not use outside of with_preloaded_report_notes
+    has_many(:report_notes, ReportNote)
     has_many(:notifications, Notification, on_delete: :delete_all)
 
     # Attention: this is a fake relation, don't try to preload it blindly and expect it to work!
@@ -113,6 +117,16 @@ defmodule Pleroma.Activity do
   end
 
   def with_preloaded_bookmark(query, _), do: query
+
+  def with_preloaded_report_notes(query) do
+    from([a] in query,
+      left_join: r in ReportNote,
+      on: a.id == r.activity_id,
+      preload: [report_notes: r]
+    )
+  end
+
+  def with_preloaded_report_notes(query, _), do: query
 
   def with_set_thread_muted_field(query, %User{} = user) do
     from([a] in query,
@@ -299,9 +313,7 @@ defmodule Pleroma.Activity do
       from(u in User.Query.build(deactivated: true), select: u.ap_id)
       |> Repo.all()
 
-    from(activity in query,
-      where: activity.actor not in ^deactivated_users
-    )
+    Activity.Queries.exclude_authors(query, deactivated_users)
   end
 
   defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search

@@ -187,14 +187,15 @@ defmodule Pleroma.Web.Router do
     get("/grouped_reports", AdminAPIController, :list_grouped_reports)
     get("/reports/:id", AdminAPIController, :report_show)
     patch("/reports", AdminAPIController, :reports_update)
-    post("/reports/:id/respond", AdminAPIController, :report_respond)
+    post("/reports/:id/notes", AdminAPIController, :report_notes_create)
+    delete("/reports/:report_id/notes/:id", AdminAPIController, :report_notes_delete)
 
     put("/statuses/:id", AdminAPIController, :status_update)
     delete("/statuses/:id", AdminAPIController, :status_delete)
 
     get("/config", AdminAPIController, :config_show)
     post("/config", AdminAPIController, :config_update)
-    get("/config/migrate_to_db", AdminAPIController, :migrate_to_db)
+    get("/config/descriptions", AdminAPIController, :config_descriptions)
     get("/config/migrate_from_db", AdminAPIController, :migrate_from_db)
 
     get("/moderation_log", AdminAPIController, :list_log)
@@ -228,9 +229,9 @@ defmodule Pleroma.Web.Router do
     pipe_through(:pleroma_html)
 
     post("/main/ostatus", UtilController, :remote_subscribe)
-    get("/ostatus_subscribe", UtilController, :remote_follow)
+    get("/ostatus_subscribe", RemoteFollowController, :follow)
 
-    post("/ostatus_subscribe", UtilController, :do_remote_follow)
+    post("/ostatus_subscribe", RemoteFollowController, :do_follow)
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
@@ -528,7 +529,10 @@ defmodule Pleroma.Web.Router do
 
     get("/users/:nickname/feed", Feed.FeedController, :feed)
     get("/users/:nickname", Feed.FeedController, :feed_redirect)
+  end
 
+  scope "/", Pleroma.Web do
+    pipe_through(:browser)
     get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end
 

@@ -70,11 +70,6 @@ You shouldn't edit the base config directly to avoid breakages and merge conflic
 * `account_field_value_length`: An account field value maximum length (default: `2048`).
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 
-!!! danger
-    This is a Work In Progress, not usable just yet
-
-* `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
-
 ## Federation
 ### MRF policies
 
@@ -355,7 +350,7 @@ Available caches:
 
 * `proxy_url`: an upstream proxy to fetch posts and/or media with, (default: `nil`)
 * `send_user_agent`: should we include a user agent with HTTP requests? (default: `true`)
-* `user_agent`: what user agent should  we use? (default: `:default`), must be string or `:default`
+* `user_agent`: what user agent should we use? (default: `:default`), must be string or `:default`
 * `adapter`: array of hackney options
 
 
@@ -379,13 +374,19 @@ For each pool, the options are:
 ## Captcha
 
 ### Pleroma.Captcha
+
 * `enabled`: Whether the captcha should be shown on registration.
 * `method`: The method/service to use for captcha.
 * `seconds_valid`: The time in seconds for which the captcha is valid.
 
 ### Captcha providers
 
+#### Pleroma.Captcha.Native
+
+A built-in captcha provider. Enabled by default.
+
 #### Pleroma.Captcha.Kocaptcha
+
 Kocaptcha is a very simple captcha service with a single API endpoint,
 the source code is here: https://github.com/koto-bank/kocaptcha. The default endpoint
 `https://captcha.kotobank.ch` is hosted by the developer.
@@ -447,6 +448,7 @@ An example for Sendgrid adapter:
 
 ```elixir
 config :pleroma, Pleroma.Emails.Mailer,
+  enabled: true,
   adapter: Swoosh.Adapters.Sendgrid,
   api_key: "YOUR_API_KEY"
 ```
@@ -455,13 +457,13 @@ An example for SMTP adapter:
 
 ```elixir
 config :pleroma, Pleroma.Emails.Mailer,
+  enabled: true,
   adapter: Swoosh.Adapters.SMTP,
   relay: "smtp.gmail.com",
   username: "YOUR_USERNAME@gmail.com",
   password: "YOUR_SMTP_PASSWORD",
   port: 465,
   ssl: true,
-  tls: :always,
   auth: :always
 ```
 
@@ -830,3 +832,11 @@ config :auto_linker,
     rel: "ugc"
   ]
 ```
+
+## Custom Runtime Modules (`:modules`)
+
+* `runtime_dir`: A path to custom Elixir modules (such as MRF policies).
+
+
+## :configurable_from_database
+Enable/disable configuration from database.

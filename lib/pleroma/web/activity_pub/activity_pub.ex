@@ -950,6 +950,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     blocked_ap_ids = opts["blocked_users_ap_ids"] || User.blocked_users_ap_ids(user)
     domain_blocks = user.domain_blocks || []
 
+    following_ap_ids = User.get_friends_ap_ids(user)
+
     query =
       if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
 
@@ -964,8 +966,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.data,
           ^blocked_ap_ids
         ),
-      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks),
-      where: fragment("not (split_part(?->>'actor', '/', 3) = ANY(?))", o.data, ^domain_blocks)
+      where:
+        fragment(
+          "(not (split_part(?, '/', 3) = ANY(?))) or ? = ANY(?)",
+          activity.actor,
+          ^domain_blocks,
+          activity.actor,
+          ^following_ap_ids
+        ),
+      where:
+        fragment(
+          "(not (split_part(?->>'actor', '/', 3) = ANY(?))) or (?->>'actor') = ANY(?)",
+          o.data,
+          ^domain_blocks,
+          o.data,
+          ^following_ap_ids
+        )
     )
   end
 
@@ -1052,6 +1068,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_preloaded_bookmark(opts["user"])
   end
 
+  defp maybe_preload_report_notes(query, %{"preload_report_notes" => true}) do
+    query
+    |> Activity.with_preloaded_report_notes()
+  end
+
+  defp maybe_preload_report_notes(query, _), do: query
+
   defp maybe_set_thread_muted_field(query, %{"skip_preload" => true}), do: query
 
   defp maybe_set_thread_muted_field(query, opts) do
@@ -1105,6 +1128,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Activity
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
+    |> maybe_preload_report_notes(opts)
     |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
@@ -1139,6 +1163,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
     |> maybe_update_cc(list_memberships, opts["user"])
+  end
+
+  @doc """
+  Fetch favorites activities of user with order by sort adds to favorites
+  """
+  @spec fetch_favourites(User.t(), map(), atom()) :: list(Activity.t())
+  def fetch_favourites(user, params \\ %{}, pagination \\ :keyset) do
+    user.ap_id
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_type("Like")
+    |> Activity.with_joined_object()
+    |> Object.with_joined_activity()
+    |> select([_like, object, activity], %{activity | object: object})
+    |> order_by([like, _, _], desc: like.id)
+    |> Pagination.fetch_paginated(
+      Map.merge(params, %{"skip_order" => true}),
+      pagination,
+      :object_activity
+    )
   end
 
   defp maybe_update_cc(activities, list_memberships, %User{ap_id: user_ap_id})
@@ -1217,6 +1260,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
+    actor_type = data["type"] || "Person"
 
     user_data = %{
       ap_id: data["id"],
@@ -1232,6 +1276,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       follower_address: data["followers"],
       following_address: data["following"],
       bio: data["summary"],
+      actor_type: actor_type,
       also_known_as: Map.get(data, "alsoKnownAs", [])
     }
 
@@ -1253,27 +1298,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def fetch_follow_information_for_user(user) do
     with {:ok, following_data} <-
            Fetcher.fetch_and_contain_remote_object_from_id(user.following_address),
-         following_count when is_integer(following_count) <- following_data["totalItems"],
          {:ok, hide_follows} <- collection_private(following_data),
          {:ok, followers_data} <-
            Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address),
-         followers_count when is_integer(followers_count) <- followers_data["totalItems"],
          {:ok, hide_followers} <- collection_private(followers_data) do
       {:ok,
        %{
          hide_follows: hide_follows,
-         follower_count: followers_count,
-         following_count: following_count,
+         follower_count: normalize_counter(followers_data["totalItems"]),
+         following_count: normalize_counter(following_data["totalItems"]),
          hide_followers: hide_followers
        }}
     else
-      {:error, _} = e ->
-        e
-
-      e ->
-        {:error, e}
+      {:error, _} = e -> e
+      e -> {:error, e}
     end
   end
+
+  defp normalize_counter(counter) when is_integer(counter), do: counter
+  defp normalize_counter(_), do: 0
 
   defp maybe_update_follow_information(data) do
     with {:enabled, true} <-
@@ -1294,24 +1337,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp collection_private(%{"first" => %{"type" => type}})
+       when type in ["CollectionPage", "OrderedCollectionPage"],
+       do: {:ok, false}
+
   defp collection_private(%{"first" => first}) do
-    if is_map(first) and
-         first["type"] in ["CollectionPage", "OrderedCollectionPage"] do
+    with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
+           Fetcher.fetch_and_contain_remote_object_from_id(first) do
       {:ok, false}
     else
-      with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
-             Fetcher.fetch_and_contain_remote_object_from_id(first) do
-        {:ok, false}
-      else
-        {:error, {:ok, %{status: code}}} when code in [401, 403] ->
-          {:ok, true}
-
-        {:error, _} = e ->
-          e
-
-        e ->
-          {:error, e}
-      end
+      {:error, {:ok, %{status: code}}} when code in [401, 403] -> {:ok, true}
+      {:error, _} = e -> e
+      e -> {:error, e}
     end
   end
 
@@ -1332,6 +1369,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          data <- maybe_update_follow_information(data) do
       {:ok, data}
     else
+      {:error, "Object has been deleted"} = e ->
+        Logger.debug("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
+        {:error, e}
+
       e ->
         Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
         {:error, e}

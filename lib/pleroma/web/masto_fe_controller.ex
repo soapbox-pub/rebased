@@ -20,18 +20,21 @@ defmodule Pleroma.Web.MastoFEController do
   plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action != :index)
 
   @doc "GET /web/*path"
-  def index(%{assigns: %{user: user}} = conn, _params) do
-    token = get_session(conn, :oauth_token)
+  def index(%{assigns: %{user: user, token: token}} = conn, _params)
+      when not is_nil(user) and not is_nil(token) do
+    conn
+    |> put_layout(false)
+    |> render("index.html",
+      token: token.token,
+      user: user,
+      custom_emojis: Pleroma.Emoji.get_all()
+    )
+  end
 
-    if user && token do
-      conn
-      |> put_layout(false)
-      |> render("index.html", token: token, user: user, custom_emojis: Pleroma.Emoji.get_all())
-    else
-      conn
-      |> put_session(:return_to, conn.request_path)
-      |> redirect(to: "/web/login")
-    end
+  def index(conn, _params) do
+    conn
+    |> put_session(:return_to, conn.request_path)
+    |> redirect(to: "/web/login")
   end
 
   @doc "GET /web/manifest.json"

@@ -12,6 +12,7 @@ defmodule Pleroma.User do
   alias Comeonin.Pbkdf2
   alias Ecto.Multi
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
   alias Pleroma.FollowingRelationship
@@ -35,7 +36,7 @@ defmodule Pleroma.User do
   require Logger
 
   @type t :: %__MODULE__{}
-
+  @type account_status :: :active | :deactivated | :password_reset_pending | :confirmation_pending
   @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
@@ -127,15 +128,13 @@ defmodule Pleroma.User do
     field(:invisible, :boolean, default: false)
     field(:allow_following_move, :boolean, default: true)
     field(:skip_thread_containment, :boolean, default: false)
+    field(:actor_type, :string, default: "Person")
     field(:also_known_as, {:array, :string}, default: [])
 
-    field(:notification_settings, :map,
-      default: %{
-        "followers" => true,
-        "follows" => true,
-        "non_follows" => true,
-        "non_followers" => true
-      }
+    embeds_one(
+      :notification_settings,
+      Pleroma.User.NotificationSetting,
+      on_replace: :update
     )
 
     has_many(:notifications, Notification)
@@ -218,14 +217,21 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "Returns if the user should be allowed to authenticate"
-  def auth_active?(%User{deactivated: true}), do: false
+  @doc "Returns status account"
+  @spec account_status(User.t()) :: account_status()
+  def account_status(%User{deactivated: true}), do: :deactivated
+  def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
 
-  def auth_active?(%User{confirmation_pending: true}),
-    do: !Pleroma.Config.get([:instance, :account_activation_required])
+  def account_status(%User{confirmation_pending: true}) do
+    case Config.get([:instance, :account_activation_required]) do
+      true -> :confirmation_pending
+      _ -> :active
+    end
+  end
 
-  def auth_active?(%User{}), do: true
+  def account_status(%User{}), do: :active
 
+  @spec visible_for?(User.t(), User.t() | nil) :: boolean()
   def visible_for?(user, for_user \\ nil)
 
   def visible_for?(%User{invisible: true}, _), do: false
@@ -233,15 +239,17 @@ defmodule Pleroma.User do
   def visible_for?(%User{id: user_id}, %User{id: for_id}) when user_id == for_id, do: true
 
   def visible_for?(%User{} = user, for_user) do
-    auth_active?(user) || superuser?(for_user)
+    account_status(user) == :active || superuser?(for_user)
   end
 
   def visible_for?(_, _), do: false
 
+  @spec superuser?(User.t()) :: boolean()
   def superuser?(%User{local: true, is_admin: true}), do: true
   def superuser?(%User{local: true, is_moderator: true}), do: true
   def superuser?(_), do: false
 
+  @spec invisible?(User.t()) :: boolean()
   def invisible?(%User{invisible: true}), do: true
   def invisible?(_), do: false
 
@@ -349,6 +357,7 @@ defmodule Pleroma.User do
           :following_count,
           :discoverable,
           :invisible,
+          :actor_type,
           :also_known_as
         ]
       )
@@ -399,6 +408,7 @@ defmodule Pleroma.User do
         :raw_fields,
         :pleroma_settings_store,
         :discoverable,
+        :actor_type,
         :also_known_as
       ]
     )
@@ -441,6 +451,7 @@ defmodule Pleroma.User do
         :discoverable,
         :hide_followers_count,
         :hide_follows_count,
+        :actor_type,
         :also_known_as
       ]
     )
@@ -861,6 +872,13 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
+  def get_friends_ap_ids(user) do
+    user
+    |> get_friends_query(nil)
+    |> select([u], u.ap_id)
+    |> Repo.all()
+  end
+
   def get_friends_ids(user, page \\ nil) do
     user
     |> get_friends_query(page)
@@ -1135,7 +1153,8 @@ defmodule Pleroma.User do
   def blocks?(nil, _), do: false
 
   def blocks?(%User{} = user, %User{} = target) do
-    blocks_user?(user, target) || blocks_domain?(user, target)
+    blocks_user?(user, target) ||
+      (!User.following?(user, target) && blocks_domain?(user, target))
   end
 
   def blocks_user?(%User{} = user, %User{} = target) do
@@ -1221,20 +1240,9 @@ defmodule Pleroma.User do
   end
 
   def update_notification_settings(%User{} = user, settings) do
-    settings =
-      settings
-      |> Enum.map(fn {k, v} -> {k, v in [true, "true", "True", "1"]} end)
-      |> Map.new()
-
-    notification_settings =
-      user.notification_settings
-      |> Map.merge(settings)
-      |> Map.take(["followers", "follows", "non_follows", "non_followers"])
-
-    params = %{notification_settings: notification_settings}
-
     user
-    |> cast(params, [:notification_settings])
+    |> cast(%{notification_settings: settings}, [])
+    |> cast_embed(:notification_settings)
     |> validate_required([:notification_settings])
     |> update_and_set_cache()
   end
@@ -1432,20 +1440,47 @@ defmodule Pleroma.User do
   Creates an internal service actor by URI if missing.
   Optionally takes nickname for addressing.
   """
-  def get_or_create_service_actor_by_ap_id(uri, nickname \\ nil) do
-    with user when is_nil(user) <- get_cached_by_ap_id(uri) do
-      {:ok, user} =
-        %User{
-          invisible: true,
-          local: true,
-          ap_id: uri,
-          nickname: nickname,
-          follower_address: uri <> "/followers"
-        }
-        |> Repo.insert()
+  @spec get_or_create_service_actor_by_ap_id(String.t(), String.t()) :: User.t() | nil
+  def get_or_create_service_actor_by_ap_id(uri, nickname) do
+    {_, user} =
+      case get_cached_by_ap_id(uri) do
+        nil ->
+          with {:error, %{errors: errors}} <- create_service_actor(uri, nickname) do
+            Logger.error("Cannot create service actor: #{uri}/.\n#{inspect(errors)}")
+            {:error, nil}
+          end
 
-      user
-    end
+        %User{invisible: false} = user ->
+          set_invisible(user)
+
+        user ->
+          {:ok, user}
+      end
+
+    user
+  end
+
+  @spec set_invisible(User.t()) :: {:ok, User.t()}
+  defp set_invisible(user) do
+    user
+    |> change(%{invisible: true})
+    |> update_and_set_cache()
+  end
+
+  @spec create_service_actor(String.t(), String.t()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  defp create_service_actor(uri, nickname) do
+    %User{
+      invisible: true,
+      local: true,
+      ap_id: uri,
+      nickname: nickname,
+      follower_address: uri <> "/followers"
+    }
+    |> change
+    |> unique_constraint(:nickname)
+    |> Repo.insert()
+    |> set_cache()
   end
 
   # AP style
@@ -1856,6 +1891,12 @@ defmodule Pleroma.User do
       :show_role
     ])
     |> update_and_set_cache()
+  end
+
+  @doc "Signs user out of all applications"
+  def global_sign_out(user) do
+    OAuth.Authorization.delete_user_authorizations(user)
+    OAuth.Token.delete_user_tokens(user)
   end
 
   def mascot_update(user, url) do

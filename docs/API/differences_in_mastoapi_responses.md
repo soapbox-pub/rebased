@@ -29,6 +29,7 @@ Has these additional fields under the `pleroma` object:
 - `spoiler_text`: a map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
 - `expires_at`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
 - `thread_muted`: true if the thread the post belongs to is muted
+- `emoji_reactions`: A list with emoji / reaction maps. The format is {emoji: "☕", count: 1}. Contains no information about the reacting users, for that use the `emoji_reactions_by` endpoint.
 
 ## Attachments
 
@@ -46,7 +47,7 @@ The `id` parameter can also be the `nickname` of the user. This only works in th
 Has these additional fields under the `pleroma` object:
 
 - `tags`: Lists an array of tags for the user
-- `relationship{}`: Includes fields as documented for Mastodon API https://docs.joinmastodon.org/api/entities/#relationship
+- `relationship{}`: Includes fields as documented for Mastodon API https://docs.joinmastodon.org/entities/relationship/
 - `is_moderator`: boolean, nullable,  true if user is a moderator
 - `is_admin`: boolean, nullable, true if user is an admin
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
@@ -66,6 +67,8 @@ Has these additional fields under the `pleroma` object:
 
 - `show_role`: boolean, nullable, true when the user wants his role (e.g admin, moderator) to be shown
 - `no_rich_text` - boolean, nullable, true when html tags are stripped from all statuses requested from the API
+- `discoverable`: boolean, true when the user allows discovery of the account in search results and other services.
+- `actor_type`: string, the type of this account.
 
 ## Conversations
 
@@ -98,11 +101,20 @@ The `type` value is `move`. Has an additional field:
 
 - `target`: new account
 
+### EmojiReaction Notification
+
+The `type` value is `pleroma:emoji_reaction`. Has these fields:
+
+- `emoji`: The used emoji
+- `account`: The account of the user who reacted
+- `status`: The status that was reacted on
+
 ## GET `/api/v1/notifications`
 
 Accepts additional parameters:
 
 - `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
+- `with_move`: boolean, when set to `true` will include Move notifications. `false` by default.
 
 ## POST `/api/v1/statuses`
 
@@ -145,6 +157,8 @@ Additional parameters can be added to the JSON body/Form data:
 - `skip_thread_containment` - if true, skip filtering out broken threads
 - `allow_following_move` - if true, allows automatically follow moved following accounts
 - `pleroma_background_image` - sets the background image of the user.
+- `discoverable` - if true, discovery of this account in search results and other services is allowed.
+- `actor_type` - the type of this account.
 
 ### Pleroma Settings Store
 Pleroma has mechanism that allows frontends to save blobs of json for each user on the backend. This can be used to save frontend-specific settings for a user that the backend does not need to know about.

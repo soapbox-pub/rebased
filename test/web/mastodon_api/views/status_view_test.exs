@@ -24,6 +24,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     :ok
   end
 
+  test "has an emoji reaction list" do
+    user = insert(:user)
+    other_user = insert(:user)
+    third_user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "dae cofe??"})
+
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, user, "☕")
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, third_user, "🍵")
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+    activity = Repo.get(Activity, activity.id)
+    status = StatusView.render("show.json", activity: activity)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{emoji: "☕", count: 2},
+             %{emoji: "🍵", count: 1}
+           ]
+  end
+
   test "loads and returns the direct conversation id when given the `with_direct_conversation_id` option" do
     user = insert(:user)
 
@@ -172,7 +190,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
         expires_at: nil,
         direct_conversation_id: nil,
-        thread_muted: false
+        thread_muted: false,
+        emoji_reactions: []
       }
     }
 
@@ -392,6 +411,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert represented[:id] == to_string(activity.id)
     assert length(represented[:media_attachments]) == 1
+  end
+
+  test "a Mobilizon event" do
+    user = insert(:user)
+
+    {:ok, object} =
+      Pleroma.Object.Fetcher.fetch_object_from_id(
+        "https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39"
+      )
+
+    %Activity{} = activity = Activity.get_create_by_object_ap_id(object.data["id"])
+
+    represented = StatusView.render("show.json", %{for: user, activity: activity})
+
+    assert represented[:id] == to_string(activity.id)
   end
 
   describe "build_tags/1" do

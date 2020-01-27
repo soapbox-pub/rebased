@@ -17,10 +17,31 @@ defmodule Pleroma.Object do
 
   require Logger
 
+  @type t() :: %__MODULE__{}
+
+  @derive {Jason.Encoder, only: [:data]}
+
   schema "objects" do
     field(:data, :map)
 
     timestamps()
+  end
+
+  def with_joined_activity(query, activity_type \\ "Create", join_type \\ :inner) do
+    object_position = Map.get(query.aliases, :object, 0)
+
+    join(query, join_type, [{object, object_position}], a in Activity,
+      on:
+        fragment(
+          "COALESCE(?->'object'->>'id', ?->>'object') = (? ->> 'id') AND (?->>'type' = ?) ",
+          a.data,
+          a.data,
+          object.data,
+          a.data,
+          ^activity_type
+        ),
+      as: :object_activity
+    )
   end
 
   def create(data) do
@@ -60,6 +81,20 @@ defmodule Pleroma.Object do
 
   def get_by_ap_id(ap_id) do
     Repo.one(from(object in Object, where: fragment("(?)->>'id' = ?", object.data, ^ap_id)))
+  end
+
+  @doc """
+  Get a single attachment by it's name and href
+  """
+  @spec get_attachment_by_name_and_href(String.t(), String.t()) :: Object.t() | nil
+  def get_attachment_by_name_and_href(name, href) do
+    query =
+      from(o in Object,
+        where: fragment("(?)->>'name' = ?", o.data, ^name),
+        where: fragment("(?)->>'href' = ?", o.data, ^href)
+      )
+
+    Repo.one(query)
   end
 
   defp warn_on_no_object_preloaded(ap_id) do
@@ -149,7 +184,11 @@ defmodule Pleroma.Object do
     with {:ok, _obj} = swap_object_with_tombstone(object),
          deleted_activity = Activity.delete_all_by_object_ap_id(id),
          {:ok, true} <- Cachex.del(:object_cache, "object:#{id}"),
-         {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path) do
+         {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path),
+         {:ok, _} <-
+           Pleroma.Workers.AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{
+             "object" => object
+           }) do
       {:ok, object, deleted_activity}
     end
   end

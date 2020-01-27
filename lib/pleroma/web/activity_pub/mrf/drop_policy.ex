@@ -9,7 +9,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.DropPolicy do
 
   @impl true
   def filter(object) do
-    Logger.info("REJECTING #{inspect(object)}")
+    Logger.debug("REJECTING #{inspect(object)}")
     {:reject, object}
   end
 

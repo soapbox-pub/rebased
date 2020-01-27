@@ -29,4 +29,25 @@ defmodule Pleroma.Uploaders.LocalTest do
              |> File.exists?()
     end
   end
+
+  describe "delete_file/1" do
+    test "deletes local file" do
+      file_path = "local_upload/files/image.jpg"
+
+      file = %Pleroma.Upload{
+        name: "image.jpg",
+        content_type: "image/jpg",
+        path: file_path,
+        tempfile: Path.absname("test/fixtures/image_tmp.jpg")
+      }
+
+      :ok = Local.put_file(file)
+      local_path = Path.join([Local.upload_path(), file_path])
+      assert File.exists?(local_path)
+
+      Local.delete_file(file_path)
+
+      refute File.exists?(local_path)
+    end
+  end
 end

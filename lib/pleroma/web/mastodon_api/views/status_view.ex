@@ -253,6 +253,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
           nil
       end
 
+    emoji_reactions =
+      with %{data: %{"reactions" => emoji_reactions}} <- object do
+        Enum.map(emoji_reactions, fn [emoji, users] ->
+          %{emoji: emoji, count: length(users)}
+        end)
+      else
+        _ -> []
+      end
+
     %{
       id: to_string(activity.id),
       uri: object.data["id"],
@@ -293,7 +302,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         spoiler_text: %{"text/plain" => summary_plaintext},
         expires_at: expires_at,
         direct_conversation_id: direct_conversation_id,
-        thread_muted: thread_muted?
+        thread_muted: thread_muted?,
+        emoji_reactions: emoji_reactions
       }
     }
   end
@@ -421,7 +431,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def render_content(%{data: %{"type" => "Video"}} = object) do
+  def render_content(%{data: %{"type" => object_type}} = object)
+      when object_type in ["Video", "Event"] do
     with name when not is_nil(name) and name != "" <- object.data["name"] do
       "<p><a href=\"#{object.data["id"]}\">#{name}</a></p>#{object.data["content"]}"
     else

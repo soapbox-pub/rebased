@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.HTTP
   alias Pleroma.Instances
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -47,7 +48,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   * `id`: the ActivityStreams URI of the message
   """
   def publish_one(%{inbox: inbox, json: json, actor: %User{} = actor, id: id} = params) do
-    Logger.info("Federating #{id} to #{inbox}")
+    Logger.debug("Federating #{id} to #{inbox}")
     %{host: host, path: path} = URI.parse(inbox)
 
     digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
@@ -188,31 +189,35 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
     recipients = recipients(actor, activity)
 
-    recipients
-    |> Enum.filter(&User.ap_enabled?/1)
-    |> Enum.map(fn %{source_data: data} -> data["inbox"] end)
-    |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
-    |> Instances.filter_reachable()
-    |> Enum.each(fn {inbox, unreachable_since} ->
-      %User{ap_id: ap_id} =
-        Enum.find(recipients, fn %{source_data: data} -> data["inbox"] == inbox end)
+    inboxes =
+      recipients
+      |> Enum.filter(&User.ap_enabled?/1)
+      |> Enum.map(fn %{source_data: data} -> data["inbox"] end)
+      |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
+      |> Instances.filter_reachable()
 
-      # Get all the recipients on the same host and add them to cc. Otherwise, a remote
-      # instance would only accept a first message for the first recipient and ignore the rest.
-      cc = get_cc_ap_ids(ap_id, recipients)
+    Repo.checkout(fn ->
+      Enum.each(inboxes, fn {inbox, unreachable_since} ->
+        %User{ap_id: ap_id} =
+          Enum.find(recipients, fn %{source_data: data} -> data["inbox"] == inbox end)
 
-      json =
-        data
-        |> Map.put("cc", cc)
-        |> Jason.encode!()
+        # Get all the recipients on the same host and add them to cc. Otherwise, a remote
+        # instance would only accept a first message for the first recipient and ignore the rest.
+        cc = get_cc_ap_ids(ap_id, recipients)
 
-      Pleroma.Web.Federator.Publisher.enqueue_one(__MODULE__, %{
-        inbox: inbox,
-        json: json,
-        actor_id: actor.id,
-        id: activity.data["id"],
-        unreachable_since: unreachable_since
-      })
+        json =
+          data
+          |> Map.put("cc", cc)
+          |> Jason.encode!()
+
+        Pleroma.Web.Federator.Publisher.enqueue_one(__MODULE__, %{
+          inbox: inbox,
+          json: json,
+          actor_id: actor.id,
+          id: activity.data["id"],
+          unreachable_since: unreachable_since
+        })
+      end)
     end)
   end
 
@@ -223,7 +228,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     public = is_public?(activity)
 
     if public && Config.get([:instance, :allow_relay]) do
-      Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
+      Logger.debug(fn -> "Relaying #{activity.data["id"]} out" end)
       Relay.publish(activity)
     end
 
@@ -259,6 +264,10 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         "rel" => "self",
         "type" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
         "href" => user.ap_id
+      },
+      %{
+        "rel" => "http://ostatus.org/schema/1.0/subscribe",
+        "template" => "#{Pleroma.Web.base_url()}/ostatus_subscribe?acct={uri}"
       }
     ]
   end

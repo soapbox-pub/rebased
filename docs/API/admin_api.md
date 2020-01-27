@@ -2,6 +2,13 @@
 
 Authentication is required and the user must be an admin.
 
+Configuration options:
+
+* `[:auth, :enforce_oauth_admin_scope_usage]` — OAuth admin scope requirement toggle.
+    If `true`, admin actions explicitly demand admin OAuth scope(s) presence in OAuth token (client app must support admin scopes).
+    If `false` and token doesn't have admin scope(s), `is_admin` user flag grants access to admin-specific actions.
+    Note that client app needs to explicitly support admin scopes and request them when obtaining auth token.
+
 ## `GET /api/pleroma/admin/users`
 
 ### List users
@@ -607,78 +614,29 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
   - On success: `204`, empty response
 
-## `POST /api/pleroma/admin/reports/:id/respond`
+## `POST /api/pleroma/admin/reports/:id/notes`
 
-### Respond to a report
+### Create report note
 
 - Params:
-  - `id`
-  - `status`: required, the message
+  - `id`: required, report id
+  - `content`: required, the message
 - Response:
   - On failure:
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
-    - 403 Forbidden `{"error": "error_msg"}`
-    - 404 Not Found `"Not found"`
-  - On success: JSON, created Mastodon Status entity
+  - On success: `204`, empty response
 
-```json
-{
-  "account": { ... },
-  "application": {
-    "name": "Web",
-    "website": null
-  },
-  "bookmarked": false,
-  "card": null,
-  "content": "Your claim is going to be closed",
-  "created_at": "2019-05-11T17:13:03.000Z",
-  "emojis": [],
-  "favourited": false,
-  "favourites_count": 0,
-  "id": "9ihuiSL1405I65TmEq",
-  "in_reply_to_account_id": null,
-  "in_reply_to_id": null,
-  "language": null,
-  "media_attachments": [],
-  "mentions": [
-    {
-      "acct": "user",
-      "id": "9i6dAJqSGSKMzLG2Lo",
-      "url": "https://pleroma.example.org/users/user",
-      "username": "user"
-    },
-    {
-      "acct": "admin",
-      "id": "9hEkA5JsvAdlSrocam",
-      "url": "https://pleroma.example.org/users/admin",
-      "username": "admin"
-    }
-  ],
-  "muted": false,
-  "pinned": false,
-  "pleroma": {
-    "content": {
-      "text/plain": "Your claim is going to be closed"
-    },
-    "conversation_id": 35,
-    "in_reply_to_account_acct": null,
-    "local": true,
-    "spoiler_text": {
-      "text/plain": ""
-    }
-  },
-  "reblog": null,
-  "reblogged": false,
-  "reblogs_count": 0,
-  "replies_count": 0,
-  "sensitive": false,
-  "spoiler_text": "",
-  "tags": [],
-  "uri": "https://pleroma.example.org/objects/cab0836d-9814-46cd-a0ea-529da9db5fcb",
-  "url": "https://pleroma.example.org/notice/9ihuiSL1405I65TmEq",
-  "visibility": "direct"
-}
-```
+## `POST /api/pleroma/admin/reports/:report_id/notes/:id`
+
+### Delete report note
+
+- Params:
+  - `report_id`: required, report id
+  - `id`: required, note id
+- Response:
+  - On failure:
+    - 400 Bad Request `"Invalid parameters"` when `status` is missing
+  - On success: `204`, empty response
 
 ## `PUT /api/pleroma/admin/statuses/:id`
 
@@ -707,27 +665,16 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 404 Not Found `"Not found"`
   - On success: 200 OK `{}`
 
-## `GET /api/pleroma/admin/config/migrate_to_db`
-
-### Run mix task pleroma.config migrate_to_db
-
-Copy settings on key `:pleroma` to DB.
-
-- Params: none
-- Response:
-
-```json
-{}
-```
-
 ## `GET /api/pleroma/admin/config/migrate_from_db`
 
 ### Run mix task pleroma.config migrate_from_db
 
-Copy all settings from DB to `config/prod.exported_from_db.secret.exs` with deletion from DB.
+Copies all settings from database to `config/{env}.exported_from_db.secret.exs` with deletion from the table. Where `{env}` is the environment in which `pleroma` is running.
 
 - Params: none
 - Response:
+  - On failure:
+    - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
 
 ```json
 {}
@@ -735,20 +682,24 @@ Copy all settings from DB to `config/prod.exported_from_db.secret.exs` with dele
 
 ## `GET /api/pleroma/admin/config`
 
-### List config settings
+### Get list of merged default settings with saved in database.
 
-List config settings only works with `:pleroma => :instance => :dynamic_configuration` setting to `true`.
+**Only works when configuration from database is enabled.**
 
-- Params: none
+- Params:
+  - `only_db`: true (*optional*, get only saved in database settings)
 - Response:
+  - On failure:
+    - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
+    - 400 Bad Request `"To use configuration from database migrate your settings to database."`
 
 ```json
 {
   configs: [
     {
-      "group": string,
-      "key": string or string with leading `:` for atoms,
-      "value": string or {} or [] or {"tuple": []}
+      "group": ":pleroma",
+      "key": "Pleroma.Upload",
+      "value": []
      }
   ]
 }
@@ -758,44 +709,107 @@ List config settings only works with `:pleroma => :instance => :dynamic_configur
 
 ### Update config settings
 
-Updating config settings only works with `:pleroma => :instance => :dynamic_configuration` setting to `true`.
-Module name can be passed as string, which starts with `Pleroma`, e.g. `"Pleroma.Upload"`.
-Atom keys and values can be passed with `:` in the beginning, e.g. `":upload"`.
-Tuples can be passed as `{"tuple": ["first_val", Pleroma.Module, []]}`.
-`{"tuple": ["some_string", "Pleroma.Some.Module", []]}` will be converted to `{"some_string", Pleroma.Some.Module, []}`.
-Keywords can be passed as lists with 2 child tuples, e.g.
-`[{"tuple": ["first_val", Pleroma.Module]}, {"tuple": ["second_val", true]}]`.
+**Only works when configuration from database is enabled.**
 
-If value contains list of settings `[subkey: val1, subkey2: val2, subkey3: val3]`, it's possible to remove only subkeys instead of all settings passing `subkeys` parameter. E.g.:
-{"group": "pleroma", "key": "some_key", "delete": "true", "subkeys": [":subkey", ":subkey3"]}.
+Some modifications are necessary to save the config settings correctly:
 
-Compile time settings (need instance reboot):
-- all settings by this keys:
+- strings which start with `Pleroma.`, `Phoenix.`, `Tesla.` or strings like `Oban`, `Ueberauth` will be converted to modules;
+```
+"Pleroma.Upload" -> Pleroma.Upload
+"Oban" -> Oban
+```
+- strings starting with `:` will be converted to atoms;
+```
+":pleroma" -> :pleroma
+```
+- objects with `tuple` key and array value will be converted to tuples;
+```
+{"tuple": ["string", "Pleroma.Upload", []]} -> {"string", Pleroma.Upload, []}
+```
+- arrays with *tuple objects* will be converted to keywords;
+```
+[{"tuple": [":key1", "value"]}, {"tuple": [":key2", "value"]}] -> [key1: "value", key2: "value"]
+```
+
+Most of the settings will be applied in `runtime`, this means that you don't need to restart the instance. But some settings are applied in `compile time` and require a reboot of the instance, such as:
+- all settings inside these keys:
   - `:hackney_pools`
   - `:chat`
-  - `Pleroma.Web.Endpoint`
-  - `Pleroma.Repo`
-- part settings:
-  - `Pleroma.Captcha` -> `:seconds_valid`
-  - `Pleroma.Upload` -> `:proxy_remote`
-  - `:instance` -> `:upload_limit`
+- partially settings inside these keys:
+  - `:seconds_valid` in `Pleroma.Captcha`
+  - `:proxy_remote` in `Pleroma.Upload`
+  - `:upload_limit` in `:instance`
 
 - Params:
-  - `configs` => [
-    - `group` (string)
-    - `key` (string or string with leading `:` for atoms)
-    - `value` (string, [], {} or {"tuple": []})
-    - `delete` = true (optional, if parameter must be deleted)
-    - `subkeys` [(string with leading `:` for atoms)] (optional, works only if `delete=true` parameter is passed, otherwise will be ignored)
-  ]
+  - `configs` - array of config objects
+  - config object params:
+    - `group` - string (**required**)
+    - `key` - string (**required**)
+    - `value` - string, [], {} or {"tuple": []} (**required**)
+    - `delete` - true (*optional*, if setting must be deleted)
+    - `subkeys` - array of strings (*optional*, only works when `delete=true` parameter is passed, otherwise will be ignored)
 
-- Request (example):
+*When a value have several nested settings, you can delete only some nested settings by passing a parameter `subkeys`, without deleting all settings by key.*
+```
+[subkey: val1, subkey2: val2, subkey3: val3] \\ initial value
+{"group": ":pleroma", "key": "some_key", "delete": true, "subkeys": [":subkey", ":subkey3"]} \\ passing json for deletion
+[subkey2: val2] \\ value after deletion
+```
+
+*Most of the settings can be partially updated through merge old values with new values, except settings value of which is list or is not keyword.*
+
+Example of setting without keyword in value:
+```elixir
+config :tesla, :adapter, Tesla.Adapter.Hackney
+```
+
+List of settings which support only full update by key:
+```elixir
+@full_key_update [
+    {:pleroma, :ecto_repos},
+    {:quack, :meta},
+    {:mime, :types},
+    {:cors_plug, [:max_age, :methods, :expose, :headers]},
+    {:auto_linker, :opts},
+    {:swarm, :node_blacklist},
+    {:logger, :backends}
+  ]
+```
+
+List of settings which support only full update by subkey:
+```elixir
+@full_subkey_update [
+    {:pleroma, :assets, :mascots},
+    {:pleroma, :emoji, :groups},
+    {:pleroma, :workers, :retries},
+    {:pleroma, :mrf_subchain, :match_actor},
+    {:pleroma, :mrf_keyword, :replace}
+  ]
+```
+
+*Settings without explicit key must be sended in separate config object params.*
+```elixir
+config :quack,
+  level: :debug,
+  meta: [:all],
+  ...
+```
+```json
+{
+  configs: [
+    {"group": ":quack", "key": ":level", "value": ":debug"},
+    {"group": ":quack", "key": ":meta", "value": [":all"]},
+    ...
+  ]
+}
+```
+- Request:
 
 ```json
 {
   configs: [
     {
-      "group": "pleroma",
+      "group": ":pleroma",
       "key": "Pleroma.Upload",
       "value": [
         {"tuple": [":uploader", "Pleroma.Uploaders.Local"]},
@@ -805,7 +819,7 @@ Compile time settings (need instance reboot):
         {"tuple": [":proxy_opts", [
           {"tuple": [":redirect_on_failure", false]},
           {"tuple": [":max_body_length", 1048576]},
-          {"tuple": [":http": [
+          {"tuple": [":http", [
             {"tuple": [":follow_redirect", true]},
             {"tuple": [":pool", ":upload"]},
           ]]}
@@ -821,17 +835,51 @@ Compile time settings (need instance reboot):
 ```
 
 - Response:
-
+  - On failure:
+    - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
 ```json
 {
   configs: [
     {
-      "group": string,
-      "key": string or string with leading `:` for atoms,
-      "value": string or {} or [] or {"tuple": []}
+      "group": ":pleroma",
+      "key": "Pleroma.Upload",
+      "value": [...]
      }
   ]
 }
+```
+
+## ` GET /api/pleroma/admin/config/descriptions`
+
+### Get JSON with config descriptions.
+Loads json generated from `config/descriptions.exs`.
+
+- Params: none
+- Response:
+
+```json
+[{
+    "group": ":pleroma", // string
+    "key": "ModuleName", // string
+    "type": "group", // string or list with possible values,
+    "description": "Upload general settings", // string
+    "children": [
+      {
+        "key": ":uploader", // string or module name `Pleroma.Upload`
+        "type": "module",
+        "description": "Module which will be used for uploads",
+        "suggestions": ["module1", "module2"]
+      },
+      {
+        "key": ":filters",
+        "type": ["list", "module"],
+        "description": "List of filter modules for uploads",
+        "suggestions": [
+          "module1", "module2", "module3"
+        ]
+      }
+    ]
+}]
 ```
 
 ## `GET /api/pleroma/admin/moderation_log`
