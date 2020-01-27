@@ -12,6 +12,7 @@ defmodule Pleroma.User do
   alias Comeonin.Pbkdf2
   alias Ecto.Multi
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
   alias Pleroma.FollowingRelationship
@@ -35,7 +36,7 @@ defmodule Pleroma.User do
   require Logger
 
   @type t :: %__MODULE__{}
-
+  @type account_status :: :active | :deactivated | :password_reset_pending | :confirmation_pending
   @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
@@ -216,14 +217,21 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "Returns if the user should be allowed to authenticate"
-  def auth_active?(%User{deactivated: true}), do: false
+  @doc "Returns status account"
+  @spec account_status(User.t()) :: account_status()
+  def account_status(%User{deactivated: true}), do: :deactivated
+  def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
 
-  def auth_active?(%User{confirmation_pending: true}),
-    do: !Pleroma.Config.get([:instance, :account_activation_required])
+  def account_status(%User{confirmation_pending: true}) do
+    case Config.get([:instance, :account_activation_required]) do
+      true -> :confirmation_pending
+      _ -> :active
+    end
+  end
 
-  def auth_active?(%User{}), do: true
+  def account_status(%User{}), do: :active
 
+  @spec visible_for?(User.t(), User.t() | nil) :: boolean()
   def visible_for?(user, for_user \\ nil)
 
   def visible_for?(%User{invisible: true}, _), do: false
@@ -231,15 +239,17 @@ defmodule Pleroma.User do
   def visible_for?(%User{id: user_id}, %User{id: for_id}) when user_id == for_id, do: true
 
   def visible_for?(%User{} = user, for_user) do
-    auth_active?(user) || superuser?(for_user)
+    account_status(user) == :active || superuser?(for_user)
   end
 
   def visible_for?(_, _), do: false
 
+  @spec superuser?(User.t()) :: boolean()
   def superuser?(%User{local: true, is_admin: true}), do: true
   def superuser?(%User{local: true, is_moderator: true}), do: true
   def superuser?(_), do: false
 
+  @spec invisible?(User.t()) :: boolean()
   def invisible?(%User{invisible: true}), do: true
   def invisible?(_), do: false
 

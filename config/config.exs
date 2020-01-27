@@ -425,14 +425,6 @@ config :pleroma, Pleroma.Web.Metadata,
   ],
   unfurl_nsfw: false
 
-config :pleroma, :suggestions,
-  enabled: false,
-  third_party_engine:
-    "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}",
-  timeout: 300_000,
-  limit: 40,
-  web: "https://vinayaka.distsn.org"
-
 config :pleroma, :http_security,
   enabled: true,
   sts: false,

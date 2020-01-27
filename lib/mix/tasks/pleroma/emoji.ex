@@ -9,6 +9,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   @moduledoc File.read!("docs/administration/CLI_tasks/emoji.md")
 
   def run(["ls-packs" | args]) do
+    Mix.Pleroma.start_pleroma()
     Application.ensure_all_started(:hackney)
 
     {options, [], []} = parse_global_opts(args)
@@ -35,6 +36,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   end
 
   def run(["get-packs" | args]) do
+    Mix.Pleroma.start_pleroma()
     Application.ensure_all_started(:hackney)
 
     {options, pack_names, []} = parse_global_opts(args)

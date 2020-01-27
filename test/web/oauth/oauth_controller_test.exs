@@ -819,7 +819,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         |> User.confirmation_changeset(need_confirmation: true)
         |> User.update_and_set_cache()
 
-      refute Pleroma.User.auth_active?(user)
+      refute Pleroma.User.account_status(user) == :active
 
       app = insert(:oauth_app)
 
@@ -849,7 +849,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       app = insert(:oauth_app)
 
-      conn =
+      resp =
         build_conn()
         |> post("/oauth/token", %{
           "grant_type" => "password",
@@ -858,10 +858,12 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "client_id" => app.client_id,
           "client_secret" => app.client_secret
         })
+        |> json_response(403)
 
-      assert resp = json_response(conn, 403)
-      assert %{"error" => _} = resp
-      refute Map.has_key?(resp, "access_token")
+      assert resp == %{
+               "error" => "Your account is currently disabled",
+               "identifier" => "account_is_disabled"
+             }
     end
 
     test "rejects token exchange for user with password_reset_pending set to true" do
@@ -875,7 +877,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       app = insert(:oauth_app, scopes: ["read", "write"])
 
-      conn =
+      resp =
         build_conn()
         |> post("/oauth/token", %{
           "grant_type" => "password",
@@ -884,12 +886,41 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "client_id" => app.client_id,
           "client_secret" => app.client_secret
         })
+        |> json_response(403)
 
-      assert resp = json_response(conn, 403)
+      assert resp == %{
+               "error" => "Password reset is required",
+               "identifier" => "password_reset_required"
+             }
+    end
 
-      assert resp["error"] == "Password reset is required"
-      assert resp["identifier"] == "password_reset_required"
-      refute Map.has_key?(resp, "access_token")
+    test "rejects token exchange for user with confirmation_pending set to true" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+      password = "testpassword"
+
+      user =
+        insert(:user,
+          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          confirmation_pending: true
+        )
+
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      resp =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "password",
+          "username" => user.nickname,
+          "password" => password,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+        |> json_response(403)
+
+      assert resp == %{
+               "error" => "Your login is missing a confirmed e-mail address",
+               "identifier" => "missing_confirmed_email"
+             }
     end
 
     test "rejects an invalid authorization code" do
