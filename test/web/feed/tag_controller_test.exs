@@ -101,7 +101,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
 
     response =
       conn
-      |> put_req_header("content-type", "application/atom+xml")
+      |> put_req_header("content-type", "application/rss+xml")
       |> get(tag_feed_path(conn, :feed, "pleromaart.rss"))
       |> response(200)
 
