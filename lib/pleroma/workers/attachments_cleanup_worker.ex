@@ -12,7 +12,10 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
 
   @impl Oban.Worker
   def perform(
-        %{"object" => %{"data" => %{"attachment" => [_ | _] = attachments, "actor" => actor}}},
+        %{
+          "op" => "cleanup_attachments",
+          "object" => %{"data" => %{"attachment" => [_ | _] = attachments, "actor" => actor}}
+        },
         _job
       ) do
     hrefs =
@@ -37,7 +40,7 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
       )
       # The query above can be time consumptive on large instances until we
       # refactor how uploads are stored
-      |> Repo.all(timout: :infinity)
+      |> Repo.all(timeout: :infinity)
       # we should delete 1 object for any given attachment, but don't delete
       # files if there are more than 1 object for it
       |> Enum.reduce(%{}, fn %{
@@ -84,5 +87,5 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
     |> Repo.delete_all()
   end
 
-  def perform(%{"object" => _object}, _job), do: :ok
+  def perform(%{"op" => "cleanup_attachments", "object" => _object}, _job), do: :ok
 end
