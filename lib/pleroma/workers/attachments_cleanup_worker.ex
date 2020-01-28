@@ -12,7 +12,10 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
 
   @impl Oban.Worker
   def perform(
-        %{"object" => %{"data" => %{"attachment" => [_ | _] = attachments, "actor" => actor}}},
+        %{
+          "op" => "cleanup_attachments",
+          "object" => %{"data" => %{"attachment" => [_ | _] = attachments, "actor" => actor}}
+        } = data,
         _job
       ) do
     hrefs =
@@ -84,5 +87,5 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
     |> Repo.delete_all()
   end
 
-  def perform(%{"object" => _object}, _job), do: :ok
+  def perform(%{"op" => "cleanup_attachments", "object" => _object}, _job), do: :ok
 end
