@@ -172,7 +172,10 @@ defmodule Pleroma.Config.TransferTaskTest do
         value: [seconds_valid: 60]
       })
 
-      assert capture_log(fn -> TransferTask.load_and_update_env([], false) end) =~ ""
+      refute String.contains?(
+               capture_log(fn -> TransferTask.load_and_update_env([], false) end),
+               "pleroma restarted"
+             )
     end
   end
 end
