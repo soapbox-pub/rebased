@@ -15,7 +15,7 @@ defmodule Pleroma.Web.Feed.TagController do
     {format, tag} = parse_tag(raw_tag)
 
     activities =
-      %{"type" => ["Create"], "whole_db" => true, "tag" => tag}
+      %{"type" => ["Create"], "tag" => tag}
       |> put_in_if_exist("max_id", params["max_id"])
       |> ActivityPub.fetch_public_activities()
 
