@@ -6,6 +6,8 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
   alias Pleroma.Config
   import Plug.Conn
 
+  require Logger
+
   def init(opts), do: opts
 
   def call(conn, _options) do
@@ -88,6 +90,15 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
 
     (main_part ++ report ++ insecure)
     |> Enum.join("; ")
+  end
+
+  def warn_if_disabled do
+    unless Config.get([:http_security, :enabled]) do
+      Logger.warn("HTTP Security is disabled. Add this line to you config to enable it:
+
+      config :pleroma, :http_security, enabled: true
+      ")
+    end
   end
 
   defp maybe_send_sts_header(conn, true) do
