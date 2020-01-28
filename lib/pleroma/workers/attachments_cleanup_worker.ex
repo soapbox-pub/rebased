@@ -15,7 +15,7 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
         %{
           "op" => "cleanup_attachments",
           "object" => %{"data" => %{"attachment" => [_ | _] = attachments, "actor" => actor}}
-        } = data,
+        },
         _job
       ) do
     hrefs =
