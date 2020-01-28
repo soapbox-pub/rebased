@@ -2,13 +2,16 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.Feed.FeedController do
+defmodule Pleroma.Web.Feed.UserController do
   use Pleroma.Web, :controller
 
   alias Fallback.RedirectController
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ActivityPubController
+  alias Pleroma.Web.Feed.FeedView
+
+  import Pleroma.Web.ControllerHelper, only: [put_in_if_exist: 3]
 
   plug(Pleroma.Plugs.SetFormatPlug when action in [:feed_redirect])
 
@@ -27,7 +30,7 @@ defmodule Pleroma.Web.Feed.FeedController do
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
-      redirect(conn, external: "#{feed_url(conn, :feed, user.nickname)}.atom")
+      redirect(conn, external: "#{user_feed_url(conn, :feed, user.nickname)}.atom")
     end
   end
 
@@ -36,15 +39,15 @@ defmodule Pleroma.Web.Feed.FeedController do
       activities =
         %{
           "type" => ["Create"],
-          "whole_db" => true,
           "actor_id" => user.ap_id
         }
-        |> Map.merge(Map.take(params, ["max_id"]))
+        |> put_in_if_exist("max_id", params["max_id"])
         |> ActivityPub.fetch_public_activities()
 
       conn
       |> put_resp_content_type("application/atom+xml")
-      |> render("feed.xml",
+      |> put_view(FeedView)
+      |> render("user.xml",
         user: user,
         activities: activities,
         feed_config: Pleroma.Config.get([:feed])

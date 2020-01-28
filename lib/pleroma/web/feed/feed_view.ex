@@ -13,19 +13,51 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   require Pleroma.Constants
 
-  def prepare_activity(activity) do
+  @spec pub_date(String.t() | DateTime.t()) :: String.t()
+  def pub_date(date) when is_binary(date) do
+    date
+    |> Timex.parse!("{ISO:Extended}")
+    |> pub_date
+  end
+
+  def pub_date(%DateTime{} = date), do: Timex.format!(date, "{RFC822}")
+
+  def prepare_activity(activity, opts \\ []) do
     object = activity_object(activity)
+
+    actor =
+      if opts[:actor] do
+        Pleroma.User.get_cached_by_ap_id(activity.actor)
+      end
 
     %{
       activity: activity,
       data: Map.get(object, :data),
-      object: object
+      object: object,
+      actor: actor
     }
+  end
+
+  def most_recent_update(activities) do
+    with %{updated_at: updated_at} <- List.first(activities) do
+      NaiveDateTime.to_iso8601(updated_at)
+    end
   end
 
   def most_recent_update(activities, user) do
     (List.first(activities) || user).updated_at
     |> NaiveDateTime.to_iso8601()
+  end
+
+  def feed_logo do
+    case Pleroma.Config.get([:feed, :logo]) do
+      nil ->
+        "#{Pleroma.Web.base_url()}/static/logo.png"
+
+      logo ->
+        "#{Pleroma.Web.base_url()}#{logo}"
+    end
+    |> MediaProxy.url()
   end
 
   def logo(user) do
@@ -40,6 +72,8 @@ defmodule Pleroma.Web.Feed.FeedView do
 
   def activity_title(%{data: %{"content" => content}}, opts \\ %{}) do
     content
+    |> Pleroma.Web.Metadata.Utils.scrub_html()
+    |> Pleroma.Emoji.Formatter.demojify()
     |> Formatter.truncate(opts[:max_length], opts[:omission])
     |> escape()
   end
@@ -49,6 +83,8 @@ defmodule Pleroma.Web.Feed.FeedView do
     |> String.replace(~r/[\n\r]/, "")
     |> escape()
   end
+
+  def activity_content(_), do: ""
 
   def activity_context(activity), do: activity.data["context"]
 

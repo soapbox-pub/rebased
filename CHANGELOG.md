@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: Removed 1.0+ deprecated configurations `Pleroma.Upload, :strip_exif` and `:instance, :dedupe_media`
 - **Breaking**: OStatus protocol support
 - **Breaking**: MDII uploader
+- **Breaking**: Using third party engines for user recommendation
 
 ### Changed
 - **Breaking:** Pleroma won't start if it detects unapplied migrations
@@ -56,6 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Static Frontend: Add the ability to render user profiles and notices server-side without requiring JS app.
 - Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
 - Mix task to list all users (`mix pleroma.user list`)
+- Mix task to send a test email (`mix pleroma.email test`)
 - Support for `X-Forwarded-For` and similar HTTP headers which used by reverse proxies to pass a real user IP address to the backend. Must not be enabled unless your instance is behind at least one reverse proxy (such as Nginx, Apache HTTPD or Varnish Cache).
 - MRF: New module which handles incoming posts based on their age. By default, all incoming posts that are older than 2 days will be unlisted and not shown to their followers.
 - User notification settings: Add `privacy_option` option.
@@ -100,6 +102,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Change emoji reaction reply format
 - Notifications: Added `pleroma:emoji_reaction` notification type
 - Mastodon API: Change emoji reaction reply format once more
+- Configuration: `feed.logo` option for tag feed.
+- Tag feed: `/tags/:tag.rss` - list public statuses by hashtag.
 </details>
 
 ### Fixed

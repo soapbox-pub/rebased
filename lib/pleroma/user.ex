@@ -1512,7 +1512,7 @@ defmodule Pleroma.User do
     data
     |> Map.put(:name, blank?(data[:name]) || data[:nickname])
     |> remote_user_creation()
-    |> Repo.insert(on_conflict: :replace_all_except_primary_key, conflict_target: :nickname)
+    |> Repo.insert(on_conflict: {:replace_all_except, [:id]}, conflict_target: :nickname)
     |> set_cache()
   end
 

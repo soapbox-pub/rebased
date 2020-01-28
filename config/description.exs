@@ -1167,7 +1167,7 @@ config :pleroma, :config_description, [
             label: "Logo margin",
             type: :string,
             description:
-              "allows you to adjust vertical margins between logo boundary and navbar borders. " <>
+              "Allows you to adjust vertical margins between logo boundary and navbar borders. " <>
                 "The idea is that to have logo's image without any extra margins and instead adjust them to your need in layout.",
             suggestions: [".1em"]
           },
@@ -1960,7 +1960,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :verbose,
-        type: :atom,
+        type: [:atom, false],
         description: "Logs verbose mode",
         suggestions: [false, :error, :warn, :info, :debug]
       },
@@ -2738,43 +2738,6 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :suggestions,
-    type: :group,
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Enables suggestions"
-      },
-      %{
-        key: :third_party_engine,
-        type: :string,
-        description: "URL for third party engine",
-        suggestions: [
-          "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}"
-        ]
-      },
-      %{
-        key: :timeout,
-        type: :integer,
-        description: "Request timeout to third party engine",
-        suggestions: [300_000]
-      },
-      %{
-        key: :limit,
-        type: :integer,
-        description: "Limit for suggestions",
-        suggestions: [40]
-      },
-      %{
-        key: :web,
-        type: :string,
-        suggestions: ["https://vinayaka.distsn.org"]
       }
     ]
   },

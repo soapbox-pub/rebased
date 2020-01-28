@@ -119,7 +119,20 @@ defmodule Pleroma.FormatterTest do
     end
   end
 
-  describe "add_user_links" do
+  describe "Formatter.linkify" do
+    test "correctly finds mentions that contain the domain name" do
+      _user = insert(:user, %{nickname: "lain"})
+      _remote_user = insert(:user, %{nickname: "lain@lain.com", local: false})
+
+      text = "hey @lain@lain.com what's up"
+
+      {_text, mentions, []} = Formatter.linkify(text)
+      [{username, user}] = mentions
+
+      assert username == "@lain@lain.com"
+      assert user.nickname == "lain@lain.com"
+    end
+
     test "gives a replacement for user links, using local nicknames in user links text" do
       text = "@gsimg According to @archa_eme_, that is @daggsy. Also hello @archaeme@archae.me"
       gsimg = insert(:user, %{nickname: "gsimg"})

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:webfeeds="http://webfeeds.org/rss/1.0">
+  <channel>
+
+
+    <title>#<%= @tag %></title>
+    <description>These are public toots tagged with #<%= @tag %>. You can interact with them if you have an account anywhere in the fediverse.</description>
+    <link><%= '#{tag_feed_url(@conn, :feed, @tag)}.rss' %></link>
+    <webfeeds:logo><%= feed_logo() %></webfeeds:logo>
+    <webfeeds:accentColor>2b90d9</webfeeds:accentColor>
+    <%= for activity <- @activities do %>
+    <%= render @view_module, "_tag_activity.xml", Map.merge(assigns, prepare_activity(activity)) %>
+    <% end %>
+  </channel>
+</rss>
