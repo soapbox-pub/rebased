@@ -455,6 +455,34 @@ defmodule Pleroma.Web.StreamerTest do
     Task.await(task)
   end
 
+  test "it does send non-reblog notification for mtued" do
+    user1 = insert(:user)
+    user2 = insert(:user)
+    user3 = insert(:user)
+    CommonAPI.hide_reblogs(user1, user2)
+
+    task =
+      Task.async(fn ->
+        assert_receive {:text, _}, 1_000
+      end)
+
+    fake_socket = %StreamerSocket{
+      transport_pid: task.pid,
+      user: user1
+    }
+
+    {:ok, create_activity} = CommonAPI.post(user3, %{"status" => "I'm kawen"})
+    {:ok, favorite_activity, _} = CommonAPI.favorite(create_activity.id, user2)
+
+    topics = %{
+      "public" => [fake_socket]
+    }
+
+    Worker.push_to_socket(topics, "public", favorite_activity)
+
+    Task.await(task)
+  end
+
   test "it doesn't send posts from muted threads" do
     user = insert(:user)
     user2 = insert(:user)
