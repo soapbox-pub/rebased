@@ -8,8 +8,6 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
   alias Pleroma.Object
   alias Pleroma.Repo
 
-  require Logger
-
   use Pleroma.Workers.WorkerHelper, queue: "attachments_cleanup"
 
   @impl Oban.Worker
@@ -83,7 +81,6 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
 
           file_path = String.trim_leading(href, "#{base_url}/#{prefix}")
 
-          Logger.warn("Deleting file #{file_path} (orig: #{href}, base_url: #{base_url})")
           uploader.delete_file(file_path)
         end
 
