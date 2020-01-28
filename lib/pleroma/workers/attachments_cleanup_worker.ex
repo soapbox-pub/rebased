@@ -75,7 +75,11 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
               _ -> ""
             end
 
-          base_url = Pleroma.Config.get([Pleroma.Upload, :base_url], Pleroma.Web.base_url())
+          base_url =
+            String.trim_trailing(
+              Pleroma.Config.get([Pleroma.Upload, :base_url], Pleroma.Web.base_url()),
+              "/"
+            )
 
           file_path = String.trim_leading(href, "#{base_url}/#{prefix}")
 
