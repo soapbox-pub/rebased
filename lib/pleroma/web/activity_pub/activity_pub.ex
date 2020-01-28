@@ -728,7 +728,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       params
       |> Map.put("user", reading_user)
       |> Map.put("actor_id", user.ap_id)
-      |> Map.put("whole_db", true)
 
     recipients =
       user_activities_recipients(%{
@@ -746,7 +745,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put("type", ["Create", "Announce"])
       |> Map.put("user", reading_user)
       |> Map.put("actor_id", user.ap_id)
-      |> Map.put("whole_db", true)
       |> Map.put("pinned_activity_ids", user.pinned_activities)
 
     params =
@@ -773,7 +771,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       params
       |> Map.put("type", ["Create", "Announce"])
       |> Map.put("instance", params["instance"])
-      |> Map.put("whole_db", true)
 
     fetch_activities([Pleroma.Constants.as_public()], params, :offset)
     |> Enum.reverse()

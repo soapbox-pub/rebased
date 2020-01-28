@@ -37,7 +37,10 @@ defmodule Pleroma.Web.Feed.UserController do
   def feed(conn, %{"nickname" => nickname} = params) do
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
       activities =
-        %{"type" => ["Create"], "whole_db" => true, "actor_id" => user.ap_id}
+        %{
+          "type" => ["Create"],
+          "actor_id" => user.ap_id
+        }
         |> put_in_if_exist("max_id", params["max_id"])
         |> ActivityPub.fetch_public_activities()
 
