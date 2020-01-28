@@ -36,7 +36,6 @@ defmodule Pleroma.Web.Feed.FeedController do
       activities =
         %{
           "type" => ["Create"],
-          "whole_db" => true,
           "actor_id" => user.ap_id
         }
         |> Map.merge(Map.take(params, ["max_id"]))
