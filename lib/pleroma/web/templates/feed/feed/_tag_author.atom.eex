@@ -1,0 +1,18 @@
+<author>
+    <activity:object-type>http://activitystrea.ms/schema/1.0/person</activity:object-type>
+    <id><%= @actor.ap_id %></id>
+    <uri><%= @actor.ap_id %></uri>
+    <name><%= @actor.nickname %></name>
+    <summary><%= escape(@actor.bio) %></summary>
+    <link rel="avatar" href="<%= User.avatar_url(@actor) %>"/>
+    <%= if User.banner_url(@actor) do %>
+      <link rel="header" href="<%= User.banner_url(@actor) %>"/>
+    <% end %>
+    <%= if @actor.local do %>
+      <ap_enabled>true</ap_enabled>
+    <% end %>
+  
+    <poco:preferredUsername><%= @actor.nickname %></poco:preferredUsername>        
+    <poco:displayName><%= @actor.name %></poco:displayName>
+    <poco:note><%= escape(@actor.bio) %></poco:note>    
+</author>

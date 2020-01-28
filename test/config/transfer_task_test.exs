@@ -105,17 +105,4 @@ defmodule Pleroma.Config.TransferTaskTest do
       Application.put_env(:pleroma, :assets, assets)
     end)
   end
-
-  test "non existing atom" do
-    ConfigDB.create(%{
-      group: ":pleroma",
-      key: ":undefined_atom_key",
-      value: [live: 2, com: 3]
-    })
-
-    assert ExUnit.CaptureLog.capture_log(fn ->
-             TransferTask.start_link([])
-           end) =~
-             "updating env causes error, group: \":pleroma\" key: \":undefined_atom_key\" value: [live: 2, com: 3] error: %ArgumentError{message: \"argument error\"}"
-  end
 end

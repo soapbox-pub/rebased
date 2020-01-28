@@ -6,6 +6,6 @@ defmodule Pleroma.RuntimeTest do
   use ExUnit.Case, async: true
 
   test "it loads custom runtime modules" do
-    assert Code.ensure_compiled?(RuntimeModule)
+    assert {:module, RuntimeModule} == Code.ensure_compiled(RuntimeModule)
   end
 end

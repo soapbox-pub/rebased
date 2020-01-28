@@ -177,6 +177,39 @@ defmodule Pleroma.ObjectTest do
 
       assert {:ok, []} == File.ls("#{uploads_dir}/#{path}")
     end
+
+    test "With custom base_url" do
+      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      Pleroma.Config.put([Pleroma.Upload, :base_url], "https://sub.domain.tld/dir/")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      user = insert(:user)
+
+      {:ok, %Object{} = attachment} =
+        Pleroma.Web.ActivityPub.ActivityPub.upload(file, actor: user.ap_id)
+
+      %{data: %{"attachment" => [%{"url" => [%{"href" => href}]}]}} =
+        note = insert(:note, %{user: user, data: %{"attachment" => [attachment.data]}})
+
+      uploads_dir = Pleroma.Config.get!([Pleroma.Uploaders.Local, :uploads])
+
+      path = href |> Path.dirname() |> Path.basename()
+
+      assert {:ok, ["an_image.jpg"]} == File.ls("#{uploads_dir}/#{path}")
+
+      Object.delete(note)
+
+      ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
+
+      assert Object.get_by_id(attachment.id) == nil
+
+      assert {:ok, []} == File.ls("#{uploads_dir}/#{path}")
+    end
   end
 
   describe "normalizer" do

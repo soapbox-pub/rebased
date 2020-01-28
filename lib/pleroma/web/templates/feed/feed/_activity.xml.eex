@@ -9,7 +9,7 @@
   <ostatus:conversation ref="<%= activity_context(@activity) %>">
     <%= activity_context(@activity) %>
   </ostatus:conversation>
-  <link ref="<%= activity_context(@activity) %>" rel="ostatus:conversation"/>
+  <link href="<%= activity_context(@activity) %>" rel="ostatus:conversation"/>
 
   <%= if @data["summary"] do %>
     <summary><%= @data["summary"] %></summary>
