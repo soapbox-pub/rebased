@@ -7,7 +7,6 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
 
   alias Pleroma.Config
 
-  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
 
