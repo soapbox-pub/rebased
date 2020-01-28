@@ -16,7 +16,7 @@ defmodule Pleroma.Web.Metadata.Providers.Feed do
        [
          rel: "alternate",
          type: "application/atom+xml",
-         href: Helpers.feed_path(Endpoint, :feed, user.nickname) <> ".atom"
+         href: Helpers.user_feed_path(Endpoint, :feed, user.nickname) <> ".atom"
        ], []}
     ]
   end

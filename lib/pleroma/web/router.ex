@@ -527,8 +527,10 @@ defmodule Pleroma.Web.Router do
     get("/notice/:id", OStatus.OStatusController, :notice)
     get("/notice/:id/embed_player", OStatus.OStatusController, :notice_player)
 
-    get("/users/:nickname/feed", Feed.FeedController, :feed)
-    get("/users/:nickname", Feed.FeedController, :feed_redirect)
+    get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
+    get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
+
+    get("/tags/:tag", Feed.TagController, :feed, as: :tag_feed)
   end
 
   scope "/", Pleroma.Web do
