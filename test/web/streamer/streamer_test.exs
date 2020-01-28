@@ -455,7 +455,7 @@ defmodule Pleroma.Web.StreamerTest do
     Task.await(task)
   end
 
-  test "it does send non-reblog notification for mtued" do
+  test "it does send non-reblog notification for reblog-muted actors" do
     user1 = insert(:user)
     user2 = insert(:user)
     user3 = insert(:user)
