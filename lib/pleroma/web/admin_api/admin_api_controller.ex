@@ -658,6 +658,39 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     json_response(conn, :no_content, "")
   end
 
+  @doc "Changes password for a given user"
+  def change_password(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname} = params) do
+    with {_, user} <- {:user, User.get_cached_by_nickname(nickname)},
+         {:ok, _user} <-
+           User.reset_password(user, %{
+             password: params["new_password"],
+             password_confirmation: params["new_password"]
+           }) do
+      ModerationLog.insert_log(%{
+        actor: admin,
+        subject: [user],
+        action: "change_password"
+      })
+
+      User.force_password_reset_async(user)
+
+      ModerationLog.insert_log(%{
+        actor: admin,
+        subject: [user],
+        action: "force_password_reset"
+      })
+
+      json(conn, %{status: "success"})
+    else
+      {:error, changeset} ->
+        {_, {error, _}} = Enum.at(changeset.errors, 0)
+        json(conn, %{error: "New password #{error}."})
+
+      _ ->
+        json(conn, %{error: "Unable to change password."})
+    end
+  end
+
   def list_reports(conn, params) do
     {page, page_size} = page_params(params)
 

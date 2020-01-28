@@ -173,6 +173,7 @@ defmodule Pleroma.Web.Router do
 
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
     patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
+    patch("/users/:nickname/change_password", AdminAPIController, :change_password)
 
     get("/users", AdminAPIController, :list_users)
     get("/users/:nickname", AdminAPIController, :user_show)

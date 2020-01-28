@@ -414,6 +414,14 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `nicknames`
 - Response: none (code `204`)
 
+## `PATCH /api/pleroma/admin/users/:nickname/change_password`
+
+### Change the user password
+
+- Params:
+  - `new_password`
+- Response: none (code `200`)
+
 ## `GET /api/pleroma/admin/reports`
 
 ### Get a list of reports

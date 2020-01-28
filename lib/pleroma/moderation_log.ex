@@ -605,6 +605,17 @@ defmodule Pleroma.ModerationLog do
     }"
   end
 
+  @spec get_log_entry_message(ModerationLog) :: String.t()
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
+          "action" => "change_password",
+          "subject" => subjects
+        }
+      }) do
+    "@#{actor_nickname} changed password for users: #{users_to_nicknames_string(subjects)}"
+  end
+
   defp nicknames_to_string(nicknames) do
     nicknames
     |> Enum.map(&"@#{&1}")

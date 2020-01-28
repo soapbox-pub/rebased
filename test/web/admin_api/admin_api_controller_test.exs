@@ -3389,6 +3389,32 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "PATCH /users/:nickname/change_password" do
+    test "changes password", %{conn: conn, admin: admin} do
+      user = insert(:user)
+      assert user.password_reset_pending == false
+
+      conn =
+        patch(conn, "/api/pleroma/admin/users/#{user.nickname}/change_password", %{
+          "new_password" => "password"
+        })
+
+      assert json_response(conn, 200) == %{"status" => "success"}
+
+      ObanHelpers.perform_all()
+
+      assert User.get_by_id(user.id).password_reset_pending == true
+
+      [log_entry1, log_entry2] = ModerationLog |> Repo.all() |> Enum.sort()
+
+      assert ModerationLog.get_log_entry_message(log_entry1) ==
+               "@#{admin.nickname} changed password for users: @#{user.nickname}"
+
+      assert ModerationLog.get_log_entry_message(log_entry2) ==
+               "@#{admin.nickname} forced password reset for users: @#{user.nickname}"
+    end
+  end
+
   describe "PATCH /users/:nickname/force_password_reset" do
     test "sets password_reset_pending to true", %{conn: conn} do
       user = insert(:user)
