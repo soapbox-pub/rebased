@@ -585,7 +585,7 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
 
     assert User.ap_id(user) ==
-             Pleroma.Web.Router.Helpers.feed_url(
+             Pleroma.Web.Router.Helpers.user_feed_url(
                Pleroma.Web.Endpoint,
                :feed_redirect,
                user.nickname
@@ -596,7 +596,7 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
 
     assert User.ap_followers(user) ==
-             Pleroma.Web.Router.Helpers.feed_url(
+             Pleroma.Web.Router.Helpers.user_feed_url(
                Pleroma.Web.Endpoint,
                :feed_redirect,
                user.nickname

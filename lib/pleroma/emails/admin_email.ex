@@ -17,7 +17,7 @@ defmodule Pleroma.Emails.AdminEmail do
   end
 
   defp user_url(user) do
-    Helpers.feed_url(Pleroma.Web.Endpoint, :feed_redirect, user.id)
+    Helpers.user_feed_url(Pleroma.Web.Endpoint, :feed_redirect, user.id)
   end
 
   def report(to, reporter, account, statuses, comment) do

@@ -2,7 +2,7 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.Feed.FeedControllerTest do
+defmodule Pleroma.Web.Feed.UserControllerTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.Feed.FeedControllerTest do
     resp =
       conn
       |> put_req_header("content-type", "application/atom+xml")
-      |> get("/users/#{user.nickname}/feed.atom")
+      |> get(user_feed_path(conn, :feed, user.nickname))
       |> response(200)
 
     activity_titles =
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.Feed.FeedControllerTest do
     conn =
       conn
       |> put_req_header("content-type", "application/atom+xml")
-      |> get("/users/nonexisting/feed.atom")
+      |> get(user_feed_path(conn, :feed, "nonexisting"))
 
     assert response(conn, 404)
   end
@@ -91,7 +91,7 @@ defmodule Pleroma.Web.Feed.FeedControllerTest do
       response =
         conn
         |> put_req_header("accept", "application/xml")
-        |> get("/users/jimm")
+        |> get(user_feed_path(conn, :feed, "jimm"))
         |> response(404)
 
       assert response == ~S({"error":"Not found"})
