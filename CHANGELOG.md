@@ -104,6 +104,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Change emoji reaction reply format once more
 - Configuration: `feed.logo` option for tag feed.
 - Tag feed: `/tags/:tag.rss` - list public statuses by hashtag.
+- Mastodon API: Add `reacted` property to `emoji_reactions`
 </details>
 
 ### Fixed
