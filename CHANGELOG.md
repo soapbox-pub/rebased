@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - **Breaking:** Pleroma won't start if it detects unapplied migrations
-- **Breaking:** attachments are removed along with statuses when there are no other references to it
+- **Breaking:** attachments are removed along with statuses. Does not affect duplicate files and attachments without status.
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
 - **Breaking:** attachment links (`config :pleroma, :instance, no_attachment_links` and `config :pleroma, Pleroma.Upload, link_name`) disabled by default
 - **Breaking:** OAuth: defaulted `[:auth, :enforce_oauth_admin_scope_usage]` setting to `true` which demands `admin` OAuth scope to perform admin actions (in addition to `is_admin` flag on User); make sure to use bundled or newer versions of AdminFE & PleromaFE to access admin / moderator features.
