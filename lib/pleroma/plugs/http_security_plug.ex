@@ -129,7 +129,6 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
            izAotX7777777777777777777777777777777777777777Y7n92:
              .;CoIIIIIUAA666666699999ZZZZZZZZZZZZZZZZZZZZ6ov.
 
-
 HTTP Security is disabled. Add this line to your config to enable it:
 
       config :pleroma, :http_security, enabled: true
