@@ -596,11 +596,21 @@ config :pleroma, :env, Mix.env()
 config :http_signatures,
   adapter: Pleroma.Signature
 
-config :pleroma, :rate_limit, authentication: {60_000, 15}
+config :pleroma, :rate_limit,
+  authentication: {60_000, 15},
+  search: [{1000, 10}, {1000, 30}],
+  app_account_creation: {1_800_000, 25},
+  relations_actions: {10_000, 10},
+  relation_id_action: {60_000, 2},
+  statuses_actions: {10_000, 15},
+  status_id_action: {60_000, 3},
+  password_reset: {1_800_000, 5},
+  account_confirmation_resend: {8_640_000, 5},
+  ap_routes: {60_000, 15}
 
 config :pleroma, Pleroma.ActivityExpiration, enabled: true
 
-config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
+config :pleroma, Pleroma.Plugs.RemoteIp, enabled: true
 
 config :pleroma, :static_fe, enabled: false
 
