@@ -308,16 +308,15 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 Available options:
 
 * `enabled` - Enable/disable the plug. Defaults to `false`.
-* `headers` - A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`.
+* `headers` - A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `["x-forwarded-for"]`.
 * `proxies` - A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Defaults to `[]`.
 * `reserved` - Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network).
 
 
 ### :rate_limit
 
-This is an advanced feature and disabled by default.
-
-If your instance is behind a reverse proxy you must enable and configure [`Pleroma.Plugs.RemoteIp`](#pleroma-plugs-remoteip).
+!!! note
+   If your instance is behind a reverse proxy ensure [`Pleroma.Plugs.RemoteIp`](#pleroma-plugs-remoteip) is enabled (it is enabled by default).
 
 A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
 
