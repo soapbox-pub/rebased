@@ -25,9 +25,14 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
       |> assign(:user, other_user)
       |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["write:statuses"]))
       |> post("/api/v1/pleroma/statuses/#{activity.id}/react_with_emoji", %{"emoji" => "☕"})
+      |> json_response(200)
 
-    assert %{"id" => id} = json_response(result, 200)
+    assert %{"id" => id} = result
     assert to_string(activity.id) == id
+
+    assert result["pleroma"]["emoji_reactions"] == [
+             %{"emoji" => "☕", "count" => 1, "reacted" => true}
+           ]
   end
 
   test "POST /api/v1/pleroma/statuses/:id/unreact_with_emoji", %{conn: conn} do
@@ -71,8 +76,20 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
       |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
       |> json_response(200)
 
-    [%{"emoji" => "🎅", "count" => 1, "accounts" => [represented_user]}] = result
+    [%{"emoji" => "🎅", "count" => 1, "accounts" => [represented_user], "reacted" => false}] =
+      result
+
     assert represented_user["id"] == other_user.id
+
+    result =
+      conn
+      |> assign(:user, other_user)
+      |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["read:statuses"]))
+      |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
+      |> json_response(200)
+
+    assert [%{"emoji" => "🎅", "count" => 1, "accounts" => [_represented_user], "reacted" => true}] =
+             result
   end
 
   test "/api/v1/pleroma/conversations/:id" do
