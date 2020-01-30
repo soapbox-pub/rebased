@@ -668,6 +668,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "rate limit", %{conn: conn} do
+      Pleroma.Config.put([Pleroma.Plugs.RemoteIp, :enabled], true)
       app_token = insert(:oauth_token, user: nil)
 
       conn =
