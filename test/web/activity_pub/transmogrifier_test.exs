@@ -395,6 +395,25 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["content"] == "👌"
     end
 
+    test "it reject invalid emoji reactions" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+
+      data =
+        File.read!("test/fixtures/emoji-reaction-too-long.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+
+      assert :error = Transmogrifier.handle_incoming(data)
+
+      data =
+        File.read!("test/fixtures/emoji-reaction-no-emoji.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+
+      assert :error = Transmogrifier.handle_incoming(data)
+    end
+
     test "it works for incoming emoji reaction undos" do
       user = insert(:user)
 
