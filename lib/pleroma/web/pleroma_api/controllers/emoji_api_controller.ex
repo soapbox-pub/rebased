@@ -591,7 +591,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       {:ok, %{access: _}} ->
         conn
         |> put_status(:internal_server_error)
-        |> json(%{error: "Error emoji pack directory must be writable and readable"})
+        |> json(%{error: "Error: emoji pack directory must be writable"})
 
       {:error, _} ->
         conn
