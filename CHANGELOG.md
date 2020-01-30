@@ -12,7 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - **Breaking:** Pleroma won't start if it detects unapplied migrations
-- **Breaking:** attachments are removed along with statuses. Does not affect duplicate files and attachments without status.
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
 - **Breaking:** `Pleroma.Plugs.RemoteIp` and `:rate_limiter` enabled by default. Please ensure your reverse proxy forwards the real IP!
 - **Breaking:** attachment links (`config :pleroma, :instance, no_attachment_links` and `config :pleroma, Pleroma.Upload, link_name`) disabled by default
@@ -54,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - `:chat_limit` option to limit chat characters.
+- `cleanup_attachments` option to remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 - Refreshing poll results for remote polls
 - Authentication: Added rate limit for password-authorized actions / login existence checks
 - Static Frontend: Add the ability to render user profiles and notices server-side without requiring JS app.
