@@ -308,16 +308,15 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 Available options:
 
 * `enabled` - Enable/disable the plug. Defaults to `false`.
-* `headers` - A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `~w[forwarded x-forwarded-for x-client-ip x-real-ip]`.
+* `headers` - A list of strings naming the `req_headers` to use when deriving the `remote_ip`. Order does not matter. Defaults to `["x-forwarded-for"]`.
 * `proxies` - A list of strings in [CIDR](https://en.wikipedia.org/wiki/CIDR) notation specifying the IPs of known proxies. Defaults to `[]`.
 * `reserved` - Defaults to [localhost](https://en.wikipedia.org/wiki/Localhost) and [private network](https://en.wikipedia.org/wiki/Private_network).
 
 
 ### :rate_limit
 
-This is an advanced feature and disabled by default.
-
-If your instance is behind a reverse proxy you must enable and configure [`Pleroma.Plugs.RemoteIp`](#pleroma-plugs-remoteip).
+!!! note
+   If your instance is behind a reverse proxy ensure [`Pleroma.Plugs.RemoteIp`](#pleroma-plugs-remoteip) is enabled (it is enabled by default).
 
 A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
 
@@ -326,14 +325,31 @@ A keyword list of rate limiters where a key is a limiter name and value is the l
 
 It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
 
+For example:
+
+```elixir
+config :pleroma, :rate_limit,
+  authentication: {60_000, 15},
+  search: [{1000, 10}, {1000, 30}]
+```
+
+Means that:
+
+1. In 60 seconds, 15 authentication attempts can be performed from the same IP address.
+2. In 1 second, 10 search requests can be performed from the same IP adress by unauthenticated users, while authenticated users can perform 30 search requests per second.
+
 Supported rate limiters:
 
-* `:search` for the search requests (account & status search etc.)
-* `:app_account_creation` for registering user accounts from the same IP address
-* `:relations_actions` for actions on relations with all users (follow, unfollow)
-* `:relation_id_action` for actions on relation with a specific user (follow, unfollow)
-* `:statuses_actions` for create / delete / fav / unfav / reblog / unreblog actions on any statuses
-* `:status_id_action` for fav / unfav or reblog / unreblog actions on the same status by the same user
+* `:search` - Account/Status search.
+* `:app_account_creation` - Account registration from the API.
+* `:relations_actions` - Following/Unfollowing in general.
+* `:relation_id_action` - Following/Unfollowing for a specific user.
+* `:statuses_actions` - Status actions such as: (un)repeating, (un)favouriting, creating, deleting.
+* `:status_id_action` - (un)Repeating/(un)Favouriting a particular status.
+* `:authentication` - Authentication actions, i.e getting an OAuth token.
+* `:password_reset` - Requesting password reset emails.
+* `:account_confirmation_resend` - Requesting resending account confirmation emails.
+* `:ap_routes` - Requesting statuses via ActivityPub.
 
 ### :web_cache_ttl
 
