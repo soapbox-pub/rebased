@@ -335,7 +335,7 @@ config :pleroma, :rate_limit,
 
 Means that:
 
-1. In 60 seconds, 50 authentication attempts can be performed from the same IP address.
+1. In 60 seconds, 15 authentication attempts can be performed from the same IP address.
 2. In 1 second, 10 search requests can be performed from the same IP adress by unauthenticated users, while authenticated users can perform 30 search requests per second.
 
 Supported rate limiters:
