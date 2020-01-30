@@ -573,11 +573,14 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   assumed to be emojis and stored in the new `pack.json` file.
   """
   def import_from_fs(conn, _params) do
-    with {:ok, results} <- File.ls(emoji_dir_path()) do
+    emoji_path = emoji_dir_path()
+
+    with {:ok, %{access: :read_write}} <- File.stat(emoji_path),
+         {:ok, results} <- File.ls(emoji_path) do
       imported_pack_names =
         results
         |> Enum.filter(fn file ->
-          dir_path = Path.join(emoji_dir_path(), file)
+          dir_path = Path.join(emoji_path, file)
           # Find the directories that do NOT have pack.json
           File.dir?(dir_path) and not File.exists?(Path.join(dir_path, "pack.json"))
         end)
@@ -585,6 +588,11 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
 
       json(conn, imported_pack_names)
     else
+      {:ok, %{access: _}} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: "Error: emoji pack directory must be writable"})
+
       {:error, _} ->
         conn
         |> put_status(:internal_server_error)
