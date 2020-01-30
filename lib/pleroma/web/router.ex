@@ -195,7 +195,7 @@ defmodule Pleroma.Web.Router do
 
     get("/config", AdminAPIController, :config_show)
     post("/config", AdminAPIController, :config_update)
-    get("/config/migrate_to_db", AdminAPIController, :migrate_to_db)
+    get("/config/descriptions", AdminAPIController, :config_descriptions)
     get("/config/migrate_from_db", AdminAPIController, :migrate_from_db)
 
     get("/moderation_log", AdminAPIController, :list_log)
@@ -229,9 +229,9 @@ defmodule Pleroma.Web.Router do
     pipe_through(:pleroma_html)
 
     post("/main/ostatus", UtilController, :remote_subscribe)
-    get("/ostatus_subscribe", UtilController, :remote_follow)
+    get("/ostatus_subscribe", RemoteFollowController, :follow)
 
-    post("/ostatus_subscribe", UtilController, :do_remote_follow)
+    post("/ostatus_subscribe", RemoteFollowController, :do_follow)
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
@@ -527,8 +527,10 @@ defmodule Pleroma.Web.Router do
     get("/notice/:id", OStatus.OStatusController, :notice)
     get("/notice/:id/embed_player", OStatus.OStatusController, :notice_player)
 
-    get("/users/:nickname/feed", Feed.FeedController, :feed)
-    get("/users/:nickname", Feed.FeedController, :feed_redirect)
+    get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
+    get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
+
+    get("/tags/:tag", Feed.TagController, :feed, as: :tag_feed)
   end
 
   scope "/", Pleroma.Web do

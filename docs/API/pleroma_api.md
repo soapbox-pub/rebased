@@ -70,59 +70,6 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: JSON. Returns `{"status": "success"}` if the account was successfully disabled, `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`
 
-## `/api/account/register`
-### Register a new user
-* Method `POST`
-* Authentication: not required
-* Params:
-    * `nickname`
-    * `fullname`
-    * `bio`
-    * `email`
-    * `password`
-    * `confirm`
-    * `captcha_solution`: optional, contains provider-specific captcha solution,
-    * `captcha_token`: optional, contains provider-specific captcha token
-    * `token`: invite token required when the registrations aren't public.
-* Response: JSON. Returns a user object on success, otherwise returns `{"error": "error_msg"}`
-* Example response:
-```json
-{
-	"background_image": null,
-	"cover_photo": "https://pleroma.soykaf.com/images/banner.png",
-	"created_at": "Tue Dec 18 16:55:56 +0000 2018",
-	"default_scope": "public",
-	"description": "blushy-crushy fediverse idol + pleroma dev\nlet's be friends \nぷれろまの生徒会長。謎の外人。日本語OK. \n公主病.",
-	"description_html": "blushy-crushy fediverse idol + pleroma dev.<br />let's be friends <br />ぷれろまの生徒会長。謎の外人。日本語OK. <br />公主病.",
-	"favourites_count": 0,
-	"fields": [],
-	"followers_count": 0,
-	"following": false,
-	"follows_you": false,
-	"friends_count": 0,
-	"id": 6,
-	"is_local": true,
-	"locked": false,
-	"name": "lain",
-	"name_html": "lain",
-	"no_rich_text": false,
-	"pleroma": {
-		"tags": []
-	},
-	"profile_image_url": "https://pleroma.soykaf.com/images/avi.png",
-	"profile_image_url_https": "https://pleroma.soykaf.com/images/avi.png",
-	"profile_image_url_original": "https://pleroma.soykaf.com/images/avi.png",
-	"profile_image_url_profile_size": "https://pleroma.soykaf.com/images/avi.png",
-	"rights": {
-		"delete_others_notice": false
-	},
-	"screen_name": "lain",
-	"statuses_count": 0,
-	"statusnet_blocking": false,
-	"statusnet_profile_url": "https://pleroma.soykaf.com/users/lain"
-}
-```
-
 ## `/api/pleroma/admin/`…
 See [Admin-API](admin_api.md)
 
@@ -504,11 +451,11 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 * Method: `GET`
 * Authentication: optional
 * Params: None
-* Response: JSON, a map of emoji to account list mappings.
+* Response: JSON, a list of emoji/account list tuples, sorted by emoji insertion date, in ascending order, e.g, the first emoji in the list is the oldest.
 * Example Response:
 ```json
-{
-  "😀" => [{"id" => "xyz.."...}, {"id" => "zyx..."}],
-  "🗡" => [{"id" => "abc..."}] 
-}
+[
+  {"emoji": "😀", "count": 2, "accounts": [{"id" => "xyz.."...}, {"id" => "zyx..."}]},
+  {"emoji": "☕", "count": 1, "accounts": [{"id" => "abc..."}]}
+]
 ```

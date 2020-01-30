@@ -29,6 +29,7 @@ Has these additional fields under the `pleroma` object:
 - `spoiler_text`: a map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
 - `expires_at`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
 - `thread_muted`: true if the thread the post belongs to is muted
+- `emoji_reactions`: A list with emoji / reaction maps. The format is {emoji: "☕", count: 1}. Contains no information about the reacting users, for that use the `emoji_reactions_by` endpoint.
 
 ## Attachments
 
@@ -46,7 +47,7 @@ The `id` parameter can also be the `nickname` of the user. This only works in th
 Has these additional fields under the `pleroma` object:
 
 - `tags`: Lists an array of tags for the user
-- `relationship{}`: Includes fields as documented for Mastodon API https://docs.joinmastodon.org/api/entities/#relationship
+- `relationship{}`: Includes fields as documented for Mastodon API https://docs.joinmastodon.org/entities/relationship/
 - `is_moderator`: boolean, nullable,  true if user is a moderator
 - `is_admin`: boolean, nullable, true if user is an admin
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
@@ -99,6 +100,14 @@ Has these additional fields under the `pleroma` object:
 The `type` value is `move`. Has an additional field:
 
 - `target`: new account
+
+### EmojiReaction Notification
+
+The `type` value is `pleroma:emoji_reaction`. Has these fields:
+
+- `emoji`: The used emoji
+- `account`: The account of the user who reacted
+- `status`: The status that was reacted on
 
 ## GET `/api/v1/notifications`
 

@@ -867,6 +867,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "adds an emoji reaction activity to the db" do
       user = insert(:user)
       reactor = insert(:user)
+      third_user = insert(:user)
+      fourth_user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
       assert object = Object.normalize(activity)
 
@@ -881,7 +883,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert reaction_activity.data["to"] == [User.ap_followers(reactor), activity.data["actor"]]
       assert reaction_activity.data["context"] == object.data["context"]
       assert object.data["reaction_count"] == 1
-      assert object.data["reactions"]["🔥"] == [reactor.ap_id]
+      assert object.data["reactions"] == [["🔥", [reactor.ap_id]]]
+
+      {:ok, _reaction_activity, object} = ActivityPub.react_with_emoji(third_user, object, "☕")
+
+      assert object.data["reaction_count"] == 2
+      assert object.data["reactions"] == [["🔥", [reactor.ap_id]], ["☕", [third_user.ap_id]]]
+
+      {:ok, _reaction_activity, object} = ActivityPub.react_with_emoji(fourth_user, object, "🔥")
+
+      assert object.data["reaction_count"] == 3
+
+      assert object.data["reactions"] == [
+               ["🔥", [fourth_user.ap_id, reactor.ap_id]],
+               ["☕", [third_user.ap_id]]
+             ]
     end
   end
 
@@ -919,7 +935,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       object = Object.get_by_ap_id(object.data["id"])
       assert object.data["reaction_count"] == 0
-      assert object.data["reactions"] == %{}
+      assert object.data["reactions"] == []
     end
   end
 
@@ -1622,6 +1638,44 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert follow_info.follower_count == 296
       assert follow_info.following_count == 32
       assert follow_info.hide_follows == true
+    end
+
+    test "doesn't crash when follower and following counters are hidden" do
+      mock(fn env ->
+        case env.url do
+          "http://localhost:4001/users/masto_hidden_counters/following" ->
+            json(%{
+              "@context" => "https://www.w3.org/ns/activitystreams",
+              "id" => "http://localhost:4001/users/masto_hidden_counters/followers"
+            })
+
+          "http://localhost:4001/users/masto_hidden_counters/following?page=1" ->
+            %Tesla.Env{status: 403, body: ""}
+
+          "http://localhost:4001/users/masto_hidden_counters/followers" ->
+            json(%{
+              "@context" => "https://www.w3.org/ns/activitystreams",
+              "id" => "http://localhost:4001/users/masto_hidden_counters/following"
+            })
+
+          "http://localhost:4001/users/masto_hidden_counters/followers?page=1" ->
+            %Tesla.Env{status: 403, body: ""}
+        end
+      end)
+
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_hidden_counters/followers",
+          following_address: "http://localhost:4001/users/masto_hidden_counters/following"
+        )
+
+      {:ok, follow_info} = ActivityPub.fetch_follow_information_for_user(user)
+
+      assert follow_info.hide_followers == true
+      assert follow_info.follower_count == 0
+      assert follow_info.hide_follows == true
+      assert follow_info.following_count == 0
     end
   end
 

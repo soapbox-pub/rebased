@@ -138,7 +138,8 @@ defmodule Pleroma.Web.Streamer.Worker do
 
     with parent <- Object.normalize(item) || item,
          true <-
-           Enum.all?([blocked_ap_ids, muted_ap_ids, reblog_muted_ap_ids], &(item.actor not in &1)),
+           Enum.all?([blocked_ap_ids, muted_ap_ids], &(item.actor not in &1)),
+         true <- item.data["type"] != "Announce" || item.actor not in reblog_muted_ap_ids,
          true <- Enum.all?([blocked_ap_ids, muted_ap_ids], &(parent.data["actor"] not in &1)),
          true <- MapSet.disjoint?(recipients, recipient_blocks),
          %{host: item_host} <- URI.parse(item.actor),

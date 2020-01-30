@@ -6,9 +6,9 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionController do
   @moduledoc "The module represents functions to manage user subscriptions."
   use Pleroma.Web, :controller
 
+  alias Pleroma.Web.MastodonAPI.PushSubscriptionView, as: View
   alias Pleroma.Web.Push
   alias Pleroma.Web.Push.Subscription
-  alias Pleroma.Web.MastodonAPI.PushSubscriptionView, as: View
 
   action_fallback(:errors)
 

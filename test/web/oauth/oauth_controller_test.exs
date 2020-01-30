@@ -450,7 +450,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
     test "renders authentication page if user is already authenticated but `force_login` is tru-ish",
          %{app: app, conn: conn} do
-      token = insert(:oauth_token, app_id: app.id)
+      token = insert(:oauth_token, app: app)
 
       conn =
         conn
@@ -474,7 +474,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      token = insert(:oauth_token, app_id: app.id)
+      token = insert(:oauth_token, app: app)
 
       conn =
         conn
@@ -497,7 +497,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      token = insert(:oauth_token, app_id: app.id)
+      token = insert(:oauth_token, app: app)
 
       conn =
         conn
@@ -523,7 +523,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            conn: conn
          } do
       unlisted_redirect_uri = "http://cross-site-request.com"
-      token = insert(:oauth_token, app_id: app.id)
+      token = insert(:oauth_token, app: app)
 
       conn =
         conn
@@ -547,7 +547,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      token = insert(:oauth_token, app_id: app.id)
+      token = insert(:oauth_token, app: app)
 
       conn =
         conn
@@ -568,29 +568,34 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
   describe "POST /oauth/authorize" do
     test "redirects with oauth authorization, " <>
-           "keeping only non-admin scopes for non-admin user" do
-      app = insert(:oauth_app, scopes: ["read", "write", "admin"])
+           "granting requested app-supported scopes to both admin- and non-admin users" do
+      app_scopes = ["read", "write", "admin", "secret_scope"]
+      app = insert(:oauth_app, scopes: app_scopes)
       redirect_uri = OAuthController.default_redirect_uri(app)
 
       non_admin = insert(:user, is_admin: false)
       admin = insert(:user, is_admin: true)
+      scopes_subset = ["read:subscope", "write", "admin"]
 
-      for {user, expected_scopes} <- %{
-            non_admin => ["read:subscope", "write"],
-            admin => ["read:subscope", "write", "admin"]
-          } do
+      # In case scope param is missing, expecting _all_ app-supported scopes to be granted
+      for user <- [non_admin, admin],
+          {requested_scopes, expected_scopes} <-
+            %{scopes_subset => scopes_subset, nil => app_scopes} do
         conn =
-          build_conn()
-          |> post("/oauth/authorize", %{
-            "authorization" => %{
-              "name" => user.nickname,
-              "password" => "test",
-              "client_id" => app.client_id,
-              "redirect_uri" => redirect_uri,
-              "scope" => "read:subscope write admin",
-              "state" => "statepassed"
+          post(
+            build_conn(),
+            "/oauth/authorize",
+            %{
+              "authorization" => %{
+                "name" => user.nickname,
+                "password" => "test",
+                "client_id" => app.client_id,
+                "redirect_uri" => redirect_uri,
+                "scope" => requested_scopes,
+                "state" => "statepassed"
+              }
             }
-          })
+          )
 
         target = redirected_to(conn)
         assert target =~ redirect_uri
@@ -631,34 +636,31 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert result =~ "Invalid Username/Password"
     end
 
-    test "returns 401 for missing scopes " <>
-           "(including all admin-only scopes for non-admin user)" do
+    test "returns 401 for missing scopes" do
       user = insert(:user, is_admin: false)
       app = insert(:oauth_app, scopes: ["read", "write", "admin"])
       redirect_uri = OAuthController.default_redirect_uri(app)
 
-      for scope_param <- ["", "admin:read admin:write"] do
-        result =
-          build_conn()
-          |> post("/oauth/authorize", %{
-            "authorization" => %{
-              "name" => user.nickname,
-              "password" => "test",
-              "client_id" => app.client_id,
-              "redirect_uri" => redirect_uri,
-              "state" => "statepassed",
-              "scope" => scope_param
-            }
-          })
-          |> html_response(:unauthorized)
+      result =
+        build_conn()
+        |> post("/oauth/authorize", %{
+          "authorization" => %{
+            "name" => user.nickname,
+            "password" => "test",
+            "client_id" => app.client_id,
+            "redirect_uri" => redirect_uri,
+            "state" => "statepassed",
+            "scope" => ""
+          }
+        })
+        |> html_response(:unauthorized)
 
-        # Keep the details
-        assert result =~ app.client_id
-        assert result =~ redirect_uri
+      # Keep the details
+      assert result =~ app.client_id
+      assert result =~ redirect_uri
 
-        # Error message
-        assert result =~ "This action is outside the authorized scopes"
-      end
+      # Error message
+      assert result =~ "This action is outside the authorized scopes"
     end
 
     test "returns 401 for scopes beyond app scopes hierarchy", %{conn: conn} do
@@ -817,7 +819,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         |> User.confirmation_changeset(need_confirmation: true)
         |> User.update_and_set_cache()
 
-      refute Pleroma.User.auth_active?(user)
+      refute Pleroma.User.account_status(user) == :active
 
       app = insert(:oauth_app)
 
@@ -847,7 +849,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       app = insert(:oauth_app)
 
-      conn =
+      resp =
         build_conn()
         |> post("/oauth/token", %{
           "grant_type" => "password",
@@ -856,10 +858,12 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "client_id" => app.client_id,
           "client_secret" => app.client_secret
         })
+        |> json_response(403)
 
-      assert resp = json_response(conn, 403)
-      assert %{"error" => _} = resp
-      refute Map.has_key?(resp, "access_token")
+      assert resp == %{
+               "error" => "Your account is currently disabled",
+               "identifier" => "account_is_disabled"
+             }
     end
 
     test "rejects token exchange for user with password_reset_pending set to true" do
@@ -873,7 +877,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       app = insert(:oauth_app, scopes: ["read", "write"])
 
-      conn =
+      resp =
         build_conn()
         |> post("/oauth/token", %{
           "grant_type" => "password",
@@ -882,12 +886,41 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "client_id" => app.client_id,
           "client_secret" => app.client_secret
         })
+        |> json_response(403)
 
-      assert resp = json_response(conn, 403)
+      assert resp == %{
+               "error" => "Password reset is required",
+               "identifier" => "password_reset_required"
+             }
+    end
 
-      assert resp["error"] == "Password reset is required"
-      assert resp["identifier"] == "password_reset_required"
-      refute Map.has_key?(resp, "access_token")
+    test "rejects token exchange for user with confirmation_pending set to true" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+      password = "testpassword"
+
+      user =
+        insert(:user,
+          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          confirmation_pending: true
+        )
+
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      resp =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "password",
+          "username" => user.nickname,
+          "password" => password,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+        |> json_response(403)
+
+      assert resp == %{
+               "error" => "Your login is missing a confirmed e-mail address",
+               "identifier" => "missing_confirmed_email"
+             }
     end
 
     test "rejects an invalid authorization code" do

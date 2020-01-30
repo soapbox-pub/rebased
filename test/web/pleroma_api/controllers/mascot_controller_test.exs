@@ -7,10 +7,8 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
 
   alias Pleroma.User
 
-  import Pleroma.Factory
-
-  test "mascot upload", %{conn: conn} do
-    user = insert(:user)
+  test "mascot upload" do
+    %{conn: conn} = oauth_access(["write:accounts"])
 
     non_image_file = %Plug.Upload{
       content_type: "audio/mpeg",
@@ -18,12 +16,9 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
       filename: "sound.mp3"
     }
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> put("/api/v1/pleroma/mascot", %{"file" => non_image_file})
+    ret_conn = put(conn, "/api/v1/pleroma/mascot", %{"file" => non_image_file})
 
-    assert json_response(conn, 415)
+    assert json_response(ret_conn, 415)
 
     file = %Plug.Upload{
       content_type: "image/jpg",
@@ -31,23 +26,18 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
       filename: "an_image.jpg"
     }
 
-    conn =
-      build_conn()
-      |> assign(:user, user)
-      |> put("/api/v1/pleroma/mascot", %{"file" => file})
+    conn = put(conn, "/api/v1/pleroma/mascot", %{"file" => file})
 
     assert %{"id" => _, "type" => image} = json_response(conn, 200)
   end
 
-  test "mascot retrieving", %{conn: conn} do
-    user = insert(:user)
-    # When user hasn't set a mascot, we should just get pleroma tan back
-    conn =
-      conn
-      |> assign(:user, user)
-      |> get("/api/v1/pleroma/mascot")
+  test "mascot retrieving" do
+    %{user: user, conn: conn} = oauth_access(["read:accounts", "write:accounts"])
 
-    assert %{"url" => url} = json_response(conn, 200)
+    # When user hasn't set a mascot, we should just get pleroma tan back
+    ret_conn = get(conn, "/api/v1/pleroma/mascot")
+
+    assert %{"url" => url} = json_response(ret_conn, 200)
     assert url =~ "pleroma-fox-tan-smol"
 
     # When a user sets their mascot, we should get that back
@@ -57,17 +47,14 @@ defmodule Pleroma.Web.PleromaAPI.MascotControllerTest do
       filename: "an_image.jpg"
     }
 
-    conn =
-      build_conn()
-      |> assign(:user, user)
-      |> put("/api/v1/pleroma/mascot", %{"file" => file})
+    ret_conn = put(conn, "/api/v1/pleroma/mascot", %{"file" => file})
 
-    assert json_response(conn, 200)
+    assert json_response(ret_conn, 200)
 
     user = User.get_cached_by_id(user.id)
 
     conn =
-      build_conn()
+      conn
       |> assign(:user, user)
       |> get("/api/v1/pleroma/mascot")
 

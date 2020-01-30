@@ -101,7 +101,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_enum, "~> 1.4"},
-      {:ecto_sql, "~> 3.2"},
+      {:ecto_sql, "~> 3.3.2"},
       {:postgrex, ">= 0.13.5"},
       {:oban, "~> 0.12.0"},
       {:quantum, "~> 2.3"},
@@ -124,7 +124,7 @@ defmodule Pleroma.Mixfile do
       {:earmark, "~> 1.3"},
       {:bbcode, "~> 0.1.1"},
       {:ex_machina, "~> 2.3", only: :test},
-      {:credo, "~> 0.9.3", only: [:dev, :test]},
+      {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.3", only: :test},
       {:crypt,
        git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
@@ -165,7 +165,7 @@ defmodule Pleroma.Mixfile do
        ref: "825dc00aaba5a1b7c4202a532b696b595dd3bcb3"},
       {:captcha,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
-       ref: "c3c795c55f6b49d79d6ac70a0f91e525099fc3e2"},
+       ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:mox, "~> 0.5", only: :test}
     ] ++ oauth_deps()
   end

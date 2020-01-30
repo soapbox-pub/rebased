@@ -19,7 +19,7 @@ defmodule HttpRequestMock do
     else
       error ->
         with {:error, message} <- error do
-          Logger.warn(message)
+          Logger.warn(to_string(message))
         end
 
         {_, _r} = error
@@ -305,6 +305,24 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/peertube.moe-vid.json")
+     }}
+  end
+
+  def get("https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39", _, _,
+        Accept: "application/activity+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mobilizon.org-event.json")
+     }}
+  end
+
+  def get("https://mobilizon.org/@tcit", _, _, Accept: "application/activity+json") do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/mobilizon.org-user.json")
      }}
   end
 

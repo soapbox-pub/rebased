@@ -17,6 +17,7 @@ defmodule Pleroma.UserTest do
 
   import Mock
   import Pleroma.Factory
+  import ExUnit.CaptureLog
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -26,6 +27,42 @@ defmodule Pleroma.UserTest do
   clear_config([:instance, :account_activation_required])
 
   describe "service actors" do
+    test "returns updated invisible actor" do
+      uri = "#{Pleroma.Web.Endpoint.url()}/relay"
+      followers_uri = "#{uri}/followers"
+
+      insert(
+        :user,
+        %{
+          nickname: "relay",
+          invisible: false,
+          local: true,
+          ap_id: uri,
+          follower_address: followers_uri
+        }
+      )
+
+      actor = User.get_or_create_service_actor_by_ap_id(uri, "relay")
+      assert actor.invisible
+    end
+
+    test "returns relay user" do
+      uri = "#{Pleroma.Web.Endpoint.url()}/relay"
+      followers_uri = "#{uri}/followers"
+
+      assert %User{
+               nickname: "relay",
+               invisible: true,
+               local: true,
+               ap_id: ^uri,
+               follower_address: ^followers_uri
+             } = User.get_or_create_service_actor_by_ap_id(uri, "relay")
+
+      assert capture_log(fn ->
+               refute User.get_or_create_service_actor_by_ap_id("/relay", "relay")
+             end) =~ "Cannot create service actor:"
+    end
+
     test "returns invisible actor" do
       uri = "#{Pleroma.Web.Endpoint.url()}/internal/fetch-test"
       followers_uri = "#{uri}/followers"
@@ -548,7 +585,7 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
 
     assert User.ap_id(user) ==
-             Pleroma.Web.Router.Helpers.feed_url(
+             Pleroma.Web.Router.Helpers.user_feed_url(
                Pleroma.Web.Endpoint,
                :feed_redirect,
                user.nickname
@@ -559,7 +596,7 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
 
     assert User.ap_followers(user) ==
-             Pleroma.Web.Router.Helpers.feed_url(
+             Pleroma.Web.Router.Helpers.user_feed_url(
                Pleroma.Web.Endpoint,
                :feed_redirect,
                user.nickname
@@ -1249,23 +1286,35 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  test "auth_active?/1 works correctly" do
-    Pleroma.Config.put([:instance, :account_activation_required], true)
+  describe "account_status/1" do
+    clear_config([:instance, :account_activation_required])
 
-    local_user = insert(:user, local: true, confirmation_pending: true)
-    confirmed_user = insert(:user, local: true, confirmation_pending: false)
-    remote_user = insert(:user, local: false)
+    test "return confirmation_pending for unconfirm user" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+      user = insert(:user, confirmation_pending: true)
+      assert User.account_status(user) == :confirmation_pending
+    end
 
-    refute User.auth_active?(local_user)
-    assert User.auth_active?(confirmed_user)
-    assert User.auth_active?(remote_user)
+    test "return active for confirmed user" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+      user = insert(:user, confirmation_pending: false)
+      assert User.account_status(user) == :active
+    end
 
-    # also shows unactive for deactivated users
+    test "return active for remote user" do
+      user = insert(:user, local: false)
+      assert User.account_status(user) == :active
+    end
 
-    deactivated_but_confirmed =
-      insert(:user, local: true, confirmation_pending: false, deactivated: true)
+    test "returns :password_reset_pending for user with reset password" do
+      user = insert(:user, password_reset_pending: true)
+      assert User.account_status(user) == :password_reset_pending
+    end
 
-    refute User.auth_active?(deactivated_but_confirmed)
+    test "returns :deactivated for deactivated user" do
+      user = insert(:user, local: true, confirmation_pending: false, deactivated: true)
+      assert User.account_status(user) == :deactivated
+    end
   end
 
   describe "superuser?/1" do

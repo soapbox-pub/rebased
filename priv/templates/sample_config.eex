@@ -20,8 +20,7 @@ config :pleroma, :instance,
   email: "<%= email %>",
   notify_email: "<%= notify_email %>",
   limit: 5000,
-  registrations_open: true,
-  dynamic_configuration: <%= db_configurable? %>
+  registrations_open: true
 
 config :pleroma, :media_proxy,
   enabled: false,
@@ -70,3 +69,5 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "<%= uploads_dir %>"
 #   host: "s3.wasabisys.com"
 
 config :joken, default_signer: "<%= jwt_secret %>"
+
+config :pleroma, configurable_from_database: <%= db_configurable? %>

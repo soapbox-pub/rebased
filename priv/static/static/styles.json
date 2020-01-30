@@ -1,6 +1,7 @@
 {
   "pleroma-dark": [ "Pleroma Dark", "#121a24", "#182230", "#b9b9ba", "#d8a070", "#d31014", "#0fa00f", "#0095ff", "#ffa500" ],
   "pleroma-light": [ "Pleroma Light", "#f2f4f6", "#dbe0e8", "#304055", "#f86f0f", "#d31014", "#0fa00f", "#0095ff", "#ffa500" ],
+  "pleroma-amoled": [ "Pleroma Dark AMOLED", "#000000", "#111111", "#b0b0b1", "#d8a070", "#aa0000", "#0fa00f", "#0095ff", "#d59500"],
   "classic-dark": [ "Classic Dark", "#161c20", "#282e32", "#b9b9b9", "#baaa9c", "#d31014", "#0fa00f", "#0095ff", "#ffa500" ],
   "bird": [ "Bird", "#f8fafd", "#e6ecf0", "#14171a", "#0084b8", "#e0245e", "#17bf63", "#1b95e0", "#fab81e"],
   "ir-black": [ "Ir Black", "#000000", "#242422", "#b5b3aa", "#ff6c60", "#FF6C60", "#A8FF60", "#96CBFE", "#FFFFB6" ],

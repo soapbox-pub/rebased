@@ -23,6 +23,7 @@ defmodule Pleroma.Plugs.UserIsAdminPlug do
       token && OAuth.Scopes.contains_admin_scopes?(token.scopes) ->
         # Note: checking for _any_ admin scope presence, not necessarily fitting requested action.
         #   Thus, controller must explicitly invoke OAuthScopesPlug to verify scope requirements.
+        #   Admin might opt out of admin scope for some apps to block any admin actions from them.
         conn
 
       true ->

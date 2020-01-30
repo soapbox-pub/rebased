@@ -7,10 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - **Breaking**: Removed 1.0+ deprecated configurations `Pleroma.Upload, :strip_exif` and `:instance, :dedupe_media`
 - **Breaking**: OStatus protocol support
+- **Breaking**: MDII uploader
+- **Breaking**: Using third party engines for user recommendation
 
 ### Changed
+- **Breaking:** Pleroma won't start if it detects unapplied migrations
+- **Breaking:** attachments are removed along with statuses. Does not affect duplicate files and attachments without status.
 - **Breaking:** Elixir >=1.8 is now required (was >= 1.7)
 - **Breaking:** attachment links (`config :pleroma, :instance, no_attachment_links` and `config :pleroma, Pleroma.Upload, link_name`) disabled by default
+- **Breaking:** OAuth: defaulted `[:auth, :enforce_oauth_admin_scope_usage]` setting to `true` which demands `admin` OAuth scope to perform admin actions (in addition to `is_admin` flag on User); make sure to use bundled or newer versions of AdminFE & PleromaFE to access admin / moderator features.
+- **Breaking:** Dynamic configuration has been rearchitected. The `:pleroma, :instance, dynamic_configuration` setting has been replaced with `config :pleroma, configurable_from_database`. Please backup your configuration to a file and run the migration task to ensure consistency with the new schema.
 - Replaced [pleroma_job_queue](https://git.pleroma.social/pleroma/pleroma_job_queue) and `Pleroma.Web.Federator.RetryQueue` with [Oban](https://github.com/sorentwo/oban) (see [`docs/config.md`](docs/config.md) on migrating customized worker / retry settings)
 - Introduced [quantum](https://github.com/quantum-elixir/quantum-core) job scheduler
 - Enabled `:instance, extended_nickname_format` in the default config
@@ -22,6 +28,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Store status data inside Flag activity
 - Deprecated (reorganized as `UserRelationship` entity) User fields with user AP IDs (`blocks`, `mutes`, `muted_reblogs`, `muted_notifications`, `subscribers`).
 - Rate limiter is now disabled for localhost/socket (unless remoteip plug is enabled)
+- Logger: default log level changed from `warn` to `info`.
+- Config mix task `migrate_to_db` truncates `config` table before migrating the config file.
 <details>
   <summary>API Changes</summary>
 
@@ -40,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API, streaming: Add `pleroma.direct_conversation_id` to the `conversation` stream event payload.
 - Admin API: Render whole status in grouped reports
 - Mastodon API: User timelines will now respect blocks, unless you are getting the user timeline of somebody you blocked (which would be empty otherwise).
+- Mastodon API: Favoriting / Repeating a post multiple times will now return the identical response every time. Before, executing that action twice would return an error ("already favorited") on the second try.
 </details>
 
 ### Added
@@ -49,9 +58,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Static Frontend: Add the ability to render user profiles and notices server-side without requiring JS app.
 - Mix task to re-count statuses for all users (`mix pleroma.count_statuses`)
 - Mix task to list all users (`mix pleroma.user list`)
+- Mix task to send a test email (`mix pleroma.email test`)
 - Support for `X-Forwarded-For` and similar HTTP headers which used by reverse proxies to pass a real user IP address to the backend. Must not be enabled unless your instance is behind at least one reverse proxy (such as Nginx, Apache HTTPD or Varnish Cache).
 - MRF: New module which handles incoming posts based on their age. By default, all incoming posts that are older than 2 days will be unlisted and not shown to their followers.
 - User notification settings: Add `privacy_option` option.
+- Support for custom Elixir modules (such as MRF policies)
 - User settings: Add _This account is a_ option.
 - OAuth: admin scopes support (relevant setting: `[:auth, :enforce_oauth_admin_scope_usage]`).
 <details>
@@ -87,6 +98,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `/api/v1/update_credentials` accepts `actor_type` field.
 - Captcha: Support native provider
 - Captcha: Enable by default
+- Mastodon API: Add support for `account_id` param to filter notifications by the account
+- Mastodon API: Add `emoji_reactions` property to Statuses
+- Mastodon API: Change emoji reaction reply format
+- Notifications: Added `pleroma:emoji_reaction` notification type
+- Mastodon API: Change emoji reaction reply format once more
+- Configuration: `feed.logo` option for tag feed.
+- Tag feed: `/tags/:tag.rss` - list public statuses by hashtag.
 </details>
 
 ### Fixed
@@ -103,6 +121,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Inability to get some local users by nickname in `/api/v1/accounts/:id_or_nickname`
 - AdminAPI: If some status received reports both in the "new" format and "old" format it was considered reports on two different statuses (in the context of grouped reports)
 - Admin API: Error when trying to update reports in the "old" format
+- Mastodon API: Marking a conversation as read (`POST /api/v1/conversations/:id/read`) now no longer brings it to the top in the user's direct conversation list
 </details>
 
 ## [1.1.6] - 2019-11-19

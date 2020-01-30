@@ -15,18 +15,27 @@ defmodule Pleroma.Web.Metadata.Utils do
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.get_cached_stripped_html_for_activity(object, "metadata")
     |> Emoji.Formatter.demojify()
+    |> HtmlEntities.decode()
     |> Formatter.truncate()
   end
 
   def scrub_html_and_truncate(content, max_length \\ 200) when is_binary(content) do
     content
+    |> scrub_html
+    |> Emoji.Formatter.demojify()
+    |> HtmlEntities.decode()
+    |> Formatter.truncate(max_length)
+  end
+
+  def scrub_html(content) when is_binary(content) do
+    content
     # html content comes from DB already encoded, decode first and scrub after
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.strip_tags()
-    |> Emoji.Formatter.demojify()
-    |> Formatter.truncate(max_length)
   end
+
+  def scrub_html(content), do: content
 
   def attachment_url(url) do
     MediaProxy.url(url)

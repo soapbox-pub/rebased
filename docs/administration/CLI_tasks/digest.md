@@ -14,8 +14,9 @@ mix pleroma.digest test <nickname> [<since_date>]
 
 
 Example: 
+
 ```sh tab="OTP"
- ./bin/pleroma_ctl digest test donaldtheduck 2019-05-20
+./bin/pleroma_ctl digest test donaldtheduck 2019-05-20
 ```
 
 ```sh tab="From Source"

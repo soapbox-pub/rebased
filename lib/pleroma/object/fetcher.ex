@@ -117,6 +117,9 @@ defmodule Pleroma.Object.Fetcher do
       {:error, %Tesla.Mock.Error{}} ->
         nil
 
+      {:error, "Object has been deleted"} ->
+        nil
+
       e ->
         Logger.error("Error while fetching #{id}: #{inspect(e)}")
         nil
@@ -154,7 +157,7 @@ defmodule Pleroma.Object.Fetcher do
   end
 
   def fetch_and_contain_remote_object_from_id(id) when is_binary(id) do
-    Logger.info("Fetching object #{id} via AP")
+    Logger.debug("Fetching object #{id} via AP")
 
     date = Pleroma.Signature.signed_date()
 

@@ -67,7 +67,7 @@ config :pleroma, Pleroma.Scheduler,
 
 config :pleroma, Pleroma.Captcha,
   enabled: true,
-  seconds_valid: 60,
+  seconds_valid: 300,
   method: Pleroma.Captcha.Native
 
 config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
@@ -108,15 +108,10 @@ config :pleroma, Pleroma.Uploaders.S3,
   streaming_enabled: true,
   public_endpoint: "https://s3.amazonaws.com"
 
-config :pleroma, Pleroma.Uploaders.MDII,
-  cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
-  files: "https://mdii.sakura.ne.jp"
-
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   pack_extensions: [".png", ".gif"],
   groups: [
-    # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
     Custom: ["/emoji/*.png", "/emoji/**/*.png"]
   ],
   default_manifest: "https://git.pleroma.social/pleroma/emoji-index/raw/master/index.json",
@@ -269,7 +264,6 @@ config :pleroma, :instance,
   remote_post_retention_days: 90,
   skip_thread_containment: true,
   limit_to_local_content: :unauthenticated,
-  dynamic_configuration: false,
   user_bio_length: 5000,
   user_name_length: 100,
   max_account_fields: 10,
@@ -431,14 +425,6 @@ config :pleroma, Pleroma.Web.Metadata,
   ],
   unfurl_nsfw: false
 
-config :pleroma, :suggestions,
-  enabled: false,
-  third_party_engine:
-    "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}",
-  timeout: 300_000,
-  limit: 40,
-  web: "https://vinayaka.distsn.org"
-
 config :pleroma, :http_security,
   enabled: true,
   sts: false,
@@ -506,7 +492,8 @@ config :pleroma, Oban,
     mailer: 10,
     transmogrifier: 20,
     scheduled_activities: 10,
-    background: 5
+    background: 5,
+    attachments_cleanup: 5
   ]
 
 config :pleroma, :workers,
@@ -565,7 +552,7 @@ config :ueberauth,
 
 config :pleroma,
        :auth,
-       enforce_oauth_admin_scope_usage: false,
+       enforce_oauth_admin_scope_usage: true,
        oauth_consumer_strategies: oauth_consumer_strategies
 
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
@@ -620,6 +607,10 @@ config :pleroma, :static_fe, enabled: false
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,
   activity_pub_question: 30_000
+
+config :pleroma, :modules, runtime_dir: "instance/modules"
+
+config :pleroma, configurable_from_database: false
 
 config :swarm, node_blacklist: [~r/myhtml_.*$/]
 # Import environment specific config. This must remain at the bottom
