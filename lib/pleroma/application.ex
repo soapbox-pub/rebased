@@ -33,6 +33,7 @@ defmodule Pleroma.Application do
   def start(_type, _args) do
     Pleroma.HTML.compile_scrubbers()
     Pleroma.Config.DeprecationWarnings.warn()
+    Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
     Pleroma.Repo.check_migrations_applied!()
     setup_instrumenters()
     load_custom_modules()
