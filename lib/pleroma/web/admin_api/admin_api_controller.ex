@@ -38,7 +38,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:accounts"], admin: true}
-    when action in [:list_users, :user_show, :right_get]
+    when action in [:list_users, :user_show, :right_get, :show_user_credentials]
   )
 
   plug(
@@ -54,7 +54,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :tag_users,
            :untag_users,
            :right_add,
-           :right_delete
+           :right_delete,
+           :update_user_credentials
          ]
   )
 
@@ -658,21 +659,34 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     json_response(conn, :no_content, "")
   end
 
-  @doc "Changes password for a given user"
-  def change_password(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname} = params) do
+  @doc "Show a given user's credentials"
+  def show_user_credentials(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
+      conn
+      |> put_view(AccountView)
+      |> render("credentials.json", %{user: user, for: admin})
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @doc "Updates a given user"
+  def update_user_credentials(
+        %{assigns: %{user: admin}} = conn,
+        %{"nickname" => nickname} = params
+      ) do
     with {_, user} <- {:user, User.get_cached_by_nickname(nickname)},
          {:ok, _user} <-
-           User.reset_password(user, %{
-             password: params["new_password"],
-             password_confirmation: params["new_password"]
-           }) do
+           User.update_as_admin(user, params) do
       ModerationLog.insert_log(%{
         actor: admin,
         subject: [user],
-        action: "change_password"
+        action: "updated_users"
       })
 
-      User.force_password_reset_async(user)
+      if params["password"] do
+        User.force_password_reset_async(user)
+      end
 
       ModerationLog.insert_log(%{
         actor: admin,

@@ -609,11 +609,11 @@ defmodule Pleroma.ModerationLog do
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
-          "action" => "change_password",
+          "action" => "updated_users",
           "subject" => subjects
         }
       }) do
-    "@#{actor_nickname} changed password for users: #{users_to_nicknames_string(subjects)}"
+    "@#{actor_nickname} updated users: #{users_to_nicknames_string(subjects)}"
   end
 
   defp nicknames_to_string(nicknames) do
