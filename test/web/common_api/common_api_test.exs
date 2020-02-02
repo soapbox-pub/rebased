@@ -324,6 +324,21 @@ defmodule Pleroma.Web.CommonAPITest do
       assert %User{pinned_activities: [^id]} = user
     end
 
+    test "pin poll", %{user: user} do
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "How is fediverse today?",
+          "poll" => %{"options" => ["Absolutely outstanding", "Not good"], "expires_in" => 20}
+        })
+
+      assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
+
+      id = activity.id
+      user = refresh_record(user)
+
+      assert %User{pinned_activities: [^id]} = user
+    end
+
     test "unlisted statuses can be pinned", %{user: user} do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!", "visibility" => "unlisted"})
       assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
