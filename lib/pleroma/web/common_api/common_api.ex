@@ -328,15 +328,10 @@ defmodule Pleroma.Web.CommonAPI do
   def pin(id_or_ap_id, %{ap_id: user_ap_id} = user) do
     with %Activity{
            actor: ^user_ap_id,
-           data: %{
-             "type" => "Create"
-           },
-           object: %Object{
-             data: %{
-               "type" => "Note"
-             }
-           }
+           data: %{"type" => "Create"},
+           object: %Object{data: %{"type" => object_type}}
          } = activity <- get_by_id_or_ap_id(id_or_ap_id),
+         true <- object_type in ["Note", "Article", "Question"],
          true <- Visibility.is_public?(activity),
          %{valid?: true} = info_changeset <- User.Info.add_pinnned_activity(user.info, activity),
          changeset <-
