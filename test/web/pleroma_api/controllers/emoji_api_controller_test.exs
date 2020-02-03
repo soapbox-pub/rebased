@@ -6,7 +6,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   import Tesla.Mock
-
   import Pleroma.Factory
 
   @emoji_dir_path Path.join(

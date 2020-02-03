@@ -238,7 +238,9 @@ defmodule Pleroma.Web.CommonAPITest do
       assert reaction.data["actor"] == user.ap_id
       assert reaction.data["content"] == "👍"
 
-      # TODO: test error case.
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:error, _} = CommonAPI.react_with_emoji(activity.id, user, ".")
     end
 
     test "unreacting to a status with an emoji" do

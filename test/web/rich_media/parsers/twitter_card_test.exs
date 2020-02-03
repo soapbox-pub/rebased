@@ -85,4 +85,19 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
                 image: image_path
               }}
   end
+
+  test "takes first founded title in html head if there is html markup error" do
+    html = File.read!("test/fixtures/nypd-facial-recognition-children-teenagers4.html")
+
+    assert TwitterCard.parse(html, %{}) ==
+             {:ok,
+              %{
+                site: nil,
+                title:
+                  "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database. - The New York Times",
+                "app:id:googleplay": "com.nytimes.android",
+                "app:name:googleplay": "NYTimes",
+                "app:url:googleplay": "nytimes://reader/id/100000006583622"
+              }}
+  end
 end

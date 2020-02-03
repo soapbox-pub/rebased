@@ -48,6 +48,6 @@ defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
   defp maybe_put_title(meta, _), do: meta
 
   defp get_page_title(html) do
-    Floki.find(html, "title") |> List.first() |> Floki.text()
+    Floki.find(html, "html head title") |> List.first() |> Floki.text()
   end
 end

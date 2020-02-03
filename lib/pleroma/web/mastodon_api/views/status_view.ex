@@ -256,7 +256,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     emoji_reactions =
       with %{data: %{"reactions" => emoji_reactions}} <- object do
         Enum.map(emoji_reactions, fn [emoji, users] ->
-          %{emoji: emoji, count: length(users)}
+          %{
+            emoji: emoji,
+            count: length(users),
+            reacted: !!(opts[:for] && opts[:for].ap_id in users)
+          }
         end)
       else
         _ -> []

@@ -37,8 +37,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: activity)
 
     assert status[:pleroma][:emoji_reactions] == [
-             %{emoji: "☕", count: 2},
-             %{emoji: "🍵", count: 1}
+             %{emoji: "☕", count: 2, reacted: false},
+             %{emoji: "🍵", count: 1, reacted: false}
+           ]
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{emoji: "☕", count: 2, reacted: true},
+             %{emoji: "🍵", count: 1, reacted: false}
            ]
   end
 
