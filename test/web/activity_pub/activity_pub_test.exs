@@ -1174,6 +1174,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert embedded_object["object"] == followed.ap_id
       assert embedded_object["id"] == follow_activity.data["id"]
     end
+
+    test "creates an undo activity for a pending follow request" do
+      follower = insert(:user)
+      followed = insert(:user, %{locked: true})
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, activity} = ActivityPub.unfollow(follower, followed)
+
+      assert activity.data["type"] == "Undo"
+      assert activity.data["actor"] == follower.ap_id
+
+      embedded_object = activity.data["object"]
+      assert is_map(embedded_object)
+      assert embedded_object["type"] == "Follow"
+      assert embedded_object["object"] == followed.ap_id
+      assert embedded_object["id"] == follow_activity.data["id"]
+    end
   end
 
   describe "blocking / unblocking" do

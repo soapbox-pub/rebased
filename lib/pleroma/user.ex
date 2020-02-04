@@ -647,20 +647,25 @@ defmodule Pleroma.User do
     end
   end
 
+  def unfollow(%User{ap_id: ap_id}, %User{ap_id: ap_id}) do
+    {:error, "Not subscribed!"}
+  end
+
   def unfollow(%User{} = follower, %User{} = followed) do
-    if following?(follower, followed) and follower.ap_id != followed.ap_id do
-      FollowingRelationship.unfollow(follower, followed)
+    case FollowingRelationship.get(follower, followed) do
+      %{state: state} when state in ["accept", "pending"] ->
+        FollowingRelationship.unfollow(follower, followed)
+        {:ok, followed} = update_follower_count(followed)
 
-      {:ok, followed} = update_follower_count(followed)
+        {:ok, follower} =
+          follower
+          |> update_following_count()
+          |> set_cache()
 
-      {:ok, follower} =
-        follower
-        |> update_following_count()
-        |> set_cache()
+        {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
 
-      {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
-    else
-      {:error, "Not subscribed!"}
+      nil ->
+        {:error, "Not subscribed!"}
     end
   end
 
