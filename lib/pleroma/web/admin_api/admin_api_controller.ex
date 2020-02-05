@@ -97,7 +97,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read"], admin: true}
-    when action in [:config_show, :migrate_from_db, :list_log]
+    when action in [:config_show, :list_log]
   )
 
   plug(
@@ -791,19 +791,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> Plug.Conn.put_resp_content_type("application/json")
     |> Plug.Conn.send_resp(200, @descriptions_json)
-  end
-
-  def migrate_from_db(conn, _params) do
-    with :ok <- configurable_from_database(conn) do
-      Mix.Tasks.Pleroma.Config.run([
-        "migrate_from_db",
-        "--env",
-        to_string(Pleroma.Config.get(:env)),
-        "-d"
-      ])
-
-      json(conn, %{})
-    end
   end
 
   def config_show(conn, %{"only_db" => true}) do
