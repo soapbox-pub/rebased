@@ -2181,11 +2181,6 @@ config :pleroma, :config_description, [
         description: "Set to `false` to remove target='_blank' attribute"
       },
       %{
-        key: :scheme,
-        type: :boolean,
-        description: "Set to `true` to link urls with schema http://google.com"
-      },
-      %{
         key: :truncate,
         type: [:integer, false],
         description:
