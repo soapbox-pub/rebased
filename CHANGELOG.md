@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: OStatus protocol support
 - **Breaking**: MDII uploader
 - **Breaking**: Using third party engines for user recommendation
+<details>
+  <summary>API Changes</summary>
+- **Breaking**: AdminAPI: migrate_from_db endpoint
+</details>
 
 ### Changed
 - **Breaking:** Pleroma won't start if it detects unapplied migrations

@@ -2984,50 +2984,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "config mix tasks run" do
-    setup do
-      Mix.shell(Mix.Shell.Quiet)
-
-      on_exit(fn ->
-        Mix.shell(Mix.Shell.IO)
-      end)
-
-      :ok
-    end
-
-    clear_config(:configurable_from_database) do
-      Pleroma.Config.put(:configurable_from_database, true)
-    end
-
-    clear_config([:feed, :post_title]) do
-      Pleroma.Config.put([:feed, :post_title], %{max_length: 100, omission: "…"})
-    end
-
-    test "transfer settings to DB and to file", %{conn: conn} do
-      assert Repo.all(Pleroma.ConfigDB) == []
-      Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
-      assert Repo.aggregate(Pleroma.ConfigDB, :count, :id) > 0
-
-      conn = get(conn, "/api/pleroma/admin/config/migrate_from_db")
-
-      assert json_response(conn, 200) == %{}
-      assert Repo.all(Pleroma.ConfigDB) == []
-    end
-
-    test "returns error if configuration from database is off", %{conn: conn} do
-      initial = Pleroma.Config.get(:configurable_from_database)
-      on_exit(fn -> Pleroma.Config.put(:configurable_from_database, initial) end)
-      Pleroma.Config.put(:configurable_from_database, false)
-
-      conn = get(conn, "/api/pleroma/admin/config/migrate_from_db")
-
-      assert json_response(conn, 400) ==
-               "To use this endpoint you need to enable configuration from database."
-
-      assert Repo.all(Pleroma.ConfigDB) == []
-    end
-  end
-
   describe "GET /api/pleroma/admin/restart" do
     clear_config(:configurable_from_database) do
       Pleroma.Config.put(:configurable_from_database, true)
