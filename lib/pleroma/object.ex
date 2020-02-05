@@ -184,11 +184,14 @@ defmodule Pleroma.Object do
     with {:ok, _obj} = swap_object_with_tombstone(object),
          deleted_activity = Activity.delete_all_by_object_ap_id(id),
          {:ok, true} <- Cachex.del(:object_cache, "object:#{id}"),
-         {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path),
-         {:ok, _} <-
-           Pleroma.Workers.AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{
-             "object" => object
-           }) do
+         {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path) do
+      with true <- Pleroma.Config.get([:instance, :cleanup_attachments]) do
+        {:ok, _} =
+          Pleroma.Workers.AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{
+            "object" => object
+          })
+      end
+
       {:ok, object, deleted_activity}
     end
   end

@@ -37,16 +37,35 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       }
 
       case mastodon_type do
-        "mention" -> put_status(response, activity, user)
-        "favourite" -> put_status(response, parent_activity, user)
-        "reblog" -> put_status(response, parent_activity, user)
-        "move" -> put_target(response, activity, user)
-        "follow" -> response
-        _ -> nil
+        "mention" ->
+          put_status(response, activity, user)
+
+        "favourite" ->
+          put_status(response, parent_activity, user)
+
+        "reblog" ->
+          put_status(response, parent_activity, user)
+
+        "move" ->
+          put_target(response, activity, user)
+
+        "follow" ->
+          response
+
+        "pleroma:emoji_reaction" ->
+          put_status(response, parent_activity, user) |> put_emoji(activity)
+
+        _ ->
+          nil
       end
     else
       _ -> nil
     end
+  end
+
+  defp put_emoji(response, activity) do
+    response
+    |> Map.put(:emoji, activity.data["content"])
   end
 
   defp put_status(response, activity, user) do

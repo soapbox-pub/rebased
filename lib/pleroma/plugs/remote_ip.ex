@@ -10,10 +10,7 @@ defmodule Pleroma.Plugs.RemoteIp do
   @behaviour Plug
 
   @headers ~w[
-    forwarded
     x-forwarded-for
-    x-client-ip
-    x-real-ip
   ]
 
   # https://en.wikipedia.org/wiki/Localhost

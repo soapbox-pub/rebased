@@ -16,6 +16,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
     test "config is required for plug to work" do
       limiter_name = :test_init
       Pleroma.Config.put([:rate_limit, limiter_name], {1, 1})
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       assert %{limits: {1, 1}, name: :test_init, opts: [name: :test_init]} ==
                RateLimiter.init(name: limiter_name)
@@ -23,11 +24,39 @@ defmodule Pleroma.Plugs.RateLimiterTest do
       assert nil == RateLimiter.init(name: :foo)
     end
 
+    test "it is disabled for localhost" do
+      limiter_name = :test_init
+      Pleroma.Config.put([:rate_limit, limiter_name], {1, 1})
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {127, 0, 0, 1})
+      Pleroma.Config.put([Pleroma.Plugs.RemoteIp, :enabled], false)
+
+      assert RateLimiter.disabled?() == true
+    end
+
+    test "it is disabled for socket" do
+      limiter_name = :test_init
+      Pleroma.Config.put([:rate_limit, limiter_name], {1, 1})
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {:local, "/path/to/pleroma.sock"})
+      Pleroma.Config.put([Pleroma.Plugs.RemoteIp, :enabled], false)
+
+      assert RateLimiter.disabled?() == true
+    end
+
+    test "it is enabled for socket when remote ip is enabled" do
+      limiter_name = :test_init
+      Pleroma.Config.put([:rate_limit, limiter_name], {1, 1})
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {:local, "/path/to/pleroma.sock"})
+      Pleroma.Config.put([Pleroma.Plugs.RemoteIp, :enabled], true)
+
+      assert RateLimiter.disabled?() == false
+    end
+
     test "it restricts based on config values" do
       limiter_name = :test_opts
       scale = 80
       limit = 5
 
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
       Pleroma.Config.put([:rate_limit, limiter_name], {scale, limit})
 
       opts = RateLimiter.init(name: limiter_name)
@@ -61,6 +90,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
       limiter_name = :test_bucket_name
 
       Pleroma.Config.put([:rate_limit, limiter_name], {1000, 5})
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       base_bucket_name = "#{limiter_name}:group1"
       opts = RateLimiter.init(name: limiter_name, bucket_name: base_bucket_name)
@@ -75,6 +105,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
     test "`params` option allows different queries to be tracked independently" do
       limiter_name = :test_params
       Pleroma.Config.put([:rate_limit, limiter_name], {1000, 5})
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       opts = RateLimiter.init(name: limiter_name, params: ["id"])
 
@@ -90,6 +121,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
     test "it supports combination of options modifying bucket name" do
       limiter_name = :test_options_combo
       Pleroma.Config.put([:rate_limit, limiter_name], {1000, 5})
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       base_bucket_name = "#{limiter_name}:group1"
       opts = RateLimiter.init(name: limiter_name, bucket_name: base_bucket_name, params: ["id"])
@@ -109,6 +141,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
     test "are restricted based on remote IP" do
       limiter_name = :test_unauthenticated
       Pleroma.Config.put([:rate_limit, limiter_name], [{1000, 5}, {1, 10}])
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       opts = RateLimiter.init(name: limiter_name)
 
@@ -147,6 +180,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
       scale = 50
       limit = 5
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
       Pleroma.Config.put([:rate_limit, limiter_name], [{1000, 1}, {scale, limit}])
 
       opts = RateLimiter.init(name: limiter_name)
@@ -169,6 +203,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
     test "diffrerent users are counted independently" do
       limiter_name = :test_authenticated
       Pleroma.Config.put([:rate_limit, limiter_name], [{1, 10}, {1000, 5}])
+      Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
 
       opts = RateLimiter.init(name: limiter_name)
 

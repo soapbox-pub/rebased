@@ -337,7 +337,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"content" => emoji, "actor" => actor}},
         object
       ) do
-    reactions = object.data["reactions"] || []
+    reactions = get_cached_emoji_reactions(object)
 
     new_reactions =
       case Enum.find_index(reactions, fn [candidate, _] -> emoji == candidate end) do
@@ -365,7 +365,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"content" => emoji, "actor" => actor}},
         object
       ) do
-    reactions = object.data["reactions"] || []
+    reactions = get_cached_emoji_reactions(object)
 
     new_reactions =
       case Enum.find_index(reactions, fn [candidate, _] -> emoji == candidate end) do
@@ -383,6 +383,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     count = emoji_count(new_reactions)
     update_element_in_object("reaction", new_reactions, object, count)
+  end
+
+  def get_cached_emoji_reactions(object) do
+    if is_list(object.data["reactions"]) do
+      object.data["reactions"]
+    else
+      []
+    end
   end
 
   @spec add_like_to_object(Activity.t(), Object.t()) ::

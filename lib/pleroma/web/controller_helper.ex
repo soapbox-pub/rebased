@@ -76,8 +76,7 @@ defmodule Pleroma.Web.ControllerHelper do
     end
   end
 
-  def try_render(conn, target, params)
-      when is_binary(target) do
+  def try_render(conn, target, params) when is_binary(target) do
     case render(conn, target, params) do
       nil -> render_error(conn, :not_implemented, "Can't display this activity")
       res -> res
@@ -87,4 +86,8 @@ defmodule Pleroma.Web.ControllerHelper do
   def try_render(conn, _, _) do
     render_error(conn, :not_implemented, "Can't display this activity")
   end
+
+  @spec put_in_if_exist(map(), atom() | String.t(), any) :: map()
+  def put_in_if_exist(map, _key, nil), do: map
+  def put_in_if_exist(map, key, value), do: put_in(map, key, value)
 end
