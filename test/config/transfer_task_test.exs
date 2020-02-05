@@ -5,6 +5,8 @@
 defmodule Pleroma.Config.TransferTaskTest do
   use Pleroma.DataCase
 
+  import ExUnit.CaptureLog
+
   alias Pleroma.Config.TransferTask
   alias Pleroma.ConfigDB
 
@@ -104,5 +106,76 @@ defmodule Pleroma.Config.TransferTaskTest do
       Application.put_env(:pleroma, :emoji, emoji)
       Application.put_env(:pleroma, :assets, assets)
     end)
+  end
+
+  describe "pleroma restart" do
+    test "don't restart if no reboot time settings were changed" do
+      emoji = Application.get_env(:pleroma, :emoji)
+      on_exit(fn -> Application.put_env(:pleroma, :emoji, emoji) end)
+
+      ConfigDB.create(%{
+        group: ":pleroma",
+        key: ":emoji",
+        value: [groups: [a: 1, b: 2]]
+      })
+
+      refute String.contains?(
+               capture_log(fn -> TransferTask.start_link([]) end),
+               "pleroma restarted"
+             )
+    end
+
+    test "restart pleroma on reboot time key" do
+      chat = Application.get_env(:pleroma, :chat)
+      on_exit(fn -> Application.put_env(:pleroma, :chat, chat) end)
+
+      ConfigDB.create(%{
+        group: ":pleroma",
+        key: ":chat",
+        value: [enabled: false]
+      })
+
+      assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
+    end
+
+    test "restart pleroma on reboot time subkey" do
+      captcha = Application.get_env(:pleroma, Pleroma.Captcha)
+      on_exit(fn -> Application.put_env(:pleroma, Pleroma.Captcha, captcha) end)
+
+      ConfigDB.create(%{
+        group: ":pleroma",
+        key: "Pleroma.Captcha",
+        value: [seconds_valid: 60]
+      })
+
+      assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
+    end
+
+    test "don't restart pleroma on reboot time key and subkey if there is false flag" do
+      chat = Application.get_env(:pleroma, :chat)
+      captcha = Application.get_env(:pleroma, Pleroma.Captcha)
+
+      on_exit(fn ->
+        Application.put_env(:pleroma, :chat, chat)
+        Application.put_env(:pleroma, Pleroma.Captcha, captcha)
+      end)
+
+      ConfigDB.create(%{
+        group: ":pleroma",
+        key: ":chat",
+        value: [enabled: false]
+      })
+
+      ConfigDB.create(%{
+        group: ":pleroma",
+        key: "Pleroma.Captcha",
+        value: [seconds_valid: 60]
+      })
+
+      refute String.contains?(
+               capture_log(fn -> TransferTask.load_and_update_env([], false) end),
+               "pleroma restarted"
+             )
+    end
   end
 end

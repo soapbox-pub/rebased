@@ -6,11 +6,7 @@ config :pleroma, configurable_from_database: true
 ```
 
 ## How it works
-Settings are stored in database and are applied in `runtime` after each change. Most of the settings take effect immediately, except some, which need instance reboot. These settings are needed in `compile time`, that's why settings are duplicated to the file.
-
-File with duplicated settings is located in `config/{env}.exported_from_db.exs` if pleroma is runned from source. For prod env it will be `config/prod.exported_from_db.exs`.
-
-For releases: `/etc/pleroma/prod.exported_from_db.secret.exs` or `PLEROMA_CONFIG_PATH/prod.exported_from_db.exs`.
+Settings are stored in database and are applied in `runtime` after each change. Most of the settings take effect immediately, except some, which need instance reboot.
 
 ## How to set it up
 You need to migrate your existing settings to the database. This task will migrate only added by user settings.
@@ -25,7 +21,7 @@ You can do this with mix task (all config files will remain untouched):
 mix pleroma.config migrate_to_db
 ```
 
-Now you can change settings in admin interface. After each save, settings from database are duplicated to the `config/{env}.exported_from_db.exs` file.
+Now you can change settings in admin interface. If `reboot time` settings were changed, pleroma must be rebooted.
 
 <span style="color:red">**ATTENTION**</span>
 
@@ -35,10 +31,19 @@ Now you can change settings in admin interface. After each save, settings from d
 - all settings inside these keys:
   - `:hackney_pools`
   - `:chat`
+  - `Oban`
+  - `:rate_limit`
+  - `:markup`
+  - `:streamer`
 - partially settings inside these keys:
   - `:seconds_valid` in `Pleroma.Captcha`
   - `:proxy_remote` in `Pleroma.Upload`
   - `:upload_limit` in `:instance`
+  - `:digest` in `:email_notifications`
+  - `:clean_expired_tokens` in `:oauth2`
+  - `:enabled` in `Pleroma.ActivityExpiration`
+  - `:enabled` in `Pleroma.ScheduledActivity`
+  - `:enabled` in `:gopher`
 
 ## How to dump settings from database to file
 
@@ -59,7 +64,7 @@ mix pleroma.config migrate_from_db [-d]
 ```sql
 TRUNCATE TABLE config;
 ```
-2. Delete `config/{env}.exported_from_db.exs`.
+2. If migrate_from_db task was runned, backup and delete `config/{env}.exported_from_db.exs`.
 
 For `prod` env:
 ```bash

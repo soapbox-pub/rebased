@@ -665,6 +665,19 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 404 Not Found `"Not found"`
   - On success: 200 OK `{}`
 
+## `GET /api/pleroma/admin/restart`
+
+### Restarts pleroma application
+
+- Params: none
+- Response:
+  - On failure:
+    - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
+
+```json
+{}
+```
+
 ## `GET /api/pleroma/admin/config/migrate_from_db`
 
 ### Run mix task pleroma.config migrate_from_db

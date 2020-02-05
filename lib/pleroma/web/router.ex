@@ -197,6 +197,7 @@ defmodule Pleroma.Web.Router do
     post("/config", AdminAPIController, :config_update)
     get("/config/descriptions", AdminAPIController, :config_descriptions)
     get("/config/migrate_from_db", AdminAPIController, :migrate_from_db)
+    get("/restart", AdminAPIController, :restart)
 
     get("/moderation_log", AdminAPIController, :list_log)
 
