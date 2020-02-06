@@ -856,4 +856,5 @@ config :auto_linker,
 
 
 ## :configurable_from_database
-Enable/disable configuration from database.
+
+Boolean, enables/disables in-database configuration. Read [Transfering the config to/from the database](../administration/CLI_tasks/config.md) for more information.
