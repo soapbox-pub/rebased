@@ -295,96 +295,116 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     end
   end
 
-  test "updating pack files" do
-    pack_file = "#{@emoji_dir_path}/test_pack/pack.json"
-    original_content = File.read!(pack_file)
+  describe "update_file/2" do
+    setup do
+      pack_file = "#{@emoji_dir_path}/test_pack/pack.json"
+      original_content = File.read!(pack_file)
 
-    on_exit(fn ->
-      File.write!(pack_file, original_content)
+      on_exit(fn ->
+        File.write!(pack_file, original_content)
+      end)
 
-      File.rm_rf!("#{@emoji_dir_path}/test_pack/blank_url.png")
-      File.rm_rf!("#{@emoji_dir_path}/test_pack/dir")
-      File.rm_rf!("#{@emoji_dir_path}/test_pack/dir_2")
-    end)
+      admin = insert(:user, is_admin: true)
+      %{conn: conn} = oauth_access(["admin:write"], user: admin)
+      {:ok, conn: conn}
+    end
 
-    admin = insert(:user, is_admin: true)
-    %{conn: conn} = oauth_access(["admin:write"], user: admin)
+    test "update file without shortcode", %{conn: conn} do
+      on_exit(fn -> File.rm_rf!("#{@emoji_dir_path}/test_pack/shortcode.png") end)
 
-    same_name = %{
-      "action" => "add",
-      "shortcode" => "blank",
-      "filename" => "dir/blank.png",
-      "file" => %Plug.Upload{
-        filename: "blank.png",
-        path: "#{@emoji_dir_path}/test_pack/blank.png"
+      assert conn
+             |> post("/api/pleroma/emoji/packs/test_pack/update_file", %{
+               "action" => "add",
+               "file" => %Plug.Upload{
+                 filename: "shortcode.png",
+                 path: "#{Pleroma.Config.get([:instance, :static_dir])}/add/shortcode.png"
+               }
+             })
+             |> json_response(200) == %{"shortcode" => "shortcode.png"}
+    end
+
+    test "updating pack files", %{conn: conn} do
+      on_exit(fn ->
+        File.rm_rf!("#{@emoji_dir_path}/test_pack/blank_url.png")
+        File.rm_rf!("#{@emoji_dir_path}/test_pack/dir")
+        File.rm_rf!("#{@emoji_dir_path}/test_pack/dir_2")
+      end)
+
+      same_name = %{
+        "action" => "add",
+        "shortcode" => "blank",
+        "filename" => "dir/blank.png",
+        "file" => %Plug.Upload{
+          filename: "blank.png",
+          path: "#{@emoji_dir_path}/test_pack/blank.png"
+        }
       }
-    }
 
-    different_name = %{same_name | "shortcode" => "blank_2"}
+      different_name = %{same_name | "shortcode" => "blank_2"}
 
-    assert (conn
-            |> post(emoji_api_path(conn, :update_file, "test_pack"), same_name)
-            |> json_response(:conflict))["error"] =~ "already exists"
+      assert (conn
+              |> post(emoji_api_path(conn, :update_file, "test_pack"), same_name)
+              |> json_response(:conflict))["error"] =~ "already exists"
 
-    assert conn
-           |> post(emoji_api_path(conn, :update_file, "test_pack"), different_name)
-           |> json_response(200) == %{"blank" => "blank.png", "blank_2" => "dir/blank.png"}
+      assert conn
+             |> post(emoji_api_path(conn, :update_file, "test_pack"), different_name)
+             |> json_response(200) == %{"blank_2" => "dir/blank.png"}
 
-    assert File.exists?("#{@emoji_dir_path}/test_pack/dir/blank.png")
+      assert File.exists?("#{@emoji_dir_path}/test_pack/dir/blank.png")
 
-    assert conn
-           |> post(emoji_api_path(conn, :update_file, "test_pack"), %{
-             "action" => "update",
-             "shortcode" => "blank_2",
-             "new_shortcode" => "blank_3",
-             "new_filename" => "dir_2/blank_3.png"
-           })
-           |> json_response(200) == %{"blank" => "blank.png", "blank_3" => "dir_2/blank_3.png"}
+      assert conn
+             |> post(emoji_api_path(conn, :update_file, "test_pack"), %{
+               "action" => "update",
+               "shortcode" => "blank_2",
+               "new_shortcode" => "blank_3",
+               "new_filename" => "dir_2/blank_3.png"
+             })
+             |> json_response(200) == %{"blank_3" => "dir_2/blank_3.png"}
 
-    refute File.exists?("#{@emoji_dir_path}/test_pack/dir/")
-    assert File.exists?("#{@emoji_dir_path}/test_pack/dir_2/blank_3.png")
+      refute File.exists?("#{@emoji_dir_path}/test_pack/dir/")
+      assert File.exists?("#{@emoji_dir_path}/test_pack/dir_2/blank_3.png")
 
-    assert conn
-           |> post(emoji_api_path(conn, :update_file, "test_pack"), %{
-             "action" => "remove",
-             "shortcode" => "blank_3"
-           })
-           |> json_response(200) == %{"blank" => "blank.png"}
+      assert conn
+             |> post(emoji_api_path(conn, :update_file, "test_pack"), %{
+               "action" => "remove",
+               "shortcode" => "blank_3"
+             })
+             |> json_response(200) == %{"blank_3" => "dir_2/blank_3.png"}
 
-    refute File.exists?("#{@emoji_dir_path}/test_pack/dir_2/")
+      refute File.exists?("#{@emoji_dir_path}/test_pack/dir_2/")
 
-    mock(fn
-      %{
-        method: :get,
-        url: "https://test-blank/blank_url.png"
-      } ->
-        text(File.read!("#{@emoji_dir_path}/test_pack/blank.png"))
-    end)
+      mock(fn
+        %{
+          method: :get,
+          url: "https://test-blank/blank_url.png"
+        } ->
+          text(File.read!("#{@emoji_dir_path}/test_pack/blank.png"))
+      end)
 
-    # The name should be inferred from the URL ending
-    from_url = %{
-      "action" => "add",
-      "shortcode" => "blank_url",
-      "file" => "https://test-blank/blank_url.png"
-    }
+      # The name should be inferred from the URL ending
+      from_url = %{
+        "action" => "add",
+        "shortcode" => "blank_url",
+        "file" => "https://test-blank/blank_url.png"
+      }
 
-    assert conn
-           |> post(emoji_api_path(conn, :update_file, "test_pack"), from_url)
-           |> json_response(200) == %{
-             "blank" => "blank.png",
-             "blank_url" => "blank_url.png"
-           }
+      assert conn
+             |> post(emoji_api_path(conn, :update_file, "test_pack"), from_url)
+             |> json_response(200) == %{
+               "blank_url" => "blank_url.png"
+             }
 
-    assert File.exists?("#{@emoji_dir_path}/test_pack/blank_url.png")
+      assert File.exists?("#{@emoji_dir_path}/test_pack/blank_url.png")
 
-    assert conn
-           |> post(emoji_api_path(conn, :update_file, "test_pack"), %{
-             "action" => "remove",
-             "shortcode" => "blank_url"
-           })
-           |> json_response(200) == %{"blank" => "blank.png"}
+      assert conn
+             |> post(emoji_api_path(conn, :update_file, "test_pack"), %{
+               "action" => "remove",
+               "shortcode" => "blank_url"
+             })
+             |> json_response(200) == %{"blank_url" => "blank_url.png"}
 
-    refute File.exists?("#{@emoji_dir_path}/test_pack/blank_url.png")
+      refute File.exists?("#{@emoji_dir_path}/test_pack/blank_url.png")
+    end
   end
 
   test "creating and deleting a pack" do

@@ -385,23 +385,35 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     json(conn, new_data)
   end
 
-  defp get_filename(%{"filename" => filename}), do: filename
-
-  defp get_filename(%{"file" => file}) do
-    case file do
-      %Plug.Upload{filename: filename} -> filename
-      url when is_binary(url) -> Path.basename(url)
-    end
-  end
+  defp get_filename(%Plug.Upload{filename: filename}), do: filename
+  defp get_filename(url) when is_binary(url), do: Path.basename(url)
 
   defp empty?(str), do: String.trim(str) == ""
 
-  defp update_file_and_send(conn, updated_full_pack, pack_file_p) do
-    # Write the emoji pack file
-    File.write!(pack_file_p, Jason.encode!(updated_full_pack, pretty: true))
+  defp update_pack_file(updated_full_pack, pack_file_p) do
+    content = Jason.encode!(updated_full_pack, pretty: true)
 
-    # Return the modified file list
-    json(conn, updated_full_pack["files"])
+    File.write!(pack_file_p, content)
+  end
+
+  defp create_subdirs(file_path) do
+    if String.contains?(file_path, "/") do
+      file_path
+      |> Path.dirname()
+      |> File.mkdir_p!()
+    end
+  end
+
+  defp pack_info(pack_name) do
+    dir = Path.join(emoji_dir_path(), pack_name)
+    json_path = Path.join(dir, "pack.json")
+
+    json =
+      json_path
+      |> File.read!()
+      |> Jason.decode!()
+
+    {dir, json_path, json}
   end
 
   @doc """
@@ -422,23 +434,25 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   # Add
   def update_file(
         conn,
-        %{"pack_name" => pack_name, "action" => "add", "shortcode" => shortcode} = params
+        %{"pack_name" => pack_name, "action" => "add"} = params
       ) do
-    pack_dir = Path.join(emoji_dir_path(), pack_name)
-    pack_file_p = Path.join(pack_dir, "pack.json")
+    shortcode =
+      if params["shortcode"] do
+        params["shortcode"]
+      else
+        filename = get_filename(params["file"])
+        Path.basename(filename, Path.extname(filename))
+      end
 
-    full_pack = Jason.decode!(File.read!(pack_file_p))
+    {pack_dir, pack_file_p, full_pack} = pack_info(pack_name)
 
     with {_, false} <- {:has_shortcode, Map.has_key?(full_pack["files"], shortcode)},
-         filename <- get_filename(params),
+         filename <- params["filename"] || get_filename(params["file"]),
          false <- empty?(shortcode),
-         false <- empty?(filename) do
-      file_path = Path.join(pack_dir, filename)
-
+         false <- empty?(filename),
+         file_path <- Path.join(pack_dir, filename) do
       # If the name contains directories, create them
-      if String.contains?(file_path, "/") do
-        File.mkdir_p!(Path.dirname(file_path))
-      end
+      create_subdirs(file_path)
 
       case params["file"] do
         %Plug.Upload{path: upload_path} ->
@@ -451,8 +465,11 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
           File.write!(file_path, file_contents)
       end
 
-      updated_full_pack = put_in(full_pack, ["files", shortcode], filename)
-      update_file_and_send(conn, updated_full_pack, pack_file_p)
+      full_pack
+      |> put_in(["files", shortcode], filename)
+      |> update_pack_file(pack_file_p)
+
+      json(conn, %{shortcode => filename})
     else
       {:has_shortcode, _} ->
         conn
@@ -472,10 +489,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         "action" => "remove",
         "shortcode" => shortcode
       }) do
-    pack_dir = Path.join(emoji_dir_path(), pack_name)
-    pack_file_p = Path.join(pack_dir, "pack.json")
-
-    full_pack = Jason.decode!(File.read!(pack_file_p))
+    {pack_dir, pack_file_p, full_pack} = pack_info(pack_name)
 
     if Map.has_key?(full_pack["files"], shortcode) do
       {emoji_file_path, updated_full_pack} = pop_in(full_pack, ["files", shortcode])
@@ -494,7 +508,8 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         end
       end
 
-      update_file_and_send(conn, updated_full_pack, pack_file_p)
+      update_pack_file(updated_full_pack, pack_file_p)
+      json(conn, %{shortcode => full_pack["files"][shortcode]})
     else
       conn
       |> put_status(:bad_request)
@@ -507,10 +522,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         conn,
         %{"pack_name" => pack_name, "action" => "update", "shortcode" => shortcode} = params
       ) do
-    pack_dir = Path.join(emoji_dir_path(), pack_name)
-    pack_file_p = Path.join(pack_dir, "pack.json")
-
-    full_pack = Jason.decode!(File.read!(pack_file_p))
+    {pack_dir, pack_file_p, full_pack} = pack_info(pack_name)
 
     with {_, true} <- {:has_shortcode, Map.has_key?(full_pack["files"], shortcode)},
          %{"new_shortcode" => new_shortcode, "new_filename" => new_filename} <- params,
@@ -522,9 +534,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       new_emoji_file_path = Path.join(pack_dir, new_filename)
 
       # If the name contains directories, create them
-      if String.contains?(new_emoji_file_path, "/") do
-        File.mkdir_p!(Path.dirname(new_emoji_file_path))
-      end
+      create_subdirs(new_emoji_file_path)
 
       # Move/Rename the old filename to a new filename
       # These are probably on the same filesystem, so just rename should work
@@ -540,8 +550,11 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       end
 
       # Then, put in the new shortcode with the new path
-      updated_full_pack = put_in(updated_full_pack, ["files", new_shortcode], new_filename)
-      update_file_and_send(conn, updated_full_pack, pack_file_p)
+      updated_full_pack
+      |> put_in(["files", new_shortcode], new_filename)
+      |> update_pack_file(pack_file_p)
+
+      json(conn, %{new_shortcode => new_filename})
     else
       {:has_shortcode, _} ->
         conn

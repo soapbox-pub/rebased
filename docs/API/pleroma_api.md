@@ -357,7 +357,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
     * if the `action` is `update`, changes emoji shortcode
       (from `shortcode` to `new_shortcode` or moves the file (from the current filename to `new_filename`)
     * if the `action` is `remove`, removes the emoji named `shortcode` and it's associated file
-* Response: JSON, updated "files" section of the pack and 200 status, 409 if the trying to use a shortcode
+* Response: JSON, emoji shortcode with filename which was added/updated/deleted and 200 status, 409 if the trying to use a shortcode
   that is already taken, 400 if there was an error with the shortcode, filename or file (additional info
   in the "error" part of the response JSON)
 
