@@ -2178,7 +2178,7 @@ config :pleroma, :config_description, [
       %{
         key: :new_window,
         type: :boolean,
-        description: "Set to `false` to remove target='_blank' attribute"
+        description: "Link urls will open in new window/tab"
       },
       %{
         key: :truncate,
