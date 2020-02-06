@@ -1,11 +1,11 @@
 @font-face {
 	font-family: "Icons";
-	src: url("./font/fontello.1580232989700.eot");
-	src: url("./font/fontello.1580232989700.eot") format("embedded-opentype"),
-		url("./font/fontello.1580232989700.woff2") format("woff2"),
-		url("./font/fontello.1580232989700.woff") format("woff"),
-		url("./font/fontello.1580232989700.ttf") format("truetype"),
-		url("./font/fontello.1580232989700.svg") format("svg");
+	src: url("./font/fontello.1575662648966.eot");
+	src: url("./font/fontello.1575662648966.eot") format("embedded-opentype"),
+		url("./font/fontello.1575662648966.woff2") format("woff2"),
+		url("./font/fontello.1575662648966.woff") format("woff"),
+		url("./font/fontello.1575662648966.ttf") format("truetype"),
+		url("./font/fontello.1575662648966.svg") format("svg");
 	font-weight: normal;
 	font-style: normal;
 }
@@ -28,8 +28,6 @@
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
-
-.icon-spin4::before { content: "\e834"; }
 
 .icon-cancel::before { content: "\e800"; }
 
@@ -105,7 +103,9 @@
 
 .icon-pencil::before { content: "\e818"; }
 
-.icon-chart-bar::before { content: "\e81b"; }
+.icon-spin4::before { content: "\e834"; }
+
+.icon-verified::before { content: "\e81b"; }
 
 .icon-smile::before { content: "\f118"; }
 
@@ -119,18 +119,28 @@
 
 .icon-bell-ringing-o::before { content: "\e810"; }
 
-.icon-zoom-in::before { content: "\e81c"; }
-
-.icon-gauge::before { content: "\f0e4"; }
-
 .icon-users::before { content: "\e81d"; }
 
-.icon-info-circled::before { content: "\e81f"; }
+.icon-address-book::before { content: "\e81e"; }
+
+.icon-cog-alt::before { content: "\e81f"; }
+
+.icon-apple::before { content: "\f179"; }
+
+.icon-android::before { content: "\f17b"; }
 
 .icon-home-2::before { content: "\e821"; }
 
-.icon-chat::before { content: "\e81e"; }
+.icon-hashtag::before { content: "\f292"; }
 
-.icon-login::before { content: "\e820"; }
+.icon-quote-right::before { content: "\f10e"; }
 
-.icon-arrow-curved::before { content: "\e822"; }
+.icon-laptop::before { content: "\f109"; }
+
+.icon-chart-bar::before { content: "\e81c"; }
+
+.icon-zoom-in::before { content: "\e820"; }
+
+.icon-gauge::before { content: "\f0e4"; }
+
+.icon-paper-plane-empty::before { content: "\f1d9"; }
