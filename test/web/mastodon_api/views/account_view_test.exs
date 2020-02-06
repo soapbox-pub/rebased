@@ -368,10 +368,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert result.pleroma[:settings_store] == nil
   end
 
-  test "sanitizes display names" do
+  test "doesn't sanitize display names" do
     user = insert(:user, name: "<marquee> username </marquee>")
     result = AccountView.render("show.json", %{user: user})
-    refute result.display_name == "<marquee> username </marquee>"
+    assert result.display_name == "<marquee> username </marquee>"
   end
 
   test "never display nil user follow counts" do
