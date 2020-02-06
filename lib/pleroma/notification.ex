@@ -294,7 +294,7 @@ defmodule Pleroma.Notification do
   end
 
   def create_notifications(%Activity{data: %{"type" => type}} = activity)
-      when type in ["Like", "Announce", "Follow", "Move", "EmojiReaction"] do
+      when type in ["Like", "Announce", "Follow", "Move", "EmojiReact"] do
     notifications =
       activity
       |> get_notified_from_activity()
@@ -322,7 +322,7 @@ defmodule Pleroma.Notification do
   def get_notified_from_activity(activity, local_only \\ true)
 
   def get_notified_from_activity(%Activity{data: %{"type" => type}} = activity, local_only)
-      when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReaction"] do
+      when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact"] do
     []
     |> Utils.maybe_notify_to_recipients(activity)
     |> Utils.maybe_notify_mentioned_recipients(activity)

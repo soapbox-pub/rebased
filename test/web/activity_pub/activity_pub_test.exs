@@ -877,7 +877,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert reaction_activity
 
       assert reaction_activity.data["actor"] == reactor.ap_id
-      assert reaction_activity.data["type"] == "EmojiReaction"
+      assert reaction_activity.data["type"] == "EmojiReact"
       assert reaction_activity.data["content"] == "🔥"
       assert reaction_activity.data["object"] == object.data["id"]
       assert reaction_activity.data["to"] == [User.ap_followers(reactor), activity.data["actor"]]

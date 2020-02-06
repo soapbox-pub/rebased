@@ -308,7 +308,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def make_emoji_reaction_data(user, object, emoji, activity_id) do
     make_like_data(user, object, activity_id)
-    |> Map.put("type", "EmojiReaction")
+    |> Map.put("type", "EmojiReact")
     |> Map.put("content", emoji)
   end
 
@@ -493,7 +493,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def get_latest_reaction(internal_activity_id, %{ap_id: ap_id}, emoji) do
     %{data: %{"object" => object_ap_id}} = Activity.get_by_id(internal_activity_id)
 
-    "EmojiReaction"
+    "EmojiReact"
     |> Activity.Queries.by_type()
     |> where(actor: ^ap_id)
     |> where([activity], fragment("?->>'content' = ?", activity.data, ^emoji))
