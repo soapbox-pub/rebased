@@ -871,7 +871,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :limit_to_local_content,
-        type: [:atom, false],
+        type: {:dropdown, :atom},
         description:
           "Limit unauthenticated users to search for local statutes and users only. Default: `:unauthenticated`.",
         suggestions: [
@@ -942,7 +942,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :level,
-        type: :atom,
+        type: {:dropdown, :atom},
         description: "Log level",
         suggestions: [:debug, :info, :warn, :error]
       },
@@ -974,7 +974,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :level,
-        type: :atom,
+        type: {:dropdown, :atom},
         description: "Log level",
         suggestions: [:debug, :info, :warn, :error]
       },
@@ -998,7 +998,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :level,
-        type: :atom,
+        type: {:dropdown, :atom},
         description: "Log level",
         suggestions: [:debug, :info, :warn, :error]
       },
@@ -1969,7 +1969,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :verbose,
-        type: [:atom, false],
+        type: {:dropdown, :atom},
         description: "Logs verbose mode",
         suggestions: [false, :error, :warn, :info, :debug]
       },
@@ -2178,7 +2178,7 @@ config :pleroma, :config_description, [
       %{
         key: :new_window,
         type: :boolean,
-        description: "Set to `false` to remove target='_blank' attribute"
+        description: "Link urls will open in new window/tab"
       },
       %{
         key: :truncate,

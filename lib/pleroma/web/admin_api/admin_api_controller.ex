@@ -797,16 +797,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with :ok <- configurable_from_database(conn) do
       configs = Pleroma.Repo.all(ConfigDB)
 
-      if configs == [] do
-        errors(
-          conn,
-          {:error, "To use configuration from database migrate your settings to database."}
-        )
-      else
-        conn
-        |> put_view(ConfigView)
-        |> render("index.json", %{configs: configs})
-      end
+      conn
+      |> put_view(ConfigView)
+      |> render("index.json", %{configs: configs})
     end
   end
 
@@ -814,45 +807,38 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with :ok <- configurable_from_database(conn) do
       configs = ConfigDB.get_all_as_keyword()
 
-      if configs == [] do
-        errors(
-          conn,
-          {:error, "To use configuration from database migrate your settings to database."}
-        )
-      else
-        merged =
-          Pleroma.Config.Holder.config()
-          |> ConfigDB.merge(configs)
-          |> Enum.map(fn {group, values} ->
-            Enum.map(values, fn {key, value} ->
-              db =
-                if configs[group][key] do
-                  ConfigDB.get_db_keys(configs[group][key], key)
-                end
+      merged =
+        Pleroma.Config.Holder.config()
+        |> ConfigDB.merge(configs)
+        |> Enum.map(fn {group, values} ->
+          Enum.map(values, fn {key, value} ->
+            db =
+              if configs[group][key] do
+                ConfigDB.get_db_keys(configs[group][key], key)
+              end
 
-              db_value = configs[group][key]
+            db_value = configs[group][key]
 
-              merged_value =
-                if !is_nil(db_value) and Keyword.keyword?(db_value) and
-                     ConfigDB.sub_key_full_update?(group, key, Keyword.keys(db_value)) do
-                  ConfigDB.merge_group(group, key, value, db_value)
-                else
-                  value
-                end
+            merged_value =
+              if !is_nil(db_value) and Keyword.keyword?(db_value) and
+                   ConfigDB.sub_key_full_update?(group, key, Keyword.keys(db_value)) do
+                ConfigDB.merge_group(group, key, value, db_value)
+              else
+                value
+              end
 
-              setting = %{
-                group: ConfigDB.convert(group),
-                key: ConfigDB.convert(key),
-                value: ConfigDB.convert(merged_value)
-              }
+            setting = %{
+              group: ConfigDB.convert(group),
+              key: ConfigDB.convert(key),
+              value: ConfigDB.convert(merged_value)
+            }
 
-              if db, do: Map.put(setting, :db, db), else: setting
-            end)
+            if db, do: Map.put(setting, :db, db), else: setting
           end)
-          |> List.flatten()
+        end)
+        |> List.flatten()
 
-        json(conn, %{configs: merged})
-      end
+      json(conn, %{configs: merged})
     end
   end
 

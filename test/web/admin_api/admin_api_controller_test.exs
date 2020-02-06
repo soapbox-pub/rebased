@@ -1899,13 +1899,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "To use this endpoint you need to enable configuration from database."
     end
 
-    test "without any settings in db", %{conn: conn} do
-      conn = get(conn, "/api/pleroma/admin/config")
-
-      assert json_response(conn, 400) ==
-               "To use configuration from database migrate your settings to database."
-    end
-
     test "with settings only in db", %{conn: conn} do
       config1 = insert(:config)
       config2 = insert(:config)

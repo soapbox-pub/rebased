@@ -689,7 +689,6 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Response:
   - On failure:
     - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
-    - 400 Bad Request `"To use configuration from database migrate your settings to database."`
 
 ```json
 {
