@@ -135,7 +135,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
              NotificationView.render("index.json", %{notifications: [notification], for: follower})
   end
 
-  test "EmojiReaction notification" do
+  test "EmojiReact notification" do
     user = insert(:user)
     other_user = insert(:user)
 

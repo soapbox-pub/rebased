@@ -1,5 +1,5 @@
 {
-  "type": "EmojiReaction",
+  "type": "EmojiReact",
   "signature": {
     "type": "RsaSignature2017",
     "signatureValue": "fdxMfQSMwbC6wP6sh6neS/vM5879K67yQkHTbiT5Npr5wAac0y6+o3Ij+41tN3rL6wfuGTosSBTHOtta6R4GCOOhCaCSLMZKypnp1VltCzLDoyrZELnYQIC8gpUXVmIycZbREk22qWUe/w7DAFaKK4UscBlHDzeDVcA0K3Se5Sluqi9/Zh+ldAnEzj/rSEPDjrtvf5wGNf3fHxbKSRKFt90JvKK6hS+vxKUhlRFDf6/SMETw+EhwJSNW4d10yMUakqUWsFv4Acq5LW7l+HpYMvlYY1FZhNde1+uonnCyuQDyvzkff8zwtEJmAXC4RivO/VVLa17SmqheJZfI8oluVg==",

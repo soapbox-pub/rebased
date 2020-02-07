@@ -29,7 +29,7 @@
                 "@id": "litepub:oauthRegistrationEndpoint",
                 "@type": "@id"
             },
-            "EmojiReaction": "litepub:EmojiReaction",
+            "EmojiReact": "litepub:EmojiReact",
             "alsoKnownAs": {
                 "@id": "as:alsoKnownAs",
                 "@type": "@id"
