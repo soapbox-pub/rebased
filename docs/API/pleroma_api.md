@@ -441,7 +441,7 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 
 ## `DELETE /api/v1/pleroma/statuses/:id/reactions/:emoji`
 ### Remove a reaction to a post with a unicode emoji
-* Method: `POST`
+* Method: `DELETE`
 * Authentication: required
 * Params: `emoji`: A single character unicode emoji
 * Response: JSON, the status.
