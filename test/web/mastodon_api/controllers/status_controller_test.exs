@@ -370,6 +370,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       assert NaiveDateTime.diff(NaiveDateTime.from_iso8601!(response["poll"]["expires_at"]), time) in 420..430
       refute response["poll"]["expred"]
+
+      question = Object.get_by_id(response["poll"]["id"])
+
+      # closed contains utc timezone
+      assert question.data["closed"] =~ "Z"
     end
 
     test "option limit is enforced", %{conn: conn} do
