@@ -58,8 +58,8 @@ defmodule Pleroma.FollowingRelationship do
 
   def unfollow(%User{} = follower, %User{} = following) do
     case get(follower, following) do
-      nil -> {:ok, nil}
       %__MODULE__{} = following_relationship -> Repo.delete(following_relationship)
+      _ -> {:ok, nil}
     end
   end
 

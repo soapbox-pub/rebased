@@ -121,6 +121,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OTP releases: Not being able to configure OAuth expired token cleanup interval
 - OTP releases: Not being able to configure HTML sanitization policy
 - Favorites timeline now ordered by favorite date instead of post date
+- Support for cancellation of a follow request
 <details>
   <summary>API Changes</summary>
 
