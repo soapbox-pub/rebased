@@ -272,6 +272,7 @@ defmodule Pleroma.Web.Router do
     pipe_through(:api)
 
     get("/statuses/:id/emoji_reactions_by", PleromaAPIController, :emoji_reactions_by)
+    get("/statuses/:id/reactions", PleromaAPIController, :emoji_reactions_by)
   end
 
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
@@ -289,6 +290,8 @@ defmodule Pleroma.Web.Router do
       patch("/conversations/:id", PleromaAPIController, :update_conversation)
       post("/statuses/:id/react_with_emoji", PleromaAPIController, :react_with_emoji)
       post("/statuses/:id/unreact_with_emoji", PleromaAPIController, :unreact_with_emoji)
+      put("/statuses/:id/reactions/:emoji", PleromaAPIController, :react_with_emoji)
+      delete("/statuses/:id/reactions/:emoji", PleromaAPIController, :unreact_with_emoji)
       post("/notifications/read", PleromaAPIController, :read_notification)
 
       patch("/accounts/update_avatar", AccountController, :update_avatar)
