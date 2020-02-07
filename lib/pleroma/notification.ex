@@ -640,6 +640,8 @@ defmodule Pleroma.Notification do
     end)
   end
 
+  def skip?(:filtered, %{data: %{"type" => type}}, _) when type in ["Follow", "Move"], do: false
+
   def skip?(:filtered, activity, user) do
     object = Object.normalize(activity)
 
