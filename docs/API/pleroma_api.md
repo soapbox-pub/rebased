@@ -434,7 +434,7 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 
 ## `PUT /api/v1/pleroma/statuses/:id/reactions/:emoji`
 ### React to a post with a unicode emoji
-* Method: `POST`
+* Method: `PUT`
 * Authentication: required
 * Params: `emoji`: A single character unicode emoji
 * Response: JSON, the status.
