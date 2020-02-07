@@ -30,24 +30,9 @@ defmodule Pleroma.FollowingRelationship do
   end
 
   def get(%User{} = follower, %User{} = following) do
-    following_relationship =
-      __MODULE__
-      |> where(follower_id: ^follower.id, following_id: ^following.id)
-      |> Repo.one()
-
-    case {following_relationship, following.local} do
-      {nil, false} ->
-        case Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(follower, following) do
-          %{data: %{"state" => state}} when state in ["pending", "accept"] ->
-            %{state: state}
-
-          _ ->
-            nil
-        end
-
-      {following_relationship, _} ->
-        following_relationship
-    end
+    __MODULE__
+    |> where(follower_id: ^follower.id, following_id: ^following.id)
+    |> Repo.one()
   end
 
   def update(follower, following, "reject"), do: unfollow(follower, following)

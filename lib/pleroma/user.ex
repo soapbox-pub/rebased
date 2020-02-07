@@ -652,8 +652,8 @@ defmodule Pleroma.User do
   end
 
   def unfollow(%User{} = follower, %User{} = followed) do
-    case FollowingRelationship.get(follower, followed) do
-      %{state: state} when state in ["accept", "pending"] ->
+    case get_follow_state(follower, followed) do
+      state when state in ["accept", "pending"] ->
         FollowingRelationship.unfollow(follower, followed)
         {:ok, followed} = update_follower_count(followed)
 
@@ -670,6 +670,24 @@ defmodule Pleroma.User do
   end
 
   defdelegate following?(follower, followed), to: FollowingRelationship
+
+  def get_follow_state(%User{} = follower, %User{} = following) do
+    following_relationship = FollowingRelationship.get(follower, following)
+
+    case {following_relationship, following.local} do
+      {nil, false} ->
+        case Utils.fetch_latest_follow(follower, following) do
+          %{data: %{"state" => state}} when state in ["pending", "accept"] -> state
+          _ -> nil
+        end
+
+      {%{state: state}, _} ->
+        state
+
+      {nil, _} ->
+        nil
+    end
+  end
 
   def locked?(%User{} = user) do
     user.locked || false
