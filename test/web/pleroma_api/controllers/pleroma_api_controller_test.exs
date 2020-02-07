@@ -14,27 +14,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
   import Pleroma.Factory
 
-  test "POST /api/v1/pleroma/statuses/:id/react_with_emoji", %{conn: conn} do
-    user = insert(:user)
-    other_user = insert(:user)
-
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
-
-    result =
-      conn
-      |> assign(:user, other_user)
-      |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["write:statuses"]))
-      |> post("/api/v1/pleroma/statuses/#{activity.id}/react_with_emoji", %{"emoji" => "☕"})
-      |> json_response(200)
-
-    assert %{"id" => id} = result
-    assert to_string(activity.id) == id
-
-    assert result["pleroma"]["emoji_reactions"] == [
-             %{"name" => "☕", "count" => 1, "me" => true}
-           ]
-  end
-
   test "PUT /api/v1/pleroma/statuses/:id/reactions/:emoji", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
@@ -57,27 +36,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
            ]
   end
 
-  test "POST /api/v1/pleroma/statuses/:id/unreact_with_emoji", %{conn: conn} do
-    user = insert(:user)
-    other_user = insert(:user)
-
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
-    {:ok, activity, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
-
-    result =
-      conn
-      |> assign(:user, other_user)
-      |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["write:statuses"]))
-      |> post("/api/v1/pleroma/statuses/#{activity.id}/unreact_with_emoji", %{"emoji" => "☕"})
-
-    assert %{"id" => id} = json_response(result, 200)
-    assert to_string(activity.id) == id
-
-    object = Object.normalize(activity)
-
-    assert object.data["reaction_count"] == 0
-  end
-
   test "DELETE /api/v1/pleroma/statuses/:id/reactions/:emoji", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
@@ -97,45 +55,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     object = Object.normalize(activity)
 
     assert object.data["reaction_count"] == 0
-  end
-
-  test "GET /api/v1/pleroma/statuses/:id/emoji_reactions_by", %{conn: conn} do
-    user = insert(:user)
-    other_user = insert(:user)
-    doomed_user = insert(:user)
-
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
-
-    result =
-      conn
-      |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
-      |> json_response(200)
-
-    assert result == []
-
-    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
-    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, doomed_user, "🎅")
-
-    User.perform(:delete, doomed_user)
-
-    result =
-      conn
-      |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
-      |> json_response(200)
-
-    [%{"name" => "🎅", "count" => 1, "accounts" => [represented_user], "me" => false}] = result
-
-    assert represented_user["id"] == other_user.id
-
-    result =
-      conn
-      |> assign(:user, other_user)
-      |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["read:statuses"]))
-      |> get("/api/v1/pleroma/statuses/#{activity.id}/emoji_reactions_by")
-      |> json_response(200)
-
-    assert [%{"name" => "🎅", "count" => 1, "accounts" => [_represented_user], "me" => true}] =
-             result
   end
 
   test "GET /api/v1/pleroma/statuses/:id/reactions", %{conn: conn} do
