@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: OStatus protocol support
 - **Breaking**: MDII uploader
 - **Breaking**: Using third party engines for user recommendation
+<details>
+  <summary>API Changes</summary>
+- **Breaking**: AdminAPI: migrate_from_db endpoint
+</details>
 
 ### Changed
 - **Breaking:** Pleroma won't start if it detects unapplied migrations
@@ -38,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Admin API: `PUT /api/pleroma/admin/reports/:id` is now `PATCH /api/pleroma/admin/reports`, see admin_api.md for details
 - **Breaking:** `/api/pleroma/admin/users/invite_token` now uses `POST`, changed accepted params and returns full invite in json instead of only token string.
 - **Breaking** replying to reports is now "report notes", enpoint changed from `POST /api/pleroma/admin/reports/:id/respond` to `POST /api/pleroma/admin/reports/:id/notes`
+- Mastodon API: stopped sanitizing display names, field names and subject fields since they are supposed to be treated as plaintext
 - Admin API: Return `total` when querying for reports
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
 - Admin API: Return link alongside with token on password reset
@@ -117,7 +122,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF: `Delete` activities being exempt from MRF policies
 - OTP releases: Not being able to configure OAuth expired token cleanup interval
 - OTP releases: Not being able to configure HTML sanitization policy
+- OTP releases: Not being able to change upload limit (again)
 - Favorites timeline now ordered by favorite date instead of post date
+- Support for cancellation of a follow request
 <details>
   <summary>API Changes</summary>
 

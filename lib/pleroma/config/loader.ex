@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.Loader do
-  @paths ["config/config.exs", "config/#{Mix.env()}.exs"]
-
   @reject_keys [
     Pleroma.Repo,
     Pleroma.Web.Endpoint,
@@ -35,8 +33,8 @@ defmodule Pleroma.Config.Loader do
   def load_and_merge do
     all_paths =
       if Pleroma.Config.get(:release),
-        do: @paths ++ ["config/releases.exs"],
-        else: @paths
+        do: ["config/config.exs", "config/releases.exs"],
+        else: ["config/config.exs"]
 
     all_paths
     |> Enum.map(&load(&1))

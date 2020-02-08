@@ -511,7 +511,6 @@ config :pleroma, :fetch_initial_posts,
 
 config :auto_linker,
   opts: [
-    scheme: true,
     extra: true,
     # TODO: Set to :no_scheme when it works properly
     validate_tld: true,
