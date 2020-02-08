@@ -15,6 +15,6 @@ defmodule Pleroma.Workers.RemoteFetcherWorker do
         },
         _job
       ) do
-    Fetcher.fetch_object_from_id!(id)
+    {:ok, _object} = Fetcher.fetch_object_from_id(id)
   end
 end

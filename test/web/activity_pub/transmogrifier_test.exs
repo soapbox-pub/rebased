@@ -1350,7 +1350,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     end
   end
 
-  describe "handle_incoming:`replies` handling" do
+  describe "`replies` handling in handle_incoming/2" do
     setup do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
@@ -1361,7 +1361,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       %{data: data, items: items, collection: collection}
     end
 
-    test "it schedules background fetching of wrapped `replies` collection items", %{
+    test "with wrapped `replies` collection, it schedules background fetching of items", %{
       data: data,
       items: items,
       collection: collection
@@ -2096,8 +2096,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "set_replies/1" do
-    clear_config([:mastodon_compatibility, :federated_note_replies_limit]) do
-      Pleroma.Config.put([:mastodon_compatibility, :federated_note_replies_limit], 2)
+    clear_config([:activitypub, :note_replies_output_limit]) do
+      Pleroma.Config.put([:activitypub, :note_replies_output_limit], 2)
     end
 
     test "returns unmodified object if activity doesn't have self-replies" do
@@ -2116,7 +2116,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, self_reply2} =
         CommonAPI.post(user, %{"status" => "self-reply 2", "in_reply_to_status_id" => id1})
 
-      # Assuming to _not_ be present in `replies` due to :federated_note_replies_limit is set to 2
+      # Assuming to _not_ be present in `replies` due to :note_replies_output_limit is set to 2
       {:ok, _} =
         CommonAPI.post(user, %{"status" => "self-reply 3", "in_reply_to_status_id" => id1})
 

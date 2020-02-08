@@ -1791,6 +1791,12 @@ config :pleroma, :config_description, [
         description: "Sign object fetches with HTTP signatures"
       },
       %{
+        key: :note_replies_output_limit,
+        type: :integer,
+        description:
+          "The number of Note replies' URIs to be included with outgoing federation (`5` to match Mastodon hardcoded value, `0` to disable the output)."
+      },
+      %{
         key: :follow_handshake_timeout,
         type: :integer,
         description: "Following handshake timeout",
@@ -3094,20 +3100,6 @@ config :pleroma, :config_description, [
         key: :runtime_dir,
         type: :string,
         description: "A path to custom Elixir modules (such as MRF policies)."
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mastodon_compatibility,
-    type: :group,
-    description: "Mastodon compatibility-related settings.",
-    children: [
-      %{
-        key: :federated_note_replies_limit,
-        type: :integer,
-        description:
-          "The number of Note self-reply URIs to be included with outgoing federation (`5` to mimic Mastodon hardcoded value, `0` to disable)."
       }
     ]
   },

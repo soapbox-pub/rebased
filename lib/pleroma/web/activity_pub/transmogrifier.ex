@@ -914,7 +914,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   Based on Mastodon's ActivityPub::NoteSerializer#replies.
   """
   def set_replies(obj) do
-    limit = Pleroma.Config.get([:mastodon_compatibility, :federated_note_replies_limit], 0)
+    limit = Pleroma.Config.get([:activitypub, :note_replies_output_limit], 0)
 
     replies_uris =
       with true <- limit > 0 || nil,
@@ -953,7 +953,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def replies(%{"replies" => replies = %{}}) do
-    replies = with %{} <- replies["first"], do: replies["first"], else: (_ -> replies)
+    replies =
+      if is_map(replies["first"]) do
+        replies["first"]
+      else
+        replies
+      end
+
     replies["items"] || []
   end
 
