@@ -682,6 +682,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ### Get list of merged default settings with saved in database.
 
+*If `need_reboot` flag exists in response, instance must be restarted, so reboot time settings can take effect.*
+
 **Only works when configuration from database is enabled.**
 
 - Params:
@@ -692,19 +694,23 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ```json
 {
-  configs: [
+  "configs": [
     {
       "group": ":pleroma",
       "key": "Pleroma.Upload",
       "value": []
      }
-  ]
+  ],
+  "need_reboot": true
 }
 ```
+ need_reboot - *optional*, if were changed reboot time settings.
 
 ## `POST /api/pleroma/admin/config`
 
 ### Update config settings
+
+*If `need_reboot` flag exists in response, instance must be restarted, so reboot time settings can take effect.*
 
 **Only works when configuration from database is enabled.**
 
@@ -793,7 +799,7 @@ config :quack,
 ```
 ```json
 {
-  configs: [
+  "configs": [
     {"group": ":quack", "key": ":level", "value": ":debug"},
     {"group": ":quack", "key": ":meta", "value": [":all"]},
     ...
@@ -804,7 +810,7 @@ config :quack,
 
 ```json
 {
-  configs: [
+  "configs": [
     {
       "group": ":pleroma",
       "key": "Pleroma.Upload",
@@ -836,15 +842,17 @@ config :quack,
     - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
 ```json
 {
-  configs: [
+  "configs": [
     {
       "group": ":pleroma",
       "key": "Pleroma.Upload",
       "value": [...]
      }
-  ]
+  ],
+  "need_reboot": true
 }
 ```
+need_reboot - *optional*, if were changed reboot time settings.
 
 ## ` GET /api/pleroma/admin/config/descriptions`
 
