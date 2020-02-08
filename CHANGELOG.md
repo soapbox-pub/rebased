@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.9] - 2020-02-10
+### Fixed
+- OTP: Inability to set the upload limit (again)
+- Not being able to pin polls
+- Streaming API: incorrect handling of reblog mutes
+- Rejecting the user when field length limit is exceeded
+- OpenGraph provider: html entities in descriptions
+
 ## [1.1.8] - 2020-01-10
 ### Fixed
 - Captcha generation issues
