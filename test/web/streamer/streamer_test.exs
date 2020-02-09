@@ -60,15 +60,15 @@ defmodule Pleroma.Web.StreamerTest do
       blocked = insert(:user)
       {:ok, user} = User.block(user, blocked)
 
+      {:ok, activity} = CommonAPI.post(user, %{"status" => ":("})
+      {:ok, notif, _} = CommonAPI.favorite(activity.id, blocked)
+
       task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
 
       Streamer.add_socket(
         "user:notification",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
-
-      {:ok, activity} = CommonAPI.post(user, %{"status" => ":("})
-      {:ok, notif, _} = CommonAPI.favorite(activity.id, blocked)
 
       Streamer.stream("user:notification", notif)
       Task.await(task)
@@ -78,6 +78,11 @@ defmodule Pleroma.Web.StreamerTest do
       user: user
     } do
       user2 = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
+      {:ok, activity} = CommonAPI.add_mute(user, activity)
+      {:ok, notif, _} = CommonAPI.favorite(activity.id, user2)
+
       task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
 
       Streamer.add_socket(
@@ -85,9 +90,6 @@ defmodule Pleroma.Web.StreamerTest do
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
-      {:ok, activity} = CommonAPI.add_mute(user, activity)
-      {:ok, notif, _} = CommonAPI.favorite(activity.id, user2)
       Streamer.stream("user:notification", notif)
       Task.await(task)
     end
@@ -96,16 +98,17 @@ defmodule Pleroma.Web.StreamerTest do
       user: user
     } do
       user2 = insert(:user, %{ap_id: "https://hecking-lewd-place.com/user/meanie"})
+
+      {:ok, user} = User.block_domain(user, "hecking-lewd-place.com")
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
+      {:ok, notif, _} = CommonAPI.favorite(activity.id, user2)
+
       task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
 
       Streamer.add_socket(
         "user:notification",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
-
-      {:ok, user} = User.block_domain(user, "hecking-lewd-place.com")
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
-      {:ok, notif, _} = CommonAPI.favorite(activity.id, user2)
 
       Streamer.stream("user:notification", notif)
       Task.await(task)
@@ -257,6 +260,8 @@ defmodule Pleroma.Web.StreamerTest do
       blocked_user = insert(:user)
       {:ok, user} = User.block(user, blocked_user)
 
+      {:ok, activity} = CommonAPI.post(blocked_user, %{"status" => "Test"})
+
       task =
         Task.async(fn ->
           refute_receive {:text, _}, 1_000
@@ -266,8 +271,6 @@ defmodule Pleroma.Web.StreamerTest do
         transport_pid: task.pid,
         user: user
       }
-
-      {:ok, activity} = CommonAPI.post(blocked_user, %{"status" => "Test"})
 
       topics = %{
         "public" => [fake_socket]
@@ -325,6 +328,12 @@ defmodule Pleroma.Web.StreamerTest do
     {:ok, list} = List.create("Test", user_a)
     {:ok, list} = List.follow(list, user_b)
 
+    {:ok, activity} =
+      CommonAPI.post(user_b, %{
+        "status" => "@#{user_c.nickname} Test",
+        "visibility" => "direct"
+      })
+
     task =
       Task.async(fn ->
         refute_receive {:text, _}, 1_000
@@ -334,12 +343,6 @@ defmodule Pleroma.Web.StreamerTest do
       transport_pid: task.pid,
       user: user_a
     }
-
-    {:ok, activity} =
-      CommonAPI.post(user_b, %{
-        "status" => "@#{user_c.nickname} Test",
-        "visibility" => "direct"
-      })
 
     topics = %{
       "list:#{list.id}" => [fake_socket]
@@ -357,6 +360,12 @@ defmodule Pleroma.Web.StreamerTest do
     {:ok, list} = List.create("Test", user_a)
     {:ok, list} = List.follow(list, user_b)
 
+    {:ok, activity} =
+      CommonAPI.post(user_b, %{
+        "status" => "Test",
+        "visibility" => "private"
+      })
+
     task =
       Task.async(fn ->
         refute_receive {:text, _}, 1_000
@@ -366,12 +375,6 @@ defmodule Pleroma.Web.StreamerTest do
       transport_pid: task.pid,
       user: user_a
     }
-
-    {:ok, activity} =
-      CommonAPI.post(user_b, %{
-        "status" => "Test",
-        "visibility" => "private"
-      })
 
     topics = %{
       "list:#{list.id}" => [fake_socket]
@@ -391,6 +394,12 @@ defmodule Pleroma.Web.StreamerTest do
     {:ok, list} = List.create("Test", user_a)
     {:ok, list} = List.follow(list, user_b)
 
+    {:ok, activity} =
+      CommonAPI.post(user_b, %{
+        "status" => "Test",
+        "visibility" => "private"
+      })
+
     task =
       Task.async(fn ->
         assert_receive {:text, _}, 1_000
@@ -400,12 +409,6 @@ defmodule Pleroma.Web.StreamerTest do
       transport_pid: task.pid,
       user: user_a
     }
-
-    {:ok, activity} =
-      CommonAPI.post(user_b, %{
-        "status" => "Test",
-        "visibility" => "private"
-      })
 
     Streamer.add_socket(
       "list:#{list.id}",
@@ -423,6 +426,9 @@ defmodule Pleroma.Web.StreamerTest do
     user3 = insert(:user)
     CommonAPI.hide_reblogs(user1, user2)
 
+    {:ok, create_activity} = CommonAPI.post(user3, %{"status" => "I'm kawen"})
+    {:ok, announce_activity, _} = CommonAPI.repeat(create_activity.id, user2)
+
     task =
       Task.async(fn ->
         refute_receive {:text, _}, 1_000
@@ -433,14 +439,39 @@ defmodule Pleroma.Web.StreamerTest do
       user: user1
     }
 
-    {:ok, create_activity} = CommonAPI.post(user3, %{"status" => "I'm kawen"})
-    {:ok, announce_activity, _} = CommonAPI.repeat(create_activity.id, user2)
-
     topics = %{
       "public" => [fake_socket]
     }
 
     Worker.push_to_socket(topics, "public", announce_activity)
+
+    Task.await(task)
+  end
+
+  test "it does send non-reblog notification for reblog-muted actors" do
+    user1 = insert(:user)
+    user2 = insert(:user)
+    user3 = insert(:user)
+    CommonAPI.hide_reblogs(user1, user2)
+
+    {:ok, create_activity} = CommonAPI.post(user3, %{"status" => "I'm kawen"})
+    {:ok, favorite_activity, _} = CommonAPI.favorite(create_activity.id, user2)
+
+    task =
+      Task.async(fn ->
+        assert_receive {:text, _}, 1_000
+      end)
+
+    fake_socket = %StreamerSocket{
+      transport_pid: task.pid,
+      user: user1
+    }
+
+    topics = %{
+      "public" => [fake_socket]
+    }
+
+    Worker.push_to_socket(topics, "public", favorite_activity)
 
     Task.await(task)
   end

@@ -137,8 +137,9 @@ defmodule Pleroma.Web.Streamer.Worker do
     domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.info.domain_blocks)
 
     with parent <- Object.normalize(item) || item,
-         true <- Enum.all?([blocks, mutes, reblog_mutes], &(item.actor not in &1)),
+         true <- Enum.all?([blocks, mutes], &(item.actor not in &1)),
          true <- Enum.all?([blocks, mutes], &(parent.data["actor"] not in &1)),
+         true <- item.data["type"] != "Announce" || item.actor not in reblog_mutes,
          true <- MapSet.disjoint?(recipients, recipient_blocks),
          %{host: item_host} <- URI.parse(item.actor),
          %{host: parent_host} <- URI.parse(parent.data["actor"]),
