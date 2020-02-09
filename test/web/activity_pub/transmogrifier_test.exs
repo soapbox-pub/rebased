@@ -2133,7 +2133,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         })
 
       object = Object.normalize(activity)
-      replies_uris = Enum.map([self_reply1, self_reply2], fn a -> a.data["id"] end)
+      replies_uris = Enum.map([self_reply1, self_reply2], fn a -> a.object.data["id"] end)
 
       assert %{
                "type" => "Collection",

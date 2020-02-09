@@ -48,8 +48,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
       {:ok, self_reply1} =
         CommonAPI.post(user, %{"status" => "self-reply 1", "in_reply_to_status_id" => activity.id})
 
+      replies_uris = [self_reply1.object.data["id"]]
       result = ObjectView.render("object.json", %{object: refresh_record(activity)})
-      replies_uris = [self_reply1.data["id"]]
 
       assert %{
                "type" => "Collection",
