@@ -914,22 +914,23 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   Based on Mastodon's ActivityPub::NoteSerializer#replies.
   """
   def set_replies(obj_data) do
-    limit = Pleroma.Config.get([:activitypub, :note_replies_output_limit], 0)
-
     replies_uris =
-      with true <- limit > 0 || nil,
+      with limit when limit > 0 <-
+             Pleroma.Config.get([:activitypub, :note_replies_output_limit], 0),
            %Object{} = object <- Object.get_cached_by_ap_id(obj_data["id"]) do
         object
         |> Object.self_replies()
         |> select([o], fragment("?->>'id'", o.data))
         |> limit(^limit)
         |> Repo.all()
+      else
+        _ -> []
       end
 
-    set_replies(obj_data, replies_uris || [])
+    set_replies(obj_data, replies_uris)
   end
 
-  defp set_replies(obj, replies_uris) when replies_uris in [nil, []] do
+  defp set_replies(obj, []) do
     obj
   end
 
@@ -952,15 +953,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.merge(obj, %{"replies" => replies_collection})
   end
 
-  def replies(%{"replies" => replies} = _object) when is_map(replies) do
-    replies =
-      if is_map(replies["first"]) do
-        replies["first"]
-      else
-        replies
-      end
+  def replies(%{"replies" => %{"first" => %{"items" => items}}}) when not is_nil(items) do
+    items
+  end
 
-    replies["items"] || []
+  def replies(%{"replies" => %{"items" => items}}) when not is_nil(items) do
+    items
   end
 
   def replies(_), do: []
