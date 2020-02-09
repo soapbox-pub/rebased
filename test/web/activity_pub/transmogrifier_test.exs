@@ -1361,6 +1361,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       %{data: data, items: items, collection: collection}
     end
 
+    # Mastodon wraps reply URIs in `replies->first->items`
     test "with wrapped `replies` collection, it schedules background fetching of items", %{
       data: data,
       items: items,
@@ -1378,6 +1379,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       end
     end
 
+    # Pleroma outputs reply URIs as `replies->items`
     test "it schedules background fetching of unwrapped `replies` collection items", %{
       data: data,
       items: items,
@@ -2135,10 +2137,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       object = Object.normalize(activity)
       replies_uris = Enum.map([self_reply1, self_reply2], fn a -> a.object.data["id"] end)
 
-      assert %{
-               "type" => "Collection",
-               "first" => %{"type" => "Collection", "items" => ^replies_uris}
-             } = Transmogrifier.set_replies(object.data)["replies"]
+      assert %{"type" => "Collection", "items" => ^replies_uris} =
+               Transmogrifier.set_replies(object.data)["replies"]
     end
   end
 end

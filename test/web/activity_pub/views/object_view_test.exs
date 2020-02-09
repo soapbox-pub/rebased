@@ -51,10 +51,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
       replies_uris = [self_reply1.object.data["id"]]
       result = ObjectView.render("object.json", %{object: refresh_record(activity)})
 
-      assert %{
-               "type" => "Collection",
-               "first" => %{"type" => "Collection", "items" => ^replies_uris}
-             } = get_in(result, ["object", "replies"])
+      assert %{"type" => "Collection", "items" => ^replies_uris} =
+               get_in(result, ["object", "replies"])
     end
   end
 

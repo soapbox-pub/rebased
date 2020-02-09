@@ -935,19 +935,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   defp set_replies(obj, replies_uris) do
-    # Note: stubs (Mastodon doesn't make separate requests via those URIs in FetchRepliesService)
-    masto_replies_uri = nil
-    masto_replies_next_page_uri = nil
-
     replies_collection = %{
       "type" => "Collection",
-      "id" => masto_replies_uri,
-      "first" => %{
-        "type" => "Collection",
-        "part_of" => masto_replies_uri,
-        "items" => replies_uris,
-        "next" => masto_replies_next_page_uri
-      }
+      "items" => replies_uris
     }
 
     Map.merge(obj, %{"replies" => replies_collection})
