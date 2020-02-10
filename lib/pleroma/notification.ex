@@ -38,14 +38,6 @@ defmodule Pleroma.Notification do
     |> cast(attrs, [:seen])
   end
 
-  @spec unread_count_query(User.t()) :: Ecto.Queryable.t()
-  def unread_count_query(user) do
-    from(q in Pleroma.Notification,
-      where: q.user_id == ^user.id,
-      where: q.seen == false
-    )
-  end
-
   @spec last_read_query(User.t()) :: Ecto.Queryable.t()
   def last_read_query(user) do
     from(q in Pleroma.Notification,
@@ -229,7 +221,7 @@ defmodule Pleroma.Notification do
     {:ok, %{ids: {_, notification_ids}}} =
       Multi.new()
       |> Multi.update_all(:ids, query, set: [seen: true, updated_at: NaiveDateTime.utc_now()])
-      |> Marker.multi_set_unread_count(user, "notifications")
+      |> Marker.multi_set_last_read_id(user, "notifications")
       |> Repo.transaction()
 
     Notification
@@ -253,7 +245,7 @@ defmodule Pleroma.Notification do
     with {:ok, %Notification{} = notification} <- get(user, notification_id) do
       Multi.new()
       |> Multi.update(:update, changeset(notification, %{seen: true}))
-      |> Marker.multi_set_unread_count(user, "notifications")
+      |> Marker.multi_set_last_read_id(user, "notifications")
       |> Repo.transaction()
       |> case do
         {:ok, %{update: notification}} -> {:ok, notification}
@@ -340,7 +332,7 @@ defmodule Pleroma.Notification do
       {:ok, %{notification: notification}} =
         Multi.new()
         |> Multi.insert(:notification, %Notification{user_id: user.id, activity: activity})
-        |> Marker.multi_set_unread_count(user, "notifications")
+        |> Marker.multi_set_last_read_id(user, "notifications")
         |> Repo.transaction()
 
       ["user", "user:notification"]

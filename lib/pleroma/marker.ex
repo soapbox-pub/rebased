@@ -21,7 +21,7 @@ defmodule Pleroma.Marker do
     field(:last_read_id, :string, default: "")
     field(:timeline, :string, default: "")
     field(:lock_version, :integer, default: 0)
-    field(:unread_count, :integer, default: 0)
+    field(:unread_count, :integer, default: 0, virtual: true)
 
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     timestamps()
@@ -33,14 +33,15 @@ defmodule Pleroma.Marker do
   opts:
   `recount_unread` - run force recount unread notifications for `true` value
   """
-  @spec get_markers(User.t(), list(String), map()) :: list(t())
-  def get_markers(user, timelines \\ [], opts \\ %{}) do
+  @spec get_markers(User.t(), list(String)) :: list(t())
+  def get_markers(user, timelines \\ []) do
     user
     |> get_query(timelines)
-    |> recount_unread_notifications(opts[:recount_unread])
+    |> unread_count_query()
     |> Repo.all()
   end
 
+  @spec upsert(User.t(), map()) :: {:ok | :error, any()}
   def upsert(%User{} = user, attrs) do
     attrs
     |> Map.take(@timelines)
@@ -52,22 +53,18 @@ defmodule Pleroma.Marker do
 
       Multi.insert(multi, timeline, marker,
         returning: true,
-        on_conflict: {:replace, [:last_read_id, :unread_count]},
+        on_conflict: {:replace, [:last_read_id]},
         conflict_target: [:user_id, :timeline]
       )
     end)
     |> Repo.transaction()
   end
 
-  @spec multi_set_unread_count(Multi.t(), User.t(), String.t()) :: Multi.t()
-  def multi_set_unread_count(multi, %User{} = user, "notifications") do
+  @spec multi_set_last_read_id(Multi.t(), User.t(), String.t()) :: Multi.t()
+  def multi_set_last_read_id(multi, %User{} = user, "notifications") do
     multi
     |> Multi.run(:counters, fn _repo, _changes ->
-      {:ok,
-       %{
-         unread_count: Repo.aggregate(Notification.unread_count_query(user), :count, :id),
-         last_read_id: Repo.one(Notification.last_read_query(user))
-       }}
+      {:ok, %{last_read_id: Repo.one(Notification.last_read_query(user))}}
     end)
     |> Multi.insert(
       :marker,
@@ -77,12 +74,12 @@ defmodule Pleroma.Marker do
         |> Ecto.Changeset.change()
       end,
       returning: true,
-      on_conflict: {:replace, [:last_read_id, :unread_count]},
+      on_conflict: {:replace, [:last_read_id]},
       conflict_target: [:user_id, :timeline]
     )
   end
 
-  def multi_set_unread_count(multi, _, _), do: multi
+  def multi_set_last_read_id(multi, _, _), do: multi
 
   defp get_marker(user, timeline) do
     case Repo.find_resource(get_query(user, timeline)) do
@@ -94,7 +91,7 @@ defmodule Pleroma.Marker do
   @doc false
   defp changeset(marker, attrs) do
     marker
-    |> cast(attrs, [:last_read_id, :unread_count])
+    |> cast(attrs, [:last_read_id])
     |> validate_required([:user_id, :timeline, :last_read_id])
     |> validate_inclusion(:timeline, @timelines)
   end
@@ -111,7 +108,7 @@ defmodule Pleroma.Marker do
     |> by_timeline(timelines)
   end
 
-  defp recount_unread_notifications(query, true) do
+  defp unread_count_query(query) do
     from(
       q in query,
       left_join: n in "notifications",
@@ -122,6 +119,4 @@ defmodule Pleroma.Marker do
       }
     )
   end
-
-  defp recount_unread_notifications(query, _), do: query
 end
