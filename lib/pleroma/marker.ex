@@ -27,12 +27,7 @@ defmodule Pleroma.Marker do
     timestamps()
   end
 
-  @doc """
-  Gets markers by user and timeline.
-
-  opts:
-  `recount_unread` - run force recount unread notifications for `true` value
-  """
+  @doc "Gets markers by user and timeline."
   @spec get_markers(User.t(), list(String)) :: list(t())
   def get_markers(user, timelines \\ []) do
     user
