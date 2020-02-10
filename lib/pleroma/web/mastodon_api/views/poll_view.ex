@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.PollView do
   use Pleroma.Web, :view
 
-  alias Pleroma.HTML
   alias Pleroma.Web.CommonAPI.Utils
 
   def render("show.json", %{object: object, multiple: multiple, options: options} = params) do
@@ -57,7 +56,7 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
       current_count = option["replies"]["totalItems"] || 0
 
       {%{
-         title: HTML.strip_tags(name),
+         title: name,
          votes_count: current_count
        }, current_count + count}
     end)

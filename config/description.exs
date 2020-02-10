@@ -765,6 +765,15 @@ config :pleroma, :config_description, [
             " This will break federation with older software for theses nicknames."
       },
       %{
+        key: :cleanup_attachments,
+        type: :boolean,
+        description: """
+        "Set to `true` to remove associated attachments when status is removed.
+        This will not affect duplicates and attachments without status.
+        Enabling this will increase load to database when deleting statuses on larger instances.
+        """
+      },
+      %{
         key: :max_pinned_statuses,
         type: :integer,
         description: "The maximum number of pinned statuses. 0 will disable the feature.",
@@ -862,7 +871,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :limit_to_local_content,
-        type: [:atom, false],
+        type: {:dropdown, :atom},
         description:
           "Limit unauthenticated users to search for local statutes and users only. Default: `:unauthenticated`.",
         suggestions: [
@@ -933,7 +942,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :level,
-        type: :atom,
+        type: {:dropdown, :atom},
         description: "Log level",
         suggestions: [:debug, :info, :warn, :error]
       },
@@ -965,7 +974,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :level,
-        type: :atom,
+        type: {:dropdown, :atom},
         description: "Log level",
         suggestions: [:debug, :info, :warn, :error]
       },
@@ -989,7 +998,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :level,
-        type: :atom,
+        type: {:dropdown, :atom},
         description: "Log level",
         suggestions: [:debug, :info, :warn, :error]
       },
@@ -1960,7 +1969,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :verbose,
-        type: [:atom, false],
+        type: {:dropdown, :atom},
         description: "Logs verbose mode",
         suggestions: [false, :error, :warn, :info, :debug]
       },
@@ -2169,12 +2178,7 @@ config :pleroma, :config_description, [
       %{
         key: :new_window,
         type: :boolean,
-        description: "Set to `false` to remove target='_blank' attribute"
-      },
-      %{
-        key: :scheme,
-        type: :boolean,
-        description: "Set to `true` to link urls with schema http://google.com"
+        description: "Link urls will open in new window/tab"
       },
       %{
         key: :truncate,

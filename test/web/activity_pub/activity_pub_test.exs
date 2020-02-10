@@ -877,7 +877,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert reaction_activity
 
       assert reaction_activity.data["actor"] == reactor.ap_id
-      assert reaction_activity.data["type"] == "EmojiReaction"
+      assert reaction_activity.data["type"] == "EmojiReact"
       assert reaction_activity.data["content"] == "🔥"
       assert reaction_activity.data["object"] == object.data["id"]
       assert reaction_activity.data["to"] == [User.ap_followers(reactor), activity.data["actor"]]
@@ -1161,6 +1161,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "creates an undo activity for the last follow" do
       follower = insert(:user)
       followed = insert(:user)
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, activity} = ActivityPub.unfollow(follower, followed)
+
+      assert activity.data["type"] == "Undo"
+      assert activity.data["actor"] == follower.ap_id
+
+      embedded_object = activity.data["object"]
+      assert is_map(embedded_object)
+      assert embedded_object["type"] == "Follow"
+      assert embedded_object["object"] == followed.ap_id
+      assert embedded_object["id"] == follow_activity.data["id"]
+    end
+
+    test "creates an undo activity for a pending follow request" do
+      follower = insert(:user)
+      followed = insert(:user, %{locked: true})
 
       {:ok, follow_activity} = ActivityPub.follow(follower, followed)
       {:ok, activity} = ActivityPub.unfollow(follower, followed)

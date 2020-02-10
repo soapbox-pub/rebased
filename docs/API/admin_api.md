@@ -665,11 +665,9 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 404 Not Found `"Not found"`
   - On success: 200 OK `{}`
 
-## `GET /api/pleroma/admin/config/migrate_from_db`
+## `GET /api/pleroma/admin/restart`
 
-### Run mix task pleroma.config migrate_from_db
-
-Copies all settings from database to `config/{env}.exported_from_db.secret.exs` with deletion from the table. Where `{env}` is the environment in which `pleroma` is running.
+### Restarts pleroma application
 
 - Params: none
 - Response:
@@ -691,7 +689,6 @@ Copies all settings from database to `config/{env}.exported_from_db.secret.exs` 
 - Response:
   - On failure:
     - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
-    - 400 Bad Request `"To use configuration from database migrate your settings to database."`
 
 ```json
 {

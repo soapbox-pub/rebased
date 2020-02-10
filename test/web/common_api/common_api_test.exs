@@ -238,7 +238,9 @@ defmodule Pleroma.Web.CommonAPITest do
       assert reaction.data["actor"] == user.ap_id
       assert reaction.data["content"] == "👍"
 
-      # TODO: test error case.
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:error, _} = CommonAPI.react_with_emoji(activity.id, user, ".")
     end
 
     test "unreacting to a status with an emoji" do
@@ -314,6 +316,21 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "pin status", %{user: user, activity: activity} do
+      assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
+
+      id = activity.id
+      user = refresh_record(user)
+
+      assert %User{pinned_activities: [^id]} = user
+    end
+
+    test "pin poll", %{user: user} do
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "How is fediverse today?",
+          "poll" => %{"options" => ["Absolutely outstanding", "Not good"], "expires_in" => 20}
+        })
+
       assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
 
       id = activity.id
@@ -533,6 +550,50 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, follower} = CommonAPI.unfollow(follower, followed)
 
       refute User.subscribed_to?(follower, followed)
+    end
+
+    test "cancels a pending follow for a local user" do
+      follower = insert(:user)
+      followed = insert(:user, locked: true)
+
+      assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
+               CommonAPI.follow(follower, followed)
+
+      assert User.get_follow_state(follower, followed) == "pending"
+      assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
+      assert User.get_follow_state(follower, followed) == nil
+
+      assert %{id: ^activity_id, data: %{"state" => "cancelled"}} =
+               Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(follower, followed)
+
+      assert %{
+               data: %{
+                 "type" => "Undo",
+                 "object" => %{"type" => "Follow", "state" => "cancelled"}
+               }
+             } = Pleroma.Web.ActivityPub.Utils.fetch_latest_undo(follower)
+    end
+
+    test "cancels a pending follow for a remote user" do
+      follower = insert(:user)
+      followed = insert(:user, locked: true, local: false, ap_enabled: true)
+
+      assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
+               CommonAPI.follow(follower, followed)
+
+      assert User.get_follow_state(follower, followed) == "pending"
+      assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
+      assert User.get_follow_state(follower, followed) == nil
+
+      assert %{id: ^activity_id, data: %{"state" => "cancelled"}} =
+               Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(follower, followed)
+
+      assert %{
+               data: %{
+                 "type" => "Undo",
+                 "object" => %{"type" => "Follow", "state" => "cancelled"}
+               }
+             } = Pleroma.Web.ActivityPub.Utils.fetch_latest_undo(follower)
     end
   end
 

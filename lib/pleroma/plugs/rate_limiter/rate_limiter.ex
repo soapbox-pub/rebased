@@ -67,6 +67,8 @@ defmodule Pleroma.Plugs.RateLimiter do
   alias Pleroma.Plugs.RateLimiter.LimiterSupervisor
   alias Pleroma.User
 
+  require Logger
+
   def init(opts) do
     limiter_name = Keyword.get(opts, :name)
 
@@ -89,16 +91,37 @@ defmodule Pleroma.Plugs.RateLimiter do
   def call(conn, nil), do: conn
 
   def call(conn, settings) do
-    settings
-    |> incorporate_conn_info(conn)
-    |> check_rate()
-    |> case do
-      {:ok, _count} ->
+    case disabled?() do
+      true ->
+        if Pleroma.Config.get(:env) == :prod,
+          do: Logger.warn("Rate limiter is disabled for localhost/socket")
+
         conn
 
-      {:error, _count} ->
-        render_throttled_error(conn)
+      false ->
+        settings
+        |> incorporate_conn_info(conn)
+        |> check_rate()
+        |> case do
+          {:ok, _count} ->
+            conn
+
+          {:error, _count} ->
+            render_throttled_error(conn)
+        end
     end
+  end
+
+  def disabled? do
+    localhost_or_socket =
+      Pleroma.Config.get([Pleroma.Web.Endpoint, :http, :ip])
+      |> Tuple.to_list()
+      |> Enum.join(".")
+      |> String.match?(~r/^local|^127.0.0.1/)
+
+    remote_ip_disabled = not Pleroma.Config.get([Pleroma.Plugs.RemoteIp, :enabled])
+
+    localhost_or_socket and remote_ip_disabled
   end
 
   def inspect_bucket(conn, name_root, settings) do
