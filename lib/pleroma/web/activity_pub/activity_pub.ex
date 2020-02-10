@@ -770,13 +770,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
-  def fetch_instance_activities(params) do
+  def fetch_statuses(reading_user, params) do
     params =
       params
       |> Map.put("type", ["Create", "Announce"])
-      |> Map.put("instance", params["instance"])
 
-    fetch_activities([Pleroma.Constants.as_public()], params, :offset)
+    recipients =
+      user_activities_recipients(%{
+        "godmode" => params["godmode"],
+        "reading_user" => reading_user
+      })
+
+    fetch_activities(recipients, params, :offset)
     |> Enum.reverse()
   end
 
