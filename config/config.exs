@@ -257,7 +257,8 @@ config :pleroma, :instance,
   account_field_name_length: 512,
   account_field_value_length: 2048,
   external_user_synchronization: true,
-  extended_nickname_format: true
+  extended_nickname_format: true,
+  cleanup_attachments: false
 
 config :pleroma, :feed,
   post_title: %{
@@ -500,7 +501,6 @@ config :pleroma, :fetch_initial_posts,
 
 config :auto_linker,
   opts: [
-    scheme: true,
     extra: true,
     # TODO: Set to :no_scheme when it works properly
     validate_tld: true,

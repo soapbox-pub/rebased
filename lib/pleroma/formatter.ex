@@ -13,7 +13,8 @@ defmodule Pleroma.Formatter do
   @auto_linker_config hashtag: true,
                       hashtag_handler: &Pleroma.Formatter.hashtag_handler/4,
                       mention: true,
-                      mention_handler: &Pleroma.Formatter.mention_handler/4
+                      mention_handler: &Pleroma.Formatter.mention_handler/4,
+                      scheme: true
 
   def escape_mention_handler("@" <> nickname = mention, buffer, _, _) do
     case User.get_cached_by_nickname(nickname) do

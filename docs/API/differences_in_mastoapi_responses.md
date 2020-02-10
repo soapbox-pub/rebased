@@ -101,7 +101,7 @@ The `type` value is `move`. Has an additional field:
 
 - `target`: new account
 
-### EmojiReaction Notification
+### EmojiReact Notification
 
 The `type` value is `pleroma:emoji_reaction`. Has these fields:
 

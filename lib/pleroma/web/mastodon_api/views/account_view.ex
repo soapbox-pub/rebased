@@ -67,7 +67,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp do_render("show.json", %{user: user} = opts) do
-    display_name = HTML.strip_tags(user.name || user.nickname)
+    display_name = user.name || user.nickname
 
     image = User.avatar_url(user) |> MediaProxy.url()
     header = User.banner_url(user) |> MediaProxy.url()
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       |> User.fields()
       |> Enum.map(fn %{"name" => name, "value" => value} ->
         %{
-          "name" => Pleroma.HTML.strip_tags(name),
+          "name" => name,
           "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
         }
       end)

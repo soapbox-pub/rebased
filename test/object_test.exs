@@ -76,8 +76,9 @@ defmodule Pleroma.ObjectTest do
   describe "delete attachments" do
     clear_config([Pleroma.Upload])
 
-    test "in subdirectories" do
+    test "Disabled via config" do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      Pleroma.Config.put([:instance, :cleanup_attachments], false)
 
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -103,6 +104,41 @@ defmodule Pleroma.ObjectTest do
 
       ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
 
+      assert Object.get_by_id(note.id).data["deleted"]
+      refute Object.get_by_id(attachment.id) == nil
+
+      assert {:ok, ["an_image.jpg"]} == File.ls("#{uploads_dir}/#{path}")
+    end
+
+    test "in subdirectories" do
+      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      Pleroma.Config.put([:instance, :cleanup_attachments], true)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      user = insert(:user)
+
+      {:ok, %Object{} = attachment} =
+        Pleroma.Web.ActivityPub.ActivityPub.upload(file, actor: user.ap_id)
+
+      %{data: %{"attachment" => [%{"url" => [%{"href" => href}]}]}} =
+        note = insert(:note, %{user: user, data: %{"attachment" => [attachment.data]}})
+
+      uploads_dir = Pleroma.Config.get!([Pleroma.Uploaders.Local, :uploads])
+
+      path = href |> Path.dirname() |> Path.basename()
+
+      assert {:ok, ["an_image.jpg"]} == File.ls("#{uploads_dir}/#{path}")
+
+      Object.delete(note)
+
+      ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
+
+      assert Object.get_by_id(note.id).data["deleted"]
       assert Object.get_by_id(attachment.id) == nil
 
       assert {:ok, []} == File.ls("#{uploads_dir}/#{path}")
@@ -111,6 +147,7 @@ defmodule Pleroma.ObjectTest do
     test "with dedupe enabled" do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
       Pleroma.Config.put([Pleroma.Upload, :filters], [Pleroma.Upload.Filter.Dedupe])
+      Pleroma.Config.put([:instance, :cleanup_attachments], true)
 
       uploads_dir = Pleroma.Config.get!([Pleroma.Uploaders.Local, :uploads])
 
@@ -139,6 +176,7 @@ defmodule Pleroma.ObjectTest do
 
       ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
 
+      assert Object.get_by_id(note.id).data["deleted"]
       assert Object.get_by_id(attachment.id) == nil
       assert {:ok, files} = File.ls(uploads_dir)
       refute filename in files
@@ -146,6 +184,7 @@ defmodule Pleroma.ObjectTest do
 
     test "with objects that have legacy data.url attribute" do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      Pleroma.Config.put([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -173,6 +212,7 @@ defmodule Pleroma.ObjectTest do
 
       ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
 
+      assert Object.get_by_id(note.id).data["deleted"]
       assert Object.get_by_id(attachment.id) == nil
 
       assert {:ok, []} == File.ls("#{uploads_dir}/#{path}")
@@ -181,6 +221,7 @@ defmodule Pleroma.ObjectTest do
     test "With custom base_url" do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
       Pleroma.Config.put([Pleroma.Upload, :base_url], "https://sub.domain.tld/dir/")
+      Pleroma.Config.put([:instance, :cleanup_attachments], true)
 
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -206,6 +247,7 @@ defmodule Pleroma.ObjectTest do
 
       ObanHelpers.perform(all_enqueued(worker: Pleroma.Workers.AttachmentsCleanupWorker))
 
+      assert Object.get_by_id(note.id).data["deleted"]
       assert Object.get_by_id(attachment.id) == nil
 
       assert {:ok, []} == File.ls("#{uploads_dir}/#{path}")
