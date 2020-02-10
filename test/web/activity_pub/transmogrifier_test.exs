@@ -1350,27 +1350,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     end
   end
 
-  describe "`replies` handling in handle_incoming/2" do
-    setup do
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
-
-      items = ["https://shitposter.club/notice/2827873", "https://shitposter.club/notice/7387606"]
-      collection = %{"items" => items}
-      %{data: data, items: items, collection: collection}
+  describe "handle_incoming/2: `replies` handling:" do
+    clear_config([:activitypub, :note_replies_output_limit]) do
+      Pleroma.Config.put([:activitypub, :note_replies_output_limit], 5)
     end
 
-    # Mastodon wraps reply URIs in `replies->first->items`
-    test "with wrapped `replies` collection, it schedules background fetching of items", %{
-      data: data,
-      items: items,
-      collection: collection
-    } do
-      replies = %{"first" => collection}
+    test "with Mastodon-formatted `replies` collection, it schedules background fetching of items" do
+      data =
+        "test/fixtures/mastodon-post-activity.json"
+        |> File.read!()
+        |> Poison.decode!()
 
-      object = Map.put(data["object"], "replies", replies)
-      data = Map.put(data, "object", object)
+      items = get_in(data, ["object", "replies", "first", "items"])
+      assert length(items) > 0
+
       {:ok, _activity} = Transmogrifier.handle_incoming(data)
 
       for id <- items do
@@ -1379,19 +1372,27 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       end
     end
 
-    # Pleroma outputs reply URIs as `replies->items`
-    test "it schedules background fetching of unwrapped `replies` collection items", %{
-      data: data,
-      items: items,
-      collection: collection
-    } do
-      replies = collection
+    test "with Pleroma-formatted `replies` collection, it schedules background fetching of items" do
+      user = insert(:user)
 
-      object = Map.put(data["object"], "replies", replies)
-      data = Map.put(data, "object", object)
-      {:ok, _activity} = Transmogrifier.handle_incoming(data)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "post1"})
 
-      for id <- items do
+      {:ok, reply1} =
+        CommonAPI.post(user, %{"status" => "reply1", "in_reply_to_status_id" => activity.id})
+
+      {:ok, reply2} =
+        CommonAPI.post(user, %{"status" => "reply2", "in_reply_to_status_id" => activity.id})
+
+      replies_uris = Enum.map([reply1, reply2], fn a -> a.object.data["id"] end)
+
+      {:ok, federation_output} = Transmogrifier.prepare_outgoing(activity.data)
+
+      Repo.delete(activity.object)
+      Repo.delete(activity)
+
+      {:ok, _activity} = Transmogrifier.handle_incoming(federation_output)
+
+      for id <- replies_uris do
         job_args = %{"op" => "fetch_remote", "id" => id}
         assert_enqueued(worker: Pleroma.Workers.RemoteFetcherWorker, args: job_args)
       end
