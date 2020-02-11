@@ -1,8 +1,8 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Workers.NewUsersDigestWorker do
+defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
   alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.User
@@ -48,11 +48,13 @@ defmodule Pleroma.Workers.NewUsersDigestWorker do
           {user, total_statuses, latest_status}
         end)
 
-      %{is_admin: true}
-      |> User.Query.build()
-      |> Repo.all()
-      |> Enum.map(&Pleroma.Emails.NewUsersDigestEmail.new_users(&1, users_and_statuses))
-      |> Enum.each(&Pleroma.Emails.Mailer.deliver/1)
+      if users_and_statuses != [] do
+        %{is_admin: true}
+        |> User.Query.build()
+        |> Repo.all()
+        |> Enum.map(&Pleroma.Emails.NewUsersDigestEmail.new_users(&1, users_and_statuses))
+        |> Enum.each(&Pleroma.Emails.Mailer.deliver/1)
+      end
     end
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.NewUsersDigestEmail do
@@ -12,14 +12,10 @@ defmodule Pleroma.Emails.NewUsersDigestEmail do
   def new_users(to, users_and_statuses) do
     instance_name = Pleroma.Config.get([:instance, :name])
     styling = Pleroma.Config.get([Pleroma.Emails.UserEmail, :styling])
-    logo = Pleroma.Config.get([Pleroma.Emails.UserEmail, :logo])
 
-    logo_path =
-      if is_nil(logo) do
-        Path.join(:code.priv_dir(:pleroma), "static/static/logo.png")
-      else
-        Path.join(Pleroma.Config.get([:instance, :static_dir]), logo)
-      end
+    logo_url =
+      Pleroma.Web.Endpoint.url() <>
+        Pleroma.Config.get([:frontend_configurations, :pleroma_fe, :logo])
 
     new()
     |> to({to.name, to.email})
@@ -29,8 +25,8 @@ defmodule Pleroma.Emails.NewUsersDigestEmail do
       title: "New Users",
       users_and_statuses: users_and_statuses,
       instance: instance_name,
-      styling: styling
+      styling: styling,
+      logo_url: logo_url
     })
-    |> attachment(Swoosh.Attachment.new(logo_path, filename: "logo.png", type: :inline))
   end
 end
