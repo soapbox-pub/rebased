@@ -7,11 +7,14 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
   alias Pleroma.Web.RichMedia.Parsers.TwitterCard
 
   test "returns error when html not contains twitter card" do
-    assert TwitterCard.parse("", %{}) == {:error, "No twitter card metadata found"}
+    assert TwitterCard.parse([{"html", [], [{"head", [], []}, {"body", [], []}]}], %{}) ==
+             {:error, "No twitter card metadata found"}
   end
 
   test "parses twitter card with only name attributes" do
-    html = File.read!("test/fixtures/nypd-facial-recognition-children-teenagers3.html")
+    html =
+      File.read!("test/fixtures/nypd-facial-recognition-children-teenagers3.html")
+      |> Floki.parse_document!()
 
     assert TwitterCard.parse(html, %{}) ==
              {:ok,
@@ -26,7 +29,9 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
   end
 
   test "parses twitter card with only property attributes" do
-    html = File.read!("test/fixtures/nypd-facial-recognition-children-teenagers2.html")
+    html =
+      File.read!("test/fixtures/nypd-facial-recognition-children-teenagers2.html")
+      |> Floki.parse_document!()
 
     assert TwitterCard.parse(html, %{}) ==
              {:ok,
@@ -45,7 +50,9 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
   end
 
   test "parses twitter card with name & property attributes" do
-    html = File.read!("test/fixtures/nypd-facial-recognition-children-teenagers.html")
+    html =
+      File.read!("test/fixtures/nypd-facial-recognition-children-teenagers.html")
+      |> Floki.parse_document!()
 
     assert TwitterCard.parse(html, %{}) ==
              {:ok,
@@ -73,7 +80,8 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
         "YTQ5MF9EQVIgZXhodW1hdGlvbiBvZiBNYXJnYXJldCBDb3JiaW4gZ3JhdmUgMTkyNi5qcGciXSxbInAiLCJjb252ZXJ0IiwiIl0sWyJwIiwiY29udmVydCIsIi1xdWFsaXR5IDgxIC1hdXRvLW9" <>
         "yaWVudCJdLFsicCIsInRodW1iIiwiNjAweD4iXV0/DAR%20exhumation%20of%20Margaret%20Corbin%20grave%201926.jpg"
 
-    html = File.read!("test/fixtures/margaret-corbin-grave-west-point.html")
+    html =
+      File.read!("test/fixtures/margaret-corbin-grave-west-point.html") |> Floki.parse_document!()
 
     assert TwitterCard.parse(html, %{}) ==
              {:ok,
@@ -87,7 +95,9 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
   end
 
   test "takes first founded title in html head if there is html markup error" do
-    html = File.read!("test/fixtures/nypd-facial-recognition-children-teenagers4.html")
+    html =
+      File.read!("test/fixtures/nypd-facial-recognition-children-teenagers4.html")
+      |> Floki.parse_document!()
 
     assert TwitterCard.parse(html, %{}) ==
              {:ok,
