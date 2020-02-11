@@ -457,6 +457,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert id == to_string(other_user.id)
     end
 
+    test "cancelling follow request", %{conn: conn} do
+      %{id: other_user_id} = insert(:user, %{locked: true})
+
+      assert %{"id" => ^other_user_id, "following" => false, "requested" => true} =
+               conn |> post("/api/v1/accounts/#{other_user_id}/follow") |> json_response(:ok)
+
+      assert %{"id" => ^other_user_id, "following" => false, "requested" => false} =
+               conn |> post("/api/v1/accounts/#{other_user_id}/unfollow") |> json_response(:ok)
+    end
+
     test "following without reblogs" do
       %{conn: conn} = oauth_access(["follow", "read:statuses"])
       followed = insert(:user)

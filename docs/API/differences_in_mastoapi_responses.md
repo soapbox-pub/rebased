@@ -88,6 +88,9 @@ Behavior has changed:
 
 - `/api/v1/accounts/search`: Does not require authentication
 
+## Search (global)
+
+Unlisted posts are available in search results, they are considered to be public posts that shouldn't be shown in local/federated timeline.
 
 ## Notifications
 

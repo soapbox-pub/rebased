@@ -54,6 +54,12 @@ defmodule Pleroma.Tests.Helpers do
           clear_config_all: 2
         ]
 
+      def to_datetime(naive_datetime) do
+        naive_datetime
+        |> DateTime.from_naive!("Etc/UTC")
+        |> DateTime.truncate(:second)
+      end
+
       def collect_ids(collection) do
         collection
         |> Enum.map(& &1.id)

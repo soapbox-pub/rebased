@@ -490,6 +490,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.one()
   end
 
+  def fetch_latest_undo(%User{ap_id: ap_id}) do
+    "Undo"
+    |> Activity.Queries.by_type()
+    |> where(actor: ^ap_id)
+    |> order_by([activity], fragment("? desc nulls last", activity.id))
+    |> limit(1)
+    |> Repo.one()
+  end
+
   def get_latest_reaction(internal_activity_id, %{ap_id: ap_id}, emoji) do
     %{data: %{"object" => object_ap_id}} = Activity.get_by_id(internal_activity_id)
 

@@ -63,7 +63,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :swarm],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -108,8 +108,7 @@ defmodule Pleroma.Mixfile do
       {:ecto_enum, "~> 1.4"},
       {:ecto_sql, "~> 3.3.2"},
       {:postgrex, ">= 0.13.5"},
-      {:oban, "~> 0.12.0"},
-      {:quantum, "~> 2.3"},
+      {:oban, "~> 0.12.1"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
@@ -163,7 +162,7 @@ defmodule Pleroma.Mixfile do
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
-      {:excoveralls, "~> 0.11.1", only: :test},
+      {:excoveralls, "~> 0.12.1", only: :test},
       {:flake_id, "~> 0.1.0"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",

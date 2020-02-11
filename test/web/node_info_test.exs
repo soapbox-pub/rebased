@@ -6,6 +6,7 @@ defmodule Pleroma.Web.NodeInfoTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
+  clear_config([:mrf_simple])
 
   test "GET /.well-known/nodeinfo", %{conn: conn} do
     links =

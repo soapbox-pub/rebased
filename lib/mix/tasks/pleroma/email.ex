@@ -1,5 +1,6 @@
 defmodule Mix.Tasks.Pleroma.Email do
   use Mix.Task
+  import Mix.Pleroma
 
   @shortdoc "Simple Email test"
   @moduledoc File.read!("docs/administration/CLI_tasks/email.md")
@@ -18,8 +19,6 @@ defmodule Mix.Tasks.Pleroma.Email do
     email = Pleroma.Emails.AdminEmail.test_email(options[:to])
     {:ok, _} = Pleroma.Emails.Mailer.deliver(email)
 
-    Mix.shell().info(
-      "Test email has been sent to #{inspect(email.to)} from #{inspect(email.from)}"
-    )
+    shell_info("Test email has been sent to #{inspect(email.to)} from #{inspect(email.from)}")
   end
 end
