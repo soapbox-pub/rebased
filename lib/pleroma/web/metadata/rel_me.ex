@@ -8,10 +8,8 @@ defmodule Pleroma.Web.Metadata.Providers.RelMe do
 
   @impl Provider
   def build_tags(%{user: user}) do
-    bio_tree = Floki.parse_fragment!(user.bio)
-
-    (Floki.attribute(bio_tree, "link[rel~=me]", "href") ++
-       Floki.attribute(bio_tree, "a[rel~=me]", "href"))
+    (Floki.attribute(user.bio, "link[rel~=me]", "href") ++
+       Floki.attribute(user.bio, "a[rel~=me]", "href"))
     |> Enum.map(fn link ->
       {:link, [rel: "me", href: link], []}
     end)
