@@ -2,16 +2,24 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.DigestEmailDaemonTest do
+defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
   use Pleroma.DataCase
+
   import Pleroma.Factory
 
-  alias Pleroma.Daemons.DigestEmailDaemon
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
+  clear_config([:email_notifications, :digest])
+
   test "it sends digest emails" do
+    Pleroma.Config.put([:email_notifications, :digest], %{
+      active: true,
+      inactivity_threshold: 7,
+      interval: 7
+    })
+
     user = insert(:user)
 
     date =
@@ -23,8 +31,7 @@ defmodule Pleroma.DigestEmailDaemonTest do
     {:ok, _} = User.switch_email_notifications(user2, "digest", true)
     CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}!"})
 
-    DigestEmailDaemon.perform()
-    ObanHelpers.perform_all()
+    Pleroma.Workers.Cron.DigestEmailsWorker.perform(:opts, :pid)
     # Performing job(s) enqueued at previous step
     ObanHelpers.perform_all()
 
