@@ -12,6 +12,7 @@ defmodule Pleroma.User do
   alias Comeonin.Pbkdf2
   alias Ecto.Multi
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
   alias Pleroma.FollowingRelationship
@@ -35,7 +36,7 @@ defmodule Pleroma.User do
   require Logger
 
   @type t :: %__MODULE__{}
-
+  @type account_status :: :active | :deactivated | :password_reset_pending | :confirmation_pending
   @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
@@ -216,14 +217,21 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "Returns if the user should be allowed to authenticate"
-  def auth_active?(%User{deactivated: true}), do: false
+  @doc "Returns status account"
+  @spec account_status(User.t()) :: account_status()
+  def account_status(%User{deactivated: true}), do: :deactivated
+  def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
 
-  def auth_active?(%User{confirmation_pending: true}),
-    do: !Pleroma.Config.get([:instance, :account_activation_required])
+  def account_status(%User{confirmation_pending: true}) do
+    case Config.get([:instance, :account_activation_required]) do
+      true -> :confirmation_pending
+      _ -> :active
+    end
+  end
 
-  def auth_active?(%User{}), do: true
+  def account_status(%User{}), do: :active
 
+  @spec visible_for?(User.t(), User.t() | nil) :: boolean()
   def visible_for?(user, for_user \\ nil)
 
   def visible_for?(%User{invisible: true}, _), do: false
@@ -231,15 +239,17 @@ defmodule Pleroma.User do
   def visible_for?(%User{id: user_id}, %User{id: for_id}) when user_id == for_id, do: true
 
   def visible_for?(%User{} = user, for_user) do
-    auth_active?(user) || superuser?(for_user)
+    account_status(user) == :active || superuser?(for_user)
   end
 
   def visible_for?(_, _), do: false
 
+  @spec superuser?(User.t()) :: boolean()
   def superuser?(%User{local: true, is_admin: true}), do: true
   def superuser?(%User{local: true, is_moderator: true}), do: true
   def superuser?(_), do: false
 
+  @spec invisible?(User.t()) :: boolean()
   def invisible?(%User{invisible: true}), do: true
   def invisible?(_), do: false
 
@@ -637,24 +647,47 @@ defmodule Pleroma.User do
     end
   end
 
+  def unfollow(%User{ap_id: ap_id}, %User{ap_id: ap_id}) do
+    {:error, "Not subscribed!"}
+  end
+
   def unfollow(%User{} = follower, %User{} = followed) do
-    if following?(follower, followed) and follower.ap_id != followed.ap_id do
-      FollowingRelationship.unfollow(follower, followed)
+    case get_follow_state(follower, followed) do
+      state when state in ["accept", "pending"] ->
+        FollowingRelationship.unfollow(follower, followed)
+        {:ok, followed} = update_follower_count(followed)
 
-      {:ok, followed} = update_follower_count(followed)
+        {:ok, follower} =
+          follower
+          |> update_following_count()
+          |> set_cache()
 
-      {:ok, follower} =
-        follower
-        |> update_following_count()
-        |> set_cache()
+        {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
 
-      {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
-    else
-      {:error, "Not subscribed!"}
+      nil ->
+        {:error, "Not subscribed!"}
     end
   end
 
   defdelegate following?(follower, followed), to: FollowingRelationship
+
+  def get_follow_state(%User{} = follower, %User{} = following) do
+    following_relationship = FollowingRelationship.get(follower, following)
+
+    case {following_relationship, following.local} do
+      {nil, false} ->
+        case Utils.fetch_latest_follow(follower, following) do
+          %{data: %{"state" => state}} when state in ["pending", "accept"] -> state
+          _ -> nil
+        end
+
+      {%{state: state}, _} ->
+        state
+
+      {nil, _} ->
+        nil
+    end
+  end
 
   def locked?(%User{} = user) do
     user.locked || false
@@ -1502,7 +1535,7 @@ defmodule Pleroma.User do
     data
     |> Map.put(:name, blank?(data[:name]) || data[:nickname])
     |> remote_user_creation()
-    |> Repo.insert(on_conflict: :replace_all_except_primary_key, conflict_target: :nickname)
+    |> Repo.insert(on_conflict: {:replace_all_except, [:id]}, conflict_target: :nickname)
     |> set_cache()
   end
 

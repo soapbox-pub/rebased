@@ -8,7 +8,7 @@ defmodule Pleroma.Mixfile do
       elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
-      elixirc_options: [warnings_as_errors: true],
+      elixirc_options: [warnings_as_errors: warnings_as_errors(Mix.env())],
       xref: [exclude: [:eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -63,7 +63,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :swarm],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -72,6 +72,11 @@ defmodule Pleroma.Mixfile do
   defp elixirc_paths(:benchmark), do: ["lib", "benchmarks"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp warnings_as_errors(:prod), do: false
+  # Uncomment this if you need testing configurable_from_database logic
+  # defp warnings_as_errors(:dev), do: false
+  defp warnings_as_errors(_), do: true
 
   # Specifies OAuth dependencies.
   defp oauth_deps do
@@ -101,10 +106,9 @@ defmodule Pleroma.Mixfile do
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_enum, "~> 1.4"},
-      {:ecto_sql, "~> 3.2"},
+      {:ecto_sql, "~> 3.3.2"},
       {:postgrex, ">= 0.13.5"},
-      {:oban, "~> 0.12.0"},
-      {:quantum, "~> 2.3"},
+      {:oban, "~> 0.12.1"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
@@ -158,7 +162,7 @@ defmodule Pleroma.Mixfile do
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
-      {:excoveralls, "~> 0.11.1", only: :test},
+      {:excoveralls, "~> 0.12.1", only: :test},
       {:flake_id, "~> 0.1.0"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
@@ -166,7 +170,8 @@ defmodule Pleroma.Mixfile do
       {:captcha,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
-      {:mox, "~> 0.5", only: :test}
+      {:mox, "~> 0.5", only: :test},
+      {:restarter, path: "./restarter"}
     ] ++ oauth_deps()
   end
 

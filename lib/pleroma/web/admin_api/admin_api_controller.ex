@@ -97,7 +97,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read"], admin: true}
-    when action in [:config_show, :migrate_from_db, :list_log]
+    when action in [:config_show, :list_log]
   )
 
   plug(
@@ -793,33 +793,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> Plug.Conn.send_resp(200, @descriptions_json)
   end
 
-  def migrate_from_db(conn, _params) do
-    with :ok <- configurable_from_database(conn) do
-      Mix.Tasks.Pleroma.Config.run([
-        "migrate_from_db",
-        "--env",
-        to_string(Pleroma.Config.get(:env)),
-        "-d"
-      ])
-
-      json(conn, %{})
-    end
-  end
-
   def config_show(conn, %{"only_db" => true}) do
     with :ok <- configurable_from_database(conn) do
       configs = Pleroma.Repo.all(ConfigDB)
 
-      if configs == [] do
-        errors(
-          conn,
-          {:error, "To use configuration from database migrate your settings to database."}
-        )
-      else
-        conn
-        |> put_view(ConfigView)
-        |> render("index.json", %{configs: configs})
-      end
+      conn
+      |> put_view(ConfigView)
+      |> render("index.json", %{configs: configs})
     end
   end
 
@@ -827,45 +807,38 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with :ok <- configurable_from_database(conn) do
       configs = ConfigDB.get_all_as_keyword()
 
-      if configs == [] do
-        errors(
-          conn,
-          {:error, "To use configuration from database migrate your settings to database."}
-        )
-      else
-        merged =
-          Pleroma.Config.Holder.config()
-          |> ConfigDB.merge(configs)
-          |> Enum.map(fn {group, values} ->
-            Enum.map(values, fn {key, value} ->
-              db =
-                if configs[group][key] do
-                  ConfigDB.get_db_keys(configs[group][key], key)
-                end
+      merged =
+        Pleroma.Config.Holder.config()
+        |> ConfigDB.merge(configs)
+        |> Enum.map(fn {group, values} ->
+          Enum.map(values, fn {key, value} ->
+            db =
+              if configs[group][key] do
+                ConfigDB.get_db_keys(configs[group][key], key)
+              end
 
-              db_value = configs[group][key]
+            db_value = configs[group][key]
 
-              merged_value =
-                if !is_nil(db_value) and Keyword.keyword?(db_value) and
-                     ConfigDB.sub_key_full_update?(group, key, Keyword.keys(db_value)) do
-                  ConfigDB.merge_group(group, key, value, db_value)
-                else
-                  value
-                end
+            merged_value =
+              if !is_nil(db_value) and Keyword.keyword?(db_value) and
+                   ConfigDB.sub_key_full_update?(group, key, Keyword.keys(db_value)) do
+                ConfigDB.merge_group(group, key, value, db_value)
+              else
+                value
+              end
 
-              setting = %{
-                group: ConfigDB.convert(group),
-                key: ConfigDB.convert(key),
-                value: ConfigDB.convert(merged_value)
-              }
+            setting = %{
+              group: ConfigDB.convert(group),
+              key: ConfigDB.convert(key),
+              value: ConfigDB.convert(merged_value)
+            }
 
-              if db, do: Map.put(setting, :db, db), else: setting
-            end)
+            if db, do: Map.put(setting, :db, db), else: setting
           end)
-          |> List.flatten()
+        end)
+        |> List.flatten()
 
-        json(conn, %{configs: merged})
-      end
+      json(conn, %{configs: merged})
     end
   end
 
@@ -890,17 +863,36 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
           Ecto.get_meta(config, :state) == :deleted
         end)
 
-      Pleroma.Config.TransferTask.load_and_update_env(deleted)
+      Pleroma.Config.TransferTask.load_and_update_env(deleted, false)
 
-      Mix.Tasks.Pleroma.Config.run([
-        "migrate_from_db",
-        "--env",
-        to_string(Pleroma.Config.get(:env))
-      ])
+      need_reboot? =
+        Enum.any?(updated, fn config ->
+          group = ConfigDB.from_string(config.group)
+          key = ConfigDB.from_string(config.key)
+          value = ConfigDB.from_binary(config.value)
+          Pleroma.Config.TransferTask.pleroma_need_restart?(group, key, value)
+        end)
+
+      response = %{configs: updated}
+
+      response =
+        if need_reboot?, do: Map.put(response, :need_reboot, need_reboot?), else: response
 
       conn
       |> put_view(ConfigView)
-      |> render("index.json", %{configs: updated})
+      |> render("index.json", response)
+    end
+  end
+
+  def restart(conn, _params) do
+    with :ok <- configurable_from_database(conn) do
+      if Pleroma.Config.get(:env) == :test do
+        Logger.warn("pleroma restarted")
+      else
+        send(Restarter.Pleroma, {:restart, 50})
+      end
+
+      json(conn, %{})
     end
   end
 

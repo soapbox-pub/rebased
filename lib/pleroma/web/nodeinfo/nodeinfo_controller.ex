@@ -69,9 +69,6 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         if Config.get([:chat, :enabled]) do
           "chat"
         end,
-        if Config.get([:suggestions, :enabled]) do
-          "suggestions"
-        end,
         if Config.get([:instance, :allow_relay]) do
           "relay"
         end,
@@ -104,11 +101,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         nodeDescription: Config.get([:instance, :description]),
         private: !Config.get([:instance, :public], true),
         suggestions: %{
-          enabled: Config.get([:suggestions, :enabled], false),
-          thirdPartyEngine: Config.get([:suggestions, :third_party_engine], ""),
-          timeout: Config.get([:suggestions, :timeout], 5000),
-          limit: Config.get([:suggestions, :limit], 23),
-          web: Config.get([:suggestions, :web], "")
+          enabled: false
         },
         staffAccounts: staff_accounts,
         federation: federation_response,

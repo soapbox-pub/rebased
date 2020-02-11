@@ -33,6 +33,7 @@ defmodule Pleroma.Application do
   def start(_type, _args) do
     Pleroma.HTML.compile_scrubbers()
     Pleroma.Config.DeprecationWarnings.warn()
+    Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
     Pleroma.Repo.check_migrations_applied!()
     setup_instrumenters()
     load_custom_modules()
@@ -41,12 +42,9 @@ defmodule Pleroma.Application do
     children =
       [
         Pleroma.Repo,
-        Pleroma.Scheduler,
         Pleroma.Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,
-        Pleroma.Daemons.ScheduledActivityDaemon,
-        Pleroma.Daemons.ActivityExpirationDaemon,
         Pleroma.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
@@ -57,7 +55,6 @@ defmodule Pleroma.Application do
           {Oban, Pleroma.Config.get(Oban)}
         ] ++
         task_children(@env) ++
-        oauth_cleanup_child(oauth_cleanup_enabled?()) ++
         streamer_child(@env) ++
         chat_child(@env, chat_enabled?()) ++
         [
@@ -159,19 +156,11 @@ defmodule Pleroma.Application do
 
   defp chat_enabled?, do: Pleroma.Config.get([:chat, :enabled])
 
-  defp oauth_cleanup_enabled?,
-    do: Pleroma.Config.get([:oauth2, :clean_expired_tokens], false)
-
   defp streamer_child(:test), do: []
 
   defp streamer_child(_) do
     [Pleroma.Web.Streamer.supervisor()]
   end
-
-  defp oauth_cleanup_child(true),
-    do: [Pleroma.Web.OAuth.Token.CleanWorker]
-
-  defp oauth_cleanup_child(_), do: []
 
   defp chat_child(_env, true) do
     [Pleroma.Web.ChatChannel.ChatChannelState]

@@ -6,6 +6,8 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
   alias Pleroma.Config
   import Plug.Conn
 
+  require Logger
+
   def init(opts), do: opts
 
   def call(conn, _options) do
@@ -88,6 +90,51 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
 
     (main_part ++ report ++ insecure)
     |> Enum.join("; ")
+  end
+
+  def warn_if_disabled do
+    unless Config.get([:http_security, :enabled]) do
+      Logger.warn("
+                                 .i;;;;i.
+                               iYcviii;vXY:
+                             .YXi       .i1c.
+                            .YC.     .    in7.
+                           .vc.   ......   ;1c.
+                           i7,   ..        .;1;
+                          i7,   .. ...      .Y1i
+                         ,7v     .6MMM@;     .YX,
+                        .7;.   ..IMMMMMM1     :t7.
+                       .;Y.     ;$MMMMMM9.     :tc.
+                       vY.   .. .nMMM@MMU.      ;1v.
+                      i7i   ...  .#MM@M@C. .....:71i
+                     it:   ....   $MMM@9;.,i;;;i,;tti
+                    :t7.  .....   0MMMWv.,iii:::,,;St.
+                   .nC.   .....   IMMMQ..,::::::,.,czX.
+                  .ct:   ....... .ZMMMI..,:::::::,,:76Y.
+                  c2:   ......,i..Y$M@t..:::::::,,..inZY
+                 vov   ......:ii..c$MBc..,,,,,,,,,,..iI9i
+                i9Y   ......iii:..7@MA,..,,,,,,,,,....;AA:
+               iIS.  ......:ii::..;@MI....,............;Ez.
+              .I9.  ......:i::::...8M1..................C0z.
+             .z9;  ......:i::::,.. .i:...................zWX.
+             vbv  ......,i::::,,.      ................. :AQY
+            c6Y.  .,...,::::,,..:t0@@QY. ................ :8bi
+           :6S. ..,,...,:::,,,..EMMMMMMI. ............... .;bZ,
+          :6o,  .,,,,..:::,,,..i#MMMMMM#v.................  YW2.
+         .n8i ..,,,,,,,::,,,,.. tMMMMM@C:.................. .1Wn
+         7Uc. .:::,,,,,::,,,,..   i1t;,..................... .UEi
+         7C...::::::::::::,,,,..        ....................  vSi.
+         ;1;...,,::::::,.........       ..................    Yz:
+          v97,.........                                     .voC.
+           izAotX7777777777777777777777777777777777777777Y7n92:
+             .;CoIIIIIUAA666666699999ZZZZZZZZZZZZZZZZZZZZ6ov.
+
+HTTP Security is disabled. Please re-enable it to prevent users from attacking
+your instance and your users via malicious posts:
+
+      config :pleroma, :http_security, enabled: true
+      ")
+    end
   end
 
   defp maybe_send_sts_header(conn, true) do

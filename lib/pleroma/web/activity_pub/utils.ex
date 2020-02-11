@@ -308,7 +308,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def make_emoji_reaction_data(user, object, emoji, activity_id) do
     make_like_data(user, object, activity_id)
-    |> Map.put("type", "EmojiReaction")
+    |> Map.put("type", "EmojiReact")
     |> Map.put("content", emoji)
   end
 
@@ -337,7 +337,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"content" => emoji, "actor" => actor}},
         object
       ) do
-    reactions = object.data["reactions"] || []
+    reactions = get_cached_emoji_reactions(object)
 
     new_reactions =
       case Enum.find_index(reactions, fn [candidate, _] -> emoji == candidate end) do
@@ -365,7 +365,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"content" => emoji, "actor" => actor}},
         object
       ) do
-    reactions = object.data["reactions"] || []
+    reactions = get_cached_emoji_reactions(object)
 
     new_reactions =
       case Enum.find_index(reactions, fn [candidate, _] -> emoji == candidate end) do
@@ -383,6 +383,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     count = emoji_count(new_reactions)
     update_element_in_object("reaction", new_reactions, object, count)
+  end
+
+  def get_cached_emoji_reactions(object) do
+    if is_list(object.data["reactions"]) do
+      object.data["reactions"]
+    else
+      []
+    end
   end
 
   @spec add_like_to_object(Activity.t(), Object.t()) ::
@@ -482,10 +490,19 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Repo.one()
   end
 
+  def fetch_latest_undo(%User{ap_id: ap_id}) do
+    "Undo"
+    |> Activity.Queries.by_type()
+    |> where(actor: ^ap_id)
+    |> order_by([activity], fragment("? desc nulls last", activity.id))
+    |> limit(1)
+    |> Repo.one()
+  end
+
   def get_latest_reaction(internal_activity_id, %{ap_id: ap_id}, emoji) do
     %{data: %{"object" => object_ap_id}} = Activity.get_by_id(internal_activity_id)
 
-    "EmojiReaction"
+    "EmojiReact"
     |> Activity.Queries.by_type()
     |> where(actor: ^ap_id)
     |> where([activity], fragment("?->>'content' = ?", activity.data, ^emoji))

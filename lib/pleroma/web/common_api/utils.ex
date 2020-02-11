@@ -179,9 +179,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         end)
 
       end_time =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(expires_in)
-        |> NaiveDateTime.to_iso8601()
+        DateTime.utc_now()
+        |> DateTime.add(expires_in)
+        |> DateTime.to_iso8601()
 
       key = if truthy_param?(data["poll"]["multiple"]), do: "anyOf", else: "oneOf"
       poll = %{"type" => "Question", key => option_notes, "closed" => end_time}

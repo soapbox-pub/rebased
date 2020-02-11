@@ -307,6 +307,15 @@ defmodule Pleroma.ConfigDBTest do
       assert ConfigDB.from_binary(binary) == Quack.Logger
     end
 
+    test "Swoosh.Adapters modules" do
+      binary = ConfigDB.transform("Swoosh.Adapters.SMTP")
+      assert binary == :erlang.term_to_binary(Swoosh.Adapters.SMTP)
+      assert ConfigDB.from_binary(binary) == Swoosh.Adapters.SMTP
+      binary = ConfigDB.transform("Swoosh.Adapters.AmazonSES")
+      assert binary == :erlang.term_to_binary(Swoosh.Adapters.AmazonSES)
+      assert ConfigDB.from_binary(binary) == Swoosh.Adapters.AmazonSES
+    end
+
     test "sigil" do
       binary = ConfigDB.transform("~r[comp[lL][aA][iI][nN]er]")
       assert binary == :erlang.term_to_binary(~r/comp[lL][aA][iI][nN]er/)

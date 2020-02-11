@@ -9,22 +9,43 @@ defmodule Pleroma.Stats do
 
   use GenServer
 
-  @interval 1000 * 60 * 60
+  @init_state %{
+    peers: [],
+    stats: %{
+      domain_count: 0,
+      status_count: 0,
+      user_count: 0
+    }
+  }
 
   def start_link(_) do
-    GenServer.start_link(__MODULE__, initial_data(), name: __MODULE__)
+    GenServer.start_link(
+      __MODULE__,
+      @init_state,
+      name: __MODULE__
+    )
   end
 
+  @doc "Performs update stats"
   def force_update do
     GenServer.call(__MODULE__, :force_update)
   end
 
+  @doc "Performs collect stats"
+  def do_collect do
+    GenServer.cast(__MODULE__, :run_update)
+  end
+
+  @doc "Returns stats data"
+  @spec get_stats() :: %{domain_count: integer(), status_count: integer(), user_count: integer()}
   def get_stats do
     %{stats: stats} = GenServer.call(__MODULE__, :get_state)
 
     stats
   end
 
+  @doc "Returns list peers"
+  @spec get_peers() :: list(String.t())
   def get_peers do
     %{peers: peers} = GenServer.call(__MODULE__, :get_state)
 
@@ -32,7 +53,6 @@ defmodule Pleroma.Stats do
   end
 
   def init(args) do
-    Process.send(self(), :run_update, [])
     {:ok, args}
   end
 
@@ -45,15 +65,10 @@ defmodule Pleroma.Stats do
     {:reply, state, state}
   end
 
-  def handle_info(:run_update, _state) do
+  def handle_cast(:run_update, _state) do
     new_stats = get_stat_data()
 
-    Process.send_after(self(), :run_update, @interval)
     {:noreply, new_stats}
-  end
-
-  defp initial_data do
-    %{peers: [], stats: %{}}
   end
 
   defp get_stat_data do
@@ -74,7 +89,11 @@ defmodule Pleroma.Stats do
 
     %{
       peers: peers,
-      stats: %{domain_count: domain_count, status_count: status_count, user_count: user_count}
+      stats: %{
+        domain_count: domain_count,
+        status_count: status_count,
+        user_count: user_count
+      }
     }
   end
 end
