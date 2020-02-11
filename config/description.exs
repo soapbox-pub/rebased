@@ -796,10 +796,10 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :no_attachment_links,
+        key: :attachment_links,
         type: :boolean,
         description:
-          "Set to `true` to disable automatically adding attachment link text to statuses"
+          "Enable to automatically add attachment link text to statuses"
       },
       %{
         key: :welcome_message,
