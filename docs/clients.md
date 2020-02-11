@@ -37,6 +37,11 @@ Feel free to contact us to be added to this list!
 - Platforms: Android
 - Features: Streaming Ready, Moderation, Text Formatting 
 
+### Kyclos
+- Source Code: <https://git.pleroma.social/pleroma/harbour-kyclos>
+- Platforms: SailfishOS
+- Features: No Streaming
+
 ### Nekonium
 - Homepage: [F-Droid Repository](https://repo.gdgd.jp.net/), [Google Play](https://play.google.com/store/apps/details?id=com.apps.nekonium), [Amazon](https://www.amazon.co.jp/dp/B076FXPRBC/)
 - Source: <https://gogs.gdgd.jp.net/lin/nekonium>
