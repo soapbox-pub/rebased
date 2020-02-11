@@ -53,10 +53,10 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
             |> Enum.filter(& &1)
 
           %{
-            emoji: emoji,
+            name: emoji,
             count: length(users),
             accounts: AccountView.render("index.json", %{users: users, for: user, as: :user}),
-            reacted: !!(user && user.ap_id in user_ap_ids)
+            me: !!(user && user.ap_id in user_ap_ids)
           }
         end)
 

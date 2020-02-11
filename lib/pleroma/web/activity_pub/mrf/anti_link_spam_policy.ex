@@ -17,6 +17,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
   # does the post contain links?
   defp contains_links?(%{"content" => content} = _object) do
     content
+    |> Floki.parse_fragment!()
     |> Floki.filter_out("a.mention,a.hashtag,a[rel~=\"tag\"],a.zrl")
     |> Floki.attribute("a", "href")
     |> length() > 0
