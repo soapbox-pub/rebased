@@ -124,15 +124,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       ) do
     params = Map.put(params, "in_reply_to_status_id", params["in_reply_to_id"])
 
-    if ScheduledActivity.far_enough?(scheduled_at) do
-      with {:ok, scheduled_activity} <-
-             ScheduledActivity.create(user, %{"params" => params, "scheduled_at" => scheduled_at}) do
-        conn
-        |> put_view(ScheduledActivityView)
-        |> render("show.json", scheduled_activity: scheduled_activity)
-      end
+    with {:far_enough, true} <- {:far_enough, ScheduledActivity.far_enough?(scheduled_at)},
+         attrs <- %{"params" => params, "scheduled_at" => scheduled_at},
+         {:ok, scheduled_activity} <- ScheduledActivity.create(user, attrs) do
+      conn
+      |> put_view(ScheduledActivityView)
+      |> render("show.json", scheduled_activity: scheduled_activity)
     else
-      create(conn, Map.drop(params, ["scheduled_at"]))
+      {:far_enough, _} ->
+        create(conn, Map.drop(params, ["scheduled_at"]))
+
+      error ->
+        error
     end
   end
 
