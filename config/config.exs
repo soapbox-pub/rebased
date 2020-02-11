@@ -361,6 +361,8 @@ config :pleroma, :mrf_keyword,
 
 config :pleroma, :mrf_subchain, match_actor: %{}
 
+config :pleroma, :mrf_activity_expiration, days: 365
+
 config :pleroma, :mrf_vocabulary,
   accept: [],
   reject: []

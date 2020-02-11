@@ -8,11 +8,8 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   def filter(policies, %{} = object) do
     policies
     |> Enum.reduce({:ok, object}, fn
-      policy, {:ok, object} ->
-        policy.filter(object)
-
-      _, error ->
-        error
+      policy, {:ok, object} -> policy.filter(object)
+      _, error -> error
     end)
   end
 
