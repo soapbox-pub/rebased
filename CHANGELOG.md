@@ -73,6 +73,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Support for custom Elixir modules (such as MRF policies)
 - User settings: Add _This account is a_ option.
 - OAuth: admin scopes support (relevant setting: `[:auth, :enforce_oauth_admin_scope_usage]`).
+- New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires OTP version older that 22.2, otherwise pleroma won’t start. For hackney OTP update is not required.
 <details>
   <summary>API Changes</summary>
 

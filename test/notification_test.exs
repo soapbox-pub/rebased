@@ -649,6 +649,13 @@ defmodule Pleroma.NotificationTest do
         "object" => remote_user.ap_id
       }
 
+      remote_user_url = remote_user.ap_id
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^remote_user_url} ->
+          %Tesla.Env{status: 404, body: ""}
+      end)
+
       {:ok, _delete_activity} = Transmogrifier.handle_incoming(delete_user_message)
       ObanHelpers.perform_all()
 

@@ -4,13 +4,13 @@
 
 defmodule Mix.Tasks.Pleroma.Emoji do
   use Mix.Task
+  import Mix.Pleroma
 
   @shortdoc "Manages emoji packs"
   @moduledoc File.read!("docs/administration/CLI_tasks/emoji.md")
 
   def run(["ls-packs" | args]) do
-    Mix.Pleroma.start_pleroma()
-    Application.ensure_all_started(:hackney)
+    start_pleroma()
 
     {options, [], []} = parse_global_opts(args)
 
@@ -36,8 +36,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   end
 
   def run(["get-packs" | args]) do
-    Mix.Pleroma.start_pleroma()
-    Application.ensure_all_started(:hackney)
+    start_pleroma()
 
     {options, pack_names, []} = parse_global_opts(args)
 
@@ -135,7 +134,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   end
 
   def run(["gen-pack", src]) do
-    Application.ensure_all_started(:hackney)
+    start_pleroma()
 
     proposed_name = Path.basename(src) |> Path.rootname()
     name = String.trim(IO.gets("Pack name [#{proposed_name}]: "))

@@ -2439,7 +2439,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "value" => "Tesla.Adapter.Httpc",
                    "db" => [":adapter"]
                  }
-               ]
+               ],
+               "need_reboot" => true
              }
     end
 
@@ -2526,7 +2527,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                 %{"tuple" => [":seconds_valid", 60]},
                 %{"tuple" => [":path", ""]},
                 %{"tuple" => [":key1", nil]},
-                %{"tuple" => [":partial_chain", "&:hackney_connect.partial_chain/1"]},
                 %{"tuple" => [":regex1", "~r/https:\/\/example.com/"]},
                 %{"tuple" => [":regex2", "~r/https:\/\/example.com/u"]},
                 %{"tuple" => [":regex3", "~r/https:\/\/example.com/i"]},
@@ -2556,7 +2556,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                      %{"tuple" => [":seconds_valid", 60]},
                      %{"tuple" => [":path", ""]},
                      %{"tuple" => [":key1", nil]},
-                     %{"tuple" => [":partial_chain", "&:hackney_connect.partial_chain/1"]},
                      %{"tuple" => [":regex1", "~r/https:\\/\\/example.com/"]},
                      %{"tuple" => [":regex2", "~r/https:\\/\\/example.com/u"]},
                      %{"tuple" => [":regex3", "~r/https:\\/\\/example.com/i"]},
@@ -2569,7 +2568,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                      ":seconds_valid",
                      ":path",
                      ":key1",
-                     ":partial_chain",
                      ":regex1",
                      ":regex2",
                      ":regex3",
@@ -2583,7 +2581,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "value" => "Tesla.Adapter.Httpc",
                    "db" => [":adapter"]
                  }
-               ]
+               ],
+               "need_reboot" => true
              }
     end
 

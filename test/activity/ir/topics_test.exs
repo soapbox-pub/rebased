@@ -83,7 +83,7 @@ defmodule Pleroma.Activity.Ir.TopicsTest do
       assert Enum.member?(topics, "hashtag:bar")
     end
 
-    test "only converts strinngs to hash tags", %{
+    test "only converts strings to hash tags", %{
       activity: %{object: %{data: data} = object} = activity
     } do
       tagged_data = Map.put(data, "tag", [2])

@@ -368,8 +368,7 @@ Available caches:
 * `proxy_url`: an upstream proxy to fetch posts and/or media with, (default: `nil`)
 * `send_user_agent`: should we include a user agent with HTTP requests? (default: `true`)
 * `user_agent`: what user agent should we use? (default: `:default`), must be string or `:default`
-* `adapter`: array of hackney options
-
+* `adapter`: array of adapter options
 
 ### :hackney_pools
 
@@ -386,6 +385,39 @@ For each pool, the options are:
 
 * `max_connections` - how much connections a pool can hold
 * `timeout` - retention duration for connections
+
+
+### :connections_pool
+
+*For `gun` adapter*
+
+Advanced settings for connections pool. Pool with opened connections. These connections can be reused in worker pools.
+
+* `:receive_connection_timeout` - timeout to receive connection from pool. Default: 250ms.
+* `:max_connections` - maximum number of connections in the pool. Default: 250 connections.
+* `:retry` - number of retries, while `gun` will try to reconnect if connections goes down. Default: 5.
+* `:retry_timeout` - timeout while `gun` will try to reconnect. Default: 100ms.
+* `:await_up_timeout` - timeout while `gun` will wait until connection is up. Default: 5000ms.
+
+### :pools
+
+*For `gun` adapter*
+
+Advanced settings for workers pools.
+
+There's four pools used:
+
+* `:federation` for the federation jobs.
+  You may want this pool max_connections to be at least equal to the number of federator jobs + retry queue jobs.
+* `:media` for rich media, media proxy
+* `:upload` for uploaded media (if using a remote uploader and `proxy_remote: true`)
+* `:default` for other requests
+
+For each pool, the options are:
+
+* `:size` - how much workers the pool can hold
+* `:timeout` - timeout while `gun` will wait for response
+* `:max_overflow` - additional workers if pool is under load
 
 
 ## Captcha

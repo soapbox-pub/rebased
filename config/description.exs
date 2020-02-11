@@ -2728,7 +2728,7 @@ config :pleroma, :config_description, [
         key: :adapter,
         type: :module,
         description: "Tesla adapter",
-        suggestions: [Tesla.Adapter.Hackney]
+        suggestions: [Tesla.Adapter.Hackney, Tesla.Adapter.Gun]
       }
     ]
   },

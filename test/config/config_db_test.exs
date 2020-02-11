@@ -478,14 +478,6 @@ defmodule Pleroma.ConfigDBTest do
       assert ConfigDB.from_binary(binary) == [key: "value"]
     end
 
-    test "keyword with partial_chain key" do
-      binary =
-        ConfigDB.transform([%{"tuple" => [":partial_chain", "&:hackney_connect.partial_chain/1"]}])
-
-      assert binary == :erlang.term_to_binary(partial_chain: &:hackney_connect.partial_chain/1)
-      assert ConfigDB.from_binary(binary) == [partial_chain: &:hackney_connect.partial_chain/1]
-    end
-
     test "keyword" do
       binary =
         ConfigDB.transform([

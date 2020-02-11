@@ -278,8 +278,6 @@ defmodule Pleroma.ConfigDB do
     }
   end
 
-  defp do_convert({:partial_chain, entity}), do: %{"tuple" => [":partial_chain", inspect(entity)]}
-
   defp do_convert(entity) when is_tuple(entity) do
     value =
       entity
@@ -321,15 +319,6 @@ defmodule Pleroma.ConfigDB do
 
   defp do_transform(%{"tuple" => [":proxy_url", %{"tuple" => [type, host, port]}]}) do
     {:proxy_url, {do_transform_string(type), parse_host(host), port}}
-  end
-
-  defp do_transform(%{"tuple" => [":partial_chain", entity]}) do
-    {partial_chain, []} =
-      entity
-      |> String.replace(~r/[^\w|^{:,[|^,|^[|^\]^}|^\/|^\.|^"]^\s/, "")
-      |> Code.eval_string()
-
-    {:partial_chain, partial_chain}
   end
 
   defp do_transform(%{"tuple" => entity}) do

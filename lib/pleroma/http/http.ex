@@ -4,21 +4,47 @@
 
 defmodule Pleroma.HTTP do
   @moduledoc """
-
+    Wrapper for `Tesla.request/2`.
   """
 
   alias Pleroma.HTTP.Connection
+  alias Pleroma.HTTP.Request
   alias Pleroma.HTTP.RequestBuilder, as: Builder
+  alias Tesla.Client
+  alias Tesla.Env
+
+  require Logger
 
   @type t :: __MODULE__
 
   @doc """
-  Builds and perform http request.
+  Performs GET request.
+
+  See `Pleroma.HTTP.request/5`
+  """
+  @spec get(Request.url() | nil, Request.headers(), keyword()) ::
+          nil | {:ok, Env.t()} | {:error, any()}
+  def get(url, headers \\ [], options \\ [])
+  def get(nil, _, _), do: nil
+  def get(url, headers, options), do: request(:get, url, "", headers, options)
+
+  @doc """
+  Performs POST request.
+
+  See `Pleroma.HTTP.request/5`
+  """
+  @spec post(Request.url(), String.t(), Request.headers(), keyword()) ::
+          {:ok, Env.t()} | {:error, any()}
+  def post(url, body, headers \\ [], options \\ []),
+    do: request(:post, url, body, headers, options)
+
+  @doc """
+  Builds and performs http request.
 
   # Arguments:
   `method` - :get, :post, :put, :delete
-  `url`
-  `body`
+  `url` - full url
+  `body` - request body
   `headers` - a keyworld list of headers, e.g. `[{"content-type", "text/plain"}]`
   `options` - custom, per-request middleware or adapter options
 
@@ -26,23 +52,78 @@ defmodule Pleroma.HTTP do
   `{:ok, %Tesla.Env{}}` or `{:error, error}`
 
   """
-  def request(method, url, body \\ "", headers \\ [], options \\ []) do
+  @spec request(atom(), Request.url(), String.t(), Request.headers(), keyword()) ::
+          {:ok, Env.t()} | {:error, any()}
+  def request(method, url, body, headers, options) when is_binary(url) do
+    with uri <- URI.parse(url),
+         received_adapter_opts <- Keyword.get(options, :adapter, []),
+         adapter_opts <- Connection.options(uri, received_adapter_opts),
+         options <- put_in(options[:adapter], adapter_opts),
+         params <- Keyword.get(options, :params, []),
+         request <- build_request(method, headers, options, url, body, params),
+         client <- Tesla.client([Tesla.Middleware.FollowRedirects], tesla_adapter()),
+         pid <- Process.whereis(adapter_opts[:pool]) do
+      pool_alive? =
+        if tesla_adapter() == Tesla.Adapter.Gun do
+          if pid, do: Process.alive?(pid), else: false
+        else
+          false
+        end
+
+      request_opts =
+        adapter_opts
+        |> Enum.into(%{})
+        |> Map.put(:env, Pleroma.Config.get([:env]))
+        |> Map.put(:pool_alive?, pool_alive?)
+
+      response =
+        request(
+          client,
+          request,
+          request_opts
+        )
+
+      Connection.after_request(adapter_opts)
+
+      response
+    end
+  end
+
+  @spec request(Client.t(), keyword(), map()) :: {:ok, Env.t()} | {:error, any()}
+  def request(%Client{} = client, request, %{env: :test}), do: request_try(client, request)
+
+  def request(%Client{} = client, request, %{body_as: :chunks}) do
+    request_try(client, request)
+  end
+
+  def request(%Client{} = client, request, %{pool_alive?: false}) do
+    request_try(client, request)
+  end
+
+  def request(%Client{} = client, request, %{pool: pool, timeout: timeout}) do
     try do
-      options =
-        process_request_options(options)
-        |> process_sni_options(url)
+      :poolboy.transaction(
+        pool,
+        &Pleroma.Pool.Request.execute(&1, client, request, timeout + 500),
+        timeout + 1_000
+      )
+    rescue
+      e ->
+        {:error, e}
+    catch
+      :exit, {:timeout, _} ->
+        Logger.warn("Receive response from pool failed #{request[:url]}")
+        {:error, :recv_pool_timeout}
 
-      params = Keyword.get(options, :params, [])
+      :exit, e ->
+        {:error, e}
+    end
+  end
 
-      %{}
-      |> Builder.method(method)
-      |> Builder.headers(headers)
-      |> Builder.opts(options)
-      |> Builder.url(url)
-      |> Builder.add_param(:body, :body, body)
-      |> Builder.add_param(:query, :query, params)
-      |> Enum.into([])
-      |> (&Tesla.request(Connection.new(options), &1)).()
+  @spec request_try(Client.t(), keyword()) :: {:ok, Env.t()} | {:error, any()}
+  def request_try(client, request) do
+    try do
+      Tesla.request(client, request)
     rescue
       e ->
         {:error, e}
@@ -52,35 +133,16 @@ defmodule Pleroma.HTTP do
     end
   end
 
-  defp process_sni_options(options, nil), do: options
-
-  defp process_sni_options(options, url) do
-    uri = URI.parse(url)
-    host = uri.host |> to_charlist()
-
-    case uri.scheme do
-      "https" -> options ++ [ssl: [server_name_indication: host]]
-      _ -> options
-    end
+  defp build_request(method, headers, options, url, body, params) do
+    Builder.new()
+    |> Builder.method(method)
+    |> Builder.headers(headers)
+    |> Builder.opts(options)
+    |> Builder.url(url)
+    |> Builder.add_param(:body, :body, body)
+    |> Builder.add_param(:query, :query, params)
+    |> Builder.convert_to_keyword()
   end
 
-  def process_request_options(options) do
-    Keyword.merge(Pleroma.HTTP.Connection.hackney_options([]), options)
-  end
-
-  @doc """
-  Performs GET request.
-
-  See `Pleroma.HTTP.request/5`
-  """
-  def get(url, headers \\ [], options \\ []),
-    do: request(:get, url, "", headers, options)
-
-  @doc """
-  Performs POST request.
-
-  See `Pleroma.HTTP.request/5`
-  """
-  def post(url, body, headers \\ [], options \\ []),
-    do: request(:post, url, body, headers, options)
+  defp tesla_adapter, do: Application.get_env(:tesla, :adapter)
 end

@@ -3,8 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Application do
-  import Cachex.Spec
   use Application
+
+  import Cachex.Spec
+
+  alias Pleroma.Config
+
   require Logger
 
   @name Mix.Project.config()[:name]
@@ -18,9 +22,9 @@ defmodule Pleroma.Application do
   def repository, do: @repository
 
   def user_agent do
-    case Pleroma.Config.get([:http, :user_agent], :default) do
+    case Config.get([:http, :user_agent], :default) do
       :default ->
-        info = "#{Pleroma.Web.base_url()} <#{Pleroma.Config.get([:instance, :email], "")}>"
+        info = "#{Pleroma.Web.base_url()} <#{Config.get([:instance, :email], "")}>"
         named_version() <> "; " <> info
 
       custom ->
@@ -32,7 +36,7 @@ defmodule Pleroma.Application do
   # for more information on OTP Applications
   def start(_type, _args) do
     Pleroma.HTML.compile_scrubbers()
-    Pleroma.Config.DeprecationWarnings.warn()
+    Config.DeprecationWarnings.warn()
     Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
     Pleroma.Repo.check_migrations_applied!()
     setup_instrumenters()
@@ -42,17 +46,17 @@ defmodule Pleroma.Application do
     children =
       [
         Pleroma.Repo,
-        Pleroma.Config.TransferTask,
+        Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,
         Pleroma.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
-        hackney_pool_children() ++
+        http_pools_children(Config.get(:env)) ++
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
-          {Oban, Pleroma.Config.get(Oban)}
+          {Oban, Config.get(Oban)}
         ] ++
         task_children(@env) ++
         streamer_child(@env) ++
@@ -62,6 +66,18 @@ defmodule Pleroma.Application do
           Pleroma.Gopher.Server
         ]
 
+    case Pleroma.OTPVersion.check_version() do
+      :ok -> :ok
+      {:error, version} -> raise "
+        !!!OTP VERSION WARNING!!!
+        You are using gun adapter with OTP version #{version}, which doesn't support correct handling of unordered certificates chains.
+        "
+      :undefined -> raise "
+        !!!OTP VERSION WARNING!!!
+        To support correct handling of unordered certificates chains - OTP version must be > 22.2.
+        "
+    end
+
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
@@ -69,7 +85,7 @@ defmodule Pleroma.Application do
   end
 
   def load_custom_modules do
-    dir = Pleroma.Config.get([:modules, :runtime_dir])
+    dir = Config.get([:modules, :runtime_dir])
 
     if dir && File.exists?(dir) do
       dir
@@ -110,20 +126,6 @@ defmodule Pleroma.Application do
     Pleroma.Web.Endpoint.Instrumenter.setup()
   end
 
-  def enabled_hackney_pools do
-    [:media] ++
-      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Hackney do
-        [:federation]
-      else
-        []
-      end ++
-      if Pleroma.Config.get([Pleroma.Upload, :proxy_remote]) do
-        [:upload]
-      else
-        []
-      end
-  end
-
   defp cachex_children do
     [
       build_cachex("used_captcha", ttl_interval: seconds_valid_interval()),
@@ -145,7 +147,7 @@ defmodule Pleroma.Application do
     do: expiration(default: :timer.seconds(6 * 60 * 60), interval: :timer.seconds(60))
 
   defp seconds_valid_interval,
-    do: :timer.seconds(Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid]))
+    do: :timer.seconds(Config.get!([Pleroma.Captcha, :seconds_valid]))
 
   defp build_cachex(type, opts),
     do: %{
@@ -154,7 +156,7 @@ defmodule Pleroma.Application do
       type: :worker
     }
 
-  defp chat_enabled?, do: Pleroma.Config.get([:chat, :enabled])
+  defp chat_enabled?, do: Config.get([:chat, :enabled])
 
   defp streamer_child(:test), do: []
 
@@ -167,13 +169,6 @@ defmodule Pleroma.Application do
   end
 
   defp chat_child(_, _), do: []
-
-  defp hackney_pool_children do
-    for pool <- enabled_hackney_pools() do
-      options = Pleroma.Config.get([:hackney_pools, pool])
-      :hackney_pool.child_spec(pool, options)
-    end
-  end
 
   defp task_children(:test) do
     [
@@ -199,4 +194,37 @@ defmodule Pleroma.Application do
       }
     ]
   end
+
+  # start hackney and gun pools in tests
+  defp http_pools_children(:test) do
+    hackney_options = Config.get([:hackney_pools, :federation])
+    hackney_pool = :hackney_pool.child_spec(:federation, hackney_options)
+    [hackney_pool, Pleroma.Pool.Supervisor]
+  end
+
+  defp http_pools_children(_) do
+    :tesla
+    |> Application.get_env(:adapter)
+    |> http_pools()
+  end
+
+  defp http_pools(Tesla.Adapter.Hackney) do
+    pools = [:federation, :media]
+
+    pools =
+      if Config.get([Pleroma.Upload, :proxy_remote]) do
+        [:upload | pools]
+      else
+        pools
+      end
+
+    for pool <- pools do
+      options = Config.get([:hackney_pools, pool])
+      :hackney_pool.child_spec(pool, options)
+    end
+  end
+
+  defp http_pools(Tesla.Adapter.Gun), do: [Pleroma.Pool.Supervisor]
+
+  defp http_pools(_), do: []
 end

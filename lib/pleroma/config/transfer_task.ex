@@ -18,7 +18,10 @@ defmodule Pleroma.Config.TransferTask do
     {:pleroma, Oban},
     {:pleroma, :rate_limit},
     {:pleroma, :markup},
-    {:plerome, :streamer}
+    {:pleroma, :streamer},
+    {:pleroma, :pools},
+    {:pleroma, :connections_pool},
+    {:tesla, :adapter}
   ]
 
   @reboot_time_subkeys [
@@ -74,6 +77,28 @@ defmodule Pleroma.Config.TransferTask do
     end
   end
 
+  defp group_for_restart(:logger, key, _, merged_value) do
+    # change logger configuration in runtime, without restart
+    if Keyword.keyword?(merged_value) and
+         key not in [:compile_time_application, :backends, :compile_time_purge_matching] do
+      Logger.configure_backend(key, merged_value)
+    else
+      Logger.configure([{key, merged_value}])
+    end
+
+    nil
+  end
+
+  defp group_for_restart(:tesla, _, _, _), do: :pleroma
+
+  defp group_for_restart(group, _, _, _) when group != :pleroma, do: group
+
+  defp group_for_restart(group, key, value, _) do
+    if pleroma_need_restart?(group, key, value) do
+      group
+    end
+  end
+
   defp merge_and_update(setting) do
     try do
       key = ConfigDB.from_string(setting.key)
@@ -95,21 +120,7 @@ defmodule Pleroma.Config.TransferTask do
 
       :ok = update_env(group, key, merged_value)
 
-      if group != :logger do
-        if group != :pleroma or pleroma_need_restart?(group, key, value) do
-          group
-        end
-      else
-        # change logger configuration in runtime, without restart
-        if Keyword.keyword?(merged_value) and
-             key not in [:compile_time_application, :backends, :compile_time_purge_matching] do
-          Logger.configure_backend(key, merged_value)
-        else
-          Logger.configure([{key, merged_value}])
-        end
-
-        nil
-      end
+      group_for_restart(group, key, value, merged_value)
     rescue
       error ->
         error_msg =

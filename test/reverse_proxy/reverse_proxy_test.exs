@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxyTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase
   import ExUnit.CaptureLog
   import Mox
   alias Pleroma.ReverseProxy
@@ -29,11 +29,11 @@ defmodule Pleroma.ReverseProxyTest do
          {"content-length", byte_size(json) |> to_string()}
        ], %{url: url}}
     end)
-    |> expect(:stream_body, invokes, fn %{url: url} ->
+    |> expect(:stream_body, invokes, fn %{url: url} = client ->
       case Registry.lookup(Pleroma.ReverseProxy.ClientMock, url) do
         [{_, 0}] ->
           Registry.update_value(Pleroma.ReverseProxy.ClientMock, url, &(&1 + 1))
-          {:ok, json}
+          {:ok, json, client}
 
         [{_, 1}] ->
           Registry.unregister(Pleroma.ReverseProxy.ClientMock, url)
@@ -78,7 +78,39 @@ defmodule Pleroma.ReverseProxyTest do
     assert conn.halted
   end
 
-  describe "max_body " do
+  defp stream_mock(invokes, with_close? \\ false) do
+    ClientMock
+    |> expect(:request, fn :get, "/stream-bytes/" <> length, _, _, _ ->
+      Registry.register(Pleroma.ReverseProxy.ClientMock, "/stream-bytes/" <> length, 0)
+
+      {:ok, 200, [{"content-type", "application/octet-stream"}],
+       %{url: "/stream-bytes/" <> length}}
+    end)
+    |> expect(:stream_body, invokes, fn %{url: "/stream-bytes/" <> length} = client ->
+      max = String.to_integer(length)
+
+      case Registry.lookup(Pleroma.ReverseProxy.ClientMock, "/stream-bytes/" <> length) do
+        [{_, current}] when current < max ->
+          Registry.update_value(
+            Pleroma.ReverseProxy.ClientMock,
+            "/stream-bytes/" <> length,
+            &(&1 + 10)
+          )
+
+          {:ok, "0123456789", client}
+
+        [{_, ^max}] ->
+          Registry.unregister(Pleroma.ReverseProxy.ClientMock, "/stream-bytes/" <> length)
+          :done
+      end
+    end)
+
+    if with_close? do
+      expect(ClientMock, :close, fn _ -> :ok end)
+    end
+  end
+
+  describe "max_body" do
     test "length returns error if content-length more than option", %{conn: conn} do
       user_agent_mock("hackney/1.15.1", 0)
 
@@ -92,38 +124,6 @@ defmodule Pleroma.ReverseProxyTest do
       assert capture_log(fn ->
                ReverseProxy.call(conn, "/huge-file", max_body_length: 4)
              end) == ""
-    end
-
-    defp stream_mock(invokes, with_close? \\ false) do
-      ClientMock
-      |> expect(:request, fn :get, "/stream-bytes/" <> length, _, _, _ ->
-        Registry.register(Pleroma.ReverseProxy.ClientMock, "/stream-bytes/" <> length, 0)
-
-        {:ok, 200, [{"content-type", "application/octet-stream"}],
-         %{url: "/stream-bytes/" <> length}}
-      end)
-      |> expect(:stream_body, invokes, fn %{url: "/stream-bytes/" <> length} ->
-        max = String.to_integer(length)
-
-        case Registry.lookup(Pleroma.ReverseProxy.ClientMock, "/stream-bytes/" <> length) do
-          [{_, current}] when current < max ->
-            Registry.update_value(
-              Pleroma.ReverseProxy.ClientMock,
-              "/stream-bytes/" <> length,
-              &(&1 + 10)
-            )
-
-            {:ok, "0123456789"}
-
-          [{_, ^max}] ->
-            Registry.unregister(Pleroma.ReverseProxy.ClientMock, "/stream-bytes/" <> length)
-            :done
-        end
-      end)
-
-      if with_close? do
-        expect(ClientMock, :close, fn _ -> :ok end)
-      end
     end
 
     test "max_body_length returns error if streaming body more than that option", %{conn: conn} do
@@ -223,12 +223,12 @@ defmodule Pleroma.ReverseProxyTest do
       Registry.register(Pleroma.ReverseProxy.ClientMock, "/headers", 0)
       {:ok, 200, [{"content-type", "application/json"}], %{url: "/headers", headers: headers}}
     end)
-    |> expect(:stream_body, 2, fn %{url: url, headers: headers} ->
+    |> expect(:stream_body, 2, fn %{url: url, headers: headers} = client ->
       case Registry.lookup(Pleroma.ReverseProxy.ClientMock, url) do
         [{_, 0}] ->
           Registry.update_value(Pleroma.ReverseProxy.ClientMock, url, &(&1 + 1))
           headers = for {k, v} <- headers, into: %{}, do: {String.capitalize(k), v}
-          {:ok, Jason.encode!(%{headers: headers})}
+          {:ok, Jason.encode!(%{headers: headers}), client}
 
         [{_, 1}] ->
           Registry.unregister(Pleroma.ReverseProxy.ClientMock, url)
@@ -305,11 +305,11 @@ defmodule Pleroma.ReverseProxyTest do
 
       {:ok, 200, headers, %{url: "/disposition"}}
     end)
-    |> expect(:stream_body, 2, fn %{url: "/disposition"} ->
+    |> expect(:stream_body, 2, fn %{url: "/disposition"} = client ->
       case Registry.lookup(Pleroma.ReverseProxy.ClientMock, "/disposition") do
         [{_, 0}] ->
           Registry.update_value(Pleroma.ReverseProxy.ClientMock, "/disposition", &(&1 + 1))
-          {:ok, ""}
+          {:ok, "", client}
 
         [{_, 1}] ->
           Registry.unregister(Pleroma.ReverseProxy.ClientMock, "/disposition")
@@ -339,6 +339,47 @@ defmodule Pleroma.ReverseProxyTest do
       conn = ReverseProxy.call(conn, "/disposition")
 
       assert {"content-disposition", "attachment; filename=\"filename.jpg\""} in conn.resp_headers
+    end
+  end
+
+  describe "tesla client using gun integration" do
+    @describetag :integration
+
+    clear_config([Pleroma.ReverseProxy.Client]) do
+      Pleroma.Config.put([Pleroma.ReverseProxy.Client], Pleroma.ReverseProxy.Client.Tesla)
+    end
+
+    clear_config([Pleroma.Gun.API]) do
+      Pleroma.Config.put([Pleroma.Gun.API], Pleroma.Gun)
+    end
+
+    setup do
+      adapter = Application.get_env(:tesla, :adapter)
+      Application.put_env(:tesla, :adapter, Tesla.Adapter.Gun)
+
+      on_exit(fn ->
+        Application.put_env(:tesla, :adapter, adapter)
+      end)
+    end
+
+    test "common", %{conn: conn} do
+      conn = ReverseProxy.call(conn, "http://httpbin.org/stream-bytes/10")
+      assert byte_size(conn.resp_body) == 10
+      assert conn.state == :chunked
+      assert conn.status == 200
+    end
+
+    test "ssl", %{conn: conn} do
+      conn = ReverseProxy.call(conn, "https://httpbin.org/stream-bytes/10")
+      assert byte_size(conn.resp_body) == 10
+      assert conn.state == :chunked
+      assert conn.status == 200
+    end
+
+    test "follow redirects", %{conn: conn} do
+      conn = ReverseProxy.call(conn, "https://httpbin.org/redirect/5")
+      assert conn.state == :chunked
+      assert conn.status == 200
     end
   end
 end
