@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics
+  alias Pleroma.ActivityExpiration
   alias Pleroma.Config
   alias Pleroma.Conversation
   alias Pleroma.Conversation.Participation
@@ -135,12 +136,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:containment, :ok} <- {:containment, Containment.contain_child(map)},
          {:ok, map, object} <- insert_full_object(map) do
       {:ok, activity} =
-        Repo.insert(%Activity{
+        %Activity{
           data: map,
           local: local,
           actor: map["actor"],
           recipients: recipients
-        })
+        }
+        |> Repo.insert()
+        |> maybe_create_activity_expiration()
 
       # Splice in the child object if we have one.
       activity =
@@ -179,6 +182,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {:error, error}
     end
   end
+
+  defp maybe_create_activity_expiration({:ok, %{data: %{"expires_at" => expires_at}} = activity}) do
+    with {:ok, _} <- ActivityExpiration.create(activity, expires_at) do
+      {:ok, activity}
+    end
+  end
+
+  defp maybe_create_activity_expiration(result), do: result
 
   defp create_or_bump_conversation(activity, actor) do
     with {:ok, conversation} <- Conversation.create_or_bump_for(activity),

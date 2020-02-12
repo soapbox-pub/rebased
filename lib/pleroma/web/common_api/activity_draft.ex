@@ -193,6 +193,13 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
 
   defp changes(draft) do
     direct? = draft.visibility == "direct"
+    additional = %{"cc" => draft.cc, "directMessage" => direct?}
+
+    additional =
+      case draft.expires_at do
+        %NaiveDateTime{} = expires_at -> Map.put(additional, "expires_at", expires_at)
+        _ -> additional
+      end
 
     changes =
       %{
@@ -200,7 +207,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
         actor: draft.user,
         context: draft.context,
         object: draft.object,
-        additional: %{"cc" => draft.cc, "directMessage" => direct?}
+        additional: additional
       }
       |> Utils.maybe_add_list_data(draft.user, draft.visibility)
 
