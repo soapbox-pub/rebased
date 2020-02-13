@@ -1986,6 +1986,7 @@ config :pleroma, :config_description, [
           "Background jobs queues (keys: queues, values: max numbers of concurrent jobs)",
         suggestions: [
           activity_expiration: 10,
+          attachments_cleanup: 5,
           background: 5,
           federator_incoming: 50,
           federator_outgoing: 50,
@@ -2000,6 +2001,12 @@ config :pleroma, :config_description, [
             type: :integer,
             description: "Activity expiration queue",
             suggestions: [10]
+          },
+          %{
+            key: :attachments_cleanup,
+            type: :integer,
+            description: "Attachment deletion queue",
+            suggestions: [5]
           },
           %{
             key: :background,
