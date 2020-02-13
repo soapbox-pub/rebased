@@ -637,12 +637,14 @@ config :pleroma, :config_description, [
       %{
         key: :registrations_open,
         type: :boolean,
-        description: "Enable registrations for anyone. Invitations require this setting to be disabled."
+        description:
+          "Enable registrations for anyone. Invitations require this setting to be disabled."
       },
       %{
         key: :invites_enabled,
         type: :boolean,
-        description: "Enable user invitations for admins (depends on `registrations_open` being disabled)."
+        description:
+          "Enable user invitations for admins (depends on `registrations_open` being disabled)."
       },
       %{
         key: :account_activation_required,
@@ -798,8 +800,7 @@ config :pleroma, :config_description, [
       %{
         key: :no_attachment_links,
         type: :boolean,
-        description:
-          "Enable to disable automatically adding attachment link text to statuses"
+        description: "Enable to disable automatically adding attachment link text to statuses"
       },
       %{
         key: :welcome_message,
