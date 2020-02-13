@@ -101,7 +101,7 @@ config :pleroma, :config_description, [
                       %{
                         key: :versions,
                         type: {:list, :atom},
-                        description: "List of TLS version to use",
+                        description: "List of TLS versions to use",
                         suggestions: [:tlsv1, ":tlsv1.1", ":tlsv1.2"]
                       }
                     ]
@@ -2165,13 +2165,13 @@ config :pleroma, :config_description, [
       %{
         key: :class,
         type: [:string, false],
-        description: "Specify the class to be added to the generated link. `False` to clear",
+        description: "Specify the class to be added to the generated link. Disable to clear",
         suggestions: ["auto-linker", false]
       },
       %{
         key: :rel,
         type: [:string, false],
-        description: "Override the rel attribute. `False` to clear",
+        description: "Override the rel attribute. Disable to clear",
         suggestions: ["ugc", "noopener noreferrer", false]
       },
       %{
@@ -2281,7 +2281,7 @@ config :pleroma, :config_description, [
         key: :ssl,
         label: "SSL",
         type: :boolean,
-        description: "`True` to use SSL, usually implies the port 636"
+        description: "Enable to use SSL, usually implies the port 636"
       },
       %{
         key: :sslopts,
@@ -2308,7 +2308,7 @@ config :pleroma, :config_description, [
         key: :tls,
         label: "TLS",
         type: :boolean,
-        description: "`True` to start TLS, usually implies the port 389"
+        description: "Enable to use STARTTLS, usually implies the port 389"
       },
       %{
         key: :tlsopts,
@@ -2358,7 +2358,7 @@ config :pleroma, :config_description, [
         description:
           "OAuth admin scope requirement toggle. " <>
             "If enabled, admin actions explicitly demand admin OAuth scope(s) presence in OAuth token " <>
-            "(client app must support admin scopes). If `false` and token doesn't have admin scope(s)," <>
+            "(client app must support admin scopes). If disabled and token doesn't have admin scope(s)," <>
             "`is_admin` user flag grants access to admin-specific actions."
       },
       %{
@@ -2517,7 +2517,7 @@ config :pleroma, :config_description, [
       %{
         key: :clean_expired_tokens,
         type: :boolean,
-        description: "Enable a background job to clean expired oauth tokens. Default: `false`."
+        description: "Enable a background job to clean expired oauth tokens. Default: disabled."
       }
     ]
   },
@@ -2577,7 +2577,7 @@ config :pleroma, :config_description, [
       %{
         key: :rum_enabled,
         type: :boolean,
-        description: "If RUM indexes should be used. Default: `false`"
+        description: "If RUM indexes should be used. Default: disabled"
       }
     ]
   },
@@ -2963,7 +2963,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enable/disable the plug. Default: `false`."
+        description: "Enable/disable the plug. Default: disabled."
       },
       %{
         key: :headers,
@@ -3017,7 +3017,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enables the rendering of static HTML. Defaults to `false`."
+        description: "Enables the rendering of static HTML. Default: disabled."
       }
     ]
   },
@@ -3093,7 +3093,7 @@ config :pleroma, :config_description, [
         key: :configurable_from_database,
         type: :boolean,
         description:
-          "Allow transferring configuration to DB with the subsequent customization from Admin api. Defaults to `false`"
+          "Allow transferring configuration to DB with the subsequent customization from Admin api. Default: disabled"
       }
     ]
   }
