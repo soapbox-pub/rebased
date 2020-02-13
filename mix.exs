@@ -126,7 +126,7 @@ defmodule Pleroma.Mixfile do
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.6.6"},
       {:earmark, "~> 1.3"},
-      {:bbcode, "~> 0.1.1"},
+      {:bbcode_pleroma, "~> 0.2.0"},
       {:ex_machina, "~> 2.3", only: :test},
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.3", only: :test},
