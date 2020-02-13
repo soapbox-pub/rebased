@@ -21,6 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   clear_config([:instance, :federating])
   clear_config([:instance, :allow_relay])
+  clear_config([:rich_media, :enabled])
 
   describe "posting statuses" do
     setup do: oauth_access(["write:statuses"])

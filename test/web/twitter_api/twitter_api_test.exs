@@ -117,15 +117,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   describe "register with one time token" do
-    setup do
-      setting = Pleroma.Config.get([:instance, :registrations_open])
-
-      if setting do
-        Pleroma.Config.put([:instance, :registrations_open], false)
-        on_exit(fn -> Pleroma.Config.put([:instance, :registrations_open], setting) end)
-      end
-
-      :ok
+    clear_config([:instance, :registrations_open]) do
+      Pleroma.Config.put([:instance, :registrations_open], false)
     end
 
     test "returns user on success" do
@@ -191,14 +184,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   describe "registers with date limited token" do
+    clear_config([:instance, :registrations_open]) do
+      Pleroma.Config.put([:instance, :registrations_open], false)
+    end
+
     setup do
-      setting = Pleroma.Config.get([:instance, :registrations_open])
-
-      if setting do
-        Pleroma.Config.put([:instance, :registrations_open], false)
-        on_exit(fn -> Pleroma.Config.put([:instance, :registrations_open], setting) end)
-      end
-
       data = %{
         "nickname" => "vinny",
         "email" => "pasta@pizza.vs",
@@ -256,15 +246,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   describe "registers with reusable token" do
-    setup do
-      setting = Pleroma.Config.get([:instance, :registrations_open])
-
-      if setting do
-        Pleroma.Config.put([:instance, :registrations_open], false)
-        on_exit(fn -> Pleroma.Config.put([:instance, :registrations_open], setting) end)
-      end
-
-      :ok
+    clear_config([:instance, :registrations_open]) do
+      Pleroma.Config.put([:instance, :registrations_open], false)
     end
 
     test "returns user on success, after him registration fails" do
@@ -309,15 +292,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   describe "registers with reusable date limited token" do
-    setup do
-      setting = Pleroma.Config.get([:instance, :registrations_open])
-
-      if setting do
-        Pleroma.Config.put([:instance, :registrations_open], false)
-        on_exit(fn -> Pleroma.Config.put([:instance, :registrations_open], setting) end)
-      end
-
-      :ok
+    clear_config([:instance, :registrations_open]) do
+      Pleroma.Config.put([:instance, :registrations_open], false)
     end
 
     test "returns user on success" do

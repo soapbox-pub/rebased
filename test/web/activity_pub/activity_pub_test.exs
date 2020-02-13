@@ -1224,6 +1224,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "deletion" do
+    clear_config([:instance, :rewrite_policy])
+
     test "it creates a delete activity and deletes the original object" do
       note = insert(:note_activity)
       object = Object.normalize(note)
@@ -1327,10 +1329,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
 
     test "it passes delete activity through MRF before deleting the object" do
-      rewrite_policy = Pleroma.Config.get([:instance, :rewrite_policy])
       Pleroma.Config.put([:instance, :rewrite_policy], Pleroma.Web.ActivityPub.MRF.DropPolicy)
-
-      on_exit(fn -> Pleroma.Config.put([:instance, :rewrite_policy], rewrite_policy) end)
 
       note = insert(:note_activity)
       object = Object.normalize(note)
@@ -1396,6 +1395,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "update" do
+    clear_config([:instance, :max_pinned_statuses])
+
     test "it creates an update activity with the new user data" do
       user = insert(:user)
       {:ok, user} = User.ensure_keys_present(user)

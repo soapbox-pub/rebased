@@ -297,15 +297,7 @@ defmodule Pleroma.UserTest do
   end
 
   describe "unfollow/2" do
-    setup do
-      setting = Pleroma.Config.get([:instance, :external_user_synchronization])
-
-      on_exit(fn ->
-        Pleroma.Config.put([:instance, :external_user_synchronization], setting)
-      end)
-
-      :ok
-    end
+    clear_config([:instance, :external_user_synchronization])
 
     test "unfollow with syncronizes external user" do
       Pleroma.Config.put([:instance, :external_user_synchronization], true)
@@ -383,6 +375,7 @@ defmodule Pleroma.UserTest do
       password_confirmation: "test",
       email: "email@example.com"
     }
+
     clear_config([:instance, :autofollowed_nicknames])
     clear_config([:instance, :welcome_message])
     clear_config([:instance, :welcome_user_nickname])
@@ -1754,16 +1747,13 @@ defmodule Pleroma.UserTest do
 
   describe "get_cached_by_nickname_or_id" do
     setup do
-      limit_to_local_content = Pleroma.Config.get([:instance, :limit_to_local_content])
       local_user = insert(:user)
       remote_user = insert(:user, nickname: "nickname@example.com", local: false)
 
-      on_exit(fn ->
-        Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local_content)
-      end)
-
       [local_user: local_user, remote_user: remote_user]
     end
+
+    clear_config([:instance, :limit_to_local_content])
 
     test "allows getting remote users by id no matter what :limit_to_local_content is set to", %{
       remote_user: remote_user
