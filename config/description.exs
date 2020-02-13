@@ -1296,14 +1296,14 @@ config :pleroma, :config_description, [
       %{
         key: :media_removal,
         type: {:list, :string},
-        description: "List of instances to remove medias from",
+        description: "List of instances to strip media attachments from",
         suggestions: ["example.com", "*.example.com"]
       },
       %{
         key: :media_nsfw,
         label: "Media NSFW",
         type: {:list, :string},
-        description: "List of instances to put medias as NSFW (sensitive) from",
+        description: "List of instances to tag all media as NSFW (sensitive) from",
         suggestions: ["example.com", "*.example.com"]
       },
       %{
@@ -1422,21 +1422,21 @@ config :pleroma, :config_description, [
         key: :reject,
         type: [:string, :regex],
         description:
-          "A list of patterns which result in message being rejected, each pattern can be a string or a regular expression.",
+          "A list of patterns which result in message being rejected. Each pattern can be a string or a regular expression.",
         suggestions: ["foo", ~r/foo/iu]
       },
       %{
         key: :federated_timeline_removal,
         type: [:string, :regex],
         description:
-          "A list of patterns which result in message being removed from federated timelines (a.k.a unlisted), each pattern can be a string or a regular expression.",
+          "A list of patterns which result in message being removed from federated timelines (a.k.a unlisted). Each pattern can be a string or a regular expression.",
         suggestions: ["foo", ~r/foo/iu]
       },
       %{
         key: :replace,
         type: [{:tuple, :string, :string}, {:tuple, :regex, :string}],
         description:
-          "A list of tuples containing {pattern, replacement}, pattern can be a string or a regular expression.",
+          "A list of tuples containing {pattern, replacement}. Each pattern can be a string or a regular expression.",
         suggestions: [{"foo", "bar"}, {~r/foo/iu, "bar"}]
       }
     ]
@@ -1451,7 +1451,7 @@ config :pleroma, :config_description, [
       %{
         key: :actors,
         type: {:list, :string},
-        description: "A list of actors, for which to drop any posts mentioning",
+        description: "A list of actors for which any post mentioning them will be dropped.",
         suggestions: ["actor1", "actor2"]
       }
     ]
@@ -1855,9 +1855,8 @@ config :pleroma, :config_description, [
         type: :string,
         description:
           "A mailto link for the administrative contact." <>
-            " It's best if this email is not a personal email address, but rather a group email so that if a person leaves an organization," <>
-            " is unavailable for an extended period, or otherwise can't respond, someone else on the list can.",
-        suggestions: ["Subject"]
+            " It's best if this email is not a personal email address, but rather a group email to the instance moderation team.",
+        suggestions: ["mailto:moderators@pleroma.com"]
       },
       %{
         key: :public_key,
@@ -2106,7 +2105,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enables/disables RichMedia."
+        description: "Enables RichMedia parsing of URLs."
       },
       %{
         key: :ignore_hosts,
@@ -2387,7 +2386,7 @@ config :pleroma, :config_description, [
         key: :oauth_consumer_strategies,
         type: {:list, :string},
         description:
-          "The list of enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable." <>
+          "The list of enabled OAuth consumer strategies. By default it's set by OAUTH_CONSUMER_STRATEGIES environment variable." <>
             " Each entry in this space-delimited string should be of format \"strategy\" or \"strategy:dependency\"" <>
             " (e.g. twitter or keycloak:ueberauth_keycloak_strategy in case dependency is named differently than ueberauth_<strategy>).",
         suggestions: ["twitter", "keycloak:ueberauth_keycloak_strategy"]
