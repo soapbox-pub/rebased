@@ -534,7 +534,8 @@ config :pleroma, :config_description, [
       %{
         key: :description,
         type: :string,
-        description: "The instance's description. It can be seen in nodeinfo and `/api/v1/instance`",
+        description:
+          "The instance's description. It can be seen in nodeinfo and `/api/v1/instance`",
         suggestions: [
           "Very cool instance"
         ]
@@ -2151,8 +2152,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description:
-          "Fetch posts when a new user is federated with"
+        description: "Fetch posts when a new user is federated with"
       },
       %{
         key: :pages,
