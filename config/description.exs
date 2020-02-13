@@ -798,8 +798,7 @@ config :pleroma, :config_description, [
       %{
         key: :attachment_links,
         type: :boolean,
-        description:
-          "Enable to automatically add attachment link text to statuses"
+        description: "Enable to automatically add attachment link text to statuses"
       },
       %{
         key: :welcome_message,
