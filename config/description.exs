@@ -1167,7 +1167,7 @@ config :pleroma, :config_description, [
             type: :boolean,
             description:
               "By default it assumes logo used will be monochrome with alpha channel to be compatible with both light and dark themes. " <>
-                "If you want a colorful logo you just disable logoMask."
+                "If you want a colorful logo you must disable logoMask."
           },
           %{
             key: :logoMargin,
