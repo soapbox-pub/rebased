@@ -62,6 +62,6 @@ defmodule Pleroma.ActivityExpiration do
   def expires_late_enough?(scheduled_at) do
     now = NaiveDateTime.utc_now()
     diff = NaiveDateTime.diff(scheduled_at, now, :millisecond)
-    diff >= @min_activity_lifetime
+    diff > @min_activity_lifetime
   end
 end
