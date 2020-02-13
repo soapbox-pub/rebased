@@ -432,21 +432,21 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 
 Emoji reactions work a lot like favourites do. They make it possible to react to a post with a single emoji character.
 
-## `POST /api/v1/pleroma/statuses/:id/react_with_emoji`
+## `PUT /api/v1/pleroma/statuses/:id/reactions/:emoji`
 ### React to a post with a unicode emoji
-* Method: `POST`
+* Method: `PUT`
 * Authentication: required
 * Params: `emoji`: A single character unicode emoji
 * Response: JSON, the status.
 
-## `POST /api/v1/pleroma/statuses/:id/unreact_with_emoji`
+## `DELETE /api/v1/pleroma/statuses/:id/reactions/:emoji`
 ### Remove a reaction to a post with a unicode emoji
-* Method: `POST`
+* Method: `DELETE`
 * Authentication: required
 * Params: `emoji`: A single character unicode emoji
 * Response: JSON, the status.
 
-## `GET /api/v1/pleroma/statuses/:id/emoji_reactions_by`
+## `GET /api/v1/pleroma/statuses/:id/reactions`
 ### Get an object of emoji to account mappings with accounts that reacted to the post
 * Method: `GET`
 * Authentication: optional
@@ -455,7 +455,7 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 * Example Response:
 ```json
 [
-  {"emoji": "😀", "count": 2, "reacted": true, "accounts": [{"id" => "xyz.."...}, {"id" => "zyx..."}]},
-  {"emoji": "☕", "count": 1, "reacted": false, "accounts": [{"id" => "abc..."}]}
+  {"name": "😀", "count": 2, "me": true, "accounts": [{"id" => "xyz.."...}, {"id" => "zyx..."}]},
+  {"name": "☕", "count": 1, "me": false, "accounts": [{"id" => "abc..."}]}
 ]
 ```

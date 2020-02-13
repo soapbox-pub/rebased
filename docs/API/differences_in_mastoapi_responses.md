@@ -29,7 +29,7 @@ Has these additional fields under the `pleroma` object:
 - `spoiler_text`: a map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
 - `expires_at`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
 - `thread_muted`: true if the thread the post belongs to is muted
-- `emoji_reactions`: A list with emoji / reaction maps. The format is `{emoji: "☕", count: 1, reacted: true}`. Contains no information about the reacting users, for that use the `emoji_reactions_by` endpoint.
+- `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
 
 ## Attachments
 
@@ -88,6 +88,9 @@ Behavior has changed:
 
 - `/api/v1/accounts/search`: Does not require authentication
 
+## Search (global)
+
+Unlisted posts are available in search results, they are considered to be public posts that shouldn't be shown in local/federated timeline.
 
 ## Notifications
 
