@@ -637,22 +637,24 @@ config :pleroma, :config_description, [
       %{
         key: :registrations_open,
         type: :boolean,
-        description: "Enable registrations for anyone, invitations can be enabled when `false`"
+        description:
+          "Enable registrations for anyone. Invitations require this setting to be disabled."
       },
       %{
         key: :invites_enabled,
         type: :boolean,
-        description: "Enable user invitations for admins (depends on `registrations_open: false`)"
+        description:
+          "Enable user invitations for admins (depends on `registrations_open` being disabled)."
       },
       %{
         key: :account_activation_required,
         type: :boolean,
-        description: "Require users to confirm their emails before signing in"
+        description: "Require users to confirm their emails before signing in."
       },
       %{
         key: :federating,
         type: :boolean,
-        description: "Enable federation with other instances"
+        description: "Enable federation with other instances."
       },
       %{
         key: :federation_incoming_replies_max_depth,
@@ -761,14 +763,14 @@ config :pleroma, :config_description, [
         key: :extended_nickname_format,
         type: :boolean,
         description:
-          "Set to `true` to use extended local nicknames format (allows underscores/dashes)." <>
+          "Enable to use extended local nicknames format (allows underscores/dashes)." <>
             " This will break federation with older software for theses nicknames."
       },
       %{
         key: :cleanup_attachments,
         type: :boolean,
         description: """
-        "Set to `true` to remove associated attachments when status is removed.
+        "Enable to remove associated attachments when status is removed.
         This will not affect duplicates and attachments without status.
         Enabling this will increase load to database when deleting statuses on larger instances.
         """
@@ -798,8 +800,7 @@ config :pleroma, :config_description, [
       %{
         key: :no_attachment_links,
         type: :boolean,
-        description:
-          "Set to `true` to disable automatically adding attachment link text to statuses"
+        description: "Enable to disable automatically adding attachment link text to statuses"
       },
       %{
         key: :welcome_message,
@@ -830,14 +831,14 @@ config :pleroma, :config_description, [
         key: :safe_dm_mentions,
         type: :boolean,
         description:
-          "If set to `true`, only mentions at the beginning of a post will be used to address people in direct messages." <>
+          "If enabled, only mentions at the beginning of a post will be used to address people in direct messages." <>
             " This is to prevent accidental mentioning of people when talking about them (e.g. \"@admin please keep an eye on @bad_actor\")." <>
-            " Default: `false`"
+            " Default: disabled"
       },
       %{
         key: :healthcheck,
         type: :boolean,
-        description: "If set to `true`, system data will be shown on /api/pleroma/healthcheck"
+        description: "If enabled, system data will be shown on /api/pleroma/healthcheck"
       },
       %{
         key: :remote_post_retention_days,
@@ -867,7 +868,7 @@ config :pleroma, :config_description, [
       %{
         key: :skip_thread_containment,
         type: :boolean,
-        description: "Skip filter out broken threads. Default: `true`"
+        description: "Skip filtering out broken threads. Default: enabled"
       },
       %{
         key: :limit_to_local_content,
@@ -1159,17 +1160,15 @@ config :pleroma, :config_description, [
             key: :alwaysShowSubjectInput,
             label: "Always show subject input",
             type: :boolean,
-            description: "When set to `false`, auto-hide the subject field when it's empty"
+            description: "When disabled, auto-hide the subject field if it's empty"
           },
           %{
             key: :logoMask,
             label: "Logo mask",
             type: :boolean,
             description:
-              "By default it assumes logo used will be monochrome-with-alpha one, this is done to be compatible with both light and dark themes, " <>
-                "so that white logo designed with dark theme in mind won't be invisible over light theme, this is done via CSS3 Masking. " <>
-                "Basically - it will take alpha channel of the image and fill non-transparent areas of it with solid color. " <>
-                "If you really want colorful logo - it can be done by setting logoMask to false."
+              "By default it assumes logo used will be monochrome with alpha channel to be compatible with both light and dark themes. " <>
+                "If you want a colorful logo you must disable logoMask."
           },
           %{
             key: :logoMargin,
@@ -1183,13 +1182,13 @@ config :pleroma, :config_description, [
           %{
             key: :stickers,
             type: :boolean,
-            description: "Enables/disables stickers."
+            description: "Enables stickers."
           },
           %{
             key: :enableEmojiPicker,
             label: "Emoji picker",
             type: :boolean,
-            description: "Enables/disables emoji picker."
+            description: "Enables emoji picker."
           }
         ]
       },
@@ -2086,7 +2085,7 @@ config :pleroma, :config_description, [
         key: :unfurl_nsfw,
         label: "Unfurl NSFW",
         type: :boolean,
-        description: "If set to `true` NSFW attachments will be shown in previews"
+        description: "When enabled NSFW attachments will be shown in previews"
       }
     ]
   },
@@ -2358,7 +2357,7 @@ config :pleroma, :config_description, [
         type: :boolean,
         description:
           "OAuth admin scope requirement toggle. " <>
-            "If `true`, admin actions explicitly demand admin OAuth scope(s) presence in OAuth token " <>
+            "If enabled, admin actions explicitly demand admin OAuth scope(s) presence in OAuth token " <>
             "(client app must support admin scopes). If `false` and token doesn't have admin scope(s)," <>
             "`is_admin` user flag grants access to admin-specific actions."
       },
