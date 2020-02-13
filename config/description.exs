@@ -534,7 +534,7 @@ config :pleroma, :config_description, [
       %{
         key: :description,
         type: :string,
-        description: "The instance's description, can be seen in nodeinfo and /api/v1/instance",
+        description: "The instance's description. It can be seen in nodeinfo and `/api/v1/instance`",
         suggestions: [
           "Very cool instance"
         ]
@@ -770,7 +770,7 @@ config :pleroma, :config_description, [
         key: :cleanup_attachments,
         type: :boolean,
         description: """
-        "Enable to remove associated attachments when status is removed.
+        Enable to remove associated attachments when status is removed.
         This will not affect duplicates and attachments without status.
         Enabling this will increase load to database when deleting statuses on larger instances.
         """
@@ -838,7 +838,7 @@ config :pleroma, :config_description, [
       %{
         key: :healthcheck,
         type: :boolean,
-        description: "If enabled, system data will be shown on /api/pleroma/healthcheck"
+        description: "If enabled, system data will be shown on `/api/pleroma/healthcheck`"
       },
       %{
         key: :remote_post_retention_days,
@@ -1924,7 +1924,7 @@ config :pleroma, :config_description, [
         key: :admin_token,
         type: :string,
         description: "Token",
-        suggestions: ["some_random_token"]
+        suggestions: ["We recommend a secure random string or UUID"]
       }
     ]
   },
@@ -2146,7 +2146,7 @@ config :pleroma, :config_description, [
         key: :enabled,
         type: :boolean,
         description:
-          "If enabled, when a new user is federated with, fetch some of their latest posts"
+          "Fetch posts when a new user is federated with"
       },
       %{
         key: :pages,
