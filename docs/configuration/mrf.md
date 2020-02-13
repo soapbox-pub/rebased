@@ -74,16 +74,18 @@ As discussed above, the MRF system is a modular system that supports pluggable p
 For example, here is a sample policy module which rewrites all messages to "new message content":
 
 ```elixir
-# This is a sample MRF policy which rewrites all Notes to have "new message
-# content."
 defmodule Site.RewritePolicy do
-  @behavior Pleroma.Web.ActivityPub.MRF
+  @moduledoc "MRF policy which rewrites all Notes to have 'new message content'."
+  @behaviour Pleroma.Web.ActivityPub.MRF
 
   # Catch messages which contain Note objects with actual data to filter.
   # Capture the object as `object`, the message content as `content` and the
   # message itself as `message`.
   @impl true
-  def filter(%{"type" => Create", "object" => {"type" => "Note", "content" => content} = object} = message)
+  def filter(
+        %{"type" => "Create", "object" => %{"type" => "Note", "content" => content} = object} =
+          message
+      )
       when is_binary(content) do
     # Subject / CW is stored as summary instead of `name` like other AS2 objects
     # because of Mastodon doing it that way.
@@ -106,6 +108,13 @@ defmodule Site.RewritePolicy do
   # Let all other messages through without modifying them.
   @impl true
   def filter(message), do: {:ok, message}
+
+  @impl true
+  def describe do
+    mrf_sample = Pleroma.Config.get(:mrf_sample)
+
+    {:ok, %{mrf_sample: mrf_sample}}
+  end
 end
 ```
 
