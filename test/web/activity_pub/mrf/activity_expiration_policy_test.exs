@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicyTest do
              ActivityExpirationPolicy.filter(%{"id" => @id, "expires_at" => expires_at})
   end
 
-  test "owerwrites existing `expires_at` if it greater than the config setting" do
+  test "overwrites existing `expires_at` if it greater than the config setting" do
     too_distant_future = NaiveDateTime.utc_now() |> Timex.shift(years: 2)
 
     assert {:ok, %{"expires_at" => expires_at}} =
