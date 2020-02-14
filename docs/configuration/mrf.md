@@ -111,9 +111,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RewritePolicy do
 
   @impl true
   def describe do
-    mrf_sample = Pleroma.Config.get(:mrf_sample)
-
-    {:ok, %{mrf_sample: mrf_sample}}
+    {:ok, %{mrf_sample: %{content: "new message content"}}}`
   end
 end
 ```
