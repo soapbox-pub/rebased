@@ -74,7 +74,7 @@ As discussed above, the MRF system is a modular system that supports pluggable p
 For example, here is a sample policy module which rewrites all messages to "new message content":
 
 ```elixir
-defmodule Site.RewritePolicy do
+defmodule Pleroma.Web.ActivityPub.MRF.RewritePolicy do
   @moduledoc "MRF policy which rewrites all Notes to have 'new message content'."
   @behaviour Pleroma.Web.ActivityPub.MRF
 
@@ -124,7 +124,7 @@ If you save this file as `lib/pleroma/web/activity_pub/mrf/rewrite_policy.ex`, i
 config :pleroma, :instance,
   rewrite_policy: [
     Pleroma.Web.ActivityPub.MRF.SimplePolicy,
-    Site.RewritePolicy
+    Pleroma.Web.ActivityPub.MRF.RewritePolicy
   ]
 ```
 
