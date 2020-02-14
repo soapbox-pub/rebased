@@ -1348,6 +1348,21 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :mrf_activity_expiration,
+    label: "MRF Activity Expiration Policy",
+    type: :group,
+    description: "Adds expiration to all local activities",
+    children: [
+      %{
+        key: :days,
+        type: :integer,
+        description: "Default global expiration time for all local activities (in days)",
+        suggestions: [90, 365]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :mrf_subchain,
     label: "MRF subchain",
     type: :group,
