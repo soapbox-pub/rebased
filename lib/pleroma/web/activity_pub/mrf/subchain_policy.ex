@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicy do
 
   require Logger
 
-  @behaviour MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF
 
   defp lookup_subchain(actor) do
     with matches <- Config.get([:mrf_subchain, :match_actor]),
