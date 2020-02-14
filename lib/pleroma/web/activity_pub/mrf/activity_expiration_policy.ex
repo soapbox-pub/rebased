@@ -7,9 +7,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   @impl true
-  def filter(%{"id" => id} = activity) do
+  def filter(activity) do
     activity =
-      if String.starts_with?(id, Pleroma.Web.Endpoint.url()) do
+      if local?(activity) do
         maybe_add_expiration(activity)
       else
         activity
@@ -20,6 +20,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy do
 
   @impl true
   def describe, do: {:ok, %{}}
+
+  defp local?(%{"id" => id}) do
+    String.starts_with?(id, Pleroma.Web.Endpoint.url())
+  end
 
   defp maybe_add_expiration(activity) do
     days = Pleroma.Config.get([:mrf_activity_expiration, :days], 365)
