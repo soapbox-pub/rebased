@@ -34,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rate limiter is now disabled for localhost/socket (unless remoteip plug is enabled)
 - Logger: default log level changed from `warn` to `info`.
 - Config mix task `migrate_to_db` truncates `config` table before migrating the config file.
+- MFR policy to set global expiration for every local activity
+
 <details>
   <summary>API Changes</summary>
 
