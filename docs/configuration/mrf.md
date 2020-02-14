@@ -118,7 +118,7 @@ defmodule Site.RewritePolicy do
 end
 ```
 
-If you save this file as `lib/site/mrf/rewrite_policy.ex`, it will be included when you next rebuild Pleroma.  You can enable it in the configuration like so:
+If you save this file as `lib/pleroma/web/activity_pub/mrf/rewrite_policy.ex`, it will be included when you next rebuild Pleroma.  You can enable it in the configuration like so:
 
 ```
 config :pleroma, :instance,
