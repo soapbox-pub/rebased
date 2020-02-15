@@ -659,7 +659,7 @@ config :pleroma, :config_description, [
         label: "Fed. incoming replies max depth",
         type: :integer,
         description:
-          "Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while" <>
+          "Max. depth of reply-to and reply activities fetching on incoming federation, to prevent out-of-memory situations while" <>
             " fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.",
         suggestions: [
           100

@@ -156,8 +156,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       when not is_nil(in_reply_to) do
     in_reply_to_id = prepare_in_reply_to(in_reply_to)
     object = Map.put(object, "inReplyToAtomUri", in_reply_to_id)
+    depth = (options[:depth] || 0) + 1
 
-    if Federator.allowed_incoming_reply_depth?(options[:depth]) do
+    if Federator.allowed_thread_distance?(depth) do
       with {:ok, replied_object} <- get_obj_helper(in_reply_to_id, options),
            %Activity{} = _ <- Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
         object
@@ -312,7 +313,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_type(%{"inReplyTo" => reply_id, "name" => _} = object, options)
       when is_binary(reply_id) do
-    with true <- Federator.allowed_incoming_reply_depth?(options[:depth]),
+    with true <- Federator.allowed_thread_distance?(options[:depth]),
          {:ok, %{data: %{"type" => "Question"} = _} = _} <- get_obj_helper(reply_id, options) do
       Map.put(object, "type", "Answer")
     else
@@ -406,7 +407,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
          {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(data["actor"]) do
-      options = Keyword.put(options, :depth, (options[:depth] || 0) + 1)
       object = fix_object(object, options)
 
       params = %{
@@ -425,8 +425,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       }
 
       with {:ok, created_activity} <- ActivityPub.create(params) do
-        for reply_id <- replies(object) do
-          Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{"id" => reply_id})
+        reply_depth = (options[:depth] || 0) + 1
+
+        if Federator.allowed_thread_distance?(reply_depth) do
+          for reply_id <- replies(object) do
+            Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{
+              "id" => reply_id,
+              "depth" => reply_depth
+            })
+          end
         end
 
         {:ok, created_activity}
@@ -448,7 +455,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> fix_addressing
 
     with {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(data["actor"]) do
-      options = Keyword.put(options, :depth, (options[:depth] || 0) + 1)
+      reply_depth = (options[:depth] || 0) + 1
+      options = Keyword.put(options, :depth, reply_depth)
       object = fix_object(object, options)
 
       params = %{

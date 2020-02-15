@@ -42,7 +42,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     end
 
     @tag capture_log: true
-    test "it fetches replied-to activities if we don't have them" do
+    test "it fetches reply-to activities if we don't have them" do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
         |> Poison.decode!()
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert returned_object.data["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
     end
 
-    test "it does not fetch replied-to activities beyond max_replies_depth" do
+    test "it does not fetch reply-to activities beyond max replies depth limit" do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
         |> Poison.decode!()
@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       data = Map.put(data, "object", object)
 
       with_mock Pleroma.Web.Federator,
-        allowed_incoming_reply_depth?: fn _ -> false end do
+        allowed_thread_distance?: fn _ -> false end do
         {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
 
         returned_object = Object.normalize(returned_activity, false)
@@ -1350,12 +1350,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     end
   end
 
-  describe "handle_incoming/2: `replies` handling:" do
+  describe "`handle_incoming/2`, Mastodon format `replies` handling" do
     clear_config([:activitypub, :note_replies_output_limit]) do
       Pleroma.Config.put([:activitypub, :note_replies_output_limit], 5)
     end
 
-    test "with Mastodon-formatted `replies` collection, it schedules background fetching of items" do
+    clear_config([:instance, :federation_incoming_replies_max_depth])
+
+    setup do
       data =
         "test/fixtures/mastodon-post-activity.json"
         |> File.read!()
@@ -1364,15 +1366,41 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       items = get_in(data, ["object", "replies", "first", "items"])
       assert length(items) > 0
 
+      %{data: data, items: items}
+    end
+
+    test "schedules background fetching of `replies` items if max thread depth limit allows", %{
+      data: data,
+      items: items
+    } do
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 10)
+
       {:ok, _activity} = Transmogrifier.handle_incoming(data)
 
       for id <- items do
-        job_args = %{"op" => "fetch_remote", "id" => id}
+        job_args = %{"op" => "fetch_remote", "id" => id, "depth" => 1}
         assert_enqueued(worker: Pleroma.Workers.RemoteFetcherWorker, args: job_args)
       end
     end
 
-    test "with Pleroma-formatted `replies` collection, it schedules background fetching of items" do
+    test "does NOT schedule background fetching of `replies` beyond max thread depth limit allows",
+         %{data: data} do
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+
+      {:ok, _activity} = Transmogrifier.handle_incoming(data)
+
+      assert all_enqueued(worker: Pleroma.Workers.RemoteFetcherWorker) == []
+    end
+  end
+
+  describe "`handle_incoming/2`, Pleroma format `replies` handling" do
+    clear_config([:activitypub, :note_replies_output_limit]) do
+      Pleroma.Config.put([:activitypub, :note_replies_output_limit], 5)
+    end
+
+    clear_config([:instance, :federation_incoming_replies_max_depth])
+
+    setup do
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "post1"})
@@ -1390,12 +1418,30 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       Repo.delete(activity.object)
       Repo.delete(activity)
 
+      %{federation_output: federation_output, replies_uris: replies_uris}
+    end
+
+    test "schedules background fetching of `replies` items if max thread depth limit allows", %{
+      federation_output: federation_output,
+      replies_uris: replies_uris
+    } do
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 1)
+
       {:ok, _activity} = Transmogrifier.handle_incoming(federation_output)
 
       for id <- replies_uris do
-        job_args = %{"op" => "fetch_remote", "id" => id}
+        job_args = %{"op" => "fetch_remote", "id" => id, "depth" => 1}
         assert_enqueued(worker: Pleroma.Workers.RemoteFetcherWorker, args: job_args)
       end
+    end
+
+    test "does NOT schedule background fetching of `replies` beyond max thread depth limit allows",
+         %{federation_output: federation_output} do
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+
+      {:ok, _activity} = Transmogrifier.handle_incoming(federation_output)
+
+      assert all_enqueued(worker: Pleroma.Workers.RemoteFetcherWorker) == []
     end
   end
 
