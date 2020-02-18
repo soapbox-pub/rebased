@@ -1,8 +1,8 @@
 defmodule Mix.Tasks.Pleroma.LoadTesting do
   use Mix.Task
   import Ecto.Query
+  import Pleroma.LoadTesting.Helper, only: [clean_tables: 0]
 
-  alias Ecto.Adapters.SQL
   alias Pleroma.Repo
   alias Pleroma.User
 
@@ -62,13 +62,5 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
     )
 
     Pleroma.LoadTesting.Fetcher.run_benchmarks(user)
-  end
-
-  defp clean_tables do
-    IO.puts("Deleting old data...\n")
-    SQL.query!(Repo, "TRUNCATE users CASCADE;")
-    SQL.query!(Repo, "TRUNCATE activities CASCADE;")
-    SQL.query!(Repo, "TRUNCATE objects CASCADE;")
-    SQL.query!(Repo, "TRUNCATE oban_jobs CASCADE;")
   end
 end

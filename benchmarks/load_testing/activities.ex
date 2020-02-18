@@ -85,6 +85,48 @@ defmodule Pleroma.LoadTesting.Activities do
     :ok
   end
 
+  def generate_power_intervals(opts \\ []) do
+    count = Keyword.get(opts, :count, 20)
+    power = Keyword.get(opts, :power, 2)
+    IO.puts("Generating #{count} intervals for a power #{power} series...")
+    counts = Enum.map(1..count, fn n -> :math.pow(n, power) end)
+    sum = Enum.sum(counts)
+
+    densities =
+      Enum.map(counts, fn c ->
+        c / sum
+      end)
+
+    densities
+    |> Enum.reduce(0, fn density, acc ->
+      if acc == 0 do
+        [{0, density}]
+      else
+        [{_, lower} | _] = acc
+        [{lower, lower + density} | acc]
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  def generate_tagged_activities(opts \\ []) do
+    tag_count = Keyword.get(opts, :tag_count, 20)
+    users = Keyword.get(opts, :users, Repo.all(Pleroma.User))
+    activity_count = Keyword.get(opts, :count, 200_000)
+
+    intervals = generate_power_intervals(count: tag_count)
+
+    IO.puts(
+      "Generating #{activity_count} activities using #{tag_count} different tags of format `tag_n`, starting at tag_0"
+    )
+
+    Enum.each(1..activity_count, fn _ ->
+      random = :rand.uniform()
+      i = Enum.find_index(intervals, fn {lower, upper} -> lower <= random && upper > random end)
+      CommonAPI.post(Enum.random(users), %{"status" => "a post with the tag #tag_#{i}"})
+    end)
+  end
+
   defp generate_long_thread(visibility, user, friends, non_friends, _opts) do
     group =
       if visibility == "public",

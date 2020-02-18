@@ -20,31 +20,31 @@ defmodule Pleroma.LoadTesting.Users do
   def generate(opts \\ []) do
     opts = Keyword.merge(@defaults, opts)
 
-    IO.puts("Starting generating #{opts[:users]} users...")
-
-    {time, _} = :timer.tc(fn -> generate_users(opts[:users]) end)
-
-    IO.puts("Generating users take #{to_sec(time)} sec.\n")
+    generate_users(opts[:users])
 
     main_user =
       Repo.one(from(u in User, where: u.local == true, order_by: fragment("RANDOM()"), limit: 1))
 
-    IO.puts("Starting making friends for #{opts[:friends]} users...")
-    {time, _} = :timer.tc(fn -> make_friends(main_user, opts[:friends]) end)
-
-    IO.puts("Making friends take #{to_sec(time)} sec.\n")
+    make_friends(main_user, opts[:friends])
 
     Repo.get(User, main_user.id)
   end
 
-  defp generate_users(max) do
-    Task.async_stream(
-      1..max,
-      &generate_user(&1),
-      max_concurrency: @max_concurrency,
-      timeout: 30_000
-    )
-    |> Stream.run()
+  def generate_users(max) do
+    IO.puts("Starting generating #{opts[:users]} users...")
+
+    {time, _} =
+      :timer.tc(fn ->
+        Task.async_stream(
+          1..max,
+          &generate_user(&1),
+          max_concurrency: @max_concurrency,
+          timeout: 30_000
+        )
+        |> Stream.run()
+      end)
+
+    IO.puts("Generating users take #{to_sec(time)} sec.\n")
   end
 
   defp generate_user(i) do
@@ -86,18 +86,25 @@ defmodule Pleroma.LoadTesting.Users do
     Map.merge(user, urls)
   end
 
-  defp make_friends(main_user, max) when is_integer(max) do
-    number_of_users =
-      (max / 2)
-      |> Kernel.trunc()
+  def make_friends(main_user, max) when is_integer(max) do
+    IO.puts("Starting making friends for #{opts[:friends]} users...")
 
-    main_user
-    |> get_users(%{limit: number_of_users, local: :local})
-    |> run_stream(main_user)
+    {time, _} =
+      :timer.tc(fn ->
+        number_of_users =
+          (max / 2)
+          |> Kernel.trunc()
 
-    main_user
-    |> get_users(%{limit: number_of_users, local: :external})
-    |> run_stream(main_user)
+        main_user
+        |> get_users(%{limit: number_of_users, local: :local})
+        |> run_stream(main_user)
+
+        main_user
+        |> get_users(%{limit: number_of_users, local: :external})
+        |> run_stream(main_user)
+      end)
+
+    IO.puts("Making friends take #{to_sec(time)} sec.\n")
   end
 
   defp make_friends(%User{} = main_user, %User{} = user) do
