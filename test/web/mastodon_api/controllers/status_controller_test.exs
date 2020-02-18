@@ -1254,4 +1254,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     assert [] = json_response(third_conn, 200)
   end
+
+  test "expires_at is nil for another user" do
+    %{conn: conn, user: user} = oauth_access(["read:statuses"])
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "foobar", "expires_in" => 1_000_000})
+
+    expires_at =
+      activity.id
+      |> ActivityExpiration.get_by_activity_id()
+      |> Map.get(:scheduled_at)
+      |> NaiveDateTime.to_iso8601()
+
+    assert %{"pleroma" => %{"expires_at" => ^expires_at}} =
+             conn |> get("/api/v1/statuses/#{activity.id}") |> json_response(:ok)
+
+    %{conn: conn} = oauth_access(["read:statuses"])
+
+    assert %{"pleroma" => %{"expires_at" => nil}} =
+             conn |> get("/api/v1/statuses/#{activity.id}") |> json_response(:ok)
+  end
 end
