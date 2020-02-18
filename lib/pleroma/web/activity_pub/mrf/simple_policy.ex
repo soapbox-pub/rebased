@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
   @moduledoc "Filter activities depending on their origin instance"
-  @behaviour MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF
 
   require Pleroma.Constants
 
