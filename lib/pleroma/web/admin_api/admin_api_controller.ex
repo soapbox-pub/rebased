@@ -8,6 +8,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.ConfigDB
   alias Pleroma.ModerationLog
   alias Pleroma.Plugs.OAuthScopesPlug
@@ -570,8 +571,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   @doc "Sends registration invite via email"
   def email_invite(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
     with true <-
-           Pleroma.Config.get([:instance, :invites_enabled]) &&
-             !Pleroma.Config.get([:instance, :registrations_open]),
+           Config.get([:instance, :invites_enabled]) &&
+             !Config.get([:instance, :registrations_open]),
          {:ok, invite_token} <- UserInviteToken.create_invite(),
          email <-
            Pleroma.Emails.UserEmail.user_invitation_email(
@@ -808,7 +809,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       configs = ConfigDB.get_all_as_keyword()
 
       merged =
-        Pleroma.Config.Holder.config()
+        Config.Holder.config()
         |> ConfigDB.merge(configs)
         |> Enum.map(fn {group, values} ->
           Enum.map(values, fn {key, value} ->
@@ -838,7 +839,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         end)
         |> List.flatten()
 
-      json(conn, %{configs: merged})
+      response = %{configs: merged}
+
+      response =
+        if Restarter.Pleroma.need_reboot?() do
+          Map.put(response, :need_reboot, true)
+        else
+          response
+        end
+
+      json(conn, response)
     end
   end
 
@@ -863,20 +873,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
           Ecto.get_meta(config, :state) == :deleted
         end)
 
-      Pleroma.Config.TransferTask.load_and_update_env(deleted, false)
+      Config.TransferTask.load_and_update_env(deleted, false)
 
       need_reboot? =
-        Enum.any?(updated, fn config ->
-          group = ConfigDB.from_string(config.group)
-          key = ConfigDB.from_string(config.key)
-          value = ConfigDB.from_binary(config.value)
-          Pleroma.Config.TransferTask.pleroma_need_restart?(group, key, value)
-        end)
+        Restarter.Pleroma.need_reboot?() ||
+          Enum.any?(updated, fn config ->
+            group = ConfigDB.from_string(config.group)
+            key = ConfigDB.from_string(config.key)
+            value = ConfigDB.from_binary(config.value)
+            Config.TransferTask.pleroma_need_restart?(group, key, value)
+          end)
 
       response = %{configs: updated}
 
       response =
-        if need_reboot?, do: Map.put(response, :need_reboot, need_reboot?), else: response
+        if need_reboot? do
+          Restarter.Pleroma.need_reboot()
+          Map.put(response, :need_reboot, need_reboot?)
+        else
+          response
+        end
 
       conn
       |> put_view(ConfigView)
@@ -886,18 +902,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   def restart(conn, _params) do
     with :ok <- configurable_from_database(conn) do
-      if Pleroma.Config.get(:env) == :test do
-        Logger.warn("pleroma restarted")
-      else
-        send(Restarter.Pleroma, {:restart, 50})
-      end
+      Restarter.Pleroma.restart(Config.get(:env), 50)
 
       json(conn, %{})
     end
   end
 
   defp configurable_from_database(conn) do
-    if Pleroma.Config.get(:configurable_from_database) do
+    if Config.get(:configurable_from_database) do
       :ok
     else
       errors(

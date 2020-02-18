@@ -109,6 +109,10 @@ defmodule Pleroma.Config.TransferTaskTest do
   end
 
   describe "pleroma restart" do
+    setup do
+      on_exit(fn -> Restarter.Pleroma.refresh() end)
+    end
+
     test "don't restart if no reboot time settings were changed" do
       emoji = Application.get_env(:pleroma, :emoji)
       on_exit(fn -> Application.put_env(:pleroma, :emoji, emoji) end)
@@ -125,7 +129,7 @@ defmodule Pleroma.Config.TransferTaskTest do
              )
     end
 
-    test "restart pleroma on reboot time key" do
+    test "on reboot time key" do
       chat = Application.get_env(:pleroma, :chat)
       on_exit(fn -> Application.put_env(:pleroma, :chat, chat) end)
 
@@ -138,7 +142,7 @@ defmodule Pleroma.Config.TransferTaskTest do
       assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
     end
 
-    test "restart pleroma on reboot time subkey" do
+    test "on reboot time subkey" do
       captcha = Application.get_env(:pleroma, Pleroma.Captcha)
       on_exit(fn -> Application.put_env(:pleroma, Pleroma.Captcha, captcha) end)
 
