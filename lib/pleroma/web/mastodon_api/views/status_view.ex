@@ -175,9 +175,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     expires_at =
       with true <- client_posted_this_activity,
-           expiration when not is_nil(expiration) <-
+           %ActivityExpiration{scheduled_at: scheduled_at} <-
              ActivityExpiration.get_by_activity_id(activity.id) do
-        expiration.scheduled_at
+        scheduled_at
+      else
+        _ -> nil
       end
 
     thread_muted? =
