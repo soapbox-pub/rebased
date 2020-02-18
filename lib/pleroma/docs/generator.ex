@@ -13,7 +13,7 @@ defmodule Pleroma.Docs.Generator do
       |> Enum.filter(&String.ends_with?(&1, ".ex"))
       |> Enum.map(fn filename ->
         module = filename |> String.trim_trailing(".ex") |> Macro.camelize()
-        String.to_existing_atom(start <> module)
+        String.to_atom(start <> module)
       end)
     end
   end

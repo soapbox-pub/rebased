@@ -37,15 +37,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: activity)
 
     assert status[:pleroma][:emoji_reactions] == [
-             %{emoji: "☕", count: 2, reacted: false},
-             %{emoji: "🍵", count: 1, reacted: false}
+             %{name: "☕", count: 2, me: false},
+             %{name: "🍵", count: 1, me: false}
            ]
 
     status = StatusView.render("show.json", activity: activity, for: user)
 
     assert status[:pleroma][:emoji_reactions] == [
-             %{emoji: "☕", count: 2, reacted: true},
-             %{emoji: "🍵", count: 1, reacted: false}
+             %{name: "☕", count: 2, me: true},
+             %{name: "🍵", count: 1, me: false}
            ]
   end
 
@@ -491,7 +491,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         title: "Example website"
       }
 
-      %{provider_name: "Example site name"} =
+      %{provider_name: "example.com"} =
         StatusView.render("card.json", %{page_url: page_url, rich_media: card})
     end
 
@@ -506,7 +506,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         description: "Example description"
       }
 
-      %{provider_name: "Example site name"} =
+      %{provider_name: "example.com"} =
         StatusView.render("card.json", %{page_url: page_url, rich_media: card})
     end
   end

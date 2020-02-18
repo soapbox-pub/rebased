@@ -575,11 +575,11 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   end
 
   describe "maybe_add_attachments/3" do
-    test "returns parsed results when no_links is true" do
+    test "returns parsed results when attachment_links is false" do
       assert Utils.maybe_add_attachments(
                {"test", [], ["tags"]},
                [],
-               true
+               false
              ) == {"test", [], ["tags"]}
     end
 
@@ -589,7 +589,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert Utils.maybe_add_attachments(
                {"test", [], ["tags"]},
                [attachment],
-               false
+               true
              ) == {
                "test<br><a href=\"SakuraPM.png\" class='attachment'>SakuraPM.png</a>",
                [],

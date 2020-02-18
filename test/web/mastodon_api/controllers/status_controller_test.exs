@@ -121,6 +121,32 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                NaiveDateTime.to_iso8601(expiration.scheduled_at)
     end
 
+    test "it fails to create a status if `expires_in` is less or equal than an hour", %{
+      conn: conn
+    } do
+      # 1 hour
+      expires_in = 60 * 60
+
+      assert %{"error" => "Expiry date is too soon"} =
+               conn
+               |> post("api/v1/statuses", %{
+                 "status" => "oolong",
+                 "expires_in" => expires_in
+               })
+               |> json_response(422)
+
+      # 30 minutes
+      expires_in = 30 * 60
+
+      assert %{"error" => "Expiry date is too soon"} =
+               conn
+               |> post("api/v1/statuses", %{
+                 "status" => "oolong",
+                 "expires_in" => expires_in
+               })
+               |> json_response(422)
+    end
+
     test "posting an undefined status with an attachment", %{user: user, conn: conn} do
       file = %Plug.Upload{
         content_type: "image/jpg",

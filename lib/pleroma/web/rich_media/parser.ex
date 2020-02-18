@@ -81,18 +81,18 @@ defmodule Pleroma.Web.RichMedia.Parser do
       {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: @hackney_options)
 
       html
-      |> parse_html
+      |> parse_html()
       |> maybe_parse()
       |> Map.put(:url, url)
       |> clean_parsed_data()
       |> check_parsed_data()
     rescue
       e ->
-        {:error, "Parsing error: #{inspect(e)}"}
+        {:error, "Parsing error: #{inspect(e)} #{inspect(__STACKTRACE__)}"}
     end
   end
 
-  defp parse_html(html), do: Floki.parse(html)
+  defp parse_html(html), do: Floki.parse_document!(html)
 
   defp maybe_parse(html) do
     Enum.reduce_while(parsers(), %{}, fn parser, acc ->

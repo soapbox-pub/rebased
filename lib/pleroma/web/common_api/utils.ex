@@ -228,9 +228,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         data,
         visibility
       ) do
-    no_attachment_links =
+    attachment_links =
       data
-      |> Map.get("no_attachment_links", Config.get([:instance, :no_attachment_links]))
+      |> Map.get("attachment_links", Config.get([:instance, :attachment_links]))
       |> truthy_param?()
 
     content_type = get_content_type(data["content_type"])
@@ -244,7 +244,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     status
     |> format_input(content_type, options)
-    |> maybe_add_attachments(attachments, no_attachment_links)
+    |> maybe_add_attachments(attachments, attachment_links)
     |> maybe_add_nsfw_tag(data)
   end
 
@@ -270,7 +270,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def make_context(%Activity{data: %{"context" => context}}, _), do: context
   def make_context(_, _), do: Utils.generate_context_id()
 
-  def maybe_add_attachments(parsed, _attachments, true = _no_links), do: parsed
+  def maybe_add_attachments(parsed, _attachments, false = _no_links), do: parsed
 
   def maybe_add_attachments({text, mentions, tags}, attachments, _no_links) do
     text = add_attachments(text, attachments)

@@ -63,7 +63,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :swarm],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -108,8 +108,7 @@ defmodule Pleroma.Mixfile do
       {:ecto_enum, "~> 1.4"},
       {:ecto_sql, "~> 3.3.2"},
       {:postgrex, ">= 0.13.5"},
-      {:oban, "~> 0.12.0"},
-      {:quantum, "~> 2.3"},
+      {:oban, "~> 0.12.1"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
@@ -140,8 +139,8 @@ defmodule Pleroma.Mixfile do
       {:phoenix_swoosh, "~> 0.2"},
       {:gen_smtp, "~> 0.13"},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
-      {:floki, "~> 0.23.0"},
-      {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
+      {:ex_syslogger, "~> 1.4"},
+      {:floki, "~> 0.25"},
       {:timex, "~> 3.5"},
       {:ueberauth, "~> 0.4"},
       {:auto_linker,
@@ -156,14 +155,14 @@ defmodule Pleroma.Mixfile do
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
       {:prometheus_ecto, "~> 1.4"},
-      {:recon, github: "ferd/recon", tag: "2.4.0"},
+      {:recon, "~> 2.5"},
       {:quack, "~> 0.1.1"},
       {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
-      {:excoveralls, "~> 0.11.1", only: :test},
+      {:excoveralls, "~> 0.12.1", only: :test},
       {:flake_id, "~> 0.1.0"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",

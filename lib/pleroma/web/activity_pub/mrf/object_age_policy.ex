@@ -5,12 +5,11 @@
 defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   alias Pleroma.Config
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.MRF
 
   require Pleroma.Constants
 
   @moduledoc "Filter activities depending on their age"
-  @behaviour MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF
 
   defp check_date(%{"published" => published} = message) do
     with %DateTime{} = now <- DateTime.utc_now(),

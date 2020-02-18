@@ -242,9 +242,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       with %{data: %{"reactions" => emoji_reactions}} <- object do
         Enum.map(emoji_reactions, fn [emoji, users] ->
           %{
-            emoji: emoji,
+            name: emoji,
             count: length(users),
-            reacted: !!(opts[:for] && opts[:for].ap_id in users)
+            me: !!(opts[:for] && opts[:for].ap_id in users)
           }
         end)
       else
@@ -321,11 +321,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         nil
       end
 
-    site_name = rich_media[:site_name] || page_url_data.host
-
     %{
       type: "link",
-      provider_name: site_name,
+      provider_name: page_url_data.host,
       provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
       url: page_url,
       image: image_url |> MediaProxy.url(),
