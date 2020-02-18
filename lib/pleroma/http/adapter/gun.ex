@@ -90,7 +90,7 @@ defmodule Pleroma.HTTP.Adapter.Gun do
       case Connections.checkin(uri, :gun_connections) do
         nil ->
           Logger.info(
-            "Gun connections pool checkin was not succesfull. Trying to open conn for next request."
+            "Gun connections pool checkin was not successful. Trying to open conn for next request."
           )
 
           :ok = Connections.open_conn(uri, :gun_connections, opts)
