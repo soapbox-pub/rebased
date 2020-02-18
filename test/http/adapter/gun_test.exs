@@ -101,7 +101,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
                assert opts[:conn] == nil
                assert opts[:close_conn] == nil
              end) =~
-               "Gun connections pool checkin was not succesfull. Trying to open conn for next request."
+               "Gun connections pool checkin was not successful. Trying to open conn for next request."
 
       opts = Gun.options(uri)
 
