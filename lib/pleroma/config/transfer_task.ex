@@ -42,7 +42,8 @@ defmodule Pleroma.Config.TransferTask do
 
   @spec load_and_update_env([ConfigDB.t()]) :: :ok | false
   def load_and_update_env(deleted \\ [], restart_pleroma? \\ true) do
-    with true <- Pleroma.Config.get(:configurable_from_database),
+    with {:configurable, true} <-
+           {:configurable, Pleroma.Config.get(:configurable_from_database)},
          true <- Ecto.Adapters.SQL.table_exists?(Repo, "config"),
          started_applications <- Application.started_applications() do
       # We need to restart applications for loaded settings take effect
@@ -65,12 +66,15 @@ defmodule Pleroma.Config.TransferTask do
         if :pleroma in applications do
           List.delete(applications, :pleroma) ++ [:pleroma]
         else
+          Restarter.Pleroma.rebooted()
           applications
         end
 
       Enum.each(applications, &restart(started_applications, &1, Pleroma.Config.get(:env)))
 
       :ok
+    else
+      {:configurable, false} -> Restarter.Pleroma.rebooted()
     end
   end
 
