@@ -35,9 +35,10 @@ defmodule Pleroma.Web.RelMe do
 
     with {:ok, %Tesla.Env{body: html, status: status}} when status in 200..299 <-
            Pleroma.HTTP.get(url, [], adapter: opts),
+         {:ok, html_tree} <- Floki.parse_document(html),
          data <-
-           Floki.attribute(html, "link[rel~=me]", "href") ++
-             Floki.attribute(html, "a[rel~=me]", "href") do
+           Floki.attribute(html_tree, "link[rel~=me]", "href") ++
+             Floki.attribute(html_tree, "a[rel~=me]", "href") do
       {:ok, data}
     end
   rescue
