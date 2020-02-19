@@ -52,8 +52,7 @@ defmodule Pleroma.Pool.Connections do
     opts =
       opts
       |> Enum.into(%{})
-      |> Map.put_new(:receive, false)
-      |> Map.put_new(:retry, pool_opts[:retry] || 5)
+      |> Map.put_new(:retry, pool_opts[:retry] || 0)
       |> Map.put_new(:retry_timeout, pool_opts[:retry_timeout] || 100)
       |> Map.put_new(:await_up_timeout, pool_opts[:await_up_timeout] || 5_000)
 
@@ -108,11 +107,11 @@ defmodule Pleroma.Pool.Connections do
         put_in(state.conns[key], %{conn | conn_state: conn_state, used_by: used_by})
       else
         false ->
-          Logger.warn("checkout for closed conn #{inspect(conn_pid)}")
+          Logger.debug("checkout for closed conn #{inspect(conn_pid)}")
           state
 
         nil ->
-          Logger.info("checkout for alive conn #{inspect(conn_pid)}, but is not in state")
+          Logger.debug("checkout for alive conn #{inspect(conn_pid)}, but is not in state")
           state
       end
 
@@ -172,15 +171,15 @@ defmodule Pleroma.Pool.Connections do
         })
       else
         :error_gun_info ->
-          Logger.warn(":gun.info caused error")
+          Logger.debug(":gun.info caused error")
           state
 
         false ->
-          Logger.warn(":gun_up message for closed conn #{inspect(conn_pid)}")
+          Logger.debug(":gun_up message for closed conn #{inspect(conn_pid)}")
           state
 
         nil ->
-          Logger.warn(
+          Logger.debug(
             ":gun_up message for alive conn #{inspect(conn_pid)}, but deleted from state"
           )
 
@@ -216,11 +215,11 @@ defmodule Pleroma.Pool.Connections do
       else
         false ->
           # gun can send gun_down for closed conn, maybe connection is not closed yet
-          Logger.warn(":gun_down message for closed conn #{inspect(conn_pid)}")
+          Logger.debug(":gun_down message for closed conn #{inspect(conn_pid)}")
           state
 
         nil ->
-          Logger.warn(
+          Logger.debug(
             ":gun_down message for alive conn #{inspect(conn_pid)}, but deleted from state"
           )
 

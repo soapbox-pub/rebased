@@ -15,7 +15,7 @@ defmodule Pleroma.HTTP.Adapter.Gun do
     connect_timeout: 20_000,
     domain_lookup_timeout: 5_000,
     tls_handshake_timeout: 5_000,
-    retry_timeout: 100,
+    retry: 0,
     await_up_timeout: 5_000
   ]
 
@@ -89,7 +89,7 @@ defmodule Pleroma.HTTP.Adapter.Gun do
     try do
       case Connections.checkin(uri, :gun_connections) do
         nil ->
-          Logger.info(
+          Logger.debug(
             "Gun connections pool checkin was not successful. Trying to open conn for next request."
           )
 
@@ -97,7 +97,9 @@ defmodule Pleroma.HTTP.Adapter.Gun do
           opts
 
         conn when is_pid(conn) ->
-          Logger.debug("received conn #{inspect(conn)} #{Connections.compose_uri(uri)}")
+          Logger.debug(
+            "received conn #{inspect(conn)} #{uri.scheme}://#{Connections.compose_uri(uri)}"
+          )
 
           opts
           |> Keyword.put(:conn, conn)
@@ -105,18 +107,30 @@ defmodule Pleroma.HTTP.Adapter.Gun do
       end
     rescue
       error ->
-        Logger.warn("Gun connections pool checkin caused error #{inspect(error)}")
+        Logger.warn(
+          "Gun connections pool checkin caused error #{uri.scheme}://#{
+            Connections.compose_uri(uri)
+          } #{inspect(error)}"
+        )
+
         opts
     catch
       :exit, {:timeout, _} ->
-        Logger.info(
-          "Gun connections pool checkin with timeout error #{Connections.compose_uri(uri)}"
+        Logger.warn(
+          "Gun connections pool checkin with timeout error #{uri.scheme}://#{
+            Connections.compose_uri(uri)
+          }"
         )
 
         opts
 
       :exit, error ->
-        Logger.warn("Gun pool checkin exited with error #{inspect(error)}")
+        Logger.warn(
+          "Gun pool checkin exited with error #{uri.scheme}://#{Connections.compose_uri(uri)} #{
+            inspect(error)
+          }"
+        )
+
         opts
     end
   end

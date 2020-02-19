@@ -91,7 +91,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
 
     test "get conn on next request" do
       level = Application.get_env(:logger, :level)
-      Logger.configure(level: :info)
+      Logger.configure(level: :debug)
       on_exit(fn -> Logger.configure(level: level) end)
       uri = URI.parse("http://some-domain2.com")
 
