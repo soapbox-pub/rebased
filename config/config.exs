@@ -480,13 +480,15 @@ config :pleroma, Oban,
     transmogrifier: 20,
     scheduled_activities: 10,
     background: 5,
-    attachments_cleanup: 5
+    attachments_cleanup: 5,
+    new_users_digest: 1
   ],
   crontab: [
     {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
     {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
     {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
-    {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker}
+    {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
+    {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]
 
 config :pleroma, :workers,
@@ -559,6 +561,8 @@ config :pleroma, Pleroma.Emails.UserEmail,
     text_color: "#b9b9ba",
     text_muted_color: "#b9b9ba"
   }
+
+config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: false
 
 config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
 

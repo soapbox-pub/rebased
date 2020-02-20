@@ -2504,6 +2504,20 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: Pleroma.Emails.NewUsersDigestEmail,
+    type: :group,
+    description: "New users admin email digest",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "enables new users admin digest email when `true`",
+        suggestions: [false]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :oauth2,
     type: :group,
     description: "Configure OAuth 2 provider capabilities",

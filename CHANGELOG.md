@@ -72,6 +72,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - User notification settings: Add `privacy_option` option.
 - Support for custom Elixir modules (such as MRF policies)
 - User settings: Add _This account is a_ option.
+- A new users admin digest email
 - OAuth: admin scopes support (relevant setting: `[:auth, :enforce_oauth_admin_scope_usage]`).
 <details>
   <summary>API Changes</summary>
