@@ -74,6 +74,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - User settings: Add _This account is a_ option.
 - A new users admin digest email
 - OAuth: admin scopes support (relevant setting: `[:auth, :enforce_oauth_admin_scope_usage]`).
+- Add an option `authorized_fetch_mode` to require HTTP signatures for AP fetches.
 <details>
   <summary>API Changes</summary>
 
