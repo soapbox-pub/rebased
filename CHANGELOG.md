@@ -116,6 +116,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `feed.logo` option for tag feed.
 - Tag feed: `/tags/:tag.rss` - list public statuses by hashtag.
 - Mastodon API: Add `reacted` property to `emoji_reactions`
+- Pleroma API: Add reactions for a single emoji.
 </details>
 
 ### Fixed

@@ -41,24 +41,29 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
-  def emoji_reactions_by(%{assigns: %{user: user}} = conn, %{"id" => activity_id}) do
+  def emoji_reactions_by(%{assigns: %{user: user}} = conn, %{"id" => activity_id} = params) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
          %Object{data: %{"reactions" => emoji_reactions}} when is_list(emoji_reactions) <-
            Object.normalize(activity) do
       reactions =
         emoji_reactions
         |> Enum.map(fn [emoji, user_ap_ids] ->
-          users =
-            Enum.map(user_ap_ids, &User.get_cached_by_ap_id/1)
-            |> Enum.filter(& &1)
+          if params["emoji"] && params["emoji"] != emoji do
+            nil
+          else
+            users =
+              Enum.map(user_ap_ids, &User.get_cached_by_ap_id/1)
+              |> Enum.filter(& &1)
 
-          %{
-            name: emoji,
-            count: length(users),
-            accounts: AccountView.render("index.json", %{users: users, for: user, as: :user}),
-            me: !!(user && user.ap_id in user_ap_ids)
-          }
+            %{
+              name: emoji,
+              count: length(users),
+              accounts: AccountView.render("index.json", %{users: users, for: user, as: :user}),
+              me: !!(user && user.ap_id in user_ap_ids)
+            }
+          end
         end)
+        |> Enum.filter(& &1)
 
       conn
       |> json(reactions)
