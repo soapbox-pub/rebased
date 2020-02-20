@@ -75,6 +75,7 @@ defmodule Pleroma.ObjectTest do
 
   describe "delete attachments" do
     clear_config([Pleroma.Upload])
+    clear_config([:instance, :cleanup_attachments])
 
     test "Disabled via config" do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)

@@ -19,7 +19,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
   clear_config([:instance])
   clear_config([:frontend_configurations, :pleroma_fe])
-  clear_config([:user, :deny_follow_blocked])
 
   describe "POST /api/pleroma/follow_import" do
     setup do: oauth_access(["follow"])
