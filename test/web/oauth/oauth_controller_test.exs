@@ -17,7 +17,8 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     key: "_test",
     signing_salt: "cooldude"
   ]
-  clear_config_all([:instance, :account_activation_required])
+
+  clear_config([:instance, :account_activation_required])
 
   describe "in OAuth consumer mode, " do
     setup do

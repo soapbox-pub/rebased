@@ -6,7 +6,9 @@ defmodule Pleroma.Web.NodeInfoTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
+
   clear_config([:mrf_simple])
+  clear_config(:instance)
 
   test "GET /.well-known/nodeinfo", %{conn: conn} do
     links =
@@ -63,11 +65,6 @@ defmodule Pleroma.Web.NodeInfoTest do
   end
 
   test "returns fieldsLimits field", %{conn: conn} do
-    max_account_fields = Pleroma.Config.get([:instance, :max_account_fields])
-    max_remote_account_fields = Pleroma.Config.get([:instance, :max_remote_account_fields])
-    account_field_name_length = Pleroma.Config.get([:instance, :account_field_name_length])
-    account_field_value_length = Pleroma.Config.get([:instance, :account_field_value_length])
-
     Pleroma.Config.put([:instance, :max_account_fields], 10)
     Pleroma.Config.put([:instance, :max_remote_account_fields], 15)
     Pleroma.Config.put([:instance, :account_field_name_length], 255)
@@ -82,11 +79,6 @@ defmodule Pleroma.Web.NodeInfoTest do
     assert response["metadata"]["fieldsLimits"]["maxRemoteFields"] == 15
     assert response["metadata"]["fieldsLimits"]["nameLength"] == 255
     assert response["metadata"]["fieldsLimits"]["valueLength"] == 2048
-
-    Pleroma.Config.put([:instance, :max_account_fields], max_account_fields)
-    Pleroma.Config.put([:instance, :max_remote_account_fields], max_remote_account_fields)
-    Pleroma.Config.put([:instance, :account_field_name_length], account_field_name_length)
-    Pleroma.Config.put([:instance, :account_field_value_length], account_field_value_length)
   end
 
   test "it returns the safe_dm_mentions feature if enabled", %{conn: conn} do
@@ -112,28 +104,28 @@ defmodule Pleroma.Web.NodeInfoTest do
     Pleroma.Config.put([:instance, :safe_dm_mentions], option)
   end
 
-  test "it shows if federation is enabled/disabled", %{conn: conn} do
-    original = Pleroma.Config.get([:instance, :federating])
+  describe "`metadata/federation/enabled`" do
+    clear_config([:instance, :federating])
 
-    Pleroma.Config.put([:instance, :federating], true)
+    test "it shows if federation is enabled/disabled", %{conn: conn} do
+      Pleroma.Config.put([:instance, :federating], true)
 
-    response =
-      conn
-      |> get("/nodeinfo/2.1.json")
-      |> json_response(:ok)
+      response =
+        conn
+        |> get("/nodeinfo/2.1.json")
+        |> json_response(:ok)
 
-    assert response["metadata"]["federation"]["enabled"] == true
+      assert response["metadata"]["federation"]["enabled"] == true
 
-    Pleroma.Config.put([:instance, :federating], false)
+      Pleroma.Config.put([:instance, :federating], false)
 
-    response =
-      conn
-      |> get("/nodeinfo/2.1.json")
-      |> json_response(:ok)
+      response =
+        conn
+        |> get("/nodeinfo/2.1.json")
+        |> json_response(:ok)
 
-    assert response["metadata"]["federation"]["enabled"] == false
-
-    Pleroma.Config.put([:instance, :federating], original)
+      assert response["metadata"]["federation"]["enabled"] == false
+    end
   end
 
   test "it shows MRF transparency data if enabled", %{conn: conn} do

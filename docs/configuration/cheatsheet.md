@@ -501,6 +501,10 @@ Email notifications settings.
 - `:logo` - a path to a custom logo. Set it to `nil` to use the default Pleroma logo.
 - `:styling` - a map with color settings for email templates.
 
+### Pleroma.Emails.NewUsersDigestEmail
+
+- `:enabled` - a boolean, enables new users admin digest email when `true`. Defaults to `false`.
+
 ## Background jobs
 
 ### Oban
