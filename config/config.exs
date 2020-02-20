@@ -617,6 +617,8 @@ config :pleroma, :modules, runtime_dir: "instance/modules"
 
 config :pleroma, configurable_from_database: false
 
+config :pleroma, Pleroma.Repo, parameters: [gin_fuzzy_search_limit: "500"]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
