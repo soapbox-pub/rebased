@@ -9,7 +9,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy do
   @impl true
   def filter(activity) do
     activity =
-      if local?(activity) do
+      if activity["type"] == "Create" && local?(activity) do
         maybe_add_expiration(activity)
       else
         activity
