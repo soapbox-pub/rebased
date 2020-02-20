@@ -63,7 +63,7 @@ defmodule Pleroma.Activity.Queries do
     )
   end
 
-  @spec by_object_id(query, String.t()) :: query
+  @spec by_object_in_reply_to_id(query, String.t(), keyword()) :: query
   def by_object_in_reply_to_id(query, in_reply_to_id, opts \\ []) do
     query =
       if opts[:skip_preloading] do
