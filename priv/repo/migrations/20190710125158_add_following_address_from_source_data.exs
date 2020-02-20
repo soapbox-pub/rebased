@@ -1,7 +1,8 @@
 defmodule Pleroma.Repo.Migrations.AddFollowingAddressFromSourceData do
-  use Ecto.Migration
-  import Ecto.Query
   alias Pleroma.User
+  import Ecto.Query
+  require Logger
+  use Ecto.Migration
 
   def change do
     query =
@@ -19,6 +20,9 @@ defmodule Pleroma.Repo.Migrations.AddFollowingAddressFromSourceData do
           :following_address
         ])
         |> Pleroma.Repo.update()
+
+      user ->
+        Logger.warn("User #{user.id} / #{user.nickname} does not seem to have source_data")
     end)
   end
 end
