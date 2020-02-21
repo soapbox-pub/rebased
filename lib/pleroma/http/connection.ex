@@ -33,8 +33,14 @@ defmodule Pleroma.HTTP.Connection do
   end
 
   defp pool_timeout(opts) do
-    timeout =
-      Config.get([:pools, opts[:pool], :timeout]) || Config.get([:pools, :default, :timeout])
+    {config_key, default} =
+      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Gun do
+        {:pools, Config.get([:pools, :default, :timeout])}
+      else
+        {:hackney_pools, 10_000}
+      end
+
+    timeout = Config.get([config_key, opts[:pool], :timeout], default)
 
     Keyword.merge(opts, timeout: timeout)
   end
