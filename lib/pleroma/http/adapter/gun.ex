@@ -115,11 +115,16 @@ defmodule Pleroma.HTTP.Adapter.Gun do
 
         opts
     catch
-      :exit, {:timeout, _} ->
+      :exit, {:timeout, {_, operation, [_, {method, _}, _]}} ->
+        messages_len =
+          :gun_connections
+          |> Process.whereis()
+          |> Process.info(:message_queue_len)
+
         Logger.warn(
-          "Gun connections pool checkin with timeout error #{uri.scheme}://#{
-            Connections.compose_uri(uri)
-          }"
+          "Gun connections pool checkin with timeout error for #{operation} #{method} #{
+            uri.scheme
+          }://#{Connections.compose_uri(uri)}. Messages length: #{messages_len}"
         )
 
         opts

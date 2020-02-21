@@ -61,8 +61,8 @@ defmodule Pleroma.HTTPTest do
 
   describe "connection pools" do
     @describetag :integration
-    clear_config([Pleroma.Gun.API]) do
-      Pleroma.Config.put([Pleroma.Gun.API], Pleroma.Gun)
+    clear_config(Pleroma.Gun.API) do
+      Pleroma.Config.put(Pleroma.Gun.API, Pleroma.Gun)
     end
 
     test "gun" do

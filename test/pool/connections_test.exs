@@ -15,6 +15,10 @@ defmodule Pleroma.Pool.ConnectionsTest do
     :ok
   end
 
+  clear_config([:connections_pool, :retry]) do
+    Pleroma.Config.put([:connections_pool, :retry], 5)
+  end
+
   setup do
     name = :test_connections
     adapter = Application.get_env(:tesla, :adapter)
@@ -429,8 +433,8 @@ defmodule Pleroma.Pool.ConnectionsTest do
   describe "integration test" do
     @describetag :integration
 
-    clear_config([API]) do
-      Pleroma.Config.put([API], Pleroma.Gun)
+    clear_config(API) do
+      Pleroma.Config.put(API, Pleroma.Gun)
     end
 
     test "opens connection and reuse it on next request", %{name: name} do

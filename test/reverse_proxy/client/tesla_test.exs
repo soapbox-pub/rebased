@@ -8,8 +8,8 @@ defmodule Pleroma.ReverseProxy.Client.TeslaTest do
   alias Pleroma.ReverseProxy.Client
   @moduletag :integration
 
-  clear_config_all([Pleroma.Gun.API]) do
-    Pleroma.Config.put([Pleroma.Gun.API], Pleroma.Gun)
+  clear_config_all(Pleroma.Gun.API) do
+    Pleroma.Config.put(Pleroma.Gun.API, Pleroma.Gun)
   end
 
   setup do

@@ -345,12 +345,12 @@ defmodule Pleroma.ReverseProxyTest do
   describe "tesla client using gun integration" do
     @describetag :integration
 
-    clear_config([Pleroma.ReverseProxy.Client]) do
-      Pleroma.Config.put([Pleroma.ReverseProxy.Client], Pleroma.ReverseProxy.Client.Tesla)
+    clear_config(Pleroma.ReverseProxy.Client) do
+      Pleroma.Config.put(Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.Client.Tesla)
     end
 
-    clear_config([Pleroma.Gun.API]) do
-      Pleroma.Config.put([Pleroma.Gun.API], Pleroma.Gun)
+    clear_config(Pleroma.Gun.API) do
+      Pleroma.Config.put(Pleroma.Gun.API, Pleroma.Gun)
     end
 
     setup do
