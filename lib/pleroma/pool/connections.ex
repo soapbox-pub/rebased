@@ -5,6 +5,8 @@
 defmodule Pleroma.Pool.Connections do
   use GenServer
 
+  alias Pleroma.Config
+
   require Logger
 
   @type domain :: String.t()
@@ -33,7 +35,7 @@ defmodule Pleroma.Pool.Connections do
   def checkin(url, name) when is_binary(url), do: checkin(URI.parse(url), name)
 
   def checkin(%URI{} = uri, name) do
-    timeout = Pleroma.Config.get([:connections_pool, :receive_connection_timeout], 250)
+    timeout = Config.get([:connections_pool, :receive_connection_timeout], 250)
 
     GenServer.call(
       name,
@@ -47,7 +49,7 @@ defmodule Pleroma.Pool.Connections do
   def open_conn(url, name, opts) when is_binary(url), do: open_conn(URI.parse(url), name, opts)
 
   def open_conn(%URI{} = uri, name, opts) do
-    pool_opts = Pleroma.Config.get([:connections_pool], [])
+    pool_opts = Config.get([:connections_pool], [])
 
     opts =
       opts
@@ -193,12 +195,13 @@ defmodule Pleroma.Pool.Connections do
 
   @impl true
   def handle_info({:gun_down, conn_pid, _protocol, _reason, _killed}, state) do
+    retries = Config.get([:connections_pool, :retry], 0)
     # we can't get info on this pid, because pid is dead
     state =
       with true <- Process.alive?(conn_pid),
            {key, conn} <- find_conn(state.conns, conn_pid) do
-        if conn.retries == 5 do
-          Logger.debug("closing conn if retries is eq 5 #{inspect(conn_pid)}")
+        if conn.retries == retries do
+          Logger.debug("closing conn if retries is eq  #{inspect(conn_pid)}")
           :ok = API.close(conn.conn)
 
           put_in(

@@ -599,7 +599,7 @@ config :pleroma, configurable_from_database: false
 config :pleroma, :connections_pool,
   receive_connection_timeout: 250,
   max_connections: 250,
-  retry: 5,
+  retry: 0,
   retry_timeout: 100,
   await_up_timeout: 5_000
 
