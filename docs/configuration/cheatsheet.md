@@ -43,7 +43,7 @@ You shouldn't edit the base config directly to avoid breakages and merge conflic
     * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
-    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Adds expiration to all local activities (see [`:mrf_activity_expiration`](#mrf_activity_expiration)).
+    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Adds expiration to all local Create activities (see [`:mrf_activity_expiration`](#mrf_activity_expiration)).
 * `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in [:frontend_configurations](#frontend_configurations) or in ``static/config.json``.
@@ -145,7 +145,7 @@ config :pleroma, :mrf_user_allowlist,
 
 #### :mrf_activity_expiration
 
-* `days`: Default global expiration time for all local activities (in days)
+* `days`: Default global expiration time for all local Create activities (in days)
 
 ### :activitypub
 * ``unfollow_blocked``: Whether blocks result in people getting unfollowed

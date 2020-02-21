@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy do
-  @moduledoc "Adds expiration to all local activities"
+  @moduledoc "Adds expiration to all local Create activities"
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   @impl true

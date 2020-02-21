@@ -1351,12 +1351,12 @@ config :pleroma, :config_description, [
     key: :mrf_activity_expiration,
     label: "MRF Activity Expiration Policy",
     type: :group,
-    description: "Adds expiration to all local activities",
+    description: "Adds expiration to all local Create activities",
     children: [
       %{
         key: :days,
         type: :integer,
-        description: "Default global expiration time for all local activities (in days)",
+        description: "Default global expiration time for all local Create activities (in days)",
         suggestions: [90, 365]
       }
     ]
