@@ -58,7 +58,8 @@ defmodule Pleroma.HTTP.Adapter.Gun do
         depth: 20,
         reuse_sessions: false,
         verify_fun:
-          {&:ssl_verify_hostname.verify_fun/3, [check_hostname: Adapter.domain_or_fallback(host)]}
+          {&:ssl_verify_hostname.verify_fun/3, [check_hostname: Adapter.domain_or_fallback(host)]},
+        log_level: :warning
       ]
     ]
 
