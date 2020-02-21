@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MediaProxyTest do
   alias Pleroma.Web.MediaProxy.MediaProxyController
 
   clear_config([:media_proxy, :enabled])
+  clear_config(Pleroma.Upload)
 
   describe "when enabled" do
     setup do
@@ -224,7 +225,6 @@ defmodule Pleroma.Web.MediaProxyTest do
     end
 
     test "ensure Pleroma.Upload base_url is always whitelisted" do
-      upload_config = Pleroma.Config.get([Pleroma.Upload])
       media_url = "https://media.pleroma.social"
       Pleroma.Config.put([Pleroma.Upload, :base_url], media_url)
 
@@ -232,8 +232,6 @@ defmodule Pleroma.Web.MediaProxyTest do
       encoded = url(url)
 
       assert String.starts_with?(encoded, media_url)
-
-      Pleroma.Config.put([Pleroma.Upload], upload_config)
     end
   end
 end

@@ -96,6 +96,8 @@ config :pleroma, :modules, runtime_dir: "test/fixtures/modules"
 
 config :pleroma, Pleroma.Gun.API, Pleroma.Gun.API.Mock
 
+config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: true
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else

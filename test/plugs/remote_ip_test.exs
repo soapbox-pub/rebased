@@ -8,6 +8,10 @@ defmodule Pleroma.Plugs.RemoteIpTest do
 
   alias Pleroma.Plugs.RemoteIp
 
+  import Pleroma.Tests.Helpers, only: [clear_config: 1, clear_config: 2]
+
+  clear_config(RemoteIp)
+
   test "disabled" do
     Pleroma.Config.put(RemoteIp, enabled: false)
 

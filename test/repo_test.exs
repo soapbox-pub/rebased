@@ -67,6 +67,8 @@ defmodule Pleroma.RepoTest do
       :ok
     end
 
+    clear_config([:i_am_aware_this_may_cause_data_loss, :disable_migration_check])
+
     test "raises if it detects unapplied migrations" do
       assert_raise Pleroma.Repo.UnappliedMigrationsError, fn ->
         capture_log(&Repo.check_migrations_applied!/0)
@@ -74,17 +76,7 @@ defmodule Pleroma.RepoTest do
     end
 
     test "doesn't do anything if disabled" do
-      disable_migration_check =
-        Pleroma.Config.get([:i_am_aware_this_may_cause_data_loss, :disable_migration_check])
-
       Pleroma.Config.put([:i_am_aware_this_may_cause_data_loss, :disable_migration_check], true)
-
-      on_exit(fn ->
-        Pleroma.Config.put(
-          [:i_am_aware_this_may_cause_data_loss, :disable_migration_check],
-          disable_migration_check
-        )
-      end)
 
       assert :ok == Repo.check_migrations_applied!()
     end

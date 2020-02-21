@@ -7,11 +7,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
   import Mock
   alias Pleroma.Config
 
-  setup do
-    media_proxy_config = Config.get([:media_proxy]) || []
-    on_exit(fn -> Config.put([:media_proxy], media_proxy_config) end)
-    :ok
-  end
+  clear_config(:media_proxy)
+  clear_config([Pleroma.Web.Endpoint, :secret_key_base])
 
   test "it returns 404 when MediaProxy disabled", %{conn: conn} do
     Config.put([:media_proxy, :enabled], false)

@@ -19,6 +19,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
   end
 
   describe "handle_incoming" do
+    clear_config([:user, :deny_follow_blocked])
+
     test "it works for osada follow request" do
       user = insert(:user)
 

@@ -49,7 +49,8 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 config :pleroma, Pleroma.Repo,
   types: Pleroma.PostgresTypes,
   telemetry_event: [Pleroma.Repo.Instrumenter],
-  migration_lock: nil
+  migration_lock: nil,
+  parameters: [gin_fuzzy_search_limit: "500"]
 
 config :pleroma, Pleroma.Captcha,
   enabled: true,
@@ -304,7 +305,8 @@ config :pleroma, :activitypub,
   unfollow_blocked: true,
   outgoing_blocks: true,
   follow_handshake_timeout: 500,
-  sign_object_fetches: true
+  sign_object_fetches: true,
+  authorized_fetch_mode: false
 
 config :pleroma, :streamer,
   workers: 3,
@@ -458,13 +460,15 @@ config :pleroma, Oban,
     transmogrifier: 20,
     scheduled_activities: 10,
     background: 5,
-    attachments_cleanup: 5
+    attachments_cleanup: 5,
+    new_users_digest: 1
   ],
   crontab: [
     {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
     {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
     {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
-    {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker}
+    {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
+    {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
   ]
 
 config :pleroma, :workers,
@@ -537,6 +541,8 @@ config :pleroma, Pleroma.Emails.UserEmail,
     text_color: "#b9b9ba",
     text_muted_color: "#b9b9ba"
   }
+
+config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: false
 
 config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
 

@@ -271,6 +271,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:api)
 
+    get("/statuses/:id/reactions/:emoji", PleromaAPIController, :emoji_reactions_by)
     get("/statuses/:id/reactions", PleromaAPIController, :emoji_reactions_by)
   end
 

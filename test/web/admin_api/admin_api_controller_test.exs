@@ -1893,9 +1893,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "when configuration from database is off", %{conn: conn} do
-      initial = Config.get(:configurable_from_database)
       Config.put(:configurable_from_database, false)
-      on_exit(fn -> Config.put(:configurable_from_database, initial) end)
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response(conn, 400) ==

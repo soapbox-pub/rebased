@@ -72,8 +72,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - User notification settings: Add `privacy_option` option.
 - Support for custom Elixir modules (such as MRF policies)
 - User settings: Add _This account is a_ option.
+- A new users admin digest email
 - OAuth: admin scopes support (relevant setting: `[:auth, :enforce_oauth_admin_scope_usage]`).
 - New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
+- Add an option `authorized_fetch_mode` to require HTTP signatures for AP fetches.
 <details>
   <summary>API Changes</summary>
 
@@ -115,6 +117,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `feed.logo` option for tag feed.
 - Tag feed: `/tags/:tag.rss` - list public statuses by hashtag.
 - Mastodon API: Add `reacted` property to `emoji_reactions`
+- Pleroma API: Add reactions for a single emoji.
 </details>
 
 ### Fixed
