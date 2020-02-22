@@ -219,6 +219,8 @@ config :pleroma, :instance,
     max_expiration: 365 * 24 * 60 * 60
   },
   registrations_open: true,
+  invites_enabled: false,
+  account_activation_required: false,
   federating: true,
   federation_incoming_replies_max_depth: 100,
   federation_reachability_timeout_days: 7,
