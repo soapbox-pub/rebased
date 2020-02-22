@@ -18,7 +18,9 @@
 6. Run `sudo -Hu postgres pg_restore -d <pleroma_db> -v -1 </path/to/backup_location/pleroma.pgdump>`
 7. If you installed a newer Pleroma version, you should run `mix ecto.migrate`[^1]. This task performs database migrations, if there were any.
 8. Restart the Pleroma service.
-
+9. After you've restarted Pleroma, you will notice that postgres will take up more cpu resources than usual. A lot in fact. To fix this you must do a VACUUM ANLAYZE. This can also be done while the instance is still running like so: 
+   $ sudo -u postgres psql pleroma_database_name
+   pleroma=# VACUUM ANALYZE;
 [^1]: Prefix with `MIX_ENV=prod` to run it using the production config file.
 
 ## Remove

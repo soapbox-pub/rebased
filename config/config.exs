@@ -327,7 +327,8 @@ config :pleroma, :activitypub,
   outgoing_blocks: true,
   follow_handshake_timeout: 500,
   note_replies_output_limit: 5,
-  sign_object_fetches: true
+  sign_object_fetches: true,
+  authorized_fetch_mode: false
 
 config :pleroma, :streamer,
   workers: 3,
@@ -617,6 +618,8 @@ config :pleroma, :web_cache_ttl,
 config :pleroma, :modules, runtime_dir: "instance/modules"
 
 config :pleroma, configurable_from_database: false
+
+config :pleroma, Pleroma.Repo, parameters: [gin_fuzzy_search_limit: "500"]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

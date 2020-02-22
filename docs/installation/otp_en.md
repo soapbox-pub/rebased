@@ -259,19 +259,14 @@ su pleroma -s $SHELL -lc "./bin/pleroma_ctl user new joeuser joeuser@sld.tld --a
 ```
 This will create an account withe the username of 'joeuser' with the email address of joeuser@sld.tld, and set that user's account as an admin. This will result in a link that you can paste into the browser, which logs you in and enables you to set the password.
 
-### Updating
-Generally, doing the following is enough:
-```sh
-# Download the new release
-su pleroma -s $SHELL -lc "./bin/pleroma_ctl update"
-
-# Migrate the database, you are advised to stop the instance before doing that
-su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate"
-```
-But you should **always check the release notes/changelog** in case there are config deprecations, special update steps, etc.
-
 ## Further reading
 
 * [Backup your instance](../administration/backup.md)
 * [Hardening your instance](../configuration/hardening.md)
 * [How to activate mediaproxy](../configuration/howto_mediaproxy.md)
+* [Updating your instance](../administration/updating.md)
+
+## Questions
+
+Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.
+

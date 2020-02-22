@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
@@ -92,15 +92,13 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       user = insert(:user)
       user2 = insert(:user)
 
-      response =
+      conn =
         conn
         |> assign(:user, user)
         |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:follows"]))
         |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
-        |> response(200)
 
-      assert response =~ "Account followed!"
-      assert user2.follower_address in User.following(user)
+      assert redirected_to(conn) == "/users/#{user2.id}"
     end
 
     test "returns error when user is deactivated", %{conn: conn} do
@@ -149,14 +147,13 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       user2 = insert(:user)
       {:ok, _, _, _} = CommonAPI.follow(user, user2)
 
-      response =
+      conn =
         conn
         |> assign(:user, refresh_record(user))
         |> assign(:token, insert(:oauth_token, user: user, scopes: ["write:follows"]))
         |> post(remote_follow_path(conn, :do_follow), %{"user" => %{"id" => user2.id}})
-        |> response(200)
 
-      assert response =~ "Account followed!"
+      assert redirected_to(conn) == "/users/#{user2.id}"
     end
   end
 
@@ -165,14 +162,13 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
       user = insert(:user)
       user2 = insert(:user)
 
-      response =
+      conn =
         conn
         |> post(remote_follow_path(conn, :do_follow), %{
           "authorization" => %{"name" => user.nickname, "password" => "test", "id" => user2.id}
         })
-        |> response(200)
 
-      assert response =~ "Account followed!"
+      assert redirected_to(conn) == "/users/#{user2.id}"
       assert user2.follower_address in User.following(user)
     end
 
