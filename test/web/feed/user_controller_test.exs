@@ -8,66 +8,78 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
   import Pleroma.Factory
   import SweetXml
 
+  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.User
 
-  clear_config([:feed])
-
-  test "gets a feed", %{conn: conn} do
-    Pleroma.Config.put(
-      [:feed, :post_title],
-      %{max_length: 10, omission: "..."}
-    )
-
-    activity = insert(:note_activity)
-
-    note =
-      insert(:note,
-        data: %{
-          "content" => "This is :moominmamma: note ",
-          "attachment" => [
-            %{
-              "url" => [%{"mediaType" => "image/png", "href" => "https://pleroma.gov/image.png"}]
-            }
-          ],
-          "inReplyTo" => activity.data["id"]
-        }
-      )
-
-    note_activity = insert(:note_activity, note: note)
-    user = User.get_cached_by_ap_id(note_activity.data["actor"])
-
-    note2 =
-      insert(:note,
-        user: user,
-        data: %{"content" => "42 This is :moominmamma: note ", "inReplyTo" => activity.data["id"]}
-      )
-
-    _note_activity2 = insert(:note_activity, note: note2)
-    object = Object.normalize(note_activity)
-
-    resp =
-      conn
-      |> put_req_header("content-type", "application/atom+xml")
-      |> get(user_feed_path(conn, :feed, user.nickname))
-      |> response(200)
-
-    activity_titles =
-      resp
-      |> SweetXml.parse()
-      |> SweetXml.xpath(~x"//entry/title/text()"l)
-
-    assert activity_titles == ['42 This...', 'This is...']
-    assert resp =~ object.data["content"]
+  clear_config_all([:instance, :federating]) do
+    Config.put([:instance, :federating], true)
   end
 
-  test "returns 404 for a missing feed", %{conn: conn} do
-    conn =
-      conn
-      |> put_req_header("content-type", "application/atom+xml")
-      |> get(user_feed_path(conn, :feed, "nonexisting"))
+  describe "feed" do
+    clear_config([:feed])
 
-    assert response(conn, 404)
+    test "gets a feed", %{conn: conn} do
+      Config.put(
+        [:feed, :post_title],
+        %{max_length: 10, omission: "..."}
+      )
+
+      activity = insert(:note_activity)
+
+      note =
+        insert(:note,
+          data: %{
+            "content" => "This is :moominmamma: note ",
+            "attachment" => [
+              %{
+                "url" => [
+                  %{"mediaType" => "image/png", "href" => "https://pleroma.gov/image.png"}
+                ]
+              }
+            ],
+            "inReplyTo" => activity.data["id"]
+          }
+        )
+
+      note_activity = insert(:note_activity, note: note)
+      user = User.get_cached_by_ap_id(note_activity.data["actor"])
+
+      note2 =
+        insert(:note,
+          user: user,
+          data: %{
+            "content" => "42 This is :moominmamma: note ",
+            "inReplyTo" => activity.data["id"]
+          }
+        )
+
+      _note_activity2 = insert(:note_activity, note: note2)
+      object = Object.normalize(note_activity)
+
+      resp =
+        conn
+        |> put_req_header("content-type", "application/atom+xml")
+        |> get(user_feed_path(conn, :feed, user.nickname))
+        |> response(200)
+
+      activity_titles =
+        resp
+        |> SweetXml.parse()
+        |> SweetXml.xpath(~x"//entry/title/text()"l)
+
+      assert activity_titles == ['42 This...', 'This is...']
+      assert resp =~ object.data["content"]
+    end
+
+    test "returns 404 for a missing feed", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/atom+xml")
+        |> get(user_feed_path(conn, :feed, "nonexisting"))
+
+      assert response(conn, 404)
+    end
   end
 
   describe "feed_redirect" do
@@ -246,6 +258,31 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> json_response(404)
 
       assert response == %{"error" => "Not found"}
+    end
+  end
+
+  describe "feed_redirect (depending on federation enabled state)" do
+    setup %{conn: conn} do
+      user = insert(:user)
+      conn = put_req_header(conn, "accept", "application/json")
+
+      %{conn: conn, user: user}
+    end
+
+    clear_config([:instance, :federating])
+
+    test "renders if instance is federating", %{conn: conn, user: user} do
+      Config.put([:instance, :federating], true)
+
+      conn = get(conn, "/users/#{user.nickname}")
+      assert json_response(conn, 200)
+    end
+
+    test "renders 404 if instance is NOT federating", %{conn: conn, user: user} do
+      Config.put([:instance, :federating], false)
+
+      conn = get(conn, "/users/#{user.nickname}")
+      assert json_response(conn, 404)
     end
   end
 end

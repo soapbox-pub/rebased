@@ -30,7 +30,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     when action in [:activity, :object]
   )
 
-  plug(Pleroma.Web.FederatingPlug when action in [:inbox, :relay])
+  plug(Pleroma.Web.FederatingPlug)
   plug(:set_requester_reachable when action in [:inbox])
   plug(:relay_active? when action in [:relay])
 

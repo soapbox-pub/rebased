@@ -16,6 +16,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.Metadata.PlayerView
   alias Pleroma.Web.Router
 
+  plug(Pleroma.Web.FederatingPlug)
+
   plug(
     RateLimiter,
     [name: :ap_routes, params: ["uuid"]] when action in [:object, :activity]
