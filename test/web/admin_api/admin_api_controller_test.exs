@@ -3545,6 +3545,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     assert String.starts_with?(child["group"], ":")
     assert child["description"]
   end
+
+  describe "/api/pleroma/admin/stats" do
+    test "status visibility count", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      user = insert(:user)
+      CommonAPI.post(user, %{"visibility" => "public", "status" => "hey"})
+      CommonAPI.post(user, %{"visibility" => "unlisted", "status" => "hey"})
+      CommonAPI.post(user, %{"visibility" => "unlisted", "status" => "hey"})
+
+      response =
+        conn
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/stats")
+        |> json_response(200)
+
+      assert %{"direct" => 0, "private" => 0, "public" => 1, "unlisted" => 2} =
+               response["status_visibility"]
+    end
+  end
 end
 
 # Needed for testing

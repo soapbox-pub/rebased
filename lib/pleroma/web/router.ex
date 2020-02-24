@@ -201,6 +201,7 @@ defmodule Pleroma.Web.Router do
     get("/moderation_log", AdminAPIController, :list_log)
 
     post("/reload_emoji", AdminAPIController, :reload_emoji)
+    get("/stats", AdminAPIController, :stats)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
