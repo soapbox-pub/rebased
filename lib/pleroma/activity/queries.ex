@@ -7,7 +7,7 @@ defmodule Pleroma.Activity.Queries do
   Contains queries for Activity.
   """
 
-  import Ecto.Query, only: [from: 2]
+  import Ecto.Query, only: [from: 2, where: 3]
 
   @type query :: Ecto.Queryable.t() | Activity.t()
 
@@ -60,6 +60,22 @@ defmodule Pleroma.Activity.Queries do
           activity.data,
           ^object_id
         )
+    )
+  end
+
+  @spec by_object_in_reply_to_id(query, String.t(), keyword()) :: query
+  def by_object_in_reply_to_id(query, in_reply_to_id, opts \\ []) do
+    query =
+      if opts[:skip_preloading] do
+        Activity.with_joined_object(query)
+      else
+        Activity.with_preloaded_object(query)
+      end
+
+    where(
+      query,
+      [activity, object: o],
+      fragment("(?)->>'inReplyTo' = ?", o.data, ^to_string(in_reply_to_id))
     )
   end
 

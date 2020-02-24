@@ -662,7 +662,7 @@ config :pleroma, :config_description, [
         label: "Fed. incoming replies max depth",
         type: :integer,
         description:
-          "Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while" <>
+          "Max. depth of reply-to and reply activities fetching on incoming federation, to prevent out-of-memory situations while" <>
             " fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.",
         suggestions: [
           100
@@ -1789,6 +1789,12 @@ config :pleroma, :config_description, [
         key: :sign_object_fetches,
         type: :boolean,
         description: "Sign object fetches with HTTP signatures"
+      },
+      %{
+        key: :note_replies_output_limit,
+        type: :integer,
+        description:
+          "The number of Note replies' URIs to be included with outgoing federation (`5` to match Mastodon hardcoded value, `0` to disable the output)."
       },
       %{
         key: :follow_handshake_timeout,
