@@ -118,7 +118,10 @@ defmodule Pleroma.Gun.API.Mock do
   end
 
   @impl API
-  def await_up(_pid), do: {:ok, :http}
+  def await_up(_pid, _timeout), do: {:ok, :http}
+
+  @impl API
+  def set_owner(_pid, _owner), do: :ok
 
   @impl API
   def connect(pid, %{host: _, port: 80}) do

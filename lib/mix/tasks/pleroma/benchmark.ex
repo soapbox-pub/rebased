@@ -79,7 +79,7 @@ defmodule Mix.Tasks.Pleroma.Benchmark do
     start_pleroma()
 
     :ok =
-      Pleroma.Pool.Connections.open_conn(
+      Pleroma.Gun.Conn.open(
         "https://httpbin.org/stream-bytes/1500",
         :gun_connections
       )

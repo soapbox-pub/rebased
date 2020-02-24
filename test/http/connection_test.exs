@@ -124,7 +124,7 @@ defmodule Pleroma.HTTP.ConnectionTest do
       uri = URI.parse("https://some-domain.com")
 
       pid = Process.whereis(:federation)
-      :ok = Pleroma.Pool.Connections.open_conn(uri, :gun_connections, genserver_pid: pid)
+      :ok = Pleroma.Gun.Conn.open(uri, :gun_connections, genserver_pid: pid)
 
       opts = Connection.options(uri)
 

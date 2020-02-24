@@ -7,6 +7,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
   use Pleroma.Tests.Helpers
   import ExUnit.CaptureLog
   alias Pleroma.Config
+  alias Pleroma.Gun.Conn
   alias Pleroma.HTTP.Adapter.Gun
   alias Pleroma.Pool.Connections
 
@@ -72,7 +73,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
 
     test "receive conn by default" do
       uri = URI.parse("http://another-domain.com")
-      :ok = Connections.open_conn(uri, :gun_connections)
+      :ok = Conn.open(uri, :gun_connections)
 
       received_opts = Gun.options(uri)
       assert received_opts[:close_conn] == false
@@ -81,7 +82,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
 
     test "don't receive conn if receive_conn is false" do
       uri = URI.parse("http://another-domain2.com")
-      :ok = Connections.open_conn(uri, :gun_connections)
+      :ok = Conn.open(uri, :gun_connections)
 
       opts = [receive_conn: false]
       received_opts = Gun.options(opts, uri)
@@ -118,7 +119,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
     test "default ssl adapter opts with connection" do
       uri = URI.parse("https://some-domain.com")
 
-      :ok = Connections.open_conn(uri, :gun_connections)
+      :ok = Conn.open(uri, :gun_connections)
 
       opts = Gun.options(uri)
 
@@ -167,7 +168,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
   describe "after_request/1" do
     test "body_as not chunks" do
       uri = URI.parse("http://some-domain.com")
-      :ok = Connections.open_conn(uri, :gun_connections)
+      :ok = Conn.open(uri, :gun_connections)
       opts = Gun.options(uri)
       :ok = Gun.after_request(opts)
       conn = opts[:conn]
@@ -185,7 +186,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
 
     test "body_as chunks" do
       uri = URI.parse("http://some-domain.com")
-      :ok = Connections.open_conn(uri, :gun_connections)
+      :ok = Conn.open(uri, :gun_connections)
       opts = Gun.options([body_as: :chunks], uri)
       :ok = Gun.after_request(opts)
       conn = opts[:conn]
@@ -205,7 +206,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
     test "with no connection" do
       uri = URI.parse("http://uniq-domain.com")
 
-      :ok = Connections.open_conn(uri, :gun_connections)
+      :ok = Conn.open(uri, :gun_connections)
 
       opts = Gun.options([body_as: :chunks], uri)
       conn = opts[:conn]
@@ -227,7 +228,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
 
     test "with ipv4" do
       uri = URI.parse("http://127.0.0.1")
-      :ok = Connections.open_conn(uri, :gun_connections)
+      :ok = Conn.open(uri, :gun_connections)
       opts = Gun.options(uri)
       send(:gun_connections, {:gun_up, opts[:conn], :http})
       :ok = Gun.after_request(opts)
@@ -246,7 +247,7 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
 
     test "with ipv6" do
       uri = URI.parse("http://[2a03:2880:f10c:83:face:b00c:0:25de]")
-      :ok = Connections.open_conn(uri, :gun_connections)
+      :ok = Conn.open(uri, :gun_connections)
       opts = Gun.options(uri)
       send(:gun_connections, {:gun_up, opts[:conn], :http})
       :ok = Gun.after_request(opts)

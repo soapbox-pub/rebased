@@ -6,9 +6,10 @@ defmodule Pleroma.Gun.API do
   @callback open(charlist(), pos_integer(), map()) :: {:ok, pid()}
   @callback info(pid()) :: map()
   @callback close(pid()) :: :ok
-  @callback await_up(pid) :: {:ok, atom()} | {:error, atom()}
+  @callback await_up(pid, pos_integer()) :: {:ok, atom()} | {:error, atom()}
   @callback connect(pid(), map()) :: reference()
   @callback await(pid(), reference()) :: {:response, :fin, 200, []}
+  @callback set_owner(pid(), pid()) :: :ok
 
   def open(host, port, opts), do: api().open(host, port, opts)
 
@@ -16,11 +17,13 @@ defmodule Pleroma.Gun.API do
 
   def close(pid), do: api().close(pid)
 
-  def await_up(pid), do: api().await_up(pid)
+  def await_up(pid, timeout \\ 5_000), do: api().await_up(pid, timeout)
 
   def connect(pid, opts), do: api().connect(pid, opts)
 
   def await(pid, ref), do: api().await(pid, ref)
+
+  def set_owner(pid, owner), do: api().set_owner(pid, owner)
 
   defp api, do: Pleroma.Config.get([Pleroma.Gun.API], Pleroma.Gun)
 end

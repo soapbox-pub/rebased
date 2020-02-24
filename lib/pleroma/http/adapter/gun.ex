@@ -12,7 +12,7 @@ defmodule Pleroma.HTTP.Adapter.Gun do
   alias Pleroma.Pool.Connections
 
   @defaults [
-    connect_timeout: 20_000,
+    connect_timeout: 5_000,
     domain_lookup_timeout: 5_000,
     tls_handshake_timeout: 5_000,
     retry: 0,
@@ -94,13 +94,11 @@ defmodule Pleroma.HTTP.Adapter.Gun do
             "Gun connections pool checkin was not successful. Trying to open conn for next request."
           )
 
-          :ok = Connections.open_conn(uri, :gun_connections, opts)
+          Task.start(fn -> Pleroma.Gun.Conn.open(uri, :gun_connections, opts) end)
           opts
 
         conn when is_pid(conn) ->
-          Logger.debug(
-            "received conn #{inspect(conn)} #{uri.scheme}://#{Connections.compose_uri(uri)}"
-          )
+          Logger.debug("received conn #{inspect(conn)} #{Connections.compose_uri_log(uri)}")
 
           opts
           |> Keyword.put(:conn, conn)
@@ -109,13 +107,14 @@ defmodule Pleroma.HTTP.Adapter.Gun do
     rescue
       error ->
         Logger.warn(
-          "Gun connections pool checkin caused error #{uri.scheme}://#{
-            Connections.compose_uri(uri)
-          } #{inspect(error)}"
+          "Gun connections pool checkin caused error #{Connections.compose_uri_log(uri)} #{
+            inspect(error)
+          }"
         )
 
         opts
     catch
+      # TODO: here must be no timeouts
       :exit, {:timeout, {_, operation, [_, {method, _}, _]}} ->
         {:message_queue_len, messages_len} =
           :gun_connections
@@ -124,15 +123,15 @@ defmodule Pleroma.HTTP.Adapter.Gun do
 
         Logger.warn(
           "Gun connections pool checkin with timeout error for #{operation} #{method} #{
-            uri.scheme
-          }://#{Connections.compose_uri(uri)}. Messages length: #{messages_len}"
+            Connections.compose_uri_log(uri)
+          }. Messages length: #{messages_len}"
         )
 
         opts
 
       :exit, error ->
         Logger.warn(
-          "Gun pool checkin exited with error #{uri.scheme}://#{Connections.compose_uri(uri)} #{
+          "Gun pool checkin exited with error #{Connections.compose_uri_log(uri)} #{
             inspect(error)
           }"
         )

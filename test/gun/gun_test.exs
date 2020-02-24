@@ -19,6 +19,12 @@ defmodule Pleroma.GunTest do
     assert json = receive_response(conn, ref)
 
     assert %{"args" => %{"a" => "b", "c" => "d"}} = Jason.decode!(json)
+
+    {:ok, pid} = Task.start(fn -> Process.sleep(50) end)
+
+    :ok = :gun.set_owner(conn, pid)
+
+    assert :gun.info(conn).owner == pid
   end
 
   defp receive_response(conn, ref, acc \\ "") do

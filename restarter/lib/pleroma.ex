@@ -44,7 +44,7 @@ defmodule Restarter.Pleroma do
   end
 
   def handle_cast({:restart, :test, _}, state) do
-    Logger.warn("pleroma restarted")
+    Logger.warn("pleroma manually restarted")
     {:noreply, Map.put(state, :need_reboot?, false)}
   end
 
@@ -57,7 +57,7 @@ defmodule Restarter.Pleroma do
   def handle_cast({:after_boot, _}, %{after_boot: true} = state), do: {:noreply, state}
 
   def handle_cast({:after_boot, :test}, state) do
-    Logger.warn("pleroma restarted")
+    Logger.warn("pleroma restarted after boot")
     {:noreply, Map.put(state, :after_boot, true)}
   end
 

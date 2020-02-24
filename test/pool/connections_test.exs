@@ -45,7 +45,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
     url = "http://some-domain.com"
     key = "http:some-domain.com:80"
     refute Connections.checkin(url, name)
-    :ok = Connections.open_conn(url, name)
+    :ok = Conn.open(url, name)
 
     conn = Connections.checkin(url, name)
     assert is_pid(conn)
@@ -110,7 +110,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
     url = "http://ですsome-domain.com"
     refute Connections.checkin(url, name)
 
-    :ok = Connections.open_conn(url, name)
+    :ok = Conn.open(url, name)
 
     conn = Connections.checkin(url, name)
     assert is_pid(conn)
@@ -139,7 +139,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
     refute Connections.checkin(url, name)
 
-    :ok = Connections.open_conn(url, name)
+    :ok = Conn.open(url, name)
 
     conn = Connections.checkin(url, name)
     assert is_pid(conn)
@@ -182,7 +182,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
     refute Connections.checkin(url, name)
 
-    :ok = Connections.open_conn(url, name)
+    :ok = Conn.open(url, name)
 
     conn = Connections.checkin(url, name)
     assert is_pid(conn)
@@ -209,7 +209,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
   test "up and down ipv4", %{name: name} do
     self = self()
     url = "http://127.0.0.1"
-    :ok = Connections.open_conn(url, name)
+    :ok = Conn.open(url, name)
     conn = Connections.checkin(url, name)
     send(name, {:gun_down, conn, nil, nil, nil})
     send(name, {:gun_up, conn, nil})
@@ -229,7 +229,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
   test "up and down ipv6", %{name: name} do
     self = self()
     url = "http://[2a03:2880:f10c:83:face:b00c:0:25de]"
-    :ok = Connections.open_conn(url, name)
+    :ok = Conn.open(url, name)
     conn = Connections.checkin(url, name)
     send(name, {:gun_down, conn, nil, nil, nil})
     send(name, {:gun_up, conn, nil})
@@ -253,13 +253,13 @@ defmodule Pleroma.Pool.ConnectionsTest do
     https_key = "https:some-domain.com:443"
 
     refute Connections.checkin(http_url, name)
-    :ok = Connections.open_conn(http_url, name)
+    :ok = Conn.open(http_url, name)
     conn = Connections.checkin(http_url, name)
     assert is_pid(conn)
     assert Process.alive?(conn)
 
     refute Connections.checkin(https_url, name)
-    :ok = Connections.open_conn(https_url, name)
+    :ok = Conn.open(https_url, name)
     https_conn = Connections.checkin(https_url, name)
 
     refute conn == https_conn
@@ -288,17 +288,17 @@ defmodule Pleroma.Pool.ConnectionsTest do
     url = "http://gun-not-up.com"
 
     assert capture_log(fn ->
-             :ok = Connections.open_conn(url, name)
+             refute Conn.open(url, name)
              refute Connections.checkin(url, name)
            end) =~
-             "Received error on opening connection http://gun-not-up.com: {:error, :timeout}"
+             "Received error on opening connection http://gun-not-up.com {:error, :timeout}"
   end
 
   test "process gun_down message and then gun_up", %{name: name} do
     self = self()
     url = "http://gun-down-and-up.com"
     key = "http:gun-down-and-up.com:80"
-    :ok = Connections.open_conn(url, name)
+    :ok = Conn.open(url, name)
     conn = Connections.checkin(url, name)
 
     assert is_pid(conn)
@@ -347,7 +347,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
   test "async processes get same conn for same domain", %{name: name} do
     url = "http://some-domain.com"
-    :ok = Connections.open_conn(url, name)
+    :ok = Conn.open(url, name)
 
     tasks =
       for _ <- 1..5 do
@@ -381,8 +381,8 @@ defmodule Pleroma.Pool.ConnectionsTest do
     self = self()
     http_url = "http://some-domain.com"
     https_url = "https://some-domain.com"
-    :ok = Connections.open_conn(https_url, name)
-    :ok = Connections.open_conn(http_url, name)
+    :ok = Conn.open(https_url, name)
+    :ok = Conn.open(http_url, name)
 
     conn1 = Connections.checkin(https_url, name)
 
@@ -413,7 +413,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
     :ok = Connections.checkout(conn1, self, name)
 
     another_url = "http://another-domain.com"
-    :ok = Connections.open_conn(another_url, name)
+    :ok = Conn.open(another_url, name)
     conn = Connections.checkin(another_url, name)
 
     %Connections{
@@ -437,9 +437,19 @@ defmodule Pleroma.Pool.ConnectionsTest do
       Pleroma.Config.put(API, Pleroma.Gun)
     end
 
+    test "opens connection and change owner", %{name: name} do
+      url = "https://httpbin.org"
+      :ok = Conn.open(url, name)
+      conn = Connections.checkin(url, name)
+
+      pid = Process.whereis(name)
+
+      assert :gun.info(conn).owner == pid
+    end
+
     test "opens connection and reuse it on next request", %{name: name} do
       url = "http://httpbin.org"
-      :ok = Connections.open_conn(url, name)
+      :ok = Conn.open(url, name)
       Process.sleep(250)
       conn = Connections.checkin(url, name)
 
@@ -462,7 +472,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
     test "opens ssl connection and reuse it on next request", %{name: name} do
       url = "https://httpbin.org"
-      :ok = Connections.open_conn(url, name)
+      :ok = Conn.open(url, name)
       Process.sleep(1_000)
       conn = Connections.checkin(url, name)
 
@@ -488,8 +498,8 @@ defmodule Pleroma.Pool.ConnectionsTest do
       https1 = "https://www.google.com"
       https2 = "https://httpbin.org"
 
-      :ok = Connections.open_conn(https1, name)
-      :ok = Connections.open_conn(https2, name)
+      :ok = Conn.open(https1, name)
+      :ok = Conn.open(https2, name)
       Process.sleep(1_500)
       conn = Connections.checkin(https1, name)
 
@@ -513,7 +523,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
       :ok = Connections.checkout(conn, self, name)
       http = "http://httpbin.org"
       Process.sleep(1_000)
-      :ok = Connections.open_conn(http, name)
+      :ok = Conn.open(http, name)
       conn = Connections.checkin(http, name)
 
       %Connections{
@@ -535,8 +545,8 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
       https1 = "https://www.google.com"
       https2 = "https://httpbin.org"
-      :ok = Connections.open_conn(https1, name)
-      :ok = Connections.open_conn(https2, name)
+      :ok = Conn.open(https1, name)
+      :ok = Conn.open(https2, name)
       Process.sleep(1_500)
 
       Connections.checkin(https1, name)
@@ -563,7 +573,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
       :ok = Connections.checkout(conn, self, name)
 
       http = "http://httpbin.org"
-      :ok = Connections.open_conn(http, name)
+      :ok = Conn.open(http, name)
       Process.sleep(1_000)
 
       conn = Connections.checkin(http, name)
@@ -587,8 +597,8 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
       https1 = "https://www.google.com"
       https2 = "https://httpbin.org"
-      :ok = Connections.open_conn(https1, name)
-      :ok = Connections.open_conn(https2, name)
+      :ok = Conn.open(https1, name)
+      :ok = Conn.open(https2, name)
       Process.sleep(1_000)
       Connections.checkin(https1, name)
       conn1 = Connections.checkin(https1, name)
@@ -639,8 +649,8 @@ defmodule Pleroma.Pool.ConnectionsTest do
       https1 = "https://www.google.com"
       https2 = "https://httpbin.org"
 
-      :ok = Connections.open_conn(https1, name)
-      :ok = Connections.open_conn(https2, name)
+      :ok = Conn.open(https1, name)
+      :ok = Conn.open(https2, name)
       Process.sleep(1_500)
       Connections.checkin(https1, name)
       Connections.checkin(https2, name)
@@ -694,7 +704,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
       } = Connections.get_state(name)
 
       http = "http://httpbin.org"
-      :ok = Connections.open_conn(http, name)
+      :ok = Conn.open(http, name)
       Process.sleep(1_000)
       conn = Connections.checkin(http, name)
 
@@ -725,7 +735,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
     test "as ip", %{name: name} do
       url = "http://proxy-string.com"
       key = "http:proxy-string.com:80"
-      :ok = Connections.open_conn(url, name, proxy: {{127, 0, 0, 1}, 8123})
+      :ok = Conn.open(url, name, proxy: {{127, 0, 0, 1}, 8123})
 
       conn = Connections.checkin(url, name)
 
@@ -745,7 +755,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
     test "as host", %{name: name} do
       url = "http://proxy-tuple-atom.com"
-      :ok = Connections.open_conn(url, name, proxy: {'localhost', 9050})
+      :ok = Conn.open(url, name, proxy: {'localhost', 9050})
       conn = Connections.checkin(url, name)
 
       %Connections{
@@ -765,7 +775,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
     test "as ip and ssl", %{name: name} do
       url = "https://proxy-string.com"
 
-      :ok = Connections.open_conn(url, name, proxy: {{127, 0, 0, 1}, 8123})
+      :ok = Conn.open(url, name, proxy: {{127, 0, 0, 1}, 8123})
       conn = Connections.checkin(url, name)
 
       %Connections{
@@ -784,7 +794,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
     test "as host and ssl", %{name: name} do
       url = "https://proxy-tuple-atom.com"
-      :ok = Connections.open_conn(url, name, proxy: {'localhost', 9050})
+      :ok = Conn.open(url, name, proxy: {'localhost', 9050})
       conn = Connections.checkin(url, name)
 
       %Connections{
@@ -804,7 +814,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
     test "with socks type", %{name: name} do
       url = "http://proxy-socks.com"
 
-      :ok = Connections.open_conn(url, name, proxy: {:socks5, 'localhost', 1234})
+      :ok = Conn.open(url, name, proxy: {:socks5, 'localhost', 1234})
 
       conn = Connections.checkin(url, name)
 
@@ -825,7 +835,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
     test "with socks4 type and ssl", %{name: name} do
       url = "https://proxy-socks.com"
 
-      :ok = Connections.open_conn(url, name, proxy: {:socks4, 'localhost', 1234})
+      :ok = Conn.open(url, name, proxy: {:socks4, 'localhost', 1234})
 
       conn = Connections.checkin(url, name)
 
@@ -892,69 +902,73 @@ defmodule Pleroma.Pool.ConnectionsTest do
   end
 
   describe "get_unused_conns/1" do
-    test "crf is equalent, sorting by reference" do
-      conns = %{
-        "1" => %Conn{
-          conn_state: :idle,
-          last_reference: now() - 1
-        },
-        "2" => %Conn{
-          conn_state: :idle,
-          last_reference: now()
-        }
-      }
+    test "crf is equalent, sorting by reference", %{name: name} do
+      Connections.add_conn(name, "1", %Conn{
+        conn_state: :idle,
+        last_reference: now() - 1
+      })
 
-      assert [{"1", _unused_conn} | _others] = Connections.get_unused_conns(conns)
+      Connections.add_conn(name, "2", %Conn{
+        conn_state: :idle,
+        last_reference: now()
+      })
+
+      assert [{"1", _unused_conn} | _others] = Connections.get_unused_conns(name)
     end
 
-    test "reference is equalent, sorting by crf" do
-      conns = %{
-        "1" => %Conn{
-          conn_state: :idle,
-          crf: 1.999
-        },
-        "2" => %Conn{
-          conn_state: :idle,
-          crf: 2
-        }
-      }
+    test "reference is equalent, sorting by crf", %{name: name} do
+      Connections.add_conn(name, "1", %Conn{
+        conn_state: :idle,
+        crf: 1.999
+      })
 
-      assert [{"1", _unused_conn} | _others] = Connections.get_unused_conns(conns)
+      Connections.add_conn(name, "2", %Conn{
+        conn_state: :idle,
+        crf: 2
+      })
+
+      assert [{"1", _unused_conn} | _others] = Connections.get_unused_conns(name)
     end
 
-    test "higher crf and lower reference" do
-      conns = %{
-        "1" => %Conn{
-          conn_state: :idle,
-          crf: 3,
-          last_reference: now() - 1
-        },
-        "2" => %Conn{
-          conn_state: :idle,
-          crf: 2,
-          last_reference: now()
-        }
-      }
+    test "higher crf and lower reference", %{name: name} do
+      Connections.add_conn(name, "1", %Conn{
+        conn_state: :idle,
+        crf: 3,
+        last_reference: now() - 1
+      })
 
-      assert [{"2", _unused_conn} | _others] = Connections.get_unused_conns(conns)
+      Connections.add_conn(name, "2", %Conn{
+        conn_state: :idle,
+        crf: 2,
+        last_reference: now()
+      })
+
+      assert [{"2", _unused_conn} | _others] = Connections.get_unused_conns(name)
     end
 
-    test "lower crf and lower reference" do
-      conns = %{
-        "1" => %Conn{
-          conn_state: :idle,
-          crf: 1.99,
-          last_reference: now() - 1
-        },
-        "2" => %Conn{
-          conn_state: :idle,
-          crf: 2,
-          last_reference: now()
-        }
-      }
+    test "lower crf and lower reference", %{name: name} do
+      Connections.add_conn(name, "1", %Conn{
+        conn_state: :idle,
+        crf: 1.99,
+        last_reference: now() - 1
+      })
 
-      assert [{"1", _unused_conn} | _others] = Connections.get_unused_conns(conns)
+      Connections.add_conn(name, "2", %Conn{
+        conn_state: :idle,
+        crf: 2,
+        last_reference: now()
+      })
+
+      assert [{"1", _unused_conn} | _others] = Connections.get_unused_conns(name)
     end
+  end
+
+  test "count/1", %{name: name} do
+    assert Connections.count(name) == 0
+    Connections.add_conn(name, "1", %Conn{conn: self()})
+    assert Connections.count(name) == 1
+    Connections.remove_conn(name, "1")
+    assert Connections.count(name) == 0
   end
 
   defp now do

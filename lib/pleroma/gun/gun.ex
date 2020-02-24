@@ -32,7 +32,7 @@ defmodule Pleroma.Gun do
   defdelegate close(pid), to: :gun
 
   @impl API
-  defdelegate await_up(pid), to: :gun
+  defdelegate await_up(pid, timeout \\ 5_000), to: :gun
 
   @impl API
   defdelegate connect(pid, opts), to: :gun
@@ -42,4 +42,7 @@ defmodule Pleroma.Gun do
 
   @spec flush(pid() | reference()) :: :ok
   defdelegate flush(pid), to: :gun
+
+  @impl API
+  defdelegate set_owner(pid, owner), to: :gun
 end
