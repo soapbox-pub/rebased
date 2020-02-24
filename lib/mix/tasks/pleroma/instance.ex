@@ -6,6 +6,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
   use Mix.Task
   import Mix.Pleroma
 
+  alias Pleroma.Config
+
   @shortdoc "Manages Pleroma instance"
   @moduledoc File.read!("docs/administration/CLI_tasks/instance.md")
 
@@ -152,6 +154,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           "What directory should custom public files be read from (custom emojis, frontend bundle overrides, robots.txt, etc.)?",
           Pleroma.Config.get([:instance, :static_dir])
         )
+
+      Config.put([:instance, :static_dir], static_dir)
 
       secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
       jwt_secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
