@@ -3,14 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.CaptchaTest do
-  use ExUnit.Case
+  use Pleroma.DataCase
 
   import Tesla.Mock
 
+  alias Pleroma.Captcha
   alias Pleroma.Captcha.Kocaptcha
   alias Pleroma.Captcha.Native
 
   @ets_options [:ordered_set, :private, :named_table, {:read_concurrency, true}]
+
+  clear_config([Pleroma.Captcha, :enabled])
 
   describe "Kocaptcha" do
     setup do
@@ -60,6 +63,54 @@ defmodule Pleroma.CaptchaTest do
       assert is_binary(answer)
       assert :ok = Native.validate(token, answer, answer)
       assert {:error, "Invalid CAPTCHA"} == Native.validate(token, answer, answer <> "foobar")
+    end
+  end
+
+  describe "Captcha Wrapper" do
+    test "validate" do
+      Pleroma.Config.put([Pleroma.Captcha, :enabled], true)
+
+      new = Captcha.new()
+
+      assert %{
+               answer_data: answer,
+               token: token
+             } = new
+
+      assert is_binary(answer)
+      assert :ok = Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", answer)
+    end
+
+    test "doesn't validate invalid answer" do
+      Pleroma.Config.put([Pleroma.Captcha, :enabled], true)
+
+      new = Captcha.new()
+
+      assert %{
+               answer_data: answer,
+               token: token
+             } = new
+
+      assert is_binary(answer)
+
+      assert {:error, "Invalid answer data"} =
+               Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", answer <> "foobar")
+    end
+
+    test "nil answer_data" do
+      Pleroma.Config.put([Pleroma.Captcha, :enabled], true)
+
+      new = Captcha.new()
+
+      assert %{
+               answer_data: answer,
+               token: token
+             } = new
+
+      assert is_binary(answer)
+
+      assert {:error, "Invalid answer data"} =
+               Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", nil)
     end
   end
 end
