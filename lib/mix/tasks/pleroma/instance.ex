@@ -65,7 +65,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
         get_option(
           options,
           :instance_name,
-          "What is the name of your instance? (e.g. Pleroma/Soykaf)",
+          "What is the name of your instance? (e.g. The Corndog Emporium)",
           domain
         )
 
