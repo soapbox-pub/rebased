@@ -6,7 +6,6 @@ defmodule Pleroma.InstanceTest do
   use ExUnit.Case
 
   setup do
-    static_dir = Pleroma.Config.get([:instance, :static_dir])
     File.mkdir_p!(tmp_path())
 
     on_exit(fn ->
