@@ -65,7 +65,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
         get_option(
           options,
           :instance_name,
-          "What is the name of your instance? (e.g. Pleroma/Soykaf)"
+          "What is the name of your instance? (e.g. Pleroma/Soykaf)",
+          domain
         )
 
       email = get_option(options, :admin_email, "What is your admin email address?")
