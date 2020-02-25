@@ -100,8 +100,7 @@ defmodule Mix.Tasks.Pleroma.User do
       User.perform(:delete, user)
       shell_info("User #{nickname} deleted.")
     else
-      _ ->
-        shell_error("No local user #{nickname}")
+      _ -> shell_error("No local user #{nickname}")
     end
   end
 

@@ -160,7 +160,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     if Federator.allowed_thread_distance?(depth) do
       with {:ok, replied_object} <- get_obj_helper(in_reply_to_id, options),
-           %Activity{} = _ <- Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
+           %Activity{} <- Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
         object
         |> Map.put("inReplyTo", replied_object.data["id"])
         |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
