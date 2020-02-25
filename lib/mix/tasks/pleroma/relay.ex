@@ -35,7 +35,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
   def run(["list"]) do
     start_pleroma()
 
-    with {:ok, list} <- Relay.list() do
+    with {:ok, list} <- Relay.list(true) do
       list |> Enum.each(&shell_info(&1))
     else
       {:error, e} -> shell_error("Error while fetching relay subscription list: #{inspect(e)}")
