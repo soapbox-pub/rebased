@@ -15,6 +15,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   import Pleroma.Factory
 
   describe "account fetching" do
+    clear_config([:instance, :limit_to_local_content])
+
     test "works by id" do
       user = insert(:user)
 
@@ -44,7 +46,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "works by nickname for remote users" do
-      limit_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
       Pleroma.Config.put([:instance, :limit_to_local_content], false)
       user = insert(:user, nickname: "user@example.com", local: false)
 
@@ -52,13 +53,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         build_conn()
         |> get("/api/v1/accounts/#{user.nickname}")
 
-      Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local)
       assert %{"id" => id} = json_response(conn, 200)
       assert id == user.id
     end
 
     test "respects limit_to_local_content == :all for remote user nicknames" do
-      limit_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
       Pleroma.Config.put([:instance, :limit_to_local_content], :all)
 
       user = insert(:user, nickname: "user@example.com", local: false)
@@ -67,12 +66,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         build_conn()
         |> get("/api/v1/accounts/#{user.nickname}")
 
-      Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local)
       assert json_response(conn, 404)
     end
 
     test "respects limit_to_local_content == :unauthenticated for remote user nicknames" do
-      limit_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
       Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
 
       user = insert(:user, nickname: "user@example.com", local: false)
@@ -90,7 +87,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> assign(:token, insert(:oauth_token, user: reading_user, scopes: ["read:accounts"]))
         |> get("/api/v1/accounts/#{user.nickname}")
 
-      Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local)
       assert %{"id" => id} = json_response(conn, 200)
       assert id == user.id
     end
@@ -676,6 +672,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       res = post(conn, "/api/v1/accounts", valid_params)
       assert json_response(res, 400) == %{"error" => "{\"email\":[\"has already been taken\"]}"}
     end
+
+    clear_config([Pleroma.Plugs.RemoteIp, :enabled])
 
     test "rate limit", %{conn: conn} do
       Pleroma.Config.put([Pleroma.Plugs.RemoteIp, :enabled], true)

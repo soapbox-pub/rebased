@@ -20,7 +20,7 @@ defmodule Pleroma.Web.StreamerTest do
   @streamer_timeout 150
   @streamer_start_wait 10
 
-  clear_config_all([:instance, :skip_thread_containment])
+  clear_config([:instance, :skip_thread_containment])
 
   describe "user streams" do
     setup do

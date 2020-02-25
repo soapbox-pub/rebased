@@ -26,6 +26,7 @@ defmodule Pleroma.Tests.Helpers do
     end
   end
 
+  @doc "Stores initial config value and restores it after *all* test examples are executed."
   defmacro clear_config_all(config_path) do
     quote do
       clear_config_all(unquote(config_path)) do
@@ -33,6 +34,11 @@ defmodule Pleroma.Tests.Helpers do
     end
   end
 
+  @doc """
+  Stores initial config value and restores it after *all* test examples are executed.
+  Only use if *all* test examples should work with the same stubbed value
+  (*no* examples set a different value).
+  """
   defmacro clear_config_all(config_path, do: yield) do
     quote do
       setup_all do

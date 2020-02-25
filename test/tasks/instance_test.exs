@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.InstanceTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
 
   setup do
     File.mkdir_p!(tmp_path())
@@ -15,6 +15,8 @@ defmodule Pleroma.InstanceTest do
       if File.exists?(static_dir) do
         File.rm_rf(Path.join(static_dir, "robots.txt"))
       end
+
+      Pleroma.Config.put([:instance, :static_dir], static_dir)
     end)
 
     :ok

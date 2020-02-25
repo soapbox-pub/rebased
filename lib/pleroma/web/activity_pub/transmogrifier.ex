@@ -156,8 +156,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       when not is_nil(in_reply_to) do
     in_reply_to_id = prepare_in_reply_to(in_reply_to)
     object = Map.put(object, "inReplyToAtomUri", in_reply_to_id)
+    depth = (options[:depth] || 0) + 1
 
-    if Federator.allowed_incoming_reply_depth?(options[:depth]) do
+    if Federator.allowed_thread_distance?(depth) do
       with {:ok, replied_object} <- get_obj_helper(in_reply_to_id, options),
            %Activity{} = _ <- Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
         object
@@ -312,7 +313,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_type(%{"inReplyTo" => reply_id, "name" => _} = object, options)
       when is_binary(reply_id) do
-    with true <- Federator.allowed_incoming_reply_depth?(options[:depth]),
+    with true <- Federator.allowed_thread_distance?(options[:depth]),
          {:ok, %{data: %{"type" => "Question"} = _} = _} <- get_obj_helper(reply_id, options) do
       Map.put(object, "type", "Answer")
     else
@@ -406,8 +407,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
          {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(data["actor"]) do
-      options = Keyword.put(options, :depth, (options[:depth] || 0) + 1)
-      object = fix_object(data["object"], options)
+      object = fix_object(object, options)
 
       params = %{
         to: data["to"],
@@ -424,7 +424,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           ])
       }
 
-      ActivityPub.create(params)
+      with {:ok, created_activity} <- ActivityPub.create(params) do
+        reply_depth = (options[:depth] || 0) + 1
+
+        if Federator.allowed_thread_distance?(reply_depth) do
+          for reply_id <- replies(object) do
+            Pleroma.Workers.RemoteFetcherWorker.enqueue("fetch_remote", %{
+              "id" => reply_id,
+              "depth" => reply_depth
+            })
+          end
+        end
+
+        {:ok, created_activity}
+      end
     else
       %Activity{} = activity -> {:ok, activity}
       _e -> :error
@@ -442,7 +455,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> fix_addressing
 
     with {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(data["actor"]) do
-      options = Keyword.put(options, :depth, (options[:depth] || 0) + 1)
+      reply_depth = (options[:depth] || 0) + 1
+      options = Keyword.put(options, :depth, reply_depth)
       object = fix_object(object, options)
 
       params = %{
@@ -903,6 +917,50 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def set_reply_to_uri(obj), do: obj
 
+  @doc """
+  Serialized Mastodon-compatible `replies` collection containing _self-replies_.
+  Based on Mastodon's ActivityPub::NoteSerializer#replies.
+  """
+  def set_replies(obj_data) do
+    replies_uris =
+      with limit when limit > 0 <-
+             Pleroma.Config.get([:activitypub, :note_replies_output_limit], 0),
+           %Object{} = object <- Object.get_cached_by_ap_id(obj_data["id"]) do
+        object
+        |> Object.self_replies()
+        |> select([o], fragment("?->>'id'", o.data))
+        |> limit(^limit)
+        |> Repo.all()
+      else
+        _ -> []
+      end
+
+    set_replies(obj_data, replies_uris)
+  end
+
+  defp set_replies(obj, []) do
+    obj
+  end
+
+  defp set_replies(obj, replies_uris) do
+    replies_collection = %{
+      "type" => "Collection",
+      "items" => replies_uris
+    }
+
+    Map.merge(obj, %{"replies" => replies_collection})
+  end
+
+  def replies(%{"replies" => %{"first" => %{"items" => items}}}) when not is_nil(items) do
+    items
+  end
+
+  def replies(%{"replies" => %{"items" => items}}) when not is_nil(items) do
+    items
+  end
+
+  def replies(_), do: []
+
   # Prepares the object of an outgoing create activity.
   def prepare_object(object) do
     object
@@ -914,6 +972,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
+    |> set_replies
     |> strip_internal_fields
     |> strip_internal_tags
     |> set_type

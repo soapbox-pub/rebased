@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Captcha do
@@ -50,7 +50,7 @@ defmodule Pleroma.Captcha do
       token = new_captcha[:token]
       secret = KeyGenerator.generate(secret_key_base, token <> "_encrypt")
       sign_secret = KeyGenerator.generate(secret_key_base, token <> "_sign")
-      # Basicallty copy what Phoenix.Token does here, add the time to
+      # Basically copy what Phoenix.Token does here, add the time to
       # the actual data and make it a binary to then encrypt it
       encrypted_captcha_answer =
         %{
@@ -62,7 +62,7 @@ defmodule Pleroma.Captcha do
 
       {
         :reply,
-        # Repalce the answer with the encrypted answer
+        # Replace the answer with the encrypted answer
         %{new_captcha | answer_data: encrypted_captcha_answer},
         state
       }
@@ -82,7 +82,8 @@ defmodule Pleroma.Captcha do
     valid_if_after = DateTime.subtract!(DateTime.now_utc(), seconds_valid)
 
     result =
-      with {:ok, data} <- MessageEncryptor.decrypt(answer_data, secret, sign_secret),
+      with false <- is_nil(answer_data),
+           {:ok, data} <- MessageEncryptor.decrypt(answer_data, secret, sign_secret),
            %{at: at, answer_data: answer_md5} <- :erlang.binary_to_term(data) do
         try do
           if DateTime.before?(at, valid_if_after),

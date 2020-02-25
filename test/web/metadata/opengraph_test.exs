@@ -7,6 +7,8 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
   import Pleroma.Factory
   alias Pleroma.Web.Metadata.Providers.OpenGraph
 
+  clear_config([Pleroma.Web.Metadata, :unfurl_nsfw])
+
   test "it renders all supported types of attachments and skips unknown types" do
     user = insert(:user)
 

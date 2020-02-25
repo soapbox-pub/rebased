@@ -26,6 +26,31 @@ defmodule Pleroma.Object.FetcherTest do
     :ok
   end
 
+  describe "max thread distance restriction" do
+    @ap_id "http://mastodon.example.org/@admin/99541947525187367"
+
+    clear_config([:instance, :federation_incoming_replies_max_depth])
+
+    test "it returns thread depth exceeded error if thread depth is exceeded" do
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+
+      assert {:error, "Max thread distance exceeded."} =
+               Fetcher.fetch_object_from_id(@ap_id, depth: 1)
+    end
+
+    test "it fetches object if max thread depth is restricted to 0 and depth is not specified" do
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
+
+      assert {:ok, _} = Fetcher.fetch_object_from_id(@ap_id)
+    end
+
+    test "it fetches object if requested depth does not exceed max thread depth" do
+      Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 10)
+
+      assert {:ok, _} = Fetcher.fetch_object_from_id(@ap_id, depth: 10)
+    end
+  end
+
   describe "actor origin containment" do
     test "it rejects objects with a bogus origin" do
       {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity.json")

@@ -9,6 +9,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
 
   clear_config([:http_securiy, :enabled])
   clear_config([:http_security, :sts])
+  clear_config([:http_security, :referrer_policy])
 
   describe "http security enabled" do
     setup do

@@ -68,6 +68,7 @@ defmodule Pleroma.Web.CommonAPITest do
     har = insert(:user)
     jafnhar = insert(:user)
     tridi = insert(:user)
+
     Pleroma.Config.put([:instance, :safe_dm_mentions], true)
 
     {:ok, activity} =

@@ -301,4 +301,26 @@ defmodule Pleroma.Object do
   def local?(%Object{data: %{"id" => id}}) do
     String.starts_with?(id, Pleroma.Web.base_url() <> "/")
   end
+
+  def replies(object, opts \\ []) do
+    object = Object.normalize(object)
+
+    query =
+      Object
+      |> where(
+        [o],
+        fragment("(?)->>'inReplyTo' = ?", o.data, ^object.data["id"])
+      )
+      |> order_by([o], asc: o.id)
+
+    if opts[:self_only] do
+      actor = object.data["actor"]
+      where(query, [o], fragment("(?)->>'actor' = ?", o.data, ^actor))
+    else
+      query
+    end
+  end
+
+  def self_replies(object, opts \\ []),
+    do: replies(object, Keyword.put(opts, :self_only, true))
 end

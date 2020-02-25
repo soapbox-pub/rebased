@@ -15,6 +15,8 @@ defmodule Pleroma.UserSearchTest do
   end
 
   describe "User.search" do
+    clear_config([:instance, :limit_to_local_content])
+
     test "excluded invisible users from results" do
       user = insert(:user, %{nickname: "john t1000"})
       insert(:user, %{invisible: true, nickname: "john t800"})
@@ -127,8 +129,6 @@ defmodule Pleroma.UserSearchTest do
       insert(:user, %{nickname: "lain@pleroma.soykaf.com", local: false})
 
       assert [%{id: ^id}] = User.search("lain")
-
-      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
     end
 
     test "find all users for unauthenticated users when `limit_to_local_content` is `false`" do
@@ -145,8 +145,6 @@ defmodule Pleroma.UserSearchTest do
         |> Enum.sort()
 
       assert [u1.id, u2.id, u3.id] == results
-
-      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
     end
 
     test "does not yield false-positive matches" do

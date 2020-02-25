@@ -143,10 +143,11 @@ config :pleroma, :mrf_user_allowlist,
   * `:reject` rejects the message entirely
 
 ### :activitypub
-* ``unfollow_blocked``: Whether blocks result in people getting unfollowed
-* ``outgoing_blocks``: Whether to federate blocks to other instances
-* ``deny_follow_blocked``: Whether to disallow following an account that has blocked the user in question
-* ``sign_object_fetches``: Sign object fetches with HTTP signatures
+* `unfollow_blocked`: Whether blocks result in people getting unfollowed
+* `outgoing_blocks`: Whether to federate blocks to other instances
+* `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
+* `sign_object_fetches`: Sign object fetches with HTTP signatures
+* `authorized_fetch_mode`: Require HTTP signatures for AP fetches
 
 ### :fetch_initial_posts
 * `enabled`: if enabled, when a new user is federated with, fetch some of their latest posts
@@ -500,6 +501,10 @@ Email notifications settings.
 
 - `:logo` - a path to a custom logo. Set it to `nil` to use the default Pleroma logo.
 - `:styling` - a map with color settings for email templates.
+
+### Pleroma.Emails.NewUsersDigestEmail
+
+- `:enabled` - a boolean, enables new users admin digest email when `true`. Defaults to `false`.
 
 ## Background jobs
 

@@ -1,0 +1,158 @@
+<%= for {user, total_statuses, latest_status} <- @users_and_statuses do %>
+	<%# user card START %>
+						<div style="background-color:transparent;">
+		<div class="block-grid mixed-two-up no-stack"
+			style="Margin: 0 auto; min-width: 320px; max-width: 590px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: <%= @styling.content_background_color%>;">
+			<div style="border-collapse: collapse;display: table;width: 100%;background-color:<%= @styling.content_background_color%>;">
+				<!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:transparent;"><tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" style="width:590px"><tr class="layout-full-width" style="background-color:<%= @styling.content_background_color%>"><![endif]-->
+				<!--[if (mso)|(IE)]><td align="center" width="147" style="background-color:<%= @styling.content_background_color%>;width:76px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;" valign="top"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 0px; padding-left: 20px; padding-top:5px; padding-bottom:5px;"><![endif]-->
+				<div class="col num3"
+					style="display: table-cell; vertical-align: top; max-width: 320px; min-width: 76px; width: 76px;">
+					<div style="width:100% !important;">
+						<!--[if (!mso)&(!IE)]><!-->
+						<div
+							style="border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:5px; padding-bottom:5px; padding-right: 0px; padding-left: 20px;">
+							<!--<![endif]-->
+							<div align="left" class="img-container left "
+								style="padding-right: 0px;padding-left: 0px;">
+								<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr style="line-height:0px"><td style="padding-right: 0px;padding-left: 0px;" align="left"><![endif]--><img
+									alt="<%= user.name %>" border="0" class="left " src="<%= avatar_url(user) %>"
+									style="text-decoration: none; -ms-interpolation-mode: bicubic; border: 0; height: auto; width: 100%; max-width: 76px; display: block;"
+									title="<%= user.name %>" width="76" />
+								<!--[if mso]></td></tr></table><![endif]-->
+							</div>
+							<!--[if (!mso)&(!IE)]><!-->
+						</div>
+						<!--<![endif]-->
+					</div>
+				</div>
+
+				<!--[if (mso)|(IE)]></td></tr></table><![endif]-->
+				<!--[if (mso)|(IE)]></td><td align="center" width="442" style="background-color:<%= @styling.content_background_color%>;width:442px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;" valign="top"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 0px; padding-left: 0px; padding-top:5px; padding-bottom:5px;"><![endif]-->
+				<div class="col num9"
+					style="display: table-cell; vertical-align: top; min-width: 320px; max-width: 441px; width: 442px;">
+					<div style="width:100% !important;">
+						<!--[if (!mso)&(!IE)]><!-->
+						<div
+							style="border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:5px; padding-bottom:5px; padding-right: 0px; padding-left: 0px;">
+							<!--<![endif]-->
+							<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 10px; padding-left: 10px; padding-top: 10px; padding-bottom: 10px; font-family: Arial, sans-serif"><![endif]-->
+							<div
+								style="color:<%= @styling.text_color %>;font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;line-height:120%;padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:10px;">
+								<div
+									style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 12px; line-height: 14px; color: <%= @styling.text_color %>;">
+									<p style="font-size: 14px; line-height: 19px; margin: 0;"><span
+											style="font-size: 16px; color: <%= @styling.text_color %>;"><%= user.name %></span></p>
+									<p style="font-size: 14px; line-height: 19px; margin: 0;"><span
+											style="font-size: 16px;"><%= link "@" <> user.nickname, style: "color: #{@styling.link_color};text-decoration: none;", to: admin_user_url(user) %></span></p>
+									<p style="font-size: 14px; line-height: 19px; margin: 0;"><span
+											style="font-size: 16px;">Total: <%= total_statuses %></span></p>
+								</div>
+							</div>
+							<!--[if mso]></td></tr></table><![endif]-->
+							<!--[if (!mso)&(!IE)]><!-->
+						</div>
+						<!--<![endif]-->
+					</div>
+				</div>
+				<!--[if (mso)|(IE)]></td></tr></table><![endif]-->
+				<!--[if (mso)|(IE)]></td></tr></table></td></tr></table><![endif]-->
+			</div>
+		</div>
+	</div>
+	<%# user card END %>
+
+	<%= if latest_status do %>
+		<div style="background-color:transparent;">
+				<div class="block-grid"
+					style="Margin: 0 auto; min-width: 320px; max-width: 590px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: <%= @styling.content_background_color%>;">
+					<div style="border-collapse: collapse;display: table;width: 100%;background-color:<%= @styling.content_background_color%>;">
+						<!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:transparent;"><tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" style="width:590px"><tr class="layout-full-width" style="background-color:<%= @styling.content_background_color%>"><![endif]-->
+						<!--[if (mso)|(IE)]><td align="center" width="590" style="background-color:<%= @styling.content_background_color%>;width:590px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;" valign="top"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 15px; padding-left: 15px; padding-top:5px; padding-bottom:5px;"><![endif]-->
+						<div class="col num12"
+							style="min-width: 320px; max-width: 590px; display: table-cell; vertical-align: top; width: 590px;">
+							<div style="width:100% !important;">
+								<!--[if (!mso)&(!IE)]><!-->
+								<div
+									style="border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:5px; padding-bottom:5px; padding-right: 15px; padding-left: 15px;">
+									<!--<![endif]-->
+									<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 10px; padding-left: 10px; padding-top: 10px; padding-bottom: 10px; font-family: Arial, sans-serif"><![endif]-->
+									<div
+										style="color:<%= @styling.text_color %>;font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;line-height:120%;padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:10px;">
+										<div
+											style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 12px; line-height: 14px; color: <%= @styling.text_color %>;">
+											<span style="font-size: 16px; line-height: 19px;"><%= raw latest_status.object.data["content"] %></span></div>
+									</div>
+									<!--[if mso]></td></tr></table><![endif]-->
+									<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 10px; padding-left: 15px; padding-top: 10px; padding-bottom: 10px; font-family: Arial, sans-serif"><![endif]-->
+									<div
+										style="color:<%= @styling.text_muted_color %>;font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;line-height:120%;padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:15px;">
+										<div
+											style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 12px; line-height: 14px; color: <%= @styling.text_muted_color %>;">
+											<p style="font-size: 14px; line-height: 16px; margin: 0;"><%= format_date latest_status.object.data["published"] %></p>
+										</div>
+									</div>
+									<!--[if mso]></td></tr></table><![endif]-->
+									<!--[if (!mso)&(!IE)]><!-->
+								</div>
+								<!--<![endif]-->
+							</div>
+						</div>
+						<!--[if (mso)|(IE)]></td></tr></table><![endif]-->
+						<!--[if (mso)|(IE)]></td></tr></table></td></tr></table><![endif]-->
+					</div>
+				</div>
+			</div>
+	<% end %>
+          <%# divider start %>
+					<div style="background-color:transparent;">
+						<div class="block-grid"
+							style="Margin: 0 auto; min-width: 320px; max-width: 590px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: <%= @styling.content_background_color%>;">
+							<div style="border-collapse: collapse;display: table;width: 100%;background-color:<%= @styling.content_background_color%>;">
+								<!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:transparent;"><tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" style="width:590px"><tr class="layout-full-width" style="background-color:<%= @styling.content_background_color%>"><![endif]-->
+								<!--[if (mso)|(IE)]><td align="center" width="590" style="background-color:<%= @styling.content_background_color%>;width:590px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;" valign="top"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 0px; padding-left: 0px; padding-top:5px; padding-bottom:5px;"><![endif]-->
+								<div class="col num12"
+									style="min-width: 320px; max-width: 590px; display: table-cell; vertical-align: top; width: 590px;">
+									<div style="width:100% !important;">
+										<!--[if (!mso)&(!IE)]><!-->
+										<div
+											style="border-top:0px solid transparent; border-left:0px solid transparent; border-bottom:0px solid transparent; border-right:0px solid transparent; padding-top:5px; padding-bottom:5px; padding-right: 0px; padding-left: 0px;">
+											<!--<![endif]-->
+											<table border="0" cellpadding="0" cellspacing="0" class="divider" role="presentation"
+												style="table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;"
+												valign="top" width="100%">
+												<tbody>
+													<tr style="vertical-align: top;" valign="top">
+														<td class="divider_inner"
+															style="word-break: break-word; vertical-align: top; min-width: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 10px;"
+															valign="top">
+															<table align="center" border="0" cellpadding="0" cellspacing="0" class="divider_content"
+																height="0" role="presentation"
+																style="table-layout: fixed; vertical-align: top; border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; border-top: 1px solid <%= @styling.text_color %>; height: 0px;"
+																valign="top" width="100%">
+																<tbody>
+																	<tr style="vertical-align: top;" valign="top">
+																		<td height="0"
+																			style="word-break: break-word; vertical-align: top; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;"
+																			valign="top"><span></span></td>
+																	</tr>
+																</tbody>
+															</table>
+														</td>
+													</tr>
+												</tbody>
+											</table>
+											<!--[if (!mso)&(!IE)]><!-->
+										</div>
+										<!--<![endif]-->
+									</div>
+								</div>
+								<!--[if (mso)|(IE)]></td></tr></table><![endif]-->
+								<!--[if (mso)|(IE)]></td></tr></table></td></tr></table><![endif]-->
+							</div>
+						</div>
+					</div>
+
+          <%# divider end %>
+	<%# user card END %>
+<% end %>
