@@ -10,8 +10,8 @@ defmodule Pleroma.Captcha.Native do
   @impl Service
   def new do
     case Captcha.get() do
-      {:timeout} ->
-        %{error: dgettext("errors", "Captcha timeout")}
+      :error ->
+        %{error: dgettext("errors", "Captcha error")}
 
       {:ok, answer_data, img_binary} ->
         %{

@@ -30,7 +30,7 @@ defmodule Pleroma.Activity.Queries do
     )
   end
 
-  @spec by_author(query, String.t()) :: query
+  @spec by_author(query, User.t()) :: query
   def by_author(query \\ Activity, %User{ap_id: ap_id}) do
     from(a in query, where: a.actor == ^ap_id)
   end

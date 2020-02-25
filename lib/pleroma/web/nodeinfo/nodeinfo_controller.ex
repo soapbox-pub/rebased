@@ -92,9 +92,9 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       openRegistrations: Config.get([:instance, :registrations_open]),
       usage: %{
         users: %{
-          total: stats.user_count || 0
+          total: Map.get(stats, :user_count, 0)
         },
-        localPosts: stats.status_count || 0
+        localPosts: Map.get(stats, :status_count, 0)
       },
       metadata: %{
         nodeName: Config.get([:instance, :name]),

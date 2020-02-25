@@ -323,7 +323,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       {:ok, _} ->
         conn |> json("ok")
 
-      {:error, _} ->
+      {:error, _, _} ->
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "Couldn't delete the pack #{name}"})
