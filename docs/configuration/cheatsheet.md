@@ -394,6 +394,8 @@ For each pool, the options are:
 
 Advanced settings for connections pool. Pool with opened connections. These connections can be reused in worker pools.
 
+For big instances it's recommended to increase `max_connections` up to 500-1000. It will increase memory usage, but federation would work faster.
+
 * `:receive_connection_timeout` - timeout to receive connection from pool. Default: 250ms.
 * `:max_connections` - maximum number of connections in the pool. Default: 250 connections.
 * `:retry` - number of retries, while `gun` will try to reconnect if connections goes down. Default: 5.
