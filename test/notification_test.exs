@@ -1143,7 +1143,7 @@ defmodule Pleroma.NotificationTest do
       assert Enum.empty?(Notification.for_user(user))
     end
 
-    test "it returns notifications about mentiones with not hidden filtered word", %{user: user} do
+    test "it returns notifications about mentions with not hidden filtered word", %{user: user} do
       insert(:filter, user: user, phrase: "test", hide: false)
       another_user = insert(:user)
 
