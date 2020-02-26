@@ -65,7 +65,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
         get_option(
           options,
           :instance_name,
-          "What is the name of your instance? (e.g. Pleroma/Soykaf)"
+          "What is the name of your instance? (e.g. The Corndog Emporium)",
+          domain
         )
 
       email = get_option(options, :admin_email, "What is your admin email address?")
@@ -206,8 +207,14 @@ defmodule Mix.Tasks.Pleroma.Instance do
       write_robots_txt(indexable, template_dir)
 
       shell_info(
-        "\n All files successfully written! Refer to the installation instructions for your platform for next steps"
+        "\n All files successfully written! Refer to the installation instructions for your platform for next steps."
       )
+
+      if db_configurable? do
+        shell_info(
+          " Please transfer your config to the database after running database migrations. Refer to \"Transfering the config to/from the database\" section of the docs for more information."
+        )
+      end
     else
       shell_error(
         "The task would have overwritten the following files:\n" <>
