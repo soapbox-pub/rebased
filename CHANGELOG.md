@@ -104,6 +104,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `feed` option for user atom feed.
 - Pleroma API: Add Emoji reactions
 - Admin API: Add `/api/pleroma/admin/instances/:instance/statuses` - lists all statuses from a given instance
+- Admin API: Add `/api/pleroma/admin/users/:nickname/statuses` - lists all statuses from a given user
 - Admin API: `PATCH /api/pleroma/users/confirm_email` to confirm email for multiple users, `PATCH /api/pleroma/users/resend_confirmation_email` to resend confirmation email for multiple users
 - ActivityPub: Configurable `type` field of the actors.
 - Mastodon API: `/api/v1/accounts/:id` has `source/pleroma/actor_type` field.
