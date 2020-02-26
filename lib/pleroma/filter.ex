@@ -42,7 +42,7 @@ defmodule Pleroma.Filter do
     from(f in query, where: f.hide)
   end
 
-  def get_by_user(query, %User{id: user_id} = _user) do
+  def get_filters(query \\ __MODULE__, %User{id: user_id}) do
     query =
       from(
         f in query,
