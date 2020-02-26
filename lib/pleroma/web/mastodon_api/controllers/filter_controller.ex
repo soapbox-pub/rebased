@@ -22,7 +22,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
 
   @doc "GET /api/v1/filters"
   def index(%{assigns: %{user: user}} = conn, _) do
-    filters = Filter.get_by_user(Filter, user)
+    filters = Filter.get_filters(user)
 
     render(conn, "index.json", filters: filters)
   end

@@ -352,6 +352,7 @@ defmodule Pleroma.Notification do
     end
   end
 
+  @spec create_notifications(Activity.t(), keyword()) :: {:ok, [Notification.t()] | []}
   def create_notifications(activity, options \\ [])
 
   def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity, options) do

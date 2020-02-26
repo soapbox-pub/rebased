@@ -110,7 +110,7 @@ defmodule Pleroma.Filter do
     __MODULE__
     |> get_active()
     |> get_irreversible()
-    |> get_by_user(user)
+    |> get_filters(user)
     |> compose_regex(format)
   end
 

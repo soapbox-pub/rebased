@@ -334,7 +334,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, status} = CommonAPI.post(user, %{"status" => "got cofe?"})
 
-      assert {:ok, [nil]} == Notification.create_notifications(status)
+      assert {:ok, []} == Notification.create_notifications(status)
     end
 
     test "it creates notifications if content matches with a not irreversible filter" do
