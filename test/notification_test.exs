@@ -1133,7 +1133,7 @@ defmodule Pleroma.NotificationTest do
       assert length(Notification.for_user(user, %{with_muted: true})) == 1
     end
 
-    test "it doesn't return notifications about mentiones with filtered word", %{user: user} do
+    test "it doesn't return notifications about mentions with filtered word", %{user: user} do
       insert(:filter, user: user, phrase: "cofe", hide: true)
       another_user = insert(:user)
 
