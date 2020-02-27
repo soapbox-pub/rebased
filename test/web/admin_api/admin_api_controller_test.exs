@@ -3115,6 +3115,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert json_response(conn, 200) |> length() == 5
     end
+
+    test "excludes reblogs by default", %{conn: conn, user: user} do
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "."})
+      {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, other_user)
+
+      conn_res = get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses")
+      assert json_response(conn_res, 200) |> length() == 0
+
+      conn_res =
+        get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses?with_reblogs=true")
+
+      assert json_response(conn_res, 200) |> length() == 1
+    end
   end
 
   describe "GET /api/pleroma/admin/moderation_log" do
@@ -3397,7 +3411,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user = insert(:user, local: false, nickname: "archaeme@archae.me")
       user2 = insert(:user, local: false, nickname: "test@test.com")
       insert_pair(:note_activity, user: user)
-      insert(:note_activity, user: user2)
+      activity = insert(:note_activity, user: user2)
 
       ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses")
 
@@ -3416,6 +3430,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       response = json_response(ret_conn, 200)
 
       assert Enum.empty?(response)
+
+      CommonAPI.repeat(activity.id, user)
+
+      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses")
+      response = json_response(ret_conn, 200)
+      assert length(response) == 2
+
+      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses?with_reblogs=true")
+      response = json_response(ret_conn, 200)
+      assert length(response) == 3
     end
   end
 
