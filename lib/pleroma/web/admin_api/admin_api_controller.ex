@@ -248,7 +248,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     {page, page_size} = page_params(params)
 
     activities =
-      ActivityPub.fetch_instance_activities(%{
+      ActivityPub.fetch_statuses(nil, %{
         "instance" => instance,
         "limit" => page_size,
         "offset" => (page - 1) * page_size,
@@ -743,6 +743,24 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     else
       _ -> json_response(conn, :bad_request, "")
     end
+  end
+
+  def list_statuses(%{assigns: %{user: admin}} = conn, params) do
+    godmode = params["godmode"] == "true" || params["godmode"] == true
+    local_only = params["local_only"] == "true" || params["local_only"] == true
+    {page, page_size} = page_params(params)
+
+    activities =
+      ActivityPub.fetch_statuses(admin, %{
+        "godmode" => godmode,
+        "local_only" => local_only,
+        "limit" => page_size,
+        "offset" => (page - 1) * page_size
+      })
+
+    conn
+    |> put_view(Pleroma.Web.AdminAPI.StatusView)
+    |> render("index.json", %{activities: activities, as: :activity})
   end
 
   def status_update(%{assigns: %{user: admin}} = conn, %{"id" => id} = params) do

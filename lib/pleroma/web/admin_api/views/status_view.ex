@@ -10,7 +10,7 @@ defmodule Pleroma.Web.AdminAPI.StatusView do
   alias Pleroma.User
 
   def render("index.json", opts) do
-    render_many(opts.activities, __MODULE__, "show.json", opts)
+    safe_render_many(opts.activities, __MODULE__, "show.json", opts)
   end
 
   def render("show.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
