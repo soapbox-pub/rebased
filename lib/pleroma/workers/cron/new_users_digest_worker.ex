@@ -51,6 +51,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
       if users_and_statuses != [] do
         %{is_admin: true}
         |> User.Query.build()
+        |> where([u], not is_nil(u.email))
         |> Repo.all()
         |> Enum.map(&Pleroma.Emails.NewUsersDigestEmail.new_users(&1, users_and_statuses))
         |> Enum.each(&Pleroma.Emails.Mailer.deliver/1)
