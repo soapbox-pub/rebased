@@ -10,8 +10,19 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
   alias Pleroma.Pagination
   alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+
+  # XXX: Ideally these would be generated instead of copypasted,
+  # but I haven't been able to overcome an issue with guards when
+  # trying to generate these.
+  # See: https://elixirforum.com/t/trouble-plugging-plugs-with-generated-options-in-guards-in-a-phoenix-controller/29465
+  plug(RateLimiter, [name: :timeline, bucket_name: :direct_timeline] when action == :direct)
+  plug(RateLimiter, [name: :timeline, bucket_name: :public_timeline] when action == :public)
+  plug(RateLimiter, [name: :timeline, bucket_name: :home_timeline] when action == :home)
+  plug(RateLimiter, [name: :timeline, bucket_name: :hashtag_timeline] when action == :hashtag)
+  plug(RateLimiter, [name: :timeline, bucket_name: :list_timeline] when action == :list)
 
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:home, :direct])
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :list)

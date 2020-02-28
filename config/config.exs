@@ -599,6 +599,7 @@ config :http_signatures,
 
 config :pleroma, :rate_limit,
   authentication: {60_000, 15},
+  timeline: {500, 3},
   search: [{1000, 10}, {1000, 30}],
   app_account_creation: {1_800_000, 25},
   relations_actions: {10_000, 10},

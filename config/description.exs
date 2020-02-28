@@ -2466,6 +2466,12 @@ config :pleroma, :config_description, [
         suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
       },
       %{
+        key: :timeline,
+        type: [:tuple, {:list, :tuple}],
+        description: "For requests to timelines (each timeline has it's own limiter)",
+        suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
+      },
+      %{
         key: :app_account_creation,
         type: [:tuple, {:list, :tuple}],
         description: "For registering user accounts from the same IP address",
