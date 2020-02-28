@@ -1617,160 +1617,6 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.Web.Endpoint,
-    type: :group,
-    description: "Phoenix endpoint configuration",
-    children: [
-      %{
-        key: :http,
-        label: "HTTP",
-        type: {:keyword, :integer, :tuple},
-        description: "http protocol configuration",
-        suggestions: [
-          port: 8080,
-          ip: {127, 0, 0, 1}
-        ],
-        children: [
-          %{
-            key: :dispatch,
-            type: {:list, :tuple},
-            description: "dispatch settings",
-            suggestions: [
-              {:_,
-               [
-                 {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-                 {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
-                  {Phoenix.Transports.WebSocket,
-                   {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, websocket_config}}},
-                 {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
-               ]}
-              # end copied from config.exs
-            ]
-          },
-          %{
-            key: :ip,
-            label: "IP",
-            type: :tuple,
-            description: "ip",
-            suggestions: [
-              {0, 0, 0, 0}
-            ]
-          },
-          %{
-            key: :port,
-            type: :integer,
-            description: "port",
-            suggestions: [
-              2020
-            ]
-          }
-        ]
-      },
-      %{
-        key: :url,
-        label: "URL",
-        type: {:keyword, :string, :integer},
-        description: "configuration for generating urls",
-        suggestions: [
-          host: "example.com",
-          port: 2020,
-          scheme: "https"
-        ],
-        children: [
-          %{
-            key: :host,
-            type: :string,
-            description: "Host",
-            suggestions: [
-              "example.com"
-            ]
-          },
-          %{
-            key: :port,
-            type: :integer,
-            description: "port",
-            suggestions: [
-              2020
-            ]
-          },
-          %{
-            key: :scheme,
-            type: :string,
-            description: "Scheme",
-            suggestions: [
-              "https",
-              "https"
-            ]
-          }
-        ]
-      },
-      %{
-        key: :instrumenters,
-        type: {:list, :module},
-        suggestions: [Pleroma.Web.Endpoint.Instrumenter]
-      },
-      %{
-        key: :protocol,
-        type: :string,
-        suggestions: ["https"]
-      },
-      %{
-        key: :secret_key_base,
-        type: :string,
-        suggestions: ["aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl"]
-      },
-      %{
-        key: :signing_salt,
-        type: :string,
-        suggestions: ["CqaoopA2"]
-      },
-      %{
-        key: :render_errors,
-        type: :keyword,
-        suggestions: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
-        children: [
-          %{
-            key: :view,
-            type: :module,
-            suggestions: [Pleroma.Web.ErrorView]
-          },
-          %{
-            key: :accepts,
-            type: {:list, :string},
-            suggestions: ["json"]
-          }
-        ]
-      },
-      %{
-        key: :pubsub,
-        type: :keyword,
-        suggestions: [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2],
-        children: [
-          %{
-            key: :name,
-            type: :module,
-            suggestions: [Pleroma.PubSub]
-          },
-          %{
-            key: :adapter,
-            type: :module,
-            suggestions: [Phoenix.PubSub.PG2]
-          }
-        ]
-      },
-      %{
-        key: :secure_cookie_flag,
-        type: :boolean
-      },
-      %{
-        key: :extra_cookie_attrs,
-        type: {:list, :string},
-        suggestions: ["SameSite=Lax"]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
     key: :activitypub,
     type: :group,
     description: "ActivityPub-related settings",
@@ -2596,19 +2442,6 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :database,
-    type: :group,
-    description: "Database related settings",
-    children: [
-      %{
-        key: :rum_enabled,
-        type: :boolean,
-        description: "If RUM indexes should be used. Default: disabled"
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
     key: :rate_limit,
     type: :group,
     description:
@@ -2767,20 +2600,6 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean
-      }
-    ]
-  },
-  %{
-    group: :prometheus,
-    key: Pleroma.Web.Endpoint.MetricsExporter,
-    type: :group,
-    description: "Prometheus settings",
-    children: [
-      %{
-        key: :path,
-        type: :string,
-        description: "API endpoint with metrics",
-        suggestions: ["/api/pleroma/app_metrics"]
       }
     ]
   },
@@ -3051,7 +2870,7 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :feed,
     type: :group,
-    description: "Configure feed rendering.",
+    description: "Configure feed rendering",
     children: [
       %{
         key: :post_title,
@@ -3101,25 +2920,12 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :modules,
     type: :group,
-    description: "Custom Runtime Modules.",
+    description: "Custom Runtime Modules",
     children: [
       %{
         key: :runtime_dir,
         type: :string,
         description: "A path to custom Elixir modules (such as MRF policies)."
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    type: :group,
-    description: "Allow instance configuration from database.",
-    children: [
-      %{
-        key: :configurable_from_database,
-        type: :boolean,
-        description:
-          "Allow transferring configuration to DB with the subsequent customization from Admin api. Default: disabled"
       }
     ]
   }

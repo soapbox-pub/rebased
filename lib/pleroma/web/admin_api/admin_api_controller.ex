@@ -244,13 +244,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def list_instance_statuses(conn, %{"instance" => instance} = params) do
+    with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
     {page, page_size} = page_params(params)
 
     activities =
-      ActivityPub.fetch_instance_activities(%{
+      ActivityPub.fetch_statuses(nil, %{
         "instance" => instance,
         "limit" => page_size,
-        "offset" => (page - 1) * page_size
+        "offset" => (page - 1) * page_size,
+        "exclude_reblogs" => !with_reblogs && "true"
       })
 
     conn
@@ -259,6 +261,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def list_user_statuses(conn, %{"nickname" => nickname} = params) do
+    with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
     godmode = params["godmode"] == "true" || params["godmode"] == true
 
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
@@ -267,7 +270,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       activities =
         ActivityPub.fetch_user_activities(user, nil, %{
           "limit" => page_size,
-          "godmode" => godmode
+          "godmode" => godmode,
+          "exclude_reblogs" => !with_reblogs && "true"
         })
 
       conn
@@ -739,6 +743,24 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     else
       _ -> json_response(conn, :bad_request, "")
     end
+  end
+
+  def list_statuses(%{assigns: %{user: admin}} = conn, params) do
+    godmode = params["godmode"] == "true" || params["godmode"] == true
+    local_only = params["local_only"] == "true" || params["local_only"] == true
+    {page, page_size} = page_params(params)
+
+    activities =
+      ActivityPub.fetch_statuses(admin, %{
+        "godmode" => godmode,
+        "local_only" => local_only,
+        "limit" => page_size,
+        "offset" => (page - 1) * page_size
+      })
+
+    conn
+    |> put_view(Pleroma.Web.AdminAPI.StatusView)
+    |> render("index.json", %{activities: activities, as: :activity})
   end
 
   def status_update(%{assigns: %{user: admin}} = conn, %{"id" => id} = params) do
