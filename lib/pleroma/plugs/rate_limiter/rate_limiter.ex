@@ -144,7 +144,7 @@ defmodule Pleroma.Plugs.RateLimiter do
   end
 
   def action_settings(plug_opts) do
-    with limiter_name when not is_nil(limiter_name) <- plug_opts[:name],
+    with limiter_name when is_atom(limiter_name) <- plug_opts[:name],
          limits when not is_nil(limits) <- Config.get([:rate_limit, limiter_name]) do
       bucket_name_root = Keyword.get(plug_opts, :bucket_name, limiter_name)
 
