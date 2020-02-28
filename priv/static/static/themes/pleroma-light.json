@@ -1,0 +1,219 @@
+{
+  "_pleroma_theme_version": 2,
+  "name": "Pleroma Light",
+  "source": {
+    "themeEngineVersion": 3,
+    "fonts": {},
+    "shadows": {
+      "button": [
+        {
+          "x": 0,
+          "y": 0,
+          "blur": 2,
+          "spread": 0,
+          "color": "#000000",
+          "alpha": "0.2"
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "blur": 0,
+          "spread": 0,
+          "color": "#FFFFFF",
+          "alpha": "0.5",
+          "inset": true
+        },
+        {
+          "x": 0,
+          "y": -1,
+          "blur": 0,
+          "spread": 0,
+          "color": "#000000",
+          "alpha": 0.2,
+          "inset": true
+        }
+      ],
+      "buttonHover": [
+        {
+          "x": 0,
+          "y": 0,
+          "blur": "2",
+          "spread": 0,
+          "color": "#000000",
+          "alpha": "0.2"
+        },
+        {
+          "x": 0,
+          "y": "0",
+          "blur": "1",
+          "spread": "2",
+          "color": "#ffc39f",
+          "alpha": "1",
+          "inset": true
+        },
+        {
+          "x": 0,
+          "y": -1,
+          "blur": 0,
+          "spread": 0,
+          "color": "#000000",
+          "alpha": 0.2,
+          "inset": true
+        }
+      ],
+      "input": [
+        {
+          "x": 0,
+          "y": 1,
+          "blur": 0,
+          "spread": 0,
+          "color": "#000000",
+          "alpha": 0.2,
+          "inset": true
+        },
+        {
+          "x": 0,
+          "y": -1,
+          "blur": 0,
+          "spread": 0,
+          "color": "#FFFFFF",
+          "alpha": 0.2,
+          "inset": true
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "blur": "2",
+          "inset": true,
+          "spread": 0,
+          "color": "#000000",
+          "alpha": "0.15"
+        }
+      ],
+      "panel": [
+        {
+          "x": "0",
+          "y": 1,
+          "blur": "3",
+          "spread": 0,
+          "color": "#000000",
+          "alpha": "0.5"
+        },
+        {
+          "x": "0",
+          "y": "3",
+          "blur": "6",
+          "spread": "1",
+          "inset": false,
+          "color": "#000000",
+          "alpha": "0.2"
+        }
+      ],
+      "panelHeader": [
+        {
+          "x": 0,
+          "y": "1",
+          "blur": 0,
+          "spread": 0,
+          "inset": true,
+          "color": "#ffffff",
+          "alpha": "0.5"
+        },
+        {
+          "x": 0,
+          "y": "1",
+          "blur": "3",
+          "spread": 0,
+          "inset": false,
+          "color": "#000000",
+          "alpha": "0.3"
+        }
+      ],
+      "buttonPressed": [
+        {
+          "x": 0,
+          "y": 0,
+          "blur": 4,
+          "spread": 0,
+          "color": "#000000",
+          "alpha": "0.2"
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "blur": "1",
+          "spread": "2",
+          "color": "#000000",
+          "alpha": "0.3",
+          "inset": true
+        },
+        {
+          "x": 0,
+          "y": -1,
+          "blur": 0,
+          "spread": 0,
+          "color": "#FFFFFF",
+          "alpha": 0.2,
+          "inset": true
+        }
+      ],
+      "popup": [
+        {
+          "x": "1",
+          "y": "2",
+          "blur": "2",
+          "spread": 0,
+          "color": "#000000",
+          "alpha": "0.2"
+        },
+        {
+          "x": "1",
+          "y": "3",
+          "blur": "7",
+          "spread": "0",
+          "inset": false,
+          "color": "#000000",
+          "alpha": "0.2"
+        }
+      ],
+      "avatarStatus": [
+        {
+          "x": 0,
+          "y": "1",
+          "blur": "4",
+          "spread": "0",
+          "inset": false,
+          "color": "#000000",
+          "alpha": "0.2"
+        }
+      ]
+    },
+    "opacity": {
+      "underlay": "0.4"
+    },
+    "colors": {
+      "bg": "#f2f6f9",
+      "fg": "#d6dfed",
+      "text": "#304055",
+      "underlay": "#5d6086",
+      "accent": "#f55b1b",
+      "cBlue": "#0095ff",
+      "cRed": "#d31014",
+      "cGreen": "#0fa00f",
+      "cOrange": "#ffa500",
+      "border": "#d8e6f9",
+      "topBarText": "#304055",
+      "topBarLink": "--topBarText",
+      "btnToggled": "--accent,-24.2",
+      "input": "#dee3ed",
+      "badgeNotification": "#e83802"
+    },
+    "radii": {
+      "btn": "3",
+      "input": "3",
+      "panel": "3",
+      "avatar": "3",
+      "attachment": "3"
+    }
+  }
+}

@@ -1,7 +1,8 @@
 {
   "_pleroma_theme_version": 2,
   "name": "Redmond XXI",
-  "theme": {
+  "source": {
+    "themeEngineVersion": 3,
     "shadows": {
       "panel": [
         {
@@ -241,6 +242,7 @@
       "bg": "#d6d6ce",
       "text": "#000000",
       "link": "#0000ff",
+      "accent": "#0a246a",
       "fg": "#d6d6ce",
       "panel": "#042967",
       "panelFaint": "#FFFFFF",
@@ -248,13 +250,16 @@
       "topBar": "#042967",
       "topBarLink": "#ffffff",
       "btn": "#d6d6ce",
+      "btnToggled": "--btn",
       "faint": "#3f3f3f",
       "faintLink": "#404080",
       "border": "#808080",
       "cRed": "#c42726",
       "cBlue": "#6699cc",
       "cGreen": "#669966",
-      "cOrange": "#cc6633"
+      "cOrange": "#cc6633",
+      "highlight": "--accent",
+      "selectedPost": "--bg,-10"
     },
     "radii": {
       "btn": "0",
