@@ -402,6 +402,8 @@ config :phoenix, :format_encoders, json: Jason
 
 config :phoenix, :json_library, Jason
 
+config :phoenix, :filter_parameters, ["password", "confirm"]
+
 config :pleroma, :gopher,
   enabled: false,
   ip: {0, 0, 0, 0},
