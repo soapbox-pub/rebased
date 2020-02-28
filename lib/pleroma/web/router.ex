@@ -203,6 +203,11 @@ defmodule Pleroma.Web.Router do
 
     post("/reload_emoji", AdminAPIController, :reload_emoji)
     get("/stats", AdminAPIController, :stats)
+
+    get("/oauth_app", AdminAPIController, :oauth_app_list)
+    post("/oauth_app", AdminAPIController, :oauth_app_create)
+    patch("/oauth_app/:id", AdminAPIController, :oauth_app_update)
+    delete("/oauth_app/:id", AdminAPIController, :oauth_app_delete)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do

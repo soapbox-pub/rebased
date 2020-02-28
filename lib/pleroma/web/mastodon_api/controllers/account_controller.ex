@@ -92,6 +92,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Map.put("fullname", params["fullname"] || nickname)
       |> Map.put("bio", params["bio"] || "")
       |> Map.put("confirm", params["password"])
+      |> Map.put("trusted_app", app.trusted)
 
     with :ok <- validate_email_param(params),
          {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),

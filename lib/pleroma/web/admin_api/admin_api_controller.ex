@@ -27,7 +27,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.MastodonAPI.AppView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.Router
 
   require Logger
@@ -976,6 +978,83 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     })
 
     conn |> json("")
+  end
+
+  def oauth_app_create(conn, params) do
+    params =
+      if params["name"] do
+        Map.put(params, "client_name", params["name"])
+      else
+        params
+      end
+
+    result =
+      case App.create(params) do
+        {:ok, app} ->
+          AppView.render("show.json", %{app: app, admin: true})
+
+        {:error, changeset} ->
+          App.errors(changeset)
+      end
+
+    json(conn, result)
+  end
+
+  def oauth_app_update(conn, params) do
+    params =
+      if params["name"] do
+        Map.put(params, "client_name", params["name"])
+      else
+        params
+      end
+
+    with {:ok, app} <- App.update(params) do
+      json(conn, AppView.render("show.json", %{app: app, admin: true}))
+    else
+      {:error, changeset} ->
+        json(conn, App.errors(changeset))
+
+      nil ->
+        json_response(conn, :bad_request, "")
+    end
+  end
+
+  def oauth_app_list(conn, params) do
+    {page, page_size} = page_params(params)
+
+    search_params = %{
+      client_name: params["name"],
+      client_id: params["client_id"],
+      page: page,
+      page_size: page_size
+    }
+
+    search_params =
+      if Map.has_key?(params, "trusted") do
+        Map.put(search_params, :trusted, params["trusted"])
+      else
+        search_params
+      end
+
+    with {:ok, apps, count} <- App.search(search_params) do
+      json(
+        conn,
+        AppView.render("index.json",
+          apps: apps,
+          count: count,
+          page_size: page_size,
+          admin: true
+        )
+      )
+    end
+  end
+
+  def oauth_app_delete(conn, params) do
+    with {:ok, _app} <- App.destroy(params["id"]) do
+      json_response(conn, :no_content, "")
+    else
+      _ -> json_response(conn, :bad_request, "")
+    end
   end
 
   def stats(conn, _) do

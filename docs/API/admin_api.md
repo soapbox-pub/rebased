@@ -983,3 +983,104 @@ Loads json generated from `config/descriptions.exs`.
   }
 }
 ```
+
+## `GET /api/pleroma/admin/oauth_app`
+
+### List OAuth app
+
+- Params:
+  - *optional* `name`
+  - *optional* `client_id`
+  - *optional* `page`
+  - *optional* `page_size`
+  - *optional* `trusted`
+
+- Response:
+
+```json
+{
+  "apps": [
+    {
+      "id": 1,
+      "name": "App name",
+      "client_id": "yHoDSiWYp5mPV6AfsaVOWjdOyt5PhWRiafi6MRd1lSk",
+      "client_secret": "nLmis486Vqrv2o65eM9mLQx_m_4gH-Q6PcDpGIMl6FY",
+      "redirect_uri": "https://example.com/oauth-callback",
+      "website": "https://example.com",
+      "trusted": true
+    }
+  ],
+  "count": 17,
+  "page_size": 50
+}
+```
+
+
+## `POST /api/pleroma/admin/oauth_app`
+
+### Create OAuth App
+
+- Params:
+  - `name`
+  - `redirect_uris`
+  - `scopes`
+  - *optional* `website`
+  - *optional* `trusted`
+
+- Response:
+
+```json
+{
+  "id": 1,
+  "name": "App name",
+  "client_id": "yHoDSiWYp5mPV6AfsaVOWjdOyt5PhWRiafi6MRd1lSk",
+  "client_secret": "nLmis486Vqrv2o65eM9mLQx_m_4gH-Q6PcDpGIMl6FY",
+  "redirect_uri": "https://example.com/oauth-callback",
+  "website": "https://example.com",
+  "trusted": true
+}
+```
+
+- On failure:
+```json
+{
+  "redirect_uris": "can't be blank",
+  "name": "can't be blank"
+}
+```
+
+## `PATCH /api/pleroma/admin/oauth_app/:id`
+
+### Update OAuth App
+
+- Params:
+  -  *optional* `name`
+  -  *optional* `redirect_uris`
+  -  *optional* `scopes`
+  -  *optional* `website`
+  -  *optional* `trusted`
+
+- Response:
+
+```json
+{
+  "id": 1,
+  "name": "App name",
+  "client_id": "yHoDSiWYp5mPV6AfsaVOWjdOyt5PhWRiafi6MRd1lSk",
+  "client_secret": "nLmis486Vqrv2o65eM9mLQx_m_4gH-Q6PcDpGIMl6FY",
+  "redirect_uri": "https://example.com/oauth-callback",
+  "website": "https://example.com",
+  "trusted": true
+}
+```
+
+## `DELETE /api/pleroma/admin/oauth_app/:id`
+
+### Delete OAuth App
+
+- Params: None
+
+- Response:
+  - On success: `204`, empty response
+  - On failure:
+    - 400 Bad Request `"Invalid parameters"` when `status` is missing
