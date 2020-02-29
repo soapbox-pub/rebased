@@ -9,6 +9,10 @@ defmodule Pleroma.Tests.ObanHelpers do
 
   alias Pleroma.Repo
 
+  def wipe_all do
+    Repo.delete_all(Oban.Job)
+  end
+
   def perform_all do
     Oban.Job
     |> Repo.all()

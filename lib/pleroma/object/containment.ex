@@ -39,15 +39,8 @@ defmodule Pleroma.Object.Containment do
     defp compare_uris(_, %URI{scheme: "tag"}), do: :ok
   end
 
-  defp compare_uris(%URI{} = id_uri, %URI{} = other_uri) do
-    if id_uri.host == other_uri.host do
-      :ok
-    else
-      :error
-    end
-  end
-
-  defp compare_uris(_, _), do: :error
+  defp compare_uris(%URI{host: host} = _id_uri, %URI{host: host} = _other_uri), do: :ok
+  defp compare_uris(_id_uri, _other_uri), do: :error
 
   @doc """
   Checks that an imported AP object's actor matches the domain it came from.

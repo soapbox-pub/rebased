@@ -36,6 +36,26 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
     assert result["@context"]
   end
 
+  describe "note activity's `replies` collection rendering" do
+    clear_config([:activitypub, :note_replies_output_limit]) do
+      Pleroma.Config.put([:activitypub, :note_replies_output_limit], 5)
+    end
+
+    test "renders `replies` collection for a note activity" do
+      user = insert(:user)
+      activity = insert(:note_activity, user: user)
+
+      {:ok, self_reply1} =
+        CommonAPI.post(user, %{"status" => "self-reply 1", "in_reply_to_status_id" => activity.id})
+
+      replies_uris = [self_reply1.object.data["id"]]
+      result = ObjectView.render("object.json", %{object: refresh_record(activity)})
+
+      assert %{"type" => "Collection", "items" => ^replies_uris} =
+               get_in(result, ["object", "replies"])
+    end
+  end
+
   test "renders a like activity" do
     note = insert(:note_activity)
     object = Object.normalize(note)

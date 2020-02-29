@@ -48,7 +48,7 @@ defmodule Pleroma.User.Query do
             followers: User.t(),
             friends: User.t(),
             recipients_from_activity: [String.t()],
-            nickname: [String.t()],
+            nickname: [String.t()] | String.t(),
             ap_id: [String.t()],
             order_by: term(),
             select: term(),

@@ -10,6 +10,7 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.Signature
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.Federator
 
   require Logger
   require Pleroma.Constants
@@ -59,20 +60,23 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
-  # TODO:
-  # This will create a Create activity, which we need internally at the moment.
+  # Note: will create a Create activity, which we need internally at the moment.
   def fetch_object_from_id(id, options \\ []) do
-    with {:fetch_object, nil} <- {:fetch_object, Object.get_cached_by_ap_id(id)},
-         {:fetch, {:ok, data}} <- {:fetch, fetch_and_contain_remote_object_from_id(id)},
-         {:normalize, nil} <- {:normalize, Object.normalize(data, false)},
+    with {_, nil} <- {:fetch_object, Object.get_cached_by_ap_id(id)},
+         {_, true} <- {:allowed_depth, Federator.allowed_thread_distance?(options[:depth])},
+         {_, {:ok, data}} <- {:fetch, fetch_and_contain_remote_object_from_id(id)},
+         {_, nil} <- {:normalize, Object.normalize(data, false)},
          params <- prepare_activity_params(data),
-         {:containment, :ok} <- {:containment, Containment.contain_origin(id, params)},
-         {:transmogrifier, {:ok, activity}} <-
+         {_, :ok} <- {:containment, Containment.contain_origin(id, params)},
+         {_, {:ok, activity}} <-
            {:transmogrifier, Transmogrifier.handle_incoming(params, options)},
-         {:object, _data, %Object{} = object} <-
+         {_, _data, %Object{} = object} <-
            {:object, data, Object.normalize(activity, false)} do
       {:ok, object}
     else
+      {:allowed_depth, false} ->
+        {:error, "Max thread distance exceeded."}
+
       {:containment, _} ->
         {:error, "Object containment failed."}
 

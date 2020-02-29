@@ -76,6 +76,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OAuth: admin scopes support (relevant setting: `[:auth, :enforce_oauth_admin_scope_usage]`).
 - New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
 - Add an option `authorized_fetch_mode` to require HTTP signatures for AP fetches.
+- ActivityPub: support for `replies` collection (output for outgoing federation & fetching on incoming federation).
+- Mix task to refresh counter cache (`mix pleroma.refresh_counter_cache`)
 <details>
   <summary>API Changes</summary>
 
@@ -103,6 +105,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `feed` option for user atom feed.
 - Pleroma API: Add Emoji reactions
 - Admin API: Add `/api/pleroma/admin/instances/:instance/statuses` - lists all statuses from a given instance
+- Admin API: Add `/api/pleroma/admin/users/:nickname/statuses` - lists all statuses from a given user
 - Admin API: `PATCH /api/pleroma/users/confirm_email` to confirm email for multiple users, `PATCH /api/pleroma/users/resend_confirmation_email` to resend confirmation email for multiple users
 - ActivityPub: Configurable `type` field of the actors.
 - Mastodon API: `/api/v1/accounts/:id` has `source/pleroma/actor_type` field.
@@ -118,6 +121,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Tag feed: `/tags/:tag.rss` - list public statuses by hashtag.
 - Mastodon API: Add `reacted` property to `emoji_reactions`
 - Pleroma API: Add reactions for a single emoji.
+- ActivityPub: `[:activitypub, :note_replies_output_limit]` setting sets the number of note self-replies to output on outgoing federation.
+- Admin API: `GET /api/pleroma/admin/stats` to get status count by visibility scope
+- Admin API: `GET /api/pleroma/admin/statuses` - list all statuses (accepts `godmode` and `local_only`)
 </details>
 
 ### Fixed

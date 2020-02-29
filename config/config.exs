@@ -198,6 +198,8 @@ config :pleroma, :instance,
     max_expiration: 365 * 24 * 60 * 60
   },
   registrations_open: true,
+  invites_enabled: false,
+  account_activation_required: false,
   federating: true,
   federation_incoming_replies_max_depth: 100,
   federation_reachability_timeout_days: 7,
@@ -305,6 +307,7 @@ config :pleroma, :activitypub,
   unfollow_blocked: true,
   outgoing_blocks: true,
   follow_handshake_timeout: 500,
+  note_replies_output_limit: 5,
   sign_object_fetches: true,
   authorized_fetch_mode: false
 
@@ -377,6 +380,8 @@ config :pleroma, :chat, enabled: true
 config :phoenix, :format_encoders, json: Jason
 
 config :phoenix, :json_library, Jason
+
+config :phoenix, :filter_parameters, ["password", "confirm"]
 
 config :pleroma, :gopher,
   enabled: false,
@@ -460,6 +465,7 @@ config :pleroma, Oban,
     transmogrifier: 20,
     scheduled_activities: 10,
     background: 5,
+    remote_fetcher: 2,
     attachments_cleanup: 5,
     new_users_digest: 1
   ],

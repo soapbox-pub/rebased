@@ -33,9 +33,15 @@ defmodule Pleroma.User.Search do
     # Strip the beginning @ off if there is a query
     query_string = String.trim_leading(query_string, "@")
 
-    with [name, domain] <- String.split(query_string, "@"),
-         formatted_domain <- String.replace(domain, ~r/[!-\-|@|[-`|{-~|\/|:|\s]+/, "") do
-      name <> "@" <> to_string(:idna.encode(formatted_domain))
+    with [name, domain] <- String.split(query_string, "@") do
+      encoded_domain =
+        domain
+        |> String.replace(~r/[!-\-|@|[-`|{-~|\/|:|\s]+/, "")
+        |> String.to_charlist()
+        |> :idna.encode()
+        |> to_string()
+
+      name <> "@" <> encoded_domain
     else
       _ -> query_string
     end

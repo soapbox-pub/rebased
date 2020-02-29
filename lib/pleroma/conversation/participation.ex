@@ -133,10 +133,8 @@ defmodule Pleroma.Conversation.Participation do
       [user.id | user_ids]
       |> Enum.uniq()
       |> Enum.reduce([], fn user_id, acc ->
-        case FlakeId.Ecto.CompatType.dump(user_id) do
-          {:ok, user_id} -> [user_id | acc]
-          _ -> acc
-        end
+        {:ok, user_id} = FlakeId.Ecto.CompatType.dump(user_id)
+        [user_id | acc]
       end)
 
     conversation_subquery =
