@@ -242,4 +242,35 @@ defmodule Pleroma.Plugs.RateLimiterTest do
       refute conn_2.halted
     end
   end
+
+  test "doesn't crash due to a race condition when multiple requests are made at the same time and the bucket is not yet initialized" do
+    limiter_name = :test_race_condition
+    Pleroma.Config.put([:rate_limit, limiter_name], {1000, 5})
+    Pleroma.Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+
+    opts = RateLimiter.init(name: limiter_name)
+
+    conn = conn(:get, "/")
+    conn_2 = conn(:get, "/")
+
+    %Task{pid: pid1} =
+      task1 =
+      Task.async(fn ->
+        receive do
+          :process2_up ->
+            RateLimiter.call(conn, opts)
+        end
+      end)
+
+    task2 =
+      Task.async(fn ->
+        send(pid1, :process2_up)
+        RateLimiter.call(conn_2, opts)
+      end)
+
+    Task.await(task1)
+    Task.await(task2)
+
+    refute {:err, :not_found} == RateLimiter.inspect_bucket(conn, limiter_name, opts)
+  end
 end

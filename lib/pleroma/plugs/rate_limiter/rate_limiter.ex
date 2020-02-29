@@ -171,7 +171,7 @@ defmodule Pleroma.Plugs.RateLimiter do
         {:error, value}
 
       {:error, :no_cache} ->
-        initialize_buckets(action_settings)
+        initialize_buckets!(action_settings)
         check_rate(action_settings)
     end
   end
@@ -250,11 +250,16 @@ defmodule Pleroma.Plugs.RateLimiter do
     |> String.replace_leading(":", "")
   end
 
-  defp initialize_buckets(%{name: _name, limits: nil}), do: :ok
+  defp initialize_buckets!(%{name: _name, limits: nil}), do: :ok
 
-  defp initialize_buckets(%{name: name, limits: limits}) do
-    LimiterSupervisor.add_limiter(anon_bucket_name(name), get_scale(:anon, limits))
-    LimiterSupervisor.add_limiter(user_bucket_name(name), get_scale(:user, limits))
+  defp initialize_buckets!(%{name: name, limits: limits}) do
+    {:ok, _pid} =
+      LimiterSupervisor.add_or_return_limiter(anon_bucket_name(name), get_scale(:anon, limits))
+
+    {:ok, _pid} =
+      LimiterSupervisor.add_or_return_limiter(user_bucket_name(name), get_scale(:user, limits))
+
+    :ok
   end
 
   defp attach_identity(base, %{mode: :user, conn_info: conn_info}),
