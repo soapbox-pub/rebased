@@ -75,7 +75,7 @@ If not a Tor-only instance,
 add the nginx config below to your existing config at `/etc/nginx/sites-enabled/pleroma.nginx`.
 
 ---
-For both cases, disable CSP in Pleroma's config (STS is disabled by default) so you can define those yourself seperately from the clearnet (if your instance is also on the clearnet).
+For both cases, disable CSP in Pleroma's config (STS is disabled by default) so you can define those yourself separately from the clearnet (if your instance is also on the clearnet).
 Copy the following into the `config/prod.secret.exs` in your Pleroma folder (/home/pleroma/pleroma/):
 ```
 config :pleroma, :http_security,
