@@ -14,10 +14,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
-  # XXX: Ideally these would be generated instead of copypasted,
-  # but I haven't been able to overcome an issue with guards when
-  # trying to generate these.
-  # See: https://elixirforum.com/t/trouble-plugging-plugs-with-generated-options-in-guards-in-a-phoenix-controller/29465
+  # TODO: Replace with a macro when there is a Phoenix release with
+  # https://github.com/phoenixframework/phoenix/commit/2e8c63c01fec4dde5467dbbbf9705ff9e780735e
+  # in it
+
   plug(RateLimiter, [name: :timeline, bucket_name: :direct_timeline] when action == :direct)
   plug(RateLimiter, [name: :timeline, bucket_name: :public_timeline] when action == :public)
   plug(RateLimiter, [name: :timeline, bucket_name: :home_timeline] when action == :home)
