@@ -121,6 +121,8 @@ defmodule Pleroma.Plugs.RateLimiter do
     localhost_or_socket and remote_ip_disabled
   end
 
+  @inspect_bucket_not_found {:error, :not_found}
+
   def inspect_bucket(conn, bucket_name_root, plug_opts) do
     with %{name: _} = action_settings <- action_settings(plug_opts) do
       action_settings = incorporate_conn_info(action_settings, conn)
@@ -130,7 +132,7 @@ defmodule Pleroma.Plugs.RateLimiter do
 
       case Cachex.get(bucket_name, key_name) do
         {:error, :no_cache} ->
-          {:err, :not_found}
+          @inspect_bucket_not_found
 
         {:ok, nil} ->
           {0, limit}
@@ -139,7 +141,7 @@ defmodule Pleroma.Plugs.RateLimiter do
           {value, limit - value}
       end
     else
-      _ -> {:err, :not_found}
+      _ -> @inspect_bucket_not_found
     end
   end
 

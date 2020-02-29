@@ -109,7 +109,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
       RateLimiter.call(conn, plug_opts)
       assert {1, 4} = RateLimiter.inspect_bucket(conn, base_bucket_name, plug_opts)
-      assert {:err, :not_found} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
+      assert {:error, :not_found} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
     end
 
     test "`params` option allows different queries to be tracked independently" do
