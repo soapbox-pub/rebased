@@ -1903,6 +1903,18 @@ config :pleroma, :config_description, [
             suggestions: [50]
           }
         ]
+      },
+      %{
+        key: :crontab,
+        type: {:list, :tuple},
+        description: "Settings for cron background jobs",
+        suggestions: [
+          {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
+          {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
+          {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
+          {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
+          {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
+        ]
       }
     ]
   },
@@ -2454,6 +2466,12 @@ config :pleroma, :config_description, [
         suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
       },
       %{
+        key: :timeline,
+        type: [:tuple, {:list, :tuple}],
+        description: "For requests to timelines (each timeline has it's own limiter)",
+        suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
+      },
+      %{
         key: :app_account_creation,
         type: [:tuple, {:list, :tuple}],
         description: "For registering user accounts from the same IP address",
@@ -2926,6 +2944,26 @@ config :pleroma, :config_description, [
         key: :runtime_dir,
         type: :string,
         description: "A path to custom Elixir modules (such as MRF policies)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :streamer,
+    type: :group,
+    description: "Settings for notifications streamer",
+    children: [
+      %{
+        key: :workers,
+        type: :integer,
+        description: "Number of workers to send notifications.",
+        suggestions: [3]
+      },
+      %{
+        key: :overflow_workers,
+        type: :integer,
+        description: "Maximum number of workers created if pool is empty.",
+        suggestions: [2]
       }
     ]
   }

@@ -13,6 +13,7 @@ defmodule Pleroma.Pagination do
   alias Pleroma.Repo
 
   @default_limit 20
+  @max_limit 40
   @page_keys ["max_id", "min_id", "limit", "since_id", "order"]
 
   def page_keys, do: @page_keys
@@ -130,7 +131,11 @@ defmodule Pleroma.Pagination do
   end
 
   defp restrict(query, :limit, options, _table_binding) do
-    limit = Map.get(options, :limit, @default_limit)
+    limit =
+      case Map.get(options, :limit, @default_limit) do
+        limit when limit < @max_limit -> limit
+        _ -> @max_limit
+      end
 
     query
     |> limit(^limit)

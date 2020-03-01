@@ -343,6 +343,7 @@ Means that:
 Supported rate limiters:
 
 * `:search` - Account/Status search.
+* `:timeline` - Timeline requests (each timeline has it's own limiter).
 * `:app_account_creation` - Account registration from the API.
 * `:relations_actions` - Following/Unfollowing in general.
 * `:relation_id_action` - Following/Unfollowing for a specific user.
