@@ -245,7 +245,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         hide_favorites: user.hide_favorites,
         relationship: relationship,
         skip_thread_containment: user.skip_thread_containment,
-        background_image: image_url(user.background) |> MediaProxy.url()
+        background_image: image_url(user.background) |> MediaProxy.url(),
+        favicon: User.get_cached_favicon(user) |> MediaProxy.url()
       }
     }
     |> maybe_put_role(user, opts[:for])
