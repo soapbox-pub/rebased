@@ -39,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Logger: default log level changed from `warn` to `info`.
 - Config mix task `migrate_to_db` truncates `config` table before migrating the config file.
 - Allow account registration without an email
+- Default to `prepare: :unnamed` in the database configuration.
 <details>
   <summary>API Changes</summary>
 
