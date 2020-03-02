@@ -395,7 +395,8 @@ For each pool, the options are:
 
 Advanced settings for connections pool. Pool with opened connections. These connections can be reused in worker pools.
 
-For big instances it's recommended to increase `max_connections` up to 500-1000. It will increase memory usage, but federation would work faster.
+For big instances it's recommended to increase `config :pleroma, :connections_pool, max_connections: 500` up to 500-1000.
+It will increase memory usage, but federation would work faster.
 
 * `:receive_connection_timeout` - timeout to receive connection from pool. Default: 250ms.
 * `:max_connections` - maximum number of connections in the pool. Default: 250 connections.
