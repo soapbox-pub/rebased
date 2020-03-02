@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Plugs.RateLimiter do
@@ -7,12 +7,14 @@ defmodule Pleroma.Plugs.RateLimiter do
 
   ## Configuration
 
-  A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
+  A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration.
+  The basic configuration is a tuple where:
 
   * The first element: `scale` (Integer). The time scale in milliseconds.
   * The second element: `limit` (Integer). How many requests to limit in the time scale provided.
 
-  It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
+  It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a
+  list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
 
   To disable a limiter set its value to `nil`.
 
@@ -64,91 +66,102 @@ defmodule Pleroma.Plugs.RateLimiter do
   import Pleroma.Web.TranslationHelpers
   import Plug.Conn
 
+  alias Pleroma.Config
   alias Pleroma.Plugs.RateLimiter.LimiterSupervisor
   alias Pleroma.User
 
   require Logger
 
-  def init(opts) do
-    limiter_name = Keyword.get(opts, :name)
+  @doc false
+  def init(plug_opts) do
+    plug_opts
+  end
 
-    case Pleroma.Config.get([:rate_limit, limiter_name]) do
-      nil ->
-        nil
-
-      config ->
-        name_root = Keyword.get(opts, :bucket_name, limiter_name)
-
-        %{
-          name: name_root,
-          limits: config,
-          opts: opts
-        }
+  def call(conn, plug_opts) do
+    if disabled?() do
+      handle_disabled(conn)
+    else
+      action_settings = action_settings(plug_opts)
+      handle(conn, action_settings)
     end
   end
 
-  # Do not limit if there is no limiter configuration
-  def call(conn, nil), do: conn
+  defp handle_disabled(conn) do
+    if Config.get(:env) == :prod do
+      Logger.warn("Rate limiter is disabled for localhost/socket")
+    end
 
-  def call(conn, settings) do
-    case disabled?() do
-      true ->
-        if Pleroma.Config.get(:env) == :prod,
-          do: Logger.warn("Rate limiter is disabled for localhost/socket")
+    conn
+  end
 
+  defp handle(conn, nil), do: conn
+
+  defp handle(conn, action_settings) do
+    action_settings
+    |> incorporate_conn_info(conn)
+    |> check_rate()
+    |> case do
+      {:ok, _count} ->
         conn
 
-      false ->
-        settings
-        |> incorporate_conn_info(conn)
-        |> check_rate()
-        |> case do
-          {:ok, _count} ->
-            conn
-
-          {:error, _count} ->
-            render_throttled_error(conn)
-        end
+      {:error, _count} ->
+        render_throttled_error(conn)
     end
   end
 
   def disabled? do
     localhost_or_socket =
-      Pleroma.Config.get([Pleroma.Web.Endpoint, :http, :ip])
+      Config.get([Pleroma.Web.Endpoint, :http, :ip])
       |> Tuple.to_list()
       |> Enum.join(".")
       |> String.match?(~r/^local|^127.0.0.1/)
 
-    remote_ip_disabled = not Pleroma.Config.get([Pleroma.Plugs.RemoteIp, :enabled])
+    remote_ip_disabled = not Config.get([Pleroma.Plugs.RemoteIp, :enabled])
 
     localhost_or_socket and remote_ip_disabled
   end
 
-  def inspect_bucket(conn, name_root, settings) do
-    settings =
-      settings
-      |> incorporate_conn_info(conn)
+  @inspect_bucket_not_found {:error, :not_found}
 
-    bucket_name = make_bucket_name(%{settings | name: name_root})
-    key_name = make_key_name(settings)
-    limit = get_limits(settings)
+  def inspect_bucket(conn, bucket_name_root, plug_opts) do
+    with %{name: _} = action_settings <- action_settings(plug_opts) do
+      action_settings = incorporate_conn_info(action_settings, conn)
+      bucket_name = make_bucket_name(%{action_settings | name: bucket_name_root})
+      key_name = make_key_name(action_settings)
+      limit = get_limits(action_settings)
 
-    case Cachex.get(bucket_name, key_name) do
-      {:error, :no_cache} ->
-        {:err, :not_found}
+      case Cachex.get(bucket_name, key_name) do
+        {:error, :no_cache} ->
+          @inspect_bucket_not_found
 
-      {:ok, nil} ->
-        {0, limit}
+        {:ok, nil} ->
+          {0, limit}
 
-      {:ok, value} ->
-        {value, limit - value}
+        {:ok, value} ->
+          {value, limit - value}
+      end
+    else
+      _ -> @inspect_bucket_not_found
     end
   end
 
-  defp check_rate(settings) do
-    bucket_name = make_bucket_name(settings)
-    key_name = make_key_name(settings)
-    limit = get_limits(settings)
+  def action_settings(plug_opts) do
+    with limiter_name when is_atom(limiter_name) <- plug_opts[:name],
+         limits when not is_nil(limits) <- Config.get([:rate_limit, limiter_name]) do
+      bucket_name_root = Keyword.get(plug_opts, :bucket_name, limiter_name)
+
+      %{
+        name: bucket_name_root,
+        limits: limits,
+        opts: plug_opts
+      }
+    end
+  end
+
+  defp check_rate(action_settings) do
+    bucket_name = make_bucket_name(action_settings)
+    key_name = make_key_name(action_settings)
+    limit = get_limits(action_settings)
 
     case Cachex.get_and_update(bucket_name, key_name, &increment_value(&1, limit)) do
       {:commit, value} ->
@@ -158,8 +171,8 @@ defmodule Pleroma.Plugs.RateLimiter do
         {:error, value}
 
       {:error, :no_cache} ->
-        initialize_buckets(settings)
-        check_rate(settings)
+        initialize_buckets!(action_settings)
+        check_rate(action_settings)
     end
   end
 
@@ -169,16 +182,19 @@ defmodule Pleroma.Plugs.RateLimiter do
 
   defp increment_value(val, _limit), do: {:commit, val + 1}
 
-  defp incorporate_conn_info(settings, %{assigns: %{user: %User{id: user_id}}, params: params}) do
-    Map.merge(settings, %{
+  defp incorporate_conn_info(action_settings, %{
+         assigns: %{user: %User{id: user_id}},
+         params: params
+       }) do
+    Map.merge(action_settings, %{
       mode: :user,
       conn_params: params,
       conn_info: "#{user_id}"
     })
   end
 
-  defp incorporate_conn_info(settings, %{params: params} = conn) do
-    Map.merge(settings, %{
+  defp incorporate_conn_info(action_settings, %{params: params} = conn) do
+    Map.merge(action_settings, %{
       mode: :anon,
       conn_params: params,
       conn_info: "#{ip(conn)}"
@@ -197,10 +213,10 @@ defmodule Pleroma.Plugs.RateLimiter do
     |> halt()
   end
 
-  defp make_key_name(settings) do
+  defp make_key_name(action_settings) do
     ""
-    |> attach_params(settings)
-    |> attach_identity(settings)
+    |> attach_selected_params(action_settings)
+    |> attach_identity(action_settings)
   end
 
   defp get_scale(_, {scale, _}), do: scale
@@ -215,28 +231,35 @@ defmodule Pleroma.Plugs.RateLimiter do
 
   defp get_limits(%{limits: [{_, limit}, _]}), do: limit
 
-  defp make_bucket_name(%{mode: :user, name: name_root}),
-    do: user_bucket_name(name_root)
+  defp make_bucket_name(%{mode: :user, name: bucket_name_root}),
+    do: user_bucket_name(bucket_name_root)
 
-  defp make_bucket_name(%{mode: :anon, name: name_root}),
-    do: anon_bucket_name(name_root)
+  defp make_bucket_name(%{mode: :anon, name: bucket_name_root}),
+    do: anon_bucket_name(bucket_name_root)
 
-  defp attach_params(input, %{conn_params: conn_params, opts: opts}) do
-    param_string =
-      opts
+  defp attach_selected_params(input, %{conn_params: conn_params, opts: plug_opts}) do
+    params_string =
+      plug_opts
       |> Keyword.get(:params, [])
       |> Enum.sort()
       |> Enum.map(&Map.get(conn_params, &1, ""))
       |> Enum.join(":")
 
-    "#{input}#{param_string}"
+    [input, params_string]
+    |> Enum.join(":")
+    |> String.replace_leading(":", "")
   end
 
-  defp initialize_buckets(%{name: _name, limits: nil}), do: :ok
+  defp initialize_buckets!(%{name: _name, limits: nil}), do: :ok
 
-  defp initialize_buckets(%{name: name, limits: limits}) do
-    LimiterSupervisor.add_limiter(anon_bucket_name(name), get_scale(:anon, limits))
-    LimiterSupervisor.add_limiter(user_bucket_name(name), get_scale(:user, limits))
+  defp initialize_buckets!(%{name: name, limits: limits}) do
+    {:ok, _pid} =
+      LimiterSupervisor.add_or_return_limiter(anon_bucket_name(name), get_scale(:anon, limits))
+
+    {:ok, _pid} =
+      LimiterSupervisor.add_or_return_limiter(user_bucket_name(name), get_scale(:user, limits))
+
+    :ok
   end
 
   defp attach_identity(base, %{mode: :user, conn_info: conn_info}),
@@ -245,6 +268,6 @@ defmodule Pleroma.Plugs.RateLimiter do
   defp attach_identity(base, %{mode: :anon, conn_info: conn_info}),
     do: "ip:#{base}:#{conn_info}"
 
-  defp user_bucket_name(name_root), do: "user:#{name_root}" |> String.to_atom()
-  defp anon_bucket_name(name_root), do: "anon:#{name_root}" |> String.to_atom()
+  defp user_bucket_name(bucket_name_root), do: "user:#{bucket_name_root}" |> String.to_atom()
+  defp anon_bucket_name(bucket_name_root), do: "anon:#{bucket_name_root}" |> String.to_atom()
 end

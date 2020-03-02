@@ -1,7 +1,9 @@
 {
   "_pleroma_theme_version": 2,
   "name": "Breezy Light (beta)",
-  "theme": {
+  "source": {
+    "themeEngineVersion": 3,
+    "fonts": {},
     "shadows": {
       "panel": [
         {
@@ -19,7 +21,7 @@
           "y": "0",
           "blur": "0",
           "spread": "1",
-          "color": "#000000",
+          "color": "--btn,900",
           "alpha": "0.3",
           "inset": true
         },
@@ -40,7 +42,7 @@
           "blur": "40",
           "spread": "-40",
           "inset": true,
-          "color": "#ffffff",
+          "color": "--panel,900",
           "alpha": "0.1"
         }
       ],
@@ -50,8 +52,8 @@
           "y": "0",
           "blur": 0,
           "spread": "1",
-          "color": "--link",
-          "alpha": "0.3",
+          "color": "--accent",
+          "alpha": "1",
           "inset": true
         },
         {
@@ -67,19 +69,10 @@
       "buttonPressed": [
         {
           "x": 0,
-          "y": 0,
-          "blur": "0",
-          "spread": "50",
-          "color": "--faint",
-          "alpha": 1,
-          "inset": true
-        },
-        {
-          "x": 0,
           "y": "0",
           "blur": 0,
           "spread": "1",
-          "color": "#ffffff",
+          "color": "--btn,900",
           "alpha": 0.2,
           "inset": true
         },
@@ -99,31 +92,30 @@
           "y": "0",
           "blur": 0,
           "spread": "1",
-          "color": "#000000",
+          "color": "--input,900",
           "alpha": "0.2",
           "inset": true
         }
       ]
     },
-    "fonts": {},
     "opacity": {
       "input": "1"
     },
     "colors": {
       "bg": "#eff0f1",
       "text": "#232627",
-      "link": "#2980b9",
-      "fg": "#bcc2c7",
-      "panel": "#475057",
-      "panelText": "#fcfcfc",
-      "input": "#fcfcfc",
-      "topBar": "#475057",
-      "topBarLink": "#eff0f1",
-      "btn": "#eff0f1",
+      "fg": "#475057",
+      "accent": "#2980b9",
+      "input": "--bg,-6.47",
+      "topBarLink": "--topBarText",
+      "btn": "--bg",
       "cRed": "#da4453",
       "cBlue": "#2980b9",
       "cGreen": "#27ae60",
-      "cOrange": "#f67400"
+      "cOrange": "#f67400",
+      "btnPressed": "--accent",
+      "selectedMenu": "--accent",
+      "selectedMenuPopover": "--accent"
     },
     "radii": {
       "btn": "2",

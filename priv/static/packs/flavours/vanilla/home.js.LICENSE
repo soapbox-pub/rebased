@@ -1,0 +1,193 @@
+/*!
+  Copyright (c) 2017 Jed Watson.
+  Licensed under the MIT License (MIT), see
+  http://jedwatson.github.io/classnames
+*/
+
+/*!
+ * escape-html
+ * Copyright(c) 2012-2013 TJ Holowaychuk
+ * Copyright(c) 2015 Andreas Lubbe
+ * Copyright(c) 2015 Tiancheng "Timothy" Gu
+ * MIT Licensed
+ */
+
+/*
+object-assign
+(c) Sindre Sorhus
+@license MIT
+*/
+
+/** @license React v16.12.0
+ * react.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/** @license React v16.12.0
+ * react-dom.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/** @license React v0.18.0
+ * scheduler.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/** @license React v16.12.0
+ * react-is.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/*!
+ * wavesurfer.js 3.3.1 (2020-01-14)
+ * https://github.com/katspaugh/wavesurfer.js
+ * @license BSD-3-Clause
+ */
+
+/*!****************************************!*\
+        !*** ./node_modules/debounce/index.js ***!
+        \****************************************/
+
+/*! no static exports found */
+
+/*!***********************************!*\
+        !*** ./src/drawer.canvasentry.js ***!
+        \***********************************/
+
+/*! ./util/style */
+
+/*! ./util/get-id */
+
+/*!***********************!*\
+        !*** ./src/drawer.js ***!
+        \***********************/
+
+/*! ./util */
+
+/*!***********************************!*\
+        !*** ./src/drawer.multicanvas.js ***!
+        \***********************************/
+
+/*! ./drawer */
+
+/*! ./drawer.canvasentry */
+
+/*!**************************************!*\
+        !*** ./src/mediaelement-webaudio.js ***!
+        \**************************************/
+
+/*! ./mediaelement */
+
+/*!*****************************!*\
+        !*** ./src/mediaelement.js ***!
+        \*****************************/
+
+/*! ./webaudio */
+
+/*!**************************!*\
+        !*** ./src/peakcache.js ***!
+        \**************************/
+
+/*!**************************!*\
+        !*** ./src/util/ajax.js ***!
+        \**************************/
+
+/*! ./observer */
+
+/*!****************************!*\
+        !*** ./src/util/extend.js ***!
+        \****************************/
+
+/*!***************************!*\
+        !*** ./src/util/fetch.js ***!
+        \***************************/
+
+/*!***************************!*\
+        !*** ./src/util/frame.js ***!
+        \***************************/
+
+/*! ./request-animation-frame */
+
+/*!****************************!*\
+        !*** ./src/util/get-id.js ***!
+        \****************************/
+
+/*!***************************!*\
+        !*** ./src/util/index.js ***!
+        \***************************/
+
+/*! ./ajax */
+
+/*! ./get-id */
+
+/*! ./max */
+
+/*! ./min */
+
+/*! ./extend */
+
+/*! ./style */
+
+/*! ./frame */
+
+/*! debounce */
+
+/*! ./prevent-click */
+
+/*! ./fetch */
+
+/*!*************************!*\
+        !*** ./src/util/max.js ***!
+        \*************************/
+
+/*!*************************!*\
+        !*** ./src/util/min.js ***!
+        \*************************/
+
+/*!******************************!*\
+        !*** ./src/util/observer.js ***!
+        \******************************/
+
+/*!***********************************!*\
+        !*** ./src/util/prevent-click.js ***!
+        \***********************************/
+
+/*!*********************************************!*\
+        !*** ./src/util/request-animation-frame.js ***!
+        \*********************************************/
+
+/*!***************************!*\
+        !*** ./src/util/style.js ***!
+        \***************************/
+
+/*!***************************!*\
+        !*** ./src/wavesurfer.js ***!
+        \***************************/
+
+/*! ./drawer.multicanvas */
+
+/*! ./peakcache */
+
+/*! ./mediaelement-webaudio */
+
+/*!*************************!*\
+        !*** ./src/webaudio.js ***!
+        \*************************/
+
+/*! https://mths.be/punycode v1.4.1 by @mathias */

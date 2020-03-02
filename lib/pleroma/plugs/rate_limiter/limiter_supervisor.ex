@@ -7,8 +7,8 @@ defmodule Pleroma.Plugs.RateLimiter.LimiterSupervisor do
     DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 
-  def add_limiter(limiter_name, expiration) do
-    {:ok, _pid} =
+  def add_or_return_limiter(limiter_name, expiration) do
+    result =
       DynamicSupervisor.start_child(
         __MODULE__,
         %{
@@ -28,6 +28,12 @@ defmodule Pleroma.Plugs.RateLimiter.LimiterSupervisor do
              ]}
         }
       )
+
+    case result do
+      {:ok, _pid} = result -> result
+      {:error, {:already_started, pid}} -> {:ok, pid}
+      _ -> result
+    end
   end
 
   @impl true

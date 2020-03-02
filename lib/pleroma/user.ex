@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User do
@@ -749,9 +749,18 @@ defmodule Pleroma.User do
     Cachex.del(:user_cache, "nickname:#{user.nickname}")
   end
 
+  @spec get_cached_by_ap_id(String.t()) :: User.t() | nil
   def get_cached_by_ap_id(ap_id) do
     key = "ap_id:#{ap_id}"
-    Cachex.fetch!(:user_cache, key, fn _ -> get_by_ap_id(ap_id) end)
+
+    with {:ok, nil} <- Cachex.get(:user_cache, key),
+         user when not is_nil(user) <- get_by_ap_id(ap_id),
+         {:ok, true} <- Cachex.put(:user_cache, key, user) do
+      user
+    else
+      {:ok, user} -> user
+      nil -> nil
+    end
   end
 
   def get_cached_by_id(id) do
@@ -853,14 +862,14 @@ defmodule Pleroma.User do
   @spec get_followers_query(User.t()) :: Ecto.Query.t()
   def get_followers_query(user), do: get_followers_query(user, nil)
 
-  @spec get_followers(User.t(), pos_integer()) :: {:ok, list(User.t())}
+  @spec get_followers(User.t(), pos_integer() | nil) :: {:ok, list(User.t())}
   def get_followers(user, page \\ nil) do
     user
     |> get_followers_query(page)
     |> Repo.all()
   end
 
-  @spec get_external_followers(User.t(), pos_integer()) :: {:ok, list(User.t())}
+  @spec get_external_followers(User.t(), pos_integer() | nil) :: {:ok, list(User.t())}
   def get_external_followers(user, page \\ nil) do
     user
     |> get_followers_query(page)
@@ -1304,7 +1313,6 @@ defmodule Pleroma.User do
     Repo.delete(user)
   end
 
-  @spec perform(atom(), User.t()) :: {:ok, User.t()}
   def perform(:fetch_initial_posts, %User{} = user) do
     pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
 
@@ -1336,7 +1344,6 @@ defmodule Pleroma.User do
     )
   end
 
-  @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
   def perform(:follow_import, %User{} = follower, followed_identifiers)
       when is_list(followed_identifiers) do
     Enum.map(
