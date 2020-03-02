@@ -277,4 +277,33 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
              |> response(404)
     end
   end
+
+  describe "when instance is not federating," do
+    clear_config([:instance, :federating]) do
+      Pleroma.Config.put([:instance, :federating], false)
+    end
+
+    test "returns 404 for GET routes", %{conn: conn} do
+      conn = put_req_header(conn, "accept", "application/json")
+
+      note_activity = insert(:note_activity, local: true)
+      [_, activity_uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["id"]))
+
+      object = Object.normalize(note_activity)
+      [_, object_uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, object.data["id"]))
+
+      get_uris = [
+        "/activities/#{activity_uuid}",
+        "/objects/#{object_uuid}",
+        "/notice/#{note_activity.id}",
+        "/notice/#{note_activity.id}/embed_player"
+      ]
+
+      for get_uri <- get_uris do
+        conn
+        |> get(get_uri)
+        |> json_response(404)
+      end
+    end
+  end
 end
