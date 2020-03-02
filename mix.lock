@@ -110,3 +110,4 @@
   "web_push_encryption": {:hex, :web_push_encryption, "0.2.3", "a0ceab85a805a30852f143d22d71c434046fbdbafbc7292e7887cec500826a80", [:mix], [{:httpoison, "~> 1.0", [hex: :httpoison, repo: "hexpm", optional: false]}, {:jose, "~> 1.8", [hex: :jose, repo: "hexpm", optional: false]}, {:poison, "~> 3.0", [hex: :poison, repo: "hexpm", optional: false]}], "hexpm", "9315c8f37c108835cf3f8e9157d7a9b8f420a34f402d1b1620a31aed5b93ecdf"},
   "websocket_client": {:git, "https://github.com/jeremyong/websocket_client.git", "9a6f65d05ebf2725d62fb19262b21f1805a59fbf", []},
 }
+

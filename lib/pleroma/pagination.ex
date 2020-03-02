@@ -12,12 +12,15 @@ defmodule Pleroma.Pagination do
 
   alias Pleroma.Repo
 
+  @type type :: :keyset | :offset
+
   @default_limit 20
   @max_limit 40
   @page_keys ["max_id", "min_id", "limit", "since_id", "order"]
 
   def page_keys, do: @page_keys
 
+  @spec fetch_paginated(Ecto.Query.t(), map(), type(), atom() | nil) :: [Ecto.Schema.t()]
   def fetch_paginated(query, params, type \\ :keyset, table_binding \\ nil)
 
   def fetch_paginated(query, %{"total" => true} = params, :keyset, table_binding) do
@@ -58,6 +61,7 @@ defmodule Pleroma.Pagination do
     |> Repo.all()
   end
 
+  @spec paginate(Ecto.Query.t(), map(), type(), atom() | nil) :: [Ecto.Schema.t()]
   def paginate(query, options, method \\ :keyset, table_binding \\ nil)
 
   def paginate(query, options, :keyset, table_binding) do

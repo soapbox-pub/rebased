@@ -37,6 +37,7 @@ defmodule Pleroma.Upload do
           Plug.Upload.t()
           | (data_uri_string :: String.t())
           | {:from_local, name :: String.t(), id :: String.t(), path :: String.t()}
+          | map()
 
   @type option ::
           {:type, :avatar | :banner | :background}
