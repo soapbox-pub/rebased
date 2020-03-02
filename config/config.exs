@@ -49,8 +49,7 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 config :pleroma, Pleroma.Repo,
   types: Pleroma.PostgresTypes,
   telemetry_event: [Pleroma.Repo.Instrumenter],
-  migration_lock: nil,
-  parameters: [gin_fuzzy_search_limit: "500"]
+  migration_lock: nil
 
 config :pleroma, Pleroma.Captcha,
   enabled: true,
@@ -602,6 +601,8 @@ config :pleroma, :web_cache_ttl,
 config :pleroma, :modules, runtime_dir: "instance/modules"
 
 config :pleroma, configurable_from_database: false
+
+config :pleroma, Pleroma.Repo, parameters: [gin_fuzzy_search_limit: "500"]
 
 config :pleroma, :connections_pool,
   receive_connection_timeout: 250,
