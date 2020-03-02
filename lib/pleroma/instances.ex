@@ -37,4 +37,32 @@ defmodule Pleroma.Instances do
       url_or_host
     end
   end
+
+  def get_cached_favicon(instance_url) when is_binary(instance_url) do
+    Cachex.fetch!(:instances_cache, instance_url, fn _ -> get_favicon(instance_url) end)
+  end
+
+  def get_cached_favicon(_instance_url) do
+    nil
+  end
+
+  def get_favicon(instance_url) when is_binary(instance_url) do
+    try do
+      with {:ok, %Tesla.Env{body: html}} <-
+             Pleroma.HTTP.get(instance_url, [{:Accept, "text/html"}]),
+           favicon_rel <-
+             html
+             |> Floki.parse_document!()
+             |> Floki.attribute("link[rel=icon]", "href")
+             |> List.first(),
+           favicon_url <- URI.merge(URI.parse(instance_url), favicon_rel) |> to_string(),
+           true <- is_binary(favicon_url) do
+        favicon_url
+      else
+        _ -> nil
+      end
+    rescue
+      _ -> nil
+    end
+  end
 end

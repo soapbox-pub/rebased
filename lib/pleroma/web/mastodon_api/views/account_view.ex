@@ -204,6 +204,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         %{}
       end
 
+    favicon =
+      user
+      |> Map.get(:ap_id, "")
+      |> URI.parse()
+      |> URI.merge("/")
+      |> to_string()
+      |> Pleroma.Instances.get_cached_favicon()
+      |> MediaProxy.url()
+
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -246,7 +255,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         relationship: relationship,
         skip_thread_containment: user.skip_thread_containment,
         background_image: image_url(user.background) |> MediaProxy.url(),
-        favicon: User.get_cached_favicon(user) |> MediaProxy.url()
+        favicon: favicon
       }
     }
     |> maybe_put_role(user, opts[:for])
