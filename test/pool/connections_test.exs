@@ -23,10 +23,17 @@ defmodule Pleroma.Pool.ConnectionsTest do
     name = :test_connections
     adapter = Application.get_env(:tesla, :adapter)
     Application.put_env(:tesla, :adapter, Tesla.Adapter.Gun)
-    on_exit(fn -> Application.put_env(:tesla, :adapter, adapter) end)
 
-    {:ok, _pid} =
+    {:ok, pid} =
       Connections.start_link({name, [max_connections: 2, receive_connection_timeout: 1_500]})
+
+    on_exit(fn ->
+      Application.put_env(:tesla, :adapter, adapter)
+
+      if Process.alive?(pid) do
+        GenServer.stop(name)
+      end
+    end)
 
     {:ok, name: name}
   end
