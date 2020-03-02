@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   alias Pleroma.Activity
   alias Pleroma.Builders.ActivityBuilder
+  alias Pleroma.Config
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
@@ -15,6 +16,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Federator
 
   import Pleroma.Factory
   import Tesla.Mock
@@ -224,7 +226,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   describe "insertion" do
     test "drops activities beyond a certain limit" do
-      limit = Pleroma.Config.get([:instance, :remote_limit])
+      limit = Config.get([:instance, :remote_limit])
 
       random_text =
         :crypto.strong_rand_bytes(limit + 1)
@@ -385,6 +387,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "create activities" do
+    test "it reverts create" do
+      user = insert(:user)
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} =
+                 ActivityPub.create(%{
+                   to: ["user1", "user2"],
+                   actor: user,
+                   context: "",
+                   object: %{
+                     "to" => ["user1", "user2"],
+                     "type" => "Note",
+                     "content" => "testing"
+                   }
+                 })
+      end
+
+      assert Repo.aggregate(Activity, :count, :id) == 0
+      assert Repo.aggregate(Object, :count, :id) == 0
+    end
+
     test "removes doubled 'to' recipients" do
       user = insert(:user)
 
@@ -852,8 +875,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "react to an object" do
-    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
-      Pleroma.Config.put([:instance, :federating], true)
+    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
+      Config.put([:instance, :federating], true)
       user = insert(:user)
       reactor = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
@@ -861,7 +884,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
 
-      assert called(Pleroma.Web.Federator.publish(reaction_activity))
+      assert called(Federator.publish(reaction_activity))
     end
 
     test "adds an emoji reaction activity to the db" do
@@ -899,11 +922,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                ["☕", [third_user.ap_id]]
              ]
     end
+
+    test "reverts emoji reaction on error" do
+      [user, reactor] = insert_list(2, :user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "Status"})
+      object = Object.normalize(activity)
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} = ActivityPub.react_with_emoji(reactor, object, "😀")
+      end
+
+      object = Object.get_by_ap_id(object.data["id"])
+      refute object.data["reaction_count"]
+      refute object.data["reactions"]
+    end
   end
 
   describe "unreacting to an object" do
-    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
-      Pleroma.Config.put([:instance, :federating], true)
+    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
+      Config.put([:instance, :federating], true)
       user = insert(:user)
       reactor = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
@@ -911,12 +949,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
 
-      assert called(Pleroma.Web.Federator.publish(reaction_activity))
+      assert called(Federator.publish(reaction_activity))
 
       {:ok, unreaction_activity, _object} =
         ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
 
-      assert called(Pleroma.Web.Federator.publish(unreaction_activity))
+      assert called(Federator.publish(unreaction_activity))
     end
 
     test "adds an undo activity to the db" do
@@ -937,18 +975,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert object.data["reaction_count"] == 0
       assert object.data["reactions"] == []
     end
+
+    test "reverts emoji unreact on error" do
+      [user, reactor] = insert_list(2, :user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "Status"})
+      object = Object.normalize(activity)
+
+      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "😀")
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} =
+                 ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
+      end
+
+      object = Object.get_by_ap_id(object.data["id"])
+
+      assert object.data["reaction_count"] == 1
+      assert object.data["reactions"] == [["😀", [reactor.ap_id]]]
+    end
   end
 
   describe "like an object" do
-    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
-      Pleroma.Config.put([:instance, :federating], true)
+    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
+      Config.put([:instance, :federating], true)
       note_activity = insert(:note_activity)
       assert object_activity = Object.normalize(note_activity)
 
       user = insert(:user)
 
       {:ok, like_activity, _object} = ActivityPub.like(user, object_activity)
-      assert called(Pleroma.Web.Federator.publish(like_activity))
+      assert called(Federator.publish(like_activity))
     end
 
     test "returns exist activity if object already liked" do
@@ -961,6 +1017,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, like_activity_exist, _object} = ActivityPub.like(user, object_activity)
       assert like_activity == like_activity_exist
+    end
+
+    test "reverts like activity on error" do
+      note_activity = insert(:note_activity)
+      object = Object.normalize(note_activity)
+      user = insert(:user)
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} = ActivityPub.like(user, object)
+      end
+
+      assert Repo.aggregate(Activity, :count, :id) == 1
+      assert Repo.get(Object, object.id) == object
     end
 
     test "adds a like activity to the db" do
@@ -993,15 +1062,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "unliking" do
-    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
-      Pleroma.Config.put([:instance, :federating], true)
+    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
+      Config.put([:instance, :federating], true)
 
       note_activity = insert(:note_activity)
       object = Object.normalize(note_activity)
       user = insert(:user)
 
       {:ok, object} = ActivityPub.unlike(user, object)
-      refute called(Pleroma.Web.Federator.publish())
+      refute called(Federator.publish())
 
       {:ok, _like_activity, object} = ActivityPub.like(user, object)
       assert object.data["like_count"] == 1
@@ -1009,7 +1078,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
       assert object.data["like_count"] == 0
 
-      assert called(Pleroma.Web.Federator.publish(unlike_activity))
+      assert called(Federator.publish(unlike_activity))
+    end
+
+    test "reverts unliking on error" do
+      note_activity = insert(:note_activity)
+      object = Object.normalize(note_activity)
+      user = insert(:user)
+
+      {:ok, like_activity, object} = ActivityPub.like(user, object)
+      assert object.data["like_count"] == 1
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} = ActivityPub.unlike(user, object)
+      end
+
+      assert Object.get_by_ap_id(object.data["id"]) == object
+      assert object.data["like_count"] == 1
+      assert Activity.get_by_id(like_activity.id)
     end
 
     test "unliking a previously liked object" do
@@ -1050,6 +1136,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert announce_activity.data["object"] == object.data["id"]
       assert announce_activity.data["actor"] == user.ap_id
       assert announce_activity.data["context"] == object.data["context"]
+    end
+
+    test "reverts annouce from object on error" do
+      note_activity = insert(:note_activity)
+      object = Object.normalize(note_activity)
+      user = insert(:user)
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} = ActivityPub.announce(user, object)
+      end
+
+      reloaded_object = Object.get_by_ap_id(object.data["id"])
+      assert reloaded_object == object
+      refute reloaded_object.data["announcement_count"]
+      refute reloaded_object.data["announcements"]
     end
   end
 
@@ -1093,8 +1194,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user)
 
       # Unannouncing an object that is not announced does nothing
-      # {:ok, object} = ActivityPub.unannounce(user, object)
-      # assert object.data["announcement_count"] == 0
+      {:ok, object} = ActivityPub.unannounce(user, object)
+      refute object.data["announcement_count"]
 
       {:ok, announce_activity, object} = ActivityPub.announce(user, object)
       assert object.data["announcement_count"] == 1
@@ -1113,6 +1214,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert unannounce_activity.data["context"] == announce_activity.data["context"]
 
       assert Activity.get_by_id(announce_activity.id) == nil
+    end
+
+    test "reverts unannouncing on error" do
+      note_activity = insert(:note_activity)
+      object = Object.normalize(note_activity)
+      user = insert(:user)
+
+      {:ok, _announce_activity, object} = ActivityPub.announce(user, object)
+      assert object.data["announcement_count"] == 1
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} = ActivityPub.unannounce(user, object)
+      end
+
+      object = Object.get_by_ap_id(object.data["id"])
+      assert object.data["announcement_count"] == 1
     end
   end
 
@@ -1148,6 +1265,35 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "following / unfollowing" do
+    test "it reverts follow activity" do
+      follower = insert(:user)
+      followed = insert(:user)
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} = ActivityPub.follow(follower, followed)
+      end
+
+      assert Repo.aggregate(Activity, :count, :id) == 0
+      assert Repo.aggregate(Object, :count, :id) == 0
+    end
+
+    test "it reverts unfollow activity" do
+      follower = insert(:user)
+      followed = insert(:user)
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} = ActivityPub.unfollow(follower, followed)
+      end
+
+      activity = Activity.get_by_id(follow_activity.id)
+      assert activity.data["type"] == "Follow"
+      assert activity.data["actor"] == follower.ap_id
+
+      assert activity.data["object"] == followed.ap_id
+    end
+
     test "creates a follow activity" do
       follower = insert(:user)
       followed = insert(:user)
@@ -1194,6 +1340,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "blocking / unblocking" do
+    test "reverts block activity on error" do
+      [blocker, blocked] = insert_list(2, :user)
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} = ActivityPub.block(blocker, blocked)
+      end
+
+      assert Repo.aggregate(Activity, :count, :id) == 0
+      assert Repo.aggregate(Object, :count, :id) == 0
+    end
+
     test "creates a block activity" do
       blocker = insert(:user)
       blocked = insert(:user)
@@ -1203,6 +1360,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["type"] == "Block"
       assert activity.data["actor"] == blocker.ap_id
       assert activity.data["object"] == blocked.ap_id
+    end
+
+    test "reverts unblock activity on error" do
+      [blocker, blocked] = insert_list(2, :user)
+      {:ok, block_activity} = ActivityPub.block(blocker, blocked)
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} = ActivityPub.unblock(blocker, blocked)
+      end
+
+      assert block_activity.data["type"] == "Block"
+      assert block_activity.data["actor"] == blocker.ap_id
+
+      assert Repo.aggregate(Activity, :count, :id) == 1
+      assert Repo.aggregate(Object, :count, :id) == 1
     end
 
     test "creates an undo activity for the last block" do
@@ -1225,6 +1397,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   describe "deletion" do
     clear_config([:instance, :rewrite_policy])
+
+    test "it reverts deletion on error" do
+      note = insert(:note_activity)
+      object = Object.normalize(note)
+
+      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
+        assert {:error, :reverted} = ActivityPub.delete(object)
+      end
+
+      assert Repo.aggregate(Activity, :count, :id) == 1
+      assert Repo.get(Object, object.id) == object
+      assert Activity.get_by_id(note.id) == note
+    end
 
     test "it creates a delete activity and deletes the original object" do
       note = insert(:note_activity)
@@ -1419,7 +1604,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   test "returned pinned statuses" do
-    Pleroma.Config.put([:instance, :max_pinned_statuses], 3)
+    Config.put([:instance, :max_pinned_statuses], 3)
     user = insert(:user)
 
     {:ok, activity_one} = CommonAPI.post(user, %{"status" => "HI!!!"})

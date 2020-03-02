@@ -1,9 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object do
   use Ecto.Schema
+
+  import Ecto.Query
+  import Ecto.Changeset
 
   alias Pleroma.Activity
   alias Pleroma.Object
@@ -11,9 +14,6 @@ defmodule Pleroma.Object do
   alias Pleroma.ObjectTombstone
   alias Pleroma.Repo
   alias Pleroma.User
-
-  import Ecto.Query
-  import Ecto.Changeset
 
   require Logger
 
@@ -145,18 +145,18 @@ defmodule Pleroma.Object do
   # Legacy objects can be mutated by anybody
   def authorize_mutation(%Object{}, %User{}), do: true
 
+  @spec get_cached_by_ap_id(String.t()) :: Object.t() | nil
   def get_cached_by_ap_id(ap_id) do
     key = "object:#{ap_id}"
 
-    Cachex.fetch!(:object_cache, key, fn _ ->
-      object = get_by_ap_id(ap_id)
-
-      if object do
-        {:commit, object}
-      else
-        {:ignore, object}
-      end
-    end)
+    with {:ok, nil} <- Cachex.get(:object_cache, key),
+         object when not is_nil(object) <- get_by_ap_id(ap_id),
+         {:ok, true} <- Cachex.put(:object_cache, key, object) do
+      object
+    else
+      {:ok, object} -> object
+      nil -> nil
+    end
   end
 
   def context_mapping(context) do

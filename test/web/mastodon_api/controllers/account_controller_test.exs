@@ -675,52 +675,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert json_response(res, 400) == %{"error" => "{\"email\":[\"has already been taken\"]}"}
     end
 
-    clear_config([Pleroma.Plugs.RemoteIp, :enabled])
-
-    test "rate limit", %{conn: conn} do
-      Pleroma.Config.put([Pleroma.Plugs.RemoteIp, :enabled], true)
-      app_token = insert(:oauth_token, user: nil)
-
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer " <> app_token.token)
-        |> Map.put(:remote_ip, {15, 15, 15, 15})
-
-      for i <- 1..5 do
-        conn =
-          post(conn, "/api/v1/accounts", %{
-            username: "#{i}lain",
-            email: "#{i}lain@example.org",
-            password: "PlzDontHackLain",
-            agreement: true
-          })
-
-        %{
-          "access_token" => token,
-          "created_at" => _created_at,
-          "scope" => _scope,
-          "token_type" => "Bearer"
-        } = json_response(conn, 200)
-
-        token_from_db = Repo.get_by(Token, token: token)
-        assert token_from_db
-        token_from_db = Repo.preload(token_from_db, :user)
-        assert token_from_db.user
-
-        assert token_from_db.user.confirmation_pending
-      end
-
-      conn =
-        post(conn, "/api/v1/accounts", %{
-          username: "6lain",
-          email: "6lain@example.org",
-          password: "PlzDontHackLain",
-          agreement: true
-        })
-
-      assert json_response(conn, :too_many_requests) == %{"error" => "Throttled"}
-    end
-
     test "returns bad_request if missing required params", %{
       conn: conn,
       valid_params: valid_params
@@ -744,6 +698,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         assert res == %{"error" => "Missing parameters"}
       end)
     end
+
+    clear_config([:instance, :account_activation_required])
 
     test "returns bad_request if missing email params when :account_activation_required is enabled",
          %{conn: conn, valid_params: valid_params} do
@@ -796,6 +752,59 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       res = post(conn, "/api/v1/accounts", valid_params)
       assert json_response(res, 403) == %{"error" => "Invalid credentials"}
+    end
+  end
+
+  describe "create account by app / rate limit" do
+    clear_config([Pleroma.Plugs.RemoteIp, :enabled]) do
+      Pleroma.Config.put([Pleroma.Plugs.RemoteIp, :enabled], true)
+    end
+
+    clear_config([:rate_limit, :app_account_creation]) do
+      Pleroma.Config.put([:rate_limit, :app_account_creation], {10_000, 2})
+    end
+
+    test "respects rate limit setting", %{conn: conn} do
+      app_token = insert(:oauth_token, user: nil)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer " <> app_token.token)
+        |> Map.put(:remote_ip, {15, 15, 15, 15})
+
+      for i <- 1..2 do
+        conn =
+          post(conn, "/api/v1/accounts", %{
+            username: "#{i}lain",
+            email: "#{i}lain@example.org",
+            password: "PlzDontHackLain",
+            agreement: true
+          })
+
+        %{
+          "access_token" => token,
+          "created_at" => _created_at,
+          "scope" => _scope,
+          "token_type" => "Bearer"
+        } = json_response(conn, 200)
+
+        token_from_db = Repo.get_by(Token, token: token)
+        assert token_from_db
+        token_from_db = Repo.preload(token_from_db, :user)
+        assert token_from_db.user
+
+        assert token_from_db.user.confirmation_pending
+      end
+
+      conn =
+        post(conn, "/api/v1/accounts", %{
+          username: "6lain",
+          email: "6lain@example.org",
+          password: "PlzDontHackLain",
+          agreement: true
+        })
+
+      assert json_response(conn, :too_many_requests) == %{"error" => "Throttled"}
     end
   end
 
