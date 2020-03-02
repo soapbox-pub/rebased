@@ -25,9 +25,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     :ok
   end
 
-  clear_config_all([:instance, :federating],
-    do: Pleroma.Config.put([:instance, :federating], true)
-  )
+  clear_config_all([:instance, :federating]) do
+    Pleroma.Config.put([:instance, :federating], true)
+  end
 
   describe "/relay" do
     clear_config([:instance, :allow_relay])
@@ -1008,7 +1008,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
-  describe "Additionnal ActivityPub C2S endpoints" do
+  describe "Additional ActivityPub C2S endpoints" do
     test "/api/ap/whoami", %{conn: conn} do
       user = insert(:user)
 
@@ -1045,6 +1045,89 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert object["name"] == desc
       assert object["type"] == "Document"
       assert object["actor"] == user.ap_id
+    end
+  end
+
+  describe "when instance is not federating," do
+    clear_config([:instance, :federating]) do
+      Pleroma.Config.put([:instance, :federating], false)
+    end
+
+    test "returns 404 for GET routes", %{conn: conn} do
+      user = insert(:user)
+      conn = put_req_header(conn, "accept", "application/json")
+
+      get_uris = [
+        "/users/#{user.nickname}",
+        "/users/#{user.nickname}/outbox",
+        "/users/#{user.nickname}/inbox?page=true",
+        "/users/#{user.nickname}/followers",
+        "/users/#{user.nickname}/following",
+        "/internal/fetch",
+        "/relay",
+        "/relay/following",
+        "/relay/followers",
+        "/api/ap/whoami"
+      ]
+
+      for get_uri <- get_uris do
+        conn
+        |> get(get_uri)
+        |> json_response(404)
+
+        conn
+        |> assign(:user, user)
+        |> get(get_uri)
+        |> json_response(404)
+      end
+    end
+
+    test "returns 404 for activity-related POST routes", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+
+      post_activity_data =
+        "test/fixtures/mastodon-post-activity.json"
+        |> File.read!()
+        |> Poison.decode!()
+
+      post_activity_uris = [
+        "/inbox",
+        "/relay/inbox",
+        "/users/#{user.nickname}/inbox",
+        "/users/#{user.nickname}/outbox"
+      ]
+
+      for post_activity_uri <- post_activity_uris do
+        conn
+        |> post(post_activity_uri, post_activity_data)
+        |> json_response(404)
+
+        conn
+        |> assign(:user, user)
+        |> post(post_activity_uri, post_activity_data)
+        |> json_response(404)
+      end
+    end
+
+    test "returns 404 for media upload attempt", %{conn: conn} do
+      user = insert(:user)
+      desc = "Description of the image"
+
+      image = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      conn
+      |> assign(:user, user)
+      |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
+      |> json_response(404)
     end
   end
 end

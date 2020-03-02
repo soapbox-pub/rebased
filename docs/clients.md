@@ -1,5 +1,5 @@
 # Pleroma Clients
-Note: Additionnal clients may be working but theses are officially supporting Pleroma.
+Note: Additional clients may be working but theses are officially supporting Pleroma.
 Feel free to contact us to be added to this list!
 
 ## Desktop
