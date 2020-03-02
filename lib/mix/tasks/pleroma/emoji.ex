@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Emoji do
@@ -186,11 +186,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     tmp_pack_dir = Path.join(System.tmp_dir!(), "emoji-pack-#{name}")
 
-    {:ok, _} =
-      :zip.unzip(
-        binary_archive,
-        cwd: tmp_pack_dir
-      )
+    {:ok, _} = :zip.unzip(binary_archive, cwd: String.to_charlist(tmp_pack_dir))
 
     emoji_map = Pleroma.Emoji.Loader.make_shortcode_to_file_map(tmp_pack_dir, exts)
 

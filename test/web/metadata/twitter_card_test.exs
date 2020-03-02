@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
@@ -12,6 +12,8 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
   alias Pleroma.Web.Metadata.Providers.TwitterCard
   alias Pleroma.Web.Metadata.Utils
   alias Pleroma.Web.Router
+
+  clear_config([Pleroma.Web.Metadata, :unfurl_nsfw])
 
   test "it renders twitter card for user info" do
     user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")

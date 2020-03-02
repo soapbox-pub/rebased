@@ -459,3 +459,16 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
   {"name": "☕", "count": 1, "me": false, "accounts": [{"id" => "abc..."}]}
 ]
 ```
+
+## `GET /api/v1/pleroma/statuses/:id/reactions/:emoji`
+### Get an object of emoji to account mappings with accounts that reacted to the post for a specific emoji`
+* Method: `GET`
+* Authentication: optional
+* Params: None
+* Response: JSON, a list of emoji/account list tuples
+* Example Response:
+```json
+[
+  {"name": "😀", "count": 2, "me": true, "accounts": [{"id" => "xyz.."...}, {"id" => "zyx..."}]}
+]
+```

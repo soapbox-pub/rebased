@@ -74,11 +74,7 @@ config :pleroma, Pleroma.ScheduledActivity,
   total_user_limit: 3,
   enabled: false
 
-config :pleroma, :rate_limit,
-  search: [{1000, 30}, {1000, 30}],
-  app_account_creation: {10_000, 5},
-  password_reset: {1000, 30},
-  ap_routes: nil
+config :pleroma, :rate_limit, %{}
 
 config :pleroma, :http_security, report_uri: "https://endpoint.com"
 
@@ -93,6 +89,8 @@ config :joken, default_signer: "yU8uHKq+yyAkZ11Hx//jcdacWc8yQ1bxAAGrplzB0Zwwjkp3
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 
 config :pleroma, :modules, runtime_dir: "test/fixtures/modules"
+
+config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: true
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

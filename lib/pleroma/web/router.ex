@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Router do
@@ -192,6 +192,7 @@ defmodule Pleroma.Web.Router do
 
     put("/statuses/:id", AdminAPIController, :status_update)
     delete("/statuses/:id", AdminAPIController, :status_delete)
+    get("/statuses", AdminAPIController, :list_statuses)
 
     get("/config", AdminAPIController, :config_show)
     post("/config", AdminAPIController, :config_update)
@@ -201,6 +202,7 @@ defmodule Pleroma.Web.Router do
     get("/moderation_log", AdminAPIController, :list_log)
 
     post("/reload_emoji", AdminAPIController, :reload_emoji)
+    get("/stats", AdminAPIController, :stats)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -271,6 +273,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:api)
 
+    get("/statuses/:id/reactions/:emoji", PleromaAPIController, :emoji_reactions_by)
     get("/statuses/:id/reactions", PleromaAPIController, :emoji_reactions_by)
   end
 

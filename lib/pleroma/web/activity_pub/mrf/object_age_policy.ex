@@ -1,16 +1,15 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   alias Pleroma.Config
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.MRF
 
   require Pleroma.Constants
 
   @moduledoc "Filter activities depending on their age"
-  @behaviour MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF
 
   defp check_date(%{"published" => published} = message) do
     with %DateTime{} = now <- DateTime.utc_now(),

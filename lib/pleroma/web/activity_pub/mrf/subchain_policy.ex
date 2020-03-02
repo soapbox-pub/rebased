@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicy do
@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicy do
 
   require Logger
 
-  @behaviour MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF
 
   defp lookup_subchain(actor) do
     with matches <- Config.get([:mrf_subchain, :match_actor]),

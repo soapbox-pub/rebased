@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RelMe do
@@ -27,9 +27,10 @@ defmodule Pleroma.Web.RelMe do
   defp parse_url(url) do
     with {:ok, %Tesla.Env{body: html, status: status}} when status in 200..299 <-
            Pleroma.HTTP.get(url, [], adapter: @hackney_options),
+         {:ok, html_tree} <- Floki.parse_document(html),
          data <-
-           Floki.attribute(html, "link[rel~=me]", "href") ++
-             Floki.attribute(html, "a[rel~=me]", "href") do
+           Floki.attribute(html_tree, "link[rel~=me]", "href") ++
+             Floki.attribute(html_tree, "a[rel~=me]", "href") do
       {:ok, data}
     end
   rescue

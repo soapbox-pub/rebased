@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Plugs.RemoteIpTest do
@@ -7,6 +7,10 @@ defmodule Pleroma.Plugs.RemoteIpTest do
   use Plug.Test
 
   alias Pleroma.Plugs.RemoteIp
+
+  import Pleroma.Tests.Helpers, only: [clear_config: 1, clear_config: 2]
+
+  clear_config(RemoteIp)
 
   test "disabled" do
     Pleroma.Config.put(RemoteIp, enabled: false)

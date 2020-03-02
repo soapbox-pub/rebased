@@ -1,10 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Instance do
   use Mix.Task
   import Mix.Pleroma
+
+  alias Pleroma.Config
 
   @shortdoc "Manages Pleroma instance"
   @moduledoc File.read!("docs/administration/CLI_tasks/instance.md")
@@ -63,7 +65,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
         get_option(
           options,
           :instance_name,
-          "What is the name of your instance? (e.g. Pleroma/Soykaf)"
+          "What is the name of your instance? (e.g. The Corndog Emporium)",
+          domain
         )
 
       email = get_option(options, :admin_email, "What is your admin email address?")
@@ -153,6 +156,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           Pleroma.Config.get([:instance, :static_dir])
         )
 
+      Config.put([:instance, :static_dir], static_dir)
+
       secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
       jwt_secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
       signing_salt = :crypto.strong_rand_bytes(8) |> Base.encode64() |> binary_part(0, 8)
@@ -202,8 +207,14 @@ defmodule Mix.Tasks.Pleroma.Instance do
       write_robots_txt(indexable, template_dir)
 
       shell_info(
-        "\n All files successfully written! Refer to the installation instructions for your platform for next steps"
+        "\n All files successfully written! Refer to the installation instructions for your platform for next steps."
       )
+
+      if db_configurable? do
+        shell_info(
+          " Please transfer your config to the database after running database migrations. Refer to \"Transfering the config to/from the database\" section of the docs for more information."
+        )
+      end
     else
       shell_error(
         "The task would have overwritten the following files:\n" <>

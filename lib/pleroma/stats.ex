@@ -1,9 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Stats do
   import Ecto.Query
+  alias Pleroma.CounterCache
   alias Pleroma.Repo
   alias Pleroma.User
 
@@ -94,6 +95,23 @@ defmodule Pleroma.Stats do
         status_count: status_count,
         user_count: user_count
       }
+    }
+  end
+
+  def get_status_visibility_count do
+    counter_cache =
+      CounterCache.get_as_map([
+        "status_visibility_public",
+        "status_visibility_private",
+        "status_visibility_unlisted",
+        "status_visibility_direct"
+      ])
+
+    %{
+      public: counter_cache["status_visibility_public"] || 0,
+      unlisted: counter_cache["status_visibility_unlisted"] || 0,
+      private: counter_cache["status_visibility_private"] || 0,
+      direct: counter_cache["status_visibility_direct"] || 0
     }
   end
 end

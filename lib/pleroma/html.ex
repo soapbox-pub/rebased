@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTML do
@@ -108,6 +108,7 @@ defmodule Pleroma.HTML do
     Cachex.fetch!(:scrubber_cache, key, fn _key ->
       result =
         content
+        |> Floki.parse_fragment!()
         |> Floki.filter_out("a.mention,a.hashtag,a[rel~=\"tag\"]")
         |> Floki.attribute("a", "href")
         |> Enum.at(0)

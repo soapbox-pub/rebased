@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicyTest do
@@ -13,6 +13,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicyTest do
     "type" => "Create",
     "object" => %{"content" => "hi"}
   }
+
+  clear_config([:mrf_subchain, :match_actor])
 
   test "it matches and processes subchains when the actor matches a configured target" do
     Pleroma.Config.put([:mrf_subchain, :match_actor], %{

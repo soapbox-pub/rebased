@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
@@ -25,6 +25,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
 
     [user: user, message: message]
   end
+
+  clear_config(:mrf_hellthread)
 
   describe "reject" do
     test "rejects the message if the recipient count is above reject_threshold", %{

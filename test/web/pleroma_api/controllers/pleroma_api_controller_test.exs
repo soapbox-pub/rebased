@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
@@ -94,6 +94,32 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     assert [%{"name" => "🎅", "count" => 1, "accounts" => [_represented_user], "me" => true}] =
              result
+  end
+
+  test "GET /api/v1/pleroma/statuses/:id/reactions/:emoji", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+
+    result =
+      conn
+      |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions/🎅")
+      |> json_response(200)
+
+    assert result == []
+
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+
+    result =
+      conn
+      |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions/🎅")
+      |> json_response(200)
+
+    [%{"name" => "🎅", "count" => 1, "accounts" => [represented_user], "me" => false}] = result
+
+    assert represented_user["id"] == other_user.id
   end
 
   test "/api/v1/pleroma/conversations/:id" do

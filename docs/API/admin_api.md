@@ -260,9 +260,23 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `nickname` or `id`
   - *optional* `page_size`: number of statuses to return (default is `20`)
   - *optional* `godmode`: `true`/`false` – allows to see private statuses
+  - *optional* `with_reblogs`: `true`/`false` – allows to see reblogs (default is false)
 - Response:
   - On failure: `Not found`
   - On success: JSON array of user's latest statuses
+
+## `GET /api/pleroma/admin/instances/:instance/statuses`
+
+### Retrive instance's latest statuses
+
+- Params:
+  - `instance`: instance name
+  - *optional* `page_size`: number of statuses to return (default is `20`)
+  - *optional* `godmode`: `true`/`false` – allows to see private statuses
+  - *optional* `with_reblogs`: `true`/`false` – allows to see reblogs (default is false)
+- Response:
+  - On failure: `Not found`
+  - On success: JSON array of instance's latest statuses
 
 ## `POST /api/pleroma/admin/relay`
 
@@ -682,6 +696,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ### Get list of merged default settings with saved in database.
 
+*If `need_reboot` flag exists in response, instance must be restarted, so reboot time settings can take effect.*
+
 **Only works when configuration from database is enabled.**
 
 - Params:
@@ -692,19 +708,23 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ```json
 {
-  configs: [
+  "configs": [
     {
       "group": ":pleroma",
       "key": "Pleroma.Upload",
       "value": []
      }
-  ]
+  ],
+  "need_reboot": true
 }
 ```
+ need_reboot - *optional*, if were changed reboot time settings.
 
 ## `POST /api/pleroma/admin/config`
 
 ### Update config settings
+
+*If `need_reboot` flag exists in response, instance must be restarted, so reboot time settings can take effect.*
 
 **Only works when configuration from database is enabled.**
 
@@ -793,7 +813,7 @@ config :quack,
 ```
 ```json
 {
-  configs: [
+  "configs": [
     {"group": ":quack", "key": ":level", "value": ":debug"},
     {"group": ":quack", "key": ":meta", "value": [":all"]},
     ...
@@ -804,7 +824,7 @@ config :quack,
 
 ```json
 {
-  configs: [
+  "configs": [
     {
       "group": ":pleroma",
       "key": "Pleroma.Upload",
@@ -836,15 +856,17 @@ config :quack,
     - 400 Bad Request `"To use this endpoint you need to enable configuration from database."`
 ```json
 {
-  configs: [
+  "configs": [
     {
       "group": ":pleroma",
       "key": "Pleroma.Upload",
       "value": [...]
      }
-  ]
+  ],
+  "need_reboot": true
 }
 ```
+need_reboot - *optional*, if were changed reboot time settings.
 
 ## ` GET /api/pleroma/admin/config/descriptions`
 
@@ -931,3 +953,20 @@ Loads json generated from `config/descriptions.exs`.
 - Params:
   - `nicknames`
 - Response: Array of user nicknames
+
+## `GET /api/pleroma/admin/stats`
+
+### Stats
+
+- Response:
+
+```json
+{
+  "status_visibility": {
+    "direct": 739,
+    "private": 9,
+    "public": 17,
+    "unlisted": 14
+  }
+}
+```

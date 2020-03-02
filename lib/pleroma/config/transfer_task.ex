@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.TransferTask do
@@ -146,9 +146,7 @@ defmodule Pleroma.Config.TransferTask do
   defp update_env(group, key, nil), do: Application.delete_env(group, key)
   defp update_env(group, key, value), do: Application.put_env(group, key, value)
 
-  defp restart(_, :pleroma, :test), do: Logger.warn("pleroma restarted")
-
-  defp restart(_, :pleroma, _), do: send(Restarter.Pleroma, :after_boot)
+  defp restart(_, :pleroma, env), do: Restarter.Pleroma.restart_after_boot(env)
 
   defp restart(started_applications, app, _) do
     with {^app, _, _} <- List.keyfind(started_applications, app, 0),

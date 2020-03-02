@@ -1,12 +1,16 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
+  import Pleroma.Factory
+  import ExUnit.CaptureLog
+
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.ConfigDB
   alias Pleroma.HTML
   alias Pleroma.ModerationLog
@@ -19,7 +23,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
-  import Pleroma.Factory
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -41,7 +44,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
     clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
-      Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], true)
+      Config.put([:auth, :enforce_oauth_admin_scope_usage], true)
     end
 
     test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope",
@@ -91,7 +94,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "unless [:auth, :enforce_oauth_admin_scope_usage]," do
     clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
-      Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], false)
+      Config.put([:auth, :enforce_oauth_admin_scope_usage], false)
     end
 
     test "GET /api/pleroma/admin/users/:nickname requires " <>
@@ -579,11 +582,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "POST /api/pleroma/admin/email_invite, with valid config" do
     clear_config([:instance, :registrations_open]) do
-      Pleroma.Config.put([:instance, :registrations_open], false)
+      Config.put([:instance, :registrations_open], false)
     end
 
     clear_config([:instance, :invites_enabled]) do
-      Pleroma.Config.put([:instance, :invites_enabled], true)
+      Config.put([:instance, :invites_enabled], true)
     end
 
     test "sends invitation and returns 204", %{admin: admin, conn: conn} do
@@ -602,8 +605,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert token_record
       refute token_record.used
 
-      notify_email = Pleroma.Config.get([:instance, :notify_email])
-      instance_name = Pleroma.Config.get([:instance, :name])
+      notify_email = Config.get([:instance, :notify_email])
+      instance_name = Config.get([:instance, :name])
 
       email =
         Pleroma.Emails.UserEmail.user_invitation_email(
@@ -639,8 +642,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     clear_config([:instance, :invites_enabled])
 
     test "it returns 500 if `invites_enabled` is not enabled", %{conn: conn} do
-      Pleroma.Config.put([:instance, :registrations_open], false)
-      Pleroma.Config.put([:instance, :invites_enabled], false)
+      Config.put([:instance, :registrations_open], false)
+      Config.put([:instance, :invites_enabled], false)
 
       conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
 
@@ -648,8 +651,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "it returns 500 if `registrations_open` is enabled", %{conn: conn} do
-      Pleroma.Config.put([:instance, :registrations_open], true)
-      Pleroma.Config.put([:instance, :invites_enabled], true)
+      Config.put([:instance, :registrations_open], true)
+      Config.put([:instance, :invites_enabled], true)
 
       conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
 
@@ -1886,13 +1889,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "GET /api/pleroma/admin/config" do
     clear_config(:configurable_from_database) do
-      Pleroma.Config.put(:configurable_from_database, true)
+      Config.put(:configurable_from_database, true)
     end
 
     test "when configuration from database is off", %{conn: conn} do
-      initial = Pleroma.Config.get(:configurable_from_database)
-      Pleroma.Config.put(:configurable_from_database, false)
-      on_exit(fn -> Pleroma.Config.put(:configurable_from_database, initial) end)
+      Config.put(:configurable_from_database, false)
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response(conn, 400) ==
@@ -2036,11 +2037,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         Application.delete_env(:pleroma, Pleroma.Captcha.NotReal)
         Application.put_env(:pleroma, :http, http)
         Application.put_env(:tesla, :adapter, Tesla.Mock)
+        Restarter.Pleroma.refresh()
       end)
     end
 
     clear_config(:configurable_from_database) do
-      Pleroma.Config.put(:configurable_from_database, true)
+      Config.put(:configurable_from_database, true)
     end
 
     @tag capture_log: true
@@ -2249,21 +2251,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "saving config which need pleroma reboot", %{conn: conn} do
-      chat = Pleroma.Config.get(:chat)
-      on_exit(fn -> Pleroma.Config.put(:chat, chat) end)
+      chat = Config.get(:chat)
+      on_exit(fn -> Config.put(:chat, chat) end)
 
-      conn =
-        post(
-          conn,
-          "/api/pleroma/admin/config",
-          %{
-            configs: [
-              %{group: ":pleroma", key: ":chat", value: [%{"tuple" => [":enabled", true]}]}
-            ]
-          }
-        )
-
-      assert json_response(conn, 200) == %{
+      assert post(
+               conn,
+               "/api/pleroma/admin/config",
+               %{
+                 configs: [
+                   %{group: ":pleroma", key: ":chat", value: [%{"tuple" => [":enabled", true]}]}
+                 ]
+               }
+             )
+             |> json_response(200) == %{
                "configs" => [
                  %{
                    "db" => [":enabled"],
@@ -2274,6 +2274,80 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                ],
                "need_reboot" => true
              }
+
+      configs =
+        conn
+        |> get("/api/pleroma/admin/config")
+        |> json_response(200)
+
+      assert configs["need_reboot"]
+
+      capture_log(fn ->
+        assert conn |> get("/api/pleroma/admin/restart") |> json_response(200) == %{}
+      end) =~ "pleroma restarted"
+
+      configs =
+        conn
+        |> get("/api/pleroma/admin/config")
+        |> json_response(200)
+
+      refute Map.has_key?(configs, "need_reboot")
+    end
+
+    test "update setting which need reboot, don't change reboot flag until reboot", %{conn: conn} do
+      chat = Config.get(:chat)
+      on_exit(fn -> Config.put(:chat, chat) end)
+
+      assert post(
+               conn,
+               "/api/pleroma/admin/config",
+               %{
+                 configs: [
+                   %{group: ":pleroma", key: ":chat", value: [%{"tuple" => [":enabled", true]}]}
+                 ]
+               }
+             )
+             |> json_response(200) == %{
+               "configs" => [
+                 %{
+                   "db" => [":enabled"],
+                   "group" => ":pleroma",
+                   "key" => ":chat",
+                   "value" => [%{"tuple" => [":enabled", true]}]
+                 }
+               ],
+               "need_reboot" => true
+             }
+
+      assert post(conn, "/api/pleroma/admin/config", %{
+               configs: [
+                 %{group: ":pleroma", key: ":key1", value: [%{"tuple" => [":key3", 3]}]}
+               ]
+             })
+             |> json_response(200) == %{
+               "configs" => [
+                 %{
+                   "group" => ":pleroma",
+                   "key" => ":key1",
+                   "value" => [
+                     %{"tuple" => [":key3", 3]}
+                   ],
+                   "db" => [":key3"]
+                 }
+               ],
+               "need_reboot" => true
+             }
+
+      capture_log(fn ->
+        assert conn |> get("/api/pleroma/admin/restart") |> json_response(200) == %{}
+      end) =~ "pleroma restarted"
+
+      configs =
+        conn
+        |> get("/api/pleroma/admin/config")
+        |> json_response(200)
+
+      refute Map.has_key?(configs, "need_reboot")
     end
 
     test "saving config with nested merge", %{conn: conn} do
@@ -2410,7 +2484,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                {ExSyslogger, :ex_syslogger}
              ]
 
-      ExUnit.CaptureLog.capture_log(fn ->
+      capture_log(fn ->
         require Logger
         Logger.warn("Ooops...")
       end) =~ "Ooops..."
@@ -2543,7 +2617,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         })
 
       assert Application.get_env(:tesla, :adapter) == Tesla.Adapter.Httpc
-      assert Pleroma.Config.get([Pleroma.Captcha.NotReal, :name]) == "Pleroma"
+      assert Config.get([Pleroma.Captcha.NotReal, :name]) == "Pleroma"
 
       assert json_response(conn, 200) == %{
                "configs" => [
@@ -2979,13 +3053,61 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "GET /api/pleroma/admin/restart" do
     clear_config(:configurable_from_database) do
-      Pleroma.Config.put(:configurable_from_database, true)
+      Config.put(:configurable_from_database, true)
     end
 
     test "pleroma restarts", %{conn: conn} do
-      ExUnit.CaptureLog.capture_log(fn ->
+      capture_log(fn ->
         assert conn |> get("/api/pleroma/admin/restart") |> json_response(200) == %{}
       end) =~ "pleroma restarted"
+
+      refute Restarter.Pleroma.need_reboot?()
+    end
+  end
+
+  describe "GET /api/pleroma/admin/statuses" do
+    test "returns all public, unlisted, and direct statuses", %{conn: conn, admin: admin} do
+      blocked = insert(:user)
+      user = insert(:user)
+      User.block(admin, blocked)
+
+      {:ok, _} =
+        CommonAPI.post(user, %{"status" => "@#{admin.nickname}", "visibility" => "direct"})
+
+      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "unlisted"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+      {:ok, _} = CommonAPI.post(blocked, %{"status" => ".", "visibility" => "public"})
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/statuses")
+        |> json_response(200)
+
+      refute "private" in Enum.map(response, & &1["visibility"])
+      assert length(response) == 4
+    end
+
+    test "returns only local statuses with local_only on", %{conn: conn} do
+      user = insert(:user)
+      remote_user = insert(:user, local: false, nickname: "archaeme@archae.me")
+      insert(:note_activity, user: user, local: true)
+      insert(:note_activity, user: remote_user, local: false)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/statuses?local_only=true")
+        |> json_response(200)
+
+      assert length(response) == 1
+    end
+
+    test "returns private statuses with godmode on", %{conn: conn} do
+      user = insert(:user)
+      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+      conn = get(conn, "/api/pleroma/admin/statuses?godmode=true")
+      assert json_response(conn, 200) |> length() == 2
     end
   end
 
@@ -3038,6 +3160,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?godmode=true")
 
       assert json_response(conn, 200) |> length() == 5
+    end
+
+    test "excludes reblogs by default", %{conn: conn, user: user} do
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "."})
+      {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, other_user)
+
+      conn_res = get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses")
+      assert json_response(conn_res, 200) |> length() == 0
+
+      conn_res =
+        get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses?with_reblogs=true")
+
+      assert json_response(conn_res, 200) |> length() == 1
     end
   end
 
@@ -3321,7 +3457,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user = insert(:user, local: false, nickname: "archaeme@archae.me")
       user2 = insert(:user, local: false, nickname: "test@test.com")
       insert_pair(:note_activity, user: user)
-      insert(:note_activity, user: user2)
+      activity = insert(:note_activity, user: user2)
 
       ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses")
 
@@ -3340,6 +3476,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       response = json_response(ret_conn, 200)
 
       assert Enum.empty?(response)
+
+      CommonAPI.repeat(activity.id, user)
+
+      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses")
+      response = json_response(ret_conn, 200)
+      assert length(response) == 2
+
+      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses?with_reblogs=true")
+      response = json_response(ret_conn, 200)
+      assert length(response) == 3
     end
   end
 
@@ -3468,6 +3614,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     assert child["key"]
     assert String.starts_with?(child["group"], ":")
     assert child["description"]
+  end
+
+  describe "/api/pleroma/admin/stats" do
+    test "status visibility count", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      user = insert(:user)
+      CommonAPI.post(user, %{"visibility" => "public", "status" => "hey"})
+      CommonAPI.post(user, %{"visibility" => "unlisted", "status" => "hey"})
+      CommonAPI.post(user, %{"visibility" => "unlisted", "status" => "hey"})
+
+      response =
+        conn
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/stats")
+        |> json_response(200)
+
+      assert %{"direct" => 0, "private" => 0, "public" => 1, "unlisted" => 2} =
+               response["status_visibility"]
+    end
   end
 end
 

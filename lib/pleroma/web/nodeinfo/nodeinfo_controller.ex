@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
@@ -46,10 +46,10 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
         data
         |> Map.merge(%{quarantined_instances: quarantined})
-        |> Map.put(:enabled, Config.get([:instance, :federating]))
       else
         %{}
       end
+      |> Map.put(:enabled, Config.get([:instance, :federating]))
 
     features =
       [
@@ -92,9 +92,9 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       openRegistrations: Config.get([:instance, :registrations_open]),
       usage: %{
         users: %{
-          total: stats.user_count || 0
+          total: Map.get(stats, :user_count, 0)
         },
-        localPosts: stats.status_count || 0
+        localPosts: Map.get(stats, :status_count, 0)
       },
       metadata: %{
         nodeName: Config.get([:instance, :name]),

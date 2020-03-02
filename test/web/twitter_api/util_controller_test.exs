@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
@@ -19,7 +19,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
   clear_config([:instance])
   clear_config([:frontend_configurations, :pleroma_fe])
-  clear_config([:user, :deny_follow_blocked])
 
   describe "POST /api/pleroma/follow_import" do
     setup do: oauth_access(["follow"])

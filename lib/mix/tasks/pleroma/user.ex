@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.User do
@@ -100,8 +100,7 @@ defmodule Mix.Tasks.Pleroma.User do
       User.perform(:delete, user)
       shell_info("User #{nickname} deleted.")
     else
-      _ ->
-        shell_error("No local user #{nickname}")
+      _ -> shell_error("No local user #{nickname}")
     end
   end
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ObjectTest do
@@ -75,6 +75,7 @@ defmodule Pleroma.ObjectTest do
 
   describe "delete attachments" do
     clear_config([Pleroma.Upload])
+    clear_config([:instance, :cleanup_attachments])
 
     test "Disabled via config" do
       Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)

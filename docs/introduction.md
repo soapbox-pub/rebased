@@ -41,7 +41,7 @@ On the top right you will also see a wrench icon. This opens your personal setti
 This is where the interesting stuff happens!
 Depending on the timeline you will see different statuses, but each status has a standard structure:
 
-- Profile pic, name and link to profile. An optional left-arrow if it's a reply to another status (hovering will reveal the replied-to status). Clicking on the profile pic will uncollapse the user's profile.
+- Profile pic, name and link to profile. An optional left-arrow if it's a reply to another status (hovering will reveal the reply-to status). Clicking on the profile pic will uncollapse the user's profile.
 - A `+` button on the right allows you to Expand/Collapse an entire discussion thread. It also updates in realtime!
 - An arrow icon allows you to open the status on the instance where it's originating from.
 - The text of the status, including mentions and attachements. If you click on a mention, it will automatically open the profile page of that person.

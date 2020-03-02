@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
@@ -21,6 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   clear_config([:instance, :federating])
   clear_config([:instance, :allow_relay])
+  clear_config([:rich_media, :enabled])
 
   describe "posting statuses" do
     setup do: oauth_access(["write:statuses"])
@@ -119,6 +120,32 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       assert fourth_response["pleroma"]["expires_at"] ==
                NaiveDateTime.to_iso8601(expiration.scheduled_at)
+    end
+
+    test "it fails to create a status if `expires_in` is less or equal than an hour", %{
+      conn: conn
+    } do
+      # 1 hour
+      expires_in = 60 * 60
+
+      assert %{"error" => "Expiry date is too soon"} =
+               conn
+               |> post("api/v1/statuses", %{
+                 "status" => "oolong",
+                 "expires_in" => expires_in
+               })
+               |> json_response(422)
+
+      # 30 minutes
+      expires_in = 30 * 60
+
+      assert %{"error" => "Expiry date is too soon"} =
+               conn
+               |> post("api/v1/statuses", %{
+                 "status" => "oolong",
+                 "expires_in" => expires_in
+               })
+               |> json_response(422)
     end
 
     test "posting an undefined status with an attachment", %{user: user, conn: conn} do
@@ -1227,5 +1254,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     third_conn = get(conn, "/api/v1/favourites?limit=0")
 
     assert [] = json_response(third_conn, 200)
+  end
+
+  test "expires_at is nil for another user" do
+    %{conn: conn, user: user} = oauth_access(["read:statuses"])
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "foobar", "expires_in" => 1_000_000})
+
+    expires_at =
+      activity.id
+      |> ActivityExpiration.get_by_activity_id()
+      |> Map.get(:scheduled_at)
+      |> NaiveDateTime.to_iso8601()
+
+    assert %{"pleroma" => %{"expires_at" => ^expires_at}} =
+             conn |> get("/api/v1/statuses/#{activity.id}") |> json_response(:ok)
+
+    %{conn: conn} = oauth_access(["read:statuses"])
+
+    assert %{"pleroma" => %{"expires_at" => nil}} =
+             conn |> get("/api/v1/statuses/#{activity.id}") |> json_response(:ok)
   end
 end

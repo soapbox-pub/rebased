@@ -35,6 +35,19 @@
         "inReplyTo": null,
         "inReplyToAtomUri": null,
         "published": "2018-02-12T14:08:20Z",
+        "replies": {
+            "id": "http://mastodon.example.org/users/admin/statuses/99512778738411822/replies",
+            "type": "Collection",
+            "first": {
+                "type":	"CollectionPage",
+                "next": "http://mastodon.example.org/users/admin/statuses/99512778738411822/replies?min_id=99512778738411824&page=true",
+                "partOf": "http://mastodon.example.org/users/admin/statuses/99512778738411822/replies",
+                "items": [
+                    "http://mastodon.example.org/users/admin/statuses/99512778738411823",
+                    "http://mastodon.example.org/users/admin/statuses/99512778738411824"
+                ]
+            }
+        },
         "sensitive": true,
         "summary": "cw",
         "tag": [
