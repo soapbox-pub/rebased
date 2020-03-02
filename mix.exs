@@ -121,7 +121,7 @@ defmodule Pleroma.Mixfile do
       {:poison, "~> 3.0", override: true},
       # {:tesla, "~> 1.3", override: true},
       {:tesla,
-       github: "alex-strizhakov/tesla",
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/tesla.git",
        ref: "922cc3db13b421763edbea76246b8ea61c38c6fa",
        override: true},
       {:castore, "~> 0.1"},
