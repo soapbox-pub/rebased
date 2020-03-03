@@ -34,7 +34,7 @@ defmodule Pleroma.Pool.Connections do
   def checkin(url, name) when is_binary(url), do: checkin(URI.parse(url), name)
 
   def checkin(%URI{} = uri, name) do
-    timeout = Config.get([:connections_pool, :receive_connection_timeout], 250)
+    timeout = Config.get([:connections_pool, :checkin_timeout], 250)
 
     GenServer.call(
       name,
@@ -184,6 +184,7 @@ defmodule Pleroma.Pool.Connections do
         time = :os.system_time(:second)
         last_reference = time - conn.last_reference
         current_crf = crf(last_reference, 100, conn.crf)
+
         put_in(state.conns[key], %{
           conn
           | gun_state: :up,

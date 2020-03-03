@@ -404,7 +404,7 @@ Advanced settings for connections pool. Pool with opened connections. These conn
 For big instances it's recommended to increase `config :pleroma, :connections_pool, max_connections: 500` up to 500-1000.
 It will increase memory usage, but federation would work faster.
 
-* `:receive_connection_timeout` - timeout to receive connection from pool. Default: 250ms.
+* `:checkin_timeout` - timeout to checkin connection from pool. Default: 250ms.
 * `:max_connections` - maximum number of connections in the pool. Default: 250 connections.
 * `:retry` - number of retries, while `gun` will try to reconnect if connections goes down. Default: 5.
 * `:retry_timeout` - timeout while `gun` will try to reconnect. Default: 100ms.

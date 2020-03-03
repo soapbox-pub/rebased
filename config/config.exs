@@ -607,7 +607,7 @@ config :pleroma, Pleroma.Repo,
   prepare: :unnamed
 
 config :pleroma, :connections_pool,
-  receive_connection_timeout: 250,
+  checkin_timeout: 250,
   max_connections: 250,
   retry: 0,
   retry_timeout: 100,
