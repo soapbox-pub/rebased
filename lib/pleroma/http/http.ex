@@ -102,8 +102,8 @@ defmodule Pleroma.HTTP do
     try do
       :poolboy.transaction(
         pool,
-        &Pleroma.Pool.Request.execute(&1, client, request, timeout + 500),
-        timeout + 1_000
+        &Pleroma.Pool.Request.execute(&1, client, request, timeout),
+        timeout
       )
     rescue
       e ->
