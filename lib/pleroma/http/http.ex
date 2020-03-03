@@ -64,8 +64,8 @@ defmodule Pleroma.HTTP do
          client <- Tesla.client([Tesla.Middleware.FollowRedirects], tesla_adapter()),
          pid <- Process.whereis(adapter_opts[:pool]) do
       pool_alive? =
-        if tesla_adapter() == Tesla.Adapter.Gun do
-          if pid, do: Process.alive?(pid), else: false
+        if tesla_adapter() == Tesla.Adapter.Gun && pid do
+          Process.alive?(pid)
         else
           false
         end
