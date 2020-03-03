@@ -90,7 +90,7 @@ defmodule Pleroma.Gun.Conn do
           } #{inspect(error)}"
         )
 
-        nil
+        error
     end
   end
 
@@ -126,7 +126,7 @@ defmodule Pleroma.Gun.Conn do
           } #{inspect(error)}"
         )
 
-        nil
+        error
     end
   end
 
@@ -144,7 +144,7 @@ defmodule Pleroma.Gun.Conn do
           }"
         )
 
-        nil
+        error
     end
   end
 
@@ -169,7 +169,7 @@ defmodule Pleroma.Gun.Conn do
 
       do_open(uri, opts)
     else
-      [] -> nil
+      [] -> {:error, :pool_overflowed}
     end
   end
 end
