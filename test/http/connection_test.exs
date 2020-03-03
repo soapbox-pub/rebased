@@ -51,31 +51,31 @@ defmodule Pleroma.HTTP.ConnectionTest do
   describe "parse_proxy/1 errors" do
     test "ip without port" do
       capture_log(fn ->
-        assert Connection.parse_proxy("127.0.0.1") == {:error, :error_parsing_proxy}
+        assert Connection.parse_proxy("127.0.0.1") == {:error, :invalid_proxy}
       end) =~ "parsing proxy fail \"127.0.0.1\""
     end
 
     test "host without port" do
       capture_log(fn ->
-        assert Connection.parse_proxy("localhost") == {:error, :error_parsing_proxy}
+        assert Connection.parse_proxy("localhost") == {:error, :invalid_proxy}
       end) =~ "parsing proxy fail \"localhost\""
     end
 
     test "host with bad port" do
       capture_log(fn ->
-        assert Connection.parse_proxy("localhost:port") == {:error, :error_parsing_port_in_proxy}
+        assert Connection.parse_proxy("localhost:port") == {:error, :invalid_proxy_port}
       end) =~ "parsing port in proxy fail \"localhost:port\""
     end
 
     test "ip with bad port" do
       capture_log(fn ->
-        assert Connection.parse_proxy("127.0.0.1:15.9") == {:error, :error_parsing_port_in_proxy}
+        assert Connection.parse_proxy("127.0.0.1:15.9") == {:error, :invalid_proxy_port}
       end) =~ "parsing port in proxy fail \"127.0.0.1:15.9\""
     end
 
     test "as tuple without port" do
       capture_log(fn ->
-        assert Connection.parse_proxy({:socks5, :localhost}) == {:error, :error_parsing_proxy}
+        assert Connection.parse_proxy({:socks5, :localhost}) == {:error, :invalid_proxy}
       end) =~ "parsing proxy fail {:socks5, :localhost}"
     end
 
