@@ -145,7 +145,7 @@ defmodule Pleroma.Pool.Connections do
           {:reply, conn, state}
         end
 
-      %{gun_state: gun_state} when gun_state == :down ->
+      %{gun_state: :down} ->
         {:reply, nil, state}
 
       nil ->
