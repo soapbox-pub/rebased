@@ -1,5 +1,5 @@
-defmodule Pleroma.HTTP.Adapter.Hackney do
-  @behaviour Pleroma.HTTP.Adapter
+defmodule Pleroma.HTTP.AdapterHelper.Hackney do
+  @behaviour Pleroma.HTTP.AdapterHelper
 
   @defaults [
     connect_timeout: 10_000,
@@ -17,7 +17,7 @@ defmodule Pleroma.HTTP.Adapter.Hackney do
     |> Keyword.merge(Pleroma.Config.get([:http, :adapter], []))
     |> Keyword.merge(connection_opts)
     |> add_scheme_opts(uri)
-    |> Pleroma.HTTP.Adapter.maybe_add_proxy(proxy)
+    |> Pleroma.HTTP.AdapterHelper.maybe_add_proxy(proxy)
   end
 
   defp add_scheme_opts(opts, %URI{scheme: "http"}), do: opts

@@ -2,13 +2,13 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.HTTP.Adapter.GunTest do
+defmodule Pleroma.HTTP.AdapterHelper.GunTest do
   use ExUnit.Case, async: true
   use Pleroma.Tests.Helpers
   import ExUnit.CaptureLog
   alias Pleroma.Config
   alias Pleroma.Gun.Conn
-  alias Pleroma.HTTP.Adapter.Gun
+  alias Pleroma.HTTP.AdapterHelper.Gun
   alias Pleroma.Pool.Connections
 
   setup_all do

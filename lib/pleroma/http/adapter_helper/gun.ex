@@ -2,10 +2,10 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.HTTP.Adapter.Gun do
-  @behaviour Pleroma.HTTP.Adapter
+defmodule Pleroma.HTTP.AdapterHelper.Gun do
+  @behaviour Pleroma.HTTP.AdapterHelper
 
-  alias Pleroma.HTTP.Adapter
+  alias Pleroma.HTTP.AdapterHelper
 
   require Logger
 
@@ -28,7 +28,7 @@ defmodule Pleroma.HTTP.Adapter.Gun do
     |> Keyword.merge(Pleroma.Config.get([:http, :adapter], []))
     |> add_original(uri)
     |> add_scheme_opts(uri)
-    |> Adapter.maybe_add_proxy(Adapter.format_proxy(proxy))
+    |> AdapterHelper.maybe_add_proxy(AdapterHelper.format_proxy(proxy))
     |> maybe_get_conn(uri, connection_opts)
   end
 

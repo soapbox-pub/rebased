@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.HTTP.Adapter do
+defmodule Pleroma.HTTP.AdapterHelper do
   alias Pleroma.HTTP.Connection
 
   @type proxy ::

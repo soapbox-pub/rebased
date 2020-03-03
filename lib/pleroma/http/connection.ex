@@ -18,7 +18,7 @@ defmodule Pleroma.HTTP.Connection do
   require Logger
 
   alias Pleroma.Config
-  alias Pleroma.HTTP.Adapter
+  alias Pleroma.HTTP.AdapterHelper
 
   @doc """
   Merge default connection & adapter options with received ones.
@@ -50,9 +50,9 @@ defmodule Pleroma.HTTP.Connection do
 
   defp adapter do
     case Application.get_env(:tesla, :adapter) do
-      Tesla.Adapter.Gun -> Adapter.Gun
-      Tesla.Adapter.Hackney -> Adapter.Hackney
-      _ -> Adapter
+      Tesla.Adapter.Gun -> AdapterHelper.Gun
+      Tesla.Adapter.Hackney -> AdapterHelper.Hackney
+      _ -> AdapterHelper
     end
   end
 

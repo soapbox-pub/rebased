@@ -2,12 +2,12 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.HTTP.Adapter.HackneyTest do
+defmodule Pleroma.HTTP.AdapterHelper.HackneyTest do
   use ExUnit.Case
   use Pleroma.Tests.Helpers
 
   alias Pleroma.Config
-  alias Pleroma.HTTP.Adapter.Hackney
+  alias Pleroma.HTTP.AdapterHelper.Hackney
 
   setup_all do
     uri = URI.parse("http://domain.com")
