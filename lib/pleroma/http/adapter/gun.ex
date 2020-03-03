@@ -86,56 +86,21 @@ defmodule Pleroma.HTTP.Adapter.Gun do
   end
 
   defp try_to_get_conn(uri, opts) do
-    try do
-      case Connections.checkin(uri, :gun_connections) do
-        nil ->
-          Logger.debug(
-            "Gun connections pool checkin was not successful. Trying to open conn for next request."
-          )
-
-          Task.start(fn -> Pleroma.Gun.Conn.open(uri, :gun_connections, opts) end)
-          opts
-
-        conn when is_pid(conn) ->
-          Logger.debug("received conn #{inspect(conn)} #{Connections.compose_uri_log(uri)}")
-
-          opts
-          |> Keyword.put(:conn, conn)
-          |> Keyword.put(:close_conn, false)
-      end
-    rescue
-      error ->
-        Logger.warn(
-          "Gun connections pool checkin caused error #{Connections.compose_uri_log(uri)} #{
-            inspect(error)
-          }"
+    case Connections.checkin(uri, :gun_connections) do
+      nil ->
+        Logger.debug(
+          "Gun connections pool checkin was not successful. Trying to open conn for next request."
         )
 
-        opts
-    catch
-      # TODO: here must be no timeouts
-      :exit, {:timeout, {_, operation, [_, {method, _}, _]}} ->
-        {:message_queue_len, messages_len} =
-          :gun_connections
-          |> Process.whereis()
-          |> Process.info(:message_queue_len)
-
-        Logger.warn(
-          "Gun connections pool checkin with timeout error for #{operation} #{method} #{
-            Connections.compose_uri_log(uri)
-          }. Messages length: #{messages_len}"
-        )
-
+        Task.start(fn -> Pleroma.Gun.Conn.open(uri, :gun_connections, opts) end)
         opts
 
-      :exit, error ->
-        Logger.warn(
-          "Gun pool checkin exited with error #{Connections.compose_uri_log(uri)} #{
-            inspect(error)
-          }"
-        )
+      conn when is_pid(conn) ->
+        Logger.debug("received conn #{inspect(conn)} #{Connections.compose_uri_log(uri)}")
 
         opts
+        |> Keyword.put(:conn, conn)
+        |> Keyword.put(:close_conn, false)
     end
   end
 
