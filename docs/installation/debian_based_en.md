@@ -7,13 +7,9 @@ This guide will assume you are on Debian Stretch. This guide should also work wi
 
 * `postgresql` (9.6+, Ubuntu 16.04 comes with 9.5, you can get a newer version from [here](https://www.postgresql.org/download/linux/ubuntu/))
 * `postgresql-contrib` (9.6+, same situtation as above)
-* `elixir` (1.5+, [install from here, Debian and Ubuntu ship older versions](https://elixir-lang.org/install.html#unix-and-unix-like) or use [asdf](https://github.com/asdf-vm/asdf) as the pleroma user)
+* `elixir` (1.8+, [install from here, Debian and Ubuntu ship older versions](https://elixir-lang.org/install.html#unix-and-unix-like) or use [asdf](https://github.com/asdf-vm/asdf) as the pleroma user)
 * `erlang-dev`
-* `erlang-tools`
-* `erlang-parsetools`
-* `erlang-eldap`, if you want to enable ldap authenticator
-* `erlang-ssh`
-* `erlang-xmerl`
+* `erlang-nox`
 * `git`
 * `build-essential`
 
@@ -50,7 +46,7 @@ sudo dpkg -i /tmp/erlang-solutions_1.0_all.deb
 
 ```shell
 sudo apt update
-sudo apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools erlang-ssh
+sudo apt install elixir erlang-dev erlang-nox
 ```
 
 ### Install PleromaBE
