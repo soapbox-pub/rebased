@@ -42,6 +42,10 @@ defmodule Pleroma.Application do
     setup_instrumenters()
     load_custom_modules()
 
+    if adapter() == Tesla.Adapter.Gun do
+      Pleroma.OTPVersion.check!()
+    end
+
     # Define workers and child supervisors to be supervised
     children =
       [
@@ -65,25 +69,6 @@ defmodule Pleroma.Application do
           Pleroma.Web.Endpoint,
           Pleroma.Gopher.Server
         ]
-
-    if adapter() == Tesla.Adapter.Gun do
-      case Pleroma.OTPVersion.check() do
-        :ok ->
-          :ok
-
-        {:error, version} ->
-          raise "
-            !!!OTP VERSION WARNING!!!
-            You are using gun adapter with OTP version #{version}, which doesn't support correct handling of unordered certificates chains.
-            "
-
-        :undefined ->
-          raise "
-            !!!OTP VERSION WARNING!!!
-            To support correct handling of unordered certificates chains - OTP version must be > 22.2.
-            "
-      end
-    end
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options

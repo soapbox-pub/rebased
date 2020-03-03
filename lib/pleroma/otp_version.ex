@@ -5,6 +5,26 @@
 defmodule Pleroma.OTPVersion do
   @type check_status() :: :ok | :undefined | {:error, String.t()}
 
+  @spec check!() :: :ok | no_return()
+  def check! do
+    case check() do
+      :ok ->
+        :ok
+
+      {:error, version} ->
+        raise "
+            !!!OTP VERSION WARNING!!!
+            You are using gun adapter with OTP version #{version}, which doesn't support correct handling of unordered certificates chains.
+            "
+
+      :undefined ->
+        raise "
+            !!!OTP VERSION WARNING!!!
+            To support correct handling of unordered certificates chains - OTP version must be > 22.2.
+            "
+    end
+  end
+
   @spec check() :: check_status()
   def check do
     # OTP Version https://erlang.org/doc/system_principles/versions.html#otp-version
