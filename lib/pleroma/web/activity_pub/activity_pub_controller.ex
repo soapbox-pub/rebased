@@ -18,11 +18,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.FederatingPlug
   alias Pleroma.Web.Federator
 
   require Logger
 
   action_fallback(:errors)
+
+  # Note: some of the following actions (like :update_inbox) may be server-to-server as well
+  @client_to_server_actions [
+    :whoami,
+    :read_inbox,
+    :update_outbox,
+    :upload_media,
+    :followers,
+    :following
+  ]
+
+  plug(FederatingPlug when action not in @client_to_server_actions)
 
   plug(
     Pleroma.Plugs.Cache,
@@ -30,7 +43,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     when action in [:activity, :object]
   )
 
-  plug(Pleroma.Web.FederatingPlug)
   plug(:set_requester_reachable when action in [:inbox])
   plug(:relay_active? when action in [:relay])
 
@@ -255,8 +267,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
-  # only accept relayed Creates
-  def inbox(conn, %{"type" => "Create"} = params) do
+  # POST /relay/inbox -or- POST /internal/fetch/inbox
+  def inbox(conn, params) do
+    if params["type"] == "Create" && FederatingPlug.federating?() do
+      post_inbox_relayed_create(conn, params)
+    else
+      post_inbox_fallback(conn, params)
+    end
+  end
+
+  defp post_inbox_relayed_create(conn, params) do
     Logger.debug(
       "Signature missing or not from author, relayed Create message, fetching object from source"
     )
@@ -266,7 +286,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
-  def inbox(conn, params) do
+  defp post_inbox_fallback(conn, params) do
     headers = Enum.into(conn.req_headers, %{})
 
     if String.contains?(headers["signature"], params["actor"]) do
@@ -314,7 +334,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def whoami(_conn, _params), do: {:error, :not_found}
 
   def read_inbox(
-        %{assigns: %{user: %{nickname: nickname} = user}} = conn,
+        %{assigns: %{user: %User{nickname: nickname} = user}} = conn,
         %{"nickname" => nickname, "page" => page?} = params
       )
       when page? in [true, "true"] do
@@ -337,7 +357,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     })
   end
 
-  def read_inbox(%{assigns: %{user: %{nickname: nickname} = user}} = conn, %{
+  def read_inbox(%{assigns: %{user: %User{nickname: nickname} = user}} = conn, %{
         "nickname" => nickname
       }) do
     with {:ok, user} <- User.ensure_keys_present(user) do
@@ -356,7 +376,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> json(err)
   end
 
-  def read_inbox(%{assigns: %{user: %{nickname: as_nickname}}} = conn, %{
+  def read_inbox(%{assigns: %{user: %User{nickname: as_nickname}}} = conn, %{
         "nickname" => nickname
       }) do
     err =
@@ -370,7 +390,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> json(err)
   end
 
-  def handle_user_activity(user, %{"type" => "Create"} = params) do
+  def handle_user_activity(%User{} = user, %{"type" => "Create"} = params) do
     object =
       params["object"]
       |> Map.merge(Map.take(params, ["to", "cc"]))
@@ -386,7 +406,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     })
   end
 
-  def handle_user_activity(user, %{"type" => "Delete"} = params) do
+  def handle_user_activity(%User{} = user, %{"type" => "Delete"} = params) do
     with %Object{} = object <- Object.normalize(params["object"]),
          true <- user.is_moderator || user.ap_id == object.data["actor"],
          {:ok, delete} <- ActivityPub.delete(object) do
@@ -396,7 +416,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def handle_user_activity(user, %{"type" => "Like"} = params) do
+  def handle_user_activity(%User{} = user, %{"type" => "Like"} = params) do
     with %Object{} = object <- Object.normalize(params["object"]),
          {:ok, activity, _object} <- ActivityPub.like(user, object) do
       {:ok, activity}
@@ -434,7 +454,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def update_outbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = _) do
+  def update_outbox(%{assigns: %{user: %User{} = user}} = conn, %{"nickname" => nickname}) do
     err =
       dgettext("errors", "can't update outbox of %{nickname} as %{as_nickname}",
         nickname: nickname,
@@ -492,7 +512,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   - HTTP Code: 201 Created
   - HTTP Body: ActivityPub object to be inserted into another's `attachment` field
   """
-  def upload_media(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
+  def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-
            ActivityPub.upload(
              file,

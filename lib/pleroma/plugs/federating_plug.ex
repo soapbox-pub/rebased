@@ -10,7 +10,7 @@ defmodule Pleroma.Web.FederatingPlug do
   end
 
   def call(conn, _opts) do
-    if Pleroma.Config.get([:instance, :federating]) do
+    if federating?() do
       conn
     else
       conn
@@ -20,4 +20,6 @@ defmodule Pleroma.Web.FederatingPlug do
       |> halt()
     end
   end
+
+  def federating?, do: Pleroma.Config.get([:instance, :federating])
 end

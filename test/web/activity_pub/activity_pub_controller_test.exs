@@ -775,7 +775,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert result["first"]["orderedItems"] == [user.ap_id]
     end
 
-    test "it returns returns a uri if the user has 'hide_followers' set", %{conn: conn} do
+    test "it returns a uri if the user has 'hide_followers' set", %{conn: conn} do
       user = insert(:user)
       user_two = insert(:user, hide_followers: true)
       User.follow(user, user_two)
@@ -1060,14 +1060,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       get_uris = [
         "/users/#{user.nickname}",
         "/users/#{user.nickname}/outbox",
-        "/users/#{user.nickname}/inbox?page=true",
-        "/users/#{user.nickname}/followers",
-        "/users/#{user.nickname}/following",
         "/internal/fetch",
-        "/relay",
-        "/relay/following",
-        "/relay/followers",
-        "/api/ap/whoami"
+        "/relay"
       ]
 
       for get_uri <- get_uris do
@@ -1098,8 +1092,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       post_activity_uris = [
         "/inbox",
         "/relay/inbox",
-        "/users/#{user.nickname}/inbox",
-        "/users/#{user.nickname}/outbox"
+        "/users/#{user.nickname}/inbox"
       ]
 
       for post_activity_uri <- post_activity_uris do
@@ -1112,22 +1105,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post(post_activity_uri, post_activity_data)
         |> json_response(404)
       end
-    end
-
-    test "returns 404 for media upload attempt", %{conn: conn} do
-      user = insert(:user)
-      desc = "Description of the image"
-
-      image = %Plug.Upload{
-        content_type: "image/jpg",
-        path: Path.absname("test/fixtures/image.jpg"),
-        filename: "an_image.jpg"
-      }
-
-      conn
-      |> assign(:user, user)
-      |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
-      |> json_response(404)
     end
   end
 end

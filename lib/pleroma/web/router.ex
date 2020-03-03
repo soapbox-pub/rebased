@@ -541,6 +541,7 @@ defmodule Pleroma.Web.Router do
     get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end
 
+  # Server to Server (S2S) AP interactions
   pipeline :activitypub do
     plug(:accepts, ["activity+json", "json"])
     plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
@@ -554,6 +555,7 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
   end
 
+  # Client to Server (C2S) AP interactions
   pipeline :activitypub_client do
     plug(:accepts, ["activity+json", "json"])
     plug(:fetch_session)
@@ -568,6 +570,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end
 
+  # Note: propagate _any_ updates to `@client_to_server_actions` in `ActivityPubController`
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through([:activitypub_client])
 
