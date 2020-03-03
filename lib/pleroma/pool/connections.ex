@@ -219,7 +219,7 @@ defmodule Pleroma.Pool.Connections do
 
   @impl true
   def handle_info({:gun_down, conn_pid, _protocol, _reason, _killed}, state) do
-    retries = Config.get([:connections_pool, :retry], 0)
+    retries = Config.get([:connections_pool, :retry], 1)
     # we can't get info on this pid, because pid is dead
     state =
       with {key, conn} <- find_conn(state.conns, conn_pid),

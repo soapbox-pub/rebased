@@ -42,8 +42,8 @@ defmodule Pleroma.Gun.Conn do
     opts =
       opts
       |> Enum.into(%{})
-      |> Map.put_new(:retry, pool_opts[:retry] || 0)
-      |> Map.put_new(:retry_timeout, pool_opts[:retry_timeout] || 100)
+      |> Map.put_new(:retry, pool_opts[:retry] || 1)
+      |> Map.put_new(:retry_timeout, pool_opts[:retry_timeout] || 1000)
       |> Map.put_new(:await_up_timeout, pool_opts[:await_up_timeout] || 5_000)
 
     key = "#{uri.scheme}:#{uri.host}:#{uri.port}"
