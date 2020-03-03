@@ -36,17 +36,16 @@ defmodule Pleroma.Pool.Connections do
   def checkin(%URI{} = uri, name) do
     timeout = Config.get([:connections_pool, :checkin_timeout], 250)
 
-    GenServer.call(
-      name,
-      {:checkin, uri},
-      timeout
-    )
+    GenServer.call(name, {:checkin, uri}, timeout)
   end
 
   @spec alive?(atom()) :: boolean()
   def alive?(name) do
-    pid = Process.whereis(name)
-    if pid, do: Process.alive?(pid), else: false
+    if pid = Process.whereis(name) do
+      Process.alive?(pid)
+    else
+      false
+    end
   end
 
   @spec get_state(atom()) :: t()
@@ -131,19 +130,20 @@ defmodule Pleroma.Pool.Connections do
       %{conn: conn, gun_state: :up} = current_conn ->
         Logger.debug("reusing conn #{key}")
 
-        with time <- :os.system_time(:second),
-             last_reference <- time - current_conn.last_reference,
-             current_crf <- crf(last_reference, 100, current_conn.crf),
-             state <-
-               put_in(state.conns[key], %{
-                 current_conn
-                 | last_reference: time,
-                   crf: current_crf,
-                   conn_state: :active,
-                   used_by: [from | current_conn.used_by]
-               }) do
-          {:reply, conn, state}
-        end
+        time = :os.system_time(:second)
+        last_reference = time - current_conn.last_reference
+        current_crf = crf(last_reference, 100, current_conn.crf)
+
+        state =
+          put_in(state.conns[key], %{
+            current_conn
+            | last_reference: time,
+              crf: current_crf,
+              conn_state: :active,
+              used_by: [from | current_conn.used_by]
+          })
+
+        {:reply, conn, state}
 
       %{gun_state: :down} ->
         {:reply, nil, state}

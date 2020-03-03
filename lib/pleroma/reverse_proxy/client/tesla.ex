@@ -18,8 +18,9 @@ defmodule Pleroma.ReverseProxy.Client.Tesla do
   def request(method, url, headers, body, opts \\ []) do
     check_adapter()
 
-    with opts <- Keyword.merge(opts, body_as: :chunks, mode: :passive),
-         {:ok, response} <-
+    opts = Keyword.merge(opts, body_as: :chunks)
+
+    with {:ok, response} <-
            Pleroma.HTTP.request(
              method,
              url,
@@ -40,7 +41,8 @@ defmodule Pleroma.ReverseProxy.Client.Tesla do
   @impl true
   @spec stream_body(map()) :: {:ok, binary(), map()} | {:error, atom() | String.t()} | :done
   def stream_body(%{pid: pid, opts: opts, fin: true}) do
-    # if connection was sended and there were redirects, we need to close new conn - pid manually
+    # if connection was reused, but in tesla were redirects,
+    # tesla returns new opened connection, which must be closed manually
     if opts[:old_conn], do: Tesla.Adapter.Gun.close(pid)
     # if there were redirects we need to checkout old conn
     conn = opts[:old_conn] || opts[:conn]
