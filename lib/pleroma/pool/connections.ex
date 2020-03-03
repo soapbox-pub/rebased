@@ -128,7 +128,7 @@ defmodule Pleroma.Pool.Connections do
     Logger.debug("checkin #{key}")
 
     case state.conns[key] do
-      %{conn: conn, gun_state: gun_state} = current_conn when gun_state == :up ->
+      %{conn: conn, gun_state: :up} = current_conn ->
         Logger.debug("reusing conn #{key}")
 
         with time <- :os.system_time(:second),
