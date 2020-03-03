@@ -416,7 +416,7 @@ It will increase memory usage, but federation would work faster.
 
 Advanced settings for workers pools.
 
-There's four pools used:
+There are four pools used:
 
 * `:federation` for the federation jobs.
   You may want this pool max_connections to be at least equal to the number of federator jobs + retry queue jobs.
