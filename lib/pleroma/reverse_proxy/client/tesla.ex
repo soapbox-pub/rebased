@@ -16,7 +16,7 @@ defmodule Pleroma.ReverseProxy.Client.Tesla do
 
   @impl true
   def request(method, url, headers, body, opts \\ []) do
-    _adapter = check_adapter()
+    check_adapter()
 
     with opts <- Keyword.merge(opts, body_as: :chunks, mode: :passive),
          {:ok, response} <-
