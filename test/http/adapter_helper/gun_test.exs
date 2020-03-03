@@ -12,7 +12,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
   alias Pleroma.Pool.Connections
 
   setup_all do
-    {:ok, _} = Registry.start_link(keys: :unique, name: Pleroma.Gun.API.Mock)
+    {:ok, _} = Registry.start_link(keys: :unique, name: Pleroma.GunMock)
     :ok
   end
 

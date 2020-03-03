@@ -6,12 +6,11 @@ defmodule Pleroma.Pool.ConnectionsTest do
   use ExUnit.Case
   use Pleroma.Tests.Helpers
   import ExUnit.CaptureLog
-  alias Pleroma.Gun.API
   alias Pleroma.Gun.Conn
   alias Pleroma.Pool.Connections
 
   setup_all do
-    {:ok, _} = Registry.start_link(keys: :unique, name: API.Mock)
+    {:ok, _} = Registry.start_link(keys: :unique, name: Pleroma.GunMock)
     :ok
   end
 
@@ -439,8 +438,8 @@ defmodule Pleroma.Pool.ConnectionsTest do
   describe "integration test" do
     @describetag :integration
 
-    clear_config(API) do
-      Pleroma.Config.put(API, Pleroma.Gun)
+    clear_config(Pleroma.Gun) do
+      Pleroma.Config.put(Pleroma.Gun, Pleroma.Gun.API)
     end
 
     test "opens connection and change owner", %{name: name} do

@@ -349,8 +349,8 @@ defmodule Pleroma.ReverseProxyTest do
       Pleroma.Config.put(Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.Client.Tesla)
     end
 
-    clear_config(Pleroma.Gun.API) do
-      Pleroma.Config.put(Pleroma.Gun.API, Pleroma.Gun)
+    clear_config(Pleroma.Gun) do
+      Pleroma.Config.put(Pleroma.Gun, Pleroma.Gun.API)
     end
 
     setup do

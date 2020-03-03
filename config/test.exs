@@ -90,7 +90,7 @@ config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 
 config :pleroma, :modules, runtime_dir: "test/fixtures/modules"
 
-config :pleroma, Pleroma.Gun.API, Pleroma.Gun.API.Mock
+config :pleroma, Pleroma.Gun, Pleroma.GunMock
 
 config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: true
 

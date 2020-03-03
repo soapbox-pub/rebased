@@ -3,46 +3,27 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Gun do
-  @behaviour Pleroma.Gun.API
+  @callback open(charlist(), pos_integer(), map()) :: {:ok, pid()}
+  @callback info(pid()) :: map()
+  @callback close(pid()) :: :ok
+  @callback await_up(pid, pos_integer()) :: {:ok, atom()} | {:error, atom()}
+  @callback connect(pid(), map()) :: reference()
+  @callback await(pid(), reference()) :: {:response, :fin, 200, []}
+  @callback set_owner(pid(), pid()) :: :ok
 
-  alias Pleroma.Gun.API
+  def open(host, port, opts), do: api().open(host, port, opts)
 
-  @gun_keys [
-    :connect_timeout,
-    :http_opts,
-    :http2_opts,
-    :protocols,
-    :retry,
-    :retry_timeout,
-    :trace,
-    :transport,
-    :tls_opts,
-    :tcp_opts,
-    :socks_opts,
-    :ws_opts
-  ]
+  def info(pid), do: api().info(pid)
 
-  @impl API
-  def open(host, port, opts \\ %{}), do: :gun.open(host, port, Map.take(opts, @gun_keys))
+  def close(pid), do: api().close(pid)
 
-  @impl API
-  defdelegate info(pid), to: :gun
+  def await_up(pid, timeout \\ 5_000), do: api().await_up(pid, timeout)
 
-  @impl API
-  defdelegate close(pid), to: :gun
+  def connect(pid, opts), do: api().connect(pid, opts)
 
-  @impl API
-  defdelegate await_up(pid, timeout \\ 5_000), to: :gun
+  def await(pid, ref), do: api().await(pid, ref)
 
-  @impl API
-  defdelegate connect(pid, opts), to: :gun
+  def set_owner(pid, owner), do: api().set_owner(pid, owner)
 
-  @impl API
-  defdelegate await(pid, ref), to: :gun
-
-  @spec flush(pid() | reference()) :: :ok
-  defdelegate flush(pid), to: :gun
-
-  @impl API
-  defdelegate set_owner(pid, owner), to: :gun
+  defp api, do: Pleroma.Config.get([Pleroma.Gun], Pleroma.Gun.API)
 end

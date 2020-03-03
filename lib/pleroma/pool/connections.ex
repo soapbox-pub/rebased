@@ -19,7 +19,7 @@ defmodule Pleroma.Pool.Connections do
 
   defstruct conns: %{}, opts: []
 
-  alias Pleroma.Gun.API
+  alias Pleroma.Gun
 
   @spec start_link({atom(), keyword()}) :: {:ok, pid()}
   def start_link({name, opts}) do
@@ -209,7 +209,7 @@ defmodule Pleroma.Pool.Connections do
         nil ->
           Logger.debug(":gun_up message for conn which is not found in state")
 
-          :ok = API.close(conn_pid)
+          :ok = Gun.close(conn_pid)
 
           state
       end
@@ -226,7 +226,7 @@ defmodule Pleroma.Pool.Connections do
            {true, key} <- {Process.alive?(conn_pid), key} do
         if conn.retries == retries do
           Logger.debug("closing conn if retries is eq  #{inspect(conn_pid)}")
-          :ok = API.close(conn.conn)
+          :ok = Gun.close(conn.conn)
 
           put_in(
             state.conns,
@@ -252,7 +252,7 @@ defmodule Pleroma.Pool.Connections do
         nil ->
           Logger.debug(":gun_down message for conn which is not found in state")
 
-          :ok = API.close(conn_pid)
+          :ok = Gun.close(conn_pid)
 
           state
       end
@@ -287,7 +287,7 @@ defmodule Pleroma.Pool.Connections do
   defp compose_key_gun_info(pid) do
     try do
       # sometimes :gun.info can raise MatchError, which lead to pool terminate
-      %{origin_host: origin_host, origin_scheme: scheme, origin_port: port} = API.info(pid)
+      %{origin_host: origin_host, origin_scheme: scheme, origin_port: port} = Gun.info(pid)
 
       host =
         case :inet.ntoa(origin_host) do

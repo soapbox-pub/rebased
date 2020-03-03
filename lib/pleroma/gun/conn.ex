@@ -6,7 +6,7 @@ defmodule Pleroma.Gun.Conn do
   @moduledoc """
   Struct for gun connection data
   """
-  alias Pleroma.Gun.API
+  alias Pleroma.Gun
   alias Pleroma.Pool.Connections
 
   require Logger
@@ -65,7 +65,7 @@ defmodule Pleroma.Gun.Conn do
         last_reference: :os.system_time(:second)
       }
 
-      :ok = API.set_owner(conn_pid, Process.whereis(name))
+      :ok = Gun.set_owner(conn_pid, Process.whereis(name))
       Connections.add_conn(name, key, conn)
     end
   end
@@ -77,10 +77,10 @@ defmodule Pleroma.Gun.Conn do
       |> add_http2_opts(uri.scheme, Map.get(opts, :tls_opts, []))
 
     with open_opts <- Map.delete(opts, :tls_opts),
-         {:ok, conn} <- API.open(proxy_host, proxy_port, open_opts),
-         {:ok, _} <- API.await_up(conn, opts[:await_up_timeout]),
-         stream <- API.connect(conn, connect_opts),
-         {:response, :fin, 200, _} <- API.await(conn, stream) do
+         {:ok, conn} <- Gun.open(proxy_host, proxy_port, open_opts),
+         {:ok, _} <- Gun.await_up(conn, opts[:await_up_timeout]),
+         stream <- Gun.connect(conn, connect_opts),
+         {:response, :fin, 200, _} <- Gun.await(conn, stream) do
       conn
     else
       error ->
@@ -115,8 +115,8 @@ defmodule Pleroma.Gun.Conn do
       |> Map.put(:protocols, [:socks])
       |> Map.put(:socks_opts, socks_opts)
 
-    with {:ok, conn} <- API.open(proxy_host, proxy_port, opts),
-         {:ok, _} <- API.await_up(conn, opts[:await_up_timeout]) do
+    with {:ok, conn} <- Gun.open(proxy_host, proxy_port, opts),
+         {:ok, _} <- Gun.await_up(conn, opts[:await_up_timeout]) do
       conn
     else
       error ->
@@ -133,8 +133,8 @@ defmodule Pleroma.Gun.Conn do
   defp do_open(%URI{host: host, port: port} = uri, opts) do
     host = Pleroma.HTTP.Connection.parse_host(host)
 
-    with {:ok, conn} <- API.open(host, port, opts),
-         {:ok, _} <- API.await_up(conn, opts[:await_up_timeout]) do
+    with {:ok, conn} <- Gun.open(host, port, opts),
+         {:ok, _} <- Gun.await_up(conn, opts[:await_up_timeout]) do
       conn
     else
       error ->
@@ -164,7 +164,7 @@ defmodule Pleroma.Gun.Conn do
 
     with [{close_key, least_used} | _conns] <-
            Connections.get_unused_conns(name),
-         :ok <- Pleroma.Gun.API.close(least_used.conn) do
+         :ok <- Gun.close(least_used.conn) do
       Connections.remove_conn(name, close_key)
 
       do_open(uri, opts)
