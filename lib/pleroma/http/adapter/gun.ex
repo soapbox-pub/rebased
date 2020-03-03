@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTP.Adapter.Gun do
@@ -42,7 +42,7 @@ defmodule Pleroma.HTTP.Adapter.Gun do
   end
 
   defp add_original(opts, %URI{host: host, port: port}) do
-    formatted_host = Adapter.domain_or_fallback(host)
+    formatted_host = format_host(host)
 
     Keyword.put(opts, :original, "#{formatted_host}:#{port}")
   end
@@ -57,8 +57,7 @@ defmodule Pleroma.HTTP.Adapter.Gun do
         cacertfile: CAStore.file_path(),
         depth: 20,
         reuse_sessions: false,
-        verify_fun:
-          {&:ssl_verify_hostname.verify_fun/3, [check_hostname: Adapter.domain_or_fallback(host)]},
+        verify_fun: {&:ssl_verify_hostname.verify_fun/3, [check_hostname: format_host(host)]},
         log_level: :warning
       ]
     ]
@@ -137,6 +136,19 @@ defmodule Pleroma.HTTP.Adapter.Gun do
         )
 
         opts
+    end
+  end
+
+  @spec format_host(String.t()) :: charlist()
+  def format_host(host) do
+    host_charlist = to_charlist(host)
+
+    case :inet.parse_address(host_charlist) do
+      {:error, :einval} ->
+        :idna.encode(host_charlist)
+
+      {:ok, _ip} ->
+        host_charlist
     end
   end
 end

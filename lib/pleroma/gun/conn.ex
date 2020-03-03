@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Gun.Conn do
@@ -131,7 +131,7 @@ defmodule Pleroma.Gun.Conn do
   end
 
   defp do_open(%URI{host: host, port: port} = uri, opts) do
-    {_type, host} = Pleroma.HTTP.Adapter.domain_or_ip(host)
+    host = Pleroma.HTTP.Connection.parse_host(host)
 
     with {:ok, conn} <- API.open(host, port, opts),
          {:ok, _} <- API.await_up(conn, opts[:await_up_timeout]) do
@@ -149,7 +149,7 @@ defmodule Pleroma.Gun.Conn do
   end
 
   defp destination_opts(%URI{host: host, port: port}) do
-    {_type, host} = Pleroma.HTTP.Adapter.domain_or_ip(host)
+    host = Pleroma.HTTP.Connection.parse_host(host)
     %{host: host, port: port}
   end
 

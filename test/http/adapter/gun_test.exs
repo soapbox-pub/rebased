@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTP.Adapter.GunTest do
@@ -262,6 +262,25 @@ defmodule Pleroma.HTTP.Adapter.GunTest do
                  }
                }
              } = Connections.get_state(:gun_connections)
+    end
+  end
+
+  describe "format_host/1" do
+    test "with domain" do
+      assert Gun.format_host("example.com") == 'example.com'
+    end
+
+    test "with idna domain" do
+      assert Gun.format_host("ですexample.com") == 'xn--example-183fne.com'
+    end
+
+    test "with ipv4" do
+      assert Gun.format_host("127.0.0.1") == '127.0.0.1'
+    end
+
+    test "with ipv6" do
+      assert Gun.format_host("2a03:2880:f10c:83:face:b00c:0:25de") ==
+               '2a03:2880:f10c:83:face:b00c:0:25de'
     end
   end
 end

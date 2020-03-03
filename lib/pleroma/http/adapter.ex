@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTP.Adapter do
@@ -8,7 +8,6 @@ defmodule Pleroma.HTTP.Adapter do
   @type proxy ::
           {Connection.host(), pos_integer()}
           | {Connection.proxy_type(), pos_integer()}
-  @type host_type :: :domain | :ip
 
   @callback options(keyword(), URI.t()) :: keyword()
   @callback after_request(keyword()) :: :ok
@@ -29,9 +28,8 @@ defmodule Pleroma.HTTP.Adapter do
   def format_proxy(nil), do: nil
 
   def format_proxy(proxy_url) do
-    with {:ok, host, port} <- Connection.parse_proxy(proxy_url) do
-      {host, port}
-    else
+    case Connection.parse_proxy(proxy_url) do
+      {:ok, host, port} -> {host, port}
       {:ok, type, host, port} -> {type, host, port}
       _ -> nil
     end
@@ -40,25 +38,4 @@ defmodule Pleroma.HTTP.Adapter do
   @spec maybe_add_proxy(keyword(), proxy() | nil) :: keyword()
   def maybe_add_proxy(opts, nil), do: opts
   def maybe_add_proxy(opts, proxy), do: Keyword.put_new(opts, :proxy, proxy)
-
-  @spec domain_or_fallback(String.t()) :: charlist()
-  def domain_or_fallback(host) do
-    case domain_or_ip(host) do
-      {:domain, domain} -> domain
-      {:ip, _ip} -> to_charlist(host)
-    end
-  end
-
-  @spec domain_or_ip(String.t()) :: {host_type(), Connection.host()}
-  def domain_or_ip(host) do
-    charlist = to_charlist(host)
-
-    case :inet.parse_address(charlist) do
-      {:error, :einval} ->
-        {:domain, :idna.encode(charlist)}
-
-      {:ok, ip} ->
-        {:ip, ip}
-    end
-  end
 end
