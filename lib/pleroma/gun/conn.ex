@@ -54,7 +54,7 @@ defmodule Pleroma.Gun.Conn do
       if Connections.count(name) < opts[:max_connection] do
         do_open(uri, opts)
       else
-        try_do_open(name, uri, opts)
+        close_least_used_and_do_open(name, uri, opts)
       end
 
     if is_pid(conn_pid) do
@@ -159,7 +159,7 @@ defmodule Pleroma.Gun.Conn do
 
   defp add_http2_opts(opts, _, _), do: opts
 
-  defp try_do_open(name, uri, opts) do
+  defp close_least_used_and_do_open(name, uri, opts) do
     Logger.debug("try to open conn #{Connections.compose_uri_log(uri)}")
 
     with [{close_key, least_used} | _conns] <-
