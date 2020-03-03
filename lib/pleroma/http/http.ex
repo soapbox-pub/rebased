@@ -55,33 +55,36 @@ defmodule Pleroma.HTTP do
   @spec request(atom(), Request.url(), String.t(), Request.headers(), keyword()) ::
           {:ok, Env.t()} | {:error, any()}
   def request(method, url, body, headers, options) when is_binary(url) do
-    with uri <- URI.parse(url),
-         received_adapter_opts <- Keyword.get(options, :adapter, []),
-         adapter_opts <- Connection.options(uri, received_adapter_opts),
-         options <- put_in(options[:adapter], adapter_opts),
-         params <- Keyword.get(options, :params, []),
-         request <- build_request(method, headers, options, url, body, params),
-         client <- Tesla.client([Tesla.Middleware.FollowRedirects], tesla_adapter()),
-         pid <- Process.whereis(adapter_opts[:pool]) do
-      pool_alive? =
-        if tesla_adapter() == Tesla.Adapter.Gun && pid do
-          Process.alive?(pid)
-        else
-          false
-        end
+    uri = URI.parse(url)
+    received_adapter_opts = Keyword.get(options, :adapter, [])
+    adapter_opts = Connection.options(uri, received_adapter_opts)
+    options = put_in(options[:adapter], adapter_opts)
+    params = Keyword.get(options, :params, [])
+    request = build_request(method, headers, options, url, body, params)
 
-      request_opts =
-        adapter_opts
-        |> Enum.into(%{})
-        |> Map.put(:env, Pleroma.Config.get([:env]))
-        |> Map.put(:pool_alive?, pool_alive?)
+    adapter = Application.get_env(:tesla, :adapter)
+    client = Tesla.client([Tesla.Middleware.FollowRedirects], adapter)
 
-      response = request(client, request, request_opts)
+    pid = Process.whereis(adapter_opts[:pool])
 
-      Connection.after_request(adapter_opts)
+    pool_alive? =
+      if adapter == Tesla.Adapter.Gun && pid do
+        Process.alive?(pid)
+      else
+        false
+      end
 
-      response
-    end
+    request_opts =
+      adapter_opts
+      |> Enum.into(%{})
+      |> Map.put(:env, Pleroma.Config.get([:env]))
+      |> Map.put(:pool_alive?, pool_alive?)
+
+    response = request(client, request, request_opts)
+
+    Connection.after_request(adapter_opts)
+
+    response
   end
 
   @spec request(Client.t(), keyword(), map()) :: {:ok, Env.t()} | {:error, any()}
@@ -138,6 +141,4 @@ defmodule Pleroma.HTTP do
     |> Builder.add_param(:query, :query, params)
     |> Builder.convert_to_keyword()
   end
-
-  defp tesla_adapter, do: Application.get_env(:tesla, :adapter)
 end
