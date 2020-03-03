@@ -602,7 +602,9 @@ config :pleroma, :modules, runtime_dir: "instance/modules"
 
 config :pleroma, configurable_from_database: false
 
-config :pleroma, Pleroma.Repo, parameters: [gin_fuzzy_search_limit: "500"]
+config :pleroma, Pleroma.Repo,
+  parameters: [gin_fuzzy_search_limit: "500"],
+  prepare: :unnamed
 
 config :pleroma, :connections_pool,
   receive_connection_timeout: 250,

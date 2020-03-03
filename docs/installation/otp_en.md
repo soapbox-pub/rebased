@@ -73,6 +73,15 @@ rc-service postgresql restart
 systemctl restart postgresql
 ```
 
+If you are using PostgreSQL 12 or higher, add this to your Ecto database configuration
+
+```elixir
+prepare: :named,
+parameters: [
+  plan_cache_mode: "force_custom_plan"
+]
+```
+
 ### Installing Pleroma
 ```sh
 # Create a Pleroma user
