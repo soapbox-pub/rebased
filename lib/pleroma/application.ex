@@ -66,16 +66,23 @@ defmodule Pleroma.Application do
           Pleroma.Gopher.Server
         ]
 
-    case Pleroma.OTPVersion.check_version() do
-      :ok -> :ok
-      {:error, version} -> raise "
-        !!!OTP VERSION WARNING!!!
-        You are using gun adapter with OTP version #{version}, which doesn't support correct handling of unordered certificates chains.
-        "
-      :undefined -> raise "
-        !!!OTP VERSION WARNING!!!
-        To support correct handling of unordered certificates chains - OTP version must be > 22.2.
-        "
+    if adapter() == Tesla.Adapter.Gun do
+      case Pleroma.OTPVersion.check() do
+        :ok ->
+          :ok
+
+        {:error, version} ->
+          raise "
+            !!!OTP VERSION WARNING!!!
+            You are using gun adapter with OTP version #{version}, which doesn't support correct handling of unordered certificates chains.
+            "
+
+        :undefined ->
+          raise "
+            !!!OTP VERSION WARNING!!!
+            To support correct handling of unordered certificates chains - OTP version must be > 22.2.
+            "
+      end
     end
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
@@ -202,11 +209,7 @@ defmodule Pleroma.Application do
     [hackney_pool, Pleroma.Pool.Supervisor]
   end
 
-  defp http_pools_children(_) do
-    :tesla
-    |> Application.get_env(:adapter)
-    |> http_pools()
-  end
+  defp http_pools_children(_), do: http_pools(adapter())
 
   defp http_pools(Tesla.Adapter.Hackney) do
     pools = [:federation, :media]
@@ -227,4 +230,6 @@ defmodule Pleroma.Application do
   defp http_pools(Tesla.Adapter.Gun), do: [Pleroma.Pool.Supervisor]
 
   defp http_pools(_), do: []
+
+  defp adapter, do: Application.get_env(:tesla, :adapter)
 end

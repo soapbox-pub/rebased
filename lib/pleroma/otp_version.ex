@@ -1,63 +1,53 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.OTPVersion do
-  @type check_status() :: :undefined | {:error, String.t()} | :ok
+  @type check_status() :: :ok | :undefined | {:error, String.t()}
 
-  require Logger
-
-  @spec check_version() :: check_status()
-  def check_version do
+  @spec check() :: check_status()
+  def check do
     # OTP Version https://erlang.org/doc/system_principles/versions.html#otp-version
-    paths = [
+    [
       Path.join(:code.root_dir(), "OTP_VERSION"),
       Path.join([:code.root_dir(), "releases", :erlang.system_info(:otp_release), "OTP_VERSION"])
     ]
-
-    :tesla
-    |> Application.get_env(:adapter)
-    |> get_and_check_version(paths)
+    |> get_version_from_files()
+    |> do_check()
   end
 
-  @spec get_and_check_version(module(), [Path.t()]) :: check_status()
-  def get_and_check_version(Tesla.Adapter.Gun, paths) do
+  @spec check([Path.t()]) :: check_status()
+  def check(paths) do
     paths
-    |> check_files()
-    |> check_version()
+    |> get_version_from_files()
+    |> do_check()
   end
 
-  def get_and_check_version(_, _), do: :ok
+  defp get_version_from_files([]), do: nil
 
-  defp check_files([]), do: nil
-
-  defp check_files([path | paths]) do
+  defp get_version_from_files([path | paths]) do
     if File.exists?(path) do
       File.read!(path)
     else
-      check_files(paths)
+      get_version_from_files(paths)
     end
   end
 
-  defp check_version(nil), do: :undefined
+  defp do_check(nil), do: :undefined
 
-  defp check_version(version) do
-    try do
-      version = String.replace(version, ~r/\r|\n|\s/, "")
+  defp do_check(version) do
+    version = String.replace(version, ~r/\r|\n|\s/, "")
 
-      formatted =
-        version
-        |> String.split(".")
-        |> Enum.map(&String.to_integer/1)
-        |> Enum.take(2)
+    [major, minor] =
+      version
+      |> String.split(".")
+      |> Enum.map(&String.to_integer/1)
+      |> Enum.take(2)
 
-      with [major, minor] when length(formatted) == 2 <- formatted,
-           true <- (major == 22 and minor >= 2) or major > 22 do
-        :ok
-      else
-        false -> {:error, version}
-        _ -> :undefined
-      end
-    rescue
-      _ -> :undefined
-    catch
-      _ -> :undefined
+    if (major == 22 and minor >= 2) or major > 22 do
+      :ok
+    else
+      {:error, version}
     end
   end
 end
