@@ -57,7 +57,7 @@ defmodule Pleroma.HTTP.Adapter do
       {:error, :einval} ->
         {:domain, :idna.encode(charlist)}
 
-      {:ok, ip} when is_tuple(ip) and tuple_size(ip) in [4, 8] ->
+      {:ok, ip} ->
         {:ip, ip}
     end
   end
