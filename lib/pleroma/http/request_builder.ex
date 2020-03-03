@@ -49,26 +49,6 @@ defmodule Pleroma.HTTP.RequestBuilder do
   @spec opts(Request.t(), keyword()) :: Request.t()
   def opts(request, options), do: %{request | opts: options}
 
-  # NOTE: isn't used anywhere
-  @doc """
-  Add optional parameters to the request
-
-  """
-  @spec add_optional_params(Request.t(), %{optional(atom) => atom}, keyword()) :: map()
-  def add_optional_params(request, _, []), do: request
-
-  def add_optional_params(request, definitions, [{key, value} | tail]) do
-    case definitions do
-      %{^key => location} ->
-        request
-        |> add_param(location, key, value)
-        |> add_optional_params(definitions, tail)
-
-      _ ->
-        add_optional_params(request, definitions, tail)
-    end
-  end
-
   @doc """
   Add optional parameters to the request
   """

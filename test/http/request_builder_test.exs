@@ -36,23 +36,6 @@ defmodule Pleroma.HTTP.RequestBuilderTest do
     end
   end
 
-  describe "add_optional_params/3" do
-    test "don't add if keyword is empty" do
-      assert RequestBuilder.add_optional_params(%{}, %{}, []) == %{}
-    end
-
-    test "add query parameter" do
-      assert RequestBuilder.add_optional_params(
-               %Request{},
-               %{query: :query, body: :body, another: :val},
-               [
-                 {:query, "param1=val1&param2=val2"},
-                 {:body, "some body"}
-               ]
-             ) == %Request{query: "param1=val1&param2=val2", body: "some body"}
-    end
-  end
-
   describe "add_param/4" do
     test "add file parameter" do
       %Request{
