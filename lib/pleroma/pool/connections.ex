@@ -180,10 +180,10 @@ defmodule Pleroma.Pool.Connections do
     state =
       with conn_key when is_binary(conn_key) <- compose_key_gun_info(conn_pid),
            {key, conn} <- find_conn(state.conns, conn_pid, conn_key),
-           {true, key} <- {Process.alive?(conn_pid), key},
-           time <- :os.system_time(:second),
-           last_reference <- time - conn.last_reference,
-           current_crf <- crf(last_reference, 100, conn.crf) do
+           {true, key} <- {Process.alive?(conn_pid), key} do
+        time = :os.system_time(:second)
+        last_reference = time - conn.last_reference
+        current_crf = crf(last_reference, 100, conn.crf)
         put_in(state.conns[key], %{
           conn
           | gun_state: :up,
