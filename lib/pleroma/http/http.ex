@@ -76,12 +76,7 @@ defmodule Pleroma.HTTP do
         |> Map.put(:env, Pleroma.Config.get([:env]))
         |> Map.put(:pool_alive?, pool_alive?)
 
-      response =
-        request(
-          client,
-          request,
-          request_opts
-        )
+      response = request(client, request, request_opts)
 
       Connection.after_request(adapter_opts)
 
