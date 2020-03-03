@@ -99,23 +99,11 @@ defmodule Pleroma.HTTP do
   end
 
   def request(%Client{} = client, request, %{pool: pool, timeout: timeout}) do
-    try do
-      :poolboy.transaction(
-        pool,
-        &Pleroma.Pool.Request.execute(&1, client, request, timeout),
-        timeout
-      )
-    rescue
-      e ->
-        {:error, e}
-    catch
-      :exit, {:timeout, _} ->
-        Logger.warn("Receive response from pool failed #{request[:url]}")
-        {:error, :recv_pool_timeout}
-
-      :exit, e ->
-        {:error, e}
-    end
+    :poolboy.transaction(
+      pool,
+      &Pleroma.Pool.Request.execute(&1, client, request, timeout),
+      timeout
+    )
   end
 
   @spec request_try(Client.t(), keyword()) :: {:ok, Env.t()} | {:error, any()}
