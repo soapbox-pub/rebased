@@ -13,7 +13,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
 
   clear_config([:email_notifications, :digest])
 
-  test "it sends digest emails" do
+  setup do
     Pleroma.Config.put([:email_notifications, :digest], %{
       active: true,
       inactivity_threshold: 7,
@@ -31,6 +31,10 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
     {:ok, _} = User.switch_email_notifications(user2, "digest", true)
     CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}!"})
 
+    {:ok, user2: user2}
+  end
+
+  test "it sends digest emails", %{user2: user2} do
     Pleroma.Workers.Cron.DigestEmailsWorker.perform(:opts, :pid)
     # Performing job(s) enqueued at previous step
     ObanHelpers.perform_all()
@@ -38,5 +42,13 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
     assert_received {:email, email}
     assert email.to == [{user2.name, user2.email}]
     assert email.subject == "Your digest from #{Pleroma.Config.get(:instance)[:name]}"
+  end
+
+  test "it doesn't fail when a user has no email", %{user2: user2} do
+    {:ok, _} = user2 |> Ecto.Changeset.change(%{email: nil}) |> Pleroma.Repo.update()
+
+    Pleroma.Workers.Cron.DigestEmailsWorker.perform(:opts, :pid)
+    # Performing job(s) enqueued at previous step
+    ObanHelpers.perform_all()
   end
 end

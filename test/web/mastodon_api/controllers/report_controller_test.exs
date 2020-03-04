@@ -75,4 +75,13 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
 
     assert json_response(conn, 400) == %{"error" => "Account not found"}
   end
+
+  test "doesn't fail if an admin has no email", %{conn: conn, target_user: target_user} do
+    insert(:user, %{is_admin: true, email: nil})
+
+    assert %{"action_taken" => false, "id" => _} =
+             conn
+             |> post("/api/v1/reports", %{"account_id" => target_user.id})
+             |> json_response(200)
+  end
 end

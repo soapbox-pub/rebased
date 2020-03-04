@@ -99,7 +99,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def password_reset(nickname_or_email) do
     with true <- is_binary(nickname_or_email),
-         %User{local: true} = user <- User.get_by_nickname_or_email(nickname_or_email),
+         %User{local: true, email: email} = user when not is_nil(email) <-
+           User.get_by_nickname_or_email(nickname_or_email),
          {:ok, token_record} <- Pleroma.PasswordResetToken.create_token(user) do
       user
       |> UserEmail.password_reset_email(token_record.token)
@@ -109,6 +110,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     else
       false ->
         {:error, "bad user identifier"}
+
+      %User{local: true, email: nil} ->
+        {:ok, :noop}
 
       %User{local: false} ->
         {:error, "remote user"}
