@@ -122,7 +122,7 @@ defmodule Pleroma.Mixfile do
       # {:tesla, "~> 1.3", override: true},
       {:tesla,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/tesla.git",
-       ref: "67436cf003d40370e944462649193706bb22ca35",
+       ref: "61b7503cef33f00834f78ddfafe0d5d9dec2270b",
        override: true},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.8", override: true},
