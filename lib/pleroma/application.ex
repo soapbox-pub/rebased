@@ -43,7 +43,25 @@ defmodule Pleroma.Application do
     load_custom_modules()
 
     if adapter() == Tesla.Adapter.Gun do
-      Pleroma.OTPVersion.check!()
+      if version = Pleroma.OTPVersion.version() do
+        [major, minor] =
+          version
+          |> String.split(".")
+          |> Enum.map(&String.to_integer/1)
+          |> Enum.take(2)
+
+        if (major == 22 and minor < 2) or major < 22 do
+          raise "
+            !!!OTP VERSION WARNING!!!
+            You are using gun adapter with OTP version #{version}, which doesn't support correct handling of unordered certificates chains.
+            "
+        end
+      else
+        raise "
+          !!!OTP VERSION WARNING!!!
+          To support correct handling of unordered certificates chains - OTP version must be > 22.2.
+          "
+      end
     end
 
     # Define workers and child supervisors to be supervised
