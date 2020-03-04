@@ -406,8 +406,8 @@ It will increase memory usage, but federation would work faster.
 
 * `:checkin_timeout` - timeout to checkin connection from pool. Default: 250ms.
 * `:max_connections` - maximum number of connections in the pool. Default: 250 connections.
-* `:retry` - number of retries, while `gun` will try to reconnect if connections goes down. Default: 1.
-* `:retry_timeout` - time between retries when gun will try to reconnect in milliseconds. Default: 1000ms.
+* `:retry` - number of retries, while `gun` will try to reconnect if connection goes down. Default: 1.
+* `:retry_timeout` - time between retries when `gun` will try to reconnect in milliseconds. Default: 1000ms.
 * `:await_up_timeout` - timeout while `gun` will wait until connection is up. Default: 5000ms.
 
 ### :pools
