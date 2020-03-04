@@ -134,7 +134,6 @@ defmodule Pleroma.HTTP.ConnectionTest do
       assert tls_opts[:depth] == 20
       assert tls_opts[:reuse_sessions] == false
 
-      assert opts[:original] == "some-domain.com:443"
       assert opts[:close_conn] == false
       assert is_pid(opts[:conn])
     end

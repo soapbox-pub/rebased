@@ -28,12 +28,7 @@ defmodule Pleroma.Pool.Request do
   end
 
   @impl true
-  def handle_info({:gun_data, _conn, stream, _, _}, state) do
-    # in some cases if we reuse conn and got {:error, :body_too_large}
-    # gun continues to send messages to this process,
-    # so we flush messages for this request
-    :ok = :gun.flush(stream)
-
+  def handle_info({:gun_data, _conn, _stream, _, _}, state) do
     {:noreply, state}
   end
 
@@ -49,8 +44,7 @@ defmodule Pleroma.Pool.Request do
   end
 
   @impl true
-  def handle_info({:gun_error, _conn, stream, _error}, state) do
-    :ok = :gun.flush(stream)
+  def handle_info({:gun_error, _conn, _stream, _error}, state) do
     {:noreply, state}
   end
 

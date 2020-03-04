@@ -26,7 +26,6 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
 
     @defaults
     |> Keyword.merge(Pleroma.Config.get([:http, :adapter], []))
-    |> add_original(uri)
     |> add_scheme_opts(uri)
     |> AdapterHelper.maybe_add_proxy(AdapterHelper.format_proxy(proxy))
     |> maybe_get_conn(uri, connection_opts)
@@ -42,17 +41,12 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     :ok
   end
 
-  defp add_original(opts, %URI{host: host, port: port}) do
-    formatted_host = format_host(host)
-
-    Keyword.put(opts, :original, "#{formatted_host}:#{port}")
-  end
-
   defp add_scheme_opts(opts, %URI{scheme: "http"}), do: opts
 
-  defp add_scheme_opts(opts, %URI{scheme: "https", host: host, port: port}) do
+  defp add_scheme_opts(opts, %URI{scheme: "https", host: host}) do
     adapter_opts = [
       certificates_verification: true,
+      transport: :tls,
       tls_opts: [
         verify: :verify_peer,
         cacertfile: CAStore.file_path(),
@@ -62,13 +56,6 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
         log_level: :warning
       ]
     ]
-
-    adapter_opts =
-      if port != 443 do
-        Keyword.put(adapter_opts, :transport, :tls)
-      else
-        adapter_opts
-      end
 
     Keyword.merge(opts, adapter_opts)
   end
