@@ -748,6 +748,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def list_statuses(%{assigns: %{user: admin}} = conn, params) do
     godmode = params["godmode"] == "true" || params["godmode"] == true
     local_only = params["local_only"] == "true" || params["local_only"] == true
+    with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
     {page, page_size} = page_params(params)
 
     activities =
@@ -755,7 +756,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         "godmode" => godmode,
         "local_only" => local_only,
         "limit" => page_size,
-        "offset" => (page - 1) * page_size
+        "offset" => (page - 1) * page_size,
+        "exclude_reblogs" => !with_reblogs && "true"
       })
 
     conn
