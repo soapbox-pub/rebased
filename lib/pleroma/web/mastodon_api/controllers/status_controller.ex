@@ -175,6 +175,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
         for: user,
         with_direct_conversation_id: true
       )
+    else
+      _ -> {:error, :not_found}
     end
   end
 
@@ -183,6 +185,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
       json(conn, %{})
     else
+      {:error, :not_found} = e -> e
       _e -> render_error(conn, :forbidden, "Can't delete this post")
     end
   end
