@@ -3066,7 +3066,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "GET /api/pleroma/admin/statuses" do
-    test "returns all public, unlisted, and direct statuses", %{conn: conn, admin: admin} do
+    test "returns all public and unlisted statuses", %{conn: conn, admin: admin} do
       blocked = insert(:user)
       user = insert(:user)
       User.block(admin, blocked)
@@ -3085,7 +3085,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> json_response(200)
 
       refute "private" in Enum.map(response, & &1["visibility"])
-      assert length(response) == 4
+      assert length(response) == 3
     end
 
     test "returns only local statuses with local_only on", %{conn: conn} do
@@ -3102,12 +3102,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert length(response) == 1
     end
 
-    test "returns private statuses with godmode on", %{conn: conn} do
+    test "returns private and direct statuses with godmode on", %{conn: conn, admin: admin} do
       user = insert(:user)
+
+      {:ok, _} =
+        CommonAPI.post(user, %{"status" => "@#{admin.nickname}", "visibility" => "direct"})
+
       {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
       {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
       conn = get(conn, "/api/pleroma/admin/statuses?godmode=true")
-      assert json_response(conn, 200) |> length() == 2
+      assert json_response(conn, 200) |> length() == 3
     end
   end
 
