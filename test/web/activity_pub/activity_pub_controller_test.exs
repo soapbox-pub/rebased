@@ -577,7 +577,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
-  describe "/users/:nickname/outbox" do
+  describe "GET /users/:nickname/outbox" do
     test "it will not bomb when there is no activity", %{conn: conn} do
       user = insert(:user)
 
@@ -614,7 +614,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert response(conn, 200) =~ announce_activity.data["object"]
     end
+  end
 
+  describe "POST /users/:nickname/outbox" do
     test "it rejects posts from other users", %{conn: conn} do
       data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
       user = insert(:user)
@@ -1059,9 +1061,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       get_uris = [
         "/users/#{user.nickname}",
-        "/users/#{user.nickname}/outbox",
         "/internal/fetch",
-        "/relay"
+        "/relay",
+        "/relay/following",
+        "/relay/followers"
       ]
 
       for get_uri <- get_uris do

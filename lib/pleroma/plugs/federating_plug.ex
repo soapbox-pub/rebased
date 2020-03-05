@@ -13,13 +13,17 @@ defmodule Pleroma.Web.FederatingPlug do
     if federating?() do
       conn
     else
-      conn
-      |> put_status(404)
-      |> Phoenix.Controller.put_view(Pleroma.Web.ErrorView)
-      |> Phoenix.Controller.render("404.json")
-      |> halt()
+      fail(conn)
     end
   end
 
   def federating?, do: Pleroma.Config.get([:instance, :federating])
+
+  def fail(conn) do
+    conn
+    |> put_status(404)
+    |> Phoenix.Controller.put_view(Pleroma.Web.ErrorView)
+    |> Phoenix.Controller.render("404.json")
+    |> halt()
+  end
 end

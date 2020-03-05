@@ -29,6 +29,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   @client_to_server_actions [
     :whoami,
     :read_inbox,
+    :outbox,
     :update_outbox,
     :upload_media,
     :followers,
@@ -140,10 +141,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   # GET /relay/following
   def following(%{assigns: %{relay: true}} = conn, _params) do
-    conn
-    |> put_resp_content_type("application/activity+json")
-    |> put_view(UserView)
-    |> render("following.json", %{user: Relay.get_actor()})
+    if FederatingPlug.federating?() do
+      conn
+      |> put_resp_content_type("application/activity+json")
+      |> put_view(UserView)
+      |> render("following.json", %{user: Relay.get_actor()})
+    else
+      FederatingPlug.fail(conn)
+    end
   end
 
   def following(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
@@ -177,10 +182,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   # GET /relay/followers
   def followers(%{assigns: %{relay: true}} = conn, _params) do
-    conn
-    |> put_resp_content_type("application/activity+json")
-    |> put_view(UserView)
-    |> render("followers.json", %{user: Relay.get_actor()})
+    if FederatingPlug.federating?() do
+      conn
+      |> put_resp_content_type("application/activity+json")
+      |> put_view(UserView)
+      |> render("followers.json", %{user: Relay.get_actor()})
+    else
+      FederatingPlug.fail(conn)
+    end
   end
 
   def followers(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
