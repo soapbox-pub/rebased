@@ -58,29 +58,4 @@ defmodule Pleroma.HTTPTest do
              }
     end
   end
-
-  describe "connection pools" do
-    @describetag :integration
-    clear_config(Pleroma.Gun) do
-      Pleroma.Config.put(Pleroma.Gun, Pleroma.Gun.API)
-    end
-
-    test "gun" do
-      adapter = Application.get_env(:tesla, :adapter)
-      Application.put_env(:tesla, :adapter, Tesla.Adapter.Gun)
-
-      on_exit(fn ->
-        Application.put_env(:tesla, :adapter, adapter)
-      end)
-
-      options = [adapter: [pool: :federation]]
-
-      assert {:ok, resp} = HTTP.get("https://httpbin.org/user-agent", [], options)
-
-      assert resp.status == 200
-
-      state = Pleroma.Pool.Connections.get_state(:gun_connections)
-      assert state.conns["https:httpbin.org:443"]
-    end
-  end
 end

@@ -341,45 +341,4 @@ defmodule Pleroma.ReverseProxyTest do
       assert {"content-disposition", "attachment; filename=\"filename.jpg\""} in conn.resp_headers
     end
   end
-
-  describe "tesla client using gun integration" do
-    @describetag :integration
-
-    clear_config(Pleroma.ReverseProxy.Client) do
-      Pleroma.Config.put(Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.Client.Tesla)
-    end
-
-    clear_config(Pleroma.Gun) do
-      Pleroma.Config.put(Pleroma.Gun, Pleroma.Gun.API)
-    end
-
-    setup do
-      adapter = Application.get_env(:tesla, :adapter)
-      Application.put_env(:tesla, :adapter, Tesla.Adapter.Gun)
-
-      on_exit(fn ->
-        Application.put_env(:tesla, :adapter, adapter)
-      end)
-    end
-
-    test "common", %{conn: conn} do
-      conn = ReverseProxy.call(conn, "http://httpbin.org/stream-bytes/10")
-      assert byte_size(conn.resp_body) == 10
-      assert conn.state == :chunked
-      assert conn.status == 200
-    end
-
-    test "ssl", %{conn: conn} do
-      conn = ReverseProxy.call(conn, "https://httpbin.org/stream-bytes/10")
-      assert byte_size(conn.resp_body) == 10
-      assert conn.state == :chunked
-      assert conn.status == 200
-    end
-
-    test "follow redirects", %{conn: conn} do
-      conn = ReverseProxy.call(conn, "https://httpbin.org/redirect/5")
-      assert conn.state == :chunked
-      assert conn.status == 200
-    end
-  end
 end
