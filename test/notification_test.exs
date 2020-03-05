@@ -649,12 +649,20 @@ defmodule Pleroma.NotificationTest do
         "object" => remote_user.ap_id
       }
 
+      remote_user_url = remote_user.ap_id
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^remote_user_url} ->
+          %Tesla.Env{status: 404, body: ""}
+      end)
+
       {:ok, _delete_activity} = Transmogrifier.handle_incoming(delete_user_message)
       ObanHelpers.perform_all()
 
       assert Enum.empty?(Notification.for_user(local_user))
     end
 
+    @tag capture_log: true
     test "move activity generates a notification" do
       %{ap_id: old_ap_id} = old_user = insert(:user)
       %{ap_id: new_ap_id} = new_user = insert(:user, also_known_as: [old_ap_id])
@@ -663,6 +671,18 @@ defmodule Pleroma.NotificationTest do
 
       User.follow(follower, old_user)
       User.follow(other_follower, old_user)
+
+      old_user_url = old_user.ap_id
+
+      body =
+        File.read!("test/fixtures/users_mock/localhost.json")
+        |> String.replace("{{nickname}}", old_user.nickname)
+        |> Jason.encode!()
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^old_user_url} ->
+          %Tesla.Env{status: 200, body: body}
+      end)
 
       Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
       ObanHelpers.perform_all()

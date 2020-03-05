@@ -22,7 +22,7 @@ defmodule Pleroma.Pool.Request do
 
   @impl true
   def handle_call({:execute, client, request}, _from, state) do
-    response = Pleroma.HTTP.request_try(client, request)
+    response = Pleroma.HTTP.request(client, request)
 
     {:reply, response, state}
   end

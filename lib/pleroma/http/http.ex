@@ -88,15 +88,11 @@ defmodule Pleroma.HTTP do
   end
 
   @spec request(Client.t(), keyword(), map()) :: {:ok, Env.t()} | {:error, any()}
-  def request(%Client{} = client, request, %{env: :test}), do: request_try(client, request)
+  def request(%Client{} = client, request, %{env: :test}), do: request(client, request)
 
-  def request(%Client{} = client, request, %{body_as: :chunks}) do
-    request_try(client, request)
-  end
+  def request(%Client{} = client, request, %{body_as: :chunks}), do: request(client, request)
 
-  def request(%Client{} = client, request, %{pool_alive?: false}) do
-    request_try(client, request)
-  end
+  def request(%Client{} = client, request, %{pool_alive?: false}), do: request(client, request)
 
   def request(%Client{} = client, request, %{pool: pool, timeout: timeout}) do
     :poolboy.transaction(
@@ -106,18 +102,8 @@ defmodule Pleroma.HTTP do
     )
   end
 
-  @spec request_try(Client.t(), keyword()) :: {:ok, Env.t()} | {:error, any()}
-  def request_try(client, request) do
-    try do
-      Tesla.request(client, request)
-    rescue
-      e ->
-        {:error, e}
-    catch
-      :exit, e ->
-        {:error, e}
-    end
-  end
+  @spec request(Client.t(), keyword()) :: {:ok, Env.t()} | {:error, any()}
+  def request(client, request), do: Tesla.request(client, request)
 
   defp build_request(method, headers, options, url, body, params) do
     Builder.new()

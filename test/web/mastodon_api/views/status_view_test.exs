@@ -92,6 +92,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     Repo.delete(user)
     Cachex.clear(:user_cache)
 
+    finger_url =
+      "https://localhost/.well-known/webfinger?resource=acct:#{user.nickname}@localhost"
+
+    Tesla.Mock.mock_global(fn
+      %{method: :get, url: "http://localhost/.well-known/host-meta"} ->
+        %Tesla.Env{status: 404, body: ""}
+
+      %{method: :get, url: "https://localhost/.well-known/host-meta"} ->
+        %Tesla.Env{status: 404, body: ""}
+
+      %{
+        method: :get,
+        url: ^finger_url
+      } ->
+        %Tesla.Env{status: 404, body: ""}
+    end)
+
     %{account: ms_user} = StatusView.render("show.json", activity: activity)
 
     assert ms_user.acct == "erroruser@example.com"

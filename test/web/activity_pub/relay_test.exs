@@ -89,6 +89,11 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
           }
         )
 
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "http://mastodon.example.org/eee/99541947525187367"} ->
+          %Tesla.Env{status: 500, body: ""}
+      end)
+
       assert capture_log(fn ->
                assert Relay.publish(activity) == {:error, nil}
              end) =~ "[error] error: nil"

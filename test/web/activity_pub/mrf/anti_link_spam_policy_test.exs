@@ -110,6 +110,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
   end
 
   describe "with unknown actors" do
+    setup do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "http://invalid.actor"} ->
+          %Tesla.Env{status: 500, body: ""}
+      end)
+
+      :ok
+    end
+
     test "it rejects posts without links" do
       message =
         @linkless_message
