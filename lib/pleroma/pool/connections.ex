@@ -285,20 +285,15 @@ defmodule Pleroma.Pool.Connections do
   end
 
   defp compose_key_gun_info(pid) do
-    try do
-      # sometimes :gun.info can raise MatchError, which lead to pool terminate
-      %{origin_host: origin_host, origin_scheme: scheme, origin_port: port} = Gun.info(pid)
+    %{origin_host: origin_host, origin_scheme: scheme, origin_port: port} = Gun.info(pid)
 
-      host =
-        case :inet.ntoa(origin_host) do
-          {:error, :einval} -> origin_host
-          ip -> ip
-        end
+    host =
+      case :inet.ntoa(origin_host) do
+        {:error, :einval} -> origin_host
+        ip -> ip
+      end
 
-      "#{scheme}:#{host}:#{port}"
-    rescue
-      _ -> :error_gun_info
-    end
+    "#{scheme}:#{host}:#{port}"
   end
 
   defp find_conn(conns, conn_pid) do
