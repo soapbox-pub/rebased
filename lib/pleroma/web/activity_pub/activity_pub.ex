@@ -660,7 +660,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(flag_data, local),
          {:ok, stripped_activity} <- strip_report_status_data(activity),
          :ok <- maybe_federate(stripped_activity) do
-      Enum.each(User.all_superusers(), fn superuser ->
+      User.all_superusers()
+      |> Enum.filter(fn user -> not is_nil(user.email) end)
+      |> Enum.each(fn superuser ->
         superuser
         |> Pleroma.Emails.AdminEmail.report(actor, account, statuses, content)
         |> Pleroma.Emails.Mailer.deliver_async()

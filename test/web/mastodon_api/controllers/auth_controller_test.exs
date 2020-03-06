@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AuthControllerTest do
@@ -82,6 +82,37 @@ defmodule Pleroma.Web.MastodonAPI.AuthControllerTest do
         to: {user.name, user.email},
         html_body: email.html_body
       )
+    end
+  end
+
+  describe "POST /auth/password, with nickname" do
+    test "it returns 204", %{conn: conn} do
+      user = insert(:user)
+
+      assert conn
+             |> post("/auth/password?nickname=#{user.nickname}")
+             |> json_response(:no_content)
+
+      ObanHelpers.perform_all()
+      token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
+
+      email = Pleroma.Emails.UserEmail.password_reset_email(user, token_record.token)
+      notify_email = Config.get([:instance, :notify_email])
+      instance_name = Config.get([:instance, :name])
+
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {user.name, user.email},
+        html_body: email.html_body
+      )
+    end
+
+    test "it doesn't fail when a user has no email", %{conn: conn} do
+      user = insert(:user, %{email: nil})
+
+      assert conn
+             |> post("/auth/password?nickname=#{user.nickname}")
+             |> json_response(:no_content)
     end
   end
 
