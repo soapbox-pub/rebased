@@ -13,8 +13,10 @@ defmodule Pleroma.HTTP.AdapterHelper.Hackney do
   def options(connection_opts \\ [], %URI{} = uri) do
     proxy = Pleroma.Config.get([:http, :proxy_url], nil)
 
+    config_opts = Pleroma.Config.get([:http, :adapter], [])
+
     @defaults
-    |> Keyword.merge(Pleroma.Config.get([:http, :adapter], []))
+    |> Keyword.merge(config_opts)
     |> Keyword.merge(connection_opts)
     |> add_scheme_opts(uri)
     |> Pleroma.HTTP.AdapterHelper.maybe_add_proxy(proxy)

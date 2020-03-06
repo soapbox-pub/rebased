@@ -5,10 +5,10 @@
 defmodule Pleroma.HTTP.AdapterHelper.Gun do
   @behaviour Pleroma.HTTP.AdapterHelper
 
-  require Logger
-
   alias Pleroma.HTTP.AdapterHelper
   alias Pleroma.Pool.Connections
+
+  require Logger
 
   @defaults [
     connect_timeout: 5_000,

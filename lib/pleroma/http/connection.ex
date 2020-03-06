@@ -6,19 +6,20 @@ defmodule Pleroma.HTTP.Connection do
   @moduledoc """
   Configure Tesla.Client with default and customized adapter options.
   """
+
+  alias Pleroma.Config
+  alias Pleroma.HTTP.AdapterHelper
+
+  require Logger
+
+  @defaults [pool: :federation]
+
   @type ip_address :: ipv4_address() | ipv6_address()
   @type ipv4_address :: {0..255, 0..255, 0..255, 0..255}
   @type ipv6_address ::
           {0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535}
   @type proxy_type() :: :socks4 | :socks5
   @type host() :: charlist() | ip_address()
-
-  @defaults [pool: :federation]
-
-  require Logger
-
-  alias Pleroma.Config
-  alias Pleroma.HTTP.AdapterHelper
 
   @doc """
   Merge default connection & adapter options with received ones.

@@ -6,6 +6,7 @@ defmodule Pleroma.Pool.Connections do
   use GenServer
 
   alias Pleroma.Config
+  alias Pleroma.Gun
 
   require Logger
 
@@ -18,8 +19,6 @@ defmodule Pleroma.Pool.Connections do
         }
 
   defstruct conns: %{}, opts: []
-
-  alias Pleroma.Gun
 
   @spec start_link({atom(), keyword()}) :: {:ok, pid()}
   def start_link({name, opts}) do
