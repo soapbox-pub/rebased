@@ -11,6 +11,10 @@ defmodule Pleroma.Gun do
   @callback await(pid(), reference()) :: {:response, :fin, 200, []}
   @callback set_owner(pid(), pid()) :: :ok
 
+  @api Pleroma.Config.get([Pleroma.Gun], Pleroma.Gun.API)
+
+  defp api, do: @api
+
   def open(host, port, opts), do: api().open(host, port, opts)
 
   def info(pid), do: api().info(pid)
@@ -24,6 +28,4 @@ defmodule Pleroma.Gun do
   def await(pid, ref), do: api().await(pid, ref)
 
   def set_owner(pid, owner), do: api().set_owner(pid, owner)
-
-  defp api, do: Pleroma.Config.get([Pleroma.Gun], Pleroma.Gun.API)
 end

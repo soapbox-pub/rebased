@@ -5,10 +5,9 @@
 defmodule Pleroma.HTTP.AdapterHelper.Gun do
   @behaviour Pleroma.HTTP.AdapterHelper
 
-  alias Pleroma.HTTP.AdapterHelper
-
   require Logger
 
+  alias Pleroma.HTTP.AdapterHelper
   alias Pleroma.Pool.Connections
 
   @defaults [
@@ -22,20 +21,23 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
 
   @spec options(keyword(), URI.t()) :: keyword()
   def options(connection_opts \\ [], %URI{} = uri) do
-    proxy = Pleroma.Config.get([:http, :proxy_url], nil)
+    formatted_proxy =
+      Pleroma.Config.get([:http, :proxy_url], nil)
+      |> AdapterHelper.format_proxy()
+
+    config_opts = Pleroma.Config.get([:http, :adapter], [])
 
     @defaults
-    |> Keyword.merge(Pleroma.Config.get([:http, :adapter], []))
+    |> Keyword.merge(config_opts)
     |> add_scheme_opts(uri)
-    |> AdapterHelper.maybe_add_proxy(AdapterHelper.format_proxy(proxy))
+    |> AdapterHelper.maybe_add_proxy(formatted_proxy)
     |> maybe_get_conn(uri, connection_opts)
   end
 
   @spec after_request(keyword()) :: :ok
   def after_request(opts) do
-    with conn when not is_nil(conn) <- opts[:conn],
-         body_as when body_as != :chunks <- opts[:body_as] do
-      Connections.checkout(conn, self(), :gun_connections)
+    if opts[:conn] && opts[:body_as] != :chunks do
+      Connections.checkout(opts[:conn], self(), :gun_connections)
     end
 
     :ok
