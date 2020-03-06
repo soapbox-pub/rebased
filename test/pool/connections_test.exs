@@ -3,38 +3,82 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Pool.ConnectionsTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   use Pleroma.Tests.Helpers
+
   import ExUnit.CaptureLog
+  import Mox
+
   alias Pleroma.Gun.Conn
+  alias Pleroma.GunMock
   alias Pleroma.Pool.Connections
 
+  setup :verify_on_exit!
+
   setup_all do
-    {:ok, _} = Registry.start_link(keys: :unique, name: Pleroma.GunMock)
-    :ok
-  end
-
-  clear_config([:connections_pool, :retry]) do
-    Pleroma.Config.put([:connections_pool, :retry], 5)
-  end
-
-  setup do
     name = :test_connections
-    adapter = Application.get_env(:tesla, :adapter)
-    Application.put_env(:tesla, :adapter, Tesla.Adapter.Gun)
-
-    {:ok, pid} = Connections.start_link({name, [max_connections: 2, checkin_timeout: 1_500]})
+    {:ok, pid} = Connections.start_link({name, [checkin_timeout: 150]})
+    {:ok, _} = Registry.start_link(keys: :unique, name: Pleroma.GunMock)
 
     on_exit(fn ->
-      Application.put_env(:tesla, :adapter, adapter)
-
-      if Process.alive?(pid) do
-        GenServer.stop(name)
-      end
+      if Process.alive?(pid), do: GenServer.stop(name)
     end)
 
     {:ok, name: name}
   end
+
+  defp open_mock(num \\ 1) do
+    GunMock
+    |> expect(:open, num, &start_and_register(&1, &2, &3))
+    |> expect(:await_up, num, fn _, _ -> {:ok, :http} end)
+    |> expect(:set_owner, num, fn _, _ -> :ok end)
+  end
+
+  defp connect_mock(mock) do
+    mock
+    |> expect(:connect, &connect(&1, &2))
+    |> expect(:await, &await(&1, &2))
+  end
+
+  defp info_mock(mock), do: expect(mock, :info, &info(&1))
+
+  defp start_and_register('gun-not-up.com', _, _), do: {:error, :timeout}
+
+  defp start_and_register(host, port, _) do
+    {:ok, pid} = Task.start_link(fn -> Process.sleep(1000) end)
+
+    scheme =
+      case port do
+        443 -> "https"
+        _ -> "http"
+      end
+
+    Registry.register(GunMock, pid, %{
+      origin_scheme: scheme,
+      origin_host: host,
+      origin_port: port
+    })
+
+    {:ok, pid}
+  end
+
+  defp info(pid) do
+    [{_, info}] = Registry.lookup(GunMock, pid)
+    info
+  end
+
+  defp connect(pid, _) do
+    ref = make_ref()
+    Registry.register(GunMock, ref, pid)
+    ref
+  end
+
+  defp await(pid, ref) do
+    [{_, ^pid}] = Registry.lookup(GunMock, ref)
+    {:response, :fin, 200, []}
+  end
+
+  defp now, do: :os.system_time(:second)
 
   describe "alive?/2" do
     test "is alive", %{name: name} do
@@ -47,6 +91,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
   end
 
   test "opens connection and reuse it on next request", %{name: name} do
+    open_mock()
     url = "http://some-domain.com"
     key = "http:some-domain.com:80"
     refute Connections.checkin(url, name)
@@ -112,6 +157,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
   end
 
   test "reuse connection for idna domains", %{name: name} do
+    open_mock()
     url = "http://ですsome-domain.com"
     refute Connections.checkin(url, name)
 
@@ -140,6 +186,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
   end
 
   test "reuse for ipv4", %{name: name} do
+    open_mock()
     url = "http://127.0.0.1"
 
     refute Connections.checkin(url, name)
@@ -183,6 +230,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
   end
 
   test "reuse for ipv6", %{name: name} do
+    open_mock()
     url = "http://[2a03:2880:f10c:83:face:b00c:0:25de]"
 
     refute Connections.checkin(url, name)
@@ -212,6 +260,10 @@ defmodule Pleroma.Pool.ConnectionsTest do
   end
 
   test "up and down ipv4", %{name: name} do
+    open_mock()
+    |> info_mock()
+    |> allow(self(), name)
+
     self = self()
     url = "http://127.0.0.1"
     :ok = Conn.open(url, name)
@@ -233,6 +285,11 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
   test "up and down ipv6", %{name: name} do
     self = self()
+
+    open_mock()
+    |> info_mock()
+    |> allow(self, name)
+
     url = "http://[2a03:2880:f10c:83:face:b00c:0:25de]"
     :ok = Conn.open(url, name)
     conn = Connections.checkin(url, name)
@@ -252,6 +309,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
   end
 
   test "reuses connection based on protocol", %{name: name} do
+    open_mock(2)
     http_url = "http://some-domain.com"
     http_key = "http:some-domain.com:80"
     https_url = "https://some-domain.com"
@@ -290,6 +348,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
   end
 
   test "connection can't get up", %{name: name} do
+    expect(GunMock, :open, &start_and_register(&1, &2, &3))
     url = "http://gun-not-up.com"
 
     assert capture_log(fn ->
@@ -301,6 +360,11 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
   test "process gun_down message and then gun_up", %{name: name} do
     self = self()
+
+    open_mock()
+    |> info_mock()
+    |> allow(self, name)
+
     url = "http://gun-down-and-up.com"
     key = "http:gun-down-and-up.com:80"
     :ok = Conn.open(url, name)
@@ -351,6 +415,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
   end
 
   test "async processes get same conn for same domain", %{name: name} do
+    open_mock()
     url = "http://some-domain.com"
     :ok = Conn.open(url, name)
 
@@ -383,6 +448,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
   end
 
   test "remove frequently used and idle", %{name: name} do
+    open_mock(3)
     self = self()
     http_url = "http://some-domain.com"
     https_url = "https://some-domain.com"
@@ -437,6 +503,9 @@ defmodule Pleroma.Pool.ConnectionsTest do
 
   describe "with proxy" do
     test "as ip", %{name: name} do
+      open_mock()
+      |> connect_mock()
+
       url = "http://proxy-string.com"
       key = "http:proxy-string.com:80"
       :ok = Conn.open(url, name, proxy: {{127, 0, 0, 1}, 8123})
@@ -458,6 +527,9 @@ defmodule Pleroma.Pool.ConnectionsTest do
     end
 
     test "as host", %{name: name} do
+      open_mock()
+      |> connect_mock()
+
       url = "http://proxy-tuple-atom.com"
       :ok = Conn.open(url, name, proxy: {'localhost', 9050})
       conn = Connections.checkin(url, name)
@@ -477,6 +549,9 @@ defmodule Pleroma.Pool.ConnectionsTest do
     end
 
     test "as ip and ssl", %{name: name} do
+      open_mock()
+      |> connect_mock()
+
       url = "https://proxy-string.com"
 
       :ok = Conn.open(url, name, proxy: {{127, 0, 0, 1}, 8123})
@@ -497,6 +572,9 @@ defmodule Pleroma.Pool.ConnectionsTest do
     end
 
     test "as host and ssl", %{name: name} do
+      open_mock()
+      |> connect_mock()
+
       url = "https://proxy-tuple-atom.com"
       :ok = Conn.open(url, name, proxy: {'localhost', 9050})
       conn = Connections.checkin(url, name)
@@ -516,6 +594,8 @@ defmodule Pleroma.Pool.ConnectionsTest do
     end
 
     test "with socks type", %{name: name} do
+      open_mock()
+
       url = "http://proxy-socks.com"
 
       :ok = Conn.open(url, name, proxy: {:socks5, 'localhost', 1234})
@@ -537,6 +617,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
     end
 
     test "with socks4 type and ssl", %{name: name} do
+      open_mock()
       url = "https://proxy-socks.com"
 
       :ok = Conn.open(url, name, proxy: {:socks4, 'localhost', 1234})
@@ -667,15 +748,13 @@ defmodule Pleroma.Pool.ConnectionsTest do
     end
   end
 
-  test "count/1", %{name: name} do
+  test "count/1" do
+    name = :test_count
+    {:ok, _} = Connections.start_link({name, [checkin_timeout: 150]})
     assert Connections.count(name) == 0
     Connections.add_conn(name, "1", %Conn{conn: self()})
     assert Connections.count(name) == 1
     Connections.remove_conn(name, "1")
     assert Connections.count(name) == 0
-  end
-
-  defp now do
-    :os.system_time(:second)
   end
 end

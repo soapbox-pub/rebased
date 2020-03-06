@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTP.AdapterHelper.HackneyTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   use Pleroma.Tests.Helpers
 
   alias Pleroma.Config
@@ -20,11 +20,7 @@ defmodule Pleroma.HTTP.AdapterHelper.HackneyTest do
     end
 
     test "add proxy and opts from config", %{uri: uri} do
-      proxy = Config.get([:http, :proxy_url])
-      Config.put([:http, :proxy_url], "localhost:8123")
-      on_exit(fn -> Config.put([:http, :proxy_url], proxy) end)
-
-      opts = Hackney.options(uri)
+      opts = Hackney.options([proxy: "localhost:8123"], uri)
 
       assert opts[:a] == 1
       assert opts[:b] == 2

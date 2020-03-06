@@ -5,15 +5,27 @@
 defmodule Pleroma.HTTP.AdapterHelper.GunTest do
   use ExUnit.Case, async: true
   use Pleroma.Tests.Helpers
+
   import ExUnit.CaptureLog
+  import Mox
+
   alias Pleroma.Config
   alias Pleroma.Gun.Conn
   alias Pleroma.HTTP.AdapterHelper.Gun
   alias Pleroma.Pool.Connections
 
-  setup_all do
-    {:ok, _} = Registry.start_link(keys: :unique, name: Pleroma.GunMock)
+  setup :verify_on_exit!
+
+  defp gun_mock(_) do
+    gun_mock()
     :ok
+  end
+
+  defp gun_mock do
+    Pleroma.GunMock
+    |> expect(:open, fn _, _, _ -> Task.start_link(fn -> Process.sleep(1000) end) end)
+    |> expect(:await_up, fn _, _ -> {:ok, :http} end)
+    |> expect(:set_owner, fn _, _ -> :ok end)
   end
 
   describe "options/1" do
@@ -24,23 +36,20 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
     test "https url with default port" do
       uri = URI.parse("https://example.com")
 
-      opts = Gun.options(uri)
+      opts = Gun.options([receive_conn: false], uri)
       assert opts[:certificates_verification]
-      tls_opts = opts[:tls_opts]
-      assert tls_opts[:verify] == :verify_peer
-      assert tls_opts[:depth] == 20
-      assert tls_opts[:reuse_sessions] == false
+      refute opts[:tls_opts] == []
 
-      assert tls_opts[:verify_fun] ==
+      assert opts[:tls_opts][:verify_fun] ==
                {&:ssl_verify_hostname.verify_fun/3, [check_hostname: 'example.com']}
 
-      assert File.exists?(tls_opts[:cacertfile])
+      assert File.exists?(opts[:tls_opts][:cacertfile])
     end
 
     test "https ipv4 with default port" do
       uri = URI.parse("https://127.0.0.1")
 
-      opts = Gun.options(uri)
+      opts = Gun.options([receive_conn: false], uri)
 
       assert opts[:tls_opts][:verify_fun] ==
                {&:ssl_verify_hostname.verify_fun/3, [check_hostname: '127.0.0.1']}
@@ -49,7 +58,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
     test "https ipv6 with default port" do
       uri = URI.parse("https://[2a03:2880:f10c:83:face:b00c:0:25de]")
 
-      opts = Gun.options(uri)
+      opts = Gun.options([receive_conn: false], uri)
 
       assert opts[:tls_opts][:verify_fun] ==
                {&:ssl_verify_hostname.verify_fun/3,
@@ -59,32 +68,14 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
     test "https url with non standart port" do
       uri = URI.parse("https://example.com:115")
 
-      opts = Gun.options(uri)
+      opts = Gun.options([receive_conn: false], uri)
 
       assert opts[:certificates_verification]
       assert opts[:transport] == :tls
     end
 
-    test "receive conn by default" do
-      uri = URI.parse("http://another-domain.com")
-      :ok = Conn.open(uri, :gun_connections)
-
-      received_opts = Gun.options(uri)
-      assert received_opts[:close_conn] == false
-      assert is_pid(received_opts[:conn])
-    end
-
-    test "don't receive conn if receive_conn is false" do
-      uri = URI.parse("http://another-domain2.com")
-      :ok = Conn.open(uri, :gun_connections)
-
-      opts = [receive_conn: false]
-      received_opts = Gun.options(opts, uri)
-      assert received_opts[:close_conn] == nil
-      assert received_opts[:conn] == nil
-    end
-
     test "get conn on next request" do
+      gun_mock()
       level = Application.get_env(:logger, :level)
       Logger.configure(level: :debug)
       on_exit(fn -> Logger.configure(level: level) end)
@@ -105,12 +96,13 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
     end
 
     test "merges with defaul http adapter config" do
-      defaults = Gun.options(URI.parse("https://example.com"))
+      defaults = Gun.options([receive_conn: false], URI.parse("https://example.com"))
       assert Keyword.has_key?(defaults, :a)
       assert Keyword.has_key?(defaults, :b)
     end
 
     test "default ssl adapter opts with connection" do
+      gun_mock()
       uri = URI.parse("https://some-domain.com")
 
       :ok = Conn.open(uri, :gun_connections)
@@ -118,10 +110,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
       opts = Gun.options(uri)
 
       assert opts[:certificates_verification]
-      tls_opts = opts[:tls_opts]
-      assert tls_opts[:verify] == :verify_peer
-      assert tls_opts[:depth] == 20
-      assert tls_opts[:reuse_sessions] == false
+      refute opts[:tls_opts] == []
 
       assert opts[:close_conn] == false
       assert is_pid(opts[:conn])
@@ -158,7 +147,32 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
     end
   end
 
+  describe "options/1 with receive_conn parameter" do
+    setup :gun_mock
+
+    test "receive conn by default" do
+      uri = URI.parse("http://another-domain.com")
+      :ok = Conn.open(uri, :gun_connections)
+
+      received_opts = Gun.options(uri)
+      assert received_opts[:close_conn] == false
+      assert is_pid(received_opts[:conn])
+    end
+
+    test "don't receive conn if receive_conn is false" do
+      uri = URI.parse("http://another-domain.com")
+      :ok = Conn.open(uri, :gun_connections)
+
+      opts = [receive_conn: false]
+      received_opts = Gun.options(opts, uri)
+      assert received_opts[:close_conn] == nil
+      assert received_opts[:conn] == nil
+    end
+  end
+
   describe "after_request/1" do
+    setup :gun_mock
+
     test "body_as not chunks" do
       uri = URI.parse("http://some-domain.com")
       :ok = Conn.open(uri, :gun_connections)
@@ -223,7 +237,6 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
       uri = URI.parse("http://127.0.0.1")
       :ok = Conn.open(uri, :gun_connections)
       opts = Gun.options(uri)
-      send(:gun_connections, {:gun_up, opts[:conn], :http})
       :ok = Gun.after_request(opts)
       conn = opts[:conn]
 
@@ -242,7 +255,6 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
       uri = URI.parse("http://[2a03:2880:f10c:83:face:b00c:0:25de]")
       :ok = Conn.open(uri, :gun_connections)
       opts = Gun.options(uri)
-      send(:gun_connections, {:gun_up, opts[:conn], :http})
       :ok = Gun.after_request(opts)
       conn = opts[:conn]
 

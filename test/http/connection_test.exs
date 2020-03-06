@@ -3,16 +3,16 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTP.ConnectionTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   use Pleroma.Tests.Helpers
+
   import ExUnit.CaptureLog
+  import Mox
+
   alias Pleroma.Config
   alias Pleroma.HTTP.Connection
 
-  setup_all do
-    {:ok, _} = Registry.start_link(keys: :unique, name: Pleroma.GunMock)
-    :ok
-  end
+  setup :verify_on_exit!
 
   describe "parse_host/1" do
     test "as atom to charlist" do
@@ -123,16 +123,19 @@ defmodule Pleroma.HTTP.ConnectionTest do
 
       uri = URI.parse("https://some-domain.com")
 
-      pid = Process.whereis(:federation)
-      :ok = Pleroma.Gun.Conn.open(uri, :gun_connections, genserver_pid: pid)
+      Pleroma.GunMock
+      |> expect(:open, fn 'some-domain.com', 443, _ ->
+        Task.start_link(fn -> Process.sleep(1000) end)
+      end)
+      |> expect(:await_up, fn _, _ -> {:ok, :http2} end)
+      |> expect(:set_owner, fn _, _ -> :ok end)
+
+      :ok = Pleroma.Gun.Conn.open(uri, :gun_connections)
 
       opts = Connection.options(uri)
 
       assert opts[:certificates_verification]
-      tls_opts = opts[:tls_opts]
-      assert tls_opts[:verify] == :verify_peer
-      assert tls_opts[:depth] == 20
-      assert tls_opts[:reuse_sessions] == false
+      refute opts[:tls_opts] == []
 
       assert opts[:close_conn] == false
       assert is_pid(opts[:conn])
