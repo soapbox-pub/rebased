@@ -5,6 +5,7 @@
 defmodule Pleroma.Pool.Supervisor do
   use Supervisor
 
+  alias Pleroma.Config
   alias Pleroma.Pool
 
   def start_link(args) do
@@ -17,8 +18,7 @@ defmodule Pleroma.Pool.Supervisor do
         %{
           id: Pool.Connections,
           start:
-            {Pool.Connections, :start_link,
-             [{:gun_connections, Pleroma.Config.get([:connections_pool])}]}
+            {Pool.Connections, :start_link, [{:gun_connections, Config.get([:connections_pool])}]}
         }
       ] ++ pools()
 
@@ -26,7 +26,16 @@ defmodule Pleroma.Pool.Supervisor do
   end
 
   defp pools do
-    for {pool_name, pool_opts} <- Pleroma.Config.get([:pools]) do
+    pools = Config.get(:pools)
+
+    pools =
+      if Config.get([Pleroma.Upload, :proxy_remote]) == false do
+        Keyword.delete(pools, :upload)
+      else
+        pools
+      end
+
+    for {pool_name, pool_opts} <- pools do
       pool_opts
       |> Keyword.put(:id, {Pool, pool_name})
       |> Keyword.put(:name, pool_name)
