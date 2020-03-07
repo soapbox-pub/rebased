@@ -12,6 +12,19 @@ defmodule Mix.Pleroma do
     end
 
     {:ok, _} = Application.ensure_all_started(:pleroma)
+
+    if Pleroma.Config.get(:env) not in [:test, :benchmark] do
+      pleroma_rebooted?()
+    end
+  end
+
+  defp pleroma_rebooted? do
+    if Restarter.Pleroma.rebooted?() do
+      :ok
+    else
+      Process.sleep(10)
+      pleroma_rebooted?()
+    end
   end
 
   def load_pleroma do

@@ -29,4 +29,16 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
     assert email.html_body =~ user2.nickname
     assert email.html_body =~ "cofe"
   end
+
+  test "it doesn't fail when admin has no email" do
+    yesterday = NaiveDateTime.utc_now() |> Timex.shift(days: -1)
+    insert(:user, %{is_admin: true, email: nil})
+    insert(:user, %{inserted_at: yesterday})
+    user = insert(:user, %{inserted_at: yesterday})
+
+    CommonAPI.post(user, %{"status" => "cofe"})
+
+    NewUsersDigestWorker.perform(nil, nil)
+    ObanHelpers.perform_all()
+  end
 end

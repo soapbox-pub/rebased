@@ -1880,10 +1880,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} deleted status ##{id}"
     end
 
-    test "returns error when status is not exist", %{conn: conn} do
+    test "returns 404 when the status does not exist", %{conn: conn} do
       conn = delete(conn, "/api/pleroma/admin/statuses/test")
 
-      assert json_response(conn, :bad_request) == "Could not delete"
+      assert json_response(conn, :not_found) == "Not found"
     end
   end
 
