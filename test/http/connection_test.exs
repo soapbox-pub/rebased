@@ -7,12 +7,9 @@ defmodule Pleroma.HTTP.ConnectionTest do
   use Pleroma.Tests.Helpers
 
   import ExUnit.CaptureLog
-  import Mox
 
   alias Pleroma.Config
   alias Pleroma.HTTP.Connection
-
-  setup :verify_on_exit!
 
   describe "parse_host/1" do
     test "as atom to charlist" do
@@ -114,31 +111,6 @@ defmodule Pleroma.HTTP.ConnectionTest do
       opts = Connection.options(%URI{}, proxy: {'example.com', 4321})
 
       assert opts[:proxy] == {'example.com', 4321}
-    end
-
-    test "default ssl adapter opts with connection" do
-      adapter = Application.get_env(:tesla, :adapter)
-      Application.put_env(:tesla, :adapter, Tesla.Adapter.Gun)
-      on_exit(fn -> Application.put_env(:tesla, :adapter, adapter) end)
-
-      uri = URI.parse("https://some-domain.com")
-
-      Pleroma.GunMock
-      |> expect(:open, fn 'some-domain.com', 443, _ ->
-        Task.start_link(fn -> Process.sleep(1000) end)
-      end)
-      |> expect(:await_up, fn _, _ -> {:ok, :http2} end)
-      |> expect(:set_owner, fn _, _ -> :ok end)
-
-      :ok = Pleroma.Gun.Conn.open(uri, :gun_connections)
-
-      opts = Connection.options(uri)
-
-      assert opts[:certificates_verification]
-      refute opts[:tls_opts] == []
-
-      assert opts[:close_conn] == false
-      assert is_pid(opts[:conn])
     end
   end
 end

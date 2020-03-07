@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTPTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   use Pleroma.Tests.Helpers
   import Tesla.Mock
   alias Pleroma.HTTP
