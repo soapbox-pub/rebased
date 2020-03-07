@@ -23,7 +23,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
 
   defp gun_mock do
     Pleroma.GunMock
-    |> expect(:open, fn _, _, _ -> Task.start_link(fn -> Process.sleep(1000) end) end)
+    |> stub(:open, fn _, _, _ -> Task.start_link(fn -> Process.sleep(1000) end) end)
     |> expect(:await_up, fn _, _ -> {:ok, :http} end)
     |> expect(:set_owner, fn _, _ -> :ok end)
   end
