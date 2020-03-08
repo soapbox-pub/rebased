@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
@@ -74,5 +74,14 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
     conn = post(conn, "/api/v1/reports", %{"status_ids" => [activity.id], "account_id" => "foo"})
 
     assert json_response(conn, 400) == %{"error" => "Account not found"}
+  end
+
+  test "doesn't fail if an admin has no email", %{conn: conn, target_user: target_user} do
+    insert(:user, %{is_admin: true, email: nil})
+
+    assert %{"action_taken" => false, "id" => _} =
+             conn
+             |> post("/api/v1/reports", %{"account_id" => target_user.id})
+             |> json_response(200)
   end
 end

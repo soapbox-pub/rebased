@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity.Queries do
@@ -30,7 +30,7 @@ defmodule Pleroma.Activity.Queries do
     )
   end
 
-  @spec by_author(query, String.t()) :: query
+  @spec by_author(query, User.t()) :: query
   def by_author(query \\ Activity, %User{ap_id: ap_id}) do
     from(a in query, where: a.actor == ^ap_id)
   end

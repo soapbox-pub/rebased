@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
@@ -1880,10 +1880,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} deleted status ##{id}"
     end
 
-    test "returns error when status is not exist", %{conn: conn} do
+    test "returns 404 when the status does not exist", %{conn: conn} do
       conn = delete(conn, "/api/pleroma/admin/statuses/test")
 
-      assert json_response(conn, :bad_request) == "Could not delete"
+      assert json_response(conn, :not_found) == "Not found"
     end
   end
 
@@ -3065,6 +3065,52 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "GET /api/pleroma/admin/statuses" do
+    test "returns all public, unlisted, and direct statuses", %{conn: conn, admin: admin} do
+      blocked = insert(:user)
+      user = insert(:user)
+      User.block(admin, blocked)
+
+      {:ok, _} =
+        CommonAPI.post(user, %{"status" => "@#{admin.nickname}", "visibility" => "direct"})
+
+      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "unlisted"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+      {:ok, _} = CommonAPI.post(blocked, %{"status" => ".", "visibility" => "public"})
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/statuses")
+        |> json_response(200)
+
+      refute "private" in Enum.map(response, & &1["visibility"])
+      assert length(response) == 4
+    end
+
+    test "returns only local statuses with local_only on", %{conn: conn} do
+      user = insert(:user)
+      remote_user = insert(:user, local: false, nickname: "archaeme@archae.me")
+      insert(:note_activity, user: user, local: true)
+      insert(:note_activity, user: remote_user, local: false)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/statuses?local_only=true")
+        |> json_response(200)
+
+      assert length(response) == 1
+    end
+
+    test "returns private statuses with godmode on", %{conn: conn} do
+      user = insert(:user)
+      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+      conn = get(conn, "/api/pleroma/admin/statuses?godmode=true")
+      assert json_response(conn, 200) |> length() == 2
+    end
+  end
+
   describe "GET /api/pleroma/admin/users/:nickname/statuses" do
     setup do
       user = insert(:user)
@@ -3114,6 +3160,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?godmode=true")
 
       assert json_response(conn, 200) |> length() == 5
+    end
+
+    test "excludes reblogs by default", %{conn: conn, user: user} do
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "."})
+      {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, other_user)
+
+      conn_res = get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses")
+      assert json_response(conn_res, 200) |> length() == 0
+
+      conn_res =
+        get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses?with_reblogs=true")
+
+      assert json_response(conn_res, 200) |> length() == 1
     end
   end
 
@@ -3397,7 +3457,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user = insert(:user, local: false, nickname: "archaeme@archae.me")
       user2 = insert(:user, local: false, nickname: "test@test.com")
       insert_pair(:note_activity, user: user)
-      insert(:note_activity, user: user2)
+      activity = insert(:note_activity, user: user2)
 
       ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses")
 
@@ -3416,6 +3476,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       response = json_response(ret_conn, 200)
 
       assert Enum.empty?(response)
+
+      CommonAPI.repeat(activity.id, user)
+
+      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses")
+      response = json_response(ret_conn, 200)
+      assert length(response) == 2
+
+      ret_conn = get(conn, "/api/pleroma/admin/instances/archae.me/statuses?with_reblogs=true")
+      response = json_response(ret_conn, 200)
+      assert length(response) == 3
     end
   end
 

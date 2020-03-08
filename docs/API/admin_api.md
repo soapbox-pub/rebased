@@ -260,6 +260,33 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `nickname` or `id`
   - *optional* `page_size`: number of statuses to return (default is `20`)
   - *optional* `godmode`: `true`/`false` – allows to see private statuses
+  - *optional* `with_reblogs`: `true`/`false` – allows to see reblogs (default is false)
+- Response:
+  - On failure: `Not found`
+  - On success: JSON array of user's latest statuses
+
+## `GET /api/pleroma/admin/instances/:instance/statuses`
+
+### Retrive instance's latest statuses
+
+- Params:
+  - `instance`: instance name
+  - *optional* `page_size`: number of statuses to return (default is `20`)
+  - *optional* `godmode`: `true`/`false` – allows to see private statuses
+  - *optional* `with_reblogs`: `true`/`false` – allows to see reblogs (default is false)
+- Response:
+  - On failure: `Not found`
+  - On success: JSON array of instance's latest statuses
+
+## `GET /api/pleroma/admin/statuses`
+
+### Retrives all latest statuses
+
+- Params:
+  - *optional* `page_size`: number of statuses to return (default is `20`)
+  - *optional* `local_only`: excludes remote statuses
+  - *optional* `godmode`: `true`/`false` – allows to see private statuses
+  - *optional* `with_reblogs`: `true`/`false` – allows to see reblogs (default is false)
 - Response:
   - On failure: `Not found`
   - On success: JSON array of user's latest statuses

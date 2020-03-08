@@ -2,9 +2,11 @@
 
 This is a cheat sheet for Pleroma configuration file, any setting possible to configure should be listed here.
 
-Pleroma configuration works by first importing the base config (`config/config.exs` on source installs, compiled-in on OTP releases), then overriding it by the environment config (`config/$MIX_ENV.exs` on source installs, N/A to OTP releases) and then overriding it by user config (`config/$MIX_ENV.secret.exs` on source installs, typically `/etc/pleroma/config.exs` on OTP releases).
+For OTP installations the configuration is typically stored in `/etc/pleroma/config.exs`.
 
-You shouldn't edit the base config directly to avoid breakages and merge conflicts, but it can be used as a reference if you don't understand how an option is supposed to be formatted, the latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs).
+For from source installations Pleroma configuration works by first importing the base config `config/config.exs`, then overriding it by the environment config `config/$MIX_ENV.exs` and then overriding it by user config `config/$MIX_ENV.secret.exs`. In from source installations you should always make the changes to the user config and NEVER to the base config to avoid breakages and merge conflicts. So for production you change/add configuration to `config/prod.secret.exs`.
+
+To add configuration to your config file, you can copy it from the base config. The latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs). You can also use this file if you don't know how an option is supposed to be formatted.
 
 ## :instance
 * `name`: The instance’s name.
@@ -150,8 +152,12 @@ config :pleroma, :mrf_user_allowlist,
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
 
 ### :fetch_initial_posts
-* `enabled`: if enabled, when a new user is federated with, fetch some of their latest posts
-* `pages`: the amount of pages to fetch
+
+!!! warning
+    Be careful with this setting, fetching posts may lead to new users being discovered whose posts will then also be fetched. This can lead to serious load on your instance and database.
+
+* `enabled`: If enabled, when a new user is discovered by your instance, fetch some of their latest posts.
+* `pages`: The amount of pages to fetch
 
 ## Pleroma.ScheduledActivity
 
@@ -343,6 +349,7 @@ Means that:
 Supported rate limiters:
 
 * `:search` - Account/Status search.
+* `:timeline` - Timeline requests (each timeline has it's own limiter).
 * `:app_account_creation` - Account registration from the API.
 * `:relations_actions` - Following/Unfollowing in general.
 * `:relation_id_action` - Following/Unfollowing for a specific user.

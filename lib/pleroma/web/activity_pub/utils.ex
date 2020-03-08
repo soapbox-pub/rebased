@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Utils do
@@ -45,8 +45,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Map.put(params, "actor", get_ap_id(params["actor"]))
   end
 
-  @spec determine_explicit_mentions(map()) :: map()
-  def determine_explicit_mentions(%{"tag" => tag} = _) when is_list(tag) do
+  @spec determine_explicit_mentions(map()) :: [any]
+  def determine_explicit_mentions(%{"tag" => tag}) when is_list(tag) do
     Enum.flat_map(tag, fn
       %{"type" => "Mention", "href" => href} -> [href]
       _ -> []
@@ -427,7 +427,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Updates a follow activity's state (for locked accounts).
   """
-  @spec update_follow_state_for_all(Activity.t(), String.t()) :: {:ok, Activity} | {:error, any()}
+  @spec update_follow_state_for_all(Activity.t(), String.t()) :: {:ok, Activity | nil}
   def update_follow_state_for_all(
         %Activity{data: %{"actor" => actor, "object" => object}} = activity,
         state

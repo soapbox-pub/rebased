@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Conversation.Participation do
@@ -133,10 +133,8 @@ defmodule Pleroma.Conversation.Participation do
       [user.id | user_ids]
       |> Enum.uniq()
       |> Enum.reduce([], fn user_id, acc ->
-        case FlakeId.Ecto.CompatType.dump(user_id) do
-          {:ok, user_id} -> [user_id | acc]
-          _ -> acc
-        end
+        {:ok, user_id} = FlakeId.Ecto.CompatType.dump(user_id)
+        [user_id | acc]
       end)
 
     conversation_subquery =

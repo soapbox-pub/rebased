@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
@@ -31,6 +31,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
 
       from(u in inactive_users_query,
         where: fragment(~s(? ->'digest' @> 'true'), u.email_notifications),
+        where: not is_nil(u.email),
         where: u.last_digest_emailed_at < datetime_add(^now, ^negative_interval, "day"),
         select: u
       )

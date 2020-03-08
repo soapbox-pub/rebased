@@ -402,6 +402,8 @@ config :phoenix, :format_encoders, json: Jason
 
 config :phoenix, :json_library, Jason
 
+config :phoenix, :filter_parameters, ["password", "confirm"]
+
 config :pleroma, :gopher,
   enabled: false,
   ip: {0, 0, 0, 0},
@@ -597,6 +599,7 @@ config :http_signatures,
 
 config :pleroma, :rate_limit,
   authentication: {60_000, 15},
+  timeline: {500, 3},
   search: [{1000, 10}, {1000, 30}],
   app_account_creation: {1_800_000, 25},
   relations_actions: {10_000, 10},
@@ -621,7 +624,9 @@ config :pleroma, :modules, runtime_dir: "instance/modules"
 
 config :pleroma, configurable_from_database: false
 
-config :pleroma, Pleroma.Repo, parameters: [gin_fuzzy_search_limit: "500"]
+config :pleroma, Pleroma.Repo,
+  parameters: [gin_fuzzy_search_limit: "500"],
+  prepare: :unnamed
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

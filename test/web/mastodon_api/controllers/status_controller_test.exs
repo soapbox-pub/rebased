@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
@@ -476,6 +476,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     assert id == to_string(activity.id)
   end
 
+  test "getting a status that doesn't exist returns 404" do
+    %{conn: conn} = oauth_access(["read:statuses"])
+    activity = insert(:note_activity)
+
+    conn = get(conn, "/api/v1/statuses/#{String.downcase(activity.id)}")
+
+    assert json_response(conn, 404) == %{"error" => "Record not found"}
+  end
+
   test "get a direct status" do
     %{user: user, conn: conn} = oauth_access(["read:statuses"])
     other_user = insert(:user)
@@ -518,6 +527,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert %{} = json_response(conn, 200)
 
       refute Activity.get_by_id(activity.id)
+    end
+
+    test "when it doesn't exist" do
+      %{user: author, conn: conn} = oauth_access(["write:statuses"])
+      activity = insert(:note_activity, user: author)
+
+      conn =
+        conn
+        |> assign(:user, author)
+        |> delete("/api/v1/statuses/#{String.downcase(activity.id)}")
+
+      assert %{"error" => "Record not found"} == json_response(conn, 404)
     end
 
     test "when you didn't create it" do
@@ -574,6 +595,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert to_string(activity.id) == id
     end
 
+    test "returns 404 if the reblogged status doesn't exist", %{conn: conn} do
+      activity = insert(:note_activity)
+
+      conn = post(conn, "/api/v1/statuses/#{String.downcase(activity.id)}/reblog")
+
+      assert %{"error" => "Record not found"} = json_response(conn, 404)
+    end
+
     test "reblogs privately and returns the reblogged status", %{conn: conn} do
       activity = insert(:note_activity)
 
@@ -626,12 +655,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       assert to_string(activity.id) == id
     end
-
-    test "returns 400 error when activity is not exist", %{conn: conn} do
-      conn = post(conn, "/api/v1/statuses/foo/reblog")
-
-      assert json_response(conn, 400) == %{"error" => "Could not repeat"}
-    end
   end
 
   describe "unreblogging" do
@@ -649,10 +672,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert to_string(activity.id) == id
     end
 
-    test "returns 400 error when activity is not exist", %{conn: conn} do
+    test "returns 404 error when activity does not exist", %{conn: conn} do
       conn = post(conn, "/api/v1/statuses/foo/unreblog")
 
-      assert json_response(conn, 400) == %{"error" => "Could not unrepeat"}
+      assert json_response(conn, 404) == %{"error" => "Record not found"}
     end
   end
 
@@ -677,10 +700,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert post(conn, "/api/v1/statuses/#{activity.id}/favourite") |> json_response(200)
     end
 
-    test "returns 400 error for a wrong id", %{conn: conn} do
+    test "returns 404 error for a wrong id", %{conn: conn} do
       conn = post(conn, "/api/v1/statuses/1/favourite")
 
-      assert json_response(conn, 400) == %{"error" => "Could not favorite"}
+      assert json_response(conn, 404) == %{"error" => "Record not found"}
     end
   end
 
@@ -700,10 +723,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert to_string(activity.id) == id
     end
 
-    test "returns 400 error for a wrong id", %{conn: conn} do
+    test "returns 404 error for a wrong id", %{conn: conn} do
       conn = post(conn, "/api/v1/statuses/1/unfavourite")
 
-      assert json_response(conn, 400) == %{"error" => "Could not unfavorite"}
+      assert json_response(conn, 404) == %{"error" => "Record not found"}
     end
   end
 

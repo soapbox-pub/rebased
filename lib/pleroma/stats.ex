@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Stats do
@@ -10,19 +10,10 @@ defmodule Pleroma.Stats do
 
   use GenServer
 
-  @init_state %{
-    peers: [],
-    stats: %{
-      domain_count: 0,
-      status_count: 0,
-      user_count: 0
-    }
-  }
-
   def start_link(_) do
     GenServer.start_link(
       __MODULE__,
-      @init_state,
+      nil,
       name: __MODULE__
     )
   end
@@ -53,8 +44,8 @@ defmodule Pleroma.Stats do
     peers
   end
 
-  def init(args) do
-    {:ok, args}
+  def init(_args) do
+    {:ok, get_stat_data()}
   end
 
   def handle_call(:force_update, _from, _state) do

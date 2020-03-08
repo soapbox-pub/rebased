@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Pagination do
@@ -12,11 +12,15 @@ defmodule Pleroma.Pagination do
 
   alias Pleroma.Repo
 
+  @type type :: :keyset | :offset
+
   @default_limit 20
+  @max_limit 40
   @page_keys ["max_id", "min_id", "limit", "since_id", "order"]
 
   def page_keys, do: @page_keys
 
+  @spec fetch_paginated(Ecto.Query.t(), map(), type(), atom() | nil) :: [Ecto.Schema.t()]
   def fetch_paginated(query, params, type \\ :keyset, table_binding \\ nil)
 
   def fetch_paginated(query, %{"total" => true} = params, :keyset, table_binding) do
@@ -57,6 +61,7 @@ defmodule Pleroma.Pagination do
     |> Repo.all()
   end
 
+  @spec paginate(Ecto.Query.t(), map(), type(), atom() | nil) :: [Ecto.Schema.t()]
   def paginate(query, options, method \\ :keyset, table_binding \\ nil)
 
   def paginate(query, options, :keyset, table_binding) do
@@ -130,7 +135,11 @@ defmodule Pleroma.Pagination do
   end
 
   defp restrict(query, :limit, options, _table_binding) do
-    limit = Map.get(options, :limit, @default_limit)
+    limit =
+      case Map.get(options, :limit, @default_limit) do
+        limit when limit < @max_limit -> limit
+        _ -> @max_limit
+      end
 
     query
     |> limit(^limit)

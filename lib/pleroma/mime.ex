@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.MIME do
@@ -9,7 +9,7 @@ defmodule Pleroma.MIME do
   @default "application/octet-stream"
   @read_bytes 35
 
-  @spec file_mime_type(String.t()) ::
+  @spec file_mime_type(String.t(), String.t()) ::
           {:ok, content_type :: String.t(), filename :: String.t()} | {:error, any()} | :error
   def file_mime_type(path, filename) do
     with {:ok, content_type} <- file_mime_type(path),

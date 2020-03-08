@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Upload do
@@ -37,6 +37,7 @@ defmodule Pleroma.Upload do
           Plug.Upload.t()
           | (data_uri_string :: String.t())
           | {:from_local, name :: String.t(), id :: String.t(), path :: String.t()}
+          | map()
 
   @type option ::
           {:type, :avatar | :banner | :background}

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Captcha.Native do
@@ -10,8 +10,8 @@ defmodule Pleroma.Captcha.Native do
   @impl Service
   def new do
     case Captcha.get() do
-      {:timeout} ->
-        %{error: dgettext("errors", "Captcha timeout")}
+      :error ->
+        %{error: dgettext("errors", "Captcha error")}
 
       {:ok, answer_data, img_binary} ->
         %{
