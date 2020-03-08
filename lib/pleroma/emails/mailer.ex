@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.Mailer do
@@ -9,6 +9,7 @@ defmodule Pleroma.Emails.Mailer do
   The module contains functions to delivery email using Swoosh.Mailer.
   """
 
+  alias Pleroma.Workers.MailerWorker
   alias Swoosh.DeliveryError
 
   @otp_app :pleroma
@@ -19,7 +20,12 @@ defmodule Pleroma.Emails.Mailer do
 
   @doc "add email to queue"
   def deliver_async(email, config \\ []) do
-    PleromaJobQueue.enqueue(:mailer, __MODULE__, [:deliver_async, email, config])
+    encoded_email =
+      email
+      |> :erlang.term_to_binary()
+      |> Base.encode64()
+
+    MailerWorker.enqueue("email", %{"encoded_email" => encoded_email, "config" => config})
   end
 
   @doc "callback to perform send email from queue"

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ReportView do
@@ -7,21 +7,23 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
   alias Pleroma.Activity
   alias Pleroma.HTML
   alias Pleroma.User
+  alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", %{reports: reports}) do
     %{
-      reports: render_many(reports, __MODULE__, "show.json", as: :report)
+      reports:
+        reports[:items]
+        |> Enum.map(&Report.extract_report_info(&1))
+        |> Enum.map(&render(__MODULE__, "show.json", &1))
+        |> Enum.reverse(),
+      total: reports[:total]
     }
   end
 
-  def render("show.json", %{report: report}) do
-    user = User.get_cached_by_ap_id(report.data["actor"])
+  def render("show.json", %{report: report, user: user, account: account, statuses: statuses}) do
     created_at = Utils.to_masto_date(report.data["published"])
-
-    [account_ap_id | status_ap_ids] = report.data["object"]
-    account = User.get_cached_by_ap_id(account_ap_id)
 
     content =
       unless is_nil(report.data["content"]) do
@@ -30,11 +32,6 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
         nil
       end
 
-    statuses =
-      Enum.map(status_ap_ids, fn ap_id ->
-        Activity.get_by_ap_id_with_object(ap_id)
-      end)
-
     %{
       id: report.id,
       account: merge_account_views(account),
@@ -42,12 +39,61 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
       content: content,
       created_at: created_at,
       statuses: StatusView.render("index.json", %{activities: statuses, as: :activity}),
-      state: report.data["state"]
+      state: report.data["state"],
+      notes: render(__MODULE__, "index_notes.json", %{notes: report.report_notes})
+    }
+  end
+
+  def render("index_grouped.json", %{groups: groups}) do
+    reports =
+      Enum.map(groups, fn group ->
+        status =
+          case group.status do
+            %Activity{} = activity -> StatusView.render("show.json", %{activity: activity})
+            _ -> group.status
+          end
+
+        %{
+          date: group[:date],
+          account: group[:account],
+          status: Map.put_new(status, "deleted", false),
+          actors: Enum.map(group[:actors], &merge_account_views/1),
+          reports:
+            group[:reports]
+            |> Enum.map(&Report.extract_report_info(&1))
+            |> Enum.map(&render(__MODULE__, "show.json", &1))
+        }
+      end)
+
+    %{
+      reports: reports
+    }
+  end
+
+  def render("index_notes.json", %{notes: notes}) when is_list(notes) do
+    Enum.map(notes, &render(__MODULE__, "show_note.json", &1))
+  end
+
+  def render("index_notes.json", _), do: []
+
+  def render("show_note.json", %{
+        id: id,
+        content: content,
+        user_id: user_id,
+        inserted_at: inserted_at
+      }) do
+    user = User.get_by_id(user_id)
+
+    %{
+      id: id,
+      content: content,
+      user: merge_account_views(user),
+      created_at: Utils.to_masto_date(inserted_at)
     }
   end
 
   defp merge_account_views(%User{} = user) do
-    Pleroma.Web.MastodonAPI.AccountView.render("account.json", %{user: user})
+    Pleroma.Web.MastodonAPI.AccountView.render("show.json", %{user: user})
     |> Map.merge(Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user}))
   end
 

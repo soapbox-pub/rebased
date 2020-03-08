@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.ModerationLogView do
@@ -8,7 +8,10 @@ defmodule Pleroma.Web.AdminAPI.ModerationLogView do
   alias Pleroma.ModerationLog
 
   def render("index.json", %{log: log}) do
-    render_many(log, __MODULE__, "show.json", as: :log_entry)
+    %{
+      items: render_many(log.items, __MODULE__, "show.json", as: :log_entry),
+      total: log.count
+    }
   end
 
   def render("show.json", %{log_entry: log_entry}) do

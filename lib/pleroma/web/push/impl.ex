@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Push.Impl do
@@ -16,14 +16,14 @@ defmodule Pleroma.Web.Push.Impl do
   require Logger
   import Ecto.Query
 
-  @types ["Create", "Follow", "Announce", "Like"]
+  @types ["Create", "Follow", "Announce", "Like", "Move"]
 
   @doc "Performs sending notifications for user subscriptions"
   @spec perform(Notification.t()) :: list(any) | :error
   def perform(
         %{
-          activity: %{data: %{"type" => activity_type}, id: activity_id} = activity,
-          user_id: user_id
+          activity: %{data: %{"type" => activity_type}} = activity,
+          user: %User{id: user_id}
         } = notif
       )
       when activity_type in @types do
@@ -33,21 +33,23 @@ defmodule Pleroma.Web.Push.Impl do
     gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
     avatar_url = User.avatar_url(actor)
     object = Object.normalize(activity)
+    user = User.get_cached_by_id(user_id)
+    direct_conversation_id = Activity.direct_conversation_id(activity, user)
 
     for subscription <- fetch_subsriptions(user_id),
         get_in(subscription.data, ["alerts", type]) do
       %{
-        title: format_title(notif),
         access_token: subscription.token.token,
-        body: format_body(notif, actor, object),
         notification_id: notif.id,
         notification_type: type,
         icon: avatar_url,
         preferred_locale: "en",
         pleroma: %{
-          activity_id: activity_id
+          activity_id: notif.activity.id,
+          direct_conversation_id: direct_conversation_id
         }
       }
+      |> Map.merge(build_content(notif, actor, object))
       |> Jason.encode!()
       |> push_message(build_sub(subscription), gcm_api_key, subscription)
     end
@@ -97,6 +99,24 @@ defmodule Pleroma.Web.Push.Impl do
     }
   end
 
+  def build_content(
+        %{
+          activity: %{data: %{"directMessage" => true}},
+          user: %{notification_settings: %{privacy_option: true}}
+        },
+        actor,
+        _
+      ) do
+    %{title: "New Direct Message", body: "@#{actor.nickname}"}
+  end
+
+  def build_content(notif, actor, object) do
+    %{
+      title: format_title(notif),
+      body: format_body(notif, actor, object)
+    }
+  end
+
   def format_body(
         %{activity: %{data: %{"type" => "Create"}}},
         actor,
@@ -123,6 +143,10 @@ defmodule Pleroma.Web.Push.Impl do
       "Follow" -> "@#{actor.nickname} has followed you"
       "Like" -> "@#{actor.nickname} has favorited your post"
     end
+  end
+
+  def format_title(%{activity: %{data: %{"directMessage" => true}}}) do
+    "New Direct Message"
   end
 
   def format_title(%{activity: %{data: %{"type" => type}}}) do

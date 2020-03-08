@@ -1,12 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
   @moduledoc "Filter activities depending on their origin instance"
-  @behaviour MRF
+  @behaviour Pleroma.Web.ActivityPub.MRF
 
   require Pleroma.Constants
 
@@ -168,7 +168,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       when obj_type in ["Application", "Group", "Organization", "Person", "Service"] do
     actor_info = URI.parse(actor)
 
-    with {:ok, object} <- check_avatar_removal(actor_info, object),
+    with {:ok, object} <- check_accept(actor_info, object),
+         {:ok, object} <- check_reject(actor_info, object),
+         {:ok, object} <- check_avatar_removal(actor_info, object),
          {:ok, object} <- check_banner_removal(actor_info, object) do
       {:ok, object}
     else

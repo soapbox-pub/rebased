@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.RobotsTxt do
@@ -18,6 +18,7 @@ defmodule Mix.Tasks.Pleroma.RobotsTxt do
 
   """
   def run(["disallow_all"]) do
+    Mix.Pleroma.start_pleroma()
     static_dir = Pleroma.Config.get([:instance, :static_dir], "instance/static/")
 
     if !File.exists?(static_dir) do

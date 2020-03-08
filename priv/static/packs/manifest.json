@@ -1,4 +1,6 @@
 {
+  "arrow-key-navigation.js": "/packs/arrow-key-navigation.js",
+  "arrow-key-navigation.js.map": "/packs/arrow-key-navigation.js.map",
   "base_polyfills.js": "/packs/base_polyfills.js",
   "base_polyfills.js.map": "/packs/base_polyfills.js.map",
   "common.js": "/packs/common.js",
@@ -7,6 +9,8 @@
   "containers/media_container.js.map": "/packs/containers/media_container.js.map",
   "core/admin.js": "/packs/core/admin.js",
   "core/admin.js.map": "/packs/core/admin.js.map",
+  "core/auth.js": "/packs/core/auth.js",
+  "core/auth.js.map": "/packs/core/auth.js.map",
   "core/common.css": "/packs/core/common.css",
   "core/common.css.map": "/packs/core/common.css.map",
   "core/common.js": "/packs/core/common.js",
@@ -44,6 +48,16 @@
         "/packs/locales/glitch/ar.js.map"
       ]
     },
+    "locales/glitch/ast": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/ast.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/ast.js.map"
+      ]
+    },
     "locales/glitch/bg": {
       "js": [
         "/packs/locales.js",
@@ -52,6 +66,26 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/glitch/bg.js.map"
+      ]
+    },
+    "locales/glitch/bn": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/bn.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/bn.js.map"
+      ]
+    },
+    "locales/glitch/br": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/br.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/br.js.map"
       ]
     },
     "locales/glitch/ca": {
@@ -64,6 +98,46 @@
         "/packs/locales/glitch/ca.js.map"
       ]
     },
+    "locales/glitch/co": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/co.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/co.js.map"
+      ]
+    },
+    "locales/glitch/cs": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/cs.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/cs.js.map"
+      ]
+    },
+    "locales/glitch/cy": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/cy.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/cy.js.map"
+      ]
+    },
+    "locales/glitch/da": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/da.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/da.js.map"
+      ]
+    },
     "locales/glitch/de": {
       "js": [
         "/packs/locales.js",
@@ -72,6 +146,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/glitch/de.js.map"
+      ]
+    },
+    "locales/glitch/el": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/el.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/el.js.map"
       ]
     },
     "locales/glitch/en": {
@@ -94,6 +178,16 @@
         "/packs/locales/glitch/eo.js.map"
       ]
     },
+    "locales/glitch/es-AR": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/es-AR.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/es-AR.js.map"
+      ]
+    },
     "locales/glitch/es": {
       "js": [
         "/packs/locales.js",
@@ -102,6 +196,26 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/glitch/es.js.map"
+      ]
+    },
+    "locales/glitch/et": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/et.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/et.js.map"
+      ]
+    },
+    "locales/glitch/eu": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/eu.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/eu.js.map"
       ]
     },
     "locales/glitch/fa": {
@@ -134,6 +248,26 @@
         "/packs/locales/glitch/fr.js.map"
       ]
     },
+    "locales/glitch/ga": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/ga.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/ga.js.map"
+      ]
+    },
+    "locales/glitch/gl": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/gl.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/gl.js.map"
+      ]
+    },
     "locales/glitch/he": {
       "js": [
         "/packs/locales.js",
@@ -142,6 +276,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/glitch/he.js.map"
+      ]
+    },
+    "locales/glitch/hi": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/hi.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/hi.js.map"
       ]
     },
     "locales/glitch/hr": {
@@ -164,6 +308,16 @@
         "/packs/locales/glitch/hu.js.map"
       ]
     },
+    "locales/glitch/hy": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/hy.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/hy.js.map"
+      ]
+    },
     "locales/glitch/id": {
       "js": [
         "/packs/locales.js",
@@ -182,6 +336,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/glitch/io.js.map"
+      ]
+    },
+    "locales/glitch/is": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/is.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/is.js.map"
       ]
     },
     "locales/glitch/it": {
@@ -204,6 +368,46 @@
         "/packs/locales/glitch/ja.js.map"
       ]
     },
+    "locales/glitch/ka": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/ka.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/ka.js.map"
+      ]
+    },
+    "locales/glitch/kab": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/kab.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/kab.js.map"
+      ]
+    },
+    "locales/glitch/kk": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/kk.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/kk.js.map"
+      ]
+    },
+    "locales/glitch/kn": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/kn.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/kn.js.map"
+      ]
+    },
     "locales/glitch/ko": {
       "js": [
         "/packs/locales.js",
@@ -214,6 +418,66 @@
         "/packs/locales/glitch/ko.js.map"
       ]
     },
+    "locales/glitch/lt": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/lt.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/lt.js.map"
+      ]
+    },
+    "locales/glitch/lv": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/lv.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/lv.js.map"
+      ]
+    },
+    "locales/glitch/mk": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/mk.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/mk.js.map"
+      ]
+    },
+    "locales/glitch/ml": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/ml.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/ml.js.map"
+      ]
+    },
+    "locales/glitch/mr": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/mr.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/mr.js.map"
+      ]
+    },
+    "locales/glitch/ms": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/ms.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/ms.js.map"
+      ]
+    },
     "locales/glitch/nl": {
       "js": [
         "/packs/locales.js",
@@ -222,6 +486,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/glitch/nl.js.map"
+      ]
+    },
+    "locales/glitch/nn": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/nn.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/nn.js.map"
       ]
     },
     "locales/glitch/no": {
@@ -264,14 +538,24 @@
         "/packs/locales/glitch/pt-BR.js.map"
       ]
     },
-    "locales/glitch/pt": {
+    "locales/glitch/pt-PT": {
       "js": [
         "/packs/locales.js",
-        "/packs/locales/glitch/pt.js"
+        "/packs/locales/glitch/pt-PT.js"
       ],
       "js.map": [
         "/packs/locales.js.map",
-        "/packs/locales/glitch/pt.js.map"
+        "/packs/locales/glitch/pt-PT.js.map"
+      ]
+    },
+    "locales/glitch/ro": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/ro.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/ro.js.map"
       ]
     },
     "locales/glitch/ru": {
@@ -284,6 +568,56 @@
         "/packs/locales/glitch/ru.js.map"
       ]
     },
+    "locales/glitch/sk": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/sk.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/sk.js.map"
+      ]
+    },
+    "locales/glitch/sl": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/sl.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/sl.js.map"
+      ]
+    },
+    "locales/glitch/sq": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/sq.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/sq.js.map"
+      ]
+    },
+    "locales/glitch/sr-Latn": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/sr-Latn.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/sr-Latn.js.map"
+      ]
+    },
+    "locales/glitch/sr": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/sr.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/sr.js.map"
+      ]
+    },
     "locales/glitch/sv": {
       "js": [
         "/packs/locales.js",
@@ -292,6 +626,26 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/glitch/sv.js.map"
+      ]
+    },
+    "locales/glitch/ta": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/ta.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/ta.js.map"
+      ]
+    },
+    "locales/glitch/te": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/te.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/te.js.map"
       ]
     },
     "locales/glitch/th": {
@@ -322,6 +676,26 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/glitch/uk.js.map"
+      ]
+    },
+    "locales/glitch/ur": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/ur.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/ur.js.map"
+      ]
+    },
+    "locales/glitch/vi": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/glitch/vi.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/glitch/vi.js.map"
       ]
     },
     "locales/glitch/zh-CN": {
@@ -392,6 +766,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/vanilla/bn.js.map"
+      ]
+    },
+    "locales/vanilla/br": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/br.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/br.js.map"
       ]
     },
     "locales/vanilla/ca": {
@@ -484,6 +868,16 @@
         "/packs/locales/vanilla/eo.js.map"
       ]
     },
+    "locales/vanilla/es-AR": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/es-AR.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/es-AR.js.map"
+      ]
+    },
     "locales/vanilla/es": {
       "js": [
         "/packs/locales.js",
@@ -492,6 +886,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/vanilla/es.js.map"
+      ]
+    },
+    "locales/vanilla/et": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/et.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/et.js.map"
       ]
     },
     "locales/vanilla/eu": {
@@ -532,6 +936,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/vanilla/fr.js.map"
+      ]
+    },
+    "locales/vanilla/ga": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/ga.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/ga.js.map"
       ]
     },
     "locales/vanilla/gl": {
@@ -614,6 +1028,16 @@
         "/packs/locales/vanilla/io.js.map"
       ]
     },
+    "locales/vanilla/is": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/is.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/is.js.map"
+      ]
+    },
     "locales/vanilla/it": {
       "js": [
         "/packs/locales.js",
@@ -644,6 +1068,16 @@
         "/packs/locales/vanilla/ka.js.map"
       ]
     },
+    "locales/vanilla/kab": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/kab.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/kab.js.map"
+      ]
+    },
     "locales/vanilla/kk": {
       "js": [
         "/packs/locales.js",
@@ -652,6 +1086,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/vanilla/kk.js.map"
+      ]
+    },
+    "locales/vanilla/kn": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/kn.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/kn.js.map"
       ]
     },
     "locales/vanilla/ko": {
@@ -664,6 +1108,16 @@
         "/packs/locales/vanilla/ko.js.map"
       ]
     },
+    "locales/vanilla/lt": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/lt.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/lt.js.map"
+      ]
+    },
     "locales/vanilla/lv": {
       "js": [
         "/packs/locales.js",
@@ -672,6 +1126,36 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/vanilla/lv.js.map"
+      ]
+    },
+    "locales/vanilla/mk": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/mk.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/mk.js.map"
+      ]
+    },
+    "locales/vanilla/ml": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/ml.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/ml.js.map"
+      ]
+    },
+    "locales/vanilla/mr": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/mr.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/mr.js.map"
       ]
     },
     "locales/vanilla/ms": {
@@ -692,6 +1176,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/locales/vanilla/nl.js.map"
+      ]
+    },
+    "locales/vanilla/nn": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/nn.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/nn.js.map"
       ]
     },
     "locales/vanilla/no": {
@@ -734,14 +1228,14 @@
         "/packs/locales/vanilla/pt-BR.js.map"
       ]
     },
-    "locales/vanilla/pt": {
+    "locales/vanilla/pt-PT": {
       "js": [
         "/packs/locales.js",
-        "/packs/locales/vanilla/pt.js"
+        "/packs/locales/vanilla/pt-PT.js"
       ],
       "js.map": [
         "/packs/locales.js.map",
-        "/packs/locales/vanilla/pt.js.map"
+        "/packs/locales/vanilla/pt-PT.js.map"
       ]
     },
     "locales/vanilla/ro": {
@@ -874,6 +1368,26 @@
         "/packs/locales/vanilla/uk.js.map"
       ]
     },
+    "locales/vanilla/ur": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/ur.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/ur.js.map"
+      ]
+    },
+    "locales/vanilla/vi": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/vi.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/vi.js.map"
+      ]
+    },
     "locales/vanilla/zh-CN": {
       "js": [
         "/packs/locales.js",
@@ -912,6 +1426,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/core/admin.js.map"
+      ]
+    },
+    "core/auth": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/core/auth.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/core/auth.js.map"
       ]
     },
     "core/common": {
@@ -1060,6 +1584,16 @@
       "js.map": [
         "/packs/locales.js.map",
         "/packs/flavours/glitch/public.js.map"
+      ]
+    },
+    "flavours/glitch/settings": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/flavours/glitch/settings.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/flavours/glitch/settings.js.map"
       ]
     },
     "flavours/glitch/share": {
@@ -1299,12 +1833,16 @@
   "features/account_timeline.js.map": "/packs/features/account_timeline.js.map",
   "features/blocks.js": "/packs/features/blocks.js",
   "features/blocks.js.map": "/packs/features/blocks.js.map",
+  "features/bookmarked_statuses.js": "/packs/features/bookmarked_statuses.js",
+  "features/bookmarked_statuses.js.map": "/packs/features/bookmarked_statuses.js.map",
   "features/community_timeline.js": "/packs/features/community_timeline.js",
   "features/community_timeline.js.map": "/packs/features/community_timeline.js.map",
   "features/compose.js": "/packs/features/compose.js",
   "features/compose.js.map": "/packs/features/compose.js.map",
   "features/direct_timeline.js": "/packs/features/direct_timeline.js",
   "features/direct_timeline.js.map": "/packs/features/direct_timeline.js.map",
+  "features/directory.js": "/packs/features/directory.js",
+  "features/directory.js.map": "/packs/features/directory.js.map",
   "features/domain_blocks.js": "/packs/features/domain_blocks.js",
   "features/domain_blocks.js.map": "/packs/features/domain_blocks.js.map",
   "features/favourited_statuses.js": "/packs/features/favourited_statuses.js",
@@ -1321,8 +1859,12 @@
   "features/generic_not_found.js.map": "/packs/features/generic_not_found.js.map",
   "features/getting_started.js": "/packs/features/getting_started.js",
   "features/getting_started.js.map": "/packs/features/getting_started.js.map",
+  "features/glitch/async/directory.js": "/packs/features/glitch/async/directory.js",
+  "features/glitch/async/directory.js.map": "/packs/features/glitch/async/directory.js.map",
   "features/glitch/async/list_adder.js": "/packs/features/glitch/async/list_adder.js",
   "features/glitch/async/list_adder.js.map": "/packs/features/glitch/async/list_adder.js.map",
+  "features/glitch/async/search.js": "/packs/features/glitch/async/search.js",
+  "features/glitch/async/search.js.map": "/packs/features/glitch/async/search.js.map",
   "features/hashtag_timeline.js": "/packs/features/hashtag_timeline.js",
   "features/hashtag_timeline.js.map": "/packs/features/hashtag_timeline.js.map",
   "features/home_timeline.js": "/packs/features/home_timeline.js",
@@ -1347,6 +1889,8 @@
   "features/public_timeline.js.map": "/packs/features/public_timeline.js.map",
   "features/reblogs.js": "/packs/features/reblogs.js",
   "features/reblogs.js.map": "/packs/features/reblogs.js.map",
+  "features/search.js": "/packs/features/search.js",
+  "features/search.js.map": "/packs/features/search.js.map",
   "features/status.js": "/packs/features/status.js",
   "features/status.js.map": "/packs/features/status.js.map",
   "flavours/glitch/about.js": "/packs/flavours/glitch/about.js",
@@ -1357,6 +1901,8 @@
   "flavours/glitch/async/account_gallery.js.map": "/packs/flavours/glitch/async/account_gallery.js.map",
   "flavours/glitch/async/account_timeline.js": "/packs/flavours/glitch/async/account_timeline.js",
   "flavours/glitch/async/account_timeline.js.map": "/packs/flavours/glitch/async/account_timeline.js.map",
+  "flavours/glitch/async/block_modal.js": "/packs/flavours/glitch/async/block_modal.js",
+  "flavours/glitch/async/block_modal.js.map": "/packs/flavours/glitch/async/block_modal.js.map",
   "flavours/glitch/async/blocks.js": "/packs/flavours/glitch/async/blocks.js",
   "flavours/glitch/async/blocks.js.map": "/packs/flavours/glitch/async/blocks.js.map",
   "flavours/glitch/async/bookmarked_statuses.js": "/packs/flavours/glitch/async/bookmarked_statuses.js",
@@ -1435,6 +1981,8 @@
   "flavours/glitch/home.js.map": "/packs/flavours/glitch/home.js.map",
   "flavours/glitch/public.js": "/packs/flavours/glitch/public.js",
   "flavours/glitch/public.js.map": "/packs/flavours/glitch/public.js.map",
+  "flavours/glitch/settings.js": "/packs/flavours/glitch/settings.js",
+  "flavours/glitch/settings.js.map": "/packs/flavours/glitch/settings.js.map",
   "flavours/glitch/share.js": "/packs/flavours/glitch/share.js",
   "flavours/glitch/share.js.map": "/packs/flavours/glitch/share.js.map",
   "flavours/vanilla/about.css": "/packs/flavours/vanilla/about.css",
@@ -1475,42 +2023,96 @@
   "locales.js.map": "/packs/locales.js.map",
   "locales/glitch/ar.js": "/packs/locales/glitch/ar.js",
   "locales/glitch/ar.js.map": "/packs/locales/glitch/ar.js.map",
+  "locales/glitch/ast.js": "/packs/locales/glitch/ast.js",
+  "locales/glitch/ast.js.map": "/packs/locales/glitch/ast.js.map",
   "locales/glitch/bg.js": "/packs/locales/glitch/bg.js",
   "locales/glitch/bg.js.map": "/packs/locales/glitch/bg.js.map",
+  "locales/glitch/bn.js": "/packs/locales/glitch/bn.js",
+  "locales/glitch/bn.js.map": "/packs/locales/glitch/bn.js.map",
+  "locales/glitch/br.js": "/packs/locales/glitch/br.js",
+  "locales/glitch/br.js.map": "/packs/locales/glitch/br.js.map",
   "locales/glitch/ca.js": "/packs/locales/glitch/ca.js",
   "locales/glitch/ca.js.map": "/packs/locales/glitch/ca.js.map",
+  "locales/glitch/co.js": "/packs/locales/glitch/co.js",
+  "locales/glitch/co.js.map": "/packs/locales/glitch/co.js.map",
+  "locales/glitch/cs.js": "/packs/locales/glitch/cs.js",
+  "locales/glitch/cs.js.map": "/packs/locales/glitch/cs.js.map",
+  "locales/glitch/cy.js": "/packs/locales/glitch/cy.js",
+  "locales/glitch/cy.js.map": "/packs/locales/glitch/cy.js.map",
+  "locales/glitch/da.js": "/packs/locales/glitch/da.js",
+  "locales/glitch/da.js.map": "/packs/locales/glitch/da.js.map",
   "locales/glitch/de.js": "/packs/locales/glitch/de.js",
   "locales/glitch/de.js.map": "/packs/locales/glitch/de.js.map",
+  "locales/glitch/el.js": "/packs/locales/glitch/el.js",
+  "locales/glitch/el.js.map": "/packs/locales/glitch/el.js.map",
   "locales/glitch/en.js": "/packs/locales/glitch/en.js",
   "locales/glitch/en.js.map": "/packs/locales/glitch/en.js.map",
   "locales/glitch/eo.js": "/packs/locales/glitch/eo.js",
   "locales/glitch/eo.js.map": "/packs/locales/glitch/eo.js.map",
+  "locales/glitch/es-AR.js": "/packs/locales/glitch/es-AR.js",
+  "locales/glitch/es-AR.js.map": "/packs/locales/glitch/es-AR.js.map",
   "locales/glitch/es.js": "/packs/locales/glitch/es.js",
   "locales/glitch/es.js.map": "/packs/locales/glitch/es.js.map",
+  "locales/glitch/et.js": "/packs/locales/glitch/et.js",
+  "locales/glitch/et.js.map": "/packs/locales/glitch/et.js.map",
+  "locales/glitch/eu.js": "/packs/locales/glitch/eu.js",
+  "locales/glitch/eu.js.map": "/packs/locales/glitch/eu.js.map",
   "locales/glitch/fa.js": "/packs/locales/glitch/fa.js",
   "locales/glitch/fa.js.map": "/packs/locales/glitch/fa.js.map",
   "locales/glitch/fi.js": "/packs/locales/glitch/fi.js",
   "locales/glitch/fi.js.map": "/packs/locales/glitch/fi.js.map",
   "locales/glitch/fr.js": "/packs/locales/glitch/fr.js",
   "locales/glitch/fr.js.map": "/packs/locales/glitch/fr.js.map",
+  "locales/glitch/ga.js": "/packs/locales/glitch/ga.js",
+  "locales/glitch/ga.js.map": "/packs/locales/glitch/ga.js.map",
+  "locales/glitch/gl.js": "/packs/locales/glitch/gl.js",
+  "locales/glitch/gl.js.map": "/packs/locales/glitch/gl.js.map",
   "locales/glitch/he.js": "/packs/locales/glitch/he.js",
   "locales/glitch/he.js.map": "/packs/locales/glitch/he.js.map",
+  "locales/glitch/hi.js": "/packs/locales/glitch/hi.js",
+  "locales/glitch/hi.js.map": "/packs/locales/glitch/hi.js.map",
   "locales/glitch/hr.js": "/packs/locales/glitch/hr.js",
   "locales/glitch/hr.js.map": "/packs/locales/glitch/hr.js.map",
   "locales/glitch/hu.js": "/packs/locales/glitch/hu.js",
   "locales/glitch/hu.js.map": "/packs/locales/glitch/hu.js.map",
+  "locales/glitch/hy.js": "/packs/locales/glitch/hy.js",
+  "locales/glitch/hy.js.map": "/packs/locales/glitch/hy.js.map",
   "locales/glitch/id.js": "/packs/locales/glitch/id.js",
   "locales/glitch/id.js.map": "/packs/locales/glitch/id.js.map",
   "locales/glitch/io.js": "/packs/locales/glitch/io.js",
   "locales/glitch/io.js.map": "/packs/locales/glitch/io.js.map",
+  "locales/glitch/is.js": "/packs/locales/glitch/is.js",
+  "locales/glitch/is.js.map": "/packs/locales/glitch/is.js.map",
   "locales/glitch/it.js": "/packs/locales/glitch/it.js",
   "locales/glitch/it.js.map": "/packs/locales/glitch/it.js.map",
   "locales/glitch/ja.js": "/packs/locales/glitch/ja.js",
   "locales/glitch/ja.js.map": "/packs/locales/glitch/ja.js.map",
+  "locales/glitch/ka.js": "/packs/locales/glitch/ka.js",
+  "locales/glitch/ka.js.map": "/packs/locales/glitch/ka.js.map",
+  "locales/glitch/kab.js": "/packs/locales/glitch/kab.js",
+  "locales/glitch/kab.js.map": "/packs/locales/glitch/kab.js.map",
+  "locales/glitch/kk.js": "/packs/locales/glitch/kk.js",
+  "locales/glitch/kk.js.map": "/packs/locales/glitch/kk.js.map",
+  "locales/glitch/kn.js": "/packs/locales/glitch/kn.js",
+  "locales/glitch/kn.js.map": "/packs/locales/glitch/kn.js.map",
   "locales/glitch/ko.js": "/packs/locales/glitch/ko.js",
   "locales/glitch/ko.js.map": "/packs/locales/glitch/ko.js.map",
+  "locales/glitch/lt.js": "/packs/locales/glitch/lt.js",
+  "locales/glitch/lt.js.map": "/packs/locales/glitch/lt.js.map",
+  "locales/glitch/lv.js": "/packs/locales/glitch/lv.js",
+  "locales/glitch/lv.js.map": "/packs/locales/glitch/lv.js.map",
+  "locales/glitch/mk.js": "/packs/locales/glitch/mk.js",
+  "locales/glitch/mk.js.map": "/packs/locales/glitch/mk.js.map",
+  "locales/glitch/ml.js": "/packs/locales/glitch/ml.js",
+  "locales/glitch/ml.js.map": "/packs/locales/glitch/ml.js.map",
+  "locales/glitch/mr.js": "/packs/locales/glitch/mr.js",
+  "locales/glitch/mr.js.map": "/packs/locales/glitch/mr.js.map",
+  "locales/glitch/ms.js": "/packs/locales/glitch/ms.js",
+  "locales/glitch/ms.js.map": "/packs/locales/glitch/ms.js.map",
   "locales/glitch/nl.js": "/packs/locales/glitch/nl.js",
   "locales/glitch/nl.js.map": "/packs/locales/glitch/nl.js.map",
+  "locales/glitch/nn.js": "/packs/locales/glitch/nn.js",
+  "locales/glitch/nn.js.map": "/packs/locales/glitch/nn.js.map",
   "locales/glitch/no.js": "/packs/locales/glitch/no.js",
   "locales/glitch/no.js.map": "/packs/locales/glitch/no.js.map",
   "locales/glitch/oc.js": "/packs/locales/glitch/oc.js",
@@ -1519,18 +2121,38 @@
   "locales/glitch/pl.js.map": "/packs/locales/glitch/pl.js.map",
   "locales/glitch/pt-BR.js": "/packs/locales/glitch/pt-BR.js",
   "locales/glitch/pt-BR.js.map": "/packs/locales/glitch/pt-BR.js.map",
-  "locales/glitch/pt.js": "/packs/locales/glitch/pt.js",
-  "locales/glitch/pt.js.map": "/packs/locales/glitch/pt.js.map",
+  "locales/glitch/pt-PT.js": "/packs/locales/glitch/pt-PT.js",
+  "locales/glitch/pt-PT.js.map": "/packs/locales/glitch/pt-PT.js.map",
+  "locales/glitch/ro.js": "/packs/locales/glitch/ro.js",
+  "locales/glitch/ro.js.map": "/packs/locales/glitch/ro.js.map",
   "locales/glitch/ru.js": "/packs/locales/glitch/ru.js",
   "locales/glitch/ru.js.map": "/packs/locales/glitch/ru.js.map",
+  "locales/glitch/sk.js": "/packs/locales/glitch/sk.js",
+  "locales/glitch/sk.js.map": "/packs/locales/glitch/sk.js.map",
+  "locales/glitch/sl.js": "/packs/locales/glitch/sl.js",
+  "locales/glitch/sl.js.map": "/packs/locales/glitch/sl.js.map",
+  "locales/glitch/sq.js": "/packs/locales/glitch/sq.js",
+  "locales/glitch/sq.js.map": "/packs/locales/glitch/sq.js.map",
+  "locales/glitch/sr-Latn.js": "/packs/locales/glitch/sr-Latn.js",
+  "locales/glitch/sr-Latn.js.map": "/packs/locales/glitch/sr-Latn.js.map",
+  "locales/glitch/sr.js": "/packs/locales/glitch/sr.js",
+  "locales/glitch/sr.js.map": "/packs/locales/glitch/sr.js.map",
   "locales/glitch/sv.js": "/packs/locales/glitch/sv.js",
   "locales/glitch/sv.js.map": "/packs/locales/glitch/sv.js.map",
+  "locales/glitch/ta.js": "/packs/locales/glitch/ta.js",
+  "locales/glitch/ta.js.map": "/packs/locales/glitch/ta.js.map",
+  "locales/glitch/te.js": "/packs/locales/glitch/te.js",
+  "locales/glitch/te.js.map": "/packs/locales/glitch/te.js.map",
   "locales/glitch/th.js": "/packs/locales/glitch/th.js",
   "locales/glitch/th.js.map": "/packs/locales/glitch/th.js.map",
   "locales/glitch/tr.js": "/packs/locales/glitch/tr.js",
   "locales/glitch/tr.js.map": "/packs/locales/glitch/tr.js.map",
   "locales/glitch/uk.js": "/packs/locales/glitch/uk.js",
   "locales/glitch/uk.js.map": "/packs/locales/glitch/uk.js.map",
+  "locales/glitch/ur.js": "/packs/locales/glitch/ur.js",
+  "locales/glitch/ur.js.map": "/packs/locales/glitch/ur.js.map",
+  "locales/glitch/vi.js": "/packs/locales/glitch/vi.js",
+  "locales/glitch/vi.js.map": "/packs/locales/glitch/vi.js.map",
   "locales/glitch/zh-CN.js": "/packs/locales/glitch/zh-CN.js",
   "locales/glitch/zh-CN.js.map": "/packs/locales/glitch/zh-CN.js.map",
   "locales/glitch/zh-HK.js": "/packs/locales/glitch/zh-HK.js",
@@ -1545,6 +2167,8 @@
   "locales/vanilla/bg.js.map": "/packs/locales/vanilla/bg.js.map",
   "locales/vanilla/bn.js": "/packs/locales/vanilla/bn.js",
   "locales/vanilla/bn.js.map": "/packs/locales/vanilla/bn.js.map",
+  "locales/vanilla/br.js": "/packs/locales/vanilla/br.js",
+  "locales/vanilla/br.js.map": "/packs/locales/vanilla/br.js.map",
   "locales/vanilla/ca.js": "/packs/locales/vanilla/ca.js",
   "locales/vanilla/ca.js.map": "/packs/locales/vanilla/ca.js.map",
   "locales/vanilla/co.js": "/packs/locales/vanilla/co.js",
@@ -1563,8 +2187,12 @@
   "locales/vanilla/en.js.map": "/packs/locales/vanilla/en.js.map",
   "locales/vanilla/eo.js": "/packs/locales/vanilla/eo.js",
   "locales/vanilla/eo.js.map": "/packs/locales/vanilla/eo.js.map",
+  "locales/vanilla/es-AR.js": "/packs/locales/vanilla/es-AR.js",
+  "locales/vanilla/es-AR.js.map": "/packs/locales/vanilla/es-AR.js.map",
   "locales/vanilla/es.js": "/packs/locales/vanilla/es.js",
   "locales/vanilla/es.js.map": "/packs/locales/vanilla/es.js.map",
+  "locales/vanilla/et.js": "/packs/locales/vanilla/et.js",
+  "locales/vanilla/et.js.map": "/packs/locales/vanilla/et.js.map",
   "locales/vanilla/eu.js": "/packs/locales/vanilla/eu.js",
   "locales/vanilla/eu.js.map": "/packs/locales/vanilla/eu.js.map",
   "locales/vanilla/fa.js": "/packs/locales/vanilla/fa.js",
@@ -1573,6 +2201,8 @@
   "locales/vanilla/fi.js.map": "/packs/locales/vanilla/fi.js.map",
   "locales/vanilla/fr.js": "/packs/locales/vanilla/fr.js",
   "locales/vanilla/fr.js.map": "/packs/locales/vanilla/fr.js.map",
+  "locales/vanilla/ga.js": "/packs/locales/vanilla/ga.js",
+  "locales/vanilla/ga.js.map": "/packs/locales/vanilla/ga.js.map",
   "locales/vanilla/gl.js": "/packs/locales/vanilla/gl.js",
   "locales/vanilla/gl.js.map": "/packs/locales/vanilla/gl.js.map",
   "locales/vanilla/he.js": "/packs/locales/vanilla/he.js",
@@ -1589,22 +2219,38 @@
   "locales/vanilla/id.js.map": "/packs/locales/vanilla/id.js.map",
   "locales/vanilla/io.js": "/packs/locales/vanilla/io.js",
   "locales/vanilla/io.js.map": "/packs/locales/vanilla/io.js.map",
+  "locales/vanilla/is.js": "/packs/locales/vanilla/is.js",
+  "locales/vanilla/is.js.map": "/packs/locales/vanilla/is.js.map",
   "locales/vanilla/it.js": "/packs/locales/vanilla/it.js",
   "locales/vanilla/it.js.map": "/packs/locales/vanilla/it.js.map",
   "locales/vanilla/ja.js": "/packs/locales/vanilla/ja.js",
   "locales/vanilla/ja.js.map": "/packs/locales/vanilla/ja.js.map",
   "locales/vanilla/ka.js": "/packs/locales/vanilla/ka.js",
   "locales/vanilla/ka.js.map": "/packs/locales/vanilla/ka.js.map",
+  "locales/vanilla/kab.js": "/packs/locales/vanilla/kab.js",
+  "locales/vanilla/kab.js.map": "/packs/locales/vanilla/kab.js.map",
   "locales/vanilla/kk.js": "/packs/locales/vanilla/kk.js",
   "locales/vanilla/kk.js.map": "/packs/locales/vanilla/kk.js.map",
+  "locales/vanilla/kn.js": "/packs/locales/vanilla/kn.js",
+  "locales/vanilla/kn.js.map": "/packs/locales/vanilla/kn.js.map",
   "locales/vanilla/ko.js": "/packs/locales/vanilla/ko.js",
   "locales/vanilla/ko.js.map": "/packs/locales/vanilla/ko.js.map",
+  "locales/vanilla/lt.js": "/packs/locales/vanilla/lt.js",
+  "locales/vanilla/lt.js.map": "/packs/locales/vanilla/lt.js.map",
   "locales/vanilla/lv.js": "/packs/locales/vanilla/lv.js",
   "locales/vanilla/lv.js.map": "/packs/locales/vanilla/lv.js.map",
+  "locales/vanilla/mk.js": "/packs/locales/vanilla/mk.js",
+  "locales/vanilla/mk.js.map": "/packs/locales/vanilla/mk.js.map",
+  "locales/vanilla/ml.js": "/packs/locales/vanilla/ml.js",
+  "locales/vanilla/ml.js.map": "/packs/locales/vanilla/ml.js.map",
+  "locales/vanilla/mr.js": "/packs/locales/vanilla/mr.js",
+  "locales/vanilla/mr.js.map": "/packs/locales/vanilla/mr.js.map",
   "locales/vanilla/ms.js": "/packs/locales/vanilla/ms.js",
   "locales/vanilla/ms.js.map": "/packs/locales/vanilla/ms.js.map",
   "locales/vanilla/nl.js": "/packs/locales/vanilla/nl.js",
   "locales/vanilla/nl.js.map": "/packs/locales/vanilla/nl.js.map",
+  "locales/vanilla/nn.js": "/packs/locales/vanilla/nn.js",
+  "locales/vanilla/nn.js.map": "/packs/locales/vanilla/nn.js.map",
   "locales/vanilla/no.js": "/packs/locales/vanilla/no.js",
   "locales/vanilla/no.js.map": "/packs/locales/vanilla/no.js.map",
   "locales/vanilla/oc.js": "/packs/locales/vanilla/oc.js",
@@ -1613,8 +2259,8 @@
   "locales/vanilla/pl.js.map": "/packs/locales/vanilla/pl.js.map",
   "locales/vanilla/pt-BR.js": "/packs/locales/vanilla/pt-BR.js",
   "locales/vanilla/pt-BR.js.map": "/packs/locales/vanilla/pt-BR.js.map",
-  "locales/vanilla/pt.js": "/packs/locales/vanilla/pt.js",
-  "locales/vanilla/pt.js.map": "/packs/locales/vanilla/pt.js.map",
+  "locales/vanilla/pt-PT.js": "/packs/locales/vanilla/pt-PT.js",
+  "locales/vanilla/pt-PT.js.map": "/packs/locales/vanilla/pt-PT.js.map",
   "locales/vanilla/ro.js": "/packs/locales/vanilla/ro.js",
   "locales/vanilla/ro.js.map": "/packs/locales/vanilla/ro.js.map",
   "locales/vanilla/ru.js": "/packs/locales/vanilla/ru.js",
@@ -1641,6 +2287,10 @@
   "locales/vanilla/tr.js.map": "/packs/locales/vanilla/tr.js.map",
   "locales/vanilla/uk.js": "/packs/locales/vanilla/uk.js",
   "locales/vanilla/uk.js.map": "/packs/locales/vanilla/uk.js.map",
+  "locales/vanilla/ur.js": "/packs/locales/vanilla/ur.js",
+  "locales/vanilla/ur.js.map": "/packs/locales/vanilla/ur.js.map",
+  "locales/vanilla/vi.js": "/packs/locales/vanilla/vi.js",
+  "locales/vanilla/vi.js.map": "/packs/locales/vanilla/vi.js.map",
   "locales/vanilla/zh-CN.js": "/packs/locales/vanilla/zh-CN.js",
   "locales/vanilla/zh-CN.js.map": "/packs/locales/vanilla/zh-CN.js.map",
   "locales/vanilla/zh-HK.js": "/packs/locales/vanilla/zh-HK.js",
@@ -1694,6 +2344,8 @@
   "media/images/reticle.png": "/packs/media/images/reticle-6490ecbb61185e86e62dca0845cf2dcf.png",
   "media/images/start.png": "/packs/media/images/start-d443e819b6248a54c6eb466c75938306.png",
   "media/images/void.png": "/packs/media/images/void-4c8270c17facce6d53726a2ebb9745f2.png",
+  "modals/block_modal.js": "/packs/modals/block_modal.js",
+  "modals/block_modal.js.map": "/packs/modals/block_modal.js.map",
   "modals/embed_modal.js": "/packs/modals/embed_modal.js",
   "modals/embed_modal.js.map": "/packs/modals/embed_modal.js.map",
   "modals/mute_modal.js": "/packs/modals/mute_modal.js",
@@ -1719,5 +2371,7 @@
   "skins/vanilla/win95/common.css": "/packs/skins/vanilla/win95/common.css",
   "skins/vanilla/win95/common.css.map": "/packs/skins/vanilla/win95/common.css.map",
   "skins/vanilla/win95/common.js": "/packs/skins/vanilla/win95/common.js",
-  "skins/vanilla/win95/common.js.map": "/packs/skins/vanilla/win95/common.js.map"
+  "skins/vanilla/win95/common.js.map": "/packs/skins/vanilla/win95/common.js.map",
+  "tesseract.js": "/packs/tesseract.js",
+  "tesseract.js.map": "/packs/tesseract.js.map"
 }

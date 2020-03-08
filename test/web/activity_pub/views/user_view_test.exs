@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.UserViewTest do
@@ -29,11 +29,27 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
     {:ok, user} =
       insert(:user)
-      |> User.upgrade_changeset(%{info: %{fields: fields}})
+      |> User.upgrade_changeset(%{fields: fields})
       |> User.update_and_set_cache()
 
     assert %{
              "attachment" => [%{"name" => "foo", "type" => "PropertyValue", "value" => "bar"}]
+           } = UserView.render("user.json", %{user: user})
+  end
+
+  test "Renders with emoji tags" do
+    user = insert(:user, emoji: [%{"bib" => "/test"}])
+
+    assert %{
+             "tag" => [
+               %{
+                 "icon" => %{"type" => "Image", "url" => "/test"},
+                 "id" => "/test",
+                 "name" => ":bib:",
+                 "type" => "Emoji",
+                 "updated" => "1970-01-01T00:00:00Z"
+               }
+             ]
            } = UserView.render("user.json", %{user: user})
   end
 
@@ -48,9 +64,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     user =
       insert(:user,
         avatar: %{"url" => [%{"href" => "https://someurl"}]},
-        info: %{
-          banner: %{"url" => [%{"href" => "https://somebanner"}]}
-        }
+        banner: %{"url" => [%{"href" => "https://somebanner"}]}
       )
 
     {:ok, user} = User.ensure_keys_present(user)
@@ -58,6 +72,12 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     result = UserView.render("user.json", %{user: user})
     assert result["icon"]["url"] == "https://someurl"
     assert result["image"]["url"] == "https://somebanner"
+  end
+
+  test "renders an invisible user with the invisible property set to true" do
+    user = insert(:user, invisible: true)
+
+    assert %{"invisible" => true} = UserView.render("service.json", %{user: user})
   end
 
   describe "endpoints" do
@@ -105,9 +125,17 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
       other_user = insert(:user)
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
       assert %{"totalItems" => 1} = UserView.render("followers.json", %{user: user})
-      info = Map.put(user.info, :hide_followers, true)
-      user = Map.put(user, :info, info)
-      assert %{"totalItems" => 0} = UserView.render("followers.json", %{user: user})
+      user = Map.merge(user, %{hide_followers_count: true, hide_followers: true})
+      refute UserView.render("followers.json", %{user: user}) |> Map.has_key?("totalItems")
+    end
+
+    test "sets correct totalItems when followers are hidden but the follower counter is not" do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      assert %{"totalItems" => 1} = UserView.render("followers.json", %{user: user})
+      user = Map.merge(user, %{hide_followers_count: false, hide_followers: true})
+      assert %{"totalItems" => 1} = UserView.render("followers.json", %{user: user})
     end
   end
 
@@ -117,40 +145,48 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
       other_user = insert(:user)
       {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
       assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
-      info = Map.put(user.info, :hide_follows, true)
-      user = Map.put(user, :info, info)
+      user = Map.merge(user, %{hide_follows_count: true, hide_follows: true})
       assert %{"totalItems" => 0} = UserView.render("following.json", %{user: user})
     end
 
-    test "activity collection page aginates correctly" do
+    test "sets correct totalItems when follows are hidden but the follow counter is not" do
       user = insert(:user)
-
-      posts =
-        for i <- 0..25 do
-          {:ok, activity} = CommonAPI.post(user, %{"status" => "post #{i}"})
-          activity
-        end
-
-      # outbox sorts chronologically, newest first, with ten per page
-      posts = Enum.reverse(posts)
-
-      %{"next" => next_url} =
-        UserView.render("activity_collection_page.json", %{
-          iri: "#{user.ap_id}/outbox",
-          activities: Enum.take(posts, 10)
-        })
-
-      next_id = Enum.at(posts, 9).id
-      assert next_url =~ next_id
-
-      %{"next" => next_url} =
-        UserView.render("activity_collection_page.json", %{
-          iri: "#{user.ap_id}/outbox",
-          activities: Enum.take(Enum.drop(posts, 10), 10)
-        })
-
-      next_id = Enum.at(posts, 19).id
-      assert next_url =~ next_id
+      other_user = insert(:user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
+      assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
+      user = Map.merge(user, %{hide_follows_count: false, hide_follows: true})
+      assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
     end
+  end
+
+  test "activity collection page aginates correctly" do
+    user = insert(:user)
+
+    posts =
+      for i <- 0..25 do
+        {:ok, activity} = CommonAPI.post(user, %{"status" => "post #{i}"})
+        activity
+      end
+
+    # outbox sorts chronologically, newest first, with ten per page
+    posts = Enum.reverse(posts)
+
+    %{"next" => next_url} =
+      UserView.render("activity_collection_page.json", %{
+        iri: "#{user.ap_id}/outbox",
+        activities: Enum.take(posts, 10)
+      })
+
+    next_id = Enum.at(posts, 9).id
+    assert next_url =~ next_id
+
+    %{"next" => next_url} =
+      UserView.render("activity_collection_page.json", %{
+        iri: "#{user.ap_id}/outbox",
+        activities: Enum.take(Enum.drop(posts, 10), 10)
+      })
+
+    next_id = Enum.at(posts, 19).id
+    assert next_url =~ next_id
   end
 end

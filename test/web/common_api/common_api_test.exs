@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPITest do
@@ -10,6 +10,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -67,6 +68,7 @@ defmodule Pleroma.Web.CommonAPITest do
     har = insert(:user)
     jafnhar = insert(:user)
     tridi = insert(:user)
+
     Pleroma.Config.put([:instance, :safe_dm_mentions], true)
 
     {:ok, activity} =
@@ -100,7 +102,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
     {:ok, activity} = CommonAPI.update(user)
     user = User.get_cached_by_ap_id(user.ap_id)
-    [firefox] = user.info.source_data["tag"]
+    [firefox] = user.source_data["tag"]
 
     assert firefox["name"] == ":firefox:"
 
@@ -140,7 +142,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       object = Object.normalize(activity)
 
-      assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
+      assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
     end
 
     test "it filters out obviously bad tags when accepting a post as Markdown" do
@@ -156,7 +158,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       object = Object.normalize(activity)
 
-      assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
+      assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
     end
 
     test "it does not allow replies to direct messages that are not direct messages themselves" do
@@ -226,6 +228,35 @@ defmodule Pleroma.Web.CommonAPITest do
   end
 
   describe "reactions" do
+    test "reacting to a status with an emoji" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:ok, reaction, _} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+
+      assert reaction.data["actor"] == user.ap_id
+      assert reaction.data["content"] == "👍"
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:error, _} = CommonAPI.react_with_emoji(activity.id, user, ".")
+    end
+
+    test "unreacting to a status with an emoji" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+      {:ok, reaction, _} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+
+      {:ok, unreaction, _} = CommonAPI.unreact_with_emoji(activity.id, user, "👍")
+
+      assert unreaction.data["type"] == "Undo"
+      assert unreaction.data["object"] == reaction.data["id"]
+    end
+
     test "repeating a status" do
       user = insert(:user)
       other_user = insert(:user)
@@ -233,6 +264,18 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
 
       {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, user)
+    end
+
+    test "repeating a status privately" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:ok, %Activity{} = announce_activity, _} =
+        CommonAPI.repeat(activity.id, user, %{"visibility" => "private"})
+
+      assert Visibility.is_private?(announce_activity)
     end
 
     test "favoriting a status" do
@@ -244,22 +287,22 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, %Activity{}, _} = CommonAPI.favorite(activity.id, user)
     end
 
-    test "retweeting a status twice returns an error" do
+    test "retweeting a status twice returns the status" do
       user = insert(:user)
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
-      {:ok, %Activity{}, _object} = CommonAPI.repeat(activity.id, user)
-      {:error, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, %Activity{} = activity, object} = CommonAPI.repeat(activity.id, user)
+      {:ok, ^activity, ^object} = CommonAPI.repeat(activity.id, user)
     end
 
-    test "favoriting a status twice returns an error" do
+    test "favoriting a status twice returns the status" do
       user = insert(:user)
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
-      {:ok, %Activity{}, _object} = CommonAPI.favorite(activity.id, user)
-      {:error, _} = CommonAPI.favorite(activity.id, user)
+      {:ok, %Activity{} = activity, object} = CommonAPI.favorite(activity.id, user)
+      {:ok, ^activity, ^object} = CommonAPI.favorite(activity.id, user)
     end
   end
 
@@ -279,7 +322,22 @@ defmodule Pleroma.Web.CommonAPITest do
       id = activity.id
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: [^id]}} = user
+      assert %User{pinned_activities: [^id]} = user
+    end
+
+    test "pin poll", %{user: user} do
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "How is fediverse today?",
+          "poll" => %{"options" => ["Absolutely outstanding", "Not good"], "expires_in" => 20}
+        })
+
+      assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
+
+      id = activity.id
+      user = refresh_record(user)
+
+      assert %User{pinned_activities: [^id]} = user
     end
 
     test "unlisted statuses can be pinned", %{user: user} do
@@ -313,7 +371,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: []}} = user
+      assert %User{pinned_activities: []} = user
     end
 
     test "should unpin when deleting a status", %{user: user, activity: activity} do
@@ -325,7 +383,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: []}} = user
+      assert %User{pinned_activities: []} = user
     end
   end
 
@@ -373,6 +431,14 @@ defmodule Pleroma.Web.CommonAPITest do
         "status_ids" => [activity.id]
       }
 
+      note_obj = %{
+        "type" => "Note",
+        "id" => activity_ap_id,
+        "content" => "foobar",
+        "published" => activity.object.data["published"],
+        "actor" => AccountView.render("show.json", %{user: target_user})
+      }
+
       assert {:ok, flag_activity} = CommonAPI.report(reporter, report_data)
 
       assert %Activity{
@@ -380,7 +446,7 @@ defmodule Pleroma.Web.CommonAPITest do
                data: %{
                  "type" => "Flag",
                  "content" => ^comment,
-                 "object" => [^target_ap_id, ^activity_ap_id],
+                 "object" => [^target_ap_id, ^note_obj],
                  "state" => "open"
                }
              } = flag_activity
@@ -400,6 +466,11 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, report} = CommonAPI.update_report_state(report_id, "resolved")
 
       assert report.data["state"] == "resolved"
+
+      [reported_user, activity_id] = report.data["object"]
+
+      assert reported_user == target_user.ap_id
+      assert activity_id == activity.data["id"]
     end
 
     test "does not update report state when state is unsupported" do
@@ -415,6 +486,35 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert CommonAPI.update_report_state(report_id, "test") == {:error, "Unsupported state"}
     end
+
+    test "updates state of multiple reports" do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %Activity{id: first_report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel offended",
+          "status_ids" => [activity.id]
+        })
+
+      {:ok, %Activity{id: second_report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel very offended!",
+          "status_ids" => [activity.id]
+        })
+
+      {:ok, report_ids} =
+        CommonAPI.update_report_state([first_report_id, second_report_id], "resolved")
+
+      first_report = Activity.get_by_id(first_report_id)
+      second_report = Activity.get_by_id(second_report_id)
+
+      assert report_ids -- [first_report_id, second_report_id] == []
+      assert first_report.data["state"] == "resolved"
+      assert second_report.data["state"] == "resolved"
+    end
   end
 
   describe "reblog muting" do
@@ -427,14 +527,14 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "add a reblog mute", %{muter: muter, muted: muted} do
-      {:ok, muter} = CommonAPI.hide_reblogs(muter, muted)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(muter, muted)
 
       assert User.showing_reblogs?(muter, muted) == false
     end
 
     test "remove a reblog mute", %{muter: muter, muted: muted} do
-      {:ok, muter} = CommonAPI.hide_reblogs(muter, muted)
-      {:ok, muter} = CommonAPI.show_reblogs(muter, muted)
+      {:ok, _reblog_mute} = CommonAPI.hide_reblogs(muter, muted)
+      {:ok, _reblog_mute} = CommonAPI.show_reblogs(muter, muted)
 
       assert User.showing_reblogs?(muter, muted) == true
     end
@@ -444,7 +544,7 @@ defmodule Pleroma.Web.CommonAPITest do
     test "also unsubscribes a user" do
       [follower, followed] = insert_pair(:user)
       {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
-      {:ok, followed} = User.subscribe(follower, followed)
+      {:ok, _subscription} = User.subscribe(follower, followed)
 
       assert User.subscribed_to?(follower, followed)
 
@@ -452,11 +552,55 @@ defmodule Pleroma.Web.CommonAPITest do
 
       refute User.subscribed_to?(follower, followed)
     end
+
+    test "cancels a pending follow for a local user" do
+      follower = insert(:user)
+      followed = insert(:user, locked: true)
+
+      assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
+               CommonAPI.follow(follower, followed)
+
+      assert User.get_follow_state(follower, followed) == "pending"
+      assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
+      assert User.get_follow_state(follower, followed) == nil
+
+      assert %{id: ^activity_id, data: %{"state" => "cancelled"}} =
+               Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(follower, followed)
+
+      assert %{
+               data: %{
+                 "type" => "Undo",
+                 "object" => %{"type" => "Follow", "state" => "cancelled"}
+               }
+             } = Pleroma.Web.ActivityPub.Utils.fetch_latest_undo(follower)
+    end
+
+    test "cancels a pending follow for a remote user" do
+      follower = insert(:user)
+      followed = insert(:user, locked: true, local: false, ap_enabled: true)
+
+      assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
+               CommonAPI.follow(follower, followed)
+
+      assert User.get_follow_state(follower, followed) == "pending"
+      assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
+      assert User.get_follow_state(follower, followed) == nil
+
+      assert %{id: ^activity_id, data: %{"state" => "cancelled"}} =
+               Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(follower, followed)
+
+      assert %{
+               data: %{
+                 "type" => "Undo",
+                 "object" => %{"type" => "Follow", "state" => "cancelled"}
+               }
+             } = Pleroma.Web.ActivityPub.Utils.fetch_latest_undo(follower)
+    end
   end
 
   describe "accept_follow_request/2" do
     test "after acceptance, it sets all existing pending follow request states to 'accept'" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
       follower = insert(:user)
       follower_two = insert(:user)
 
@@ -476,7 +620,7 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "after rejection, it sets all existing pending follow request states to 'reject'" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
       follower = insert(:user)
       follower_two = insert(:user)
 
@@ -512,6 +656,45 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, _, object} = CommonAPI.vote(other_user, object, [0])
 
       assert {:error, "Already voted"} == CommonAPI.vote(other_user, object, [1])
+    end
+  end
+
+  describe "listen/2" do
+    test "returns a valid activity" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.listen(user, %{
+          "title" => "lain radio episode 1",
+          "album" => "lain radio",
+          "artist" => "lain",
+          "length" => 180_000
+        })
+
+      object = Object.normalize(activity)
+
+      assert object.data["title"] == "lain radio episode 1"
+
+      assert Visibility.get_visibility(activity) == "public"
+    end
+
+    test "respects visibility=private" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.listen(user, %{
+          "title" => "lain radio episode 1",
+          "album" => "lain radio",
+          "artist" => "lain",
+          "length" => 180_000,
+          "visibility" => "private"
+        })
+
+      object = Object.normalize(activity)
+
+      assert object.data["title"] == "lain radio episode 1"
+
+      assert Visibility.get_visibility(activity) == "private"
     end
   end
 end

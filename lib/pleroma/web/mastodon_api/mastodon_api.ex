@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
@@ -24,19 +24,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
 
     with {:ok, follower, _followed, _} <- result do
       options = cast_params(params)
-
-      case reblogs_visibility(options[:reblogs], result) do
-        {:ok, follower} -> {:ok, follower}
-        _ -> {:ok, follower}
-      end
+      set_reblogs_visibility(options[:reblogs], result)
+      {:ok, follower}
     end
   end
 
-  defp reblogs_visibility(false, {:ok, follower, followed, _}) do
+  defp set_reblogs_visibility(false, {:ok, follower, followed, _}) do
     CommonAPI.hide_reblogs(follower, followed)
   end
 
-  defp reblogs_visibility(_, {:ok, follower, followed, _}) do
+  defp set_reblogs_visibility(_, {:ok, follower, followed, _}) do
     CommonAPI.show_reblogs(follower, followed)
   end
 
@@ -59,6 +56,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     user
     |> Notification.for_user_query(options)
     |> restrict(:exclude_types, options)
+    |> restrict(:account_ap_id, options)
     |> Pagination.fetch_paginated(params)
   end
 
@@ -71,8 +69,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   defp cast_params(params) do
     param_types = %{
       exclude_types: {:array, :string},
+      exclude_visibilities: {:array, :string},
       reblogs: :boolean,
-      with_muted: :boolean
+      with_muted: :boolean,
+      with_move: :boolean,
+      account_ap_id: :string
     }
 
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))
@@ -87,6 +88,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
 
     query
     |> where([q, a], not fragment("? @> ARRAY[?->>'type']::varchar[]", ^ap_types, a.data))
+  end
+
+  defp restrict(query, :account_ap_id, %{account_ap_id: account_ap_id}) do
+    where(query, [n, a], a.actor == ^account_ap_id)
   end
 
   defp restrict(query, _, _), do: query

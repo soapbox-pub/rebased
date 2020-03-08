@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
@@ -157,11 +157,11 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       text = "**hello world**\n\n*another @user__test and @user__test google.com paragraph*"
 
       expected =
-        "<p><strong>hello world</strong></p>\n<p><em>another <span class=\"h-card\"><a data-user=\"#{
+        ~s(<p><strong>hello world</strong></p>\n<p><em>another <span class="h-card"><a data-user="#{
           user.id
-        }\" class=\"u-url mention\" href=\"http://foo.com/user__test\">@<span>user__test</span></a></span> and <span class=\"h-card\"><a data-user=\"#{
+        }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a data-user="#{
           user.id
-        }\" class=\"u-url mention\" href=\"http://foo.com/user__test\">@<span>user__test</span></a></span> <a href=\"http://google.com\">google.com</a> paragraph</em></p>\n"
+        }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>\n)
 
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
@@ -307,7 +307,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "private", nil)
       assert length(to) == 2
-      assert length(cc) == 0
+      assert Enum.empty?(cc)
 
       assert mentioned_user.ap_id in to
       assert user.follower_address in to
@@ -323,7 +323,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "private", nil)
 
       assert length(to) == 3
-      assert length(cc) == 0
+      assert Enum.empty?(cc)
 
       assert mentioned_user.ap_id in to
       assert third_user.ap_id in to
@@ -338,7 +338,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "direct", nil)
 
       assert length(to) == 1
-      assert length(cc) == 0
+      assert Enum.empty?(cc)
 
       assert mentioned_user.ap_id in to
     end
@@ -353,7 +353,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "direct", nil)
 
       assert length(to) == 2
-      assert length(cc) == 0
+      assert Enum.empty?(cc)
 
       assert mentioned_user.ap_id in to
       assert third_user.ap_id in to
@@ -575,11 +575,11 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   end
 
   describe "maybe_add_attachments/3" do
-    test "returns parsed results when no_links is true" do
+    test "returns parsed results when attachment_links is false" do
       assert Utils.maybe_add_attachments(
                {"test", [], ["tags"]},
                [],
-               true
+               false
              ) == {"test", [], ["tags"]}
     end
 
@@ -589,7 +589,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert Utils.maybe_add_attachments(
                {"test", [], ["tags"]},
                [attachment],
-               false
+               true
              ) == {
                "test<br><a href=\"SakuraPM.png\" class='attachment'>SakuraPM.png</a>",
                [],

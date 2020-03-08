@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Relay do
@@ -9,9 +9,18 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   alias Pleroma.Web.ActivityPub.ActivityPub
   require Logger
 
+  @relay_nickname "relay"
+
   def get_actor do
+    actor =
+      relay_ap_id()
+      |> User.get_or_create_service_actor_by_ap_id(@relay_nickname)
+
+    actor
+  end
+
+  def relay_ap_id do
     "#{Pleroma.Web.Endpoint.url()}/relay"
-    |> User.get_or_create_service_actor_by_ap_id()
   end
 
   @spec follow(String.t()) :: {:ok, Activity.t()} | {:error, any()}
@@ -50,6 +59,21 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   end
 
   def publish(_), do: {:error, "Not implemented"}
+
+  @spec list() :: {:ok, [String.t()]} | {:error, any()}
+  def list do
+    with %User{} = user <- get_actor() do
+      list =
+        user
+        |> User.following()
+        |> Enum.map(fn entry -> URI.parse(entry).host end)
+        |> Enum.uniq()
+
+      {:ok, list}
+    else
+      error -> format_error(error)
+    end
+  end
 
   defp format_error({:error, error}), do: format_error(error)
 

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Visibility do
@@ -7,15 +7,17 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Utils
 
   require Pleroma.Constants
 
   @spec is_public?(Object.t() | Activity.t() | map()) :: boolean()
   def is_public?(%Object{data: %{"type" => "Tombstone"}}), do: false
   def is_public?(%Object{data: data}), do: is_public?(data)
+  def is_public?(%Activity{data: %{"type" => "Move"}}), do: true
   def is_public?(%Activity{data: data}), do: is_public?(data)
   def is_public?(%{"directMessage" => true}), do: false
-  def is_public?(data), do: Pleroma.Constants.as_public() in (data["to"] ++ (data["cc"] || []))
+  def is_public?(data), do: Utils.label_in_message?(Pleroma.Constants.as_public(), data)
 
   def is_private?(activity) do
     with false <- is_public?(activity),
@@ -25,6 +27,11 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
     else
       _ -> false
     end
+  end
+
+  def is_announceable?(activity, user, public \\ true) do
+    is_public?(activity) ||
+      (!public && is_private?(activity) && activity.data["actor"] == user.ap_id)
   end
 
   def is_direct?(%Activity{data: %{"directMessage" => true}}), do: true
@@ -53,7 +60,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   end
 
   def visible_for_user?(activity, user) do
-    x = [user.ap_id | user.following]
+    x = [user.ap_id | User.following(user)]
     y = [activity.actor] ++ activity.data["to"] ++ (activity.data["cc"] || [])
     visible_for_user?(activity, nil) || Enum.any?(x, &(&1 in y))
   end

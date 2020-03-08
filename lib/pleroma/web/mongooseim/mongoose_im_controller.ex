@@ -1,12 +1,17 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   use Pleroma.Web, :controller
+
   alias Comeonin.Pbkdf2
+  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.User
+
+  plug(RateLimiter, [name: :authentication] when action in [:user_exists, :check_password])
+  plug(RateLimiter, [name: :authentication, params: ["user"]] when action == :check_password)
 
   def user_exists(conn, %{"user" => username}) do
     with %User{} <- Repo.get_by(User, nickname: username, local: true) do

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser do
@@ -81,15 +81,18 @@ defmodule Pleroma.Web.RichMedia.Parser do
       {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: @hackney_options)
 
       html
+      |> parse_html()
       |> maybe_parse()
       |> Map.put(:url, url)
       |> clean_parsed_data()
       |> check_parsed_data()
     rescue
       e ->
-        {:error, "Parsing error: #{inspect(e)}"}
+        {:error, "Parsing error: #{inspect(e)} #{inspect(__STACKTRACE__)}"}
     end
   end
+
+  defp parse_html(html), do: Floki.parse_document!(html)
 
   defp maybe_parse(html) do
     Enum.reduce_while(parsers(), %{}, fn parser, acc ->
@@ -100,7 +103,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
     end)
   end
 
-  defp check_parsed_data(%{title: title} = data) when is_binary(title) and byte_size(title) > 0 do
+  defp check_parsed_data(%{title: title} = data)
+       when is_binary(title) and byte_size(title) > 0 do
     {:ok, data}
   end
 

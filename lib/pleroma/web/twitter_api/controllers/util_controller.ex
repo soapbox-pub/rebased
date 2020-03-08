@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.UtilController do
@@ -7,16 +7,44 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   require Logger
 
-  alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Emoji
   alias Pleroma.Healthcheck
   alias Pleroma.Notification
-  alias Pleroma.Plugs.AuthenticationPlug
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.WebFinger
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["follow", "write:follows"]}
+    when action == :follow_import
+  )
+
+  # Note: follower can submit the form (with password auth) not being signed in (having no token)
+  plug(
+    OAuthScopesPlug,
+    %{fallback: :proceed_unauthenticated, scopes: ["follow", "write:follows"]}
+    when action == :do_remote_follow
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks_import)
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:accounts"]}
+    when action in [
+           :change_email,
+           :change_password,
+           :delete_account,
+           :update_notificaton_settings,
+           :disable_account
+         ]
+  )
+
+  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :notifications_read)
 
   plug(Pleroma.Plugs.SetFormatPlug when action in [:config, :version])
 
@@ -51,94 +79,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           avatar: nil,
           error: "Something went wrong."
         })
-    end
-  end
-
-  def remote_follow(%{assigns: %{user: user}} = conn, %{"acct" => acct}) do
-    if is_status?(acct) do
-      {:ok, object} = Pleroma.Object.Fetcher.fetch_object_from_id(acct)
-      %Activity{id: activity_id} = Activity.get_create_by_object_ap_id(object.data["id"])
-      redirect(conn, to: "/notice/#{activity_id}")
-    else
-      with {:ok, followee} <- User.get_or_fetch(acct) do
-        conn
-        |> render(follow_template(user), %{
-          error: false,
-          acct: acct,
-          avatar: User.avatar_url(followee),
-          name: followee.nickname,
-          id: followee.id
-        })
-      else
-        {:error, _reason} ->
-          render(conn, follow_template(user), %{error: :error})
-      end
-    end
-  end
-
-  defp follow_template(%User{} = _user), do: "follow.html"
-  defp follow_template(_), do: "follow_login.html"
-
-  defp is_status?(acct) do
-    case Pleroma.Object.Fetcher.fetch_and_contain_remote_object_from_id(acct) do
-      {:ok, %{"type" => type}} when type in ["Article", "Note", "Video", "Page", "Question"] ->
-        true
-
-      _ ->
-        false
-    end
-  end
-
-  def do_remote_follow(conn, %{
-        "authorization" => %{"name" => username, "password" => password, "id" => id}
-      }) do
-    with %User{} = followee <- User.get_cached_by_id(id),
-         {_, %User{} = user, _} <- {:auth, User.get_cached_by_nickname(username), followee},
-         {_, true, _} <- {
-           :auth,
-           AuthenticationPlug.checkpw(password, user.password_hash),
-           followee
-         },
-         {:ok, _follower, _followee, _activity} <- CommonAPI.follow(user, followee) do
-      conn
-      |> render("followed.html", %{error: false})
-    else
-      # Was already following user
-      {:error, "Could not follow user:" <> _rest} ->
-        render(conn, "followed.html", %{error: "Error following account"})
-
-      {:auth, _, followee} ->
-        conn
-        |> render("follow_login.html", %{
-          error: "Wrong username or password",
-          id: id,
-          name: followee.nickname,
-          avatar: User.avatar_url(followee)
-        })
-
-      e ->
-        Logger.debug("Remote follow failed with error #{inspect(e)}")
-        render(conn, "followed.html", %{error: "Something went wrong."})
-    end
-  end
-
-  def do_remote_follow(%{assigns: %{user: user}} = conn, %{"user" => %{"id" => id}}) do
-    with {:fetch_user, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
-         {:ok, _follower, _followee, _activity} <- CommonAPI.follow(user, followee) do
-      conn
-      |> render("followed.html", %{error: false})
-    else
-      # Was already following user
-      {:error, "Could not follow user:" <> _rest} ->
-        render(conn, "followed.html", %{error: "Error following account"})
-
-      {:fetch_user, error} ->
-        Logger.debug("Remote follow failed with error #{inspect(error)}")
-        render(conn, "followed.html", %{error: "Could not find user"})
-
-      e ->
-        Logger.debug("Remote follow failed with error #{inspect(e)}")
-        render(conn, "followed.html", %{error: "Something went wrong."})
     end
   end
 
@@ -239,11 +179,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def emoji(conn, _params) do
     emoji =
-      Emoji.get_all()
-      |> Enum.map(fn {short_code, path, tags} ->
-        {short_code, %{image_url: path, tags: tags}}
+      Enum.reduce(Emoji.get_all(), %{}, fn {code, %Emoji{file: file, tags: tags}}, acc ->
+        Map.put(acc, code, %{image_url: file, tags: tags})
       end)
-      |> Enum.into(%{})
 
     json(conn, emoji)
   end
@@ -265,12 +203,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
              String.split(line, ",") |> List.first()
            end)
            |> List.delete("Account address") do
-      PleromaJobQueue.enqueue(:background, User, [
-        :follow_import,
-        follower,
-        followed_identifiers
-      ])
-
+      User.follow_import(follower, followed_identifiers)
       json(conn, "job started")
     end
   end
@@ -281,12 +214,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
     with blocked_identifiers <- String.split(list) do
-      PleromaJobQueue.enqueue(:background, User, [
-        :blocks_import,
-        blocker,
-        blocked_identifiers
-      ])
-
+      User.blocks_import(blocker, blocked_identifiers)
       json(conn, "job started")
     end
   end
@@ -334,7 +262,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def delete_account(%{assigns: %{user: user}} = conn, params) do
-    case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
+    password = params["password"] || ""
+
+    case CommonAPI.Utils.confirm_current_password(user, password) do
       {:ok, user} ->
         User.delete(user)
         json(conn, %{status: "success"})

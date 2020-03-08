@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.BBS.Handler do
   use Sshd.ShellHandler
   alias Pleroma.Activity
+  alias Pleroma.HTML
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
@@ -42,9 +43,9 @@ defmodule Pleroma.BBS.Handler do
   end
 
   def puts_activity(activity) do
-    status = Pleroma.Web.MastodonAPI.StatusView.render("status.json", %{activity: activity})
+    status = Pleroma.Web.MastodonAPI.StatusView.render("show.json", %{activity: activity})
     IO.puts("-- #{status.id} by #{status.account.display_name} (#{status.account.acct})")
-    IO.puts(HtmlSanitizeEx.strip_tags(status.content))
+    IO.puts(HTML.strip_tags(status.content))
     IO.puts("")
   end
 
@@ -97,7 +98,7 @@ defmodule Pleroma.BBS.Handler do
       |> Map.put("user", user)
 
     activities =
-      [user.ap_id | user.following]
+      [user.ap_id | Pleroma.User.following(user)]
       |> ActivityPub.fetch_activities(params)
 
     Enum.each(activities, fn activity ->

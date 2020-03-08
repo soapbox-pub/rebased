@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.WebFinger do
@@ -108,7 +108,6 @@ defmodule Pleroma.Web.WebFinger do
              doc
            ),
          subject <- XML.string_from_xpath("//Subject", doc),
-         salmon <- XML.string_from_xpath(~s{//Link[@rel="salmon"]/@href}, doc),
          subscribe_address <-
            XML.string_from_xpath(
              ~s{//Link[@rel="http://ostatus.org/schema/1.0/subscribe"]/@template},
@@ -123,7 +122,6 @@ defmodule Pleroma.Web.WebFinger do
         "magic_key" => magic_key,
         "topic" => topic,
         "subject" => subject,
-        "salmon" => salmon,
         "subscribe_address" => subscribe_address,
         "ap_id" => ap_id
       }
@@ -147,16 +145,6 @@ defmodule Pleroma.Web.WebFinger do
 
           {"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"", "self"} ->
             Map.put(data, "ap_id", link["href"])
-
-          {_, "magic-public-key"} ->
-            "data:application/magic-public-key," <> magic_key = link["href"]
-            Map.put(data, "magic_key", magic_key)
-
-          {"application/atom+xml", "http://schemas.google.com/g/2010#updates-from"} ->
-            Map.put(data, "topic", link["href"])
-
-          {_, "salmon"} ->
-            Map.put(data, "salmon", link["href"])
 
           {_, "http://ostatus.org/schema/1.0/subscribe"} ->
             Map.put(data, "subscribe_address", link["template"])

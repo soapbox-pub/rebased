@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.Search do
@@ -33,9 +33,15 @@ defmodule Pleroma.User.Search do
     # Strip the beginning @ off if there is a query
     query_string = String.trim_leading(query_string, "@")
 
-    with [name, domain] <- String.split(query_string, "@"),
-         formatted_domain <- String.replace(domain, ~r/[!-\-|@|[-`|{-~|\/|:|\s]+/, "") do
-      name <> "@" <> to_string(:idna.encode(formatted_domain))
+    with [name, domain] <- String.split(query_string, "@") do
+      encoded_domain =
+        domain
+        |> String.replace(~r/[!-\-|@|[-`|{-~|\/|:|\s]+/, "")
+        |> String.to_charlist()
+        |> :idna.encode()
+        |> to_string()
+
+      name <> "@" <> encoded_domain
     else
       _ -> query_string
     end
@@ -45,6 +51,7 @@ defmodule Pleroma.User.Search do
     for_user
     |> base_query(following)
     |> filter_blocked_user(for_user)
+    |> filter_invisible_users()
     |> filter_blocked_domains(for_user)
     |> fts_search(query_string)
     |> trigram_rank(query_string)
@@ -54,15 +61,7 @@ defmodule Pleroma.User.Search do
     |> maybe_restrict_local(for_user)
   end
 
-  @nickname_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~\-@]+$/
   defp fts_search(query, query_string) do
-    {nickname_weight, name_weight} =
-      if String.match?(query_string, @nickname_regex) do
-        {"A", "B"}
-      else
-        {"B", "A"}
-      end
-
     query_string = to_tsquery(query_string)
 
     from(
@@ -70,12 +69,10 @@ defmodule Pleroma.User.Search do
       where:
         fragment(
           """
-          (setweight(to_tsvector('simple', ?), ?) || setweight(to_tsvector('simple', ?), ?)) @@ to_tsquery('simple', ?)
+          (to_tsvector('simple', ?) || to_tsvector('simple', ?)) @@ to_tsquery('simple', ?)
           """,
           u.name,
-          ^name_weight,
           u.nickname,
-          ^nickname_weight,
           ^query_string
         )
     )
@@ -108,14 +105,22 @@ defmodule Pleroma.User.Search do
   defp base_query(_user, false), do: User
   defp base_query(user, true), do: User.get_followers_query(user)
 
-  defp filter_blocked_user(query, %User{info: %{blocks: blocks}})
-       when length(blocks) > 0 do
-    from(q in query, where: not (q.ap_id in ^blocks))
+  defp filter_invisible_users(query) do
+    from(q in query, where: q.invisible == false)
+  end
+
+  defp filter_blocked_user(query, %User{} = blocker) do
+    query
+    |> join(:left, [u], b in Pleroma.UserRelationship,
+      as: :blocks,
+      on: b.relationship_type == ^:block and b.source_id == ^blocker.id and u.id == b.target_id
+    )
+    |> where([blocks: b], is_nil(b.target_id))
   end
 
   defp filter_blocked_user(query, _), do: query
 
-  defp filter_blocked_domains(query, %User{info: %{domain_blocks: domain_blocks}})
+  defp filter_blocked_domains(query, %User{domain_blocks: domain_blocks})
        when length(domain_blocks) > 0 do
     domains = Enum.join(domain_blocks, ",")
 

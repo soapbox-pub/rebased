@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.List do
@@ -84,22 +84,11 @@ defmodule Pleroma.List do
   end
 
   # Get lists to which the account belongs.
-  def get_lists_account_belongs(%User{} = owner, account_id) do
-    user = User.get_cached_by_id(account_id)
-
-    query =
-      from(
-        l in Pleroma.List,
-        where:
-          l.user_id == ^owner.id and
-            fragment(
-              "? = ANY(?)",
-              ^user.follower_address,
-              l.following
-            )
-      )
-
-    Repo.all(query)
+  def get_lists_account_belongs(%User{} = owner, user) do
+    Pleroma.List
+    |> where([l], l.user_id == ^owner.id)
+    |> where([l], fragment("? = ANY(?)", ^user.follower_address, l.following))
+    |> Repo.all()
   end
 
   def rename(%Pleroma.List{} = list, title) do

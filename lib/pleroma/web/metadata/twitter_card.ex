@@ -1,6 +1,6 @@
 # Pleroma: A lightweight social networking server
 
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
@@ -31,7 +31,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
       if attachments == [] or Metadata.activity_nsfw?(object) do
         [
           image_tag(user),
-          {:meta, [property: "twitter:card", content: "summary_large_image"], []}
+          {:meta, [property: "twitter:card", content: "summary"], []}
         ]
       else
         attachments

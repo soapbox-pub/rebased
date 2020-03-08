@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Uploaders.S3Test do
@@ -77,6 +77,13 @@ defmodule Pleroma.Uploaders.S3Test do
                  assert S3.put_file(file_upload) == {:error, "S3 Upload failed"}
                end) =~ "Elixir.Pleroma.Uploaders.S3: {:error, \"S3 Upload failed\"}"
       end
+    end
+  end
+
+  describe "delete_file/1" do
+    test_with_mock "deletes file", ExAws, request: fn _req -> {:ok, %{status_code: 204}} end do
+      assert :ok = S3.delete_file("image.jpg")
+      assert_called(ExAws.request(:_))
     end
   end
 end

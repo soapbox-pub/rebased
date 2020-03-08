@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Integration.MastodonWebsocketTest do
@@ -68,7 +68,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
     assert {:ok, json} = Jason.decode(json["payload"])
 
     view_json =
-      Pleroma.Web.MastodonAPI.StatusView.render("status.json", activity: activity, for: nil)
+      Pleroma.Web.MastodonAPI.StatusView.render("show.json", activity: activity, for: nil)
       |> Jason.encode!()
       |> Jason.decode!()
 

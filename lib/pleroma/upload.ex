@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Upload do
@@ -37,6 +37,7 @@ defmodule Pleroma.Upload do
           Plug.Upload.t()
           | (data_uri_string :: String.t())
           | {:from_local, name :: String.t(), id :: String.t(), path :: String.t()}
+          | map()
 
   @type option ::
           {:type, :avatar | :banner | :background}
@@ -105,7 +106,7 @@ defmodule Pleroma.Upload do
           {Pleroma.Config.get!([:instance, :upload_limit]), "Document"}
       end
 
-    opts = %{
+    %{
       activity_type: Keyword.get(opts, :activity_type, activity_type),
       size_limit: Keyword.get(opts, :size_limit, size_limit),
       uploader: Keyword.get(opts, :uploader, Pleroma.Config.get([__MODULE__, :uploader])),
@@ -118,37 +119,6 @@ defmodule Pleroma.Upload do
           Pleroma.Config.get([__MODULE__, :base_url], Pleroma.Web.base_url())
         )
     }
-
-    # TODO: 1.0+ : remove old config compatibility
-    opts =
-      if Pleroma.Config.get([__MODULE__, :strip_exif]) == true &&
-           !Enum.member?(opts.filters, Pleroma.Upload.Filter.Mogrify) do
-        Logger.warn("""
-        Pleroma: configuration `:instance, :strip_exif` is deprecated, please instead set:
-
-          :pleroma, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Mogrify]]
-
-          :pleroma, Pleroma.Upload.Filter.Mogrify, args: ["strip", "auto-orient"]
-        """)
-
-        Pleroma.Config.put([Pleroma.Upload.Filter.Mogrify], args: ["strip", "auto-orient"])
-        Map.put(opts, :filters, opts.filters ++ [Pleroma.Upload.Filter.Mogrify])
-      else
-        opts
-      end
-
-    if Pleroma.Config.get([:instance, :dedupe_media]) == true &&
-         !Enum.member?(opts.filters, Pleroma.Upload.Filter.Dedupe) do
-      Logger.warn("""
-      Pleroma: configuration `:instance, :dedupe_media` is deprecated, please instead set:
-
-      :pleroma, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Dedupe]]
-      """)
-
-      Map.put(opts, :filters, opts.filters ++ [Pleroma.Upload.Filter.Dedupe])
-    else
-      opts
-    end
   end
 
   defp prepare_upload(%Plug.Upload{} = file, opts) do

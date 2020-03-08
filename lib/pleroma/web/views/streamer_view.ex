@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.StreamerView do
@@ -16,7 +16,7 @@ defmodule Pleroma.Web.StreamerView do
       event: "update",
       payload:
         Pleroma.Web.MastodonAPI.StatusView.render(
-          "status.json",
+          "show.json",
           activity: activity,
           for: user
         )
@@ -43,7 +43,7 @@ defmodule Pleroma.Web.StreamerView do
       event: "update",
       payload:
         Pleroma.Web.MastodonAPI.StatusView.render(
-          "status.json",
+          "show.json",
           activity: activity
         )
         |> Jason.encode!()

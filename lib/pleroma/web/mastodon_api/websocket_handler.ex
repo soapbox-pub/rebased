@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
@@ -35,6 +35,13 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
          {_, stream} <- List.keyfind(params, "stream", 0),
          {:ok, user} <- allow_request(stream, [access_token, sec_websocket]),
          topic when is_binary(topic) <- expand_topic(stream, params) do
+      req =
+        if sec_websocket do
+          :cowboy_req.set_resp_header("sec-websocket-protocol", sec_websocket, req)
+        else
+          req
+        end
+
       {:cowboy_websocket, req, %{user: user, topic: topic}, %{idle_timeout: @timeout}}
     else
       {:error, code} ->

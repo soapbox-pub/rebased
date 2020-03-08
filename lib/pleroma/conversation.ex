@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Conversation do
@@ -67,6 +67,14 @@ defmodule Pleroma.Conversation do
 
       participations =
         Enum.map(users, fn user ->
+          invisible_conversation = Enum.any?(users, &User.blocks?(user, &1))
+
+          unless invisible_conversation do
+            User.increment_unread_conversation_count(conversation, user)
+          end
+
+          opts = Keyword.put(opts, :invisible_conversation, invisible_conversation)
+
           {:ok, participation} =
             Participation.create_for_user_and_conversation(user, conversation, opts)
 

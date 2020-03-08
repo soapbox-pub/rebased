@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AccountView do
@@ -7,7 +7,6 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
 
   alias Pleroma.HTML
   alias Pleroma.User
-  alias Pleroma.User.Info
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.MediaProxy
 
@@ -16,6 +15,12 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       users: render_many(users, AccountView, "show.json", as: :user),
       count: count,
       page_size: page_size
+    }
+  end
+
+  def render("index.json", %{users: users}) do
+    %{
+      users: render_many(users, AccountView, "show.json", as: :user)
     }
   end
 
@@ -28,10 +33,11 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "avatar" => avatar,
       "nickname" => user.nickname,
       "display_name" => display_name,
-      "deactivated" => user.info.deactivated,
+      "deactivated" => user.deactivated,
       "local" => user.local,
-      "roles" => Info.roles(user.info),
-      "tags" => user.tags || []
+      "roles" => User.roles(user),
+      "tags" => user.tags || [],
+      "confirmation_pending" => user.confirmation_pending
     }
   end
 

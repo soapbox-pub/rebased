@@ -47,3 +47,5 @@ docs/generated_config.md
 .idea
 pleroma.iml
 
+# asdf
+.tool-versions

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Factory do
@@ -31,16 +31,27 @@ defmodule Pleroma.Factory do
       nickname: sequence(:nickname, &"nick#{&1}"),
       password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
       bio: sequence(:bio, &"Tester Number #{&1}"),
-      info: %{},
-      last_digest_emailed_at: NaiveDateTime.utc_now()
+      last_digest_emailed_at: NaiveDateTime.utc_now(),
+      notification_settings: %Pleroma.User.NotificationSetting{}
     }
 
     %{
       user
       | ap_id: User.ap_id(user),
         follower_address: User.ap_followers(user),
-        following_address: User.ap_following(user),
-        following: [User.ap_id(user)]
+        following_address: User.ap_following(user)
+    }
+  end
+
+  def user_relationship_factory(attrs \\ %{}) do
+    source = attrs[:source] || insert(:user)
+    target = attrs[:target] || insert(:user)
+    relationship_type = attrs[:relationship_type] || :block
+
+    %Pleroma.UserRelationship{
+      source_id: source.id,
+      target_id: target.id,
+      relationship_type: relationship_type
     }
   end
 
@@ -68,6 +79,47 @@ defmodule Pleroma.Factory do
 
     %Pleroma.Object{
       data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
+  def audio_factory(attrs \\ %{}) do
+    text = sequence(:text, &"lain radio episode #{&1}")
+
+    user = attrs[:user] || insert(:user)
+
+    data = %{
+      "type" => "Audio",
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+      "artist" => "lain",
+      "title" => text,
+      "album" => "lain radio",
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "actor" => user.ap_id,
+      "length" => 180_000
+    }
+
+    %Pleroma.Object{
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
+    }
+  end
+
+  def listen_factory do
+    audio = insert(:audio)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+      "type" => "Listen",
+      "actor" => audio.data["actor"],
+      "to" => audio.data["to"],
+      "object" => audio.data,
+      "published" => audio.data["published"]
+    }
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
     }
   end
 
@@ -240,31 +292,11 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def websub_subscription_factory do
-    %Pleroma.Web.Websub.WebsubServerSubscription{
-      topic: "http://example.org",
-      callback: "http://example.org/callback",
-      secret: "here's a secret",
-      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 100),
-      state: "requested"
-    }
-  end
-
-  def websub_client_subscription_factory do
-    %Pleroma.Web.Websub.WebsubClientSubscription{
-      topic: "http://example.org",
-      secret: "here's a secret",
-      valid_until: nil,
-      state: "requested",
-      subscribers: []
-    }
-  end
-
   def oauth_app_factory do
     %Pleroma.Web.OAuth.App{
       client_name: "Some client",
       redirect_uris: "https://example.com/callback",
-      scopes: ["read", "write", "follow", "push"],
+      scopes: ["read", "write", "follow", "push", "admin"],
       website: "https://example.com",
       client_id: Ecto.UUID.generate(),
       client_secret: "aaa;/&bbb"
@@ -278,16 +310,35 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def oauth_token_factory do
-    oauth_app = insert(:oauth_app)
+  def oauth_token_factory(attrs \\ %{}) do
+    scopes = Map.get(attrs, :scopes, ["read"])
+    oauth_app = Map.get_lazy(attrs, :app, fn -> insert(:oauth_app, scopes: scopes) end)
+    user = Map.get_lazy(attrs, :user, fn -> build(:user) end)
+
+    valid_until =
+      Map.get(attrs, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10))
 
     %Pleroma.Web.OAuth.Token{
       token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
       refresh_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
-      user: build(:user),
-      app_id: oauth_app.id,
-      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)
+      scopes: scopes,
+      user: user,
+      app: oauth_app,
+      valid_until: valid_until
     }
+  end
+
+  def oauth_admin_token_factory(attrs \\ %{}) do
+    user = Map.get_lazy(attrs, :user, fn -> build(:user, is_admin: true) end)
+
+    scopes =
+      attrs
+      |> Map.get(:scopes, ["admin"])
+      |> Kernel.++(["admin"])
+      |> Enum.uniq()
+
+    attrs = Map.merge(attrs, %{user: user, scopes: scopes})
+    oauth_token_factory(attrs)
   end
 
   def oauth_authorization_factory do
@@ -343,9 +394,15 @@ defmodule Pleroma.Factory do
   end
 
   def config_factory do
-    %Pleroma.Web.AdminAPI.Config{
-      key: sequence(:key, &"some_key_#{&1}"),
-      group: "pleroma",
+    %Pleroma.ConfigDB{
+      key:
+        sequence(:key, fn key ->
+          # Atom dynamic registration hack in tests
+          "some_key_#{key}"
+          |> String.to_atom()
+          |> inspect()
+        end),
+      group: ":pleroma",
       value:
         sequence(
           :value,
@@ -353,6 +410,15 @@ defmodule Pleroma.Factory do
             :erlang.term_to_binary(%{another_key: "#{key}somevalue", another: "#{key}somevalue"})
           end
         )
+    }
+  end
+
+  def marker_factory do
+    %Pleroma.Marker{
+      user: build(:user),
+      timeline: "notifications",
+      lock_version: 0,
+      last_read_id: "1"
     }
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
@@ -19,6 +19,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
   end
 
   describe "handle_incoming" do
+    clear_config([:user, :deny_follow_blocked])
+
     test "it works for osada follow request" do
       user = insert(:user)
 
@@ -58,7 +60,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
     end
 
     test "with locked accounts, it does not create a follow or an accept" do
-      user = insert(:user, info: %{locked: true})
+      user = insert(:user, locked: true)
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")
@@ -78,7 +80,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
         )
         |> Repo.all()
 
-      assert length(accepts) == 0
+      assert Enum.empty?(accepts)
     end
 
     test "it works for follow requests when you are already followed, creating a new accept activity" do
@@ -128,7 +130,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
       user = insert(:user)
       {:ok, target} = User.get_or_fetch("http://mastodon.example.org/users/admin")
 
-      {:ok, user} = User.block(user, target)
+      {:ok, _user_relationship} = User.block(user, target)
 
       data =
         File.read!("test/fixtures/mastodon-follow-activity.json")

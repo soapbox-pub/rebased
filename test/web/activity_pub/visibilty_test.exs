@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.VisibilityTest do
@@ -212,7 +212,8 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
 
     test "returns true if user following to author" do
       author = insert(:user)
-      user = insert(:user, following: [author.ap_id])
+      user = insert(:user)
+      Pleroma.User.follow(user, author)
 
       activity =
         insert(:note_activity,

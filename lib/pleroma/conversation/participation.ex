@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Conversation.Participation do
@@ -32,11 +32,20 @@ defmodule Pleroma.Conversation.Participation do
 
   def create_for_user_and_conversation(user, conversation, opts \\ []) do
     read = !!opts[:read]
+    invisible_conversation = !!opts[:invisible_conversation]
+
+    update_on_conflict =
+      if(invisible_conversation, do: [], else: [read: read])
+      |> Keyword.put(:updated_at, NaiveDateTime.utc_now())
 
     %__MODULE__{}
-    |> creation_cng(%{user_id: user.id, conversation_id: conversation.id, read: read})
+    |> creation_cng(%{
+      user_id: user.id,
+      conversation_id: conversation.id,
+      read: invisible_conversation || read
+    })
     |> Repo.insert(
-      on_conflict: [set: [read: read, updated_at: NaiveDateTime.utc_now()]],
+      on_conflict: [set: update_on_conflict],
       returning: true,
       conflict_target: [:user_id, :conversation_id]
     )
@@ -48,10 +57,59 @@ defmodule Pleroma.Conversation.Participation do
     |> validate_required([:read])
   end
 
+  def mark_as_read(%User{} = user, %Conversation{} = conversation) do
+    with %__MODULE__{} = participation <- for_user_and_conversation(user, conversation) do
+      mark_as_read(participation)
+    end
+  end
+
   def mark_as_read(participation) do
-    participation
-    |> read_cng(%{read: true})
-    |> Repo.update()
+    __MODULE__
+    |> where(id: ^participation.id)
+    |> update(set: [read: true])
+    |> select([p], p)
+    |> Repo.update_all([])
+    |> case do
+      {1, [participation]} ->
+        participation = Repo.preload(participation, :user)
+        User.set_unread_conversation_count(participation.user)
+        {:ok, participation}
+
+      error ->
+        error
+    end
+  end
+
+  def mark_all_as_read(%User{local: true} = user, %User{} = target_user) do
+    target_conversation_ids =
+      __MODULE__
+      |> where([p], p.user_id == ^target_user.id)
+      |> select([p], p.conversation_id)
+      |> Repo.all()
+
+    __MODULE__
+    |> where([p], p.user_id == ^user.id)
+    |> where([p], p.conversation_id in ^target_conversation_ids)
+    |> update([p], set: [read: true])
+    |> Repo.update_all([])
+
+    {:ok, user} = User.set_unread_conversation_count(user)
+    {:ok, user, []}
+  end
+
+  def mark_all_as_read(%User{} = user, %User{}), do: {:ok, user, []}
+
+  def mark_all_as_read(%User{} = user) do
+    {_, participations} =
+      __MODULE__
+      |> where([p], p.user_id == ^user.id)
+      |> where([p], not p.read)
+      |> update([p], set: [read: true])
+      |> select([p], p)
+      |> Repo.update_all([])
+
+    {:ok, user} = User.set_unread_conversation_count(user)
+    {:ok, user, participations}
   end
 
   def mark_as_unread(participation) do
@@ -66,8 +124,34 @@ defmodule Pleroma.Conversation.Participation do
       order_by: [desc: p.updated_at],
       preload: [conversation: [:users]]
     )
+    |> restrict_recipients(user, params)
     |> Pleroma.Pagination.fetch_paginated(params)
   end
+
+  def restrict_recipients(query, user, %{"recipients" => user_ids}) do
+    user_ids =
+      [user.id | user_ids]
+      |> Enum.uniq()
+      |> Enum.reduce([], fn user_id, acc ->
+        {:ok, user_id} = FlakeId.Ecto.CompatType.dump(user_id)
+        [user_id | acc]
+      end)
+
+    conversation_subquery =
+      __MODULE__
+      |> group_by([p], p.conversation_id)
+      |> having(
+        [p],
+        count(p.user_id) == ^length(user_ids) and
+          fragment("array_agg(?) @> ?", p.user_id, ^user_ids)
+      )
+      |> select([p], %{id: p.conversation_id})
+
+    query
+    |> join(:inner, [p], c in subquery(conversation_subquery), on: p.conversation_id == c.id)
+  end
+
+  def restrict_recipients(query, _, _), do: query
 
   def for_user_and_conversation(user, conversation) do
     from(p in __MODULE__,
@@ -134,5 +218,13 @@ defmodule Pleroma.Conversation.Participation do
     end)
 
     {:ok, Repo.preload(participation, :recipients, force: true)}
+  end
+
+  def unread_conversation_count_for_user(user) do
+    from(p in __MODULE__,
+      where: p.user_id == ^user.id,
+      where: not p.read,
+      select: %{count: count(p.id)}
+    )
   end
 end

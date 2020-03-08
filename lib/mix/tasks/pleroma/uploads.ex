@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Uploads do
@@ -12,16 +12,8 @@ defmodule Mix.Tasks.Pleroma.Uploads do
   @log_every 50
 
   @shortdoc "Migrates uploads from local to remote storage"
-  @moduledoc """
-   Manages uploads
+  @moduledoc File.read!("docs/administration/CLI_tasks/uploads.md")
 
-   ## Migrate uploads from local to remote storage
-       mix pleroma.uploads migrate_local TARGET_UPLOADER [OPTIONS...]
-   Options:
-   - `--delete` - delete local uploads after migrating them to the target uploader
-
-   A list of available uploaders can be seen in config.exs
-  """
   def run(["migrate_local", target_uploader | args]) do
     delete? = Enum.member?(args, "--delete")
     start_pleroma()

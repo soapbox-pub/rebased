@@ -1,0 +1,31 @@
+<header>
+  <h1><%= link instance_name(), to: "/" %></h1>
+
+  <h3>
+    <form class="pull-right collapse" method="POST" action="<%= Helpers.util_path(@conn, :remote_subscribe) %>">
+      <input type="hidden" name="nickname" value="<%= @user.nickname %>">
+      <input type="hidden" name="profile" value="">
+      <button type="submit" class="collapse">Remote follow</button>
+    </form>
+    <%= raw Formatter.emojify(@user.name, emoji_for_user(@user)) %> |
+    <%= link "@#{@user.nickname}@#{Endpoint.host()}", to: User.profile_url(@user) %>
+  </h3>
+  <p><%= raw @user.bio %></p>
+</header>
+
+<main>
+  <div class="activity-stream">
+    <%= for activity <- @timeline do %>
+      <%= render("_notice.html", Map.put(activity, :selected, false)) %>
+    <% end %>
+    <p id="pagination">
+      <%= if @prev_page_id do %>
+        <%= link "«", to: "?min_id=" <> @prev_page_id %>
+      <% end %>
+      <%= if @prev_page_id && @next_page_id, do: " | " %>
+      <%= if @next_page_id do %>
+        <%= link "»", to: "?max_id=" <> @next_page_id %>
+      <% end %>
+    </p>
+  </div>
+</main>

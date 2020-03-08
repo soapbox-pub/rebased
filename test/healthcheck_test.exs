@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HealthcheckTest do
@@ -9,7 +9,14 @@ defmodule Pleroma.HealthcheckTest do
   test "system_info/0" do
     result = Healthcheck.system_info() |> Map.from_struct()
 
-    assert Map.keys(result) == [:active, :healthy, :idle, :memory_used, :pool_size]
+    assert Map.keys(result) == [
+             :active,
+             :healthy,
+             :idle,
+             :job_queue_stats,
+             :memory_used,
+             :pool_size
+           ]
   end
 
   describe "check_health/1" do

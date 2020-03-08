@@ -1,11 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Helpers.UriHelper
+  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
@@ -13,10 +14,10 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
   alias Pleroma.Web.OAuth.Token.Strategy.Revoke, as: RevokeToken
-  alias Pleroma.Web.OAuth.Scopes
 
   require Logger
 
@@ -24,6 +25,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   plug(:fetch_session)
   plug(:fetch_flash)
+  plug(RateLimiter, [name: :authentication] when action == :create_authorization)
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 
@@ -165,13 +167,33 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   defp handle_create_authorization_error(
          %Plug.Conn{} = conn,
-         {:auth_active, false},
+         {:account_status, :confirmation_pending},
          %{"authorization" => _} = params
        ) do
-    # Per https://github.com/tootsuite/mastodon/blob/
-    #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L76
     conn
     |> put_flash(:error, dgettext("errors", "Your login is missing a confirmed e-mail address"))
+    |> put_status(:forbidden)
+    |> authorize(params)
+  end
+
+  defp handle_create_authorization_error(
+         %Plug.Conn{} = conn,
+         {:account_status, :password_reset_pending},
+         %{"authorization" => _} = params
+       ) do
+    conn
+    |> put_flash(:error, dgettext("errors", "Password reset is required"))
+    |> put_status(:forbidden)
+    |> authorize(params)
+  end
+
+  defp handle_create_authorization_error(
+         %Plug.Conn{} = conn,
+         {:account_status, :deactivated},
+         %{"authorization" => _} = params
+       ) do
+    conn
+    |> put_flash(:error, dgettext("errors", "Your account is currently disabled"))
     |> put_status(:forbidden)
     |> authorize(params)
   end
@@ -216,23 +238,14 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       ) do
     with {:ok, %User{} = user} <- Authenticator.get_user(conn),
          {:ok, app} <- Token.Utils.fetch_app(conn),
-         {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
-         {:user_active, true} <- {:user_active, !user.info.deactivated},
+         {:account_status, :active} <- {:account_status, User.account_status(user)},
          {:ok, scopes} <- validate_scopes(app, params),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:ok, token} <- Token.exchange_token(app, auth) do
       json(conn, Token.Response.build(user, token))
     else
-      {:auth_active, false} ->
-        # Per https://github.com/tootsuite/mastodon/blob/
-        #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L76
-        render_error(conn, :forbidden, "Your login is missing a confirmed e-mail address")
-
-      {:user_active, false} ->
-        render_error(conn, :forbidden, "Your account is currently disabled")
-
-      _error ->
-        render_invalid_credentials_error(conn)
+      error ->
+        handle_token_exchange_error(conn, error)
     end
   end
 
@@ -260,6 +273,43 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   # Bad request
   def token_exchange(%Plug.Conn{} = conn, params), do: bad_request(conn, params)
+
+  defp handle_token_exchange_error(%Plug.Conn{} = conn, {:account_status, :deactivated}) do
+    render_error(
+      conn,
+      :forbidden,
+      "Your account is currently disabled",
+      %{},
+      "account_is_disabled"
+    )
+  end
+
+  defp handle_token_exchange_error(
+         %Plug.Conn{} = conn,
+         {:account_status, :password_reset_pending}
+       ) do
+    render_error(
+      conn,
+      :forbidden,
+      "Password reset is required",
+      %{},
+      "password_reset_required"
+    )
+  end
+
+  defp handle_token_exchange_error(%Plug.Conn{} = conn, {:account_status, :confirmation_pending}) do
+    render_error(
+      conn,
+      :forbidden,
+      "Your login is missing a confirmed e-mail address",
+      %{},
+      "missing_confirmed_email"
+    )
+  end
+
+  defp handle_token_exchange_error(%Plug.Conn{} = conn, _error) do
+    render_invalid_credentials_error(conn)
+  end
 
   def token_revoke(%Plug.Conn{} = conn, %{"token" => _token} = params) do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
@@ -447,13 +497,13 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
          {:ok, scopes} <- validate_scopes(app, auth_attrs),
-         {:auth_active, true} <- {:auth_active, User.auth_active?(user)} do
+         {:account_status, :active} <- {:account_status, User.account_status(user)} do
       Authorization.create_authorization(app, user, scopes)
     end
   end
 
   # Special case: Local MastodonFE
-  defp redirect_uri(%Plug.Conn{} = conn, "."), do: mastodon_api_url(conn, :login)
+  defp redirect_uri(%Plug.Conn{} = conn, "."), do: auth_url(conn, :login)
 
   defp redirect_uri(%Plug.Conn{}, redirect_uri), do: redirect_uri
 
@@ -464,10 +514,10 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   @spec validate_scopes(App.t(), map()) ::
           {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}
-  defp validate_scopes(app, params) do
+  defp validate_scopes(%App{} = app, params) do
     params
     |> Scopes.fetch_scopes(app.scopes)
-    |> Scopes.validates(app.scopes)
+    |> Scopes.validate(app.scopes)
   end
 
   def default_redirect_uri(%App{} = app) do

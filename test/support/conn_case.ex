@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ConnCase do
@@ -28,6 +28,26 @@ defmodule Pleroma.Web.ConnCase do
 
       # The default endpoint for testing
       @endpoint Pleroma.Web.Endpoint
+
+      # Sets up OAuth access with specified scopes
+      defp oauth_access(scopes, opts \\ []) do
+        user =
+          Keyword.get_lazy(opts, :user, fn ->
+            Pleroma.Factory.insert(:user)
+          end)
+
+        token =
+          Keyword.get_lazy(opts, :oauth_token, fn ->
+            Pleroma.Factory.insert(:oauth_token, user: user, scopes: scopes)
+          end)
+
+        conn =
+          build_conn()
+          |> assign(:user, user)
+          |> assign(:token, token)
+
+        %{user: user, token: token, conn: conn}
+      end
     end
   end
 

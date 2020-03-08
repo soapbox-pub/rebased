@@ -1,11 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Tests.Helpers do
   @moduledoc """
   Helpers for use in tests.
   """
+  alias Pleroma.Config
 
   defmacro clear_config(config_path) do
     quote do
@@ -17,14 +18,15 @@ defmodule Pleroma.Tests.Helpers do
   defmacro clear_config(config_path, do: yield) do
     quote do
       setup do
-        initial_setting = Pleroma.Config.get(unquote(config_path))
+        initial_setting = Config.get(unquote(config_path))
         unquote(yield)
-        on_exit(fn -> Pleroma.Config.put(unquote(config_path), initial_setting) end)
+        on_exit(fn -> Config.put(unquote(config_path), initial_setting) end)
         :ok
       end
     end
   end
 
+  @doc "Stores initial config value and restores it after *all* test examples are executed."
   defmacro clear_config_all(config_path) do
     quote do
       clear_config_all(unquote(config_path)) do
@@ -32,12 +34,17 @@ defmodule Pleroma.Tests.Helpers do
     end
   end
 
+  @doc """
+  Stores initial config value and restores it after *all* test examples are executed.
+  Only use if *all* test examples should work with the same stubbed value
+  (*no* examples set a different value).
+  """
   defmacro clear_config_all(config_path, do: yield) do
     quote do
       setup_all do
-        initial_setting = Pleroma.Config.get(unquote(config_path))
+        initial_setting = Config.get(unquote(config_path))
         unquote(yield)
-        on_exit(fn -> Pleroma.Config.put(unquote(config_path), initial_setting) end)
+        on_exit(fn -> Config.put(unquote(config_path), initial_setting) end)
         :ok
       end
     end
@@ -52,6 +59,12 @@ defmodule Pleroma.Tests.Helpers do
           clear_config_all: 1,
           clear_config_all: 2
         ]
+
+      def to_datetime(naive_datetime) do
+        naive_datetime
+        |> DateTime.from_naive!("Etc/UTC")
+        |> DateTime.truncate(:second)
+      end
 
       def collect_ids(collection) do
         collection
@@ -75,12 +88,29 @@ defmodule Pleroma.Tests.Helpers do
         |> Poison.decode!()
       end
 
+      def stringify_keys(nil), do: nil
+
+      def stringify_keys(key) when key in [true, false], do: key
+      def stringify_keys(key) when is_atom(key), do: Atom.to_string(key)
+
+      def stringify_keys(map) when is_map(map) do
+        map
+        |> Enum.map(fn {k, v} -> {stringify_keys(k), stringify_keys(v)} end)
+        |> Enum.into(%{})
+      end
+
+      def stringify_keys([head | rest] = list) when is_list(list) do
+        [stringify_keys(head) | stringify_keys(rest)]
+      end
+
+      def stringify_keys(key), do: key
+
       defmacro guards_config(config_path) do
         quote do
-          initial_setting = Pleroma.Config.get(config_path)
+          initial_setting = Config.get(config_path)
 
-          Pleroma.Config.put(config_path, true)
-          on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
+          Config.put(config_path, true)
+          on_exit(fn -> Config.put(config_path, initial_setting) end)
         end
       end
     end

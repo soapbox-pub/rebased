@@ -15,7 +15,9 @@ config :pleroma, Pleroma.Captcha,
   method: Pleroma.Captcha.Mock
 
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger, :console,
+  level: :warn,
+  format: "\n[$level] $message\n"
 
 config :pleroma, :auth, oauth_consumer_strategies: []
 
@@ -30,7 +32,8 @@ config :pleroma, :instance,
   notify_email: "noreply@example.com",
   skip_thread_containment: false,
   federating: false,
-  external_user_synchronization: false
+  external_user_synchronization: false,
+  static_dir: "test/instance_static/"
 
 config :pleroma, :activitypub, sign_object_fetches: false
 
@@ -61,18 +64,17 @@ config :web_push_encryption, :vapid_details,
 
 config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
 
-config :pleroma_job_queue, disabled: true
+config :pleroma, Oban,
+  queues: false,
+  prune: :disabled,
+  crontab: false
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 2,
   total_user_limit: 3,
   enabled: false
 
-config :pleroma, :rate_limit,
-  search: [{1000, 30}, {1000, 30}],
-  app_account_creation: {10_000, 5},
-  password_reset: {1000, 30},
-  ap_routes: nil
+config :pleroma, :rate_limit, %{}
 
 config :pleroma, :http_security, report_uri: "https://endpoint.com"
 
@@ -86,6 +88,10 @@ config :joken, default_signer: "yU8uHKq+yyAkZ11Hx//jcdacWc8yQ1bxAAGrplzB0Zwwjkp3
 
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 
+config :pleroma, :modules, runtime_dir: "test/fixtures/modules"
+
+config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: true
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else
@@ -93,5 +99,3 @@ else
     "You may want to create test.secret.exs to declare custom database connection parameters."
   )
 end
-
-config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"

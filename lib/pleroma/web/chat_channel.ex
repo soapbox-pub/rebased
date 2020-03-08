@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ChatChannel do
@@ -20,9 +20,9 @@ defmodule Pleroma.Web.ChatChannel do
   def handle_in("new_msg", %{"text" => text}, %{assigns: %{user_name: user_name}} = socket) do
     text = String.trim(text)
 
-    if String.length(text) > 0 do
+    if String.length(text) in 1..Pleroma.Config.get([:instance, :chat_limit]) do
       author = User.get_cached_by_nickname(user_name)
-      author = Pleroma.Web.MastodonAPI.AccountView.render("account.json", user: author)
+      author = Pleroma.Web.MastodonAPI.AccountView.render("show.json", user: author)
       message = ChatChannelState.add_message(%{text: text, author: author})
 
       broadcast!(socket, "new_msg", message)

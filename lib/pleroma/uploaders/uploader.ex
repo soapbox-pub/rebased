@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Uploaders.Uploader do
@@ -36,6 +36,8 @@ defmodule Pleroma.Uploaders.Uploader do
   @callback put_file(Pleroma.Upload.t()) ::
               :ok | {:ok, file_spec()} | {:error, String.t()} | :wait_callback
 
+  @callback delete_file(file :: String.t()) :: :ok | {:error, String.t()}
+
   @callback http_callback(Plug.Conn.t(), Map.t()) ::
               {:ok, Plug.Conn.t()}
               | {:ok, Plug.Conn.t(), file_spec()}
@@ -43,7 +45,6 @@ defmodule Pleroma.Uploaders.Uploader do
   @optional_callbacks http_callback: 2
 
   @spec put_file(module(), Pleroma.Upload.t()) :: {:ok, file_spec()} | {:error, String.t()}
-
   def put_file(uploader, upload) do
     case uploader.put_file(upload) do
       :ok -> {:ok, {:file, upload.path}}

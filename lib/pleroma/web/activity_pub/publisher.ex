@@ -1,12 +1,15 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.Delivery
   alias Pleroma.HTTP
   alias Pleroma.Instances
+  alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -45,7 +48,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   * `id`: the ActivityStreams URI of the message
   """
   def publish_one(%{inbox: inbox, json: json, actor: %User{} = actor, id: id} = params) do
-    Logger.info("Federating #{id} to #{inbox}")
+    Logger.debug("Federating #{id} to #{inbox}")
     %{host: host, path: path} = URI.parse(inbox)
 
     digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
@@ -84,6 +87,15 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     end
   end
 
+  def publish_one(%{actor_id: actor_id} = params) do
+    actor = User.get_cached_by_id(actor_id)
+
+    params
+    |> Map.delete(:actor_id)
+    |> Map.put(:actor, actor)
+    |> publish_one()
+  end
+
   defp should_federate?(inbox, public) do
     if public do
       true
@@ -100,14 +112,25 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
   @spec recipients(User.t(), Activity.t()) :: list(User.t()) | []
   defp recipients(actor, activity) do
-    {:ok, followers} =
+    followers =
       if actor.follower_address in activity.recipients do
         User.get_external_followers(actor)
       else
-        {:ok, []}
+        []
       end
 
-    Pleroma.Web.Salmon.remote_users(actor, activity) ++ followers
+    fetchers =
+      with %Activity{data: %{"type" => "Delete"}} <- activity,
+           %Object{id: object_id} <- Object.normalize(activity),
+           fetchers <- User.get_delivered_users_by_object_id(object_id),
+           _ <- Delivery.delete_all_by_object_id(object_id) do
+        fetchers
+      else
+        _ ->
+          []
+      end
+
+    Pleroma.Web.Federator.Publisher.remote_users(actor, activity) ++ followers ++ fetchers
   end
 
   defp get_cc_ap_ids(ap_id, recipients) do
@@ -118,7 +141,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     |> Enum.map(& &1.ap_id)
   end
 
-  defp maybe_use_sharedinbox(%User{info: %{source_data: data}}),
+  defp maybe_use_sharedinbox(%User{source_data: data}),
     do: (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
 
   @doc """
@@ -134,7 +157,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   """
   def determine_inbox(
         %Activity{data: activity_data},
-        %User{info: %{source_data: data}} = user
+        %User{source_data: data} = user
       ) do
     to = activity_data["to"] || []
     cc = activity_data["cc"] || []
@@ -159,37 +182,42 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   Publishes an activity with BCC to all relevant peers.
   """
 
-  def publish(actor, %{data: %{"bcc" => bcc}} = activity) when is_list(bcc) and bcc != [] do
+  def publish(%User{} = actor, %{data: %{"bcc" => bcc}} = activity)
+      when is_list(bcc) and bcc != [] do
     public = is_public?(activity)
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
 
     recipients = recipients(actor, activity)
 
-    recipients
-    |> Enum.filter(&User.ap_enabled?/1)
-    |> Enum.map(fn %{info: %{source_data: data}} -> data["inbox"] end)
-    |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
-    |> Instances.filter_reachable()
-    |> Enum.each(fn {inbox, unreachable_since} ->
-      %User{ap_id: ap_id} =
-        Enum.find(recipients, fn %{info: %{source_data: data}} -> data["inbox"] == inbox end)
+    inboxes =
+      recipients
+      |> Enum.filter(&User.ap_enabled?/1)
+      |> Enum.map(fn %{source_data: data} -> data["inbox"] end)
+      |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
+      |> Instances.filter_reachable()
 
-      # Get all the recipients on the same host and add them to cc. Otherwise, a remote
-      # instance would only accept a first message for the first recipient and ignore the rest.
-      cc = get_cc_ap_ids(ap_id, recipients)
+    Repo.checkout(fn ->
+      Enum.each(inboxes, fn {inbox, unreachable_since} ->
+        %User{ap_id: ap_id} =
+          Enum.find(recipients, fn %{source_data: data} -> data["inbox"] == inbox end)
 
-      json =
-        data
-        |> Map.put("cc", cc)
-        |> Jason.encode!()
+        # Get all the recipients on the same host and add them to cc. Otherwise, a remote
+        # instance would only accept a first message for the first recipient and ignore the rest.
+        cc = get_cc_ap_ids(ap_id, recipients)
 
-      Pleroma.Web.Federator.Publisher.enqueue_one(__MODULE__, %{
-        inbox: inbox,
-        json: json,
-        actor: actor,
-        id: activity.data["id"],
-        unreachable_since: unreachable_since
-      })
+        json =
+          data
+          |> Map.put("cc", cc)
+          |> Jason.encode!()
+
+        Pleroma.Web.Federator.Publisher.enqueue_one(__MODULE__, %{
+          inbox: inbox,
+          json: json,
+          actor_id: actor.id,
+          id: activity.data["id"],
+          unreachable_since: unreachable_since
+        })
+      end)
     end)
   end
 
@@ -200,7 +228,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     public = is_public?(activity)
 
     if public && Config.get([:instance, :allow_relay]) do
-      Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
+      Logger.debug(fn -> "Relaying #{activity.data["id"]} out" end)
       Relay.publish(activity)
     end
 
@@ -221,7 +249,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         %{
           inbox: inbox,
           json: json,
-          actor: actor,
+          actor_id: actor.id,
           id: activity.data["id"],
           unreachable_since: unreachable_since
         }
@@ -236,6 +264,10 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         "rel" => "self",
         "type" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
         "href" => user.ap_id
+      },
+      %{
+        "rel" => "http://ostatus.org/schema/1.0/subscribe",
+        "template" => "#{Pleroma.Web.base_url()}/ostatus_subscribe?acct={uri}"
       }
     ]
   end

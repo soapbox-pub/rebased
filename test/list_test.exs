@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ListTest do
@@ -113,10 +113,10 @@ defmodule Pleroma.ListTest do
     {:ok, not_owned_list} = Pleroma.List.follow(not_owned_list, member_1)
     {:ok, not_owned_list} = Pleroma.List.follow(not_owned_list, member_2)
 
-    lists_1 = Pleroma.List.get_lists_account_belongs(owner, member_1.id)
+    lists_1 = Pleroma.List.get_lists_account_belongs(owner, member_1)
     assert owned_list in lists_1
     refute not_owned_list in lists_1
-    lists_2 = Pleroma.List.get_lists_account_belongs(owner, member_2.id)
+    lists_2 = Pleroma.List.get_lists_account_belongs(owner, member_2)
     assert owned_list in lists_2
     refute not_owned_list in lists_2
   end

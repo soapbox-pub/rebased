@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RelMeTest do
@@ -14,7 +14,9 @@ defmodule Pleroma.Web.RelMeTest do
     hrefs = ["https://social.example.org/users/lain"]
 
     assert Pleroma.Web.RelMe.parse("http://example.com/rel_me/null") == {:ok, []}
-    assert {:error, _} = Pleroma.Web.RelMe.parse("http://example.com/rel_me/error")
+
+    assert {:ok, %Tesla.Env{status: 404}} =
+             Pleroma.Web.RelMe.parse("http://example.com/rel_me/error")
 
     assert Pleroma.Web.RelMe.parse("http://example.com/rel_me/link") == {:ok, hrefs}
     assert Pleroma.Web.RelMe.parse("http://example.com/rel_me/anchor") == {:ok, hrefs}

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ChannelCase do
@@ -23,6 +23,7 @@ defmodule Pleroma.Web.ChannelCase do
     quote do
       # Import conveniences for testing with channels
       use Phoenix.ChannelTest
+      use Pleroma.Tests.Helpers
 
       # The default endpoint for testing
       @endpoint Pleroma.Web.Endpoint

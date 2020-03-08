@@ -1,12 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ControllerHelper do
   use Pleroma.Web, :controller
 
   # As in MastoAPI, per https://api.rubyonrails.org/classes/ActiveModel/Type/Boolean.html
-  @falsy_param_values [false, 0, "0", "f", "F", "false", "FALSE", "off", "OFF"]
+  @falsy_param_values [false, 0, "0", "f", "F", "false", "False", "FALSE", "off", "OFF"]
   def truthy_param?(blank_value) when blank_value in [nil, ""], do: nil
   def truthy_param?(value), do: value not in @falsy_param_values
 
@@ -34,79 +34,60 @@ defmodule Pleroma.Web.ControllerHelper do
 
   defp param_to_integer(_, default), do: default
 
-  def add_link_headers(
-        conn,
-        method,
-        activities,
-        param \\ nil,
-        params \\ %{},
-        func3 \\ nil,
-        func4 \\ nil
-      ) do
-    params =
-      conn.params
-      |> Map.drop(["since_id", "max_id", "min_id"])
-      |> Map.merge(params)
+  def add_link_headers(conn, activities, extra_params \\ %{}) do
+    case List.last(activities) do
+      %{id: max_id} ->
+        params =
+          conn.params
+          |> Map.drop(Map.keys(conn.path_params))
+          |> Map.drop(["since_id", "max_id", "min_id"])
+          |> Map.merge(extra_params)
 
-    last = List.last(activities)
+        limit =
+          params
+          |> Map.get("limit", "20")
+          |> String.to_integer()
 
-    func3 = func3 || (&mastodon_api_url/3)
-    func4 = func4 || (&mastodon_api_url/4)
+        min_id =
+          if length(activities) <= limit do
+            activities
+            |> List.first()
+            |> Map.get(:id)
+          else
+            activities
+            |> Enum.at(limit * -1)
+            |> Map.get(:id)
+          end
 
-    if last do
-      max_id = last.id
+        next_url = current_url(conn, Map.merge(params, %{max_id: max_id}))
+        prev_url = current_url(conn, Map.merge(params, %{min_id: min_id}))
 
-      limit =
-        params
-        |> Map.get("limit", "20")
-        |> String.to_integer()
+        put_resp_header(conn, "link", "<#{next_url}>; rel=\"next\", <#{prev_url}>; rel=\"prev\"")
 
-      min_id =
-        if length(activities) <= limit do
-          activities
-          |> List.first()
-          |> Map.get(:id)
-        else
-          activities
-          |> Enum.at(limit * -1)
-          |> Map.get(:id)
-        end
-
-      {next_url, prev_url} =
-        if param do
-          {
-            func4.(
-              Pleroma.Web.Endpoint,
-              method,
-              param,
-              Map.merge(params, %{max_id: max_id})
-            ),
-            func4.(
-              Pleroma.Web.Endpoint,
-              method,
-              param,
-              Map.merge(params, %{min_id: min_id})
-            )
-          }
-        else
-          {
-            func3.(
-              Pleroma.Web.Endpoint,
-              method,
-              Map.merge(params, %{max_id: max_id})
-            ),
-            func3.(
-              Pleroma.Web.Endpoint,
-              method,
-              Map.merge(params, %{min_id: min_id})
-            )
-          }
-        end
-
-      conn
-      |> put_resp_header("link", "<#{next_url}>; rel=\"next\", <#{prev_url}>; rel=\"prev\"")
-    else
-      conn
+      _ ->
+        conn
     end
   end
+
+  def assign_account_by_id(%{params: %{"id" => id}} = conn, _) do
+    case Pleroma.User.get_cached_by_id(id) do
+      %Pleroma.User{} = account -> assign(conn, :account, account)
+      nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
+    end
+  end
+
+  def try_render(conn, target, params) when is_binary(target) do
+    case render(conn, target, params) do
+      nil -> render_error(conn, :not_implemented, "Can't display this activity")
+      res -> res
+    end
+  end
+
+  def try_render(conn, _, _) do
+    render_error(conn, :not_implemented, "Can't display this activity")
+  end
+
+  @spec put_in_if_exist(map(), atom() | String.t(), any) :: map()
+  def put_in_if_exist(map, _key, nil), do: map
+  def put_in_if_exist(map, key, value), do: put_in(map, key, value)
 end

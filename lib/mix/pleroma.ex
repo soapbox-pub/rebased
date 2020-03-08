@@ -1,12 +1,30 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Pleroma do
   @doc "Common functions to be reused in mix tasks"
   def start_pleroma do
     Application.put_env(:phoenix, :serve_endpoints, false, persistent: true)
+
+    if Pleroma.Config.get(:env) != :test do
+      Application.put_env(:logger, :console, level: :debug)
+    end
+
     {:ok, _} = Application.ensure_all_started(:pleroma)
+
+    if Pleroma.Config.get(:env) not in [:test, :benchmark] do
+      pleroma_rebooted?()
+    end
+  end
+
+  defp pleroma_rebooted? do
+    if Restarter.Pleroma.rebooted?() do
+      :ok
+    else
+      Process.sleep(10)
+      pleroma_rebooted?()
+    end
   end
 
   def load_pleroma do

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
@@ -9,6 +9,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
 
   clear_config([:http_securiy, :enabled])
   clear_config([:http_security, :sts])
+  clear_config([:http_security, :referrer_policy])
 
   describe "http security enabled" do
     setup do

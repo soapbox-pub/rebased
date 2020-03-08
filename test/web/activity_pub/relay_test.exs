@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.RelayTest do
@@ -7,9 +7,11 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
 
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
 
+  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Mock
 
@@ -18,9 +20,16 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
     assert user.ap_id == "#{Pleroma.Web.Endpoint.url()}/relay"
   end
 
+  test "relay actor is invisible" do
+    user = Relay.get_actor()
+    assert User.invisible?(user)
+  end
+
   describe "follow/1" do
     test "returns errors when user not found" do
-      assert Relay.follow("test-ap-id") == {:error, "Could not fetch by AP id"}
+      assert capture_log(fn ->
+               {:error, _} = Relay.follow("test-ap-id")
+             end) =~ "Could not decode user at fetch"
     end
 
     test "returns activity" do
@@ -37,7 +46,9 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
 
   describe "unfollow/1" do
     test "returns errors when user not found" do
-      assert Relay.unfollow("test-ap-id") == {:error, "Could not fetch by AP id"}
+      assert capture_log(fn ->
+               {:error, _} = Relay.unfollow("test-ap-id")
+             end) =~ "Could not decode user at fetch"
     end
 
     test "returns activity" do
@@ -45,14 +56,14 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       service_actor = Relay.get_actor()
       ActivityPub.follow(service_actor, user)
       Pleroma.User.follow(service_actor, user)
-      assert "#{user.ap_id}/followers" in refresh_record(service_actor).following
+      assert "#{user.ap_id}/followers" in User.following(service_actor)
       assert {:ok, %Activity{} = activity} = Relay.unfollow(user.ap_id)
       assert activity.actor == "#{Pleroma.Web.Endpoint.url()}/relay"
       assert user.ap_id in activity.recipients
       assert activity.data["type"] == "Undo"
       assert activity.data["actor"] == service_actor.ap_id
       assert activity.data["to"] == [user.ap_id]
-      refute "#{user.ap_id}/followers" in refresh_record(service_actor).following
+      refute "#{user.ap_id}/followers" in User.following(service_actor)
     end
   end
 
@@ -78,7 +89,9 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
           }
         )
 
-      assert Relay.publish(activity) == {:error, nil}
+      assert capture_log(fn ->
+               assert Relay.publish(activity) == {:error, nil}
+             end) =~ "[error] error: nil"
     end
 
     test_with_mock "returns announce activity and publish to federate",
@@ -92,7 +105,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
       assert activity.data["object"] == obj.data["id"]
-      assert called(Pleroma.Web.Federator.publish(activity, 5))
+      assert called(Pleroma.Web.Federator.publish(activity))
     end
 
     test_with_mock "returns announce activity and not publish to federate",
@@ -106,7 +119,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
       assert activity.data["object"] == obj.data["id"]
-      refute called(Pleroma.Web.Federator.publish(activity, 5))
+      refute called(Pleroma.Web.Federator.publish(activity))
     end
   end
 end

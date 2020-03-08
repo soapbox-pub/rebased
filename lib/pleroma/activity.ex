@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Activity do
@@ -12,6 +12,7 @@ defmodule Pleroma.Activity do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ReportNote
   alias Pleroma.ThreadMute
   alias Pleroma.User
 
@@ -28,7 +29,9 @@ defmodule Pleroma.Activity do
     "Create" => "mention",
     "Follow" => "follow",
     "Announce" => "reblog",
-    "Like" => "favourite"
+    "Like" => "favourite",
+    "Move" => "move",
+    "EmojiReact" => "pleroma:emoji_reaction"
   }
 
   @mastodon_to_ap_notification_types for {k, v} <- @mastodon_notification_types,
@@ -41,8 +44,14 @@ defmodule Pleroma.Activity do
     field(:actor, :string)
     field(:recipients, {:array, :string}, default: [])
     field(:thread_muted?, :boolean, virtual: true)
+
+    # This is a fake relation,
+    # do not use outside of with_preloaded_user_actor/with_joined_user_actor
+    has_one(:user_actor, User, on_delete: :nothing, foreign_key: :id)
     # This is a fake relation, do not use outside of with_preloaded_bookmark/get_bookmark
     has_one(:bookmark, Bookmark)
+    # This is a fake relation, do not use outside of with_preloaded_report_notes
+    has_many(:report_notes, ReportNote)
     has_many(:notifications, Notification, on_delete: :delete_all)
 
     # Attention: this is a fake relation, don't try to preload it blindly and expect it to work!
@@ -86,6 +95,19 @@ defmodule Pleroma.Activity do
     |> preload([activity, object: object], object: object)
   end
 
+  def with_joined_user_actor(query, join_type \\ :inner) do
+    join(query, join_type, [activity], u in User,
+      on: u.ap_id == activity.actor,
+      as: :user_actor
+    )
+  end
+
+  def with_preloaded_user_actor(query, join_type \\ :inner) do
+    query
+    |> with_joined_user_actor(join_type)
+    |> preload([activity, user_actor: user_actor], user_actor: user_actor)
+  end
+
   def with_preloaded_bookmark(query, %User{} = user) do
     from([a] in query,
       left_join: b in Bookmark,
@@ -95,6 +117,16 @@ defmodule Pleroma.Activity do
   end
 
   def with_preloaded_bookmark(query, _), do: query
+
+  def with_preloaded_report_notes(query) do
+    from([a] in query,
+      left_join: r in ReportNote,
+      on: a.id == r.activity_id,
+      preload: [report_notes: r]
+    )
+  end
+
+  def with_preloaded_report_notes(query, _), do: query
 
   def with_set_thread_muted_field(query, %User{} = user) do
     from([a] in query,
@@ -137,11 +169,18 @@ defmodule Pleroma.Activity do
     |> Repo.one()
   end
 
+  @spec get_by_id(String.t()) :: Activity.t() | nil
   def get_by_id(id) do
-    Activity
-    |> where([a], a.id == ^id)
-    |> restrict_deactivated_users()
-    |> Repo.one()
+    case FlakeId.flake_id?(id) do
+      true ->
+        Activity
+        |> where([a], a.id == ^id)
+        |> restrict_deactivated_users()
+        |> Repo.one()
+
+      _ ->
+        nil
+    end
   end
 
   def get_by_id_with_object(id) do
@@ -216,9 +255,10 @@ defmodule Pleroma.Activity do
   def normalize(ap_id) when is_binary(ap_id), do: get_by_ap_id_with_object(ap_id)
   def normalize(_), do: nil
 
-  def delete_by_ap_id(id) when is_binary(id) do
+  def delete_all_by_object_ap_id(id) when is_binary(id) do
     id
     |> Queries.by_object_id()
+    |> Queries.exclude_type("Delete")
     |> select([u], u)
     |> Repo.delete_all()
     |> elem(1)
@@ -230,7 +270,7 @@ defmodule Pleroma.Activity do
     |> purge_web_resp_cache()
   end
 
-  def delete_by_ap_id(_), do: nil
+  def delete_all_by_object_ap_id(_), do: nil
 
   defp purge_web_resp_cache(%Activity{} = activity) do
     %{path: path} = URI.parse(activity.data["id"])
@@ -270,13 +310,24 @@ defmodule Pleroma.Activity do
 
   def restrict_deactivated_users(query) do
     deactivated_users =
-      from(u in User.Query.build(deactivated: true), select: u.ap_id)
+      from(u in User.Query.build(%{deactivated: true}), select: u.ap_id)
       |> Repo.all()
 
-    from(activity in query,
-      where: activity.actor not in ^deactivated_users
-    )
+    Activity.Queries.exclude_authors(query, deactivated_users)
   end
 
   defdelegate search(user, query, options \\ []), to: Pleroma.Activity.Search
+
+  def direct_conversation_id(activity, for_user) do
+    alias Pleroma.Conversation.Participation
+
+    with %{data: %{"context" => context}} when is_binary(context) <- activity,
+         %Pleroma.Conversation{} = conversation <- Pleroma.Conversation.get_for_ap_id(context),
+         %Participation{id: participation_id} <-
+           Participation.for_user_and_conversation(for_user, conversation) do
+      participation_id
+    else
+      _ -> nil
+    end
+  end
 end

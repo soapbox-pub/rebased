@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ActivityTest do
@@ -7,6 +7,7 @@ defmodule Pleroma.ActivityTest do
   alias Pleroma.Activity
   alias Pleroma.Bookmark
   alias Pleroma.Object
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.ThreadMute
   import Pleroma.Factory
 
@@ -125,8 +126,27 @@ defmodule Pleroma.ActivityTest do
       }
 
       {:ok, local_activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "find me!"})
-      {:ok, remote_activity} = Pleroma.Web.Federator.incoming_ap_doc(params)
-      %{local_activity: local_activity, remote_activity: remote_activity, user: user}
+      {:ok, japanese_activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "更新情報"})
+      {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
+      {:ok, remote_activity} = ObanHelpers.perform(job)
+
+      %{
+        japanese_activity: japanese_activity,
+        local_activity: local_activity,
+        remote_activity: remote_activity,
+        user: user
+      }
+    end
+
+    clear_config([:instance, :limit_to_local_content])
+
+    test "finds utf8 text in statuses", %{
+      japanese_activity: japanese_activity,
+      user: user
+    } do
+      activities = Activity.search(user, "更新情報")
+
+      assert [^japanese_activity] = activities
     end
 
     test "find local and remote statuses for authenticated users", %{
@@ -147,7 +167,6 @@ defmodule Pleroma.ActivityTest do
          %{local_activity: local_activity} do
       Pleroma.Config.put([:instance, :limit_to_local_content], :all)
       assert [^local_activity] = Activity.search(nil, "find me")
-      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
     end
 
     test "find all statuses for unauthenticated users when `limit_to_local_content` is `false`",
@@ -160,8 +179,6 @@ defmodule Pleroma.ActivityTest do
       activities = Enum.sort_by(Activity.search(nil, "find me"), & &1.id)
 
       assert [^local_activity, ^remote_activity] = activities
-
-      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
     end
   end
 

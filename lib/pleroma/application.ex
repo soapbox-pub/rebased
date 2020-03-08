@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Application do
   import Cachex.Spec
   use Application
+  require Logger
 
   @name Mix.Project.config()[:name]
   @version Mix.Project.config()[:version]
@@ -17,15 +18,25 @@ defmodule Pleroma.Application do
   def repository, do: @repository
 
   def user_agent do
-    info = "#{Pleroma.Web.base_url()} <#{Pleroma.Config.get([:instance, :email], "")}>"
-    named_version() <> "; " <> info
+    case Pleroma.Config.get([:http, :user_agent], :default) do
+      :default ->
+        info = "#{Pleroma.Web.base_url()} <#{Pleroma.Config.get([:instance, :email], "")}>"
+        named_version() <> "; " <> info
+
+      custom ->
+        custom
+    end
   end
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
+    Pleroma.HTML.compile_scrubbers()
     Pleroma.Config.DeprecationWarnings.warn()
+    Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
+    Pleroma.Repo.check_migrations_applied!()
     setup_instrumenters()
+    load_custom_modules()
 
     # Define workers and child supervisors to be supervised
     children =
@@ -34,17 +45,16 @@ defmodule Pleroma.Application do
         Pleroma.Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,
-        Pleroma.ScheduledActivityWorker,
-        Pleroma.ActivityExpirationWorker
+        Pleroma.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
         hackney_pool_children() ++
         [
-          Pleroma.Web.Federator.RetryQueue,
-          Pleroma.Stats
+          Pleroma.Stats,
+          Pleroma.JobQueueMonitor,
+          {Oban, Pleroma.Config.get(Oban)}
         ] ++
         task_children(@env) ++
-        oauth_cleanup_child(oauth_cleanup_enabled?()) ++
         streamer_child(@env) ++
         chat_child(@env, chat_enabled?()) ++
         [
@@ -56,6 +66,28 @@ defmodule Pleroma.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  def load_custom_modules do
+    dir = Pleroma.Config.get([:modules, :runtime_dir])
+
+    if dir && File.exists?(dir) do
+      dir
+      |> Pleroma.Utils.compile_dir()
+      |> case do
+        {:error, _errors, _warnings} ->
+          raise "Invalid custom modules"
+
+        {:ok, modules, _warnings} ->
+          if @env != :test do
+            Enum.each(modules, fn mod ->
+              Logger.info("Custom module loaded: #{inspect(mod)}")
+            end)
+          end
+
+          :ok
+      end
+    end
   end
 
   defp setup_instrumenters do
@@ -101,9 +133,13 @@ defmodule Pleroma.Application do
       build_cachex("scrubber", limit: 2500),
       build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500),
       build_cachex("web_resp", limit: 2500),
+      build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
       build_cachex("failed_proxy_url", limit: 2500)
     ]
   end
+
+  defp emoji_packs_expiration,
+    do: expiration(default: :timer.seconds(5 * 60), interval: :timer.seconds(60))
 
   defp idempotency_expiration,
     do: expiration(default: :timer.seconds(6 * 60 * 60), interval: :timer.seconds(60))
@@ -120,21 +156,11 @@ defmodule Pleroma.Application do
 
   defp chat_enabled?, do: Pleroma.Config.get([:chat, :enabled])
 
-  defp oauth_cleanup_enabled?,
-    do: Pleroma.Config.get([:oauth2, :clean_expired_tokens], false)
-
   defp streamer_child(:test), do: []
 
   defp streamer_child(_) do
     [Pleroma.Web.Streamer.supervisor()]
   end
-
-  defp oauth_cleanup_child(true),
-    do: [Pleroma.Web.OAuth.Token.CleanWorker]
-
-  defp oauth_cleanup_child(_), do: []
-
-  defp chat_child(:test, _), do: []
 
   defp chat_child(_env, true) do
     [Pleroma.Web.ChatChannel.ChatChannelState]
@@ -155,11 +181,6 @@ defmodule Pleroma.Application do
         id: :web_push_init,
         start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
         restart: :temporary
-      },
-      %{
-        id: :federator_init,
-        start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
-        restart: :temporary
       }
     ]
   end
@@ -169,11 +190,6 @@ defmodule Pleroma.Application do
       %{
         id: :web_push_init,
         start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
-        restart: :temporary
-      },
-      %{
-        id: :federator_init,
-        start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
         restart: :temporary
       },
       %{

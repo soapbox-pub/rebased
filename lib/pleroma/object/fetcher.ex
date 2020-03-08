@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object.Fetcher do
@@ -10,7 +10,7 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.Signature
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.Transmogrifier
-  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.Federator
 
   require Logger
   require Pleroma.Constants
@@ -31,6 +31,7 @@ defmodule Pleroma.Object.Fetcher do
 
   defp maybe_reinject_internal_fields(data, _), do: data
 
+  @spec reinject_object(struct(), map()) :: {:ok, Object.t()} | {:error, any()}
   defp reinject_object(struct, data) do
     Logger.debug("Reinjecting object #{data["id"]}")
 
@@ -49,70 +50,82 @@ defmodule Pleroma.Object.Fetcher do
   end
 
   def refetch_object(%Object{data: %{"id" => id}} = object) do
-    with {:local, false} <- {:local, String.starts_with?(id, Pleroma.Web.base_url() <> "/")},
+    with {:local, false} <- {:local, Object.local?(object)},
          {:ok, data} <- fetch_and_contain_remote_object_from_id(id),
          {:ok, object} <- reinject_object(object, data) do
       {:ok, object}
     else
-      {:local, true} -> object
+      {:local, true} -> {:ok, object}
       e -> {:error, e}
     end
   end
 
-  # TODO:
-  # This will create a Create activity, which we need internally at the moment.
+  # Note: will create a Create activity, which we need internally at the moment.
   def fetch_object_from_id(id, options \\ []) do
-    if object = Object.get_cached_by_ap_id(id) do
+    with {_, nil} <- {:fetch_object, Object.get_cached_by_ap_id(id)},
+         {_, true} <- {:allowed_depth, Federator.allowed_thread_distance?(options[:depth])},
+         {_, {:ok, data}} <- {:fetch, fetch_and_contain_remote_object_from_id(id)},
+         {_, nil} <- {:normalize, Object.normalize(data, false)},
+         params <- prepare_activity_params(data),
+         {_, :ok} <- {:containment, Containment.contain_origin(id, params)},
+         {_, {:ok, activity}} <-
+           {:transmogrifier, Transmogrifier.handle_incoming(params, options)},
+         {_, _data, %Object{} = object} <-
+           {:object, data, Object.normalize(activity, false)} do
       {:ok, object}
     else
-      Logger.info("Fetching #{id} via AP")
+      {:allowed_depth, false} ->
+        {:error, "Max thread distance exceeded."}
 
-      with {:fetch, {:ok, data}} <- {:fetch, fetch_and_contain_remote_object_from_id(id)},
-           {:normalize, nil} <- {:normalize, Object.normalize(data, false)},
-           params <- %{
-             "type" => "Create",
-             "to" => data["to"],
-             "cc" => data["cc"],
-             # Should we seriously keep this attributedTo thing?
-             "actor" => data["actor"] || data["attributedTo"],
-             "object" => data
-           },
-           {:containment, :ok} <- {:containment, Containment.contain_origin(id, params)},
-           {:ok, activity} <- Transmogrifier.handle_incoming(params, options),
-           {:object, _data, %Object{} = object} <-
-             {:object, data, Object.normalize(activity, false)} do
+      {:containment, _} ->
+        {:error, "Object containment failed."}
+
+      {:transmogrifier, {:error, {:reject, nil}}} ->
+        {:reject, nil}
+
+      {:transmogrifier, _} ->
+        {:error, "Transmogrifier failure."}
+
+      {:object, data, nil} ->
+        reinject_object(%Object{}, data)
+
+      {:normalize, object = %Object{}} ->
         {:ok, object}
-      else
-        {:containment, _} ->
-          {:error, "Object containment failed."}
 
-        {:error, {:reject, nil}} ->
-          {:reject, nil}
+      {:fetch_object, %Object{} = object} ->
+        {:ok, object}
 
-        {:object, data, nil} ->
-          reinject_object(%Object{}, data)
+      {:fetch, {:error, error}} ->
+        {:error, error}
 
-        {:normalize, object = %Object{}} ->
-          {:ok, object}
-
-        _e ->
-          # Only fallback when receiving a fetch/normalization error with ActivityPub
-          Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
-
-          # FIXME: OStatus Object Containment?
-          case OStatus.fetch_activity_from_url(id) do
-            {:ok, [activity | _]} -> {:ok, Object.normalize(activity, false)}
-            e -> e
-          end
-      end
+      e ->
+        e
     end
+  end
+
+  defp prepare_activity_params(data) do
+    %{
+      "type" => "Create",
+      "to" => data["to"],
+      "cc" => data["cc"],
+      # Should we seriously keep this attributedTo thing?
+      "actor" => data["actor"] || data["attributedTo"],
+      "object" => data
+    }
   end
 
   def fetch_object_from_id!(id, options \\ []) do
     with {:ok, object} <- fetch_object_from_id(id, options) do
       object
     else
-      _e ->
+      {:error, %Tesla.Mock.Error{}} ->
+        nil
+
+      {:error, "Object has been deleted"} ->
+        nil
+
+      e ->
+        Logger.error("Error while fetching #{id}: #{inspect(e)}")
         nil
     end
   end
@@ -148,7 +161,7 @@ defmodule Pleroma.Object.Fetcher do
   end
 
   def fetch_and_contain_remote_object_from_id(id) when is_binary(id) do
-    Logger.info("Fetching object #{id} via AP")
+    Logger.debug("Fetching object #{id} via AP")
 
     date = Pleroma.Signature.signed_date()
 
@@ -159,7 +172,7 @@ defmodule Pleroma.Object.Fetcher do
 
     Logger.debug("Fetch headers: #{inspect(headers)}")
 
-    with true <- String.starts_with?(id, "http"),
+    with {:scheme, true} <- {:scheme, String.starts_with?(id, "http")},
          {:ok, %{body: body, status: code}} when code in 200..299 <- HTTP.get(id, headers),
          {:ok, data} <- Jason.decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
@@ -167,6 +180,12 @@ defmodule Pleroma.Object.Fetcher do
     else
       {:ok, %{status: code}} when code in [404, 410] ->
         {:error, "Object has been deleted"}
+
+      {:scheme, _} ->
+        {:error, "Unsupported URI scheme"}
+
+      {:error, e} ->
+        {:error, e}
 
       e ->
         {:error, e}

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.Search do
@@ -18,7 +18,11 @@ defmodule Pleroma.Web.AdminAPI.Search do
 
   @spec user(map()) :: {:ok, [User.t()], pos_integer()}
   def user(params \\ %{}) do
-    query = User.Query.build(params) |> order_by([u], u.nickname)
+    query =
+      params
+      |> Map.drop([:page, :page_size])
+      |> User.Query.build()
+      |> order_by([u], u.nickname)
 
     paginated_query =
       User.Query.paginate(query, params[:page] || 1, params[:page_size] || @page_size)

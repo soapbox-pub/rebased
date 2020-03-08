@@ -1,16 +1,20 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.SubscriptionController do
   @moduledoc "The module represents functions to manage user subscriptions."
   use Pleroma.Web, :controller
 
+  alias Pleroma.Web.MastodonAPI.PushSubscriptionView, as: View
   alias Pleroma.Web.Push
   alias Pleroma.Web.Push.Subscription
-  alias Pleroma.Web.MastodonAPI.PushSubscriptionView, as: View
 
   action_fallback(:errors)
+
+  plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["push"]})
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   # Creates PushSubscription
   # POST /api/v1/push/subscription

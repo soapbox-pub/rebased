@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.AdminEmail do
@@ -7,6 +7,7 @@ defmodule Pleroma.Emails.AdminEmail do
 
   import Swoosh.Email
 
+  alias Pleroma.Config
   alias Pleroma.Web.Router.Helpers
 
   defp instance_config, do: Pleroma.Config.get(:instance)
@@ -17,7 +18,20 @@ defmodule Pleroma.Emails.AdminEmail do
   end
 
   defp user_url(user) do
-    Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.id)
+    Helpers.user_feed_url(Pleroma.Web.Endpoint, :feed_redirect, user.id)
+  end
+
+  def test_email(mail_to \\ nil) do
+    html_body = """
+    <h3>Instance Test Email</h3>
+    <p>A test email was requested. Hello. :)</p>
+    """
+
+    new()
+    |> to(mail_to || Config.get([:instance, :email]))
+    |> from({instance_name(), instance_notify_email()})
+    |> subject("Instance Test Email")
+    |> html_body(html_body)
   end
 
   def report(to, reporter, account, statuses, comment) do

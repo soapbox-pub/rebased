@@ -1,30 +1,32 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
 
-  alias Ecto.Changeset
   alias Pleroma.Notification
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TokenView
 
   require Logger
 
+  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :notifications_read)
+
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+
   action_fallback(:errors)
 
   def confirm_email(conn, %{"user_id" => uid, "token" => token}) do
     with %User{} = user <- User.get_cached_by_id(uid),
-         true <- user.local,
-         true <- user.info.confirmation_pending,
-         true <- user.info.confirmation_token == token,
-         info_change <- User.Info.confirmation_changeset(user.info, need_confirmation: false),
-         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_change),
-         {:ok, _} <- User.update_and_set_cache(changeset) do
-      conn
-      |> redirect(to: "/")
+         true <- user.local and user.confirmation_pending and user.confirmation_token == token,
+         {:ok, _} <-
+           user
+           |> User.confirmation_changeset(need_confirmation: false)
+           |> User.update_and_set_cache() do
+      redirect(conn, to: "/")
     end
   end
 

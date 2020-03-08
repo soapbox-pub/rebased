@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ConversationTest do
@@ -21,6 +21,8 @@ defmodule Pleroma.ConversationTest do
 
     {:ok, _activity} =
       CommonAPI.post(user, %{"visibility" => "direct", "status" => "hey @#{other_user.nickname}"})
+
+    Pleroma.Tests.ObanHelpers.perform_all()
 
     Repo.delete_all(Conversation)
     Repo.delete_all(Conversation.Participation)

@@ -69,3 +69,5 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "<%= uploads_dir %>"
 #   host: "s3.wasabisys.com"
 
 config :joken, default_signer: "<%= jwt_secret %>"
+
+config :pleroma, configurable_from_database: <%= db_configurable? %>

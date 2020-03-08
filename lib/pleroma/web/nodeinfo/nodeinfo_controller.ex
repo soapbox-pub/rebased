@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
@@ -46,10 +46,10 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
         data
         |> Map.merge(%{quarantined_instances: quarantined})
-        |> Map.put(:enabled, Config.get([:instance, :federating]))
       else
         %{}
       end
+      |> Map.put(:enabled, Config.get([:instance, :federating]))
 
     features =
       [
@@ -58,6 +58,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         "mastodon_api_streaming",
         "polls",
         "pleroma_explicit_addressing",
+        "shareable_emoji_packs",
+        "multifetch",
         if Config.get([:media_proxy, :enabled]) do
           "media_proxy"
         end,
@@ -66,9 +68,6 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         end,
         if Config.get([:chat, :enabled]) do
           "chat"
-        end,
-        if Config.get([:suggestions, :enabled]) do
-          "suggestions"
         end,
         if Config.get([:instance, :allow_relay]) do
           "relay"
@@ -93,20 +92,16 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       openRegistrations: Config.get([:instance, :registrations_open]),
       usage: %{
         users: %{
-          total: stats.user_count || 0
+          total: Map.get(stats, :user_count, 0)
         },
-        localPosts: stats.status_count || 0
+        localPosts: Map.get(stats, :status_count, 0)
       },
       metadata: %{
         nodeName: Config.get([:instance, :name]),
         nodeDescription: Config.get([:instance, :description]),
         private: !Config.get([:instance, :public], true),
         suggestions: %{
-          enabled: Config.get([:suggestions, :enabled], false),
-          thirdPartyEngine: Config.get([:suggestions, :third_party_engine], ""),
-          timeout: Config.get([:suggestions, :timeout], 5000),
-          limit: Config.get([:suggestions, :limit], 23),
-          web: Config.get([:suggestions, :web], "")
+          enabled: false
         },
         staffAccounts: staff_accounts,
         federation: federation_response,
@@ -117,6 +112,12 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           avatar: Config.get([:instance, :avatar_upload_limit]),
           banner: Config.get([:instance, :banner_upload_limit]),
           background: Config.get([:instance, :background_upload_limit])
+        },
+        fieldsLimits: %{
+          maxFields: Config.get([:instance, :max_account_fields]),
+          maxRemoteFields: Config.get([:instance, :max_remote_account_fields]),
+          nameLength: Config.get([:instance, :account_field_name_length]),
+          valueLength: Config.get([:instance, :account_field_value_length])
         },
         accountActivationRequired: Config.get([:instance, :account_activation_required], false),
         invitesEnabled: Config.get([:instance, :invites_enabled], false),

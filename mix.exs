@@ -4,11 +4,11 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("1.1.9"),
-      elixir: "~> 1.7",
+      version: version("2.0.0"),
+      elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
-      elixirc_options: [warnings_as_errors: true],
+      elixirc_options: [warnings_as_errors: warnings_as_errors(Mix.env())],
       xref: [exclude: [:eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -63,14 +63,20 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize],
       included_applications: [:ex_syslogger]
     ]
   end
 
   # Specifies which paths to compile per environment.
+  defp elixirc_paths(:benchmark), do: ["lib", "benchmarks"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp warnings_as_errors(:prod), do: false
+  # Uncomment this if you need testing configurable_from_database logic
+  # defp warnings_as_errors(:dev), do: false
+  defp warnings_as_errors(_), do: true
 
   # Specifies OAuth dependencies.
   defp oauth_deps do
@@ -99,17 +105,19 @@ defmodule Pleroma.Mixfile do
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
-      {:ecto_sql, "~> 3.1"},
+      {:ecto_enum, "~> 1.4"},
+      {:ecto_sql, "~> 3.3.2"},
       {:postgrex, ">= 0.13.5"},
+      {:oban, "~> 0.12.1"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
       {:trailing_format_plug, "~> 0.0.7"},
-      {:html_sanitize_ex, "~> 1.3.0"},
+      {:fast_sanitize, "~> 0.1"},
       {:html_entities, "~> 0.5", override: true},
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},
-      {:cachex, "~> 3.0.2"},
+      {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
       {:tesla, "~> 1.3", override: true},
       {:jason, "~> 1.0"},
@@ -120,7 +128,7 @@ defmodule Pleroma.Mixfile do
       {:earmark, "~> 1.3"},
       {:bbcode, "~> 0.1.1"},
       {:ex_machina, "~> 2.3", only: :test},
-      {:credo, "~> 0.9.3", only: [:dev, :test]},
+      {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.3", only: :test},
       {:crypt,
        git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
@@ -131,8 +139,8 @@ defmodule Pleroma.Mixfile do
       {:phoenix_swoosh, "~> 0.2"},
       {:gen_smtp, "~> 0.13"},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
-      {:floki, "~> 0.20.0"},
-      {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
+      {:ex_syslogger, "~> 1.4"},
+      {:floki, "~> 0.25"},
       {:timex, "~> 3.5"},
       {:ueberauth, "~> 0.4"},
       {:auto_linker,
@@ -141,27 +149,29 @@ defmodule Pleroma.Mixfile do
       {:http_signatures,
        git: "https://git.pleroma.social/pleroma/http_signatures.git",
        ref: "293d77bb6f4a67ac8bde1428735c3b42f22cbb30"},
-      {:pleroma_job_queue, "~> 0.3"},
       {:telemetry, "~> 0.3"},
       {:poolboy, "~> 1.5"},
       {:prometheus_ex, "~> 3.0"},
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
       {:prometheus_ecto, "~> 1.4"},
-      {:recon, github: "ferd/recon", tag: "2.4.0"},
+      {:recon, "~> 2.5"},
       {:quack, "~> 0.1.1"},
       {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
-      {:ex_rated, "~> 1.3"},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
-      {:excoveralls, "~> 0.11.1", only: :test},
+      {:excoveralls, "~> 0.12.1", only: :test},
       {:flake_id, "~> 0.1.0"},
+      {:remote_ip,
+       git: "https://git.pleroma.social/pleroma/remote_ip.git",
+       ref: "825dc00aaba5a1b7c4202a532b696b595dd3bcb3"},
       {:captcha,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
-      {:mox, "~> 0.5", only: :test}
+      {:mox, "~> 0.5", only: :test},
+      {:restarter, path: "./restarter"}
     ] ++ oauth_deps()
   end
 
@@ -177,7 +187,8 @@ defmodule Pleroma.Mixfile do
       "ecto.rollback": ["pleroma.ecto.rollback"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"],
+      docs: ["pleroma.docs", "docs"]
     ]
   end
 
@@ -192,26 +203,20 @@ defmodule Pleroma.Mixfile do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
     # Pre-release version, denoted from patch version with a hyphen
-    {git_tag, git_pre_release} =
+    git_pre_release =
       with {tag, 0} <-
              System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true),
-           tag = String.trim(tag),
-           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]),
-           describe = String.trim(describe),
-           ahead <- String.replace(describe, tag, ""),
-           ahead <- String.trim_leading(ahead, "-") do
-        {String.replace_prefix(tag, "v", ""), if(ahead != "", do: String.trim(ahead))}
+           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]) do
+        describe
+        |> String.trim()
+        |> String.replace(String.trim(tag), "")
+        |> String.trim_leading("-")
+        |> String.trim()
       else
         _ ->
           {commit_hash, 0} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
-          {nil, "0-g" <> String.trim(commit_hash)}
+          "0-g" <> String.trim(commit_hash)
       end
-
-    if git_tag && version != git_tag do
-      Mix.shell().error(
-        "Application version #{inspect(version)} does not match git tag #{inspect(git_tag)}"
-      )
-    end
 
     # Branch name as pre-release version component, denoted with a dot
     branch_name =

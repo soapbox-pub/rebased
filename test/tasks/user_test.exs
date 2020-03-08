@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.UserTest do
@@ -58,8 +58,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert user.name == unsaved.name
       assert user.email == unsaved.email
       assert user.bio == unsaved.bio
-      assert user.info.is_moderator
-      assert user.info.is_admin
+      assert user.is_moderator
+      assert user.is_admin
     end
 
     test "user is not created" do
@@ -113,11 +113,11 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ " deactivated"
 
       user = User.get_cached_by_nickname(user.nickname)
-      assert user.info.deactivated
+      assert user.deactivated
     end
 
     test "user is activated" do
-      user = insert(:user, info: %{deactivated: true})
+      user = insert(:user, deactivated: true)
 
       Mix.Tasks.Pleroma.User.run(["toggle_activated", user.nickname])
 
@@ -125,7 +125,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ " activated"
 
       user = User.get_cached_by_nickname(user.nickname)
-      refute user.info.deactivated
+      refute user.deactivated
     end
 
     test "no user to toggle" do
@@ -139,7 +139,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
   describe "running unsubscribe" do
     test "user is unsubscribed" do
       followed = insert(:user)
-      user = insert(:user, %{following: [User.ap_followers(followed)]})
+      user = insert(:user)
+      User.follow(user, followed, "accept")
 
       Mix.Tasks.Pleroma.User.run(["unsubscribe", user.nickname])
 
@@ -154,8 +155,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ "Successfully unsubscribed"
 
       user = User.get_cached_by_nickname(user.nickname)
-      assert Enum.empty?(user.following)
-      assert user.info.deactivated
+      assert Enum.empty?(User.get_friends(user))
+      assert user.deactivated
     end
 
     test "no user to unsubscribe" do
@@ -182,13 +183,13 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ ~r/Admin status .* true/
 
       user = User.get_cached_by_nickname(user.nickname)
-      assert user.info.is_moderator
-      assert user.info.locked
-      assert user.info.is_admin
+      assert user.is_moderator
+      assert user.locked
+      assert user.is_admin
     end
 
     test "All statuses unset" do
-      user = insert(:user, info: %{is_moderator: true, locked: true, is_admin: true})
+      user = insert(:user, locked: true, is_moderator: true, is_admin: true)
 
       Mix.Tasks.Pleroma.User.run([
         "set",
@@ -208,9 +209,9 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ ~r/Admin status .* false/
 
       user = User.get_cached_by_nickname(user.nickname)
-      refute user.info.is_moderator
-      refute user.info.locked
-      refute user.info.is_admin
+      refute user.is_moderator
+      refute user.locked
+      refute user.is_admin
     end
 
     test "no user to set status" do
@@ -358,28 +359,28 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
   describe "running toggle_confirmed" do
     test "user is confirmed" do
-      %{id: id, nickname: nickname} = insert(:user, info: %{confirmation_pending: false})
+      %{id: id, nickname: nickname} = insert(:user, confirmation_pending: false)
 
       assert :ok = Mix.Tasks.Pleroma.User.run(["toggle_confirmed", nickname])
       assert_received {:mix_shell, :info, [message]}
       assert message == "#{nickname} needs confirmation."
 
       user = Repo.get(User, id)
-      assert user.info.confirmation_pending
-      assert user.info.confirmation_token
+      assert user.confirmation_pending
+      assert user.confirmation_token
     end
 
     test "user is not confirmed" do
       %{id: id, nickname: nickname} =
-        insert(:user, info: %{confirmation_pending: true, confirmation_token: "some token"})
+        insert(:user, confirmation_pending: true, confirmation_token: "some token")
 
       assert :ok = Mix.Tasks.Pleroma.User.run(["toggle_confirmed", nickname])
       assert_received {:mix_shell, :info, [message]}
       assert message == "#{nickname} doesn't need confirmation."
 
       user = Repo.get(User, id)
-      refute user.info.confirmation_pending
-      refute user.info.confirmation_token
+      refute user.confirmation_pending
+      refute user.confirmation_token
     end
 
     test "it prints an error message when user is not exist" do

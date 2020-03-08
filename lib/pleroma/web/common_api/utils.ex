@@ -1,14 +1,16 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.Utils do
   import Pleroma.Web.Gettext
+  import Pleroma.Web.ControllerHelper, only: [truthy_param?: 1]
 
   alias Calendar.Strftime
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Emoji
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.Plugs.AuthenticationPlug
@@ -39,14 +41,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         Activity.get_create_by_object_ap_id_with_object(activity.data["object"])
       end
   end
-
-  def get_replied_to_activity(""), do: nil
-
-  def get_replied_to_activity(id) when not is_nil(id) do
-    Activity.get_by_id(id)
-  end
-
-  def get_replied_to_activity(_), do: nil
 
   def attachments_from_ids(%{"media_ids" => ids, "descriptions" => desc} = _) do
     attachments_from_ids_descs(ids, desc)
@@ -158,70 +152,74 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_add_list_data(activity_params, _, _), do: activity_params
 
+  def make_poll_data(%{"poll" => %{"expires_in" => expires_in}} = data)
+      when is_binary(expires_in) do
+    # In some cases mastofe sends out strings instead of integers
+    data
+    |> put_in(["poll", "expires_in"], String.to_integer(expires_in))
+    |> make_poll_data()
+  end
+
   def make_poll_data(%{"poll" => %{"options" => options, "expires_in" => expires_in}} = data)
       when is_list(options) do
-    %{max_expiration: max_expiration, min_expiration: min_expiration} =
-      limits = Pleroma.Config.get([:instance, :poll_limits])
+    limits = Pleroma.Config.get([:instance, :poll_limits])
 
-    # XXX: There is probably a cleaner way of doing this
-    try do
-      # In some cases mastofe sends out strings instead of integers
-      expires_in = if is_binary(expires_in), do: String.to_integer(expires_in), else: expires_in
-
-      if Enum.count(options) > limits.max_options do
-        raise ArgumentError, message: "Poll can't contain more than #{limits.max_options} options"
-      end
-
-      {poll, emoji} =
+    with :ok <- validate_poll_expiration(expires_in, limits),
+         :ok <- validate_poll_options_amount(options, limits),
+         :ok <- validate_poll_options_length(options, limits) do
+      {option_notes, emoji} =
         Enum.map_reduce(options, %{}, fn option, emoji ->
-          if String.length(option) > limits.max_option_chars do
-            raise ArgumentError,
-              message:
-                "Poll options cannot be longer than #{limits.max_option_chars} characters each"
-          end
+          note = %{
+            "name" => option,
+            "type" => "Note",
+            "replies" => %{"type" => "Collection", "totalItems" => 0}
+          }
 
-          {%{
-             "name" => option,
-             "type" => "Note",
-             "replies" => %{"type" => "Collection", "totalItems" => 0}
-           }, Map.merge(emoji, Formatter.get_emoji_map(option))}
+          {note, Map.merge(emoji, Emoji.Formatter.get_emoji_map(option))}
         end)
 
-      case expires_in do
-        expires_in when expires_in > max_expiration ->
-          raise ArgumentError, message: "Expiration date is too far in the future"
-
-        expires_in when expires_in < min_expiration ->
-          raise ArgumentError, message: "Expiration date is too soon"
-
-        _ ->
-          :noop
-      end
-
       end_time =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(expires_in)
-        |> NaiveDateTime.to_iso8601()
+        DateTime.utc_now()
+        |> DateTime.add(expires_in)
+        |> DateTime.to_iso8601()
 
-      poll =
-        if Pleroma.Web.ControllerHelper.truthy_param?(data["poll"]["multiple"]) do
-          %{"type" => "Question", "anyOf" => poll, "closed" => end_time}
-        else
-          %{"type" => "Question", "oneOf" => poll, "closed" => end_time}
-        end
+      key = if truthy_param?(data["poll"]["multiple"]), do: "anyOf", else: "oneOf"
+      poll = %{"type" => "Question", key => option_notes, "closed" => end_time}
 
-      {poll, emoji}
-    rescue
-      e in ArgumentError -> e.message
+      {:ok, {poll, emoji}}
     end
   end
 
   def make_poll_data(%{"poll" => poll}) when is_map(poll) do
-    "Invalid poll"
+    {:error, "Invalid poll"}
   end
 
   def make_poll_data(_data) do
-    {%{}, %{}}
+    {:ok, {%{}, %{}}}
+  end
+
+  defp validate_poll_options_amount(options, %{max_options: max_options}) do
+    if Enum.count(options) > max_options do
+      {:error, "Poll can't contain more than #{max_options} options"}
+    else
+      :ok
+    end
+  end
+
+  defp validate_poll_options_length(options, %{max_option_chars: max_option_chars}) do
+    if Enum.any?(options, &(String.length(&1) > max_option_chars)) do
+      {:error, "Poll options cannot be longer than #{max_option_chars} characters each"}
+    else
+      :ok
+    end
+  end
+
+  defp validate_poll_expiration(expires_in, %{min_expiration: min, max_expiration: max}) do
+    cond do
+      expires_in > max -> {:error, "Expiration date is too far in the future"}
+      expires_in < min -> {:error, "Expiration date is too soon"}
+      true -> :ok
+    end
   end
 
   def make_content_html(
@@ -230,10 +228,10 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         data,
         visibility
       ) do
-    no_attachment_links =
+    attachment_links =
       data
-      |> Map.get("no_attachment_links", Config.get([:instance, :no_attachment_links]))
-      |> Kernel.in([true, "true"])
+      |> Map.get("attachment_links", Config.get([:instance, :attachment_links]))
+      |> truthy_param?()
 
     content_type = get_content_type(data["content_type"])
 
@@ -246,7 +244,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     status
     |> format_input(content_type, options)
-    |> maybe_add_attachments(attachments, no_attachment_links)
+    |> maybe_add_attachments(attachments, attachment_links)
     |> maybe_add_nsfw_tag(data)
   end
 
@@ -272,7 +270,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def make_context(%Activity{data: %{"context" => context}}, _), do: context
   def make_context(_, _), do: Utils.generate_context_id()
 
-  def maybe_add_attachments(parsed, _attachments, true = _no_links), do: parsed
+  def maybe_add_attachments(parsed, _attachments, false = _no_links), do: parsed
 
   def maybe_add_attachments({text, mentions, tags}, attachments, _no_links) do
     text = add_attachments(text, attachments)
@@ -346,25 +344,25 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         attachments,
         in_reply_to,
         tags,
-        cw \\ nil,
+        summary \\ nil,
         cc \\ [],
         sensitive \\ false,
-        merge \\ %{}
+        extra_params \\ %{}
       ) do
     %{
       "type" => "Note",
       "to" => to,
       "cc" => cc,
       "content" => content_html,
-      "summary" => cw,
-      "sensitive" => !Enum.member?(["false", "False", "0", false], sensitive),
+      "summary" => summary,
+      "sensitive" => truthy_param?(sensitive),
       "context" => context,
       "attachment" => attachments,
       "actor" => actor,
       "tag" => Keyword.values(tags) |> Enum.uniq()
     }
     |> add_in_reply_to(in_reply_to)
-    |> Map.merge(merge)
+    |> Map.merge(extra_params)
   end
 
   defp add_in_reply_to(object, nil), do: object
@@ -433,12 +431,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def emoji_from_profile(%{info: _info} = user) do
-    (Formatter.get_emoji(user.bio) ++ Formatter.get_emoji(user.name))
-    |> Enum.map(fn {shortcode, url, _} ->
+  def emoji_from_profile(%User{bio: bio, name: name}) do
+    [bio, name]
+    |> Enum.map(&Emoji.Formatter.get_emoji/1)
+    |> Enum.concat()
+    |> Enum.map(fn {shortcode, %Emoji{file: path}} ->
       %{
         "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{url}"},
+        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{path}"},
         "name" => ":#{shortcode}:"
       }
     end)
@@ -450,6 +450,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       ) do
     recipients ++ to
   end
+
+  def maybe_notify_to_recipients(recipients, _), do: recipients
 
   def maybe_notify_mentioned_recipients(
         recipients,
@@ -492,7 +494,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     with %User{} = user <- User.get_cached_by_ap_id(actor) do
       subscriber_ids =
         user
-        |> User.subscribers()
+        |> User.subscriber_users()
         |> Enum.filter(&Visibility.visible_for_user?(activity, &1))
         |> Enum.map(& &1.ap_id)
 
@@ -501,6 +503,17 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def maybe_notify_subscribers(recipients, _), do: recipients
+
+  def maybe_notify_followers(recipients, %Activity{data: %{"type" => "Move"}} = activity) do
+    with %User{} = user <- User.get_cached_by_ap_id(activity.actor) do
+      user
+      |> User.get_followers()
+      |> Enum.map(& &1.ap_id)
+      |> Enum.concat(recipients)
+    end
+  end
+
+  def maybe_notify_followers(recipients, _), do: recipients
 
   def maybe_extract_mentions(%{"tag" => tag}) do
     tag
@@ -570,15 +583,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     }
   end
 
-  def validate_character_limit(full_payload, attachments, limit) do
+  def validate_character_limit("" = _full_payload, [] = _attachments) do
+    {:error, dgettext("errors", "Cannot post an empty status without attachments")}
+  end
+
+  def validate_character_limit(full_payload, _attachments) do
+    limit = Pleroma.Config.get([:instance, :limit])
     length = String.length(full_payload)
 
     if length < limit do
-      if length > 0 or Enum.count(attachments) > 0 do
-        :ok
-      else
-        {:error, dgettext("errors", "Cannot post an empty status without attachments")}
-      end
+      :ok
     else
       {:error, dgettext("errors", "The status is over the character limit")}
     end

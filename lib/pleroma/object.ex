@@ -1,9 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object do
   use Ecto.Schema
+
+  import Ecto.Query
+  import Ecto.Changeset
 
   alias Pleroma.Activity
   alias Pleroma.Object
@@ -12,15 +15,33 @@ defmodule Pleroma.Object do
   alias Pleroma.Repo
   alias Pleroma.User
 
-  import Ecto.Query
-  import Ecto.Changeset
-
   require Logger
+
+  @type t() :: %__MODULE__{}
+
+  @derive {Jason.Encoder, only: [:data]}
 
   schema "objects" do
     field(:data, :map)
 
     timestamps()
+  end
+
+  def with_joined_activity(query, activity_type \\ "Create", join_type \\ :inner) do
+    object_position = Map.get(query.aliases, :object, 0)
+
+    join(query, join_type, [{object, object_position}], a in Activity,
+      on:
+        fragment(
+          "COALESCE(?->'object'->>'id', ?->>'object') = (? ->> 'id') AND (?->>'type' = ?) ",
+          a.data,
+          a.data,
+          object.data,
+          a.data,
+          ^activity_type
+        ),
+      as: :object_activity
+    )
   end
 
   def create(data) do
@@ -62,8 +83,22 @@ defmodule Pleroma.Object do
     Repo.one(from(object in Object, where: fragment("(?)->>'id' = ?", object.data, ^ap_id)))
   end
 
+  @doc """
+  Get a single attachment by it's name and href
+  """
+  @spec get_attachment_by_name_and_href(String.t(), String.t()) :: Object.t() | nil
+  def get_attachment_by_name_and_href(name, href) do
+    query =
+      from(o in Object,
+        where: fragment("(?)->>'name' = ?", o.data, ^name),
+        where: fragment("(?)->>'href' = ?", o.data, ^href)
+      )
+
+    Repo.one(query)
+  end
+
   defp warn_on_no_object_preloaded(ap_id) do
-    "Object.normalize() called without preloaded object (#{ap_id}). Consider preloading the object"
+    "Object.normalize() called without preloaded object (#{inspect(ap_id)}). Consider preloading the object"
     |> Logger.debug()
 
     Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
@@ -110,18 +145,18 @@ defmodule Pleroma.Object do
   # Legacy objects can be mutated by anybody
   def authorize_mutation(%Object{}, %User{}), do: true
 
+  @spec get_cached_by_ap_id(String.t()) :: Object.t() | nil
   def get_cached_by_ap_id(ap_id) do
     key = "object:#{ap_id}"
 
-    Cachex.fetch!(:object_cache, key, fn _ ->
-      object = get_by_ap_id(ap_id)
-
-      if object do
-        {:commit, object}
-      else
-        {:ignore, object}
-      end
-    end)
+    with {:ok, nil} <- Cachex.get(:object_cache, key),
+         object when not is_nil(object) <- get_by_ap_id(ap_id),
+         {:ok, true} <- Cachex.put(:object_cache, key, object) do
+      object
+    else
+      {:ok, object} -> object
+      nil -> nil
+    end
   end
 
   def context_mapping(context) do
@@ -147,9 +182,16 @@ defmodule Pleroma.Object do
 
   def delete(%Object{data: %{"id" => id}} = object) do
     with {:ok, _obj} = swap_object_with_tombstone(object),
-         deleted_activity = Activity.delete_by_ap_id(id),
+         deleted_activity = Activity.delete_all_by_object_ap_id(id),
          {:ok, true} <- Cachex.del(:object_cache, "object:#{id}"),
          {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path) do
+      with true <- Pleroma.Config.get([:instance, :cleanup_attachments]) do
+        {:ok, _} =
+          Pleroma.Workers.AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{
+            "object" => object
+          })
+      end
+
       {:ok, object, deleted_activity}
     end
   end
@@ -248,4 +290,37 @@ defmodule Pleroma.Object do
       _ -> :noop
     end
   end
+
+  @doc "Updates data field of an object"
+  def update_data(%Object{data: data} = object, attrs \\ %{}) do
+    object
+    |> Object.change(%{data: Map.merge(data || %{}, attrs)})
+    |> Repo.update()
+  end
+
+  def local?(%Object{data: %{"id" => id}}) do
+    String.starts_with?(id, Pleroma.Web.base_url() <> "/")
+  end
+
+  def replies(object, opts \\ []) do
+    object = Object.normalize(object)
+
+    query =
+      Object
+      |> where(
+        [o],
+        fragment("(?)->>'inReplyTo' = ?", o.data, ^object.data["id"])
+      )
+      |> order_by([o], asc: o.id)
+
+    if opts[:self_only] do
+      actor = object.data["actor"]
+      where(query, [o], fragment("(?)->>'actor' = ?", o.data, ^actor))
+    else
+      query
+    end
+  end
+
+  def self_replies(object, opts \\ []),
+    do: replies(object, Keyword.put(opts, :self_only, true))
 end

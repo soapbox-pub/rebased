@@ -1,13 +1,24 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.InstanceTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
 
   setup do
     File.mkdir_p!(tmp_path())
-    on_exit(fn -> File.rm_rf(tmp_path()) end)
+
+    on_exit(fn ->
+      File.rm_rf(tmp_path())
+      static_dir = Pleroma.Config.get([:instance, :static_dir], "test/instance_static/")
+
+      if File.exists?(static_dir) do
+        File.rm_rf(Path.join(static_dir, "robots.txt"))
+      end
+
+      Pleroma.Config.put([:instance, :static_dir], static_dir)
+    end)
+
     :ok
   end
 
@@ -41,6 +52,8 @@ defmodule Pleroma.InstanceTest do
         "dbpass",
         "--indexable",
         "y",
+        "--db-configurable",
+        "y",
         "--rum",
         "y",
         "--listen-port",
@@ -67,6 +80,7 @@ defmodule Pleroma.InstanceTest do
     assert generated_config =~ "database: \"dbname\""
     assert generated_config =~ "username: \"dbuser\""
     assert generated_config =~ "password: \"dbpass\""
+    assert generated_config =~ "configurable_from_database: true"
     assert generated_config =~ "http: [ip: {127, 0, 0, 1}, port: 4000]"
     assert File.read!(tmp_path() <> "setup.psql") == generated_setup_psql()
   end

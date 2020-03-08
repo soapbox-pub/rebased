@@ -1,17 +1,20 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.PublisherTest do
-  use Pleroma.DataCase
+  use Pleroma.Web.ConnCase
 
+  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
   import Mock
 
   alias Pleroma.Activity
   alias Pleroma.Instances
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Publisher
+  alias Pleroma.Web.CommonAPI
 
   @as_public "https://www.w3.org/ns/activitystreams#Public"
 
@@ -20,11 +23,32 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     :ok
   end
 
+  describe "gather_webfinger_links/1" do
+    test "it returns links" do
+      user = insert(:user)
+
+      expected_links = [
+        %{"href" => user.ap_id, "rel" => "self", "type" => "application/activity+json"},
+        %{
+          "href" => user.ap_id,
+          "rel" => "self",
+          "type" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+        },
+        %{
+          "rel" => "http://ostatus.org/schema/1.0/subscribe",
+          "template" => "#{Pleroma.Web.base_url()}/ostatus_subscribe?acct={uri}"
+        }
+      ]
+
+      assert expected_links == Publisher.gather_webfinger_links(user)
+    end
+  end
+
   describe "determine_inbox/2" do
     test "it returns sharedInbox for messages involving as:Public in to" do
       user =
         insert(:user, %{
-          info: %{source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}}
+          source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}
         })
 
       activity = %Activity{
@@ -37,7 +61,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     test "it returns sharedInbox for messages involving as:Public in cc" do
       user =
         insert(:user, %{
-          info: %{source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}}
+          source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}
         })
 
       activity = %Activity{
@@ -50,7 +74,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     test "it returns sharedInbox for messages involving multiple recipients in to" do
       user =
         insert(:user, %{
-          info: %{source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}}
+          source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}
         })
 
       user_two = insert(:user)
@@ -66,7 +90,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     test "it returns sharedInbox for messages involving multiple recipients in cc" do
       user =
         insert(:user, %{
-          info: %{source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}}
+          source_data: %{"endpoints" => %{"sharedInbox" => "http://example.com/inbox"}}
         })
 
       user_two = insert(:user)
@@ -81,14 +105,12 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
     test "it returns sharedInbox for messages involving multiple recipients in total" do
       user =
-        insert(:user, %{
-          info: %{
-            source_data: %{
-              "inbox" => "http://example.com/personal-inbox",
-              "endpoints" => %{"sharedInbox" => "http://example.com/inbox"}
-            }
+        insert(:user,
+          source_data: %{
+            "inbox" => "http://example.com/personal-inbox",
+            "endpoints" => %{"sharedInbox" => "http://example.com/inbox"}
           }
-        })
+        )
 
       user_two = insert(:user)
 
@@ -101,14 +123,12 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
 
     test "it returns inbox for messages involving single recipients in total" do
       user =
-        insert(:user, %{
-          info: %{
-            source_data: %{
-              "inbox" => "http://example.com/personal-inbox",
-              "endpoints" => %{"sharedInbox" => "http://example.com/inbox"}
-            }
+        insert(:user,
+          source_data: %{
+            "inbox" => "http://example.com/personal-inbox",
+            "endpoints" => %{"sharedInbox" => "http://example.com/inbox"}
           }
-        })
+        )
 
       activity = %Activity{
         data: %{"to" => [user.ap_id], "cc" => []}
@@ -188,7 +208,10 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user)
       inbox = "http://connrefused.site/users/nick1/inbox"
 
-      assert {:error, _} = Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+      assert capture_log(fn ->
+               assert {:error, _} =
+                        Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+             end) =~ "connrefused"
 
       assert called(Instances.set_unreachable(inbox))
     end
@@ -212,14 +235,16 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       actor = insert(:user)
       inbox = "http://connrefused.site/users/nick1/inbox"
 
-      assert {:error, _} =
-               Publisher.publish_one(%{
-                 inbox: inbox,
-                 json: "{}",
-                 actor: actor,
-                 id: 1,
-                 unreachable_since: NaiveDateTime.utc_now()
-               })
+      assert capture_log(fn ->
+               assert {:error, _} =
+                        Publisher.publish_one(%{
+                          inbox: inbox,
+                          json: "{}",
+                          actor: actor,
+                          id: 1,
+                          unreachable_since: NaiveDateTime.utc_now()
+                        })
+             end) =~ "connrefused"
 
       refute called(Instances.set_unreachable(inbox))
     end
@@ -233,10 +258,8 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       follower =
         insert(:user,
           local: false,
-          info: %{
-            ap_enabled: true,
-            source_data: %{"inbox" => "https://domain.com/users/nick1/inbox"}
-          }
+          source_data: %{"inbox" => "https://domain.com/users/nick1/inbox"},
+          ap_enabled: true
         )
 
       actor = insert(:user, follower_address: follower.ap_id)
@@ -257,8 +280,68 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       assert called(
                Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
                  inbox: "https://domain.com/users/nick1/inbox",
-                 actor: actor,
+                 actor_id: actor.id,
                  id: note_activity.data["id"]
+               })
+             )
+    end
+
+    test_with_mock "publishes a delete activity to peers who signed fetch requests to the create acitvity/object.",
+                   Pleroma.Web.Federator.Publisher,
+                   [:passthrough],
+                   [] do
+      fetcher =
+        insert(:user,
+          local: false,
+          source_data: %{"inbox" => "https://domain.com/users/nick1/inbox"},
+          ap_enabled: true
+        )
+
+      another_fetcher =
+        insert(:user,
+          local: false,
+          source_data: %{"inbox" => "https://domain2.com/users/nick1/inbox"},
+          ap_enabled: true
+        )
+
+      actor = insert(:user)
+
+      note_activity = insert(:note_activity, user: actor)
+      object = Object.normalize(note_activity)
+
+      activity_path = String.trim_leading(note_activity.data["id"], Pleroma.Web.Endpoint.url())
+      object_path = String.trim_leading(object.data["id"], Pleroma.Web.Endpoint.url())
+
+      build_conn()
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, fetcher)
+      |> get(object_path)
+      |> json_response(200)
+
+      build_conn()
+      |> put_req_header("accept", "application/activity+json")
+      |> assign(:user, another_fetcher)
+      |> get(activity_path)
+      |> json_response(200)
+
+      {:ok, delete} = CommonAPI.delete(note_activity.id, actor)
+
+      res = Publisher.publish(actor, delete)
+      assert res == :ok
+
+      assert called(
+               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
+                 inbox: "https://domain.com/users/nick1/inbox",
+                 actor_id: actor.id,
+                 id: delete.data["id"]
+               })
+             )
+
+      assert called(
+               Pleroma.Web.Federator.Publisher.enqueue_one(Publisher, %{
+                 inbox: "https://domain2.com/users/nick1/inbox",
+                 actor_id: actor.id,
+                 id: delete.data["id"]
                })
              )
     end

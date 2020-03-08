@@ -1,61 +1,15 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Emoji do
   use Mix.Task
 
   @shortdoc "Manages emoji packs"
-  @moduledoc """
-  Manages emoji packs
-
-  ## ls-packs
-
-      mix pleroma.emoji ls-packs [OPTION...]
-
-  Lists the emoji packs and metadata specified in the manifest.
-
-  ### Options
-
-  - `-m, --manifest PATH/URL` - path to a custom manifest, it can
-    either be an URL starting with `http`, in that case the
-    manifest will be fetched from that address, or a local path
-
-  ## get-packs
-
-      mix pleroma.emoji get-packs [OPTION...] PACKS
-
-  Fetches, verifies and installs the specified PACKS from the
-  manifest into the `STATIC-DIR/emoji/PACK-NAME`
-
-  ### Options
-
-  - `-m, --manifest PATH/URL` - same as ls-packs
-
-  ## gen-pack
-
-      mix pleroma.emoji gen-pack PACK-URL
-
-  Creates a new manifest entry and a file list from the specified
-  remote pack file. Currently, only .zip archives are recognized
-  as remote pack files and packs are therefore assumed to be zip
-  archives. This command is intended to run interactively and will
-  first ask you some basic questions about the pack, then download
-  the remote file and generate an SHA256 checksum for it, then
-  generate an emoji file list for you.
-
-  The manifest entry will either be written to a newly created
-  `index.json` file or appended to the existing one, *replacing*
-  the old pack with the same name if it was in the file previously.
-
-  The file list will be written to the file specified previously,
-  *replacing* that file. You _should_ check that the file list doesn't
-  contain anything you don't need in the pack, that is, anything that is
-  not an emoji (the whole pack is downloaded, but only emoji files
-  are extracted).
-  """
+  @moduledoc File.read!("docs/administration/CLI_tasks/emoji.md")
 
   def run(["ls-packs" | args]) do
+    Mix.Pleroma.start_pleroma()
     Application.ensure_all_started(:hackney)
 
     {options, [], []} = parse_global_opts(args)
@@ -82,6 +36,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   end
 
   def run(["get-packs" | args]) do
+    Mix.Pleroma.start_pleroma()
     Application.ensure_all_started(:hackney)
 
     {options, pack_names, []} = parse_global_opts(args)
@@ -158,19 +113,21 @@ defmodule Mix.Tasks.Pleroma.Emoji do
             file_list: files_to_unzip
           )
 
-        IO.puts(IO.ANSI.format(["Writing emoji.txt for ", :bright, pack_name]))
+        IO.puts(IO.ANSI.format(["Writing pack.json for ", :bright, pack_name]))
 
-        emoji_txt_str =
-          Enum.map(
-            files,
-            fn {shortcode, path} ->
-              emojo_path = Path.join("/emoji/#{pack_name}", path)
-              "#{shortcode}, #{emojo_path}"
-            end
-          )
-          |> Enum.join("\n")
+        pack_json = %{
+          pack: %{
+            "license" => pack["license"],
+            "homepage" => pack["homepage"],
+            "description" => pack["description"],
+            "fallback-src" => pack["src"],
+            "fallback-src-sha256" => pack["src_sha256"],
+            "share-files" => true
+          },
+          files: files
+        }
 
-        File.write!(Path.join(pack_path, "emoji.txt"), emoji_txt_str)
+        File.write!(Path.join(pack_path, "pack.json"), Jason.encode!(pack_json, pretty: true))
       else
         IO.puts(IO.ANSI.format([:bright, :red, "No pack named \"#{pack_name}\" found"]))
       end
@@ -229,13 +186,9 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     tmp_pack_dir = Path.join(System.tmp_dir!(), "emoji-pack-#{name}")
 
-    {:ok, _} =
-      :zip.unzip(
-        binary_archive,
-        cwd: tmp_pack_dir
-      )
+    {:ok, _} = :zip.unzip(binary_archive, cwd: String.to_charlist(tmp_pack_dir))
 
-    emoji_map = Pleroma.Emoji.make_shortcode_to_file_map(tmp_pack_dir, exts)
+    emoji_map = Pleroma.Emoji.Loader.make_shortcode_to_file_map(tmp_pack_dir, exts)
 
     File.write!(files_name, Jason.encode!(emoji_map, pretty: true))
 

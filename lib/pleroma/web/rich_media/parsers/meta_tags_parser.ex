@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
@@ -48,6 +48,6 @@ defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
   defp maybe_put_title(meta, _), do: meta
 
   defp get_page_title(html) do
-    Floki.find(html, "title") |> Floki.text()
+    Floki.find(html, "html head title") |> List.first() |> Floki.text()
   end
 end

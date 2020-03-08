@@ -1,2 +1,2 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[58],{663:function(n,a,t){"use strict";t.r(a);var c=t(0),e=(t(3),t(625)),o=t(896);a.default=function(){return Object(c.a)(e.a,{},void 0,Object(c.a)(o.a,{}))}}}]);
+(window.webpackJsonp=window.webpackJsonp||[]).push([[66],{774:function(a,n,e){"use strict";e.r(n);var t=e(0),c=(e(3),e(730)),o=e(1029);n.default=function(){return Object(t.a)(c.a,{},void 0,Object(t.a)(o.a,{fullPage:!0}))}}}]);
 //# sourceMappingURL=generic_not_found.js.map

@@ -1,12 +1,12 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Federator.Publisher do
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.User
-  alias Pleroma.Web.Federator.RetryQueue
+  alias Pleroma.Workers.PublisherWorker
 
   require Logger
 
@@ -30,23 +30,11 @@ defmodule Pleroma.Web.Federator.Publisher do
   Enqueue publishing a single activity.
   """
   @spec enqueue_one(module(), Map.t()) :: :ok
-  def enqueue_one(module, %{} = params),
-    do: PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_one, module, params])
-
-  @spec perform(atom(), module(), any()) :: {:ok, any()} | {:error, any()}
-  def perform(:publish_one, module, params) do
-    case apply(module, :publish_one, [params]) do
-      {:ok, _} ->
-        :ok
-
-      {:error, _e} ->
-        RetryQueue.enqueue(params, module)
-    end
-  end
-
-  def perform(type, _, _) do
-    Logger.debug("Unknown task: #{type}")
-    {:error, "Don't know what to do with this"}
+  def enqueue_one(module, %{} = params) do
+    PublisherWorker.enqueue(
+      "publish_one",
+      %{"module" => to_string(module), "params" => params}
+    )
   end
 
   @doc """
@@ -59,7 +47,7 @@ defmodule Pleroma.Web.Federator.Publisher do
     Config.get([:instance, :federation_publisher_modules])
     |> Enum.each(fn module ->
       if module.is_representable?(activity) do
-        Logger.info("Publishing #{activity.data["id"]} using #{inspect(module)}")
+        Logger.debug("Publishing #{activity.data["id"]} using #{inspect(module)}")
         module.publish(user, activity)
       end
     end)
@@ -91,5 +79,31 @@ defmodule Pleroma.Web.Federator.Publisher do
     |> Enum.reduce([], fn module, links ->
       links ++ module.gather_nodeinfo_protocol_names()
     end)
+  end
+
+  @doc """
+  Gathers a set of remote users given an IR envelope.
+  """
+  def remote_users(%User{id: user_id}, %{data: %{"to" => to} = data}) do
+    cc = Map.get(data, "cc", [])
+
+    bcc =
+      data
+      |> Map.get("bcc", [])
+      |> Enum.reduce([], fn ap_id, bcc ->
+        case Pleroma.List.get_by_ap_id(ap_id) do
+          %Pleroma.List{user_id: ^user_id} = list ->
+            {:ok, following} = Pleroma.List.get_following(list)
+            bcc ++ Enum.map(following, & &1.ap_id)
+
+          _ ->
+            bcc
+        end
+      end)
+
+    [to, cc, bcc]
+    |> Enum.concat()
+    |> Enum.map(&User.get_cached_by_ap_id/1)
+    |> Enum.filter(fn user -> user && !user.local end)
   end
 end

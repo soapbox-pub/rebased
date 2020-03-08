@@ -1,12 +1,14 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Config
+  alias Pleroma.Constants
   alias Pleroma.Conversation
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
@@ -20,6 +22,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
+  alias Pleroma.Workers.BackgroundWorker
 
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
@@ -67,7 +70,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp check_actor_is_active(actor) do
     if not is_nil(actor) do
       with user <- User.get_cached_by_ap_id(actor),
-           false <- user.info.deactivated do
+           false <- user.deactivated do
         true
       else
         _e -> false
@@ -122,6 +125,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def increase_poll_votes_if_vote(_create_data), do: :noop
 
+  @spec insert(map(), boolean(), boolean(), boolean()) :: {:ok, Activity.t()} | {:error, any()}
   def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map, fake),
@@ -130,7 +134,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
          {:fake, false, map, recipients} <- {:fake, fake, map, recipients},
-         :ok <- Containment.contain_child(map),
+         {:containment, :ok} <- {:containment, Containment.contain_child(map)},
          {:ok, map, object} <- insert_full_object(map) do
       {:ok, activity} =
         Repo.insert(%Activity{
@@ -148,15 +152,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity
         end
 
-      PleromaJobQueue.enqueue(:background, Pleroma.Web.RichMedia.Helpers, [:fetch, activity])
+      BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
 
       Notification.create_notifications(activity)
 
-      participations =
-        activity
-        |> Conversation.create_or_bump_for()
-        |> get_participations()
-
+      conversation = create_or_bump_conversation(activity, map["actor"])
+      participations = get_participations(conversation)
       stream_out(activity)
       stream_out_participations(participations)
       {:ok, activity}
@@ -181,7 +182,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp get_participations({:ok, %{participations: participations}}), do: participations
+  defp create_or_bump_conversation(activity, actor) do
+    with {:ok, conversation} <- Conversation.create_or_bump_for(activity),
+         %User{} = user <- User.get_cached_by_ap_id(actor),
+         Participation.mark_as_read(user, conversation) do
+      {:ok, conversation}
+    end
+  end
+
+  defp get_participations({:ok, conversation}) do
+    conversation
+    |> Repo.preload(:participations, force: true)
+    |> Map.get(:participations)
+  end
+
   defp get_participations(_), do: []
 
   def stream_out_participations(participations) do
@@ -219,11 +233,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     :noop
   end
 
-  def create(%{to: to, actor: actor, context: context, object: object} = params, fake \\ false) do
+  @spec create(map(), boolean()) :: {:ok, Activity.t()} | {:error, any()}
+  def create(params, fake \\ false) do
+    with {:ok, result} <- Repo.transaction(fn -> do_create(params, fake) end) do
+      result
+    end
+  end
+
+  defp do_create(%{to: to, actor: actor, context: context, object: object} = params, fake) do
     additional = params[:additional] || %{}
     # only accept false as false value
     local = !(params[:local] == false)
     published = params[:published]
+    quick_insert? = Config.get([:env]) == :benchmark
 
     with create_data <-
            make_create_data(
@@ -234,42 +256,65 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
          _ <- increase_poll_votes_if_vote(create_data),
-         # Changing note count prior to enqueuing federation task in order to avoid
-         # race conditions on updating user.info
+         {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
+      {:quick_insert, true, activity} ->
+        {:ok, activity}
+
       {:fake, true, activity} ->
         {:ok, activity}
 
       {:error, message} ->
-        {:error, message}
+        Repo.rollback(message)
     end
   end
 
-  def accept(%{to: to, actor: actor, object: object} = params) do
+  @spec listen(map()) :: {:ok, Activity.t()} | {:error, any()}
+  def listen(%{to: to, actor: actor, context: context, object: object} = params) do
+    additional = params[:additional] || %{}
     # only accept false as false value
     local = !(params[:local] == false)
+    published = params[:published]
 
-    with data <- %{"to" => to, "type" => "Accept", "actor" => actor.ap_id, "object" => object},
+    with listen_data <-
+           make_listen_data(
+             %{to: to, actor: actor, published: published, context: context, object: object},
+             additional
+           ),
+         {:ok, activity} <- insert(listen_data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
+  @spec accept(map()) :: {:ok, Activity.t()} | {:error, any()}
+  def accept(params) do
+    accept_or_reject("Accept", params)
+  end
+
+  @spec reject(map()) :: {:ok, Activity.t()} | {:error, any()}
+  def reject(params) do
+    accept_or_reject("Reject", params)
+  end
+
+  @spec accept_or_reject(String.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
+  def accept_or_reject(type, %{to: to, actor: actor, object: object} = params) do
+    local = Map.get(params, :local, true)
+    activity_id = Map.get(params, :activity_id, nil)
+
+    with data <-
+           %{"to" => to, "type" => type, "actor" => actor.ap_id, "object" => object}
+           |> Utils.maybe_put("id", activity_id),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
 
-  def reject(%{to: to, actor: actor, object: object} = params) do
-    # only accept false as false value
-    local = !(params[:local] == false)
-
-    with data <- %{"to" => to, "type" => "Reject", "actor" => actor.ap_id, "object" => object},
-         {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    end
-  end
-
+  @spec update(map()) :: {:ok, Activity.t()} | {:error, any()}
   def update(%{to: to, cc: cc, actor: actor, object: object} = params) do
     local = !(params[:local] == false)
     activity_id = params[:activity_id]
@@ -288,13 +333,70 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  @spec react_with_emoji(User.t(), Object.t(), String.t(), keyword()) ::
+          {:ok, Activity.t(), Object.t()} | {:error, any()}
+  def react_with_emoji(user, object, emoji, options \\ []) do
+    with {:ok, result} <-
+           Repo.transaction(fn -> do_react_with_emoji(user, object, emoji, options) end) do
+      result
+    end
+  end
+
+  defp do_react_with_emoji(user, object, emoji, options) do
+    with local <- Keyword.get(options, :local, true),
+         activity_id <- Keyword.get(options, :activity_id, nil),
+         true <- Pleroma.Emoji.is_unicode_emoji?(emoji),
+         reaction_data <- make_emoji_reaction_data(user, object, emoji, activity_id),
+         {:ok, activity} <- insert(reaction_data, local),
+         {:ok, object} <- add_emoji_reaction_to_object(activity, object),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity, object}
+    else
+      false -> {:error, false}
+      {:error, error} -> Repo.rollback(error)
+    end
+  end
+
+  @spec unreact_with_emoji(User.t(), String.t(), keyword()) ::
+          {:ok, Activity.t(), Object.t()} | {:error, any()}
+  def unreact_with_emoji(user, reaction_id, options \\ []) do
+    with {:ok, result} <-
+           Repo.transaction(fn -> do_unreact_with_emoji(user, reaction_id, options) end) do
+      result
+    end
+  end
+
+  defp do_unreact_with_emoji(user, reaction_id, options) do
+    with local <- Keyword.get(options, :local, true),
+         activity_id <- Keyword.get(options, :activity_id, nil),
+         user_ap_id <- user.ap_id,
+         %Activity{actor: ^user_ap_id} = reaction_activity <- Activity.get_by_ap_id(reaction_id),
+         object <- Object.normalize(reaction_activity),
+         unreact_data <- make_undo_data(user, reaction_activity, activity_id),
+         {:ok, activity} <- insert(unreact_data, local),
+         {:ok, object} <- remove_emoji_reaction_from_object(reaction_activity, object),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity, object}
+    else
+      {:error, error} -> Repo.rollback(error)
+    end
+  end
+
   # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
-  def like(
-        %User{ap_id: ap_id} = user,
-        %Object{data: %{"id" => _}} = object,
-        activity_id \\ nil,
-        local \\ true
-      ) do
+  @spec like(User.t(), Object.t(), String.t() | nil, boolean()) ::
+          {:ok, Activity.t(), Object.t()} | {:error, any()}
+  def like(user, object, activity_id \\ nil, local \\ true) do
+    with {:ok, result} <- Repo.transaction(fn -> do_like(user, object, activity_id, local) end) do
+      result
+    end
+  end
+
+  defp do_like(
+         %User{ap_id: ap_id} = user,
+         %Object{data: %{"id" => _}} = object,
+         activity_id,
+         local
+       ) do
     with nil <- get_existing_like(ap_id, object),
          like_data <- make_like_data(user, object, activity_id),
          {:ok, activity} <- insert(like_data, local),
@@ -302,12 +404,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- maybe_federate(activity) do
       {:ok, activity, object}
     else
-      %Activity{} = activity -> {:ok, activity, object}
-      error -> {:error, error}
+      %Activity{} = activity ->
+        {:ok, activity, object}
+
+      {:error, error} ->
+        Repo.rollback(error)
     end
   end
 
+  @spec unlike(User.t(), Object.t(), String.t() | nil, boolean()) ::
+          {:ok, Activity.t(), Activity.t(), Object.t()} | {:ok, Object.t()} | {:error, any()}
   def unlike(%User{} = actor, %Object{} = object, activity_id \\ nil, local \\ true) do
+    with {:ok, result} <-
+           Repo.transaction(fn -> do_unlike(actor, object, activity_id, local) end) do
+      result
+    end
+  end
+
+  defp do_unlike(actor, object, activity_id, local) do
     with %Activity{} = like_activity <- get_existing_like(actor.ap_id, object),
          unlike_data <- make_unlike_data(actor, like_activity, activity_id),
          {:ok, unlike_activity} <- insert(unlike_data, local),
@@ -316,10 +430,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- maybe_federate(unlike_activity) do
       {:ok, unlike_activity, like_activity, object}
     else
-      _e -> {:ok, object}
+      nil -> {:ok, object}
+      {:error, error} -> Repo.rollback(error)
     end
   end
 
+  @spec announce(User.t(), Object.t(), String.t() | nil, boolean(), boolean()) ::
+          {:ok, Activity.t(), Object.t()} | {:error, any()}
   def announce(
         %User{ap_id: _} = user,
         %Object{data: %{"id" => _}} = object,
@@ -327,23 +444,40 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         local \\ true,
         public \\ true
       ) do
-    with true <- is_public?(object),
+    with {:ok, result} <-
+           Repo.transaction(fn -> do_announce(user, object, activity_id, local, public) end) do
+      result
+    end
+  end
+
+  defp do_announce(user, object, activity_id, local, public) do
+    with true <- is_announceable?(object, user, public),
          announce_data <- make_announce_data(user, object, activity_id, public),
          {:ok, activity} <- insert(announce_data, local),
          {:ok, object} <- add_announce_to_object(activity, object),
          :ok <- maybe_federate(activity) do
       {:ok, activity, object}
     else
-      error -> {:error, error}
+      false -> {:error, false}
+      {:error, error} -> Repo.rollback(error)
     end
   end
 
+  @spec unannounce(User.t(), Object.t(), String.t() | nil, boolean()) ::
+          {:ok, Activity.t(), Object.t()} | {:ok, Object.t()} | {:error, any()}
   def unannounce(
         %User{} = actor,
         %Object{} = object,
         activity_id \\ nil,
         local \\ true
       ) do
+    with {:ok, result} <-
+           Repo.transaction(fn -> do_unannounce(actor, object, activity_id, local) end) do
+      result
+    end
+  end
+
+  defp do_unannounce(actor, object, activity_id, local) do
     with %Activity{} = announce_activity <- get_existing_announce(actor.ap_id, object),
          unannounce_data <- make_unannounce_data(actor, announce_activity, activity_id),
          {:ok, unannounce_activity} <- insert(unannounce_data, local),
@@ -352,30 +486,61 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, object} <- remove_announce_from_object(announce_activity, object) do
       {:ok, unannounce_activity, object}
     else
-      _e -> {:ok, object}
+      nil -> {:ok, object}
+      {:error, error} -> Repo.rollback(error)
     end
   end
 
+  @spec follow(User.t(), User.t(), String.t() | nil, boolean()) ::
+          {:ok, Activity.t()} | {:error, any()}
   def follow(follower, followed, activity_id \\ nil, local \\ true) do
+    with {:ok, result} <-
+           Repo.transaction(fn -> do_follow(follower, followed, activity_id, local) end) do
+      result
+    end
+  end
+
+  defp do_follow(follower, followed, activity_id, local) do
     with data <- make_follow_data(follower, followed, activity_id),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity),
          _ <- User.set_follow_state_cache(follower.ap_id, followed.ap_id, activity.data["state"]) do
       {:ok, activity}
+    else
+      {:error, error} -> Repo.rollback(error)
     end
   end
 
+  @spec unfollow(User.t(), User.t(), String.t() | nil, boolean()) ::
+          {:ok, Activity.t()} | nil | {:error, any()}
   def unfollow(follower, followed, activity_id \\ nil, local \\ true) do
+    with {:ok, result} <-
+           Repo.transaction(fn -> do_unfollow(follower, followed, activity_id, local) end) do
+      result
+    end
+  end
+
+  defp do_unfollow(follower, followed, activity_id, local) do
     with %Activity{} = follow_activity <- fetch_latest_follow(follower, followed),
          {:ok, follow_activity} <- update_follow_state(follow_activity, "cancelled"),
          unfollow_data <- make_unfollow_data(follower, followed, follow_activity, activity_id),
          {:ok, activity} <- insert(unfollow_data, local),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
+    else
+      nil -> nil
+      {:error, error} -> Repo.rollback(error)
     end
   end
 
-  def delete(%User{ap_id: ap_id, follower_address: follower_address} = user) do
+  @spec delete(User.t() | Object.t(), keyword()) :: {:ok, User.t() | Object.t()} | {:error, any()}
+  def delete(entity, options \\ []) do
+    with {:ok, result} <- Repo.transaction(fn -> do_delete(entity, options) end) do
+      result
+    end
+  end
+
+  defp do_delete(%User{ap_id: ap_id, follower_address: follower_address} = user, _) do
     with data <- %{
            "to" => [follower_address],
            "type" => "Delete",
@@ -388,30 +553,47 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
+  defp do_delete(%Object{data: %{"id" => id, "actor" => actor}} = object, options) do
+    local = Keyword.get(options, :local, true)
+    activity_id = Keyword.get(options, :activity_id, nil)
+    actor = Keyword.get(options, :actor, actor)
+
     user = User.get_cached_by_ap_id(actor)
     to = (object.data["to"] || []) ++ (object.data["cc"] || [])
 
-    with {:ok, object, activity} <- Object.delete(object),
-         data <- %{
-           "type" => "Delete",
-           "actor" => actor,
-           "object" => id,
-           "to" => to,
-           "deleted_activity_id" => activity && activity.id
-         },
+    with create_activity <- Activity.get_create_by_object_ap_id(id),
+         data <-
+           %{
+             "type" => "Delete",
+             "actor" => actor,
+             "object" => id,
+             "to" => to,
+             "deleted_activity_id" => create_activity && create_activity.id
+           }
+           |> maybe_put("id", activity_id),
          {:ok, activity} <- insert(data, local, false),
+         {:ok, object, _create_activity} <- Object.delete(object),
          stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
-         # Changing note count prior to enqueuing federation task in order to avoid
-         # race conditions on updating user.info
          {:ok, _actor} <- decrease_note_count_if_public(user, object),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
+    else
+      {:error, error} ->
+        Repo.rollback(error)
     end
   end
 
+  @spec block(User.t(), User.t(), String.t() | nil, boolean()) ::
+          {:ok, Activity.t()} | {:error, any()}
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do
+    with {:ok, result} <-
+           Repo.transaction(fn -> do_block(blocker, blocked, activity_id, local) end) do
+      result
+    end
+  end
+
+  defp do_block(blocker, blocked, activity_id, local) do
     outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
     unfollow_blocked = Config.get([:activitypub, :unfollow_blocked])
 
@@ -426,23 +608,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
-      _e -> {:ok, nil}
+      {:error, error} -> Repo.rollback(error)
     end
   end
 
+  @spec unblock(User.t(), User.t(), String.t() | nil, boolean()) ::
+          {:ok, Activity.t()} | {:error, any()} | nil
   def unblock(blocker, blocked, activity_id \\ nil, local \\ true) do
+    with {:ok, result} <-
+           Repo.transaction(fn -> do_unblock(blocker, blocked, activity_id, local) end) do
+      result
+    end
+  end
+
+  defp do_unblock(blocker, blocked, activity_id, local) do
     with %Activity{} = block_activity <- fetch_latest_block(blocker, blocked),
          unblock_data <- make_unblock_data(blocker, blocked, block_activity, activity_id),
          {:ok, activity} <- insert(unblock_data, local),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
+    else
+      nil -> nil
+      {:error, error} -> Repo.rollback(error)
     end
   end
 
+  @spec flag(map()) :: {:ok, Activity.t()} | {:error, any()}
   def flag(
         %{
           actor: actor,
-          context: context,
+          context: _context,
           account: account,
           statuses: statuses,
           content: content
@@ -454,14 +649,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     additional = params[:additional] || %{}
 
-    params = %{
-      actor: actor,
-      context: context,
-      account: account,
-      statuses: statuses,
-      content: content
-    }
-
     additional =
       if forward do
         Map.merge(additional, %{"to" => [], "cc" => [account.ap_id]})
@@ -471,8 +658,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     with flag_data <- make_flag_data(params, additional),
          {:ok, activity} <- insert(flag_data, local),
-         :ok <- maybe_federate(activity) do
-      Enum.each(User.all_superusers(), fn superuser ->
+         {:ok, stripped_activity} <- strip_report_status_data(activity),
+         :ok <- maybe_federate(stripped_activity) do
+      User.all_superusers()
+      |> Enum.filter(fn user -> not is_nil(user.email) end)
+      |> Enum.each(fn superuser ->
         superuser
         |> Pleroma.Emails.AdminEmail.report(actor, account, statuses, content)
         |> Pleroma.Emails.Mailer.deliver_async()
@@ -482,11 +672,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  @spec move(User.t(), User.t(), boolean()) :: {:ok, Activity.t()} | {:error, any()}
+  def move(%User{} = origin, %User{} = target, local \\ true) do
+    params = %{
+      "type" => "Move",
+      "actor" => origin.ap_id,
+      "object" => origin.ap_id,
+      "target" => target.ap_id
+    }
+
+    with true <- origin.ap_id in target.also_known_as,
+         {:ok, activity} <- insert(params, local) do
+      maybe_federate(activity)
+
+      BackgroundWorker.enqueue("move_following", %{
+        "origin_id" => origin.id,
+        "target_id" => target.id
+      })
+
+      {:ok, activity}
+    else
+      false -> {:error, "Target account must have the origin in `alsoKnownAs`"}
+      err -> err
+    end
+  end
+
   defp fetch_activities_for_context_query(context, opts) do
-    public = [Pleroma.Constants.as_public()]
+    public = [Constants.as_public()]
 
     recipients =
-      if opts["user"], do: [opts["user"].ap_id | opts["user"].following] ++ public, else: public
+      if opts["user"],
+        do: [opts["user"].ap_id | User.following(opts["user"])] ++ public,
+        else: public
 
     from(activity in Activity)
     |> maybe_preload_objects(opts)
@@ -526,14 +743,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Repo.one()
   end
 
-  def fetch_public_activities(opts \\ %{}) do
+  @spec fetch_public_activities(map(), Pagination.type()) :: [Activity.t()]
+  def fetch_public_activities(opts \\ %{}, pagination \\ :keyset) do
     opts = Map.drop(opts, ["user"])
 
-    [Pleroma.Constants.as_public()]
+    [Constants.as_public()]
     |> fetch_activities_query(opts)
     |> restrict_unlisted()
-    |> Pagination.fetch_paginated(opts)
-    |> Enum.reverse()
+    |> Pagination.fetch_paginated(opts, pagination)
   end
 
   @valid_visibilities ~w[direct unlisted public private]
@@ -576,12 +793,55 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_visibility(query, _visibility), do: query
 
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when is_list(visibility) do
+    if Enum.all?(visibility, &(&1 in @valid_visibilities)) do
+      from(
+        a in query,
+        where:
+          not fragment(
+            "activity_visibility(?, ?, ?) = ANY (?)",
+            a.actor,
+            a.recipients,
+            a.data,
+            ^visibility
+          )
+      )
+    else
+      Logger.error("Could not exclude visibility to #{visibility}")
+      query
+    end
+  end
+
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when visibility in @valid_visibilities do
+    from(
+      a in query,
+      where:
+        not fragment(
+          "activity_visibility(?, ?, ?) = ?",
+          a.actor,
+          a.recipients,
+          a.data,
+          ^visibility
+        )
+    )
+  end
+
+  defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
+       when visibility not in @valid_visibilities do
+    Logger.error("Could not exclude visibility to #{visibility}")
+    query
+  end
+
+  defp exclude_visibility(query, _visibility), do: query
+
   defp restrict_thread_visibility(query, _, %{skip_thread_containment: true} = _),
     do: query
 
   defp restrict_thread_visibility(
          query,
-         %{"user" => %User{info: %{skip_thread_containment: true}}},
+         %{"user" => %User{skip_thread_containment: true}},
          _
        ),
        do: query
@@ -595,14 +855,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_thread_visibility(query, _, _), do: query
 
-  def fetch_user_activities(user, reading_user, params \\ %{}) do
+  def fetch_user_abstract_activities(user, reading_user, params \\ %{}) do
     params =
       params
-      |> Map.put("type", ["Create", "Announce"])
       |> Map.put("user", reading_user)
       |> Map.put("actor_id", user.ap_id)
-      |> Map.put("whole_db", true)
-      |> Map.put("pinned_activity_ids", user.info.pinned_activities)
 
     recipients =
       user_activities_recipients(%{
@@ -614,15 +871,57 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
+  def fetch_user_activities(user, reading_user, params \\ %{}) do
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce"])
+      |> Map.put("user", reading_user)
+      |> Map.put("actor_id", user.ap_id)
+      |> Map.put("pinned_activity_ids", user.pinned_activities)
+
+    params =
+      if User.blocks?(reading_user, user) do
+        params
+      else
+        params
+        |> Map.put("blocking_user", reading_user)
+        |> Map.put("muting_user", reading_user)
+      end
+
+    recipients =
+      user_activities_recipients(%{
+        "godmode" => params["godmode"],
+        "reading_user" => reading_user
+      })
+
+    fetch_activities(recipients, params)
+    |> Enum.reverse()
+  end
+
+  def fetch_statuses(reading_user, params) do
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce"])
+
+    recipients =
+      user_activities_recipients(%{
+        "godmode" => params["godmode"],
+        "reading_user" => reading_user
+      })
+
+    fetch_activities(recipients, params, :offset)
+    |> Enum.reverse()
+  end
+
   defp user_activities_recipients(%{"godmode" => true}) do
     []
   end
 
   defp user_activities_recipients(%{"reading_user" => reading_user}) do
     if reading_user do
-      [Pleroma.Constants.as_public()] ++ [reading_user.ap_id | reading_user.following]
+      [Constants.as_public()] ++ [reading_user.ap_id | User.following(reading_user)]
     else
-      [Pleroma.Constants.as_public()]
+      [Constants.as_public()]
     end
   end
 
@@ -763,8 +1062,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted(query, %{"with_muted" => val}) when val in [true, "true", "1"], do: query
 
-  defp restrict_muted(query, %{"muting_user" => %User{info: info}} = opts) do
-    mutes = info.mutes
+  defp restrict_muted(query, %{"muting_user" => %User{} = user} = opts) do
+    mutes = opts["muted_users_ap_ids"] || User.muted_users_ap_ids(user)
 
     query =
       from([activity] in query,
@@ -781,26 +1080,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted(query, _), do: query
 
-  defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
-    blocks = info.blocks || []
-    domain_blocks = info.domain_blocks || []
+  defp restrict_blocked(query, %{"blocking_user" => %User{} = user} = opts) do
+    blocked_ap_ids = opts["blocked_users_ap_ids"] || User.blocked_users_ap_ids(user)
+    domain_blocks = user.domain_blocks || []
+
+    following_ap_ids = User.get_friends_ap_ids(user)
 
     query =
       if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
 
     from(
       [activity, object: o] in query,
-      where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
-      where: fragment("not (? && ?)", activity.recipients, ^blocks),
+      where: fragment("not (? = ANY(?))", activity.actor, ^blocked_ap_ids),
+      where: fragment("not (? && ?)", activity.recipients, ^blocked_ap_ids),
       where:
         fragment(
           "not (?->>'type' = 'Announce' and ?->'to' \\?| ?)",
           activity.data,
           activity.data,
-          ^blocks
+          ^blocked_ap_ids
         ),
-      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks),
-      where: fragment("not (split_part(?->>'actor', '/', 3) = ANY(?))", o.data, ^domain_blocks)
+      where:
+        fragment(
+          "(not (split_part(?, '/', 3) = ANY(?))) or ? = ANY(?)",
+          activity.actor,
+          ^domain_blocks,
+          activity.actor,
+          ^following_ap_ids
+        ),
+      where:
+        fragment(
+          "(not (split_part(?->>'actor', '/', 3) = ANY(?))) or (?->>'actor') = ANY(?)",
+          o.data,
+          ^domain_blocks,
+          o.data,
+          ^following_ap_ids
+        )
     )
   end
 
@@ -813,7 +1128,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         fragment(
           "not (coalesce(?->'cc', '{}'::jsonb) \\?| ?)",
           activity.data,
-          ^[Pleroma.Constants.as_public()]
+          ^[Constants.as_public()]
         )
     )
   end
@@ -824,8 +1139,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_pinned(query, _), do: query
 
-  defp restrict_muted_reblogs(query, %{"muting_user" => %User{info: info}}) do
-    muted_reblogs = info.muted_reblogs || []
+  defp restrict_muted_reblogs(query, %{"muting_user" => %User{} = user} = opts) do
+    muted_reblogs = opts["reblog_muted_users_ap_ids"] || User.reblog_muted_users_ap_ids(user)
 
     from(
       activity in query,
@@ -840,6 +1155,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_muted_reblogs(query, _), do: query
+
+  defp restrict_instance(query, %{"instance" => instance}) do
+    users =
+      from(
+        u in User,
+        select: u.ap_id,
+        where: fragment("? LIKE ?", u.nickname, ^"%@#{instance}")
+      )
+      |> Repo.all()
+
+    from(activity in query, where: activity.actor in ^users)
+  end
+
+  defp restrict_instance(query, _), do: query
 
   defp exclude_poll_votes(query, %{"include_poll_votes" => true}), do: query
 
@@ -873,6 +1202,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_preloaded_bookmark(opts["user"])
   end
 
+  defp maybe_preload_report_notes(query, %{"preload_report_notes" => true}) do
+    query
+    |> Activity.with_preloaded_report_notes()
+  end
+
+  defp maybe_preload_report_notes(query, _), do: query
+
   defp maybe_set_thread_muted_field(query, %{"skip_preload" => true}), do: query
 
   defp maybe_set_thread_muted_field(query, opts) do
@@ -892,7 +1228,33 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp maybe_order(query, _), do: query
 
+  defp fetch_activities_query_ap_ids_ops(opts) do
+    source_user = opts["muting_user"]
+    ap_id_relations = if source_user, do: [:mute, :reblog_mute], else: []
+
+    ap_id_relations =
+      ap_id_relations ++
+        if opts["blocking_user"] && opts["blocking_user"] == source_user do
+          [:block]
+        else
+          []
+        end
+
+    preloaded_ap_ids = User.outgoing_relations_ap_ids(source_user, ap_id_relations)
+
+    restrict_blocked_opts = Map.merge(%{"blocked_users_ap_ids" => preloaded_ap_ids[:block]}, opts)
+    restrict_muted_opts = Map.merge(%{"muted_users_ap_ids" => preloaded_ap_ids[:mute]}, opts)
+
+    restrict_muted_reblogs_opts =
+      Map.merge(%{"reblog_muted_users_ap_ids" => preloaded_ap_ids[:reblog_mute]}, opts)
+
+    {restrict_blocked_opts, restrict_muted_opts, restrict_muted_reblogs_opts}
+  end
+
   def fetch_activities_query(recipients, opts \\ %{}) do
+    {restrict_blocked_opts, restrict_muted_opts, restrict_muted_reblogs_opts} =
+      fetch_activities_query_ap_ids_ops(opts)
+
     config = %{
       skip_thread_containment: Config.get([:instance, :skip_thread_containment])
     }
@@ -900,6 +1262,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Activity
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
+    |> maybe_preload_report_notes(opts)
     |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
@@ -912,26 +1275,47 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_type(opts)
     |> restrict_state(opts)
     |> restrict_favorited_by(opts)
-    |> restrict_blocked(opts)
-    |> restrict_muted(opts)
+    |> restrict_blocked(restrict_blocked_opts)
+    |> restrict_muted(restrict_muted_opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
     |> restrict_thread_visibility(opts, config)
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
-    |> restrict_muted_reblogs(opts)
+    |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
+    |> restrict_instance(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
+    |> exclude_visibility(opts)
   end
 
-  def fetch_activities(recipients, opts \\ %{}) do
+  def fetch_activities(recipients, opts \\ %{}, pagination \\ :keyset) do
     list_memberships = Pleroma.List.memberships(opts["user"])
 
     fetch_activities_query(recipients ++ list_memberships, opts)
-    |> Pagination.fetch_paginated(opts)
+    |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
     |> maybe_update_cc(list_memberships, opts["user"])
+  end
+
+  @doc """
+  Fetch favorites activities of user with order by sort adds to favorites
+  """
+  @spec fetch_favourites(User.t(), map(), Pagination.type()) :: list(Activity.t())
+  def fetch_favourites(user, params \\ %{}, pagination \\ :keyset) do
+    user.ap_id
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_type("Like")
+    |> Activity.with_joined_object()
+    |> Object.with_joined_activity()
+    |> select([_like, object, activity], %{activity | object: object})
+    |> order_by([like, _, _], desc: like.id)
+    |> Pagination.fetch_paginated(
+      Map.merge(params, %{"skip_order" => true}),
+      pagination,
+      :object_activity
+    )
   end
 
   defp maybe_update_cc(activities, list_memberships, %User{ap_id: user_ap_id})
@@ -956,17 +1340,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       where:
         fragment("? && ?", activity.recipients, ^recipients) or
           (fragment("? && ?", activity.recipients, ^recipients_with_public) and
-             ^Pleroma.Constants.as_public() in activity.recipients)
+             ^Constants.as_public() in activity.recipients)
     )
   end
 
-  def fetch_activities_bounded(recipients, recipients_with_public, opts \\ %{}) do
+  def fetch_activities_bounded(
+        recipients,
+        recipients_with_public,
+        opts \\ %{},
+        pagination \\ :keyset
+      ) do
     fetch_activities_query([], opts)
     |> fetch_activities_bounded_query(recipients, recipients_with_public)
-    |> Pagination.fetch_paginated(opts)
+    |> Pagination.fetch_paginated(opts, pagination)
     |> Enum.reverse()
   end
 
+  @spec upload(Upload.source(), keyword()) :: {:ok, Object.t()} | {:error, any()}
   def upload(file, opts \\ []) do
     with {:ok, data} <- Upload.store(file, opts) do
       obj_data =
@@ -1003,21 +1393,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
+    discoverable = data["discoverable"] || false
+    invisible = data["invisible"] || false
+    actor_type = data["type"] || "Person"
 
     user_data = %{
       ap_id: data["id"],
-      info: %{
-        ap_enabled: true,
-        source_data: data,
-        banner: banner,
-        fields: fields,
-        locked: locked
-      },
+      ap_enabled: true,
+      source_data: data,
+      banner: banner,
+      fields: fields,
+      locked: locked,
+      discoverable: discoverable,
+      invisible: invisible,
       avatar: avatar,
       name: data["name"],
       follower_address: data["followers"],
       following_address: data["following"],
-      bio: data["summary"]
+      bio: data["summary"],
+      actor_type: actor_type,
+      also_known_as: Map.get(data, "alsoKnownAs", [])
     }
 
     # nickname can be nil because of virtual actors
@@ -1038,33 +1433,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def fetch_follow_information_for_user(user) do
     with {:ok, following_data} <-
            Fetcher.fetch_and_contain_remote_object_from_id(user.following_address),
-         following_count when is_integer(following_count) <- following_data["totalItems"],
          {:ok, hide_follows} <- collection_private(following_data),
          {:ok, followers_data} <-
            Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address),
-         followers_count when is_integer(followers_count) <- followers_data["totalItems"],
          {:ok, hide_followers} <- collection_private(followers_data) do
       {:ok,
        %{
          hide_follows: hide_follows,
-         follower_count: followers_count,
-         following_count: following_count,
+         follower_count: normalize_counter(followers_data["totalItems"]),
+         following_count: normalize_counter(following_data["totalItems"]),
          hide_followers: hide_followers
        }}
     else
-      {:error, _} = e ->
-        e
-
-      e ->
-        {:error, e}
+      {:error, _} = e -> e
+      e -> {:error, e}
     end
   end
 
+  defp normalize_counter(counter) when is_integer(counter), do: counter
+  defp normalize_counter(_), do: 0
+
   defp maybe_update_follow_information(data) do
-    with {:enabled, true} <-
-           {:enabled, Pleroma.Config.get([:instance, :external_user_synchronization])},
+    with {:enabled, true} <- {:enabled, Config.get([:instance, :external_user_synchronization])},
          {:ok, info} <- fetch_follow_information_for_user(data) do
-      info = Map.merge(data.info, info)
+      info = Map.merge(data[:info] || %{}, info)
       Map.put(data, :info, info)
     else
       {:enabled, false} ->
@@ -1079,26 +1471,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp collection_private(data) do
-    if is_map(data["first"]) and
-         data["first"]["type"] in ["CollectionPage", "OrderedCollectionPage"] do
+  defp collection_private(%{"first" => %{"type" => type}})
+       when type in ["CollectionPage", "OrderedCollectionPage"],
+       do: {:ok, false}
+
+  defp collection_private(%{"first" => first}) do
+    with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
+           Fetcher.fetch_and_contain_remote_object_from_id(first) do
       {:ok, false}
     else
-      with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
-             Fetcher.fetch_and_contain_remote_object_from_id(data["first"]) do
-        {:ok, false}
-      else
-        {:error, {:ok, %{status: code}}} when code in [401, 403] ->
-          {:ok, true}
-
-        {:error, _} = e ->
-          e
-
-        e ->
-          {:error, e}
-      end
+      {:error, {:ok, %{status: code}}} when code in [401, 403] -> {:ok, true}
+      {:error, _} = e -> e
+      e -> {:error, e}
     end
   end
+
+  defp collection_private(_data), do: {:ok, true}
 
   def user_data_from_user_object(data) do
     with {:ok, data} <- MRF.filter(data),
@@ -1115,7 +1503,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          data <- maybe_update_follow_information(data) do
       {:ok, data}
     else
-      e -> Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
+      {:error, "Object has been deleted"} = e ->
+        Logger.debug("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
+        {:error, e}
+
+      e ->
+        Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
+        {:error, e}
     end
   end
 

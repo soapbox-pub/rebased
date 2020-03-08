@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
@@ -7,6 +7,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.Conversation.Participation
+  alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -14,7 +16,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.OStatus
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -23,19 +24,64 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     :ok
   end
 
-  test "returns the direct conversation id when given the `with_conversation_id` option" do
+  test "has an emoji reaction list" do
+    user = insert(:user)
+    other_user = insert(:user)
+    third_user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "dae cofe??"})
+
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, user, "☕")
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, third_user, "🍵")
+    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+    activity = Repo.get(Activity, activity.id)
+    status = StatusView.render("show.json", activity: activity)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 2, me: false},
+             %{name: "🍵", count: 1, me: false}
+           ]
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 2, me: true},
+             %{name: "🍵", count: 1, me: false}
+           ]
+  end
+
+  test "loads and returns the direct conversation id when given the `with_direct_conversation_id` option" do
     user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+    [participation] = Participation.for_user(user)
 
     status =
-      StatusView.render("status.json",
+      StatusView.render("show.json",
         activity: activity,
         with_direct_conversation_id: true,
         for: user
       )
 
-    assert status[:pleroma][:direct_conversation_id]
+    assert status[:pleroma][:direct_conversation_id] == participation.id
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+    assert status[:pleroma][:direct_conversation_id] == nil
+  end
+
+  test "returns the direct conversation id when given the `direct_conversation_id` option" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+    [participation] = Participation.for_user(user)
+
+    status =
+      StatusView.render("show.json",
+        activity: activity,
+        direct_conversation_id: participation.id,
+        for: user
+      )
+
+    assert status[:pleroma][:direct_conversation_id] == participation.id
   end
 
   test "returns a temporary ap_id based user for activities missing db users" do
@@ -46,7 +92,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     Repo.delete(user)
     Cachex.clear(:user_cache)
 
-    %{account: ms_user} = StatusView.render("status.json", activity: activity)
+    %{account: ms_user} = StatusView.render("show.json", activity: activity)
 
     assert ms_user.acct == "erroruser@example.com"
   end
@@ -63,7 +109,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     Cachex.clear(:user_cache)
 
-    result = StatusView.render("status.json", activity: activity)
+    result = StatusView.render("show.json", activity: activity)
 
     assert result[:account][:id] == to_string(user.id)
   end
@@ -81,7 +127,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     User.get_cached_by_ap_id(note.data["actor"])
 
-    status = StatusView.render("status.json", %{activity: note})
+    status = StatusView.render("show.json", %{activity: note})
 
     assert status.content == ""
   end
@@ -93,7 +139,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     convo_id = Utils.context_to_conversation_id(object_data["context"])
 
-    status = StatusView.render("status.json", %{activity: note})
+    status = StatusView.render("show.json", %{activity: note})
 
     created_at =
       (object_data["published"] || "")
@@ -103,12 +149,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       id: to_string(note.id),
       uri: object_data["id"],
       url: Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, note),
-      account: AccountView.render("account.json", %{user: user}),
+      account: AccountView.render("show.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       card: nil,
       reblog: nil,
-      content: HtmlSanitizeEx.basic_html(object_data["content"]),
+      content: HTML.filter_tags(object_data["content"]),
       created_at: created_at,
       reblogs_count: 0,
       replies_count: 0,
@@ -120,7 +166,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       pinned: false,
       sensitive: false,
       poll: nil,
-      spoiler_text: HtmlSanitizeEx.basic_html(object_data["summary"]),
+      spoiler_text: HTML.filter_tags(object_data["summary"]),
       visibility: "public",
       media_attachments: [],
       mentions: [],
@@ -147,11 +193,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         local: true,
         conversation_id: convo_id,
         in_reply_to_account_acct: nil,
-        content: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["content"])},
-        spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["summary"])},
+        content: %{"text/plain" => HTML.strip_tags(object_data["content"])},
+        spoiler_text: %{"text/plain" => HTML.strip_tags(object_data["summary"])},
         expires_at: nil,
         direct_conversation_id: nil,
-        thread_muted: false
+        thread_muted: false,
+        emoji_reactions: []
       }
     }
 
@@ -162,14 +209,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, user} = User.mute(user, other_user)
+    {:ok, _user_relationships} = User.mute(user, other_user)
 
     {:ok, activity} = CommonAPI.post(other_user, %{"status" => "test"})
-    status = StatusView.render("status.json", %{activity: activity})
+    status = StatusView.render("show.json", %{activity: activity})
 
     assert status.muted == false
 
-    status = StatusView.render("status.json", %{activity: activity, for: user})
+    status = StatusView.render("show.json", %{activity: activity, for: user})
 
     assert status.muted == true
   end
@@ -178,16 +225,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, user} = User.mute(user, other_user)
+    {:ok, _user_relationships} = User.mute(user, other_user)
 
     {:ok, activity} = CommonAPI.post(other_user, %{"status" => "test"})
-    status = StatusView.render("status.json", %{activity: activity, for: user})
+    status = StatusView.render("show.json", %{activity: activity, for: user})
 
     assert status.pleroma.thread_muted == false
 
     {:ok, activity} = CommonAPI.add_mute(user, activity)
 
-    status = StatusView.render("status.json", %{activity: activity, for: user})
+    status = StatusView.render("show.json", %{activity: activity, for: user})
 
     assert status.pleroma.thread_muted == true
   end
@@ -196,11 +243,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Cute girls doing cute things"})
-    status = StatusView.render("status.json", %{activity: activity})
+    status = StatusView.render("show.json", %{activity: activity})
 
     assert status.bookmarked == false
 
-    status = StatusView.render("status.json", %{activity: activity, for: user})
+    status = StatusView.render("show.json", %{activity: activity, for: user})
 
     assert status.bookmarked == false
 
@@ -208,7 +255,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     activity = Activity.get_by_id_with_object(activity.id)
 
-    status = StatusView.render("status.json", %{activity: activity, for: user})
+    status = StatusView.render("show.json", %{activity: activity, for: user})
 
     assert status.bookmarked == true
   end
@@ -220,7 +267,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     {:ok, activity} =
       CommonAPI.post(user, %{"status" => "he", "in_reply_to_status_id" => note.id})
 
-    status = StatusView.render("status.json", %{activity: activity})
+    status = StatusView.render("show.json", %{activity: activity})
 
     assert status.in_reply_to_id == to_string(note.id)
 
@@ -230,17 +277,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   end
 
   test "contains mentions" do
-    incoming = File.read!("test/fixtures/incoming_reply_mastodon.xml")
-    # a user with this ap id might be in the cache.
-    recipient = "https://pleroma.soykaf.com/users/lain"
-    user = insert(:user, %{ap_id: recipient})
+    user = insert(:user)
+    mentioned = insert(:user)
 
-    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "hi @#{mentioned.nickname}"})
 
-    status = StatusView.render("status.json", %{activity: activity})
+    status = StatusView.render("show.json", %{activity: activity})
 
     assert status.mentions ==
-             Enum.map([user], fn u -> AccountView.render("mention.json", %{user: u}) end)
+             Enum.map([mentioned], fn u -> AccountView.render("mention.json", %{user: u}) end)
   end
 
   test "create mentions from the 'to' field" do
@@ -263,7 +308,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert length(activity.recipients) == 3
 
-    %{mentions: [mention] = mentions} = StatusView.render("status.json", %{activity: activity})
+    %{mentions: [mention] = mentions} = StatusView.render("show.json", %{activity: activity})
 
     assert length(mentions) == 1
     assert mention.url == recipient_ap_id
@@ -300,7 +345,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert length(activity.recipients) == 3
 
-    %{mentions: [mention] = mentions} = StatusView.render("status.json", %{activity: activity})
+    %{mentions: [mention] = mentions} = StatusView.render("show.json", %{activity: activity})
 
     assert length(mentions) == 1
     assert mention.url == recipient.ap_id
@@ -340,7 +385,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     id = "https://wedistribute.org/wp-json/pterotype/v1/object/85810"
     [activity] = Activity.search(nil, id)
 
-    status = StatusView.render("status.json", %{activity: activity})
+    status = StatusView.render("show.json", %{activity: activity})
 
     assert status.uri == id
     assert status.url == "https://wedistribute.org/2019/07/mastodon-drops-ostatus/"
@@ -352,7 +397,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     {:ok, reblog, _} = CommonAPI.repeat(activity.id, user)
 
-    represented = StatusView.render("status.json", %{for: user, activity: reblog})
+    represented = StatusView.render("show.json", %{for: user, activity: reblog})
 
     assert represented[:id] == to_string(reblog.id)
     assert represented[:reblog][:id] == to_string(activity.id)
@@ -369,10 +414,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     %Activity{} = activity = Activity.get_create_by_object_ap_id(object.data["id"])
 
-    represented = StatusView.render("status.json", %{for: user, activity: activity})
+    represented = StatusView.render("show.json", %{for: user, activity: activity})
 
     assert represented[:id] == to_string(activity.id)
     assert length(represented[:media_attachments]) == 1
+  end
+
+  test "a Mobilizon event" do
+    user = insert(:user)
+
+    {:ok, object} =
+      Pleroma.Object.Fetcher.fetch_object_from_id(
+        "https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39"
+      )
+
+    %Activity{} = activity = Activity.get_create_by_object_ap_id(object.data["id"])
+
+    represented = StatusView.render("show.json", %{for: user, activity: activity})
+
+    assert represented[:id] == to_string(activity.id)
   end
 
   describe "build_tags/1" do
@@ -431,7 +491,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         title: "Example website"
       }
 
-      %{provider_name: "Example site name"} =
+      %{provider_name: "example.com"} =
         StatusView.render("card.json", %{page_url: page_url, rich_media: card})
     end
 
@@ -446,118 +506,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         description: "Example description"
       }
 
-      %{provider_name: "Example site name"} =
+      %{provider_name: "example.com"} =
         StatusView.render("card.json", %{page_url: page_url, rich_media: card})
-    end
-  end
-
-  describe "poll view" do
-    test "renders a poll" do
-      user = insert(:user)
-
-      {:ok, activity} =
-        CommonAPI.post(user, %{
-          "status" => "Is Tenshi eating a corndog cute?",
-          "poll" => %{
-            "options" => ["absolutely!", "sure", "yes", "why are you even asking?"],
-            "expires_in" => 20
-          }
-        })
-
-      object = Object.normalize(activity)
-
-      expected = %{
-        emojis: [],
-        expired: false,
-        id: to_string(object.id),
-        multiple: false,
-        options: [
-          %{title: "absolutely!", votes_count: 0},
-          %{title: "sure", votes_count: 0},
-          %{title: "yes", votes_count: 0},
-          %{title: "why are you even asking?", votes_count: 0}
-        ],
-        voted: false,
-        votes_count: 0
-      }
-
-      result = StatusView.render("poll.json", %{object: object})
-      expires_at = result.expires_at
-      result = Map.delete(result, :expires_at)
-
-      assert result == expected
-
-      expires_at = NaiveDateTime.from_iso8601!(expires_at)
-      assert NaiveDateTime.diff(expires_at, NaiveDateTime.utc_now()) in 15..20
-    end
-
-    test "detects if it is multiple choice" do
-      user = insert(:user)
-
-      {:ok, activity} =
-        CommonAPI.post(user, %{
-          "status" => "Which Mastodon developer is your favourite?",
-          "poll" => %{
-            "options" => ["Gargron", "Eugen"],
-            "expires_in" => 20,
-            "multiple" => true
-          }
-        })
-
-      object = Object.normalize(activity)
-
-      assert %{multiple: true} = StatusView.render("poll.json", %{object: object})
-    end
-
-    test "detects emoji" do
-      user = insert(:user)
-
-      {:ok, activity} =
-        CommonAPI.post(user, %{
-          "status" => "What's with the smug face?",
-          "poll" => %{
-            "options" => [":blank: sip", ":blank::blank: sip", ":blank::blank::blank: sip"],
-            "expires_in" => 20
-          }
-        })
-
-      object = Object.normalize(activity)
-
-      assert %{emojis: [%{shortcode: "blank"}]} =
-               StatusView.render("poll.json", %{object: object})
-    end
-
-    test "detects vote status" do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      {:ok, activity} =
-        CommonAPI.post(user, %{
-          "status" => "Which input devices do you use?",
-          "poll" => %{
-            "options" => ["mouse", "trackball", "trackpoint"],
-            "multiple" => true,
-            "expires_in" => 20
-          }
-        })
-
-      object = Object.normalize(activity)
-
-      {:ok, _, object} = CommonAPI.vote(other_user, object, [1, 2])
-
-      result = StatusView.render("poll.json", %{object: object, for: other_user})
-
-      assert result[:voted] == true
-      assert Enum.at(result[:options], 1)[:votes_count] == 1
-      assert Enum.at(result[:options], 2)[:votes_count] == 1
-    end
-
-    test "does not crash on polls with no end date" do
-      object = Object.normalize("https://skippers-bin.com/notes/7x9tmrp97i")
-      result = StatusView.render("poll.json", %{object: object})
-
-      assert result[:expires_at] == nil
-      assert result[:expired] == false
     end
   end
 
@@ -570,7 +520,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         "status" => "drink more water"
       })
 
-    result = StatusView.render("status.json", %{activity: activity, for: other_user})
+    result = StatusView.render("show.json", %{activity: activity, for: other_user})
 
     assert result[:account][:pleroma][:relationship] ==
              AccountView.render("relationship.json", %{user: other_user, target: user})
@@ -587,7 +537,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     {:ok, activity, _object} = CommonAPI.repeat(activity.id, other_user)
 
-    result = StatusView.render("status.json", %{activity: activity, for: user})
+    result = StatusView.render("show.json", %{activity: activity, for: user})
 
     assert result[:account][:pleroma][:relationship] ==
              AccountView.render("relationship.json", %{user: user, target: other_user})
@@ -604,8 +554,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     {:ok, activity} =
       CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
 
-    status = StatusView.render("status.json", activity: activity)
+    status = StatusView.render("show.json", activity: activity)
 
     assert status.visibility == "list"
+  end
+
+  test "successfully renders a Listen activity (pleroma extension)" do
+    listen_activity = insert(:listen)
+
+    status = StatusView.render("listen.json", activity: listen_activity)
+
+    assert status.length == listen_activity.data["object"]["length"]
+    assert status.title == listen_activity.data["object"]["title"]
   end
 end

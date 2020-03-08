@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     captcha_enabled = Pleroma.Config.get([Pleroma.Captcha, :enabled])
     # true if captcha is disabled or enabled and valid, false otherwise
     captcha_ok =
-      if !captcha_enabled do
+      if not captcha_enabled do
         :ok
       else
         Pleroma.Captcha.validate(
@@ -99,7 +99,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def password_reset(nickname_or_email) do
     with true <- is_binary(nickname_or_email),
-         %User{local: true} = user <- User.get_by_nickname_or_email(nickname_or_email),
+         %User{local: true, email: email} = user when not is_nil(email) <-
+           User.get_by_nickname_or_email(nickname_or_email),
          {:ok, token_record} <- Pleroma.PasswordResetToken.create_token(user) do
       user
       |> UserEmail.password_reset_email(token_record.token)
@@ -109,6 +110,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     else
       false ->
         {:error, "bad user identifier"}
+
+      %User{local: true, email: nil} ->
+        {:ok, :noop}
 
       %User{local: false} ->
         {:error, "remote user"}

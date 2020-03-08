@@ -1,15 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.AppView do
   use Pleroma.Web, :view
 
   alias Pleroma.Web.OAuth.App
-
-  @vapid_key :web_push_encryption
-             |> Application.get_env(:vapid_details, [])
-             |> Keyword.get(:public_key)
 
   def render("show.json", %{app: %App{} = app}) do
     %{
@@ -32,8 +28,10 @@ defmodule Pleroma.Web.MastodonAPI.AppView do
   end
 
   defp with_vapid_key(data) do
-    if @vapid_key do
-      Map.put(data, "vapid_key", @vapid_key)
+    vapid_key = Application.get_env(:web_push_encryption, :vapid_details, [])[:public_key]
+
+    if vapid_key do
+      Map.put(data, "vapid_key", vapid_key)
     else
       data
     end

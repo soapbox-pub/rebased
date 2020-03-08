@@ -1,11 +1,13 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   alias Pleroma.Web.Metadata.Providers.OpenGraph
+
+  clear_config([Pleroma.Web.Metadata, :unfurl_nsfw])
 
   test "it renders all supported types of attachments and skips unknown types" do
     user = insert(:user)

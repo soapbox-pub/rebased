@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Object.ContainmentTest do
@@ -17,6 +17,16 @@ defmodule Pleroma.Object.ContainmentTest do
   end
 
   describe "general origin containment" do
+    test "works for completely actorless posts" do
+      assert :error ==
+               Containment.contain_origin("https://glaceon.social/users/monorail", %{
+                 "deleted" => "2019-10-30T05:48:50.249606Z",
+                 "formerType" => "Note",
+                 "id" => "https://glaceon.social/users/monorail/statuses/103049757364029187",
+                 "type" => "Tombstone"
+               })
+    end
+
     test "contain_origin_from_id() catches obvious spoofing attempts" do
       data = %{
         "id" => "http://example.com/~alyssa/activities/1234.json"
@@ -65,7 +75,7 @@ defmodule Pleroma.Object.ContainmentTest do
       assert capture_log(fn ->
                {:error, _} = User.get_or_fetch_by_ap_id("https://n1u.moe/users/rye")
              end) =~
-               "[error] Could not decode user at fetch https://n1u.moe/users/rye, {:error, :error}"
+               "[error] Could not decode user at fetch https://n1u.moe/users/rye"
     end
 
     test "contain_origin_from_id() gracefully handles cases where no ID is present" do

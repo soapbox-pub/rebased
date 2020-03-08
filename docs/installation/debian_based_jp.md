@@ -5,67 +5,64 @@
 
 ## インストール
 
-このガイドはDebian Stretchを仮定しています。Ubuntu 16.04でも可能です。
+このガイドはDebian Stretchを利用することを想定しています。Ubuntu 16.04や18.04でもおそらく動作します。また、ユーザはrootもしくはsudoにより管理者権限を持っていることを前提とします。もし、以下の操作をrootユーザで行う場合は、 `sudo` を無視してください。ただし、`sudo -Hu pleroma` のようにユーザを指定している場合には `su <username> -s $SHELL -c 'command'` を代わりに使ってください。
 
 ### 必要なソフトウェア
 
-- PostgreSQL 9.6+ (postgresql-contrib-9.6 または他のバージョンの PSQL をインストールしてください)
-- Elixir 1.5 以上 ([Debianのリポジトリからインストールしないこと！！！ ここからインストールすること！](https://elixir-lang.org/install.html#unix-and-unix-like))。または [asdf](https://github.com/asdf-vm/asdf) を pleroma ユーザーでインストール。
-- erlang-dev
+- PostgreSQL 9.6以上 (Ubuntu16.04では9.5しか提供されていないので，[](https://www.postgresql.org/download/linux/ubuntu/)こちらから新しいバージョンを入手してください)
+- postgresql-contrib 9.6以上 (同上)
+- Elixir 1.5 以上 ([Debianのリポジトリからインストールしないこと！！！ ここからインストールすること！](https://elixir-lang.org/install.html#unix-and-unix-like)。または [asdf](https://github.com/asdf-vm/asdf) をpleromaユーザーでインストールしてください)
+  - erlang-dev
 - erlang-tools
 - erlang-parsetools
+- erlang-eldap (LDAP認証を有効化するときのみ必要)
 - erlang-ssh
-- erlang-xmerl (Jessieではバックポートからインストールすること！)
+- erlang-xmerl
 - git
 - build-essential
-- openssh
-- openssl
-- nginx prefered (Apacheも動くかもしれませんが、誰もテストしていません！)
-- certbot (または何らかのACME Let's encryptクライアント)
+
+#### このガイドで利用している追加パッケージ
+
+- nginx (おすすめです。他のリバースプロキシを使う場合は、参考となる設定をこのリポジトリから探してください)
+- certbot (または何らかのLet's Encrypt向けACMEクライアント)
 
 ### システムを準備する
 
 * まずシステムをアップデートしてください。
 ```
-apt update && apt dist-upgrade
+sudo apt update
+sudo apt full-upgrade
 ```
 
-* 複数のツールとpostgresqlをインストールします。あとで必要になるので。
+* 上記に挙げたパッケージをインストールしておきます。
 ```
-apt install git build-essential openssl ssh sudo postgresql-9.6 postgresql-contrib-9.6
+sudo apt install git build-essential postgresql postgresql-contrib
 ```
-(postgresqlのバージョンは、あなたのディストロにあわせて変えてください。または、バージョン番号がいらないかもしれません。)
+
 
 ### ElixirとErlangをインストールします
 
 * Erlangのリポジトリをダウンロードおよびインストールします。
 ```
-wget -P /tmp/ https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && sudo dpkg -i /tmp/erlang-solutions_1.0_all.deb
+wget -P /tmp/ https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
+sudo dpkg -i /tmp/erlang-solutions_1.0_all.deb
 ```
 
 * ElixirとErlangをインストールします、
 ```
-apt update && apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools erlang-ssh
+sudo apt update
+sudo apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools erlang-ssh
 ```
 
 ### Pleroma BE (バックエンド) をインストールします
 
-*  新しいユーザーを作ります。
-```
-adduser pleroma
-``` 
-(Give it any password you want, make it STRONG)
+*  Pleroma用に新しいユーザーを作ります。
 
-*  新しいユーザーをsudoグループに入れます。
 ```
-usermod -aG sudo pleroma
+sudo useradd -r -s /bin/false -m -d /var/lib/pleroma -U pleroma
 ```
 
-*  新しいユーザーに変身し、ホームディレクトリに移動します。
-```
-su pleroma
-cd ~
-```
+**注意**: Pleromaユーザとして単発のコマンドを実行したい場合はは、`sudo -Hu pleroma command` を使ってください。シェルを使いたい場合は `sudo -Hu pleroma $SHELL`です。もし `sudo` を使わない場合は、rootユーザで `su -l pleroma -s $SHELL -c 'command'` とすることでコマンドを、`su -l pleroma -s $SHELL` とすることでシェルを開始できます。
 
 *  Gitリポジトリをクローンします。
 ```
@@ -76,118 +73,116 @@ sudo -Hu pleroma git clone -b stable https://git.pleroma.social/pleroma/pleroma 
 
 *  新しいディレクトリに移動します。
 ```
-cd pleroma/
+cd /opt/pleroma
 ```
 
 * Pleromaが依存するパッケージをインストールします。Hexをインストールしてもよいか聞かれたら、yesを入力してください。
 ```
-mix deps.get
+sudo -Hu pleroma mix deps.get
 ```
 
 * コンフィギュレーションを生成します。
 ```
-mix pleroma.instance gen
+sudo -Hu pleroma mix pleroma.instance gen
 ```
     * rebar3をインストールしてもよいか聞かれたら、yesを入力してください。
-    * この処理には時間がかかります。私もよく分かりませんが、何らかのコンパイルが行われているようです。
-    * あなたのインスタンスについて、いくつかの質問があります。その回答は `config/generated_config.exs` というコンフィギュレーションファイルに保存されます。
+    * このときにpleromaの一部がコンパイルされるため、この処理には時間がかかります。
+    * あなたのインスタンスについて、いくつかの質問されます。この質問により `config/generated_config.exs` という設定ファイルが生成されます。
 
-**注意**: メディアプロクシを有効にすると回答して、なおかつ、キャッシュのURLは空欄のままにしている場合は、`generated_config.exs` を編集して、`base_url` で始まる行をコメントアウトまたは削除してください。そして、上にある行の `true` の後にあるコンマを消してください。
 
 * コンフィギュレーションを確認して、もし問題なければ、ファイル名を変更してください。
 ```
 mv config/{generated_config.exs,prod.secret.exs}
 ```
 
-* これまでのコマンドで、すでに `config/setup_db.psql` というファイルが作られています。このファイルをもとに、データベースを作成します。
+* 先程のコマンドで、すでに `config/setup_db.psql` というファイルが作られています。このファイルをもとに、データベースを作成します。
 ```
-sudo su postgres -c 'psql -f config/setup_db.psql'
-```
-
-* そして、データベースのミグレーションを実行します。
-```
-MIX_ENV=prod mix ecto.migrate
+sudo -Hu pleroma mix pleroma.instance gen
 ```
 
-* Pleromaを起動できるようになりました。
+* そして、データベースのマイグレーションを実行します。
 ```
-MIX_ENV=prod mix phx.server
+sudo -Hu pleroma MIX_ENV=prod mix ecto.migrate
 ```
 
-### インストールを終わらせる
+* これでPleromaを起動できるようになりました。
+```
+sudo -Hu pleroma MIX_ENV=prod mix phx.server
+```
 
-あなたの新しいインスタンスを世界に向けて公開するには、nginxまたは何らかのウェブサーバー (プロクシ) を使用する必要があります。また、Pleroma のためにシステムサービスファイルを作成する必要があります。
+### インストールの最終段階
+
+あなたの新しいインスタンスを世界に向けて公開するには、nginx等のWebサーバやプロキシサーバをPleromaの前段に使用する必要があります。また、Pleroma のためにシステムサービスファイルを作成する必要があります。
 
 #### Nginx
 
 * まだインストールしていないなら、nginxをインストールします。
 ```
-apt install nginx
+sudo apt install nginx
 ```
 
 * SSLをセットアップします。他の方法でもよいですが、ここではcertbotを説明します。
 certbotを使うならば、まずそれをインストールします。
 ```
-apt install certbot
+sudo apt install certbot
 ```
 そしてセットアップします。
 ```
-mkdir -p /var/lib/letsencrypt/.well-known
-% certbot certonly --email your@emailaddress --webroot -w /var/lib/letsencrypt/ -d yourdomain
+sudo mkdir -p /var/lib/letsencrypt/
+sudo certbot certonly --email <your@emailaddress> -d <yourdomain> --standalone
 ```
-もしうまくいかないときは、先にnginxを設定してください。ssl "on" を "off" に変えてから再試行してください。
+もしうまくいかないときは、nginxが正しく動いていない可能性があります。先にnginxを設定してください。ssl "on" を "off" に変えてから再試行してください。
 
 ---
 
-* nginxコンフィギュレーションの例をnginxフォルダーにコピーします。
+* nginxの設定ファイルサンプルをnginxフォルダーにコピーします。
 ```
-cp /home/pleroma/pleroma/installation/pleroma.nginx /etc/nginx/sites-enabled/pleroma.nginx
+sudo cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/sites-available/pleroma.nginx
+sudo ln -s /etc/nginx/sites-available/pleroma.nginx /etc/nginx/sites-enabled/pleroma.nginx
 ```
 
-* nginxを起動する前に、コンフィギュレーションを編集してください。例えば、サーバー名、証明書のパスなどを変更する必要があります。
+* nginxを起動する前に、設定ファイルを編集してください。例えば、サーバー名、証明書のパスなどを変更する必要があります。
 * nginxを再起動します。
 ```
-systemctl reload nginx.service
+sudo systemctl enable --now nginx.service
 ```
+
+もし証明書を更新する必要が出てきた場合には、nginxの関連するlocationブロックのコメントアウトを外し、以下のコマンドを動かします。
+
+```
+sudo certbot certonly --email <your@emailaddress> -d <yourdomain> --webroot -w /var/lib/letsencrypt/
+```
+
+#### 他のWebサーバやプロキシ
+これに関してはサンプルが `/opt/pleroma/installation/` にあるので、探してみてください。
 
 #### Systemd サービス
 
-* サービスファイルの例をコピーします。
+* サービスファイルのサンプルをコピーします。
 ```
-cp /home/pleroma/pleroma/installation/pleroma.service /usr/lib/systemd/system/pleroma.service
-```
-
-* サービスファイルを変更します。すべてのパスが正しいことを確認してください。また、`[Service]` セクションに以下の行があることを確認してください。
-```
-Environment="MIX_ENV=prod"
+sudo cp /opt/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
 ```
 
-* `pleroma.service` を enable および start してください。
+* サービスファイルを変更します。すべてのパスが正しいことを確認してください
+* サービスを有効化し `pleroma.service` を開始してください
 ```
-systemctl enable --now pleroma.service
-```
-
-#### モデレーターを作る
-
-新たにユーザーを作ったら、モデレーター権限を与えたいかもしれません。以下のタスクで可能です。
-```
-mix set_moderator username [true|false]
+sudo systemctl enable --now pleroma.service
 ```
 
-モデレーターはすべてのポストを消すことができます。将来的には他のことも可能になるかもしれません。
+#### 初期ユーザの作成
 
-#### メディアプロクシを有効にする
+新たにインスタンスを作成したら、以下のコマンドにより管理者権限を持った初期ユーザを作成できます。
 
-`generate_config` でメディアプロクシを有効にしているなら、すでにメディアプロクシが動作しています。あとから設定を変更したいなら、[How to activate mediaproxy](How-to-activate-mediaproxy) を見てください。
+```
+sudo -Hu pleroma MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress> --admin
+```
 
-#### コンフィギュレーションとカスタマイズ
+#### その他の設定とカスタマイズ
 
-* [Backup your instance](backup.html)
-* [Configuration tips](general-tips-for-customizing-pleroma-fe.html)
-* [Hardening your instance](hardening.html)
-* [How to activate mediaproxy](howto_mediaproxy.html)
-* [Small Pleroma-FE customizations](small_customizations.html)
-* [Updating your instance](updating.html)
+* [Backup your instance](../administration/backup.md)
+* [Hardening your instance](../configuration/hardening.md)
+* [How to activate mediaproxy](../configuration/howto_mediaproxy.md)
+* [Updating your instance](../administration/updating.md)
 
 ## 質問ある？
 

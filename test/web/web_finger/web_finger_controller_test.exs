@@ -1,10 +1,11 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
   use Pleroma.Web.ConnCase
 
+  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -75,11 +76,13 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
   test "Sends a 404 when invalid format" do
     user = insert(:user)
 
-    assert_raise Phoenix.NotAcceptableError, fn ->
-      build_conn()
-      |> put_req_header("accept", "text/html")
-      |> get("/.well-known/webfinger?resource=acct:#{user.nickname}@localhost")
-    end
+    assert capture_log(fn ->
+             assert_raise Phoenix.NotAcceptableError, fn ->
+               build_conn()
+               |> put_req_header("accept", "text/html")
+               |> get("/.well-known/webfinger?resource=acct:#{user.nickname}@localhost")
+             end
+           end) =~ "no supported media type in accept header"
   end
 
   test "Sends a 400 when resource param is missing" do

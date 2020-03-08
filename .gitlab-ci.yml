@@ -1,22 +1,25 @@
 image: elixir:1.8.1
 
-variables:
+variables: &global_variables
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
   MIX_ENV: test
 
-cache:
+cache: &global_cache_policy
   key: ${CI_COMMIT_REF_SLUG}
   paths:
-          - deps
-          - _build
+    - deps
+    - _build
+
 stages:
   - build
   - test
+  - benchmark
   - deploy
   - release
+  - docker
 
 before_script:
   - mix local.hex --force
@@ -28,24 +31,27 @@ build:
   - mix deps.get
   - mix compile --force
 
-docs-build:
-  stage: build
-  only: &docs-only
-  - stable@pleroma/pleroma
-  - develop@pleroma/pleroma
+benchmark:
+  stage: benchmark
+  when: manual
   variables:
-    MIX_ENV: dev
+    MIX_ENV: benchmark
+  services:
+  - name: postgres:9.6
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
     - mix deps.get
-    - mix compile
-    - mix docs
-  artifacts:
-    paths:
-      - priv/static/doc
-
+    - mix ecto.create
+    - mix ecto.migrate
+    - mix pleroma.load_testing
 
 unit-testing:
   stage: test
+  cache: &testing_cache_policy
+    <<: *global_cache_policy
+    policy: pull
+
   services:
   - name: postgres:9.6
     alias: postgres
@@ -56,13 +62,29 @@ unit-testing:
     - mix ecto.migrate
     - mix coveralls --preload-modules
 
+federated-testing:
+  stage: test
+  cache: *testing_cache_policy
+  services:
+  - name: minibikini/postgres-with-rum:12
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  script:
+    - mix deps.get
+    - mix ecto.create
+    - mix ecto.migrate
+    - epmd -daemon
+    - mix test --trace --only federated
+
 unit-testing-rum:
   stage: test
+  cache: *testing_cache_policy
   services:
   - name: minibikini/postgres-with-rum:12
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   variables:
+    <<: *global_variables
     RUM_ENABLED: "true"
   script:
     - mix deps.get
@@ -73,28 +95,28 @@ unit-testing-rum:
 
 lint:
   stage: test
+  cache: *testing_cache_policy
   script:
     - mix format --check-formatted
 
 analysis:
   stage: test
+  cache: *testing_cache_policy
   script:
     - mix deps.get
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
 docs-deploy:
   stage: deploy
-  image: alpine:3.9
-  only: *docs-only
+  cache: *testing_cache_policy
+  image: alpine:latest
+  only:
+  - stable@pleroma/pleroma
+  - develop@pleroma/pleroma
   before_script:
-    - apk update && apk add openssh-client rsync
+  - apk add curl
   script:
-    - mkdir -p ~/.ssh
-    - echo "${SSH_HOST_KEY}" > ~/.ssh/known_hosts
-    - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - rsync -hrvz --delete -e "ssh -p ${SSH_PORT}" priv/static/doc/ "${SSH_USER_HOST_LOCATION}/${CI_COMMIT_REF_NAME}"
-
+  - curl -X POST -F"token=$DOCS_PIPELINE_TRIGGER" -F'ref=master' -F"variables[BRANCH]=$CI_COMMIT_REF_NAME" https://git.pleroma.social/api/v4/projects/673/trigger/pipeline
 review_app:
   image: alpine:3.9
   stage: deploy
@@ -117,6 +139,7 @@ review_app:
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - ssh-keyscan -H "pleroma.online" >> ~/.ssh/known_hosts
     - (ssh -t dokku@pleroma.online -- apps:create "$CI_ENVIRONMENT_SLUG") || true
+    - (ssh -t dokku@pleroma.online -- git:set "$CI_ENVIRONMENT_SLUG" keep-git-dir true) || true
     - ssh -t dokku@pleroma.online -- config:set "$CI_ENVIRONMENT_SLUG" APP_NAME="$CI_ENVIRONMENT_SLUG" APP_HOST="$CI_ENVIRONMENT_SLUG.pleroma.online" MIX_ENV=dokku
     - (ssh -t dokku@pleroma.online -- postgres:create $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db) || true
     - (ssh -t dokku@pleroma.online -- postgres:link $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db "$CI_ENVIRONMENT_SLUG") || true
@@ -142,7 +165,7 @@ stop_review_app:
     - ssh -t dokku@pleroma.online -- --force postgres:destroy $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db
 
 amd64:
-  stage: release 
+  stage: release
   # TODO: Replace with upstream image when 1.9.0 comes out
   image: rinpatch/elixir:1.9.0-rc.0
   only: &release-only
@@ -243,3 +266,66 @@ arm64-musl:
   variables: *release-variables
   before_script: *before-release-musl
   script: *release
+
+docker:
+  stage: docker
+  image: docker:latest
+  cache: {}
+  dependencies: []
+  variables: &docker-variables
+    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: unix:///var/run/docker.sock
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    IMAGE_TAG_SLUG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    IMAGE_TAG_LATEST: $CI_REGISTRY_IMAGE:latest
+    IMAGE_TAG_LATEST_STABLE: $CI_REGISTRY_IMAGE:latest-stable
+  before_script: &before-docker
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull $IMAGE_TAG_SLUG || true
+    - export CI_JOB_TIMESTAMP=$(date --utc -Iseconds)
+    - export CI_VCS_REF=$CI_COMMIT_SHORT_SHA
+  allow_failure: true
+  script:
+    - docker build --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST .
+    - docker push $IMAGE_TAG
+    - docker push $IMAGE_TAG_SLUG
+    - docker push $IMAGE_TAG_LATEST
+  tags:
+    - dind
+  only:
+    - develop@pleroma/pleroma
+
+docker-stable:
+  stage: docker
+  image: docker:latest
+  cache: {}
+  dependencies: []
+  variables: *docker-variables
+  before_script: *before-docker
+  allow_failure: true
+  script:
+    - docker build --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST_STABLE .
+    - docker push $IMAGE_TAG
+    - docker push $IMAGE_TAG_SLUG
+    - docker push $IMAGE_TAG_LATEST_STABLE
+  tags:
+    - dind
+  only:
+    - stable@pleroma/pleroma
+
+docker-release:
+  stage: docker
+  image: docker:latest
+  cache: {}
+  dependencies: []
+  variables: *docker-variables
+  before_script: *before-docker
+  allow_failure: true
+  script:
+    - docker build --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t       $IMAGE_TAG_SLUG .
+    - docker push $IMAGE_TAG
+    - docker push $IMAGE_TAG_SLUG
+  tags:
+    - dind
+  only:
+    - /^release/.*$/@pleroma/pleroma

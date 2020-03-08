@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.MastodonAPI.ConversationViewTest do
@@ -30,5 +30,6 @@ defmodule Pleroma.Web.MastodonAPI.ConversationViewTest do
 
     assert [account] = conversation.accounts
     assert account.id == other_user.id
+    assert conversation.last_status.pleroma.direct_conversation_id == participation.id
   end
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
@@ -11,12 +11,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
 
   # has the user successfully posted before?
   defp old_user?(%User{} = u) do
-    u.info.note_count > 0 || u.info.follower_count > 0
+    u.note_count > 0 || u.follower_count > 0
   end
 
   # does the post contain links?
   defp contains_links?(%{"content" => content} = _object) do
     content
+    |> Floki.parse_fragment!()
     |> Floki.filter_out("a.mention,a.hashtag,a[rel~=\"tag\"],a.zrl")
     |> Floki.attribute("a", "href")
     |> length() > 0

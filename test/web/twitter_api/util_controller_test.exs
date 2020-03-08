@@ -1,13 +1,14 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
+  use Oban.Testing, repo: Pleroma.Repo
 
-  alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.Web.CommonAPI
+
   import Pleroma.Factory
   import Mock
 
@@ -18,58 +19,53 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
   clear_config([:instance])
   clear_config([:frontend_configurations, :pleroma_fe])
-  clear_config([:user, :deny_follow_blocked])
 
   describe "POST /api/pleroma/follow_import" do
+    setup do: oauth_access(["follow"])
+
     test "it returns HTTP 200", %{conn: conn} do
-      user1 = insert(:user)
       user2 = insert(:user)
 
       response =
         conn
-        |> assign(:user, user1)
         |> post("/api/pleroma/follow_import", %{"list" => "#{user2.ap_id}"})
         |> json_response(:ok)
 
       assert response == "job started"
     end
 
-    test "it imports follow lists from file", %{conn: conn} do
-      user1 = insert(:user)
+    test "it imports follow lists from file", %{user: user1, conn: conn} do
       user2 = insert(:user)
 
       with_mocks([
         {File, [],
          read!: fn "follow_list.txt" ->
            "Account address,Show boosts\n#{user2.ap_id},true"
-         end},
-        {PleromaJobQueue, [:passthrough], []}
+         end}
       ]) do
         response =
           conn
-          |> assign(:user, user1)
           |> post("/api/pleroma/follow_import", %{"list" => %Plug.Upload{path: "follow_list.txt"}})
           |> json_response(:ok)
 
-        assert called(
-                 PleromaJobQueue.enqueue(
-                   :background,
-                   User,
-                   [:follow_import, user1, [user2.ap_id]]
-                 )
-               )
-
         assert response == "job started"
+
+        assert ObanHelpers.member?(
+                 %{
+                   "op" => "follow_import",
+                   "follower_id" => user1.id,
+                   "followed_identifiers" => [user2.ap_id]
+                 },
+                 all_enqueued(worker: Pleroma.Workers.BackgroundWorker)
+               )
       end
     end
 
     test "it imports new-style mastodon follow lists", %{conn: conn} do
-      user1 = insert(:user)
       user2 = insert(:user)
 
       response =
         conn
-        |> assign(:user, user1)
         |> post("/api/pleroma/follow_import", %{
           "list" => "Account address,Show boosts\n#{user2.ap_id},true"
         })
@@ -78,19 +74,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert response == "job started"
     end
 
-    test "requires 'follow' permission", %{conn: conn} do
+    test "requires 'follow' or 'write:follows' permissions" do
       token1 = insert(:oauth_token, scopes: ["read", "write"])
       token2 = insert(:oauth_token, scopes: ["follow"])
+      token3 = insert(:oauth_token, scopes: ["something"])
       another_user = insert(:user)
 
-      for token <- [token1, token2] do
+      for token <- [token1, token2, token3] do
         conn =
-          conn
+          build_conn()
           |> put_req_header("authorization", "Bearer #{token.token}")
           |> post("/api/pleroma/follow_import", %{"list" => "#{another_user.ap_id}"})
 
-        if token == token1 do
-          assert %{"error" => "Insufficient permissions: follow."} == json_response(conn, 403)
+        if token == token3 do
+          assert %{"error" => "Insufficient permissions: follow | write:follows."} ==
+                   json_response(conn, 403)
         else
           assert json_response(conn, 200)
         end
@@ -99,67 +97,82 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   end
 
   describe "POST /api/pleroma/blocks_import" do
+    # Note: "follow" or "write:blocks" permission is required
+    setup do: oauth_access(["write:blocks"])
+
     test "it returns HTTP 200", %{conn: conn} do
-      user1 = insert(:user)
       user2 = insert(:user)
 
       response =
         conn
-        |> assign(:user, user1)
         |> post("/api/pleroma/blocks_import", %{"list" => "#{user2.ap_id}"})
         |> json_response(:ok)
 
       assert response == "job started"
     end
 
-    test "it imports blocks users from file", %{conn: conn} do
-      user1 = insert(:user)
+    test "it imports blocks users from file", %{user: user1, conn: conn} do
       user2 = insert(:user)
       user3 = insert(:user)
 
       with_mocks([
-        {File, [], read!: fn "blocks_list.txt" -> "#{user2.ap_id} #{user3.ap_id}" end},
-        {PleromaJobQueue, [:passthrough], []}
+        {File, [], read!: fn "blocks_list.txt" -> "#{user2.ap_id} #{user3.ap_id}" end}
       ]) do
         response =
           conn
-          |> assign(:user, user1)
           |> post("/api/pleroma/blocks_import", %{"list" => %Plug.Upload{path: "blocks_list.txt"}})
           |> json_response(:ok)
 
-        assert called(
-                 PleromaJobQueue.enqueue(
-                   :background,
-                   User,
-                   [:blocks_import, user1, [user2.ap_id, user3.ap_id]]
-                 )
-               )
-
         assert response == "job started"
+
+        assert ObanHelpers.member?(
+                 %{
+                   "op" => "blocks_import",
+                   "blocker_id" => user1.id,
+                   "blocked_identifiers" => [user2.ap_id, user3.ap_id]
+                 },
+                 all_enqueued(worker: Pleroma.Workers.BackgroundWorker)
+               )
       end
     end
   end
 
   describe "PUT /api/pleroma/notification_settings" do
-    test "it updates notification settings", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["write:accounts"])
 
+    test "it updates notification settings", %{user: user, conn: conn} do
       conn
-      |> assign(:user, user)
       |> put("/api/pleroma/notification_settings", %{
         "followers" => false,
         "bar" => 1
       })
       |> json_response(:ok)
 
-      user = Repo.get(User, user.id)
+      user = refresh_record(user)
 
-      assert %{
-               "followers" => false,
-               "follows" => true,
-               "non_follows" => true,
-               "non_followers" => true
-             } == user.info.notification_settings
+      assert %Pleroma.User.NotificationSetting{
+               followers: false,
+               follows: true,
+               non_follows: true,
+               non_followers: true,
+               privacy_option: false
+             } == user.notification_settings
+    end
+
+    test "it updates notification privacy option", %{user: user, conn: conn} do
+      conn
+      |> put("/api/pleroma/notification_settings", %{"privacy_option" => "1"})
+      |> json_response(:ok)
+
+      user = refresh_record(user)
+
+      assert %Pleroma.User.NotificationSetting{
+               followers: true,
+               follows: true,
+               non_follows: true,
+               non_followers: true,
+               privacy_option: true
+             } == user.notification_settings
     end
   end
 
@@ -303,194 +316,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
   end
 
-  describe "GET /ostatus_subscribe - remote_follow/2" do
-    test "adds status to pleroma instance if the `acct` is a status", %{conn: conn} do
-      conn =
-        get(
-          conn,
-          "/ostatus_subscribe?acct=https://mastodon.social/users/emelie/statuses/101849165031453009"
-        )
-
-      assert redirected_to(conn) =~ "/notice/"
-    end
-
-    test "show follow account page if the `acct` is a account link", %{conn: conn} do
-      response =
-        get(
-          conn,
-          "/ostatus_subscribe?acct=https://mastodon.social/users/emelie"
-        )
-
-      assert html_response(response, 200) =~ "Log in to follow"
-    end
-
-    test "show follow page if the `acct` is a account link", %{conn: conn} do
-      user = insert(:user)
-
-      response =
-        conn
-        |> assign(:user, user)
-        |> get("/ostatus_subscribe?acct=https://mastodon.social/users/emelie")
-
-      assert html_response(response, 200) =~ "Remote follow"
-    end
-
-    test "show follow page with error when user cannot fecth by `acct` link", %{conn: conn} do
-      user = insert(:user)
-
-      response =
-        conn
-        |> assign(:user, user)
-        |> get("/ostatus_subscribe?acct=https://mastodon.social/users/not_found")
-
-      assert html_response(response, 200) =~ "Error fetching user"
-    end
-  end
-
-  describe "POST /ostatus_subscribe - do_remote_follow/2 with assigned user " do
-    test "follows user", %{conn: conn} do
-      user = insert(:user)
-      user2 = insert(:user)
-
-      response =
-        conn
-        |> assign(:user, user)
-        |> post("/ostatus_subscribe", %{"user" => %{"id" => user2.id}})
-        |> response(200)
-
-      assert response =~ "Account followed!"
-      assert user2.follower_address in refresh_record(user).following
-    end
-
-    test "returns error when user is deactivated", %{conn: conn} do
-      user = insert(:user, info: %{deactivated: true})
-      user2 = insert(:user)
-
-      response =
-        conn
-        |> assign(:user, user)
-        |> post("/ostatus_subscribe", %{"user" => %{"id" => user2.id}})
-        |> response(200)
-
-      assert response =~ "Error following account"
-    end
-
-    test "returns error when user is blocked", %{conn: conn} do
-      Pleroma.Config.put([:user, :deny_follow_blocked], true)
-      user = insert(:user)
-      user2 = insert(:user)
-
-      {:ok, _user} = Pleroma.User.block(user2, user)
-
-      response =
-        conn
-        |> assign(:user, user)
-        |> post("/ostatus_subscribe", %{"user" => %{"id" => user2.id}})
-        |> response(200)
-
-      assert response =~ "Error following account"
-    end
-
-    test "returns error when followee not found", %{conn: conn} do
-      user = insert(:user)
-
-      response =
-        conn
-        |> assign(:user, user)
-        |> post("/ostatus_subscribe", %{"user" => %{"id" => "jimm"}})
-        |> response(200)
-
-      assert response =~ "Error following account"
-    end
-
-    test "returns success result when user already in followers", %{conn: conn} do
-      user = insert(:user)
-      user2 = insert(:user)
-      {:ok, _, _, _} = CommonAPI.follow(user, user2)
-
-      response =
-        conn
-        |> assign(:user, refresh_record(user))
-        |> post("/ostatus_subscribe", %{"user" => %{"id" => user2.id}})
-        |> response(200)
-
-      assert response =~ "Account followed!"
-    end
-  end
-
-  describe "POST /ostatus_subscribe - do_remote_follow/2 without assigned user " do
-    test "follows", %{conn: conn} do
-      user = insert(:user)
-      user2 = insert(:user)
-
-      response =
-        conn
-        |> post("/ostatus_subscribe", %{
-          "authorization" => %{"name" => user.nickname, "password" => "test", "id" => user2.id}
-        })
-        |> response(200)
-
-      assert response =~ "Account followed!"
-      assert user2.follower_address in refresh_record(user).following
-    end
-
-    test "returns error when followee not found", %{conn: conn} do
-      user = insert(:user)
-
-      response =
-        conn
-        |> post("/ostatus_subscribe", %{
-          "authorization" => %{"name" => user.nickname, "password" => "test", "id" => "jimm"}
-        })
-        |> response(200)
-
-      assert response =~ "Error following account"
-    end
-
-    test "returns error when login invalid", %{conn: conn} do
-      user = insert(:user)
-
-      response =
-        conn
-        |> post("/ostatus_subscribe", %{
-          "authorization" => %{"name" => "jimm", "password" => "test", "id" => user.id}
-        })
-        |> response(200)
-
-      assert response =~ "Wrong username or password"
-    end
-
-    test "returns error when password invalid", %{conn: conn} do
-      user = insert(:user)
-      user2 = insert(:user)
-
-      response =
-        conn
-        |> post("/ostatus_subscribe", %{
-          "authorization" => %{"name" => user.nickname, "password" => "42", "id" => user2.id}
-        })
-        |> response(200)
-
-      assert response =~ "Wrong username or password"
-    end
-
-    test "returns error when user is blocked", %{conn: conn} do
-      Pleroma.Config.put([:user, :deny_follow_blocked], true)
-      user = insert(:user)
-      user2 = insert(:user)
-      {:ok, _user} = Pleroma.User.block(user2, user)
-
-      response =
-        conn
-        |> post("/ostatus_subscribe", %{
-          "authorization" => %{"name" => user.nickname, "password" => "test", "id" => user2.id}
-        })
-        |> response(200)
-
-      assert response =~ "Error following account"
-    end
-  end
-
   describe "GET /api/pleroma/healthcheck" do
     clear_config([:instance, :healthcheck])
 
@@ -525,7 +350,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       end
     end
 
-    test "returns 503 when healthcheck enabled and  health is false", %{conn: conn} do
+    test "returns 503 when healthcheck enabled and health is false", %{conn: conn} do
       Pleroma.Config.put([:instance, :healthcheck], true)
 
       with_mock Pleroma.Healthcheck,
@@ -547,35 +372,34 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   end
 
   describe "POST /api/pleroma/disable_account" do
-    test "it returns HTTP 200", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["write:accounts"])
 
+    test "with valid permissions and password, it disables the account", %{conn: conn, user: user} do
       response =
         conn
-        |> assign(:user, user)
         |> post("/api/pleroma/disable_account", %{"password" => "test"})
         |> json_response(:ok)
 
       assert response == %{"status" => "success"}
+      ObanHelpers.perform_all()
 
       user = User.get_cached_by_id(user.id)
 
-      assert user.info.deactivated == true
+      assert user.deactivated == true
     end
 
-    test "it returns returns when password invalid", %{conn: conn} do
+    test "with valid permissions and invalid password, it returns an error", %{conn: conn} do
       user = insert(:user)
 
       response =
         conn
-        |> assign(:user, user)
         |> post("/api/pleroma/disable_account", %{"password" => "test1"})
         |> json_response(:ok)
 
       assert response == %{"error" => "Invalid password."}
       user = User.get_cached_by_id(user.id)
 
-      refute user.info.deactivated
+      refute user.deactivated
     end
   end
 
@@ -638,7 +462,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
                "https://social.heldscal.la/main/ostatussub?profile=#{user.ap_id}"
     end
 
-    test "it renders form with error when use not found", %{conn: conn} do
+    test "it renders form with error when user not found", %{conn: conn} do
       user2 = insert(:user, ap_id: "shp@social.heldscal.la")
 
       response =
@@ -663,29 +487,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
   end
 
-  defp with_credentials(conn, username, password) do
-    header_content = "Basic " <> Base.encode64("#{username}:#{password}")
-    put_req_header(conn, "authorization", header_content)
-  end
-
-  defp valid_user(_context) do
-    user = insert(:user)
-    [user: user]
-  end
-
   describe "POST /api/pleroma/change_email" do
-    setup [:valid_user]
+    setup do: oauth_access(["write:accounts"])
 
-    test "without credentials", %{conn: conn} do
-      conn = post(conn, "/api/pleroma/change_email")
-      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
-    end
-
-    test "with credentials and invalid password", %{conn: conn, user: current_user} do
+    test "without permissions", %{conn: conn} do
       conn =
         conn
-        |> with_credentials(current_user.nickname, "test")
-        |> post("/api/pleroma/change_email", %{
+        |> assign(:token, nil)
+        |> post("/api/pleroma/change_email")
+
+      assert json_response(conn, 403) == %{"error" => "Insufficient permissions: write:accounts."}
+    end
+
+    test "with proper permissions and invalid password", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/change_email", %{
           "password" => "hi",
           "email" => "test@test.com"
         })
@@ -693,14 +509,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response(conn, 200) == %{"error" => "Invalid password."}
     end
 
-    test "with credentials, valid password and invalid email", %{
-      conn: conn,
-      user: current_user
+    test "with proper permissions, valid password and invalid email", %{
+      conn: conn
     } do
       conn =
-        conn
-        |> with_credentials(current_user.nickname, "test")
-        |> post("/api/pleroma/change_email", %{
+        post(conn, "/api/pleroma/change_email", %{
           "password" => "test",
           "email" => "foobar"
         })
@@ -708,28 +521,22 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response(conn, 200) == %{"error" => "Email has invalid format."}
     end
 
-    test "with credentials, valid password and no email", %{
-      conn: conn,
-      user: current_user
+    test "with proper permissions, valid password and no email", %{
+      conn: conn
     } do
       conn =
-        conn
-        |> with_credentials(current_user.nickname, "test")
-        |> post("/api/pleroma/change_email", %{
+        post(conn, "/api/pleroma/change_email", %{
           "password" => "test"
         })
 
       assert json_response(conn, 200) == %{"error" => "Email can't be blank."}
     end
 
-    test "with credentials, valid password and blank email", %{
-      conn: conn,
-      user: current_user
+    test "with proper permissions, valid password and blank email", %{
+      conn: conn
     } do
       conn =
-        conn
-        |> with_credentials(current_user.nickname, "test")
-        |> post("/api/pleroma/change_email", %{
+        post(conn, "/api/pleroma/change_email", %{
           "password" => "test",
           "email" => ""
         })
@@ -737,16 +544,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response(conn, 200) == %{"error" => "Email can't be blank."}
     end
 
-    test "with credentials, valid password and non unique email", %{
-      conn: conn,
-      user: current_user
+    test "with proper permissions, valid password and non unique email", %{
+      conn: conn
     } do
       user = insert(:user)
 
       conn =
-        conn
-        |> with_credentials(current_user.nickname, "test")
-        |> post("/api/pleroma/change_email", %{
+        post(conn, "/api/pleroma/change_email", %{
           "password" => "test",
           "email" => user.email
         })
@@ -754,17 +558,113 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert json_response(conn, 200) == %{"error" => "Email has already been taken."}
     end
 
-    test "with credentials, valid password and valid email", %{
-      conn: conn,
-      user: current_user
+    test "with proper permissions, valid password and valid email", %{
+      conn: conn
     } do
       conn =
-        conn
-        |> with_credentials(current_user.nickname, "test")
-        |> post("/api/pleroma/change_email", %{
+        post(conn, "/api/pleroma/change_email", %{
           "password" => "test",
           "email" => "cofe@foobar.com"
         })
+
+      assert json_response(conn, 200) == %{"status" => "success"}
+    end
+  end
+
+  describe "POST /api/pleroma/change_password" do
+    setup do: oauth_access(["write:accounts"])
+
+    test "without permissions", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:token, nil)
+        |> post("/api/pleroma/change_password")
+
+      assert json_response(conn, 403) == %{"error" => "Insufficient permissions: write:accounts."}
+    end
+
+    test "with proper permissions and invalid password", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/change_password", %{
+          "password" => "hi",
+          "new_password" => "newpass",
+          "new_password_confirmation" => "newpass"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Invalid password."}
+    end
+
+    test "with proper permissions, valid password and new password and confirmation not matching",
+         %{
+           conn: conn
+         } do
+      conn =
+        post(conn, "/api/pleroma/change_password", %{
+          "password" => "test",
+          "new_password" => "newpass",
+          "new_password_confirmation" => "notnewpass"
+        })
+
+      assert json_response(conn, 200) == %{
+               "error" => "New password does not match confirmation."
+             }
+    end
+
+    test "with proper permissions, valid password and invalid new password", %{
+      conn: conn
+    } do
+      conn =
+        post(conn, "/api/pleroma/change_password", %{
+          "password" => "test",
+          "new_password" => "",
+          "new_password_confirmation" => ""
+        })
+
+      assert json_response(conn, 200) == %{
+               "error" => "New password can't be blank."
+             }
+    end
+
+    test "with proper permissions, valid password and matching new password and confirmation", %{
+      conn: conn,
+      user: user
+    } do
+      conn =
+        post(conn, "/api/pleroma/change_password", %{
+          "password" => "test",
+          "new_password" => "newpass",
+          "new_password_confirmation" => "newpass"
+        })
+
+      assert json_response(conn, 200) == %{"status" => "success"}
+      fetched_user = User.get_cached_by_id(user.id)
+      assert Comeonin.Pbkdf2.checkpw("newpass", fetched_user.password_hash) == true
+    end
+  end
+
+  describe "POST /api/pleroma/delete_account" do
+    setup do: oauth_access(["write:accounts"])
+
+    test "without permissions", %{conn: conn} do
+      conn =
+        conn
+        |> assign(:token, nil)
+        |> post("/api/pleroma/delete_account")
+
+      assert json_response(conn, 403) ==
+               %{"error" => "Insufficient permissions: write:accounts."}
+    end
+
+    test "with proper permissions and wrong or missing password", %{conn: conn} do
+      for params <- [%{"password" => "hi"}, %{}] do
+        ret_conn = post(conn, "/api/pleroma/delete_account", params)
+
+        assert json_response(ret_conn, 200) == %{"error" => "Invalid password."}
+      end
+    end
+
+    test "with proper permissions and valid password", %{conn: conn} do
+      conn = post(conn, "/api/pleroma/delete_account", %{"password" => "test"})
 
       assert json_response(conn, 200) == %{"status" => "success"}
     end

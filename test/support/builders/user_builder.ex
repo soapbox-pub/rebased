@@ -11,7 +11,7 @@ defmodule Pleroma.Builders.UserBuilder do
       bio: "A tester.",
       ap_id: "some id",
       last_digest_emailed_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
-      info: %{}
+      notification_settings: %Pleroma.User.NotificationSetting{}
     }
 
     Map.merge(user, data)

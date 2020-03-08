@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.SearchTest do
@@ -47,9 +47,9 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     end
 
     test "it returns active/deactivated users" do
-      insert(:user, info: %{deactivated: true})
-      insert(:user, info: %{deactivated: true})
-      insert(:user, info: %{deactivated: false})
+      insert(:user, deactivated: true)
+      insert(:user, deactivated: true)
+      insert(:user, deactivated: false)
 
       {:ok, _results, active_count} =
         Search.user(%{
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     test "it returns specific user" do
       insert(:user)
       insert(:user)
-      user = insert(:user, nickname: "bob", local: true, info: %{deactivated: false})
+      user = insert(:user, nickname: "bob", local: true, deactivated: false)
 
       {:ok, _results, total_count} = Search.user(%{query: ""})
 
@@ -108,7 +108,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     end
 
     test "it returns admin user" do
-      admin = insert(:user, info: %{is_admin: true})
+      admin = insert(:user, is_admin: true)
       insert(:user)
       insert(:user)
 
@@ -119,7 +119,7 @@ defmodule Pleroma.Web.AdminAPI.SearchTest do
     end
 
     test "it returns moderator user" do
-      moderator = insert(:user, info: %{is_moderator: true})
+      moderator = insert(:user, is_moderator: true)
       insert(:user)
       insert(:user)
 

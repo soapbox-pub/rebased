@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.Query do
@@ -28,6 +28,8 @@ defmodule Pleroma.User.Query do
   """
   import Ecto.Query
   import Pleroma.Web.AdminAPI.Search, only: [not_empty_string: 1]
+
+  alias Pleroma.FollowingRelationship
   alias Pleroma.User
 
   @type criteria ::
@@ -46,7 +48,7 @@ defmodule Pleroma.User.Query do
             followers: User.t(),
             friends: User.t(),
             recipients_from_activity: [String.t()],
-            nickname: [String.t()],
+            nickname: [String.t()] | String.t(),
             ap_id: [String.t()],
             order_by: term(),
             select: term(),
@@ -56,7 +58,6 @@ defmodule Pleroma.User.Query do
 
   @ilike_criteria [:nickname, :name, :query]
   @equal_criteria [:email]
-  @role_criteria [:is_admin, :is_moderator]
   @contains_criteria [:ap_id, :nickname]
 
   @spec build(criteria()) :: Query.t()
@@ -100,15 +101,19 @@ defmodule Pleroma.User.Query do
     Enum.reduce(tags, query, &prepare_tag_criteria/2)
   end
 
-  defp compose_query({key, _}, query) when key in @role_criteria do
-    where(query, [u], fragment("(?->? @> 'true')", u.info, ^to_string(key)))
+  defp compose_query({:is_admin, _}, query) do
+    where(query, [u], u.is_admin)
+  end
+
+  defp compose_query({:is_moderator, _}, query) do
+    where(query, [u], u.is_moderator)
   end
 
   defp compose_query({:super_users, _}, query) do
     where(
       query,
       [u],
-      fragment("?->'is_admin' @> 'true' OR ?->'is_moderator' @> 'true'", u.info, u.info)
+      u.is_admin or u.is_moderator
     )
   end
 
@@ -117,7 +122,13 @@ defmodule Pleroma.User.Query do
   defp compose_query({:external, _}, query), do: location_query(query, false)
 
   defp compose_query({:active, _}, query) do
-    where(query, [u], fragment("not (?->'deactivated' @> 'true')", u.info))
+    User.restrict_deactivated(query)
+    |> where([u], not is_nil(u.nickname))
+  end
+
+  defp compose_query({:legacy_active, _}, query) do
+    query
+    |> where([u], fragment("not (?->'deactivated' @> 'true')", u.info))
     |> where([u], not is_nil(u.nickname))
   end
 
@@ -126,22 +137,45 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query({:deactivated, true}, query) do
-    where(query, [u], fragment("?->'deactivated' @> 'true'", u.info))
+    where(query, [u], u.deactivated == ^true)
     |> where([u], not is_nil(u.nickname))
   end
 
-  defp compose_query({:followers, %User{id: id, follower_address: follower_address}}, query) do
-    where(query, [u], fragment("? <@ ?", ^[follower_address], u.following))
+  defp compose_query({:followers, %User{id: id}}, query) do
+    query
     |> where([u], u.id != ^id)
+    |> join(:inner, [u], r in FollowingRelationship,
+      as: :relationships,
+      on: r.following_id == ^id and r.follower_id == u.id
+    )
+    |> where([relationships: r], r.state == "accept")
   end
 
-  defp compose_query({:friends, %User{id: id, following: following}}, query) do
-    where(query, [u], u.follower_address in ^following)
+  defp compose_query({:friends, %User{id: id}}, query) do
+    query
     |> where([u], u.id != ^id)
+    |> join(:inner, [u], r in FollowingRelationship,
+      as: :relationships,
+      on: r.following_id == u.id and r.follower_id == ^id
+    )
+    |> where([relationships: r], r.state == "accept")
   end
 
   defp compose_query({:recipients_from_activity, to}, query) do
-    where(query, [u], u.ap_id in ^to or fragment("? && ?", u.following, ^to))
+    query
+    |> join(:left, [u], r in FollowingRelationship,
+      as: :relationships,
+      on: r.follower_id == u.id
+    )
+    |> join(:left, [relationships: r], f in User,
+      as: :following,
+      on: f.id == r.following_id
+    )
+    |> where(
+      [u, following: f, relationships: r],
+      u.ap_id in ^to or (f.follower_address in ^to and r.state == "accept")
+    )
+    |> distinct(true)
   end
 
   defp compose_query({:order_by, key}, query) do

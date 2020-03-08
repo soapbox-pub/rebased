@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emails.AdminEmailTest do
@@ -19,8 +19,8 @@ defmodule Pleroma.Emails.AdminEmailTest do
       AdminEmail.report(to_user, reporter, account, [%{name: "Test", id: "12"}], "Test comment")
 
     status_url = Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, "12")
-    reporter_url = Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, reporter.id)
-    account_url = Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, account.id)
+    reporter_url = Helpers.user_feed_url(Pleroma.Web.Endpoint, :feed_redirect, reporter.id)
+    account_url = Helpers.user_feed_url(Pleroma.Web.Endpoint, :feed_redirect, account.id)
 
     assert res.to == [{to_user.name, to_user.email}]
     assert res.from == {config[:name], config[:notify_email]}

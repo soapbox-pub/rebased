@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTP.RequestBuilderTest do
@@ -9,6 +9,7 @@ defmodule Pleroma.HTTP.RequestBuilderTest do
 
   describe "headers/2" do
     clear_config([:http, :send_user_agent])
+    clear_config([:http, :user_agent])
 
     test "don't send pleroma user agent" do
       assert RequestBuilder.headers(%{}, []) == %{headers: []}
@@ -16,9 +17,19 @@ defmodule Pleroma.HTTP.RequestBuilderTest do
 
     test "send pleroma user agent" do
       Pleroma.Config.put([:http, :send_user_agent], true)
+      Pleroma.Config.put([:http, :user_agent], :default)
 
       assert RequestBuilder.headers(%{}, []) == %{
                headers: [{"User-Agent", Pleroma.Application.user_agent()}]
+             }
+    end
+
+    test "send custom user agent" do
+      Pleroma.Config.put([:http, :send_user_agent], true)
+      Pleroma.Config.put([:http, :user_agent], "totally-not-pleroma")
+
+      assert RequestBuilder.headers(%{}, []) == %{
+               headers: [{"User-Agent", "totally-not-pleroma"}]
              }
     end
   end
