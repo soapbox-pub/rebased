@@ -12,7 +12,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
   alias Pleroma.Object
   alias Pleroma.User
 
-  clear_config_all([:instance, :federating]) do
+  clear_config([:instance, :federating]) do
     Config.put([:instance, :federating], true)
   end
 
@@ -82,160 +82,9 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
     end
   end
 
+  # Note: see ActivityPubControllerTest for JSON format tests
   describe "feed_redirect" do
-    test "undefined format. it redirects to feed", %{conn: conn} do
-      note_activity = insert(:note_activity)
-      user = User.get_cached_by_ap_id(note_activity.data["actor"])
-
-      response =
-        conn
-        |> put_req_header("accept", "application/xml")
-        |> get("/users/#{user.nickname}")
-        |> response(302)
-
-      assert response ==
-               "<html><body>You are being <a href=\"#{Pleroma.Web.base_url()}/users/#{
-                 user.nickname
-               }/feed.atom\">redirected</a>.</body></html>"
-    end
-
-    test "undefined format. it returns error when user not found", %{conn: conn} do
-      response =
-        conn
-        |> put_req_header("accept", "application/xml")
-        |> get(user_feed_path(conn, :feed, "jimm"))
-        |> response(404)
-
-      assert response == ~S({"error":"Not found"})
-    end
-
-    test "activity+json format. it redirects on actual feed of user", %{conn: conn} do
-      note_activity = insert(:note_activity)
-      user = User.get_cached_by_ap_id(note_activity.data["actor"])
-
-      response =
-        conn
-        |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}")
-        |> json_response(200)
-
-      assert response["endpoints"] == %{
-               "oauthAuthorizationEndpoint" => "#{Pleroma.Web.base_url()}/oauth/authorize",
-               "oauthRegistrationEndpoint" => "#{Pleroma.Web.base_url()}/api/v1/apps",
-               "oauthTokenEndpoint" => "#{Pleroma.Web.base_url()}/oauth/token",
-               "sharedInbox" => "#{Pleroma.Web.base_url()}/inbox",
-               "uploadMedia" => "#{Pleroma.Web.base_url()}/api/ap/upload_media"
-             }
-
-      assert response["@context"] == [
-               "https://www.w3.org/ns/activitystreams",
-               "http://localhost:4001/schemas/litepub-0.1.jsonld",
-               %{"@language" => "und"}
-             ]
-
-      assert Map.take(response, [
-               "followers",
-               "following",
-               "id",
-               "inbox",
-               "manuallyApprovesFollowers",
-               "name",
-               "outbox",
-               "preferredUsername",
-               "summary",
-               "tag",
-               "type",
-               "url"
-             ]) == %{
-               "followers" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}/followers",
-               "following" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}/following",
-               "id" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}",
-               "inbox" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}/inbox",
-               "manuallyApprovesFollowers" => false,
-               "name" => user.name,
-               "outbox" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}/outbox",
-               "preferredUsername" => user.nickname,
-               "summary" => user.bio,
-               "tag" => [],
-               "type" => "Person",
-               "url" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}"
-             }
-    end
-
-    test "activity+json format. it returns error whe use not found", %{conn: conn} do
-      response =
-        conn
-        |> put_req_header("accept", "application/activity+json")
-        |> get("/users/jimm")
-        |> json_response(404)
-
-      assert response == "Not found"
-    end
-
-    test "json format. it redirects on actual feed of user", %{conn: conn} do
-      note_activity = insert(:note_activity)
-      user = User.get_cached_by_ap_id(note_activity.data["actor"])
-
-      response =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> get("/users/#{user.nickname}")
-        |> json_response(200)
-
-      assert response["endpoints"] == %{
-               "oauthAuthorizationEndpoint" => "#{Pleroma.Web.base_url()}/oauth/authorize",
-               "oauthRegistrationEndpoint" => "#{Pleroma.Web.base_url()}/api/v1/apps",
-               "oauthTokenEndpoint" => "#{Pleroma.Web.base_url()}/oauth/token",
-               "sharedInbox" => "#{Pleroma.Web.base_url()}/inbox",
-               "uploadMedia" => "#{Pleroma.Web.base_url()}/api/ap/upload_media"
-             }
-
-      assert response["@context"] == [
-               "https://www.w3.org/ns/activitystreams",
-               "http://localhost:4001/schemas/litepub-0.1.jsonld",
-               %{"@language" => "und"}
-             ]
-
-      assert Map.take(response, [
-               "followers",
-               "following",
-               "id",
-               "inbox",
-               "manuallyApprovesFollowers",
-               "name",
-               "outbox",
-               "preferredUsername",
-               "summary",
-               "tag",
-               "type",
-               "url"
-             ]) == %{
-               "followers" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}/followers",
-               "following" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}/following",
-               "id" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}",
-               "inbox" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}/inbox",
-               "manuallyApprovesFollowers" => false,
-               "name" => user.name,
-               "outbox" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}/outbox",
-               "preferredUsername" => user.nickname,
-               "summary" => user.bio,
-               "tag" => [],
-               "type" => "Person",
-               "url" => "#{Pleroma.Web.base_url()}/users/#{user.nickname}"
-             }
-    end
-
-    test "json format. it returns error whe use not found", %{conn: conn} do
-      response =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> get("/users/jimm")
-        |> json_response(404)
-
-      assert response == "Not found"
-    end
-
-    test "html format. it redirects on actual feed of user", %{conn: conn} do
+    test "with html format, it redirects to user feed", %{conn: conn} do
       note_activity = insert(:note_activity)
       user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
@@ -251,7 +100,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
                ).resp_body
     end
 
-    test "html format. it returns error when user not found", %{conn: conn} do
+    test "with html format, it returns error when user is not found", %{conn: conn} do
       response =
         conn
         |> get("/users/jimm")
@@ -259,30 +108,30 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
 
       assert response == %{"error" => "Not found"}
     end
-  end
 
-  describe "feed_redirect (depending on federation enabled state)" do
-    setup %{conn: conn} do
-      user = insert(:user)
-      conn = put_req_header(conn, "accept", "application/json")
+    test "with non-html / non-json format, it redirects to user feed in atom format", %{
+      conn: conn
+    } do
+      note_activity = insert(:note_activity)
+      user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
-      %{conn: conn, user: user}
+      conn =
+        conn
+        |> put_req_header("accept", "application/xml")
+        |> get("/users/#{user.nickname}")
+
+      assert conn.status == 302
+      assert redirected_to(conn) == "#{Pleroma.Web.base_url()}/users/#{user.nickname}/feed.atom"
     end
 
-    clear_config([:instance, :federating])
+    test "with non-html / non-json format, it returns error when user is not found", %{conn: conn} do
+      response =
+        conn
+        |> put_req_header("accept", "application/xml")
+        |> get(user_feed_path(conn, :feed, "jimm"))
+        |> response(404)
 
-    test "renders if instance is federating", %{conn: conn, user: user} do
-      Config.put([:instance, :federating], true)
-
-      conn = get(conn, "/users/#{user.nickname}")
-      assert json_response(conn, 200)
-    end
-
-    test "renders 404 if instance is NOT federating", %{conn: conn, user: user} do
-      Config.put([:instance, :federating], false)
-
-      conn = get(conn, "/users/#{user.nickname}")
-      assert json_response(conn, 404)
+      assert response == ~S({"error":"Not found"})
     end
   end
 end

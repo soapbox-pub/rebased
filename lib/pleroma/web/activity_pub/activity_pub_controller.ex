@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Delivery
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
+  alias Pleroma.Plugs.EnsureAuthenticatedPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.InternalFetchActor
@@ -25,18 +26,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   action_fallback(:errors)
 
-  # Note: some of the following actions (like :update_inbox) may be server-to-server as well
-  @client_to_server_actions [
-    :whoami,
-    :read_inbox,
-    :outbox,
-    :update_outbox,
-    :upload_media,
-    :followers,
-    :following
-  ]
+  @federating_only_actions [:internal_fetch, :relay, :relay_following, :relay_followers]
 
-  plug(FederatingPlug when action not in @client_to_server_actions)
+  plug(FederatingPlug when action in @federating_only_actions)
+
+  plug(
+    EnsureAuthenticatedPlug,
+    [unless_func: &FederatingPlug.federating?/0] when action not in @federating_only_actions
+  )
+
+  plug(
+    EnsureAuthenticatedPlug
+    when action in [:read_inbox, :update_outbox, :whoami, :upload_media, :following, :followers]
+  )
 
   plug(
     Pleroma.Plugs.Cache,
@@ -47,7 +49,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   plug(:set_requester_reachable when action in [:inbox])
   plug(:relay_active? when action in [:relay])
 
-  def relay_active?(conn, _) do
+  defp relay_active?(conn, _) do
     if Pleroma.Config.get([:instance, :allow_relay]) do
       conn
     else
@@ -140,14 +142,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   # GET /relay/following
-  def following(%{assigns: %{relay: true}} = conn, _params) do
-    if FederatingPlug.federating?() do
+  def relay_following(conn, _params) do
+    with %{halted: false} = conn <- FederatingPlug.call(conn, []) do
       conn
       |> put_resp_content_type("application/activity+json")
       |> put_view(UserView)
       |> render("following.json", %{user: Relay.get_actor()})
-    else
-      FederatingPlug.fail(conn)
     end
   end
 
@@ -181,14 +181,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   # GET /relay/followers
-  def followers(%{assigns: %{relay: true}} = conn, _params) do
-    if FederatingPlug.federating?() do
+  def relay_followers(conn, _params) do
+    with %{halted: false} = conn <- FederatingPlug.call(conn, []) do
       conn
       |> put_resp_content_type("application/activity+json")
       |> put_view(UserView)
       |> render("followers.json", %{user: Relay.get_actor()})
-    else
-      FederatingPlug.fail(conn)
     end
   end
 
@@ -221,13 +219,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def outbox(conn, %{"nickname" => nickname, "page" => page?} = params)
+  def outbox(
+        %{assigns: %{user: for_user}} = conn,
+        %{"nickname" => nickname, "page" => page?} = params
+      )
       when page? in [true, "true"] do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {:ok, user} <- User.ensure_keys_present(user) do
       activities =
         if params["max_id"] do
-          ActivityPub.fetch_user_activities(user, nil, %{
+          ActivityPub.fetch_user_activities(user, for_user, %{
             "max_id" => params["max_id"],
             # This is a hack because postgres generates inefficient queries when filtering by
             # 'Answer', poll votes will be hidden by the visibility filter in this case anyway
@@ -235,7 +236,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
             "limit" => 10
           })
         else
-          ActivityPub.fetch_user_activities(user, nil, %{
+          ActivityPub.fetch_user_activities(user, for_user, %{
             "limit" => 10,
             "include_poll_votes" => true
           })
@@ -298,7 +299,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   defp post_inbox_fallback(conn, params) do
     headers = Enum.into(conn.req_headers, %{})
 
-    if String.contains?(headers["signature"], params["actor"]) do
+    if headers["signature"] && params["actor"] &&
+         String.contains?(headers["signature"], params["actor"]) do
       Logger.debug(
         "Signature validation error for: #{params["actor"]}, make sure you are forwarding the HTTP Host header!"
       )
@@ -306,7 +308,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       Logger.debug(inspect(conn.req_headers))
     end
 
-    json(conn, dgettext("errors", "error"))
+    conn
+    |> put_status(:bad_request)
+    |> json(dgettext("errors", "error"))
   end
 
   defp represent_service_actor(%User{} = user, conn) do
@@ -339,8 +343,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> put_view(UserView)
     |> render("user.json", %{user: user})
   end
-
-  def whoami(_conn, _params), do: {:error, :not_found}
 
   def read_inbox(
         %{assigns: %{user: %User{nickname: nickname} = user}} = conn,
@@ -377,14 +379,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def read_inbox(%{assigns: %{user: nil}} = conn, %{"nickname" => nickname}) do
-    err = dgettext("errors", "can't read inbox of %{nickname}", nickname: nickname)
-
-    conn
-    |> put_status(:forbidden)
-    |> json(err)
-  end
-
   def read_inbox(%{assigns: %{user: %User{nickname: as_nickname}}} = conn, %{
         "nickname" => nickname
       }) do
@@ -399,7 +393,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> json(err)
   end
 
-  def handle_user_activity(%User{} = user, %{"type" => "Create"} = params) do
+  defp handle_user_activity(%User{} = user, %{"type" => "Create"} = params) do
     object =
       params["object"]
       |> Map.merge(Map.take(params, ["to", "cc"]))
@@ -415,7 +409,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     })
   end
 
-  def handle_user_activity(%User{} = user, %{"type" => "Delete"} = params) do
+  defp handle_user_activity(%User{} = user, %{"type" => "Delete"} = params) do
     with %Object{} = object <- Object.normalize(params["object"]),
          true <- user.is_moderator || user.ap_id == object.data["actor"],
          {:ok, delete} <- ActivityPub.delete(object) do
@@ -425,7 +419,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def handle_user_activity(%User{} = user, %{"type" => "Like"} = params) do
+  defp handle_user_activity(%User{} = user, %{"type" => "Like"} = params) do
     with %Object{} = object <- Object.normalize(params["object"]),
          {:ok, activity, _object} <- ActivityPub.like(user, object) do
       {:ok, activity}
@@ -434,7 +428,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def handle_user_activity(_, _) do
+  defp handle_user_activity(_, _) do
     {:error, dgettext("errors", "Unhandled activity type")}
   end
 
@@ -475,13 +469,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> json(err)
   end
 
-  def errors(conn, {:error, :not_found}) do
+  defp errors(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
     |> json(dgettext("errors", "Not found"))
   end
 
-  def errors(conn, _e) do
+  defp errors(conn, _e) do
     conn
     |> put_status(:internal_server_error)
     |> json(dgettext("errors", "error"))

@@ -19,7 +19,7 @@ defmodule Pleroma.Web.FederatingPlug do
 
   def federating?, do: Pleroma.Config.get([:instance, :federating])
 
-  def fail(conn) do
+  defp fail(conn) do
     conn
     |> put_status(404)
     |> Phoenix.Controller.put_view(Pleroma.Web.ErrorView)

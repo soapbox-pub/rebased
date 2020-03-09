@@ -48,6 +48,25 @@ defmodule Pleroma.Web.ConnCase do
 
         %{user: user, token: token, conn: conn}
       end
+
+      defp ensure_federating_or_authenticated(conn, url, user) do
+        Pleroma.Config.put([:instance, :federating], false)
+
+        conn
+        |> get(url)
+        |> response(403)
+
+        conn
+        |> assign(:user, user)
+        |> get(url)
+        |> response(200)
+
+        Pleroma.Config.put([:instance, :federating], true)
+
+        conn
+        |> get(url)
+        |> response(200)
+      end
     end
   end
 
