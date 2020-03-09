@@ -392,46 +392,10 @@ defmodule Pleroma.ModerationLog do
         data: %{
           "actor" => %{"nickname" => actor_nickname},
           "action" => "activate",
-          "subject" => user
-        }
-      })
-      when is_map(user) do
-    get_log_entry_message(%ModerationLog{
-      data: %{
-        "actor" => %{"nickname" => actor_nickname},
-        "action" => "activate",
-        "subject" => [user]
-      }
-    })
-  end
-
-  @spec get_log_entry_message(ModerationLog) :: String.t()
-  def get_log_entry_message(%ModerationLog{
-        data: %{
-          "actor" => %{"nickname" => actor_nickname},
-          "action" => "activate",
           "subject" => users
         }
       }) do
     "@#{actor_nickname} activated users: #{users_to_nicknames_string(users)}"
-  end
-
-  @spec get_log_entry_message(ModerationLog) :: String.t()
-  def get_log_entry_message(%ModerationLog{
-        data: %{
-          "actor" => %{"nickname" => actor_nickname},
-          "action" => "deactivate",
-          "subject" => user
-        }
-      })
-      when is_map(user) do
-    get_log_entry_message(%ModerationLog{
-      data: %{
-        "actor" => %{"nickname" => actor_nickname},
-        "action" => "deactivate",
-        "subject" => [user]
-      }
-    })
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
@@ -478,51 +442,11 @@ defmodule Pleroma.ModerationLog do
         data: %{
           "actor" => %{"nickname" => actor_nickname},
           "action" => "grant",
-          "subject" => user,
-          "permission" => permission
-        }
-      })
-      when is_map(user) do
-    get_log_entry_message(%ModerationLog{
-      data: %{
-        "actor" => %{"nickname" => actor_nickname},
-        "action" => "grant",
-        "subject" => [user],
-        "permission" => permission
-      }
-    })
-  end
-
-  @spec get_log_entry_message(ModerationLog) :: String.t()
-  def get_log_entry_message(%ModerationLog{
-        data: %{
-          "actor" => %{"nickname" => actor_nickname},
-          "action" => "grant",
           "subject" => users,
           "permission" => permission
         }
       }) do
     "@#{actor_nickname} made #{users_to_nicknames_string(users)} #{permission}"
-  end
-
-  @spec get_log_entry_message(ModerationLog) :: String.t()
-  def get_log_entry_message(%ModerationLog{
-        data: %{
-          "actor" => %{"nickname" => actor_nickname},
-          "action" => "revoke",
-          "subject" => user,
-          "permission" => permission
-        }
-      })
-      when is_map(user) do
-    get_log_entry_message(%ModerationLog{
-      data: %{
-        "actor" => %{"nickname" => actor_nickname},
-        "action" => "revoke",
-        "subject" => [user],
-        "permission" => permission
-      }
-    })
   end
 
   @spec get_log_entry_message(ModerationLog) :: String.t()
