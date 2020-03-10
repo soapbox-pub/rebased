@@ -11,7 +11,7 @@ defmodule Pleroma.Web.Feed.UserController do
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.Feed.FeedView
 
-  import Pleroma.Web.ControllerHelper, only: [put_in_if_exist: 3]
+  import Pleroma.Web.ControllerHelper, only: [put_if_exist: 3]
 
   plug(Pleroma.Plugs.SetFormatPlug when action in [:feed_redirect])
 
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.Feed.UserController do
           "type" => ["Create"],
           "actor_id" => user.ap_id
         }
-        |> put_in_if_exist("max_id", params["max_id"])
+        |> put_if_exist("max_id", params["max_id"])
         |> ActivityPub.fetch_public_activities()
 
       conn

@@ -54,7 +54,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
           }
         )
 
-      _note_activity2 = insert(:note_activity, note: note2)
+      note_activity2 = insert(:note_activity, note: note2)
       object = Object.normalize(note_activity)
 
       resp =
@@ -70,6 +70,19 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
 
       assert activity_titles == ['42 This...', 'This is...']
       assert resp =~ object.data["content"]
+
+      resp =
+        conn
+        |> put_req_header("content-type", "application/atom+xml")
+        |> get("/users/#{user.nickname}/feed", %{"max_id" => note_activity2.id})
+        |> response(200)
+
+      activity_titles =
+        resp
+        |> SweetXml.parse()
+        |> SweetXml.xpath(~x"//entry/title/text()"l)
+
+      assert activity_titles == ['This is...']
     end
 
     test "returns 404 for a missing feed", %{conn: conn} do
