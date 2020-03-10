@@ -156,8 +156,8 @@ cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/conf.d/pleroma.conf
 ```
 
 ```sh tab="Debian/Ubuntu"
-cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/sites-available/pleroma.nginx
-ln -s /etc/nginx/sites-available/pleroma.nginx /etc/nginx/sites-enabled/pleroma.nginx
+cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/sites-available/pleroma.conf
+ln -s /etc/nginx/sites-available/pleroma.conf /etc/nginx/sites-enabled/pleroma.conf
 ```
 
 If your distro does not have either of those you can append `include /etc/nginx/pleroma.conf` to the end of the http section in /etc/nginx/nginx.conf and
