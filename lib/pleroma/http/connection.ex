@@ -106,4 +106,17 @@ defmodule Pleroma.HTTP.Connection do
       {:ok, ip} -> ip
     end
   end
+
+  @spec format_host(String.t()) :: charlist()
+  def format_host(host) do
+    host_charlist = to_charlist(host)
+
+    case :inet.parse_address(host_charlist) do
+      {:error, :einval} ->
+        :idna.encode(host_charlist)
+
+      {:ok, _ip} ->
+        host_charlist
+    end
+  end
 end

@@ -45,6 +45,7 @@ defmodule Pleroma.Gun.Conn do
       |> Map.put_new(:retry, pool_opts[:retry] || 1)
       |> Map.put_new(:retry_timeout, pool_opts[:retry_timeout] || 1000)
       |> Map.put_new(:await_up_timeout, pool_opts[:await_up_timeout] || 5_000)
+      |> maybe_add_tls_opts(uri)
 
     key = "#{uri.scheme}:#{uri.host}:#{uri.port}"
 
@@ -68,6 +69,29 @@ defmodule Pleroma.Gun.Conn do
       :ok = Gun.set_owner(conn_pid, Process.whereis(name))
       Connections.add_conn(name, key, conn)
     end
+  end
+
+  defp maybe_add_tls_opts(opts, %URI{scheme: "http"}), do: opts
+
+  defp maybe_add_tls_opts(opts, %URI{scheme: "https", host: host}) do
+    tls_opts = [
+      verify: :verify_peer,
+      cacertfile: CAStore.file_path(),
+      depth: 20,
+      reuse_sessions: false,
+      verify_fun:
+        {&:ssl_verify_hostname.verify_fun/3,
+         [check_hostname: Pleroma.HTTP.Connection.format_host(host)]}
+    ]
+
+    tls_opts =
+      if Keyword.keyword?(opts[:tls_opts]) do
+        Keyword.merge(tls_opts, opts[:tls_opts])
+      else
+        tls_opts
+      end
+
+    Map.put(opts, :tls_opts, tls_opts)
   end
 
   defp do_open(uri, %{proxy: {proxy_host, proxy_port}} = opts) do

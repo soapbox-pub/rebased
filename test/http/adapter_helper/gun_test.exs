@@ -38,31 +38,23 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
 
       opts = Gun.options([receive_conn: false], uri)
       assert opts[:certificates_verification]
-      refute opts[:tls_opts] == []
-
-      assert opts[:tls_opts][:verify_fun] ==
-               {&:ssl_verify_hostname.verify_fun/3, [check_hostname: 'example.com']}
-
-      assert File.exists?(opts[:tls_opts][:cacertfile])
+      assert opts[:tls_opts][:log_level] == :warning
     end
 
     test "https ipv4 with default port" do
       uri = URI.parse("https://127.0.0.1")
 
       opts = Gun.options([receive_conn: false], uri)
-
-      assert opts[:tls_opts][:verify_fun] ==
-               {&:ssl_verify_hostname.verify_fun/3, [check_hostname: '127.0.0.1']}
+      assert opts[:certificates_verification]
+      assert opts[:tls_opts][:log_level] == :warning
     end
 
     test "https ipv6 with default port" do
       uri = URI.parse("https://[2a03:2880:f10c:83:face:b00c:0:25de]")
 
       opts = Gun.options([receive_conn: false], uri)
-
-      assert opts[:tls_opts][:verify_fun] ==
-               {&:ssl_verify_hostname.verify_fun/3,
-                [check_hostname: '2a03:2880:f10c:83:face:b00c:0:25de']}
+      assert opts[:certificates_verification]
+      assert opts[:tls_opts][:log_level] == :warning
     end
 
     test "https url with non standart port" do
@@ -267,25 +259,6 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
                  }
                }
              } = Connections.get_state(:gun_connections)
-    end
-  end
-
-  describe "format_host/1" do
-    test "with domain" do
-      assert Gun.format_host("example.com") == 'example.com'
-    end
-
-    test "with idna domain" do
-      assert Gun.format_host("ですexample.com") == 'xn--example-183fne.com'
-    end
-
-    test "with ipv4" do
-      assert Gun.format_host("127.0.0.1") == '127.0.0.1'
-    end
-
-    test "with ipv6" do
-      assert Gun.format_host("2a03:2880:f10c:83:face:b00c:0:25de") ==
-               '2a03:2880:f10c:83:face:b00c:0:25de'
     end
   end
 end

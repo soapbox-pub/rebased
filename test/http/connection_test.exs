@@ -113,4 +113,23 @@ defmodule Pleroma.HTTP.ConnectionTest do
       assert opts[:proxy] == {'example.com', 4321}
     end
   end
+
+  describe "format_host/1" do
+    test "with domain" do
+      assert Connection.format_host("example.com") == 'example.com'
+    end
+
+    test "with idna domain" do
+      assert Connection.format_host("ですexample.com") == 'xn--example-183fne.com'
+    end
+
+    test "with ipv4" do
+      assert Connection.format_host("127.0.0.1") == '127.0.0.1'
+    end
+
+    test "with ipv6" do
+      assert Connection.format_host("2a03:2880:f10c:83:face:b00c:0:25de") ==
+               '2a03:2880:f10c:83:face:b00c:0:25de'
+    end
+  end
 end

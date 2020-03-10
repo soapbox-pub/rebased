@@ -45,21 +45,11 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
 
   defp add_scheme_opts(opts, %URI{scheme: "http"}), do: opts
 
-  defp add_scheme_opts(opts, %URI{scheme: "https", host: host}) do
-    adapter_opts = [
-      certificates_verification: true,
-      transport: :tls,
-      tls_opts: [
-        verify: :verify_peer,
-        cacertfile: CAStore.file_path(),
-        depth: 20,
-        reuse_sessions: false,
-        verify_fun: {&:ssl_verify_hostname.verify_fun/3, [check_hostname: format_host(host)]},
-        log_level: :warning
-      ]
-    ]
-
-    Keyword.merge(opts, adapter_opts)
+  defp add_scheme_opts(opts, %URI{scheme: "https"}) do
+    opts
+    |> Keyword.put(:certificates_verification, true)
+    |> Keyword.put(:transport, :tls)
+    |> Keyword.put(:tls_opts, log_level: :warning)
   end
 
   defp maybe_get_conn(adapter_opts, uri, connection_opts) do
@@ -91,19 +81,6 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
         opts
         |> Keyword.put(:conn, conn)
         |> Keyword.put(:close_conn, false)
-    end
-  end
-
-  @spec format_host(String.t()) :: charlist()
-  def format_host(host) do
-    host_charlist = to_charlist(host)
-
-    case :inet.parse_address(host_charlist) do
-      {:error, :einval} ->
-        :idna.encode(host_charlist)
-
-      {:ok, _ip} ->
-        host_charlist
     end
   end
 end
