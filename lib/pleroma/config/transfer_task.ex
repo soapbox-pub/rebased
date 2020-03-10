@@ -20,8 +20,7 @@ defmodule Pleroma.Config.TransferTask do
     {:pleroma, :markup},
     {:pleroma, :streamer},
     {:pleroma, :pools},
-    {:pleroma, :connections_pool},
-    {:tesla, :adapter}
+    {:pleroma, :connections_pool}
   ]
 
   @reboot_time_subkeys [
@@ -35,8 +34,6 @@ defmodule Pleroma.Config.TransferTask do
     {:pleroma, :gopher, [:enabled]}
   ]
 
-  @reject [nil, :prometheus]
-
   def start_link(_) do
     load_and_update_env()
     if Pleroma.Config.get(:env) == :test, do: Ecto.Adapters.SQL.Sandbox.checkin(Repo)
@@ -45,39 +42,46 @@ defmodule Pleroma.Config.TransferTask do
 
   @spec load_and_update_env([ConfigDB.t()]) :: :ok | false
   def load_and_update_env(deleted \\ [], restart_pleroma? \\ true) do
-    with {:configurable, true} <-
-           {:configurable, Pleroma.Config.get(:configurable_from_database)},
-         true <- Ecto.Adapters.SQL.table_exists?(Repo, "config"),
-         started_applications <- Application.started_applications() do
+    with {_, true} <- {:configurable, Pleroma.Config.get(:configurable_from_database)} do
       # We need to restart applications for loaded settings take effect
-
       in_db = Repo.all(ConfigDB)
 
       with_deleted = in_db ++ deleted
 
-      reject_for_restart = if restart_pleroma?, do: @reject, else: [:pleroma | @reject]
+      # TODO: some problem with prometheus after restart!
+      reject = [nil, :prometheus]
 
-      applications =
-        with_deleted
-        |> Enum.map(&merge_and_update(&1))
-        |> Enum.uniq()
-        # TODO: some problem with prometheus after restart!
-        |> Enum.reject(&(&1 in reject_for_restart))
-
-      # to be ensured that pleroma will be restarted last
-      applications =
-        if :pleroma in applications do
-          List.delete(applications, :pleroma) ++ [:pleroma]
+      reject_for_restart =
+        if restart_pleroma? do
+          reject
         else
-          Restarter.Pleroma.rebooted()
-          applications
+          [:pleroma | reject]
         end
 
-      Enum.each(applications, &restart(started_applications, &1, Pleroma.Config.get(:env)))
+      started_applications = Application.started_applications()
+
+      with_deleted
+      |> Enum.map(&merge_and_update(&1))
+      |> Enum.uniq()
+      |> Enum.reject(&(&1 in reject_for_restart))
+      |> maybe_set_pleroma_last()
+      |> Enum.each(&restart(started_applications, &1, Pleroma.Config.get(:env)))
 
       :ok
     else
       {:configurable, false} -> Restarter.Pleroma.rebooted()
+    end
+  end
+
+  defp maybe_set_pleroma_last(apps) do
+    # to be ensured that pleroma will be restarted last
+    if :pleroma in apps do
+      apps
+      |> List.delete(:pleroma)
+      |> List.insert_at(-1, :pleroma)
+    else
+      Restarter.Pleroma.rebooted()
+      apps
     end
   end
 
@@ -93,14 +97,10 @@ defmodule Pleroma.Config.TransferTask do
     nil
   end
 
-  defp group_for_restart(:tesla, _, _, _), do: :pleroma
-
   defp group_for_restart(group, _, _, _) when group != :pleroma, do: group
 
   defp group_for_restart(group, key, value, _) do
-    if pleroma_need_restart?(group, key, value) do
-      group
-    end
+    if pleroma_need_restart?(group, key, value), do: group
   end
 
   defp merge_and_update(setting) do
