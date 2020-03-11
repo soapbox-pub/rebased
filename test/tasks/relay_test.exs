@@ -38,6 +38,9 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       assert activity.data["type"] == "Follow"
       assert activity.data["actor"] == local_user.ap_id
       assert activity.data["object"] == target_user.ap_id
+
+      :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
+      assert_receive {:mix_shell, :info, ["mastodon.example.org (no Accept received)"]}
     end
   end
 
