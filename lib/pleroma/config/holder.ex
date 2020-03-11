@@ -5,10 +5,8 @@
 defmodule Pleroma.Config.Holder do
   @config Pleroma.Config.Loader.default_config()
 
-  @spec to_ets() :: true
-  def to_ets do
-    :ets.new(:default_config, [:named_table, :protected])
-
+  @spec save_default() :: :ok
+  def save_default do
     default_config =
       if System.get_env("RELEASE_NAME") do
         release_config =
@@ -21,20 +19,17 @@ defmodule Pleroma.Config.Holder do
         @config
       end
 
-    :ets.insert(:default_config, {:config, default_config})
+    Pleroma.Config.put(:default_config, default_config)
   end
 
   @spec default_config() :: keyword()
-  def default_config, do: from_ets()
+  def default_config, do: get_default()
 
   @spec default_config(atom()) :: keyword()
-  def default_config(group), do: Keyword.get(from_ets(), group)
+  def default_config(group), do: Keyword.get(get_default(), group)
 
   @spec default_config(atom(), atom()) :: keyword()
-  def default_config(group, key), do: get_in(from_ets(), [group, key])
+  def default_config(group, key), do: get_in(get_default(), [group, key])
 
-  defp from_ets do
-    [{:config, default_config}] = :ets.lookup(:default_config, :config)
-    default_config
-  end
+  defp get_default, do: Pleroma.Config.get(:default_config)
 end
