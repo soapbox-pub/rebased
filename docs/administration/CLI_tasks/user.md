@@ -5,11 +5,11 @@
 ## Create a user
 
 ```sh tab="OTP"
-./bin/pleroma_ctl user new <email> [<options>]
+./bin/pleroma_ctl user new <nickname> <email> [<options>]
 ```
 
 ```sh tab="From Source"
-mix pleroma.user new <email> [<options>]
+mix pleroma.user new <nickname> <email> [<options>]
 ```
 
 
