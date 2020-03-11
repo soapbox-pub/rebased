@@ -12,6 +12,10 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
     Config.put([:static_fe, :enabled], true)
   end
 
+  clear_config([:instance, :federating]) do
+    Config.put([:instance, :federating], true)
+  end
+
   setup %{conn: conn} do
     conn = put_req_header(conn, "accept", "text/html")
     user = insert(:user)
@@ -69,6 +73,10 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       assert html =~ ">test10<"
       refute html =~ ">test20<"
       refute html =~ ">test29<"
+    end
+
+    test "it requires authentication if instance is NOT federating", %{conn: conn, user: user} do
+      ensure_federating_or_authenticated(conn, "/users/#{user.nickname}", user)
     end
   end
 
@@ -152,6 +160,12 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       conn = get(conn, "/notice/#{activity.id}")
 
       assert html_response(conn, 302) =~ "redirected"
+    end
+
+    test "it requires authentication if instance is NOT federating", %{conn: conn, user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "testing a thing!"})
+
+      ensure_federating_or_authenticated(conn, "/notice/#{activity.id}", user)
     end
   end
 end

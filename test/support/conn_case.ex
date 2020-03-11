@@ -26,6 +26,8 @@ defmodule Pleroma.Web.ConnCase do
       use Pleroma.Tests.Helpers
       import Pleroma.Web.Router.Helpers
 
+      alias Pleroma.Config
+
       # The default endpoint for testing
       @endpoint Pleroma.Web.Endpoint
 
@@ -50,7 +52,10 @@ defmodule Pleroma.Web.ConnCase do
       end
 
       defp ensure_federating_or_authenticated(conn, url, user) do
-        Pleroma.Config.put([:instance, :federating], false)
+        initial_setting = Config.get([:instance, :federating])
+        on_exit(fn -> Config.put([:instance, :federating], initial_setting) end)
+
+        Config.put([:instance, :federating], false)
 
         conn
         |> get(url)
@@ -61,7 +66,7 @@ defmodule Pleroma.Web.ConnCase do
         |> get(url)
         |> response(200)
 
-        Pleroma.Config.put([:instance, :federating], true)
+        Config.put([:instance, :federating], true)
 
         conn
         |> get(url)

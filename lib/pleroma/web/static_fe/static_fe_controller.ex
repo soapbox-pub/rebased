@@ -17,6 +17,10 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
   plug(:put_view, Pleroma.Web.StaticFE.StaticFEView)
   plug(:assign_id)
 
+  plug(Pleroma.Plugs.EnsureAuthenticatedPlug,
+    unless_func: &Pleroma.Web.FederatingPlug.federating?/0
+  )
+
   @page_keys ["max_id", "min_id", "limit", "since_id", "order"]
 
   defp get_title(%Object{data: %{"name" => name}}) when is_binary(name),
@@ -33,7 +37,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
     |> render("error.html", %{message: message, meta: ""})
   end
 
-  def get_counts(%Activity{} = activity) do
+  defp get_counts(%Activity{} = activity) do
     %Object{data: data} = Object.normalize(activity)
 
     %{
@@ -43,9 +47,9 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
     }
   end
 
-  def represent(%Activity{} = activity), do: represent(activity, false)
+  defp represent(%Activity{} = activity), do: represent(activity, false)
 
-  def represent(%Activity{object: %Object{data: data}} = activity, selected) do
+  defp represent(%Activity{object: %Object{data: data}} = activity, selected) do
     {:ok, user} = User.get_or_fetch(activity.object.data["actor"])
 
     link =
@@ -147,17 +151,17 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
     end
   end
 
-  def assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),
+  defp assign_id(%{path_info: ["notice", notice_id]} = conn, _opts),
     do: assign(conn, :notice_id, notice_id)
 
-  def assign_id(%{path_info: ["users", user_id]} = conn, _opts),
+  defp assign_id(%{path_info: ["users", user_id]} = conn, _opts),
     do: assign(conn, :username_or_id, user_id)
 
-  def assign_id(%{path_info: ["objects", object_id]} = conn, _opts),
+  defp assign_id(%{path_info: ["objects", object_id]} = conn, _opts),
     do: assign(conn, :object_id, object_id)
 
-  def assign_id(%{path_info: ["activities", activity_id]} = conn, _opts),
+  defp assign_id(%{path_info: ["activities", activity_id]} = conn, _opts),
     do: assign(conn, :activity_id, activity_id)
 
-  def assign_id(conn, _opts), do: conn
+  defp assign_id(conn, _opts), do: conn
 end
