@@ -1273,6 +1273,21 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/rin.json")}}
   end
 
+  def get(
+        "https://channels.tests.funkwhale.audio/federation/music/uploads/42342395-0208-4fee-a38d-259a6dae0871",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/funkwhale_audio.json")}}
+  end
+
+  def get("https://channels.tests.funkwhale.audio/federation/actors/compositions", _, _, _) do
+    {:ok,
+     %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/funkwhale_channel.json")}}
+  end
+
   def get("http://example.com/rel_me/error", _, _, _) do
     {:ok, %Tesla.Env{status: 404, body: ""}}
   end
