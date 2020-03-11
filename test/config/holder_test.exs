@@ -7,8 +7,8 @@ defmodule Pleroma.Config.HolderTest do
 
   alias Pleroma.Config.Holder
 
-  test "config/0" do
-    config = Holder.config()
+  test "default_config/0" do
+    config = Holder.default_config()
     assert config[:pleroma][Pleroma.Uploaders.Local][:uploads] == "test/uploads"
     assert config[:tesla][:adapter] == Tesla.Mock
 
@@ -20,15 +20,15 @@ defmodule Pleroma.Config.HolderTest do
     refute config[:phoenix][:serve_endpoints]
   end
 
-  test "config/1" do
-    pleroma_config = Holder.config(:pleroma)
+  test "default_config/1" do
+    pleroma_config = Holder.default_config(:pleroma)
     assert pleroma_config[Pleroma.Uploaders.Local][:uploads] == "test/uploads"
-    tesla_config = Holder.config(:tesla)
+    tesla_config = Holder.default_config(:tesla)
     assert tesla_config[:adapter] == Tesla.Mock
   end
 
-  test "config/2" do
-    assert Holder.config(:pleroma, Pleroma.Uploaders.Local) == [uploads: "test/uploads"]
-    assert Holder.config(:tesla, :adapter) == Tesla.Mock
+  test "default_config/2" do
+    assert Holder.default_config(:pleroma, Pleroma.Uploaders.Local) == [uploads: "test/uploads"]
+    assert Holder.default_config(:tesla, :adapter) == Tesla.Mock
   end
 end

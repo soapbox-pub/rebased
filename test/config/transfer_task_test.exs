@@ -70,7 +70,7 @@ defmodule Pleroma.Config.TransferTaskTest do
 
     assert Application.get_env(:quack, :level) == :info
     assert Application.get_env(:quack, :meta) == [:none]
-    default = Pleroma.Config.Holder.config(:quack, :webhook_url)
+    default = Pleroma.Config.Holder.default_config(:quack, :webhook_url)
     assert Application.get_env(:quack, :webhook_url) == default
 
     on_exit(fn ->

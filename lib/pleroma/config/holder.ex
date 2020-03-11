@@ -3,14 +3,33 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.Holder do
-  @config Pleroma.Config.Loader.load_and_merge()
+  @config Pleroma.Config.Loader.default_config()
 
-  @spec config() :: keyword()
-  def config, do: @config
+  @spec save_default() :: :ok
+  def save_default do
+    default_config =
+      if System.get_env("RELEASE_NAME") do
+        release_config =
+          [:code.root_dir(), "releases", System.get_env("RELEASE_VSN"), "releases.exs"]
+          |> Path.join()
+          |> Pleroma.Config.Loader.read()
 
-  @spec config(atom()) :: any()
-  def config(group), do: @config[group]
+        Pleroma.Config.Loader.merge(@config, release_config)
+      else
+        @config
+      end
 
-  @spec config(atom(), atom()) :: any()
-  def config(group, key), do: @config[group][key]
+    Pleroma.Config.put(:default_config, default_config)
+  end
+
+  @spec default_config() :: keyword()
+  def default_config, do: get_default()
+
+  @spec default_config(atom()) :: keyword()
+  def default_config(group), do: Keyword.get(get_default(), group)
+
+  @spec default_config(atom(), atom()) :: keyword()
+  def default_config(group, key), do: get_in(get_default(), [group, key])
+
+  defp get_default, do: Pleroma.Config.get(:default_config)
 end

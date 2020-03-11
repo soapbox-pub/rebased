@@ -15,7 +15,7 @@ defmodule Pleroma.Docs.JSON do
   end
 
   def compile do
-    with config <- Pleroma.Config.Loader.load("config/description.exs") do
+    with config <- Pleroma.Config.Loader.read("config/description.exs") do
       config[:pleroma][:config_description]
       |> Pleroma.Docs.Generator.convert_to_strings()
       |> Jason.encode!()
