@@ -5,11 +5,11 @@
 ## Create a user
 
 ```sh tab="OTP"
-./bin/pleroma_ctl user new <email> [<options>]
+./bin/pleroma_ctl user new <nickname> <email> [option ...]
 ```
 
 ```sh tab="From Source"
-mix pleroma.user new <email> [<options>]
+mix pleroma.user new <nickname> <email> [option ...]
 ```
 
 
@@ -33,11 +33,11 @@ mix pleroma.user list
 
 ## Generate an invite link
 ```sh tab="OTP"
- ./bin/pleroma_ctl user invite [<options>]
+ ./bin/pleroma_ctl user invite [option ...]
 ```
 
 ```sh tab="From Source"
-mix pleroma.user invite [<options>]
+mix pleroma.user invite [option ...]
 ```
 
 
@@ -137,11 +137,11 @@ mix pleroma.user reset_password <nickname>
 
 ## Set the value of the given user's settings
 ```sh tab="OTP"
- ./bin/pleroma_ctl user set <nickname> [<options>]
+ ./bin/pleroma_ctl user set <nickname> [option ...]
 ```
 
 ```sh tab="From Source"
-mix pleroma.user set <nickname> [<options>]
+mix pleroma.user set <nickname> [option ...]
 ```
 
 ### Options
