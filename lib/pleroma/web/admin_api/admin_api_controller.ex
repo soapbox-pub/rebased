@@ -834,7 +834,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       configs = ConfigDB.get_all_as_keyword()
 
       merged =
-        Config.Holder.config()
+        Config.Holder.default_config()
         |> ConfigDB.merge(configs)
         |> Enum.map(fn {group, values} ->
           Enum.map(values, fn {key, value} ->
