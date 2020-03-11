@@ -412,7 +412,11 @@ defmodule Pleroma.UserTest do
       assert activity.actor == welcome_user.ap_id
     end
 
-    test "it requires an email, name, nickname and password, bio is optional" do
+    clear_config([:instance, :account_activation_required])
+
+    test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
       @full_user_data
       |> Map.keys()
       |> Enum.each(fn key ->
@@ -420,6 +424,19 @@ defmodule Pleroma.UserTest do
         changeset = User.register_changeset(%User{}, params)
 
         assert if key == :bio, do: changeset.valid?, else: not changeset.valid?
+      end)
+    end
+
+    test "it requires an name, nickname and password, bio and email are optional when account_activation_required is disabled" do
+      Pleroma.Config.put([:instance, :account_activation_required], false)
+
+      @full_user_data
+      |> Map.keys()
+      |> Enum.each(fn key ->
+        params = Map.delete(@full_user_data, key)
+        changeset = User.register_changeset(%User{}, params)
+
+        assert if key in [:bio, :email], do: changeset.valid?, else: not changeset.valid?
       end)
     end
 
