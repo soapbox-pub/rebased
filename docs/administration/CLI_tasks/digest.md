@@ -5,11 +5,11 @@
 ## Send digest email since given date (user registration date by default) ignoring user activity status.
 
 ```sh tab="OTP"
- ./bin/pleroma_ctl digest test <nickname> [<since_date>]
+ ./bin/pleroma_ctl digest test <nickname> [since_date]
 ```
 
 ```sh tab="From Source"
-mix pleroma.digest test <nickname> [<since_date>]
+mix pleroma.digest test <nickname> [since_date]
 ```
 
 
