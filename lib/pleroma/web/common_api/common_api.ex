@@ -70,20 +70,21 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def delete(activity_id, user) do
-    with %Activity{data: %{"object" => _}} = activity <-
-           Activity.get_by_id_with_object(activity_id),
+    with {_, %Activity{data: %{"object" => _}} = activity} <-
+           {:find_activity, Activity.get_by_id_with_object(activity_id)},
          %Object{} = object <- Object.normalize(activity),
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, _} <- unpin(activity_id, user),
          {:ok, delete} <- ActivityPub.delete(object) do
       {:ok, delete}
     else
+      {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not delete")}
     end
   end
 
   def repeat(id_or_ap_id, user, params \\ %{}) do
-    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
+    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)},
          object <- Object.normalize(activity),
          announce_activity <- Utils.get_existing_announce(user.ap_id, object),
          public <- public_announce?(object, params) do
@@ -93,21 +94,23 @@ defmodule Pleroma.Web.CommonAPI do
         ActivityPub.announce(user, object, nil, true, public)
       end
     else
+      {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not repeat")}
     end
   end
 
   def unrepeat(id_or_ap_id, user) do
-    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id) do
+    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)} do
       object = Object.normalize(activity)
       ActivityPub.unannounce(user, object)
     else
+      {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not unrepeat")}
     end
   end
 
   def favorite(id_or_ap_id, user) do
-    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
+    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)},
          object <- Object.normalize(activity),
          like_activity <- Utils.get_existing_like(user.ap_id, object) do
       if like_activity do
@@ -116,15 +119,17 @@ defmodule Pleroma.Web.CommonAPI do
         ActivityPub.like(user, object)
       end
     else
+      {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not favorite")}
     end
   end
 
   def unfavorite(id_or_ap_id, user) do
-    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id) do
+    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)} do
       object = Object.normalize(activity)
       ActivityPub.unlike(user, object)
     else
+      {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not unfavorite")}
     end
   end

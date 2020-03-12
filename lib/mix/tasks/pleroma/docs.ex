@@ -28,7 +28,7 @@ defmodule Mix.Tasks.Pleroma.Docs do
   defp do_run(implementation) do
     start_pleroma()
 
-    with descriptions <- Pleroma.Config.Loader.load("config/description.exs"),
+    with descriptions <- Pleroma.Config.Loader.read("config/description.exs"),
          {:ok, file_path} <-
            Pleroma.Docs.Generator.process(
              implementation,

@@ -1,0 +1,20 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "endpoints": {
+    "sharedInbox": "https://relay.mastodon.host/inbox"
+  },
+  "followers": "https://relay.mastodon.host/followers",
+  "following": "https://relay.mastodon.host/following",
+  "inbox": "https://relay.mastodon.host/inbox",
+  "name": "ActivityRelay",
+  "type": "Application",
+  "id": "https://relay.mastodon.host/actor",
+  "publicKey": {
+    "id": "https://relay.mastodon.host/actor#main-key",
+    "owner": "https://relay.mastodon.host/actor",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAuNYHNYETdsZFsdcTTEQo\nlsTP9yz4ZjOGrQ1EjoBA7NkjBUxxUAPxZbBjWPT9F+L3IbCX1IwI2OrBM/KwDlug\nV41xnjNmxSCUNpxX5IMZtFaAz9/hWu6xkRTs9Bh6XWZxi+db905aOqszb9Mo3H2g\nQJiAYemXwTh2kBO7XlBDbsMhO11Tu8FxcWTMdR54vlGv4RoiVh8dJRa06yyiTs+m\njbj/OJwR06mHHwlKYTVT/587NUb+e9QtCK6t/dqpyZ1o7vKSK5PSldZVjwHt292E\nXVxFOQVXi7JazTwpdPww79ECSe8ThCykOYCNkm3RjsKuLuokp7Vzq1hXIoeBJ7z2\ndU8vbgg/JyazsOsTxkVs2nd2i9/QW2SH+sX9X3357+XLSCh/A8p8fv/GeoN7UCXe\n4DWHFJZDlItNFfymiPbQH+omuju8qrfW9ngk1gFeI2mahXFQVu7x0qsaZYioCIrZ\nwq0zPnUGl9u0tLUXQz+ZkInRrEz+JepDVauy5/3QdzMLG420zCj/ygDrFzpBQIrc\n62Z6URueUBJox0UK71K+usxqOrepgw8haFGMvg3STFo34pNYjoK4oKO+h5qZEDFD\nb1n57t6JWUaBocZbJns9RGASq5gih+iMk2+zPLWp1x64yvuLsYVLPLBHxjCxS6lA\ndWcopZHi7R/OsRz+vTT7420CAwEAAQ==\n-----END PUBLIC KEY-----"
+  },
+  "summary": "ActivityRelay bot",
+  "preferredUsername": "relay",
+  "url": "https://relay.mastodon.host/actor"
+}

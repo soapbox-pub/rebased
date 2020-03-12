@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Relay do
@@ -35,7 +35,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
   def run(["list"]) do
     start_pleroma()
 
-    with {:ok, list} <- Relay.list() do
+    with {:ok, list} <- Relay.list(true) do
       list |> Enum.each(&shell_info(&1))
     else
       {:error, e} -> shell_error("Error while fetching relay subscription list: #{inspect(e)}")
