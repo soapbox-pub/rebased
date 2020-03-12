@@ -10,11 +10,11 @@
 Replaces embedded objects with references to them in the `objects` table. Only needs to be ran once if the instance was created before Pleroma 1.0.5. The reason why this is not a migration is because it could significantly increase the database size after being ran, however after this `VACUUM FULL` will be able to reclaim about 20% (really depends on what is in the database, your mileage may vary) of the db size before the migration.
 
 ```sh tab="OTP"
-./bin/pleroma_ctl database remove_embedded_objects [<options>]
+./bin/pleroma_ctl database remove_embedded_objects [option ...]
 ```
 
 ```sh tab="From Source"
-mix pleroma.database remove_embedded_objects [<options>]
+mix pleroma.database remove_embedded_objects [option ...]
 ```
 
 ### Options
@@ -28,11 +28,11 @@ This will prune remote posts older than 90 days (configurable with [`config :ple
     The disk space will only be reclaimed after `VACUUM FULL`. You may run out of disk space during the execution of the task or vacuuming if you don't have about 1/3rds of the database size free.
 
 ```sh tab="OTP"
-./bin/pleroma_ctl database prune_objects [<options>]
+./bin/pleroma_ctl database prune_objects [option ...]
 ```
 
 ```sh tab="From Source"
-mix pleroma.database prune_objects [<options>]
+mix pleroma.database prune_objects [option ...]
 ```
 
 ### Options

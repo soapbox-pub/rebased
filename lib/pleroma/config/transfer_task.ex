@@ -104,7 +104,7 @@ defmodule Pleroma.Config.TransferTask do
       key = ConfigDB.from_string(setting.key)
       group = ConfigDB.from_string(setting.group)
 
-      default = Config.Holder.config(group, key)
+      default = Config.Holder.default_config(group, key)
       value = ConfigDB.from_binary(setting.value)
 
       merged_value =

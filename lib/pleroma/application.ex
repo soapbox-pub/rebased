@@ -35,6 +35,7 @@ defmodule Pleroma.Application do
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
+    Pleroma.Config.Holder.save_default()
     Pleroma.HTML.compile_scrubbers()
     Config.DeprecationWarnings.warn()
     Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
