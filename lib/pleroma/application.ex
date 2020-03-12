@@ -42,7 +42,9 @@ defmodule Pleroma.Application do
     setup_instrumenters()
     load_custom_modules()
 
-    if adapter() == Tesla.Adapter.Gun do
+    adapter = Application.get_env(:tesla, :adapter)
+
+    if adapter == Tesla.Adapter.Gun do
       if version = Pleroma.OTPVersion.version() do
         [major, minor] =
           version
@@ -74,7 +76,7 @@ defmodule Pleroma.Application do
         Pleroma.Plugs.RateLimiter.Supervisor
       ] ++
         cachex_children() ++
-        http_pools_children(Config.get(:env)) ++
+        http_children(adapter, @env) ++
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
@@ -206,15 +208,13 @@ defmodule Pleroma.Application do
   end
 
   # start hackney and gun pools in tests
-  defp http_pools_children(:test) do
+  defp http_children(_, :test) do
     hackney_options = Config.get([:hackney_pools, :federation])
     hackney_pool = :hackney_pool.child_spec(:federation, hackney_options)
     [hackney_pool, Pleroma.Pool.Supervisor]
   end
 
-  defp http_pools_children(_), do: http_pools(adapter())
-
-  defp http_pools(Tesla.Adapter.Hackney) do
+  defp http_children(Tesla.Adapter.Hackney, _) do
     pools = [:federation, :media]
 
     pools =
@@ -230,9 +230,7 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp http_pools(Tesla.Adapter.Gun), do: [Pleroma.Pool.Supervisor]
+  defp http_children(Tesla.Adapter.Gun, _), do: [Pleroma.Pool.Supervisor]
 
-  defp http_pools(_), do: []
-
-  defp adapter, do: Application.get_env(:tesla, :adapter)
+  defp http_children(_, _), do: []
 end

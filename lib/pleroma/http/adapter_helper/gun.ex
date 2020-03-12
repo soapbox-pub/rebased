@@ -20,8 +20,8 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
   ]
 
   @spec options(keyword(), URI.t()) :: keyword()
-  def options(connection_opts \\ [], %URI{} = uri) do
-    formatted_proxy =
+  def options(incoming_opts \\ [], %URI{} = uri) do
+    proxy =
       Pleroma.Config.get([:http, :proxy_url], nil)
       |> AdapterHelper.format_proxy()
 
@@ -30,8 +30,8 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     @defaults
     |> Keyword.merge(config_opts)
     |> add_scheme_opts(uri)
-    |> AdapterHelper.maybe_add_proxy(formatted_proxy)
-    |> maybe_get_conn(uri, connection_opts)
+    |> AdapterHelper.maybe_add_proxy(proxy)
+    |> maybe_get_conn(uri, incoming_opts)
   end
 
   @spec after_request(keyword()) :: :ok
@@ -43,44 +43,35 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     :ok
   end
 
-  defp add_scheme_opts(opts, %URI{scheme: "http"}), do: opts
+  defp add_scheme_opts(opts, %{scheme: "http"}), do: opts
 
-  defp add_scheme_opts(opts, %URI{scheme: "https"}) do
+  defp add_scheme_opts(opts, %{scheme: "https"}) do
     opts
     |> Keyword.put(:certificates_verification, true)
-    |> Keyword.put(:transport, :tls)
     |> Keyword.put(:tls_opts, log_level: :warning)
   end
 
-  defp maybe_get_conn(adapter_opts, uri, connection_opts) do
+  defp maybe_get_conn(adapter_opts, uri, incoming_opts) do
     {receive_conn?, opts} =
       adapter_opts
-      |> Keyword.merge(connection_opts)
+      |> Keyword.merge(incoming_opts)
       |> Keyword.pop(:receive_conn, true)
 
     if Connections.alive?(:gun_connections) and receive_conn? do
-      try_to_get_conn(uri, opts)
+      checkin_conn(uri, opts)
     else
       opts
     end
   end
 
-  defp try_to_get_conn(uri, opts) do
+  defp checkin_conn(uri, opts) do
     case Connections.checkin(uri, :gun_connections) do
       nil ->
-        Logger.debug(
-          "Gun connections pool checkin was not successful. Trying to open conn for next request."
-        )
-
-        Task.start(fn -> Pleroma.Gun.Conn.open(uri, :gun_connections, opts) end)
+        Task.start(Pleroma.Gun.Conn, :open, [uri, :gun_connections, opts])
         opts
 
       conn when is_pid(conn) ->
-        Logger.debug("received conn #{inspect(conn)} #{Connections.compose_uri_log(uri)}")
-
-        opts
-        |> Keyword.put(:conn, conn)
-        |> Keyword.put(:close_conn, false)
+        Keyword.merge(opts, conn: conn, close_conn: false)
     end
   end
 end

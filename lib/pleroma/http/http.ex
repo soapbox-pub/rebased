@@ -56,10 +56,9 @@ defmodule Pleroma.HTTP do
           {:ok, Env.t()} | {:error, any()}
   def request(method, url, body, headers, options) when is_binary(url) do
     uri = URI.parse(url)
-    received_adapter_opts = Keyword.get(options, :adapter, [])
-    adapter_opts = Connection.options(uri, received_adapter_opts)
+    adapter_opts = Connection.options(uri, options[:adapter] || [])
     options = put_in(options[:adapter], adapter_opts)
-    params = Keyword.get(options, :params, [])
+    params = options[:params] || []
     request = build_request(method, headers, options, url, body, params)
 
     adapter = Application.get_env(:tesla, :adapter)

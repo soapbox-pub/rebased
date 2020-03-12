@@ -355,7 +355,7 @@ defmodule Pleroma.Pool.ConnectionsTest do
              refute Conn.open(url, name)
              refute Connections.checkin(url, name)
            end) =~
-             "Received error on opening connection http://gun-not-up.com {:error, :timeout}"
+             "Opening connection to http://gun-not-up.com failed with error {:error, :timeout}"
   end
 
   test "process gun_down message and then gun_up", %{name: name} do

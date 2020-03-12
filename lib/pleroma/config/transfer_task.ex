@@ -5,6 +5,7 @@
 defmodule Pleroma.Config.TransferTask do
   use Task
 
+  alias Pleroma.Config
   alias Pleroma.ConfigDB
   alias Pleroma.Repo
 
@@ -36,36 +37,31 @@ defmodule Pleroma.Config.TransferTask do
 
   def start_link(_) do
     load_and_update_env()
-    if Pleroma.Config.get(:env) == :test, do: Ecto.Adapters.SQL.Sandbox.checkin(Repo)
+    if Config.get(:env) == :test, do: Ecto.Adapters.SQL.Sandbox.checkin(Repo)
     :ignore
   end
 
-  @spec load_and_update_env([ConfigDB.t()]) :: :ok | false
-  def load_and_update_env(deleted \\ [], restart_pleroma? \\ true) do
-    with {_, true} <- {:configurable, Pleroma.Config.get(:configurable_from_database)} do
+  @spec load_and_update_env([ConfigDB.t()], boolean()) :: :ok
+  def load_and_update_env(deleted_settings \\ [], restart_pleroma? \\ true) do
+    with {_, true} <- {:configurable, Config.get(:configurable_from_database)} do
       # We need to restart applications for loaded settings take effect
-      in_db = Repo.all(ConfigDB)
-
-      with_deleted = in_db ++ deleted
 
       # TODO: some problem with prometheus after restart!
-      reject = [nil, :prometheus]
-
-      reject_for_restart =
+      reject_restart =
         if restart_pleroma? do
-          reject
+          [nil, :prometheus]
         else
-          [:pleroma | reject]
+          [:pleroma, nil, :prometheus]
         end
 
       started_applications = Application.started_applications()
 
-      with_deleted
-      |> Enum.map(&merge_and_update(&1))
+      (Repo.all(ConfigDB) ++ deleted_settings)
+      |> Enum.map(&merge_and_update/1)
       |> Enum.uniq()
-      |> Enum.reject(&(&1 in reject_for_restart))
+      |> Enum.reject(&(&1 in reject_restart))
       |> maybe_set_pleroma_last()
-      |> Enum.each(&restart(started_applications, &1, Pleroma.Config.get(:env)))
+      |> Enum.each(&restart(started_applications, &1, Config.get(:env)))
 
       :ok
     else
@@ -108,18 +104,14 @@ defmodule Pleroma.Config.TransferTask do
       key = ConfigDB.from_string(setting.key)
       group = ConfigDB.from_string(setting.group)
 
-      default = Pleroma.Config.Holder.config(group, key)
+      default = Config.Holder.config(group, key)
       value = ConfigDB.from_binary(setting.value)
 
       merged_value =
-        if Ecto.get_meta(setting, :state) == :deleted do
-          default
-        else
-          if can_be_merged?(default, value) do
-            ConfigDB.merge_group(group, key, default, value)
-          else
-            value
-          end
+        cond do
+          Ecto.get_meta(setting, :state) == :deleted -> default
+          can_be_merged?(default, value) -> ConfigDB.merge_group(group, key, default, value)
+          true -> value
         end
 
       :ok = update_env(group, key, merged_value)

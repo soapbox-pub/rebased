@@ -71,15 +71,15 @@ defmodule Pleroma.HTTP.Connection do
       {:ok, parse_host(host), port}
     else
       {_, _} ->
-        Logger.warn("parsing port in proxy fail #{inspect(proxy)}")
+        Logger.warn("Parsing port failed #{inspect(proxy)}")
         {:error, :invalid_proxy_port}
 
       :error ->
-        Logger.warn("parsing port in proxy fail #{inspect(proxy)}")
+        Logger.warn("Parsing port failed #{inspect(proxy)}")
         {:error, :invalid_proxy_port}
 
       _ ->
-        Logger.warn("parsing proxy fail #{inspect(proxy)}")
+        Logger.warn("Parsing proxy failed #{inspect(proxy)}")
         {:error, :invalid_proxy}
     end
   end
@@ -89,7 +89,7 @@ defmodule Pleroma.HTTP.Connection do
       {:ok, type, parse_host(host), port}
     else
       _ ->
-        Logger.warn("parsing proxy fail #{inspect(proxy)}")
+        Logger.warn("Parsing proxy failed #{inspect(proxy)}")
         {:error, :invalid_proxy}
     end
   end

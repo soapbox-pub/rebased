@@ -49,8 +49,6 @@ defmodule Pleroma.Gun.Conn do
 
     key = "#{uri.scheme}:#{uri.host}:#{uri.port}"
 
-    Logger.debug("opening new connection #{Connections.compose_uri_log(uri)}")
-
     conn_pid =
       if Connections.count(name) < opts[:max_connection] do
         do_open(uri, opts)
@@ -109,9 +107,9 @@ defmodule Pleroma.Gun.Conn do
     else
       error ->
         Logger.warn(
-          "Received error on opening connection with http proxy #{
-            Connections.compose_uri_log(uri)
-          } #{inspect(error)}"
+          "Opening proxied connection to #{compose_uri_log(uri)} failed with error #{
+            inspect(error)
+          }"
         )
 
         error
@@ -145,9 +143,9 @@ defmodule Pleroma.Gun.Conn do
     else
       error ->
         Logger.warn(
-          "Received error on opening connection with socks proxy #{
-            Connections.compose_uri_log(uri)
-          } #{inspect(error)}"
+          "Opening socks proxied connection to #{compose_uri_log(uri)} failed with error #{
+            inspect(error)
+          }"
         )
 
         error
@@ -163,9 +161,7 @@ defmodule Pleroma.Gun.Conn do
     else
       error ->
         Logger.warn(
-          "Received error on opening connection #{Connections.compose_uri_log(uri)} #{
-            inspect(error)
-          }"
+          "Opening connection to #{compose_uri_log(uri)} failed with error #{inspect(error)}"
         )
 
         error
@@ -184,16 +180,17 @@ defmodule Pleroma.Gun.Conn do
   defp add_http2_opts(opts, _, _), do: opts
 
   defp close_least_used_and_do_open(name, uri, opts) do
-    Logger.debug("try to open conn #{Connections.compose_uri_log(uri)}")
-
-    with [{close_key, least_used} | _conns] <-
-           Connections.get_unused_conns(name),
-         :ok <- Gun.close(least_used.conn) do
-      Connections.remove_conn(name, close_key)
+    with [{key, conn} | _conns] <- Connections.get_unused_conns(name),
+         :ok <- Gun.close(conn.conn) do
+      Connections.remove_conn(name, key)
 
       do_open(uri, opts)
     else
       [] -> {:error, :pool_overflowed}
     end
+  end
+
+  def compose_uri_log(%URI{scheme: scheme, host: host, path: path}) do
+    "#{scheme}://#{host}#{path}"
   end
 end

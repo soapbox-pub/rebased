@@ -6,7 +6,6 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
   use ExUnit.Case, async: true
   use Pleroma.Tests.Helpers
 
-  import ExUnit.CaptureLog
   import Mox
 
   alias Pleroma.Config
@@ -63,7 +62,6 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
       opts = Gun.options([receive_conn: false], uri)
 
       assert opts[:certificates_verification]
-      assert opts[:transport] == :tls
     end
 
     test "get conn on next request" do
@@ -73,14 +71,12 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
       on_exit(fn -> Logger.configure(level: level) end)
       uri = URI.parse("http://some-domain2.com")
 
-      assert capture_log(fn ->
-               opts = Gun.options(uri)
+      opts = Gun.options(uri)
 
-               assert opts[:conn] == nil
-               assert opts[:close_conn] == nil
-             end) =~
-               "Gun connections pool checkin was not successful. Trying to open conn for next request."
+      assert opts[:conn] == nil
+      assert opts[:close_conn] == nil
 
+      Process.sleep(50)
       opts = Gun.options(uri)
 
       assert is_pid(opts[:conn])

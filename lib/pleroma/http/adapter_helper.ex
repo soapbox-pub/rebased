@@ -7,7 +7,7 @@ defmodule Pleroma.HTTP.AdapterHelper do
 
   @type proxy ::
           {Connection.host(), pos_integer()}
-          | {Connection.proxy_type(), pos_integer()}
+          | {Connection.proxy_type(), Connection.host(), pos_integer()}
 
   @callback options(keyword(), URI.t()) :: keyword()
   @callback after_request(keyword()) :: :ok
