@@ -411,6 +411,44 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Instances.reachable?(sender_url)
     end
 
+    test "accept follow activity", %{conn: conn} do
+      Pleroma.Config.put([:instance, :federating], true)
+      relay = Relay.get_actor()
+
+      assert {:ok, %Activity{} = activity} = Relay.follow("https://relay.mastodon.host/actor")
+
+      followed_relay = Pleroma.User.get_by_ap_id("https://relay.mastodon.host/actor")
+      relay = refresh_record(relay)
+
+      accept =
+        File.read!("test/fixtures/relay/accept-follow.json")
+        |> String.replace("{{ap_id}}", relay.ap_id)
+        |> String.replace("{{activity_id}}", activity.data["id"])
+
+      assert "ok" ==
+               conn
+               |> assign(:valid_signature, true)
+               |> put_req_header("content-type", "application/activity+json")
+               |> post("/inbox", accept)
+               |> json_response(200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+
+      assert Pleroma.FollowingRelationship.following?(
+               relay,
+               followed_relay
+             )
+
+      Mix.shell(Mix.Shell.Process)
+
+      on_exit(fn ->
+        Mix.shell(Mix.Shell.IO)
+      end)
+
+      :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
+      assert_receive {:mix_shell, :info, ["relay.mastodon.host"]}
+    end
+
     test "without valid signature, " <>
            "it only accepts Create activities and requires enabled federation",
          %{conn: conn} do

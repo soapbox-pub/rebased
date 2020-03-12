@@ -5,11 +5,11 @@
 ## Lists emoji packs and metadata specified in the manifest
 
 ```sh tab="OTP"
-./bin/pleroma_ctl emoji ls-packs [<options>]
+./bin/pleroma_ctl emoji ls-packs [option ...]
 ```
 
 ```sh tab="From Source"
-mix pleroma.emoji ls-packs [<options>]
+mix pleroma.emoji ls-packs [option ...]
 ```
 
 
@@ -19,11 +19,11 @@ mix pleroma.emoji ls-packs [<options>]
 ## Fetch, verify and install the specified packs from the manifest into `STATIC-DIR/emoji/PACK-NAME`
 
 ```sh tab="OTP"
-./bin/pleroma_ctl emoji get-packs [<options>] <packs>
+./bin/pleroma_ctl emoji get-packs [option ...] <pack ...>
 ```
 
 ```sh tab="From Source"
-mix pleroma.emoji get-packs [<options>] <packs>
+mix pleroma.emoji get-packs [option ...] <pack ...>
 ```
 
 ### Options

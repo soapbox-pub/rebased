@@ -13,32 +13,28 @@ defmodule Pleroma.Config.Loader do
   ]
 
   if Code.ensure_loaded?(Config.Reader) do
-    @spec load(Path.t()) :: keyword()
-    def load(path), do: Config.Reader.read!(path)
+    @reader Config.Reader
 
-    defp do_merge(conf1, conf2), do: Config.Reader.merge(conf1, conf2)
+    def read(path), do: @reader.read!(path)
   else
     # support for Elixir less than 1.9
-    @spec load(Path.t()) :: keyword()
-    def load(path) do
+    @reader Mix.Config
+    def read(path) do
       path
-      |> Mix.Config.eval!()
+      |> @reader.eval!()
       |> elem(0)
     end
-
-    defp do_merge(conf1, conf2), do: Mix.Config.merge(conf1, conf2)
   end
 
-  @spec load_and_merge() :: keyword()
-  def load_and_merge do
-    all_paths =
-      if Pleroma.Config.get(:release),
-        do: ["config/config.exs", "config/releases.exs"],
-        else: ["config/config.exs"]
+  @spec read(Path.t()) :: keyword()
 
-    all_paths
-    |> Enum.map(&load(&1))
-    |> Enum.reduce([], &do_merge(&2, &1))
+  @spec merge(keyword(), keyword()) :: keyword()
+  def merge(c1, c2), do: @reader.merge(c1, c2)
+
+  @spec default_config() :: keyword()
+  def default_config do
+    "config/config.exs"
+    |> read()
     |> filter()
   end
 

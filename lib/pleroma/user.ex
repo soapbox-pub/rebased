@@ -530,7 +530,14 @@ defmodule Pleroma.User do
   end
 
   def maybe_validate_required_email(changeset, true), do: changeset
-  def maybe_validate_required_email(changeset, _), do: validate_required(changeset, [:email])
+
+  def maybe_validate_required_email(changeset, _) do
+    if Pleroma.Config.get([:instance, :account_activation_required]) do
+      validate_required(changeset, [:email])
+    else
+      changeset
+    end
+  end
 
   defp put_ap_id(changeset) do
     ap_id = ap_id(%User{nickname: get_field(changeset, :nickname)})
