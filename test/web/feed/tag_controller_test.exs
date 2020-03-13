@@ -49,7 +49,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
 
     response =
       conn
-      |> put_req_header("content-type", "application/atom+xml")
+      |> put_req_header("accept", "application/atom+xml")
       |> get(tag_feed_path(conn, :feed, "pleromaart.atom"))
       |> response(200)
 
@@ -65,12 +65,13 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     assert xpath(xml, ~x"//feed/entry/author/name/text()"ls) == [user.nickname, user.nickname]
     assert xpath(xml, ~x"//feed/entry/author/id/text()"ls) == [user.ap_id, user.ap_id]
 
-    resp =
+    conn =
       conn
-      |> put_req_header("content-type", "application/atom+xml")
+      |> put_req_header("accept", "application/atom+xml")
       |> get("/tags/pleromaart.atom", %{"max_id" => activity2.id})
-      |> response(200)
 
+    assert get_resp_header(conn, "content-type") == ["application/atom+xml; charset=utf-8"]
+    resp = response(conn, 200)
     xml = parse(resp)
 
     assert xpath(xml, ~x"//feed/title/text()") == '#pleromaart'
@@ -115,7 +116,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
 
     response =
       conn
-      |> put_req_header("content-type", "application/rss+xml")
+      |> put_req_header("accept", "application/rss+xml")
       |> get(tag_feed_path(conn, :feed, "pleromaart.rss"))
       |> response(200)
 
@@ -155,7 +156,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
 
     response =
       conn
-      |> put_req_header("content-type", "application/atom+xml")
+      |> put_req_header("accept", "application/rss+xml")
       |> get(tag_feed_path(conn, :feed, "pleromaart"))
       |> response(200)
 
@@ -165,12 +166,13 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     assert xpath(xml, ~x"//channel/description/text()"s) ==
              "These are public toots tagged with #pleromaart. You can interact with them if you have an account anywhere in the fediverse."
 
-    resp =
+    conn =
       conn
-      |> put_req_header("content-type", "application/atom+xml")
-      |> get("/tags/pleromaart", %{"max_id" => activity2.id})
-      |> response(200)
+      |> put_req_header("accept", "application/rss+xml")
+      |> get("/tags/pleromaart.rss", %{"max_id" => activity2.id})
 
+    assert get_resp_header(conn, "content-type") == ["application/rss+xml; charset=utf-8"]
+    resp = response(conn, 200)
     xml = parse(resp)
 
     assert xpath(xml, ~x"//channel/title/text()") == '#pleromaart'

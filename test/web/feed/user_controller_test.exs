@@ -19,7 +19,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
   describe "feed" do
     clear_config([:feed])
 
-    test "gets an atom feed", %{conn: conn} do
+    test "gets a feed", %{conn: conn} do
       Config.put(
         [:feed, :post_title],
         %{max_length: 10, omission: "..."}
@@ -139,7 +139,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
 
       resp =
         conn
-        |> put_req_header("accept", "application/atom+xml")
+        |> put_req_header("accept", "application/rss+xml")
         |> get("/users/#{user.nickname}/feed.rss", %{"max_id" => note_activity2.id})
         |> response(200)
 

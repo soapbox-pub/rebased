@@ -20,7 +20,7 @@ defmodule Pleroma.Web.Feed.TagController do
       |> ActivityPub.fetch_public_activities()
 
     conn
-    |> put_resp_content_type("application/atom+xml")
+    |> put_resp_content_type("application/#{format}+xml")
     |> put_view(FeedView)
     |> render("tag.#{format}",
       activities: activities,
