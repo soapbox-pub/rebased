@@ -297,8 +297,8 @@ defmodule Pleroma.ReverseProxy do
 
     cond do
       has_cache? ->
-        # There's caching header present but no cache-control -- we need to explicitely override it
-        # to public as Plug defaults to "max-age=0, private, must-revalidate"
+        # There's caching header present but no cache-control -- we need to set our own
+        # as Plug defaults to "max-age=0, private, must-revalidate"
         List.keystore(headers, "cache-control", 0, {"cache-control", @default_cache_control_header})
 
       true ->
