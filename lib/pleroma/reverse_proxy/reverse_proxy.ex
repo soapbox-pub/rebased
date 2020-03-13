@@ -299,7 +299,12 @@ defmodule Pleroma.ReverseProxy do
       has_cache? ->
         # There's caching header present but no cache-control -- we need to set our own
         # as Plug defaults to "max-age=0, private, must-revalidate"
-        List.keystore(headers, "cache-control", 0, {"cache-control", @default_cache_control_header})
+        List.keystore(
+          headers,
+          "cache-control",
+          0,
+          {"cache-control", @default_cache_control_header}
+        )
 
       true ->
         List.keystore(
