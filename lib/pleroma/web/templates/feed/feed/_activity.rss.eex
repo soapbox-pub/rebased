@@ -1,0 +1,49 @@
+<item>
+  <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+  <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+  <guid><%= @data["id"] %></guid>
+  <title><%= activity_title(@object, Keyword.get(@feed_config, :post_title, %{})) %></title>
+  <description><%= activity_content(@object) %></description>
+  <pubDate><%= @data["published"] %></pubDate>
+  <updated><%= @data["published"] %></updated>
+  <ostatus:conversation ref="<%= activity_context(@activity) %>">
+    <%= activity_context(@activity) %>
+  </ostatus:conversation>
+  <link rel="ostatus:conversation"><%= activity_context(@activity) %></link>
+
+  <%= if @data["summary"] do %>
+    <description><%= @data["summary"] %></description>
+  <% end %>
+
+  <%= if @activity.local do %>
+    <link><%= @data["id"] %></link>
+  <% else %>
+    <link><%= @data["external_url"] %></link>
+  <% end %>
+
+  <%= for tag <- @data["tag"] || [] do %>
+    <category term="<%= tag %>"></category>
+  <% end %>
+
+  <%= for attachment <- @data["attachment"] || [] do %>
+    <link type="<%= attachment_type(attachment) %>"><%= attachment_href(attachment) %></link>
+  <% end %>
+
+  <%= if @data["inReplyTo"] do %>
+    <thr:in-reply-to ref='<%= @data["inReplyTo"] %>' href='<%= get_href(@data["inReplyTo"]) %>'/>
+  <% end %>
+
+  <%= for id <- @activity.recipients do %>
+    <%= if id == Pleroma.Constants.as_public() do %>
+      <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection">http://activityschema.org/collection/public</link>
+    <% else %>
+      <%= unless Regex.match?(~r/^#{Pleroma.Web.base_url()}.+followers$/, id) do %>
+        <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person"><%= id %></link>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <%= for {emoji, file} <- @data["emoji"] || %{} do %>
+    <link name="<%= emoji %>" rel="emoji"><%= file %></link>
+  <% end %>
+</item>

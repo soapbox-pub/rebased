@@ -40,6 +40,15 @@ defmodule Pleroma.Web.Feed.UserController do
   end
 
   def feed(conn, %{"nickname" => nickname} = params) do
+    format = get_format(conn)
+
+    format =
+      if format in ["rss", "atom"] do
+        format
+      else
+        "atom"
+      end
+
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
       activities =
         %{
@@ -50,9 +59,9 @@ defmodule Pleroma.Web.Feed.UserController do
         |> ActivityPub.fetch_public_activities()
 
       conn
-      |> put_resp_content_type("application/atom+xml")
+      |> put_resp_content_type("application/#{format}+xml")
       |> put_view(FeedView)
-      |> render("user.xml",
+      |> render("user.#{format}",
         user: user,
         activities: activities,
         feed_config: Pleroma.Config.get([:feed])
