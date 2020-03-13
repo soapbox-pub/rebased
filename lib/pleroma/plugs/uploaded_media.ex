@@ -18,7 +18,10 @@ defmodule Pleroma.Plugs.UploadedMedia do
 
   def init(_opts) do
     static_plug_opts =
-      []
+      [
+        headers: %{"cache-control" => @default_cache_control_header},
+        cache_control_for_etags: @default_cache_control_header
+      ]
       |> Keyword.put(:from, "__unconfigured_media_plug")
       |> Keyword.put(:at, "/__unconfigured_media_plug")
       |> Plug.Static.init()
@@ -60,10 +63,6 @@ defmodule Pleroma.Plugs.UploadedMedia do
       Map.get(opts, :static_plug_opts)
       |> Map.put(:at, [@path])
       |> Map.put(:from, directory)
-      |> Map.put(:cache_control_for_etags, @default_cache_control_header)
-      |> Map.put(:headers, %{
-        "cache-control" => @default_cache_control_header
-      })
 
     conn = Plug.Static.call(conn, static_opts)
 
