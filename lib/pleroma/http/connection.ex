@@ -30,12 +30,12 @@ defmodule Pleroma.HTTP.Connection do
     @defaults
     |> pool_timeout()
     |> Keyword.merge(opts)
-    |> adapter().options(uri)
+    |> adapter_helper().options(uri)
   end
 
   defp pool_timeout(opts) do
     {config_key, default} =
-      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Gun do
+      if adapter() == Tesla.Adapter.Gun do
         {:pools, Config.get([:pools, :default, :timeout])}
       else
         {:hackney_pools, 10_000}
@@ -47,10 +47,12 @@ defmodule Pleroma.HTTP.Connection do
   end
 
   @spec after_request(keyword()) :: :ok
-  def after_request(opts), do: adapter().after_request(opts)
+  def after_request(opts), do: adapter_helper().after_request(opts)
 
-  defp adapter do
-    case Application.get_env(:tesla, :adapter) do
+  defp adapter, do: Application.get_env(:tesla, :adapter)
+
+  defp adapter_helper do
+    case adapter() do
       Tesla.Adapter.Gun -> AdapterHelper.Gun
       Tesla.Adapter.Hackney -> AdapterHelper.Hackney
       _ -> AdapterHelper

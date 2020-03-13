@@ -11,7 +11,7 @@ defmodule Pleroma.HTTP.AdapterHelper.Hackney do
 
   @spec options(keyword(), URI.t()) :: keyword()
   def options(connection_opts \\ [], %URI{} = uri) do
-    proxy = Pleroma.Config.get([:http, :proxy_url], nil)
+    proxy = Pleroma.Config.get([:http, :proxy_url])
 
     config_opts = Pleroma.Config.get([:http, :adapter], [])
 

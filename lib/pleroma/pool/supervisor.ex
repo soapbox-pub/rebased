@@ -13,16 +13,13 @@ defmodule Pleroma.Pool.Supervisor do
   end
 
   def init(_) do
-    children =
-      [
-        %{
-          id: Pool.Connections,
-          start:
-            {Pool.Connections, :start_link, [{:gun_connections, Config.get([:connections_pool])}]}
-        }
-      ] ++ pools()
+    conns_child = %{
+      id: Pool.Connections,
+      start:
+        {Pool.Connections, :start_link, [{:gun_connections, Config.get([:connections_pool])}]}
+    }
 
-    Supervisor.init(children, strategy: :one_for_one)
+    Supervisor.init([conns_child | pools()], strategy: :one_for_one)
   end
 
   defp pools do

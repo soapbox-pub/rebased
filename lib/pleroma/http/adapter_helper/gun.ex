@@ -22,7 +22,7 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
   @spec options(keyword(), URI.t()) :: keyword()
   def options(incoming_opts \\ [], %URI{} = uri) do
     proxy =
-      Pleroma.Config.get([:http, :proxy_url], nil)
+      Pleroma.Config.get([:http, :proxy_url])
       |> AdapterHelper.format_proxy()
 
     config_opts = Pleroma.Config.get([:http, :adapter], [])

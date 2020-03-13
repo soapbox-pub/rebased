@@ -59,7 +59,7 @@ defmodule Pleroma.ReverseProxy do
 
   * `req_headers`, `resp_headers` additional headers.
 
-  * `http`: options for [gun](https://github.com/ninenines/gun).
+  * `http`: options for [hackney](https://github.com/benoitc/hackney) or [gun](https://github.com/ninenines/gun).
 
   """
   @default_options [pool: :media]

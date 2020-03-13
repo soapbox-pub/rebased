@@ -39,7 +39,6 @@ defmodule Pleroma.Pool.Request do
 
   @impl true
   def handle_info({:gun_down, _conn, _protocol, _reason, _killed}, state) do
-    # don't flush messages here, because gun can reconnect
     {:noreply, state}
   end
 

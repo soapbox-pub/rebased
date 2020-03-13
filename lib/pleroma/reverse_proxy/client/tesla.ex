@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxy.Client.Tesla do
+  @behaviour Pleroma.ReverseProxy.Client
+
   @type headers() :: [{String.t(), String.t()}]
   @type status() :: pos_integer()
-
-  @behaviour Pleroma.ReverseProxy.Client
 
   @spec request(atom(), String.t(), headers(), String.t(), keyword()) ::
           {:ok, status(), headers}
@@ -18,7 +18,7 @@ defmodule Pleroma.ReverseProxy.Client.Tesla do
   def request(method, url, headers, body, opts \\ []) do
     check_adapter()
 
-    opts = Keyword.merge(opts, body_as: :chunks)
+    opts = Keyword.put(opts, :body_as, :chunks)
 
     with {:ok, response} <-
            Pleroma.HTTP.request(
@@ -39,7 +39,8 @@ defmodule Pleroma.ReverseProxy.Client.Tesla do
   end
 
   @impl true
-  @spec stream_body(map()) :: {:ok, binary(), map()} | {:error, atom() | String.t()} | :done
+  @spec stream_body(map()) ::
+          {:ok, binary(), map()} | {:error, atom() | String.t()} | :done | no_return()
   def stream_body(%{pid: pid, opts: opts, fin: true}) do
     # if connection was reused, but in tesla were redirects,
     # tesla returns new opened connection, which must be closed manually
