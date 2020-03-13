@@ -294,7 +294,7 @@ defmodule Pleroma.ReverseProxyTest do
       |> expect(:stream_body, fn _ -> :done end)
 
       conn = ReverseProxy.call(conn, "/cache")
-      assert {"cache-control", "public"} in conn.resp_headers
+      assert {"cache-control", "public, max-age=1209600"} in conn.resp_headers
     end
   end
 
