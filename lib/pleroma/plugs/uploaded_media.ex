@@ -14,6 +14,8 @@ defmodule Pleroma.Plugs.UploadedMedia do
   # no slashes
   @path "media"
 
+  @default_cache_control_header "public max-age=86400 must-revalidate"
+
   def init(_opts) do
     static_plug_opts =
       []
@@ -58,6 +60,10 @@ defmodule Pleroma.Plugs.UploadedMedia do
       Map.get(opts, :static_plug_opts)
       |> Map.put(:at, [@path])
       |> Map.put(:from, directory)
+      |> Map.put(:cache_control_for_etags, @default_cache_control_header)
+      |> Map.put(:headers, %{
+        "cache-control" => @default_cache_control_header
+      })
 
     conn = Plug.Static.call(conn, static_opts)
 
