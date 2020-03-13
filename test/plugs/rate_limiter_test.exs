@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Plugs.RateLimiterTest do
-  use ExUnit.Case, async: true
-  use Plug.Test
+  use Pleroma.Web.ConnCase
 
   alias Pleroma.Config
   alias Pleroma.Plugs.RateLimiter
@@ -36,63 +35,44 @@ defmodule Pleroma.Plugs.RateLimiterTest do
                |> RateLimiter.init()
                |> RateLimiter.action_settings()
     end
+  end
 
-    test "it is disabled for localhost" do
-      Config.put([:rate_limit, @limiter_name], {1, 1})
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {127, 0, 0, 1})
-      Config.put([Pleroma.Plugs.RemoteIp, :enabled], false)
+  test "it is disabled if it remote ip plug is enabled but no remote ip is found" do
+    Config.put([Pleroma.Web.Endpoint, :http, :ip], {127, 0, 0, 1})
+    assert RateLimiter.disabled?(Plug.Conn.assign(build_conn(), :remote_ip_found, false))
+  end
 
-      assert RateLimiter.disabled?() == true
-    end
+  test "it restricts based on config values" do
+    limiter_name = :test_plug_opts
+    scale = 80
+    limit = 5
 
-    test "it is disabled for socket" do
-      Config.put([:rate_limit, @limiter_name], {1, 1})
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {:local, "/path/to/pleroma.sock"})
-      Config.put([Pleroma.Plugs.RemoteIp, :enabled], false)
+    Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
+    Config.put([:rate_limit, limiter_name], {scale, limit})
 
-      assert RateLimiter.disabled?() == true
-    end
+    plug_opts = RateLimiter.init(name: limiter_name)
+    conn = conn(:get, "/")
 
-    test "it is enabled for socket when remote ip is enabled" do
-      Config.put([:rate_limit, @limiter_name], {1, 1})
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {:local, "/path/to/pleroma.sock"})
-      Config.put([Pleroma.Plugs.RemoteIp, :enabled], true)
-
-      assert RateLimiter.disabled?() == false
-    end
-
-    test "it restricts based on config values" do
-      limiter_name = :test_plug_opts
-      scale = 80
-      limit = 5
-
-      Config.put([Pleroma.Web.Endpoint, :http, :ip], {8, 8, 8, 8})
-      Config.put([:rate_limit, limiter_name], {scale, limit})
-
-      plug_opts = RateLimiter.init(name: limiter_name)
-      conn = conn(:get, "/")
-
-      for i <- 1..5 do
-        conn = RateLimiter.call(conn, plug_opts)
-        assert {^i, _} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
-        Process.sleep(10)
-      end
-
+    for i <- 1..5 do
       conn = RateLimiter.call(conn, plug_opts)
-      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
-      assert conn.halted
-
-      Process.sleep(50)
-
-      conn = conn(:get, "/")
-
-      conn = RateLimiter.call(conn, plug_opts)
-      assert {1, 4} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
-
-      refute conn.status == Plug.Conn.Status.code(:too_many_requests)
-      refute conn.resp_body
-      refute conn.halted
+      assert {^i, _} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
+      Process.sleep(10)
     end
+
+    conn = RateLimiter.call(conn, plug_opts)
+    assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+    assert conn.halted
+
+    Process.sleep(50)
+
+    conn = conn(:get, "/")
+
+    conn = RateLimiter.call(conn, plug_opts)
+    assert {1, 4} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
+
+    refute conn.status == Plug.Conn.Status.code(:too_many_requests)
+    refute conn.resp_body
+    refute conn.halted
   end
 
   describe "options" do
