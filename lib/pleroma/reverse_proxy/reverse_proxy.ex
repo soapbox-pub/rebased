@@ -7,7 +7,7 @@ defmodule Pleroma.ReverseProxy do
 
   @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since) ++
                       ~w(if-unmodified-since if-none-match if-range range)
-  @resp_cache_headers ~w(etag date last-modified cache-control)
+  @resp_cache_headers ~w(etag date last-modified)
   @keep_resp_headers @resp_cache_headers ++
                        ~w(content-type content-disposition content-encoding content-range) ++
                        ~w(accept-ranges vary)
@@ -33,9 +33,6 @@ defmodule Pleroma.ReverseProxy do
 
   * request: `#{inspect(@keep_req_headers)}`
   * response: `#{inspect(@keep_resp_headers)}`
-
-  If no caching headers (`#{inspect(@resp_cache_headers)}`) are returned by upstream, `cache-control` will be
-  set to `#{inspect(@default_cache_control_header)}`.
 
   Options:
 
@@ -297,16 +294,17 @@ defmodule Pleroma.ReverseProxy do
 
   defp build_resp_cache_headers(headers, _opts) do
     has_cache? = Enum.any?(headers, fn {k, _} -> k in @resp_cache_headers end)
-    has_cache_control? = List.keymember?(headers, "cache-control", 0)
 
     cond do
-      has_cache? && has_cache_control? ->
-        headers
-
       has_cache? ->
-        # There's caching header present but no cache-control -- we need to explicitely override it
-        # to public as Plug defaults to "max-age=0, private, must-revalidate"
-        List.keystore(headers, "cache-control", 0, {"cache-control", "public"})
+        # There's caching header present but no cache-control -- we need to set our own
+        # as Plug defaults to "max-age=0, private, must-revalidate"
+        List.keystore(
+          headers,
+          "cache-control",
+          0,
+          {"cache-control", @default_cache_control_header}
+        )
 
       true ->
         List.keystore(
