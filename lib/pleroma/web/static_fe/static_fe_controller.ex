@@ -58,10 +58,17 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
         _ -> data["url"] || data["external_url"] || data["id"]
       end
 
+    content =
+      if data["content"] do
+        Pleroma.HTML.filter_tags(data["content"])
+      else
+        nil
+      end
+
     %{
-      user: user,
+      user: User.sanitize_html(user),
       title: get_title(activity.object),
-      content: data["content"] || nil,
+      content: content,
       attachment: data["attachment"],
       link: link,
       published: data["published"],
@@ -113,7 +120,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
         next_page_id = List.last(timeline) && List.last(timeline).id
 
         render(conn, "profile.html", %{
-          user: user,
+          user: User.sanitize_html(user),
           timeline: timeline,
           prev_page_id: prev_page_id,
           next_page_id: next_page_id,
