@@ -21,6 +21,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - BBCode and Markdown formatters will no longer return any `\n` and only use `<br/>` for newlines
 - Mastodon API: Allow registration without email if email verification is not enabled
 
+### Upgrade notes
+#### Nginx only
+1. Remove `proxy_ignore_headers Cache-Control;` and `proxy_hide_header  Cache-Control;` from your config.
+
+#### Everyone
+1. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+2. Restart Pleroma
+
 ## [2.0.0] - 2019-03-08
 ### Security
 - Mastodon API: Fix being able to request enourmous amount of statuses in timelines leading to DoS. Now limited to 40 per request.
