@@ -839,20 +839,11 @@ defmodule Pleroma.User do
       _e ->
         with [_nick, _domain] <- String.split(nickname, "@"),
              {:ok, user} <- fetch_by_nickname(nickname) do
-          if Pleroma.Config.get([:fetch_initial_posts, :enabled]) do
-            fetch_initial_posts(user)
-          end
-
           {:ok, user}
         else
           _e -> {:error, "not found " <> nickname}
         end
     end
-  end
-
-  @doc "Fetch some posts when the user has just been federated with"
-  def fetch_initial_posts(user) do
-    BackgroundWorker.enqueue("fetch_initial_posts", %{"user_id" => user.id})
   end
 
   @spec get_followers_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
@@ -1320,16 +1311,6 @@ defmodule Pleroma.User do
     Repo.delete(user)
   end
 
-  def perform(:fetch_initial_posts, %User{} = user) do
-    pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
-
-    # Insert all the posts in reverse order, so they're in the right order on the timeline
-    user.source_data["outbox"]
-    |> Utils.fetch_ordered_collection(pages)
-    |> Enum.reverse()
-    |> Enum.each(&Pleroma.Web.Federator.incoming_ap_doc/1)
-  end
-
   def perform(:deactivate_async, user, status), do: deactivate(user, status)
 
   @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
@@ -1458,18 +1439,7 @@ defmodule Pleroma.User do
     if !is_nil(user) and !needs_update?(user) do
       {:ok, user}
     else
-      # Whether to fetch initial posts for the user (if it's a new user & the fetching is enabled)
-      should_fetch_initial = is_nil(user) and Pleroma.Config.get([:fetch_initial_posts, :enabled])
-
-      resp = fetch_by_ap_id(ap_id)
-
-      if should_fetch_initial do
-        with {:ok, %User{} = user} <- resp do
-          fetch_initial_posts(user)
-        end
-      end
-
-      resp
+      fetch_by_ap_id(ap_id)
     end
   end
 
