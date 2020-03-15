@@ -25,7 +25,12 @@ defmodule Pleroma.Web.Feed.UserController do
 
   def feed_redirect(%{assigns: %{format: format}} = conn, _params)
       when format in ["json", "activity+json"] do
-    ActivityPubController.call(conn, :user)
+    with %{halted: false} = conn <-
+           Pleroma.Plugs.EnsureAuthenticatedPlug.call(conn,
+             unless_func: &Pleroma.Web.FederatingPlug.federating?/0
+           ) do
+      ActivityPubController.call(conn, :user)
+    end
   end
 
   def feed_redirect(conn, %{"nickname" => nickname}) do

@@ -1,56 +1,46 @@
 defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
   use Pleroma.Web.ConnCase
+
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
 
   clear_config_all([:static_fe, :enabled]) do
-    Pleroma.Config.put([:static_fe, :enabled], true)
+    Config.put([:static_fe, :enabled], true)
   end
 
-  describe "user profile page" do
-    test "just the profile as HTML", %{conn: conn} do
-      user = insert(:user)
+  clear_config([:instance, :federating]) do
+    Config.put([:instance, :federating], true)
+  end
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/users/#{user.nickname}")
+  setup %{conn: conn} do
+    conn = put_req_header(conn, "accept", "text/html")
+    user = insert(:user)
+
+    %{conn: conn, user: user}
+  end
+
+  describe "user profile html" do
+    test "just the profile as HTML", %{conn: conn, user: user} do
+      conn = get(conn, "/users/#{user.nickname}")
 
       assert html_response(conn, 200) =~ user.nickname
     end
 
-    test "renders json unless there's an html accept header", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> get("/users/#{user.nickname}")
-
-      assert json_response(conn, 200)
-    end
-
     test "404 when user not found", %{conn: conn} do
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/users/limpopo")
+      conn = get(conn, "/users/limpopo")
 
       assert html_response(conn, 404) =~ "not found"
     end
 
-    test "profile does not include private messages", %{conn: conn} do
-      user = insert(:user)
+    test "profile does not include private messages", %{conn: conn, user: user} do
       CommonAPI.post(user, %{"status" => "public"})
       CommonAPI.post(user, %{"status" => "private", "visibility" => "private"})
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/users/#{user.nickname}")
+      conn = get(conn, "/users/#{user.nickname}")
 
       html = html_response(conn, 200)
 
@@ -58,14 +48,10 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       refute html =~ ">private<"
     end
 
-    test "pagination", %{conn: conn} do
-      user = insert(:user)
+    test "pagination", %{conn: conn, user: user} do
       Enum.map(1..30, fn i -> CommonAPI.post(user, %{"status" => "test#{i}"}) end)
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/users/#{user.nickname}")
+      conn = get(conn, "/users/#{user.nickname}")
 
       html = html_response(conn, 200)
 
@@ -75,15 +61,11 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       refute html =~ ">test1<"
     end
 
-    test "pagination, page 2", %{conn: conn} do
-      user = insert(:user)
+    test "pagination, page 2", %{conn: conn, user: user} do
       activities = Enum.map(1..30, fn i -> CommonAPI.post(user, %{"status" => "test#{i}"}) end)
       {:ok, a11} = Enum.at(activities, 11)
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/users/#{user.nickname}?max_id=#{a11.id}")
+      conn = get(conn, "/users/#{user.nickname}?max_id=#{a11.id}")
 
       html = html_response(conn, 200)
 
@@ -92,17 +74,17 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       refute html =~ ">test20<"
       refute html =~ ">test29<"
     end
+
+    test "it requires authentication if instance is NOT federating", %{conn: conn, user: user} do
+      ensure_federating_or_authenticated(conn, "/users/#{user.nickname}", user)
+    end
   end
 
-  describe "notice rendering" do
-    test "single notice page", %{conn: conn} do
-      user = insert(:user)
+  describe "notice html" do
+    test "single notice page", %{conn: conn, user: user} do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "testing a thing!"})
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/notice/#{activity.id}")
+      conn = get(conn, "/notice/#{activity.id}")
 
       html = html_response(conn, 200)
       assert html =~ "<header>"
@@ -110,8 +92,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       assert html =~ "testing a thing!"
     end
 
-    test "shows the whole thread", %{conn: conn} do
-      user = insert(:user)
+    test "shows the whole thread", %{conn: conn, user: user} do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "space: the final frontier"})
 
       CommonAPI.post(user, %{
@@ -119,70 +100,47 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
         "in_reply_to_status_id" => activity.id
       })
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/notice/#{activity.id}")
+      conn = get(conn, "/notice/#{activity.id}")
 
       html = html_response(conn, 200)
       assert html =~ "the final frontier"
       assert html =~ "voyages"
     end
 
-    test "redirect by AP object ID", %{conn: conn} do
-      user = insert(:user)
-
+    test "redirect by AP object ID", %{conn: conn, user: user} do
       {:ok, %Activity{data: %{"object" => object_url}}} =
         CommonAPI.post(user, %{"status" => "beam me up"})
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get(URI.parse(object_url).path)
+      conn = get(conn, URI.parse(object_url).path)
 
       assert html_response(conn, 302) =~ "redirected"
     end
 
-    test "redirect by activity ID", %{conn: conn} do
-      user = insert(:user)
-
+    test "redirect by activity ID", %{conn: conn, user: user} do
       {:ok, %Activity{data: %{"id" => id}}} =
         CommonAPI.post(user, %{"status" => "I'm a doctor, not a devops!"})
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get(URI.parse(id).path)
+      conn = get(conn, URI.parse(id).path)
 
       assert html_response(conn, 302) =~ "redirected"
     end
 
     test "404 when notice not found", %{conn: conn} do
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/notice/88c9c317")
+      conn = get(conn, "/notice/88c9c317")
 
       assert html_response(conn, 404) =~ "not found"
     end
 
-    test "404 for private status", %{conn: conn} do
-      user = insert(:user)
-
+    test "404 for private status", %{conn: conn, user: user} do
       {:ok, activity} =
         CommonAPI.post(user, %{"status" => "don't show me!", "visibility" => "private"})
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/notice/#{activity.id}")
+      conn = get(conn, "/notice/#{activity.id}")
 
       assert html_response(conn, 404) =~ "not found"
     end
 
-    test "302 for remote cached status", %{conn: conn} do
-      user = insert(:user)
-
+    test "302 for remote cached status", %{conn: conn, user: user} do
       message = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
         "to" => user.follower_address,
@@ -199,12 +157,15 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
 
       assert {:ok, activity} = Transmogrifier.handle_incoming(message)
 
-      conn =
-        conn
-        |> put_req_header("accept", "text/html")
-        |> get("/notice/#{activity.id}")
+      conn = get(conn, "/notice/#{activity.id}")
 
       assert html_response(conn, 302) =~ "redirected"
+    end
+
+    test "it requires authentication if instance is NOT federating", %{conn: conn, user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "testing a thing!"})
+
+      ensure_federating_or_authenticated(conn, "/notice/#{activity.id}", user)
     end
   end
 end

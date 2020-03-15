@@ -16,6 +16,10 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.Metadata.PlayerView
   alias Pleroma.Web.Router
 
+  plug(Pleroma.Plugs.EnsureAuthenticatedPlug,
+    unless_func: &Pleroma.Web.FederatingPlug.federating?/0
+  )
+
   plug(
     RateLimiter,
     [name: :ap_routes, params: ["uuid"]] when action in [:object, :activity]
@@ -135,13 +139,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
-  def errors(conn, {:error, :not_found}) do
+  defp errors(conn, {:error, :not_found}) do
     render_error(conn, :not_found, "Not found")
   end
 
-  def errors(conn, {:fetch_user, nil}), do: errors(conn, {:error, :not_found})
+  defp errors(conn, {:fetch_user, nil}), do: errors(conn, {:error, :not_found})
 
-  def errors(conn, _) do
+  defp errors(conn, _) do
     render_error(conn, :internal_server_error, "Something went wrong")
   end
 end
