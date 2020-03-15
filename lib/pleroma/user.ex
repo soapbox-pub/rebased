@@ -16,6 +16,7 @@ defmodule Pleroma.User do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
   alias Pleroma.FollowingRelationship
+  alias Pleroma.HTML
   alias Pleroma.Keys
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -2031,5 +2032,28 @@ defmodule Pleroma.User do
     |> cast(params, [:invisible])
     |> validate_required([:invisible])
     |> update_and_set_cache()
+  end
+
+  def sanitize_html(%User{} = user) do
+    sanitize_html(user, nil)
+  end
+
+  # User data that mastodon isn't filtering (treated as plaintext):
+  # - field name
+  # - display name
+  def sanitize_html(%User{} = user, filter) do
+    fields =
+      user
+      |> User.fields()
+      |> Enum.map(fn %{"name" => name, "value" => value} ->
+        %{
+          "name" => name,
+          "value" => HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
+        }
+      end)
+
+    user
+    |> Map.put(:bio, HTML.filter_tags(user.bio, filter))
+    |> Map.put(:fields, fields)
   end
 end
