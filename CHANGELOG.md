@@ -3,9 +3,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [unreleased]
+## [2.0.1] - 2020-03-15
+### Fixed
+- 500 errors when no `Accept` header is present if Static-FE is enabled
+- Instance panel not being updated immediately due to wrong `Cache-Control` headers
+- Statuses posted with BBCode/Markdown having unncessary newlines in Pleroma-FE
+- OTP: Fix some settings not being migrated to in-database config properly
+- No `Cache-Control` headers on attachment/media proxy requests
+- Character limit enforcement being off by 1
+- Mastodon Streaming API: hashtag timelines not working
+
 ### Changed
-- **Breaking:** BBCode and Markdown formatters will no longer return any `\n` and only use `<br/>` for newlines
+- BBCode and Markdown formatters will no longer return any `\n` and only use `<br/>` for newlines
+- Mastodon API: Allow registration without email if email verification is not enabled
 
 ## [2.0.0] - 2019-03-08
 ### Security
