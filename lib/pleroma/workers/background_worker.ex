@@ -10,10 +10,6 @@ defmodule Pleroma.Workers.BackgroundWorker do
   use Pleroma.Workers.WorkerHelper, queue: "background"
 
   @impl Oban.Worker
-  def perform(%{"op" => "fetch_initial_posts", "user_id" => user_id}, _job) do
-    user = User.get_cached_by_id(user_id)
-    User.perform(:fetch_initial_posts, user)
-  end
 
   def perform(%{"op" => "deactivate_user", "user_id" => user_id, "status" => status}, _job) do
     user = User.get_cached_by_id(user_id)

@@ -4,11 +4,11 @@
 
 ## Migrate uploads from local to remote storage
 ```sh tab="OTP"
- ./bin/pleroma_ctl uploads migrate_local <target_uploader> [<options>]
+ ./bin/pleroma_ctl uploads migrate_local <target_uploader> [option ...]
 ```
 
 ```sh tab="From Source"
-mix pleroma.uploads migrate_local <target_uploader> [<options>]
+mix pleroma.uploads migrate_local <target_uploader> [option ...]
 ```
 
 ### Options

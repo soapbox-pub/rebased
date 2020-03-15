@@ -39,7 +39,7 @@ defmodule Pleroma.Activity.Ir.Topics do
     end
   end
 
-  defp item_creation_tags(tags, %{data: %{"type" => "Create"}} = object, activity) do
+  defp item_creation_tags(tags, object, %{data: %{"type" => "Create"}} = activity) do
     tags ++ hashtags_to_topics(object) ++ attachment_topics(object, activity)
   end
 

@@ -275,17 +275,6 @@ defmodule Pleroma.ReverseProxyTest do
   end
 
   describe "cache resp headers" do
-    test "returns headers", %{conn: conn} do
-      ClientMock
-      |> expect(:request, fn :get, "/cache/" <> ttl, _, _, _ ->
-        {:ok, 200, [{"cache-control", "public, max-age=" <> ttl}], %{}}
-      end)
-      |> expect(:stream_body, fn _ -> :done end)
-
-      conn = ReverseProxy.call(conn, "/cache/10")
-      assert {"cache-control", "public, max-age=10"} in conn.resp_headers
-    end
-
     test "add cache-control", %{conn: conn} do
       ClientMock
       |> expect(:request, fn :get, "/cache", _, _, _ ->
@@ -294,7 +283,7 @@ defmodule Pleroma.ReverseProxyTest do
       |> expect(:stream_body, fn _ -> :done end)
 
       conn = ReverseProxy.call(conn, "/cache")
-      assert {"cache-control", "public"} in conn.resp_headers
+      assert {"cache-control", "public, max-age=1209600"} in conn.resp_headers
     end
   end
 

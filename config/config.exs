@@ -504,10 +504,6 @@ config :pleroma, :workers,
     federator_outgoing: 5
   ]
 
-config :pleroma, :fetch_initial_posts,
-  enabled: false,
-  pages: 5
-
 config :auto_linker,
   opts: [
     extra: true,

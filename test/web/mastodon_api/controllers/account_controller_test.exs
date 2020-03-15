@@ -601,6 +601,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       [valid_params: valid_params]
     end
 
+    clear_config([:instance, :account_activation_required])
+
     test "Account registration via Application", %{conn: conn} do
       conn =
         post(conn, "/api/v1/apps", %{
@@ -685,7 +687,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert json_response(res, 200)
 
       [{127, 0, 0, 1}, {127, 0, 0, 2}, {127, 0, 0, 3}, {127, 0, 0, 4}]
-      |> Stream.zip(valid_params)
+      |> Stream.zip(Map.delete(valid_params, :email))
       |> Enum.each(fn {ip, {attr, _}} ->
         res =
           conn
@@ -697,6 +699,54 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       end)
     end
 
+    clear_config([:instance, :account_activation_required])
+
+    test "returns bad_request if missing email params when :account_activation_required is enabled",
+         %{conn: conn, valid_params: valid_params} do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      app_token = insert(:oauth_token, user: nil)
+      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+
+      res =
+        conn
+        |> Map.put(:remote_ip, {127, 0, 0, 5})
+        |> post("/api/v1/accounts", Map.delete(valid_params, :email))
+
+      assert json_response(res, 400) == %{"error" => "Missing parameters"}
+
+      res =
+        conn
+        |> Map.put(:remote_ip, {127, 0, 0, 6})
+        |> post("/api/v1/accounts", Map.put(valid_params, :email, ""))
+
+      assert json_response(res, 400) == %{"error" => "{\"email\":[\"can't be blank\"]}"}
+    end
+
+    test "allow registration without an email", %{conn: conn, valid_params: valid_params} do
+      app_token = insert(:oauth_token, user: nil)
+      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+
+      res =
+        conn
+        |> Map.put(:remote_ip, {127, 0, 0, 7})
+        |> post("/api/v1/accounts", Map.delete(valid_params, :email))
+
+      assert json_response(res, 200)
+    end
+
+    test "allow registration with an empty email", %{conn: conn, valid_params: valid_params} do
+      app_token = insert(:oauth_token, user: nil)
+      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+
+      res =
+        conn
+        |> Map.put(:remote_ip, {127, 0, 0, 8})
+        |> post("/api/v1/accounts", Map.put(valid_params, :email, ""))
+
+      assert json_response(res, 200)
+    end
+
     test "returns forbidden if token is invalid", %{conn: conn, valid_params: valid_params} do
       conn = put_req_header(conn, "authorization", "Bearer " <> "invalid-token")
 
@@ -706,10 +756,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "create account by app / rate limit" do
-    clear_config([Pleroma.Plugs.RemoteIp, :enabled]) do
-      Pleroma.Config.put([Pleroma.Plugs.RemoteIp, :enabled], true)
-    end
-
     clear_config([:rate_limit, :app_account_creation]) do
       Pleroma.Config.put([:rate_limit, :app_account_creation], {10_000, 2})
     end

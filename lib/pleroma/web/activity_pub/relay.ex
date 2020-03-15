@@ -60,14 +60,27 @@ defmodule Pleroma.Web.ActivityPub.Relay do
 
   def publish(_), do: {:error, "Not implemented"}
 
-  @spec list() :: {:ok, [String.t()]} | {:error, any()}
-  def list do
+  @spec list(boolean()) :: {:ok, [String.t()]} | {:error, any()}
+  def list(with_not_accepted \\ false) do
     with %User{} = user <- get_actor() do
-      list =
+      accepted =
         user
         |> User.following()
         |> Enum.map(fn entry -> URI.parse(entry).host end)
         |> Enum.uniq()
+
+      list =
+        if with_not_accepted do
+          without_accept =
+            user
+            |> Pleroma.Activity.following_requests_for_actor()
+            |> Enum.map(fn a -> URI.parse(a.data["object"]).host <> " (no Accept received)" end)
+            |> Enum.uniq()
+
+          accepted ++ without_accept
+        else
+          accepted
+        end
 
       {:ok, list}
     else

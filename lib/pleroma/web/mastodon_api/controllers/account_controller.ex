@@ -76,7 +76,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   @doc "POST /api/v1/accounts"
   def create(
         %{assigns: %{app: app}} = conn,
-        %{"username" => nickname, "email" => _, "password" => _, "agreement" => true} = params
+        %{"username" => nickname, "password" => _, "agreement" => true} = params
       ) do
     params =
       params
@@ -93,7 +93,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Map.put("bio", params["bio"] || "")
       |> Map.put("confirm", params["password"])
 
-    with {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
+    with :ok <- validate_email_param(params),
+         {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
          {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
       json(conn, %{
         token_type: "Bearer",
@@ -112,6 +113,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   def create(conn, _) do
     render_error(conn, :forbidden, "Invalid credentials")
+  end
+
+  defp validate_email_param(%{"email" => _}), do: :ok
+
+  defp validate_email_param(_) do
+    case Pleroma.Config.get([:instance, :account_activation_required]) do
+      true -> {:error, %{"error" => "Missing parameters"}}
+      _ -> :ok
+    end
   end
 
   @doc "GET /api/v1/accounts/verify_credentials"
