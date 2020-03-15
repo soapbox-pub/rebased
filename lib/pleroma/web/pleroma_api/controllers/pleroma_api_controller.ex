@@ -101,6 +101,11 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
       conn
       |> put_view(ConversationView)
       |> render("participation.json", %{participation: participation, for: user})
+    else
+      _error ->
+        conn
+        |> put_status(404)
+        |> json(%{"error" => "Unknown conversation id"})
     end
   end
 
@@ -108,9 +113,9 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
         %{assigns: %{user: user}} = conn,
         %{"id" => participation_id} = params
       ) do
-    participation = Participation.get(participation_id, preload: [:conversation])
-
-    if user.id == participation.user_id do
+    with %Participation{} = participation <-
+           Participation.get(participation_id, preload: [:conversation]),
+         true <- user.id == participation.user_id do
       params =
         params
         |> Map.put("blocking_user", user)
@@ -126,6 +131,11 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
       |> add_link_headers(activities)
       |> put_view(StatusView)
       |> render("index.json", %{activities: activities, for: user, as: :activity})
+    else
+      _error ->
+        conn
+        |> put_status(404)
+        |> json(%{"error" => "Unknown conversation id"})
     end
   end
 
@@ -133,15 +143,22 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
         %{assigns: %{user: user}} = conn,
         %{"id" => participation_id, "recipients" => recipients}
       ) do
-    participation =
-      participation_id
-      |> Participation.get()
-
-    with true <- user.id == participation.user_id,
+    with %Participation{} = participation <- Participation.get(participation_id),
+         true <- user.id == participation.user_id,
          {:ok, participation} <- Participation.set_recipients(participation, recipients) do
       conn
       |> put_view(ConversationView)
       |> render("participation.json", %{participation: participation, for: user})
+    else
+      {:error, message} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{"error" => message})
+
+      _error ->
+        conn
+        |> put_status(404)
+        |> json(%{"error" => "Unknown conversation id"})
     end
   end
 
