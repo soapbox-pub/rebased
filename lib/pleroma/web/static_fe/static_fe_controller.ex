@@ -58,10 +58,17 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
         _ -> data["url"] || data["external_url"] || data["id"]
       end
 
+    content =
+      if data["content"] do
+        Pleroma.HTML.filter_tags(data["content"])
+      else
+        nil
+      end
+
     %{
       user: user,
       title: get_title(activity.object),
-      content: data["content"] || nil,
+      content: content,
       attachment: data["attachment"],
       link: link,
       published: data["published"],

@@ -92,6 +92,19 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       assert html =~ "testing a thing!"
     end
 
+    test "filters HTML tags", %{conn: conn} do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "<script>alert('xss')</script>"})
+
+      conn =
+        conn
+        |> put_req_header("accept", "text/html")
+        |> get("/notice/#{activity.id}")
+
+      html = html_response(conn, 200)
+      assert html =~ ~s[&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;]
+    end
+
     test "shows the whole thread", %{conn: conn, user: user} do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "space: the final frontier"})
 
