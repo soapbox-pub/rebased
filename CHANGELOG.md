@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [2.0.1] - 2020-03-15
+### Security
+- Static-FE: Fix remote posts not being sanitized
+
 ### Fixed
+- Rate limiter crashes when there is no explicitly specified ip in the config
 - 500 errors when no `Accept` header is present if Static-FE is enabled
 - Instance panel not being updated immediately due to wrong `Cache-Control` headers
 - Statuses posted with BBCode/Markdown having unncessary newlines in Pleroma-FE
