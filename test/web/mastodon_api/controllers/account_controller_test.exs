@@ -756,10 +756,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "create account by app / rate limit" do
-    clear_config([Pleroma.Plugs.RemoteIp, :enabled]) do
-      Pleroma.Config.put([Pleroma.Plugs.RemoteIp, :enabled], true)
-    end
-
     clear_config([:rate_limit, :app_account_creation]) do
       Pleroma.Config.put([:rate_limit, :app_account_creation], {10_000, 2})
     end

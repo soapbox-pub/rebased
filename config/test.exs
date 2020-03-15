@@ -92,6 +92,8 @@ config :pleroma, :modules, runtime_dir: "test/fixtures/modules"
 
 config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: true
 
+config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else
