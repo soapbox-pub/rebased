@@ -1108,13 +1108,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def add_mention_tags(object) do
-    mentions =
-      object
-      |> Utils.get_notified_from_object()
-      |> Enum.map(&build_mention_tag/1)
+    {enabled_receivers, disabled_receivers} = Utils.get_notified_from_object(object)
+    potential_receivers = enabled_receivers ++ disabled_receivers
+    mentions = Enum.map(potential_receivers, &build_mention_tag/1)
 
     tags = object["tag"] || []
-
     Map.put(object, "tag", tags ++ mentions)
   end
 

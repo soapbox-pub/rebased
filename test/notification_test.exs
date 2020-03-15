@@ -6,12 +6,14 @@ defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase
 
   import Pleroma.Factory
+  import Mock
 
   alias Pleroma.Notification
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
 
   describe "create_notifications" do
@@ -382,7 +384,7 @@ defmodule Pleroma.NotificationTest do
     end
   end
 
-  describe "notification target determination" do
+  describe "notification target determination / get_notified_from_activity/2" do
     test "it sends notifications to addressed users in new messages" do
       user = insert(:user)
       other_user = insert(:user)
@@ -392,7 +394,9 @@ defmodule Pleroma.NotificationTest do
           "status" => "hey @#{other_user.nickname}!"
         })
 
-      assert other_user in Notification.get_notified_from_activity(activity)
+      {enabled_receivers, _disabled_receivers} = Notification.get_notified_from_activity(activity)
+
+      assert other_user in enabled_receivers
     end
 
     test "it sends notifications to mentioned users in new messages" do
@@ -420,7 +424,9 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = Transmogrifier.handle_incoming(create_activity)
 
-      assert other_user in Notification.get_notified_from_activity(activity)
+      {enabled_receivers, _disabled_receivers} = Notification.get_notified_from_activity(activity)
+
+      assert other_user in enabled_receivers
     end
 
     test "it does not send notifications to users who are only cc in new messages" do
@@ -442,7 +448,9 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = Transmogrifier.handle_incoming(create_activity)
 
-      assert other_user not in Notification.get_notified_from_activity(activity)
+      {enabled_receivers, _disabled_receivers} = Notification.get_notified_from_activity(activity)
+
+      assert other_user not in enabled_receivers
     end
 
     test "it does not send notification to mentioned users in likes" do
@@ -457,7 +465,10 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity_two, _} = CommonAPI.favorite(activity_one.id, third_user)
 
-      assert other_user not in Notification.get_notified_from_activity(activity_two)
+      {enabled_receivers, _disabled_receivers} =
+        Notification.get_notified_from_activity(activity_two)
+
+      assert other_user not in enabled_receivers
     end
 
     test "it does not send notification to mentioned users in announces" do
@@ -472,7 +483,96 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity_two, _} = CommonAPI.repeat(activity_one.id, third_user)
 
-      assert other_user not in Notification.get_notified_from_activity(activity_two)
+      {enabled_receivers, _disabled_receivers} =
+        Notification.get_notified_from_activity(activity_two)
+
+      assert other_user not in enabled_receivers
+    end
+
+    test_with_mock "it returns blocking recipient in disabled recipients list",
+                   Push,
+                   [:passthrough],
+                   [] do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, _user_relationship} = User.block(other_user, user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{other_user.nickname}!"})
+
+      {enabled_receivers, disabled_receivers} = Notification.get_notified_from_activity(activity)
+
+      assert [] == enabled_receivers
+      assert [other_user] == disabled_receivers
+
+      assert 1 == length(Repo.all(Notification))
+      refute called(Push.send(:_))
+    end
+
+    test_with_mock "it returns notification-muting recipient in disabled recipients list",
+                   Push,
+                   [:passthrough],
+                   [] do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, _user_relationships} = User.mute(other_user, user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{other_user.nickname}!"})
+
+      {enabled_receivers, disabled_receivers} = Notification.get_notified_from_activity(activity)
+
+      assert [] == enabled_receivers
+      assert [other_user] == disabled_receivers
+
+      assert 1 == length(Repo.all(Notification))
+      refute called(Push.send(:_))
+    end
+
+    test_with_mock "it returns thread-muting recipient in disabled recipients list",
+                   Push,
+                   [:passthrough],
+                   [] do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{other_user.nickname}!"})
+
+      {:ok, _} = CommonAPI.add_mute(other_user, activity)
+
+      {:ok, same_context_activity} =
+        CommonAPI.post(user, %{
+          "status" => "hey-hey-hey @#{other_user.nickname}!",
+          "in_reply_to_status_id" => activity.id
+        })
+
+      {enabled_receivers, disabled_receivers} =
+        Notification.get_notified_from_activity(same_context_activity)
+
+      assert [other_user] == disabled_receivers
+      refute other_user in enabled_receivers
+
+      [pre_mute_notification, post_mute_notification] =
+        Repo.all(from(n in Notification, where: n.user_id == ^other_user.id, order_by: n.id))
+
+      pre_mute_notification_id = pre_mute_notification.id
+      post_mute_notification_id = post_mute_notification.id
+
+      assert called(
+               Push.send(
+                 :meck.is(fn
+                   %Notification{id: ^pre_mute_notification_id} -> true
+                   _ -> false
+                 end)
+               )
+             )
+
+      refute called(
+               Push.send(
+                 :meck.is(fn
+                   %Notification{id: ^post_mute_notification_id} -> true
+                   _ -> false
+                 end)
+               )
+             )
     end
   end
 

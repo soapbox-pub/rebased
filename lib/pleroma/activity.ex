@@ -95,6 +95,16 @@ defmodule Pleroma.Activity do
     |> preload([activity, object: object], object: object)
   end
 
+  def user_actor(%Activity{actor: nil}), do: nil
+
+  def user_actor(%Activity{} = activity) do
+    with %User{} <- activity.user_actor do
+      activity.user_actor
+    else
+      _ -> User.get_cached_by_ap_id(activity.actor)
+    end
+  end
+
   def with_joined_user_actor(query, join_type \\ :inner) do
     join(query, join_type, [activity], u in User,
       on: u.ap_id == activity.actor,
