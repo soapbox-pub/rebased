@@ -123,7 +123,8 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       assert html =~ ~s[&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;]
     end
 
-    test "shows the whole thread", %{conn: conn, user: user} do
+    test "shows the whole thread", %{conn: conn} do
+      user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "space: the final frontier"})
 
       CommonAPI.post(user, %{
