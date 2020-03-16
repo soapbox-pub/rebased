@@ -169,19 +169,26 @@ defmodule Pleroma.Pool.Connections do
 
   @impl true
   def handle_info({:gun_up, conn_pid, _protocol}, state) do
-    %{origin_host: host, origin_scheme: scheme, origin_port: port} = Gun.info(conn_pid)
+    # TODO: temp fix for gun MatchError https://github.com/ninenines/gun/issues/222
+    # TODO: REMOVE LATER
+    {key, conn} =
+      try do
+        %{origin_host: host, origin_scheme: scheme, origin_port: port} = Gun.info(conn_pid)
 
-    host =
-      case :inet.ntoa(host) do
-        {:error, :einval} -> host
-        ip -> ip
+        host =
+          case :inet.ntoa(host) do
+            {:error, :einval} -> host
+            ip -> ip
+          end
+
+        key = "#{scheme}:#{host}:#{port}"
+        find_conn(state.conns, conn_pid, key)
+      rescue
+        MatcheError -> find_conn(state.conns, conn_pid)
       end
 
-    key = "#{scheme}:#{host}:#{port}"
-
     state =
-      with {_key, conn} <- find_conn(state.conns, conn_pid, key),
-           {true, key} <- {Process.alive?(conn_pid), key} do
+      with {true, key} <- {Process.alive?(conn_pid), key} do
         put_in(state.conns[key], %{
           conn
           | gun_state: :up,
