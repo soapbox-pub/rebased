@@ -1796,25 +1796,6 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :pleroma_job_queue,
-    key: :queues,
-    type: :group,
-    description: "[Deprecated] Replaced with `Oban`/`:queues` (keeping the same format)"
-  },
-  %{
-    group: :pleroma,
-    key: Pleroma.Web.Federator.RetryQueue,
-    type: :group,
-    description: "[Deprecated] See `Oban` and `:workers` sections for configuration notes",
-    children: [
-      %{
-        key: :max_retries,
-        type: :integer,
-        description: "[Deprecated] Replaced as `Oban`/`:queues`/`:outgoing_federation` value"
-      }
-    ]
-  },
-  %{
     group: :pleroma,
     key: Oban,
     type: :group,
@@ -2019,25 +2000,6 @@ config :pleroma, :config_description, [
         suggestions: [
           Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl
         ]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :fetch_initial_posts,
-    type: :group,
-    description: "Fetching initial posts settings",
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Fetch posts when a new user is federated with"
-      },
-      %{
-        key: :pages,
-        type: :integer,
-        description: "The amount of pages to fetch",
-        suggestions: [5]
       }
     ]
   },
@@ -2608,19 +2570,6 @@ config :pleroma, :config_description, [
             suggestions: ["activity+json"]
           }
         ]
-      }
-    ]
-  },
-  %{
-    group: :tesla,
-    type: :group,
-    description: "Tesla settings",
-    children: [
-      %{
-        key: :adapter,
-        type: :module,
-        description: "Tesla adapter",
-        suggestions: [Tesla.Adapter.Hackney]
       }
     ]
   },
