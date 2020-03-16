@@ -5,14 +5,20 @@
 defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
   use Pleroma.Web.ConnCase
 
+  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+
   import ExUnit.CaptureLog
   import Pleroma.Factory
 
   setup do
     Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
+  end
+
+  clear_config_all([:instance, :federating]) do
+    Config.put([:instance, :federating], true)
   end
 
   clear_config([:instance])

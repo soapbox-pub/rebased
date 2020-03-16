@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.AccountView do
   use Pleroma.Web, :view
 
-  alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -67,6 +66,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp do_render("show.json", %{user: user} = opts) do
+    user = User.sanitize_html(user, User.html_filter_policy(opts[:for]))
     display_name = user.name || user.nickname
 
     image = User.avatar_url(user) |> MediaProxy.url()
@@ -100,17 +100,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         }
       end)
 
-    fields =
-      user
-      |> User.fields()
-      |> Enum.map(fn %{"name" => name, "value" => value} ->
-        %{
-          "name" => name,
-          "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
-        }
-      end)
-
-    bio = HTML.filter_tags(user.bio, User.html_filter_policy(opts[:for]))
     relationship = render("relationship.json", %{user: opts[:for], target: user})
 
     %{
@@ -123,17 +112,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       followers_count: followers_count,
       following_count: following_count,
       statuses_count: user.note_count,
-      note: bio || "",
+      note: user.bio || "",
       url: User.profile_url(user),
       avatar: image,
       avatar_static: image,
       header: header,
       header_static: header,
       emojis: emojis,
-      fields: fields,
+      fields: user.fields,
       bot: bot,
       source: %{
-        note: HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
+        note: Pleroma.HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
