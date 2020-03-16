@@ -89,8 +89,8 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       assert output == expected
 
-      text = "<p>hello world!</p>\n\n<p>second paragraph</p>"
-      expected = "<p>hello world!</p>\n\n<p>second paragraph</p>"
+      text = "<p>hello world!</p><br/>\n<p>second paragraph</p>"
+      expected = "<p>hello world!</p><br/>\n<p>second paragraph</p>"
 
       {output, [], []} = Utils.format_input(text, "text/html")
 
@@ -99,14 +99,14 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
     test "works for bare text/markdown" do
       text = "**hello world**"
-      expected = "<p><strong>hello world</strong></p>\n"
+      expected = "<p><strong>hello world</strong></p>"
 
       {output, [], []} = Utils.format_input(text, "text/markdown")
 
       assert output == expected
 
       text = "**hello world**\n\n*another paragraph*"
-      expected = "<p><strong>hello world</strong></p>\n<p><em>another paragraph</em></p>\n"
+      expected = "<p><strong>hello world</strong></p><p><em>another paragraph</em></p>"
 
       {output, [], []} = Utils.format_input(text, "text/markdown")
 
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       by someone
       """
 
-      expected = "<blockquote><p>cool quote</p>\n</blockquote>\n<p>by someone</p>\n"
+      expected = "<blockquote><p>cool quote</p></blockquote><p>by someone</p>"
 
       {output, [], []} = Utils.format_input(text, "text/markdown")
 
@@ -134,7 +134,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert output == expected
 
       text = "[b]hello world![/b]\n\nsecond paragraph!"
-      expected = "<strong>hello world!</strong><br>\n<br>\nsecond paragraph!"
+      expected = "<strong>hello world!</strong><br><br>second paragraph!"
 
       {output, [], []} = Utils.format_input(text, "text/bbcode")
 
@@ -143,7 +143,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       text = "[b]hello world![/b]\n\n<strong>second paragraph!</strong>"
 
       expected =
-        "<strong>hello world!</strong><br>\n<br>\n&lt;strong&gt;second paragraph!&lt;/strong&gt;"
+        "<strong>hello world!</strong><br><br>&lt;strong&gt;second paragraph!&lt;/strong&gt;"
 
       {output, [], []} = Utils.format_input(text, "text/bbcode")
 
@@ -156,16 +156,14 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       text = "**hello world**\n\n*another @user__test and @user__test google.com paragraph*"
 
-      expected =
-        ~s(<p><strong>hello world</strong></p>\n<p><em>another <span class="h-card"><a data-user="#{
-          user.id
-        }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a data-user="#{
-          user.id
-        }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>\n)
-
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
-      assert output == expected
+      assert output ==
+               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a data-user="#{
+                 user.id
+               }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a data-user="#{
+                 user.id
+               }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
     end
   end
 

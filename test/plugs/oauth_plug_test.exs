@@ -38,7 +38,7 @@ defmodule Pleroma.Plugs.OAuthPlugTest do
     assert conn.assigns[:user] == opts[:user]
   end
 
-  test "with valid token(downcase) in url parameters, it assings the user", opts do
+  test "with valid token(downcase) in url parameters, it assigns the user", opts do
     conn =
       :get
       |> build_conn("/?access_token=#{opts[:token]}")

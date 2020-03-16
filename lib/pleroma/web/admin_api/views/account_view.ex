@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.AdminAPI.AccountView do
   use Pleroma.Web, :view
 
-  alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.MediaProxy
@@ -26,7 +25,8 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
 
   def render("show.json", %{user: user}) do
     avatar = User.avatar_url(user) |> MediaProxy.url()
-    display_name = HTML.strip_tags(user.name || user.nickname)
+    display_name = Pleroma.HTML.strip_tags(user.name || user.nickname)
+    user = User.sanitize_html(user, FastSanitize.Sanitizer.StripTags)
 
     %{
       "id" => user.id,

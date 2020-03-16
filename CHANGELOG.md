@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [unreleased]
+### Changed
+- **Breaking:** BBCode and Markdown formatters will no longer return any `\n` and only use `<br/>` for newlines
+
 ## [2.0.0] - 2019-03-08
 ### Security
 - Mastodon API: Fix being able to request enourmous amount of statuses in timelines leading to DoS. Now limited to 40 per request.

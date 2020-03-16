@@ -6,6 +6,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
+  alias Pleroma.Config
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
 
@@ -178,7 +179,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
   describe "GET /api/statusnet/config" do
     test "it returns config in xml format", %{conn: conn} do
-      instance = Pleroma.Config.get(:instance)
+      instance = Config.get(:instance)
 
       response =
         conn
@@ -195,12 +196,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "it returns config in json format", %{conn: conn} do
-      instance = Pleroma.Config.get(:instance)
-      Pleroma.Config.put([:instance, :managed_config], true)
-      Pleroma.Config.put([:instance, :registrations_open], false)
-      Pleroma.Config.put([:instance, :invites_enabled], true)
-      Pleroma.Config.put([:instance, :public], false)
-      Pleroma.Config.put([:frontend_configurations, :pleroma_fe], %{theme: "asuka-hospital"})
+      instance = Config.get(:instance)
+      Config.put([:instance, :managed_config], true)
+      Config.put([:instance, :registrations_open], false)
+      Config.put([:instance, :invites_enabled], true)
+      Config.put([:instance, :public], false)
+      Config.put([:frontend_configurations, :pleroma_fe], %{theme: "asuka-hospital"})
 
       response =
         conn
@@ -234,7 +235,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "returns the state of safe_dm_mentions flag", %{conn: conn} do
-      Pleroma.Config.put([:instance, :safe_dm_mentions], true)
+      Config.put([:instance, :safe_dm_mentions], true)
 
       response =
         conn
@@ -243,7 +244,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert response["site"]["safeDMMentionsEnabled"] == "1"
 
-      Pleroma.Config.put([:instance, :safe_dm_mentions], false)
+      Config.put([:instance, :safe_dm_mentions], false)
 
       response =
         conn
@@ -254,8 +255,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "it returns the managed config", %{conn: conn} do
-      Pleroma.Config.put([:instance, :managed_config], false)
-      Pleroma.Config.put([:frontend_configurations, :pleroma_fe], %{theme: "asuka-hospital"})
+      Config.put([:instance, :managed_config], false)
+      Config.put([:frontend_configurations, :pleroma_fe], %{theme: "asuka-hospital"})
 
       response =
         conn
@@ -264,7 +265,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       refute response["site"]["pleromafe"]
 
-      Pleroma.Config.put([:instance, :managed_config], true)
+      Config.put([:instance, :managed_config], true)
 
       response =
         conn
@@ -287,7 +288,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         }
       ]
 
-      Pleroma.Config.put(:frontend_configurations, config)
+      Config.put(:frontend_configurations, config)
 
       response =
         conn
@@ -320,7 +321,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     clear_config([:instance, :healthcheck])
 
     test "returns 503 when healthcheck disabled", %{conn: conn} do
-      Pleroma.Config.put([:instance, :healthcheck], false)
+      Config.put([:instance, :healthcheck], false)
 
       response =
         conn
@@ -331,7 +332,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "returns 200 when healthcheck enabled and all ok", %{conn: conn} do
-      Pleroma.Config.put([:instance, :healthcheck], true)
+      Config.put([:instance, :healthcheck], true)
 
       with_mock Pleroma.Healthcheck,
         system_info: fn -> %Pleroma.Healthcheck{healthy: true} end do
@@ -351,7 +352,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "returns 503 when healthcheck enabled and health is false", %{conn: conn} do
-      Pleroma.Config.put([:instance, :healthcheck], true)
+      Config.put([:instance, :healthcheck], true)
 
       with_mock Pleroma.Healthcheck,
         system_info: fn -> %Pleroma.Healthcheck{healthy: false} end do
@@ -426,6 +427,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   end
 
   describe "POST /main/ostatus - remote_subscribe/2" do
+    clear_config([:instance, :federating]) do
+      Config.put([:instance, :federating], true)
+    end
+
     test "renders subscribe form", %{conn: conn} do
       user = insert(:user)
 
