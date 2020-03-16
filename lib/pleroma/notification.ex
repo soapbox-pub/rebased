@@ -344,6 +344,7 @@ defmodule Pleroma.Notification do
       |> Utils.maybe_notify_followers(activity)
       |> Enum.uniq()
 
+    # Since even subscribers and followers can mute / thread-mute, filtering all above AP IDs
     notification_enabled_ap_ids =
       potential_receiver_ap_ids
       |> exclude_relation_restricting_ap_ids(activity)

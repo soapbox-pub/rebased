@@ -82,6 +82,80 @@ defmodule Pleroma.NotificationTest do
     end
   end
 
+  describe "CommonApi.post/2 notification-related functionality" do
+    test_with_mock "creates but does NOT send notification to blocker user",
+                   Push,
+                   [:passthrough],
+                   [] do
+      user = insert(:user)
+      blocker = insert(:user)
+      {:ok, _user_relationship} = User.block(blocker, user)
+
+      {:ok, _activity} = CommonAPI.post(user, %{"status" => "hey @#{blocker.nickname}!"})
+
+      blocker_id = blocker.id
+      assert [%Notification{user_id: ^blocker_id}] = Repo.all(Notification)
+      refute called(Push.send(:_))
+    end
+
+    test_with_mock "creates but does NOT send notification to notification-muter user",
+                   Push,
+                   [:passthrough],
+                   [] do
+      user = insert(:user)
+      muter = insert(:user)
+      {:ok, _user_relationships} = User.mute(muter, user)
+
+      {:ok, _activity} = CommonAPI.post(user, %{"status" => "hey @#{muter.nickname}!"})
+
+      muter_id = muter.id
+      assert [%Notification{user_id: ^muter_id}] = Repo.all(Notification)
+      refute called(Push.send(:_))
+    end
+
+    test_with_mock "creates but does NOT send notification to thread-muter user",
+                   Push,
+                   [:passthrough],
+                   [] do
+      user = insert(:user)
+      thread_muter = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{thread_muter.nickname}!"})
+
+      {:ok, _} = CommonAPI.add_mute(thread_muter, activity)
+
+      {:ok, _same_context_activity} =
+        CommonAPI.post(user, %{
+          "status" => "hey-hey-hey @#{thread_muter.nickname}!",
+          "in_reply_to_status_id" => activity.id
+        })
+
+      [pre_mute_notification, post_mute_notification] =
+        Repo.all(from(n in Notification, where: n.user_id == ^thread_muter.id, order_by: n.id))
+
+      pre_mute_notification_id = pre_mute_notification.id
+      post_mute_notification_id = post_mute_notification.id
+
+      assert called(
+               Push.send(
+                 :meck.is(fn
+                   %Notification{id: ^pre_mute_notification_id} -> true
+                   _ -> false
+                 end)
+               )
+             )
+
+      refute called(
+               Push.send(
+                 :meck.is(fn
+                   %Notification{id: ^post_mute_notification_id} -> true
+                   _ -> false
+                 end)
+               )
+             )
+    end
+  end
+
   describe "create_notification" do
     @tag needs_streamer: true
     test "it creates a notification for user and send to the 'user' and the 'user:notification' stream" do
@@ -489,10 +563,7 @@ defmodule Pleroma.NotificationTest do
       assert other_user not in enabled_receivers
     end
 
-    test_with_mock "it returns blocking recipient in disabled recipients list",
-                   Push,
-                   [:passthrough],
-                   [] do
+    test "it returns blocking recipient in disabled recipients list" do
       user = insert(:user)
       other_user = insert(:user)
       {:ok, _user_relationship} = User.block(other_user, user)
@@ -503,15 +574,9 @@ defmodule Pleroma.NotificationTest do
 
       assert [] == enabled_receivers
       assert [other_user] == disabled_receivers
-
-      assert 1 == length(Repo.all(Notification))
-      refute called(Push.send(:_))
     end
 
-    test_with_mock "it returns notification-muting recipient in disabled recipients list",
-                   Push,
-                   [:passthrough],
-                   [] do
+    test "it returns notification-muting recipient in disabled recipients list" do
       user = insert(:user)
       other_user = insert(:user)
       {:ok, _user_relationships} = User.mute(other_user, user)
@@ -522,15 +587,9 @@ defmodule Pleroma.NotificationTest do
 
       assert [] == enabled_receivers
       assert [other_user] == disabled_receivers
-
-      assert 1 == length(Repo.all(Notification))
-      refute called(Push.send(:_))
     end
 
-    test_with_mock "it returns thread-muting recipient in disabled recipients list",
-                   Push,
-                   [:passthrough],
-                   [] do
+    test "it returns thread-muting recipient in disabled recipients list" do
       user = insert(:user)
       other_user = insert(:user)
 
@@ -549,30 +608,6 @@ defmodule Pleroma.NotificationTest do
 
       assert [other_user] == disabled_receivers
       refute other_user in enabled_receivers
-
-      [pre_mute_notification, post_mute_notification] =
-        Repo.all(from(n in Notification, where: n.user_id == ^other_user.id, order_by: n.id))
-
-      pre_mute_notification_id = pre_mute_notification.id
-      post_mute_notification_id = post_mute_notification.id
-
-      assert called(
-               Push.send(
-                 :meck.is(fn
-                   %Notification{id: ^pre_mute_notification_id} -> true
-                   _ -> false
-                 end)
-               )
-             )
-
-      refute called(
-               Push.send(
-                 :meck.is(fn
-                   %Notification{id: ^post_mute_notification_id} -> true
-                   _ -> false
-                 end)
-               )
-             )
     end
   end
 
@@ -820,7 +855,7 @@ defmodule Pleroma.NotificationTest do
       assert Notification.for_user(user) == []
     end
 
-    test "it doesn't return notificatitons for blocked domain" do
+    test "it doesn't return notifications for blocked domain" do
       user = insert(:user)
       blocked = insert(:user, ap_id: "http://some-domain.com")
       {:ok, user} = User.block_domain(user, "some-domain.com")
