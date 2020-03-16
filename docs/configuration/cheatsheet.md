@@ -138,7 +138,8 @@ config :pleroma, :mrf_user_allowlist,
 ```
 
 #### :mrf_object_age
-* `threshold`: Required age (in seconds) of a post before actions are taken.
+* `threshold`: Required time offset (in seconds) compared to your server clock of an incoming post before actions are taken.
+  e.g., A value of 900 results in any post with a timestamp older than 15 minutes will be acted upon.
 * `actions`: A list of actions to apply to the post:
   * `:delist` removes the post from public timelines
   * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
