@@ -14,7 +14,7 @@ defmodule Pleroma.LoadTesting.Users do
     friends: 100
   ]
 
-  @max_concurrency 30
+  @max_concurrency 10
 
   @spec generate(keyword()) :: User.t()
   def generate(opts \\ []) do
@@ -31,7 +31,7 @@ defmodule Pleroma.LoadTesting.Users do
   end
 
   def generate_users(max) do
-    IO.puts("Starting generating #{opts[:users]} users...")
+    IO.puts("Starting generating #{max} users...")
 
     {time, _} =
       :timer.tc(fn ->
@@ -87,7 +87,7 @@ defmodule Pleroma.LoadTesting.Users do
   end
 
   def make_friends(main_user, max) when is_integer(max) do
-    IO.puts("Starting making friends for #{opts[:friends]} users...")
+    IO.puts("Starting making friends for #{max} users...")
 
     {time, _} =
       :timer.tc(fn ->
@@ -107,7 +107,7 @@ defmodule Pleroma.LoadTesting.Users do
     IO.puts("Making friends take #{to_sec(time)} sec.\n")
   end
 
-  defp make_friends(%User{} = main_user, %User{} = user) do
+  def make_friends(%User{} = main_user, %User{} = user) do
     {:ok, _} = User.follow(main_user, user)
     {:ok, _} = User.follow(user, main_user)
   end

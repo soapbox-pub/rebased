@@ -19,7 +19,7 @@ defmodule Pleroma.LoadTesting.Activities do
     non_friends_used: 20
   ]
 
-  @max_concurrency 30
+  @max_concurrency 10
 
   @visibility ~w(public private direct unlisted)
   @types ~w(simple emoji mentions hell_thread attachment tag like reblog simple_thread remote)
@@ -81,7 +81,7 @@ defmodule Pleroma.LoadTesting.Activities do
         )
       end)
 
-    IO.puts("Generating iterations activities take #{to_sec(time)} sec.\n")
+    IO.puts("Generating iterations of activities take #{to_sec(time)} sec.\n")
     :ok
   end
 
