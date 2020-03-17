@@ -1241,16 +1241,46 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         filename: "an_image.jpg"
       }
 
-      conn =
+      object =
         conn
         |> assign(:user, user)
         |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
+        |> json_response(:created)
 
-      assert object = json_response(conn, :created)
       assert object["name"] == desc
       assert object["type"] == "Document"
       assert object["actor"] == user.ap_id
+      assert [%{"href" => object_href}] = object["url"]
 
+      activity_request = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "type" => "Create",
+        "object" => %{
+          "type" => "Note",
+          "content" => "AP C2S test, attachment",
+          "attachment" => [object]
+        },
+        "to" => "https://www.w3.org/ns/activitystreams#Public",
+        "cc" => []
+      }
+
+      activity_response =
+        conn
+        |> assign(:user, user)
+        |> post("/users/#{user.nickname}/outbox", activity_request)
+        |> json_response(:created)
+
+      assert activity_response["id"]
+      assert activity_response["object"]
+      assert activity_response["actor"] == user.ap_id
+
+      assert %Object{data: %{"attachment" => [attachment]}} = Object.normalize(activity_response["object"])
+      assert attachment["type"] == "Document"
+      assert attachment["name"] == desc
+      assert [%{"href" => attachment_href}] = attachment["url"]
+      assert attachment_href == object_href
+
+      # Fails if unauthenticated
       conn
       |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
       |> json_response(403)
