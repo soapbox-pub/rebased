@@ -476,9 +476,7 @@ defmodule Pleroma.UserTest do
       email: "email@example.com"
     }
 
-    clear_config([:instance, :account_activation_required]) do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
-    end
+    clear_config([:instance, :account_activation_required], true)
 
     test "it creates unconfirmed user" do
       changeset = User.register_changeset(%User{}, @full_user_data)

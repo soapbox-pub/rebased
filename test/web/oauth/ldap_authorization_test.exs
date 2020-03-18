@@ -12,13 +12,9 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
 
   @skip if !Code.ensure_loaded?(:eldap), do: :skip
 
-  clear_config_all([:ldap, :enabled]) do
-    Pleroma.Config.put([:ldap, :enabled], true)
-  end
+  clear_config_all([:ldap, :enabled], true)
 
-  clear_config_all(Pleroma.Web.Auth.Authenticator) do
-    Pleroma.Config.put(Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.LDAPAuthenticator)
-  end
+  clear_config_all(Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.LDAPAuthenticator)
 
   @tag @skip
   test "authorizes the existing user using LDAP credentials" do

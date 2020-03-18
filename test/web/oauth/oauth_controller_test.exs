@@ -31,12 +31,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       ]
     end
 
-    clear_config([:auth, :oauth_consumer_strategies]) do
-      Pleroma.Config.put(
-        [:auth, :oauth_consumer_strategies],
-        ~w(twitter facebook)
-      )
-    end
+    clear_config([:auth, :oauth_consumer_strategies], ~w(twitter facebook))
 
     test "GET /oauth/authorize renders auth forms, including OAuth consumer form", %{
       app: app,

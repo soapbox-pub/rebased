@@ -13,9 +13,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
                     "emoji"
                   )
 
-  clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
-    Pleroma.Config.put([:auth, :enforce_oauth_admin_scope_usage], false)
-  end
+  clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
 
   test "shared & non-shared pack information in list_packs is ok" do
     conn = build_conn()

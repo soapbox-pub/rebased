@@ -12,9 +12,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
   alias Pleroma.Object
   alias Pleroma.User
 
-  clear_config([:instance, :federating]) do
-    Config.put([:instance, :federating], true)
-  end
+  clear_config([:instance, :federating], true)
 
   describe "feed" do
     clear_config([:feed])

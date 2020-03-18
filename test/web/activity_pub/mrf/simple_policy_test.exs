@@ -8,18 +8,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
   alias Pleroma.Config
   alias Pleroma.Web.ActivityPub.MRF.SimplePolicy
 
-  clear_config([:mrf_simple]) do
-    Config.put(:mrf_simple,
-      media_removal: [],
-      media_nsfw: [],
-      federated_timeline_removal: [],
-      report_removal: [],
-      reject: [],
-      accept: [],
-      avatar_removal: [],
-      banner_removal: []
-    )
-  end
+  clear_config(:mrf_simple,
+    media_removal: [],
+    media_nsfw: [],
+    federated_timeline_removal: [],
+    report_removal: [],
+    reject: [],
+    accept: [],
+    avatar_removal: [],
+    banner_removal: []
+  )
 
   describe "when :media_removal" do
     test "is empty" do

@@ -117,9 +117,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   describe "register with one time token" do
-    clear_config([:instance, :registrations_open]) do
-      Pleroma.Config.put([:instance, :registrations_open], false)
-    end
+    clear_config([:instance, :registrations_open], false)
 
     test "returns user on success" do
       {:ok, invite} = UserInviteToken.create_invite()
@@ -184,9 +182,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   describe "registers with date limited token" do
-    clear_config([:instance, :registrations_open]) do
-      Pleroma.Config.put([:instance, :registrations_open], false)
-    end
+    clear_config([:instance, :registrations_open], false)
 
     setup do
       data = %{
@@ -246,9 +242,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   describe "registers with reusable token" do
-    clear_config([:instance, :registrations_open]) do
-      Pleroma.Config.put([:instance, :registrations_open], false)
-    end
+    clear_config([:instance, :registrations_open], false)
 
     test "returns user on success, after him registration fails" do
       {:ok, invite} = UserInviteToken.create_invite(%{max_use: 100})
@@ -292,9 +286,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   describe "registers with reusable date limited token" do
-    clear_config([:instance, :registrations_open]) do
-      Pleroma.Config.put([:instance, :registrations_open], false)
-    end
+    clear_config([:instance, :registrations_open], false)
 
     test "returns user on success" do
       {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.utc_today(), max_use: 100})

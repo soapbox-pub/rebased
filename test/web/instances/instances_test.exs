@@ -7,9 +7,7 @@ defmodule Pleroma.InstancesTest do
 
   use Pleroma.DataCase
 
-  clear_config_all([:instance, :federation_reachability_timeout_days]) do
-    Pleroma.Config.put([:instance, :federation_reachability_timeout_days], 1)
-  end
+  clear_config_all([:instance, :federation_reachability_timeout_days], 1)
 
   describe "reachable?/1" do
     test "returns `true` for host / url with unknown reachability status" do

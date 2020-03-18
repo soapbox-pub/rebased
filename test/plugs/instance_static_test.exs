@@ -12,9 +12,7 @@ defmodule Pleroma.Web.RuntimeStaticPlugTest do
     on_exit(fn -> File.rm_rf(@dir) end)
   end
 
-  clear_config([:instance, :static_dir]) do
-    Pleroma.Config.put([:instance, :static_dir], @dir)
-  end
+  clear_config([:instance, :static_dir], @dir)
 
   test "overrides index" do
     bundled_index = get(build_conn(), "/")

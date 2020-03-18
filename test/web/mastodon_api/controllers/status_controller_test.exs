@@ -739,9 +739,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       %{activity: activity}
     end
 
-    clear_config([:instance, :max_pinned_statuses]) do
-      Config.put([:instance, :max_pinned_statuses], 1)
-    end
+    clear_config([:instance, :max_pinned_statuses], 1)
 
     test "pin status", %{conn: conn, user: user, activity: activity} do
       id_str = to_string(activity.id)

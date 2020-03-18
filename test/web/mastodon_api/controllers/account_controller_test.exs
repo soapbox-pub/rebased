@@ -756,9 +756,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "create account by app / rate limit" do
-    clear_config([:rate_limit, :app_account_creation]) do
-      Pleroma.Config.put([:rate_limit, :app_account_creation], {10_000, 2})
-    end
+    clear_config([:rate_limit, :app_account_creation], {10_000, 2})
 
     test "respects rate limit setting", %{conn: conn} do
       app_token = insert(:oauth_token, user: nil)

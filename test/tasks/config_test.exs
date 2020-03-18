@@ -20,9 +20,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     :ok
   end
 
-  clear_config_all(:configurable_from_database) do
-    Pleroma.Config.put(:configurable_from_database, true)
-  end
+  clear_config_all(:configurable_from_database, true)
 
   test "error if file with custom settings doesn't exist" do
     Mix.Tasks.Pleroma.Config.migrate_to_db("config/not_existance_config_file.exs")

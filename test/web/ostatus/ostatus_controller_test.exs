@@ -17,9 +17,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     :ok
   end
 
-  clear_config([:instance, :federating]) do
-    Config.put([:instance, :federating], true)
-  end
+  clear_config([:instance, :federating], true)
 
   # Note: see ActivityPubControllerTest for JSON format tests
   describe "GET /objects/:uuid (text/html)" do

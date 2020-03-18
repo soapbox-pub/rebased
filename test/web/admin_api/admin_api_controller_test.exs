@@ -43,9 +43,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
-    clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
-      Config.put([:auth, :enforce_oauth_admin_scope_usage], true)
-    end
+    clear_config([:auth, :enforce_oauth_admin_scope_usage], true)
 
     test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope",
          %{admin: admin} do
@@ -93,9 +91,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "unless [:auth, :enforce_oauth_admin_scope_usage]," do
-    clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
-      Config.put([:auth, :enforce_oauth_admin_scope_usage], false)
-    end
+    clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
 
     test "GET /api/pleroma/admin/users/:nickname requires " <>
            "read:accounts or admin:read:accounts or broader scope",
@@ -581,13 +577,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "POST /api/pleroma/admin/email_invite, with valid config" do
-    clear_config([:instance, :registrations_open]) do
-      Config.put([:instance, :registrations_open], false)
-    end
-
-    clear_config([:instance, :invites_enabled]) do
-      Config.put([:instance, :invites_enabled], true)
-    end
+    clear_config([:instance, :registrations_open], false)
+    clear_config([:instance, :invites_enabled], true)
 
     test "sends invitation and returns 204", %{admin: admin, conn: conn} do
       recipient_email = "foo@bar.com"
@@ -1888,9 +1879,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "GET /api/pleroma/admin/config" do
-    clear_config(:configurable_from_database) do
-      Config.put(:configurable_from_database, true)
-    end
+    clear_config(:configurable_from_database, true)
 
     test "when configuration from database is off", %{conn: conn} do
       Config.put(:configurable_from_database, false)
@@ -2041,9 +2030,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       end)
     end
 
-    clear_config(:configurable_from_database) do
-      Config.put(:configurable_from_database, true)
-    end
+    clear_config(:configurable_from_database, true)
 
     @tag capture_log: true
     test "create new config setting in db", %{conn: conn} do
@@ -3052,9 +3039,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "GET /api/pleroma/admin/restart" do
-    clear_config(:configurable_from_database) do
-      Config.put(:configurable_from_database, true)
-    end
+    clear_config(:configurable_from_database, true)
 
     test "pleroma restarts", %{conn: conn} do
       capture_log(fn ->

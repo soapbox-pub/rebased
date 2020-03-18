@@ -427,9 +427,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   end
 
   describe "POST /main/ostatus - remote_subscribe/2" do
-    clear_config([:instance, :federating]) do
-      Config.put([:instance, :federating], true)
-    end
+    clear_config([:instance, :federating], true)
 
     test "renders subscribe form", %{conn: conn} do
       user = insert(:user)

@@ -37,9 +37,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
   end
 
   describe "note activity's `replies` collection rendering" do
-    clear_config([:activitypub, :note_replies_output_limit]) do
-      Pleroma.Config.put([:activitypub, :note_replies_output_limit], 5)
-    end
+    clear_config([:activitypub, :note_replies_output_limit], 5)
 
     test "renders `replies` collection for a note activity" do
       user = insert(:user)

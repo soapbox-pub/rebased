@@ -10,9 +10,7 @@ defmodule Pleroma.Instances.InstanceTest do
 
   import Pleroma.Factory
 
-  clear_config_all([:instance, :federation_reachability_timeout_days]) do
-    Pleroma.Config.put([:instance, :federation_reachability_timeout_days], 1)
-  end
+  clear_config_all([:instance, :federation_reachability_timeout_days], 1)
 
   describe "set_reachable/1" do
     test "clears `unreachable_since` of existing matching Instance record having non-nil `unreachable_since`" do

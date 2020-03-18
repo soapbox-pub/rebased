@@ -250,9 +250,7 @@ defmodule Pleroma.UploadTest do
   end
 
   describe "Setting a custom base_url for uploaded media" do
-    clear_config([Pleroma.Upload, :base_url]) do
-      Pleroma.Config.put([Pleroma.Upload, :base_url], "https://cache.pleroma.social")
-    end
+    clear_config([Pleroma.Upload, :base_url], "https://cache.pleroma.social")
 
     test "returns a media url with configured base_url" do
       base_url = Pleroma.Config.get([Pleroma.Upload, :base_url])

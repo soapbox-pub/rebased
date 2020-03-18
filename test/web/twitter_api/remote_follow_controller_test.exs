@@ -17,9 +17,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     :ok
   end
 
-  clear_config_all([:instance, :federating]) do
-    Config.put([:instance, :federating], true)
-  end
+  clear_config_all([:instance, :federating], true)
 
   clear_config([:instance])
   clear_config([:frontend_configurations, :pleroma_fe])

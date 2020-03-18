@@ -26,9 +26,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     :ok
   end
 
-  clear_config([:instance, :federating]) do
-    Config.put([:instance, :federating], true)
-  end
+  clear_config([:instance, :federating], true)
 
   describe "/relay" do
     clear_config([:instance, :allow_relay])

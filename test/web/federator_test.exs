@@ -21,9 +21,7 @@ defmodule Pleroma.Web.FederatorTest do
     :ok
   end
 
-  clear_config_all([:instance, :federating]) do
-    Pleroma.Config.put([:instance, :federating], true)
-  end
+  clear_config_all([:instance, :federating], true)
 
   clear_config([:instance, :allow_relay])
   clear_config([:instance, :rewrite_policy])

@@ -1351,9 +1351,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "`handle_incoming/2`, Mastodon format `replies` handling" do
-    clear_config([:activitypub, :note_replies_output_limit]) do
-      Pleroma.Config.put([:activitypub, :note_replies_output_limit], 5)
-    end
+    clear_config([:activitypub, :note_replies_output_limit], 5)
 
     clear_config([:instance, :federation_incoming_replies_max_depth])
 
@@ -1394,9 +1392,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "`handle_incoming/2`, Pleroma format `replies` handling" do
-    clear_config([:activitypub, :note_replies_output_limit]) do
-      Pleroma.Config.put([:activitypub, :note_replies_output_limit], 5)
-    end
+    clear_config([:activitypub, :note_replies_output_limit], 5)
 
     clear_config([:instance, :federation_incoming_replies_max_depth])
 
@@ -2145,9 +2141,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "set_replies/1" do
-    clear_config([:activitypub, :note_replies_output_limit]) do
-      Pleroma.Config.put([:activitypub, :note_replies_output_limit], 2)
-    end
+    clear_config([:activitypub, :note_replies_output_limit], 2)
 
     test "returns unmodified object if activity doesn't have self-replies" do
       data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
