@@ -72,7 +72,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
       exclude_visibilities: {:array, :string},
       reblogs: :boolean,
       with_muted: :boolean,
-      with_move: :boolean,
       account_ap_id: :string
     }
 
