@@ -1250,7 +1250,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert object["name"] == desc
       assert object["type"] == "Document"
       assert object["actor"] == user.ap_id
-      assert [%{"href" => object_href}] = object["url"]
+      assert [%{"href" => object_href, "mediaType" => object_mediatype}] = object["url"]
+      assert is_binary(object_href)
+      assert object_mediatype == "image/jpeg"
 
       activity_request = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
@@ -1274,11 +1276,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert activity_response["object"]
       assert activity_response["actor"] == user.ap_id
 
-      assert %Object{data: %{"attachment" => [attachment]}} = Object.normalize(activity_response["object"])
+      assert %Object{data: %{"attachment" => [attachment]}} =
+               Object.normalize(activity_response["object"])
+
       assert attachment["type"] == "Document"
       assert attachment["name"] == desc
-      assert [%{"href" => attachment_href}] = attachment["url"]
-      assert attachment_href == object_href
+
+      assert [
+               %{
+                 "href" => ^object_href,
+                 "type" => "Link",
+                 "mediaType" => ^object_mediatype
+               }
+             ] = attachment["url"]
 
       # Fails if unauthenticated
       conn

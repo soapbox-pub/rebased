@@ -202,21 +202,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("conversation", context)
   end
 
-  def fix_attachments(%{"attachment" => attachment} = object) when is_list(attachment) do
-    attachments =
-      Enum.map(attachment, fn data ->
-        media_type = data["mediaType"] || data["mimeType"]
-        href = data["url"] || data["href"]
-        url = [%{"type" => "Link", "mediaType" => media_type, "href" => href}]
-
-        data
-        |> Map.put("mediaType", media_type)
-        |> Map.put("url", url)
-      end)
-
-    Map.put(object, "attachment", attachments)
-  end
-
   def fix_attachments(%{"attachment" => attachment} = object) when is_map(attachment) do
     object
     |> Map.put("attachment", [attachment])
