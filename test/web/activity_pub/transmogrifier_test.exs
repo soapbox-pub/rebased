@@ -1228,19 +1228,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       attachment = %{
         "type" => "Link",
         "mediaType" => "video/mp4",
-        "href" =>
-          "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-        "mimeType" => "video/mp4",
-        "size" => 5_015_880,
         "url" => [
           %{
             "href" =>
               "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-            "mediaType" => "video/mp4",
-            "type" => "Link"
+            "mediaType" => "video/mp4"
           }
-        ],
-        "width" => 480
+        ]
       }
 
       assert object.data["url"] ==
@@ -2067,11 +2061,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                  %{
                    "mediaType" => "video/mp4",
                    "url" => [
-                     %{
-                       "href" => "https://peertube.moe/stat-480.mp4",
-                       "mediaType" => "video/mp4",
-                       "type" => "Link"
-                     }
+                     %{"href" => "https://peertube.moe/stat-480.mp4", "mediaType" => "video/mp4"}
                    ]
                  }
                ]
@@ -2089,23 +2079,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                  %{
                    "mediaType" => "video/mp4",
                    "url" => [
-                     %{
-                       "href" => "https://pe.er/stat-480.mp4",
-                       "mediaType" => "video/mp4",
-                       "type" => "Link"
-                     }
+                     %{"href" => "https://pe.er/stat-480.mp4", "mediaType" => "video/mp4"}
                    ]
                  },
                  %{
-                   "href" => "https://pe.er/stat-480.mp4",
                    "mediaType" => "video/mp4",
-                   "mimeType" => "video/mp4",
                    "url" => [
-                     %{
-                       "href" => "https://pe.er/stat-480.mp4",
-                       "mediaType" => "video/mp4",
-                       "type" => "Link"
-                     }
+                     %{"href" => "https://pe.er/stat-480.mp4", "mediaType" => "video/mp4"}
                    ]
                  }
                ]

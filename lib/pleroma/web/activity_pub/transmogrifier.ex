@@ -202,6 +202,51 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("conversation", context)
   end
 
+  defp add_if_present(map, _key, nil), do: map
+
+  defp add_if_present(map, key, value) do
+    Map.put(map, key, value)
+  end
+
+  def fix_attachments(%{"attachment" => attachment} = object) when is_list(attachment) do
+    attachments =
+      Enum.map(attachment, fn data ->
+        url =
+          cond do
+            is_list(data["url"]) -> List.first(data["url"])
+            is_map(data["url"]) -> data["url"]
+            true -> nil
+          end
+
+        media_type =
+          cond do
+            is_map(url) && is_binary(url["mediaType"]) -> url["mediaType"]
+            is_binary(data["mediaType"]) -> data["mediaType"]
+            is_binary(data["mimeType"]) -> data["mimeType"]
+            true -> nil
+          end
+
+        href =
+          cond do
+            is_map(url) && is_binary(url["href"]) -> url["href"]
+            is_binary(data["url"]) -> data["url"]
+            is_binary(data["href"]) -> data["href"]
+          end
+
+        attachment_url =
+          %{"href" => href}
+          |> add_if_present("mediaType", media_type)
+          |> add_if_present("type", Map.get(url || %{}, "type"))
+
+        %{"url" => [attachment_url]}
+        |> add_if_present("mediaType", media_type)
+        |> add_if_present("type", data["type"])
+        |> add_if_present("name", data["name"])
+      end)
+
+    Map.put(object, "attachment", attachments)
+  end
+
   def fix_attachments(%{"attachment" => attachment} = object) when is_map(attachment) do
     object
     |> Map.put("attachment", [attachment])
