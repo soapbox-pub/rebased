@@ -60,7 +60,7 @@ defmodule Pleroma.StateTest do
       other_user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"visibility" => "public", "status" => "hey"})
       _ = CommonAPI.follow(user, other_user)
-      CommonAPI.favorite(activity.id, other_user)
+      CommonAPI.favorite(other_user, activity.id)
       CommonAPI.repeat(activity.id, other_user)
 
       assert %{direct: 0, private: 0, public: 1, unlisted: 0} =

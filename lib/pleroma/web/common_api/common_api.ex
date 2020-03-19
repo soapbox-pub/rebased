@@ -12,6 +12,8 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
@@ -19,6 +21,7 @@ defmodule Pleroma.Web.CommonAPI do
   import Pleroma.Web.CommonAPI.Utils
 
   require Pleroma.Constants
+  require Logger
 
   def follow(follower, followed) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
@@ -109,18 +112,39 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def favorite(id_or_ap_id, user) do
-    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)},
-         object <- Object.normalize(activity),
-         like_activity <- Utils.get_existing_like(user.ap_id, object) do
-      if like_activity do
-        {:ok, like_activity, object}
-      else
-        ActivityPub.like(user, object)
-      end
+  @spec favorite(User.t(), binary()) :: {:ok, Activity.t()} | {:error, any()}
+  def favorite(%User{} = user, id) do
+    with {_, %Activity{object: object}} <- {:find_object, Activity.get_by_id_with_object(id)},
+         {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
+         {_, {:ok, %Activity{} = activity, _meta}} <-
+           {:common_pipeline,
+            Pipeline.common_pipeline(like_object, Keyword.put(meta, :local, true))} do
+      {:ok, activity}
     else
-      {:find_activity, _} -> {:error, :not_found}
-      _ -> {:error, dgettext("errors", "Could not favorite")}
+      {:find_object, _} ->
+        {:error, :not_found}
+
+      {:common_pipeline,
+       {
+         :error,
+         {
+           :validate_object,
+           {
+             :error,
+             changeset
+           }
+         }
+       }} = e ->
+        if {:object, {"already liked by this actor", []}} in changeset.errors do
+          {:ok, :already_liked}
+        else
+          Logger.error("Could not favorite #{id}. Error: #{inspect(e, pretty: true)}")
+          {:error, dgettext("errors", "Could not favorite"), e}
+        end
+
+      e ->
+        Logger.error("Could not favorite #{id}. Error: #{inspect(e, pretty: true)}")
+        {:error, dgettext("errors", "Could not favorite"), e}
     end
   end
 

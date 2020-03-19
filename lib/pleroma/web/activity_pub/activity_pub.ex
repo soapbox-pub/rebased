@@ -126,6 +126,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def increase_poll_votes_if_vote(_create_data), do: :noop
 
   @spec insert(map(), boolean(), boolean(), boolean()) :: {:ok, Activity.t()} | {:error, any()}
+  # TODO rewrite in with style
+  @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
+  def persist(object, meta) do
+    local = Keyword.fetch!(meta, :local)
+    {recipients, _, _} = get_recipients(object)
+
+    {:ok, activity} =
+      Repo.insert(%Activity{
+        data: object,
+        local: local,
+        recipients: recipients,
+        actor: object["actor"]
+      })
+
+    {:ok, activity, meta}
+  end
+
   def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map, fake),
@@ -133,6 +150,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {_, true} <- {:remote_limit_error, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
+         # ???
          {:fake, false, map, recipients} <- {:fake, fake, map, recipients},
          {:containment, :ok} <- {:containment, Containment.contain_child(map)},
          {:ok, map, object} <- insert_full_object(map) do

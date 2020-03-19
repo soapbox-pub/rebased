@@ -13,6 +13,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.ObjectValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
@@ -608,17 +611,21 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> handle_incoming(options)
   end
 
-  def handle_incoming(
-        %{"type" => "Like", "object" => object_id, "actor" => _actor, "id" => id} = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         {:ok, activity, _object} <- ActivityPub.like(actor, object, id, false) do
+  def handle_incoming(%{"type" => "Like"} = data, _options) do
+    with {_, {:ok, cast_data_sym}} <-
+           {:casting_data,
+            data |> LikeValidator.cast_data() |> Ecto.Changeset.apply_action(:insert)},
+         {_, cast_data} <-
+           {:stringify_keys, ObjectValidator.stringify_keys(cast_data_sym |> Map.from_struct())},
+         :ok <- ObjectValidator.fetch_actor_and_object(cast_data),
+         {_, {:ok, cast_data}} <- {:maybe_add_context, maybe_add_context_from_object(cast_data)},
+         {_, {:ok, cast_data}} <-
+           {:maybe_add_recipients, maybe_add_recipients_from_object(cast_data)},
+         {_, {:ok, activity, _meta}} <-
+           {:common_pipeline, Pipeline.common_pipeline(cast_data, local: false)} do
       {:ok, activity}
     else
-      _e -> :error
+      e -> {:error, e}
     end
   end
 
@@ -1244,4 +1251,47 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def maybe_fix_user_url(data), do: data
 
   def maybe_fix_user_object(data), do: maybe_fix_user_url(data)
+
+  defp maybe_add_context_from_object(%{"context" => context} = data) when is_binary(context),
+    do: {:ok, data}
+
+  defp maybe_add_context_from_object(%{"object" => object} = data) when is_binary(object) do
+    if object = Object.normalize(object) do
+      data =
+        data
+        |> Map.put("context", object.data["context"])
+
+      {:ok, data}
+    else
+      {:error, "No context on referenced object"}
+    end
+  end
+
+  defp maybe_add_context_from_object(_) do
+    {:error, "No referenced object"}
+  end
+
+  defp maybe_add_recipients_from_object(%{"object" => object} = data) do
+    to = data["to"] || []
+    cc = data["cc"] || []
+
+    if to == [] && cc == [] do
+      if object = Object.normalize(object) do
+        data =
+          data
+          |> Map.put("to", [object.data["actor"]])
+          |> Map.put("cc", cc)
+
+        {:ok, data}
+      else
+        {:error, "No actor on referenced object"}
+      end
+    else
+      {:ok, data}
+    end
+  end
+
+  defp maybe_add_recipients_from_object(_) do
+    {:error, "No referenced object"}
+  end
 end

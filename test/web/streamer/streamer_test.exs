@@ -65,15 +65,15 @@ defmodule Pleroma.Web.StreamerTest do
       blocked = insert(:user)
       {:ok, _user_relationship} = User.block(user, blocked)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => ":("})
-      {:ok, notif, _} = CommonAPI.favorite(activity.id, blocked)
-
       task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
       Streamer.add_socket(
         "user:notification",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => ":("})
+      {:ok, notif} = CommonAPI.favorite(blocked, activity.id)
 
       Streamer.stream("user:notification", notif)
       Task.await(task)
@@ -84,16 +84,16 @@ defmodule Pleroma.Web.StreamerTest do
     } do
       user2 = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
-      {:ok, activity} = CommonAPI.add_mute(user, activity)
-      {:ok, notif, _} = CommonAPI.favorite(activity.id, user2)
-
       task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
       Streamer.add_socket(
         "user:notification",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
+      {:ok, activity} = CommonAPI.add_mute(user, activity)
+      {:ok, notif} = CommonAPI.favorite(user2, activity.id)
 
       Streamer.stream("user:notification", notif)
       Task.await(task)
@@ -104,16 +104,16 @@ defmodule Pleroma.Web.StreamerTest do
     } do
       user2 = insert(:user, %{ap_id: "https://hecking-lewd-place.com/user/meanie"})
 
-      {:ok, user} = User.block_domain(user, "hecking-lewd-place.com")
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
-      {:ok, notif, _} = CommonAPI.favorite(activity.id, user2)
-
       task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
       Streamer.add_socket(
         "user:notification",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
+
+      {:ok, user} = User.block_domain(user, "hecking-lewd-place.com")
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
+      {:ok, notif} = CommonAPI.favorite(user2, activity.id)
 
       Streamer.stream("user:notification", notif)
       Task.await(task)
@@ -465,7 +465,7 @@ defmodule Pleroma.Web.StreamerTest do
     CommonAPI.hide_reblogs(user1, user2)
 
     {:ok, create_activity} = CommonAPI.post(user3, %{"status" => "I'm kawen"})
-    {:ok, favorite_activity, _} = CommonAPI.favorite(create_activity.id, user2)
+    {:ok, favorite_activity} = CommonAPI.favorite(user2, create_activity.id)
 
     task =
       Task.async(fn ->

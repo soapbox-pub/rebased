@@ -42,7 +42,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     user = insert(:user)
     another_user = insert(:user)
     {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
-    {:ok, favorite_activity, _object} = CommonAPI.favorite(create_activity.id, another_user)
+    {:ok, favorite_activity} = CommonAPI.favorite(another_user, create_activity.id)
     {:ok, [notification]} = Notification.create_notifications(favorite_activity)
     create_activity = Activity.get_by_id(create_activity.id)
 

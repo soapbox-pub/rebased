@@ -1146,8 +1146,8 @@ defmodule Pleroma.UserTest do
       object_two = insert(:note, user: follower)
       activity_two = insert(:note_activity, user: follower, note: object_two)
 
-      {:ok, like, _} = CommonAPI.favorite(activity_two.id, user)
-      {:ok, like_two, _} = CommonAPI.favorite(activity.id, follower)
+      {:ok, like} = CommonAPI.favorite(user, activity_two.id)
+      {:ok, like_two} = CommonAPI.favorite(follower, activity.id)
       {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
 
       {:ok, job} = User.delete(user)
