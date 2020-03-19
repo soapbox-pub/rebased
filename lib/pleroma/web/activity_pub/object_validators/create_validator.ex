@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateNoteValidator do
   use Ecto.Schema
 
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
 
