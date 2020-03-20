@@ -11,8 +11,8 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorkerTest do
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
-  setup do 
-  	clear_config([ActivityExpiration, :enabled])
+  setup do
+    clear_config([ActivityExpiration, :enabled])
     clear_config([:instance, :rewrite_policy])
   end
 
