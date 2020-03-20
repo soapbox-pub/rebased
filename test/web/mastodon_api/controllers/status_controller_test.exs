@@ -476,6 +476,103 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     assert id == to_string(activity.id)
   end
 
+  defp local_and_remote_activities do
+    local = insert(:note_activity)
+    remote = insert(:note_activity, local: false)
+    {:ok, local: local, remote: remote}
+  end
+
+  describe "status with restrict unauthenticated activities for local and remote" do
+    setup do: local_and_remote_activities()
+
+    clear_config([:restrict_unauthenticated, :activities, :local]) do
+      Config.put([:restrict_unauthenticated, :activities, :local], true)
+    end
+
+    clear_config([:restrict_unauthenticated, :activities, :remote]) do
+      Config.put([:restrict_unauthenticated, :activities, :remote], true)
+    end
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/statuses/#{local.id}")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Record not found"
+             }
+
+      res_conn = get(conn, "/api/v1/statuses/#{remote.id}")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Record not found"
+             }
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{local.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+
+      res_conn = get(conn, "/api/v1/statuses/#{remote.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+    end
+  end
+
+  describe "status with restrict unauthenticated activities for local" do
+    setup do: local_and_remote_activities()
+
+    clear_config([:restrict_unauthenticated, :activities, :local]) do
+      Config.put([:restrict_unauthenticated, :activities, :local], true)
+    end
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/statuses/#{local.id}")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Record not found"
+             }
+
+      res_conn = get(conn, "/api/v1/statuses/#{remote.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{local.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+
+      res_conn = get(conn, "/api/v1/statuses/#{remote.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+    end
+  end
+
+  describe "status with restrict unauthenticated activities for remote" do
+    setup do: local_and_remote_activities()
+
+    clear_config([:restrict_unauthenticated, :activities, :remote]) do
+      Config.put([:restrict_unauthenticated, :activities, :remote], true)
+    end
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/statuses/#{local.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+
+      res_conn = get(conn, "/api/v1/statuses/#{remote.id}")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Record not found"
+             }
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+      res_conn = get(conn, "/api/v1/statuses/#{local.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+
+      res_conn = get(conn, "/api/v1/statuses/#{remote.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+    end
+  end
+
   test "getting a status that doesn't exist returns 404" do
     %{conn: conn} = oauth_access(["read:statuses"])
     activity = insert(:note_activity)
@@ -512,6 +609,78 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     conn = get(conn, "/api/v1/statuses/?#{query_string}")
 
     assert [%{"id" => ^id1}, %{"id" => ^id2}] = Enum.sort_by(json_response(conn, :ok), & &1["id"])
+  end
+
+  describe "getting statuses by ids with restricted unauthenticated for local and remote" do
+    setup do: local_and_remote_activities()
+
+    clear_config([:restrict_unauthenticated, :activities, :local]) do
+      Config.put([:restrict_unauthenticated, :activities, :local], true)
+    end
+
+    clear_config([:restrict_unauthenticated, :activities, :remote]) do
+      Config.put([:restrict_unauthenticated, :activities, :remote], true)
+    end
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/statuses", %{ids: [local.id, remote.id]})
+
+      assert json_response(res_conn, 200) == []
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+
+      res_conn = get(conn, "/api/v1/statuses", %{ids: [local.id, remote.id]})
+
+      assert length(json_response(res_conn, 200)) == 2
+    end
+  end
+
+  describe "getting statuses by ids with restricted unauthenticated for local" do
+    setup do: local_and_remote_activities()
+
+    clear_config([:restrict_unauthenticated, :activities, :local]) do
+      Config.put([:restrict_unauthenticated, :activities, :local], true)
+    end
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/statuses", %{ids: [local.id, remote.id]})
+
+      remote_id = remote.id
+      assert [%{"id" => ^remote_id}] = json_response(res_conn, 200)
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+
+      res_conn = get(conn, "/api/v1/statuses", %{ids: [local.id, remote.id]})
+
+      assert length(json_response(res_conn, 200)) == 2
+    end
+  end
+
+  describe "getting statuses by ids with restricted unauthenticated for remote" do
+    setup do: local_and_remote_activities()
+
+    clear_config([:restrict_unauthenticated, :activities, :remote]) do
+      Config.put([:restrict_unauthenticated, :activities, :remote], true)
+    end
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/statuses", %{ids: [local.id, remote.id]})
+
+      local_id = local.id
+      assert [%{"id" => ^local_id}] = json_response(res_conn, 200)
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+
+      res_conn = get(conn, "/api/v1/statuses", %{ids: [local.id, remote.id]})
+
+      assert length(json_response(res_conn, 200)) == 2
+    end
   end
 
   describe "deleting a status" do
