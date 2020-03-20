@@ -9,7 +9,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
-  clear_config([:instance, :max_account_fields])
+
+  setup do: clear_config([:instance, :max_account_fields])
 
   describe "updating credentials" do
     setup do: oauth_access(["write:accounts"])

@@ -17,12 +17,10 @@ defmodule Pleroma.Tests.Helpers do
 
   defmacro clear_config(config_path, do: yield) do
     quote do
-      setup do
-        initial_setting = Config.get(unquote(config_path))
-        unquote(yield)
-        on_exit(fn -> Config.put(unquote(config_path), initial_setting) end)
-        :ok
-      end
+      initial_setting = Config.get(unquote(config_path))
+      unquote(yield)
+      on_exit(fn -> Config.put(unquote(config_path), initial_setting) end)
+      :ok
     end
   end
 
@@ -34,58 +32,12 @@ defmodule Pleroma.Tests.Helpers do
     end
   end
 
-  @doc """
-  From _within a test case_, sets config to provided value and restores initial value on exit.
-  For multi-case setup use `clear_config/2` instead.
-  """
-  def set_config(config_path, temp_setting) do
-    initial_setting = Config.get(config_path)
-    Config.put(config_path, temp_setting)
-
-    ExUnit.Callbacks.on_exit(fn -> Config.put(config_path, initial_setting) end)
-  end
-
-  @doc "Stores initial config value and restores it after *all* test examples are executed."
-  defmacro clear_config_all(config_path) do
-    quote do
-      clear_config_all(unquote(config_path)) do
-      end
-    end
-  end
-
-  @doc """
-  Stores initial config value and restores it after *all* test examples are executed.
-  Only use if *all* test examples should work with the same stubbed value
-  (*no* examples set a different value).
-  """
-  defmacro clear_config_all(config_path, do: yield) do
-    quote do
-      setup_all do
-        initial_setting = Config.get(unquote(config_path))
-        unquote(yield)
-        on_exit(fn -> Config.put(unquote(config_path), initial_setting) end)
-        :ok
-      end
-    end
-  end
-
-  defmacro clear_config_all(config_path, temp_setting) do
-    quote do
-      clear_config_all(unquote(config_path)) do
-        Config.put(unquote(config_path), unquote(temp_setting))
-      end
-    end
-  end
-
   defmacro __using__(_opts) do
     quote do
       import Pleroma.Tests.Helpers,
         only: [
           clear_config: 1,
-          clear_config: 2,
-          clear_config_all: 1,
-          clear_config_all: 2,
-          set_config: 2
+          clear_config: 2
         ]
 
       def to_datetime(naive_datetime) do

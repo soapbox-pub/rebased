@@ -11,7 +11,7 @@ defmodule Pleroma.ConversationTest do
 
   import Pleroma.Factory
 
-  clear_config_all([:instance, :federating], true)
+  setup_all do: clear_config([:instance, :federating], true)
 
   test "it goes through old direct conversations" do
     user = insert(:user)

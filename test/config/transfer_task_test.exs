@@ -10,7 +10,7 @@ defmodule Pleroma.Config.TransferTaskTest do
   alias Pleroma.Config.TransferTask
   alias Pleroma.ConfigDB
 
-  clear_config(:configurable_from_database, true)
+  setup do: clear_config(:configurable_from_database, true)
 
   test "transfer config values from db to env" do
     refute Application.get_env(:pleroma, :test_key)

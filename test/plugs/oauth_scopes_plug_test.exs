@@ -193,7 +193,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
   end
 
   describe "transform_scopes/2" do
-    clear_config([:auth, :enforce_oauth_admin_scope_usage])
+    setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage])
 
     setup do
       {:ok, %{f: &OAuthScopesPlug.transform_scopes/2}}

@@ -18,8 +18,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     :ok
   end
 
-  clear_config([:instance])
-  clear_config([:frontend_configurations, :pleroma_fe])
+  setup do: clear_config([:instance])
+  setup do: clear_config([:frontend_configurations, :pleroma_fe])
 
   describe "POST /api/pleroma/follow_import" do
     setup do: oauth_access(["follow"])
@@ -318,7 +318,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   end
 
   describe "GET /api/pleroma/healthcheck" do
-    clear_config([:instance, :healthcheck])
+    setup do: clear_config([:instance, :healthcheck])
 
     test "returns 503 when healthcheck disabled", %{conn: conn} do
       Config.put([:instance, :healthcheck], false)
@@ -427,7 +427,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   end
 
   describe "POST /main/ostatus - remote_subscribe/2" do
-    clear_config([:instance, :federating], true)
+    setup do: clear_config([:instance, :federating], true)
 
     test "renders subscribe form", %{conn: conn} do
       user = insert(:user)

@@ -9,7 +9,7 @@ defmodule Pleroma.Plugs.UserIsAdminPlugTest do
   import Pleroma.Factory
 
   describe "unless [:auth, :enforce_oauth_admin_scope_usage]," do
-    clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
+    setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
 
     test "accepts a user that is an admin" do
       user = insert(:user, is_admin: true)
@@ -40,7 +40,7 @@ defmodule Pleroma.Plugs.UserIsAdminPlugTest do
   end
 
   describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
-    clear_config([:auth, :enforce_oauth_admin_scope_usage], true)
+    setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], true)
 
     setup do
       admin_user = insert(:user, is_admin: true)

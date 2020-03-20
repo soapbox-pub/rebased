@@ -23,7 +23,7 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     :ok
   end
 
-  clear_config_all([:instance, :federating], true)
+  setup_all do: clear_config([:instance, :federating], true)
 
   describe "gather_webfinger_links/1" do
     test "it returns links" do

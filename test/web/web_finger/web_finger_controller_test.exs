@@ -14,7 +14,7 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
     :ok
   end
 
-  clear_config_all([:instance, :federating], true)
+  setup_all do: clear_config([:instance, :federating], true)
 
   test "GET host-meta" do
     response =

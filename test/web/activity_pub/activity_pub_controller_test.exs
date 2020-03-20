@@ -26,10 +26,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     :ok
   end
 
-  clear_config([:instance, :federating], true)
+  setup do: clear_config([:instance, :federating], true)
 
   describe "/relay" do
-    clear_config([:instance, :allow_relay])
+    setup do: clear_config([:instance, :allow_relay])
 
     test "with the relay active, it returns the relay user", %{conn: conn} do
       res =
@@ -1225,8 +1225,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> json_response(403)
     end
 
-    clear_config([:media_proxy])
-    clear_config([Pleroma.Upload])
+    setup do: clear_config([:media_proxy])
+    setup do: clear_config([Pleroma.Upload])
 
     test "POST /api/ap/upload_media", %{conn: conn} do
       user = insert(:user)

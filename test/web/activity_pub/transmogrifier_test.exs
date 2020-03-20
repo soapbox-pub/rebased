@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     :ok
   end
 
-  clear_config([:instance, :max_remote_account_fields])
+  setup do: clear_config([:instance, :max_remote_account_fields])
 
   describe "handle_incoming" do
     test "it ignores an incoming notice if we already have it" do
@@ -1351,9 +1351,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "`handle_incoming/2`, Mastodon format `replies` handling" do
-    clear_config([:activitypub, :note_replies_output_limit], 5)
-
-    clear_config([:instance, :federation_incoming_replies_max_depth])
+    setup do: clear_config([:activitypub, :note_replies_output_limit], 5)
+    setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
 
     setup do
       data =
@@ -1392,9 +1391,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "`handle_incoming/2`, Pleroma format `replies` handling" do
-    clear_config([:activitypub, :note_replies_output_limit], 5)
-
-    clear_config([:instance, :federation_incoming_replies_max_depth])
+    setup do: clear_config([:activitypub, :note_replies_output_limit], 5)
+    setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
 
     setup do
       user = insert(:user)
@@ -1878,7 +1876,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "fix_in_reply_to/2" do
-    clear_config([:instance, :federation_incoming_replies_max_depth])
+    setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
 
     setup do
       data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))
@@ -2141,7 +2139,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "set_replies/1" do
-    clear_config([:activitypub, :note_replies_output_limit], 2)
+    setup do: clear_config([:activitypub, :note_replies_output_limit], 2)
 
     test "returns unmodified object if activity doesn't have self-replies" do
       data = Poison.decode!(File.read!("test/fixtures/mastodon-post-activity.json"))

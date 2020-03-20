@@ -28,8 +28,7 @@ defmodule Pleroma.Object.FetcherTest do
 
   describe "max thread distance restriction" do
     @ap_id "http://mastodon.example.org/@admin/99541947525187367"
-
-    clear_config([:instance, :federation_incoming_replies_max_depth])
+    setup do: clear_config([:instance, :federation_incoming_replies_max_depth])
 
     test "it returns thread depth exceeded error if thread depth is exceeded" do
       Pleroma.Config.put([:instance, :federation_incoming_replies_max_depth], 0)
@@ -160,7 +159,7 @@ defmodule Pleroma.Object.FetcherTest do
   end
 
   describe "signed fetches" do
-    clear_config([:activitypub, :sign_object_fetches])
+    setup do: clear_config([:activitypub, :sign_object_fetches])
 
     test_with_mock "it signs fetches when configured to do so",
                    Pleroma.Signature,

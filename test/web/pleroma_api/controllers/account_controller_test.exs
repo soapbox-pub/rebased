@@ -27,7 +27,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       [user: user]
     end
 
-    clear_config([:instance, :account_activation_required], true)
+    setup do: clear_config([:instance, :account_activation_required], true)
 
     test "resend account confirmation email", %{conn: conn, user: user} do
       conn

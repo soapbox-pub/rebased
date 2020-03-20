@@ -17,11 +17,10 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowControllerTest do
     :ok
   end
 
-  clear_config_all([:instance, :federating], true)
-
-  clear_config([:instance])
-  clear_config([:frontend_configurations, :pleroma_fe])
-  clear_config([:user, :deny_follow_blocked])
+  setup_all do: clear_config([:instance, :federating], true)
+  setup do: clear_config([:instance])
+  setup do: clear_config([:frontend_configurations, :pleroma_fe])
+  setup do: clear_config([:user, :deny_follow_blocked])
 
   describe "GET /ostatus_subscribe - remote_follow/2" do
     test "adds status to pleroma instance if the `acct` is a status", %{conn: conn} do
