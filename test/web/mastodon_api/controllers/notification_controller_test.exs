@@ -304,6 +304,51 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert [%{"id" => ^reblog_notification_id}] = json_response(conn_res, 200)
   end
 
+  test "filters notifications using include_types" do
+    %{user: user, conn: conn} = oauth_access(["read:notifications"])
+    other_user = insert(:user)
+
+    {:ok, mention_activity} = CommonAPI.post(other_user, %{"status" => "hey @#{user.nickname}"})
+    {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
+    {:ok, favorite_activity, _} = CommonAPI.favorite(create_activity.id, other_user)
+    {:ok, reblog_activity, _} = CommonAPI.repeat(create_activity.id, other_user)
+    {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
+
+    mention_notification_id = get_notification_id_by_activity(mention_activity)
+    favorite_notification_id = get_notification_id_by_activity(favorite_activity)
+    reblog_notification_id = get_notification_id_by_activity(reblog_activity)
+    follow_notification_id = get_notification_id_by_activity(follow_activity)
+
+    conn_res = get(conn, "/api/v1/notifications", %{include_types: ["follow"]})
+
+    assert [%{"id" => ^follow_notification_id}] = json_response(conn_res, 200)
+
+    conn_res = get(conn, "/api/v1/notifications", %{include_types: ["mention"]})
+
+    assert [%{"id" => ^mention_notification_id}] = json_response(conn_res, 200)
+
+    conn_res = get(conn, "/api/v1/notifications", %{include_types: ["favourite"]})
+
+    assert [%{"id" => ^favorite_notification_id}] = json_response(conn_res, 200)
+
+    conn_res = get(conn, "/api/v1/notifications", %{include_types: ["reblog"]})
+
+    assert [%{"id" => ^reblog_notification_id}] = json_response(conn_res, 200)
+
+    result = conn |> get("/api/v1/notifications") |> json_response(200)
+
+    assert length(result) == 4
+
+    result =
+      conn
+      |> get("/api/v1/notifications", %{
+        include_types: ["follow", "mention", "favourite", "reblog"]
+      })
+      |> json_response(200)
+
+    assert length(result) == 4
+  end
+
   test "destroy multiple" do
     %{user: user, conn: conn} = oauth_access(["read:notifications", "write:notifications"])
     other_user = insert(:user)
