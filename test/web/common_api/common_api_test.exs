@@ -17,9 +17,9 @@ defmodule Pleroma.Web.CommonAPITest do
 
   require Pleroma.Constants
 
-  clear_config([:instance, :safe_dm_mentions])
-  clear_config([:instance, :limit])
-  clear_config([:instance, :max_pinned_statuses])
+  setup do: clear_config([:instance, :safe_dm_mentions])
+  setup do: clear_config([:instance, :limit])
+  setup do: clear_config([:instance, :max_pinned_statuses])
 
   test "when replying to a conversation / participation, it will set the correct context id even if no explicit reply_to is given" do
     user = insert(:user)

@@ -645,6 +645,11 @@ config :pleroma, :hackney_pools,
     timeout: 300_000
   ]
 
+config :pleroma, :restrict_unauthenticated,
+  timelines: %{local: false, federated: false},
+  profiles: %{local: false, remote: false},
+  activities: %{local: false, remote: false}
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

@@ -55,6 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
 
     user
     |> Notification.for_user_query(options)
+    |> restrict(:include_types, options)
     |> restrict(:exclude_types, options)
     |> restrict(:account_ap_id, options)
     |> Pagination.fetch_paginated(params)
@@ -69,6 +70,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   defp cast_params(params) do
     param_types = %{
       exclude_types: {:array, :string},
+      include_types: {:array, :string},
       exclude_visibilities: {:array, :string},
       reblogs: :boolean,
       with_muted: :boolean,
@@ -79,14 +81,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     changeset.changes
   end
 
-  defp restrict(query, :exclude_types, %{exclude_types: mastodon_types = [_ | _]}) do
-    ap_types =
-      mastodon_types
-      |> Enum.map(&Activity.from_mastodon_notification_type/1)
-      |> Enum.filter(& &1)
+  defp restrict(query, :include_types, %{include_types: mastodon_types = [_ | _]}) do
+    ap_types = convert_and_filter_mastodon_types(mastodon_types)
 
-    query
-    |> where([q, a], not fragment("? @> ARRAY[?->>'type']::varchar[]", ^ap_types, a.data))
+    where(query, [q, a], fragment("? @> ARRAY[?->>'type']::varchar[]", ^ap_types, a.data))
+  end
+
+  defp restrict(query, :exclude_types, %{exclude_types: mastodon_types = [_ | _]}) do
+    ap_types = convert_and_filter_mastodon_types(mastodon_types)
+
+    where(query, [q, a], not fragment("? @> ARRAY[?->>'type']::varchar[]", ^ap_types, a.data))
   end
 
   defp restrict(query, :account_ap_id, %{account_ap_id: account_ap_id}) do
@@ -94,4 +98,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   end
 
   defp restrict(query, _, _), do: query
+
+  defp convert_and_filter_mastodon_types(types) do
+    types
+    |> Enum.map(&Activity.from_mastodon_notification_type/1)
+    |> Enum.filter(& &1)
+  end
 end

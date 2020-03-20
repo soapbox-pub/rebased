@@ -11,7 +11,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
-  clear_config([:email_notifications, :digest])
+  setup do: clear_config([:email_notifications, :digest])
 
   setup do
     Pleroma.Config.put([:email_notifications, :digest], %{

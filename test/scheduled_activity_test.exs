@@ -8,7 +8,7 @@ defmodule Pleroma.ScheduledActivityTest do
   alias Pleroma.ScheduledActivity
   import Pleroma.Factory
 
-  clear_config([ScheduledActivity, :enabled])
+  setup do: clear_config([ScheduledActivity, :enabled])
 
   setup context do
     DataCase.ensure_local_uploader(context)

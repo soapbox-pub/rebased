@@ -8,7 +8,7 @@ defmodule Pleroma.Upload.FilterTest do
   alias Pleroma.Config
   alias Pleroma.Upload.Filter
 
-  clear_config([Pleroma.Upload.Filter.AnonymizeFilename, :text])
+  setup do: clear_config([Pleroma.Upload.Filter.AnonymizeFilename, :text])
 
   test "applies filters" do
     Config.put([Pleroma.Upload.Filter.AnonymizeFilename, :text], "custom-file.png")

@@ -10,7 +10,7 @@ defmodule Pleroma.Upload.Filter.MogrifyTest do
   alias Pleroma.Upload
   alias Pleroma.Upload.Filter
 
-  clear_config([Filter.Mogrify, :args])
+  setup do: clear_config([Filter.Mogrify, :args])
 
   test "apply mogrify filter" do
     Config.put([Filter.Mogrify, :args], [{"tint", "40"}])

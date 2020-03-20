@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
   end
 
   describe "publish/1" do
-    clear_config([:instance, :federating])
+    setup do: clear_config([:instance, :federating])
 
     test "returns error when activity not `Create` type" do
       activity = insert(:like_activity)

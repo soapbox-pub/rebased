@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
 
   alias Pleroma.Web.ActivityPub.MRF.RejectNonPublic
 
-  clear_config([:mrf_rejectnonpublic])
+  setup do: clear_config([:mrf_rejectnonpublic])
 
   describe "public message" do
     test "it's allowed when address is public" do
