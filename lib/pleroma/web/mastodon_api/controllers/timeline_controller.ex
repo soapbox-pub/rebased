@@ -27,7 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:home, :direct])
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :list)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action != :public)
 
   plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
 
@@ -75,17 +75,30 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   def public(%{assigns: %{user: user}} = conn, params) do
     local_only = truthy_param?(params["local"])
 
-    activities =
-      params
-      |> Map.put("type", ["Create", "Announce"])
-      |> Map.put("local_only", local_only)
-      |> Map.put("blocking_user", user)
-      |> Map.put("muting_user", user)
-      |> ActivityPub.fetch_public_activities()
+    cfg_key =
+      if local_only do
+        :local
+      else
+        :federated
+      end
 
-    conn
-    |> add_link_headers(activities, %{"local" => local_only})
-    |> render("index.json", activities: activities, for: user, as: :activity)
+    restrict? = Pleroma.Config.get([:restrict_unauthenticated, :timelines, cfg_key])
+
+    if not (restrict? and is_nil(user)) do
+      activities =
+        params
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", local_only)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> ActivityPub.fetch_public_activities()
+
+      conn
+      |> add_link_headers(activities, %{"local" => local_only})
+      |> render("index.json", activities: activities, for: user, as: :activity)
+    else
+      render_error(conn, :unauthorized, "authorization required for timeline view")
+    end
   end
 
   def hashtag_fetching(params, user, local_only) do
