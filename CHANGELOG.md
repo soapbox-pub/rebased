@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - **Breaking:** BBCode and Markdown formatters will no longer return any `\n` and only use `<br/>` for newlines
 
+### Removed
+- **Breaking:** removed `with_move` parameter from notifications timeline.
+
+### Added
+- NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
+<details>
+  <summary>API Changes</summary>
+- Mastodon API: Support for `include_types` in `/api/v1/notifications`.
+</details>
+
 ## [2.0.0] - 2019-03-08
 ### Security
 - Mastodon API: Fix being able to request enourmous amount of statuses in timelines leading to DoS. Now limited to 40 per request.

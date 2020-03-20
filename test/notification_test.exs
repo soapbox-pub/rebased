@@ -667,7 +667,13 @@ defmodule Pleroma.NotificationTest do
       Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
       ObanHelpers.perform_all()
 
-      assert [] = Notification.for_user(follower)
+      assert [
+               %{
+                 activity: %{
+                   data: %{"type" => "Move", "actor" => ^old_ap_id, "target" => ^new_ap_id}
+                 }
+               }
+             ] = Notification.for_user(follower)
 
       assert [
                %{
@@ -675,17 +681,7 @@ defmodule Pleroma.NotificationTest do
                    data: %{"type" => "Move", "actor" => ^old_ap_id, "target" => ^new_ap_id}
                  }
                }
-             ] = Notification.for_user(follower, %{with_move: true})
-
-      assert [] = Notification.for_user(other_follower)
-
-      assert [
-               %{
-                 activity: %{
-                   data: %{"type" => "Move", "actor" => ^old_ap_id, "target" => ^new_ap_id}
-                 }
-               }
-             ] = Notification.for_user(other_follower, %{with_move: true})
+             ] = Notification.for_user(other_follower)
     end
   end
 
