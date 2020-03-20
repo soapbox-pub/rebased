@@ -100,13 +100,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "public with restrict unauthenticated timeline for local and federated timelines" do
     setup do: local_and_remote_activities()
 
-    clear_config([:restrict_unauthenticated, :timelines, :local]) do
-      Config.put([:restrict_unauthenticated, :timelines, :local], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :local], true)
 
-    clear_config([:restrict_unauthenticated, :timelines, :federated]) do
-      Config.put([:restrict_unauthenticated, :timelines, :federated], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :federated], true)
 
     test "if user is unauthenticated", %{conn: conn} do
       res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "true"})
@@ -136,9 +132,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "public with restrict unauthenticated timeline for local" do
     setup do: local_and_remote_activities()
 
-    clear_config([:restrict_unauthenticated, :timelines, :local]) do
-      Config.put([:restrict_unauthenticated, :timelines, :local], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :local], true)
 
     test "if user is unauthenticated", %{conn: conn} do
       res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "true"})
@@ -165,9 +159,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "public with restrict unauthenticated timeline for remote" do
     setup do: local_and_remote_activities()
 
-    clear_config([:restrict_unauthenticated, :timelines, :federated]) do
-      Config.put([:restrict_unauthenticated, :timelines, :federated], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :federated], true)
 
     test "if user is unauthenticated", %{conn: conn} do
       res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "true"})

@@ -10,7 +10,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
 
   alias Pleroma.Web.Feed.FeedView
 
-  clear_config([:feed])
+  setup do: clear_config([:feed])
 
   test "gets a feed (ATOM)", %{conn: conn} do
     Pleroma.Config.put(

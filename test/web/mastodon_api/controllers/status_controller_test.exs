@@ -19,9 +19,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   import Pleroma.Factory
 
-  clear_config([:instance, :federating])
-  clear_config([:instance, :allow_relay])
-  clear_config([:rich_media, :enabled])
+  setup do: clear_config([:instance, :federating])
+  setup do: clear_config([:instance, :allow_relay])
+  setup do: clear_config([:rich_media, :enabled])
 
   describe "posting statuses" do
     setup do: oauth_access(["write:statuses"])
@@ -485,13 +485,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   describe "status with restrict unauthenticated activities for local and remote" do
     setup do: local_and_remote_activities()
 
-    clear_config([:restrict_unauthenticated, :activities, :local]) do
-      Config.put([:restrict_unauthenticated, :activities, :local], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
 
-    clear_config([:restrict_unauthenticated, :activities, :remote]) do
-      Config.put([:restrict_unauthenticated, :activities, :remote], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/statuses/#{local.id}")
@@ -520,9 +516,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   describe "status with restrict unauthenticated activities for local" do
     setup do: local_and_remote_activities()
 
-    clear_config([:restrict_unauthenticated, :activities, :local]) do
-      Config.put([:restrict_unauthenticated, :activities, :local], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/statuses/#{local.id}")
@@ -548,9 +542,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   describe "status with restrict unauthenticated activities for remote" do
     setup do: local_and_remote_activities()
 
-    clear_config([:restrict_unauthenticated, :activities, :remote]) do
-      Config.put([:restrict_unauthenticated, :activities, :remote], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/statuses/#{local.id}")
@@ -614,13 +606,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   describe "getting statuses by ids with restricted unauthenticated for local and remote" do
     setup do: local_and_remote_activities()
 
-    clear_config([:restrict_unauthenticated, :activities, :local]) do
-      Config.put([:restrict_unauthenticated, :activities, :local], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
 
-    clear_config([:restrict_unauthenticated, :activities, :remote]) do
-      Config.put([:restrict_unauthenticated, :activities, :remote], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/statuses", %{ids: [local.id, remote.id]})
@@ -640,9 +628,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   describe "getting statuses by ids with restricted unauthenticated for local" do
     setup do: local_and_remote_activities()
 
-    clear_config([:restrict_unauthenticated, :activities, :local]) do
-      Config.put([:restrict_unauthenticated, :activities, :local], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :activities, :local], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/statuses", %{ids: [local.id, remote.id]})
@@ -663,9 +649,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   describe "getting statuses by ids with restricted unauthenticated for remote" do
     setup do: local_and_remote_activities()
 
-    clear_config([:restrict_unauthenticated, :activities, :remote]) do
-      Config.put([:restrict_unauthenticated, :activities, :remote], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :activities, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/statuses", %{ids: [local.id, remote.id]})
@@ -908,9 +892,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       %{activity: activity}
     end
 
-    clear_config([:instance, :max_pinned_statuses]) do
-      Config.put([:instance, :max_pinned_statuses], 1)
-    end
+    setup do: clear_config([:instance, :max_pinned_statuses], 1)
 
     test "pin status", %{conn: conn, user: user, activity: activity} do
       id_str = to_string(activity.id)

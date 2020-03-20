@@ -16,7 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   import Pleroma.Factory
 
   describe "account fetching" do
-    clear_config([:instance, :limit_to_local_content])
+    setup do: clear_config([:instance, :limit_to_local_content])
 
     test "works by id" do
       user = insert(:user)
@@ -150,13 +150,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   describe "user fetching with restrict unauthenticated profiles for local and remote" do
     setup do: local_and_remote_users()
 
-    clear_config([:restrict_unauthenticated, :profiles, :local]) do
-      Config.put([:restrict_unauthenticated, :profiles, :local], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :local], true)
 
-    clear_config([:restrict_unauthenticated, :profiles, :remote]) do
-      Config.put([:restrict_unauthenticated, :profiles, :remote], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/accounts/#{local.id}")
@@ -186,9 +182,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   describe "user fetching with restrict unauthenticated profiles for local" do
     setup do: local_and_remote_users()
 
-    clear_config([:restrict_unauthenticated, :profiles, :local]) do
-      Config.put([:restrict_unauthenticated, :profiles, :local], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :local], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/accounts/#{local.id}")
@@ -215,9 +209,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   describe "user fetching with restrict unauthenticated profiles for remote" do
     setup do: local_and_remote_users()
 
-    clear_config([:restrict_unauthenticated, :profiles, :remote]) do
-      Config.put([:restrict_unauthenticated, :profiles, :remote], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/accounts/#{local.id}")
@@ -405,13 +397,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     setup do: local_and_remote_users()
     setup :local_and_remote_activities
 
-    clear_config([:restrict_unauthenticated, :profiles, :local]) do
-      Config.put([:restrict_unauthenticated, :profiles, :local], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :local], true)
 
-    clear_config([:restrict_unauthenticated, :profiles, :remote]) do
-      Config.put([:restrict_unauthenticated, :profiles, :remote], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
@@ -442,9 +430,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     setup do: local_and_remote_users()
     setup :local_and_remote_activities
 
-    clear_config([:restrict_unauthenticated, :profiles, :local]) do
-      Config.put([:restrict_unauthenticated, :profiles, :local], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :local], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
@@ -472,9 +458,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     setup do: local_and_remote_users()
     setup :local_and_remote_activities
 
-    clear_config([:restrict_unauthenticated, :profiles, :remote]) do
-      Config.put([:restrict_unauthenticated, :profiles, :remote], true)
-    end
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :remote], true)
 
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
@@ -806,7 +790,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       [valid_params: valid_params]
     end
 
-    clear_config([:instance, :account_activation_required])
+    setup do: clear_config([:instance, :account_activation_required])
 
     test "Account registration via Application", %{conn: conn} do
       conn =
@@ -904,7 +888,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       end)
     end
 
-    clear_config([:instance, :account_activation_required])
+    setup do: clear_config([:instance, :account_activation_required])
 
     test "returns bad_request if missing email params when :account_activation_required is enabled",
          %{conn: conn, valid_params: valid_params} do
@@ -961,9 +945,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "create account by app / rate limit" do
-    clear_config([:rate_limit, :app_account_creation]) do
-      Config.put([:rate_limit, :app_account_creation], {10_000, 2})
-    end
+    setup do: clear_config([:rate_limit, :app_account_creation], {10_000, 2})
 
     test "respects rate limit setting", %{conn: conn} do
       app_token = insert(:oauth_token, user: nil)

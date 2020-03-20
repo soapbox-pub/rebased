@@ -13,8 +13,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicyTest do
     "type" => "Create",
     "object" => %{"content" => "hi"}
   }
-
-  clear_config([:mrf_subchain, :match_actor])
+  setup do: clear_config([:mrf_subchain, :match_actor])
 
   test "it matches and processes subchains when the actor matches a configured target" do
     Pleroma.Config.put([:mrf_subchain, :match_actor], %{
