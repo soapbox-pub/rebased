@@ -7,9 +7,9 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
   alias Pleroma.Config
   alias Plug.Conn
 
-  clear_config([:http_securiy, :enabled])
-  clear_config([:http_security, :sts])
-  clear_config([:http_security, :referrer_policy])
+  setup do: clear_config([:http_securiy, :enabled])
+  setup do: clear_config([:http_security, :sts])
+  setup do: clear_config([:http_security, :referrer_policy])
 
   describe "http security enabled" do
     setup do

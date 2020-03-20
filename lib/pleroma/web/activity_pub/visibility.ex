@@ -44,6 +44,7 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   def is_list?(%{data: %{"listMessage" => _}}), do: true
   def is_list?(_), do: false
 
+  @spec visible_for_user?(Activity.t(), User.t() | nil) :: boolean()
   def visible_for_user?(%{actor: ap_id}, %User{ap_id: ap_id}), do: true
 
   def visible_for_user?(%{data: %{"listMessage" => list_ap_id}} = activity, %User{} = user) do
@@ -55,14 +56,21 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
 
   def visible_for_user?(%{data: %{"listMessage" => _}}, nil), do: false
 
-  def visible_for_user?(activity, nil) do
-    is_public?(activity)
+  def visible_for_user?(%{local: local} = activity, nil) do
+    cfg_key =
+      if local,
+        do: :local,
+        else: :remote
+
+    if Pleroma.Config.get([:restrict_unauthenticated, :activities, cfg_key]),
+      do: false,
+      else: is_public?(activity)
   end
 
   def visible_for_user?(activity, user) do
     x = [user.ap_id | User.following(user)]
     y = [activity.actor] ++ activity.data["to"] ++ (activity.data["cc"] || [])
-    visible_for_user?(activity, nil) || Enum.any?(x, &(&1 in y))
+    is_public?(activity) || Enum.any?(x, &(&1 in y))
   end
 
   def entire_thread_visible_for_user?(%Activity{} = activity, %User{} = user) do

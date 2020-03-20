@@ -120,7 +120,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     old_user = refresh_record(old_user)
     new_user = refresh_record(new_user)
 
-    [notification] = Notification.for_user(follower, %{with_move: true})
+    [notification] = Notification.for_user(follower)
 
     expected = %{
       id: to_string(notification.id),

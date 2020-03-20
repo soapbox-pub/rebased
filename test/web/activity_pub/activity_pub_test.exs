@@ -27,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     :ok
   end
 
-  clear_config([:instance, :federating])
+  setup do: clear_config([:instance, :federating])
 
   describe "streaming out participations" do
     test "it streams them out" do
@@ -1396,7 +1396,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "deletion" do
-    clear_config([:instance, :rewrite_policy])
+    setup do: clear_config([:instance, :rewrite_policy])
 
     test "it reverts deletion on error" do
       note = insert(:note_activity)
@@ -1580,7 +1580,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "update" do
-    clear_config([:instance, :max_pinned_statuses])
+    setup do: clear_config([:instance, :max_pinned_statuses])
 
     test "it creates an update activity with the new user data" do
       user = insert(:user)
@@ -1955,11 +1955,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activity = %Activity{activity | object: nil}
 
-      assert [%Notification{activity: ^activity}] =
-               Notification.for_user(follower, %{with_move: true})
+      assert [%Notification{activity: ^activity}] = Notification.for_user(follower)
 
-      assert [%Notification{activity: ^activity}] =
-               Notification.for_user(follower_move_opted_out, %{with_move: true})
+      assert [%Notification{activity: ^activity}] = Notification.for_user(follower_move_opted_out)
     end
 
     test "old user must be in the new user's `also_known_as` list" do
@@ -1972,7 +1970,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "global activity expiration" do
-    clear_config([:instance, :rewrite_policy])
+    setup do: clear_config([:instance, :rewrite_policy])
 
     test "creates an activity expiration for local Create activities" do
       Pleroma.Config.put(

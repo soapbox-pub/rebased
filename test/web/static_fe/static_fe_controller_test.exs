@@ -8,13 +8,8 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
 
   import Pleroma.Factory
 
-  clear_config_all([:static_fe, :enabled]) do
-    Config.put([:static_fe, :enabled], true)
-  end
-
-  clear_config([:instance, :federating]) do
-    Config.put([:instance, :federating], true)
-  end
+  setup_all do: clear_config([:static_fe, :enabled], true)
+  setup do: clear_config([:instance, :federating], true)
 
   setup %{conn: conn} do
     conn = put_req_header(conn, "accept", "text/html")

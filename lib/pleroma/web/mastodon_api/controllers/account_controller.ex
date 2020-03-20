@@ -60,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(
     Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-    when action != :create
+    when action not in [:create, :show, :statuses]
   )
 
   @relations [:follow, :unfollow]
@@ -259,7 +259,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "GET /api/v1/accounts/:id/statuses"
   def statuses(%{assigns: %{user: reading_user}} = conn, params) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user),
+         true <- User.visible_for?(user, reading_user) do
       params =
         params
         |> Map.put("tag", params["tagged"])
@@ -271,6 +272,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> add_link_headers(activities)
       |> put_view(StatusView)
       |> render("index.json", activities: activities, for: reading_user, as: :activity)
+    else
+      _e -> render_error(conn, :not_found, "Can't find user")
     end
   end
 

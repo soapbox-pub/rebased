@@ -22,8 +22,8 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       [image: image]
     end
 
-    clear_config([:media_proxy])
-    clear_config([Pleroma.Upload])
+    setup do: clear_config([:media_proxy])
+    setup do: clear_config([Pleroma.Upload])
 
     test "returns uploaded image", %{conn: conn, image: image} do
       desc = "Description of the image"
