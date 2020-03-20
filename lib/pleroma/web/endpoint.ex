@@ -35,7 +35,7 @@ defmodule Pleroma.Web.Endpoint do
     at: "/",
     from: :pleroma,
     only:
-      ~w(index.html robots.txt static finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc),
+      ~w(index.html robots.txt static finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc embed.js embed.css),
     # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
     gzip: true,
     cache_control_for_etags: @static_cache_control,

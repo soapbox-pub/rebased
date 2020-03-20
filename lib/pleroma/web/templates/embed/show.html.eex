@@ -1,0 +1,76 @@
+<div>
+  <div class="p-author h-card">
+    <a class="u-url" rel="author noopener" href="<%= User.profile_url(@author) %>">
+      <div class="avatar">
+        <img src="<%= User.avatar_url(@author) |> MediaProxy.url %>" width="48" height="48" alt="">
+      </div>
+      <span class="display-name" style="padding-left: 0.5em;">
+        <bdi><%= raw (@author.name |> Formatter.emojify(emoji_for_user(@author))) %></bdi>
+        <span class="nickname"><%= full_nickname(@author) %></span>
+      </span>
+    </a>
+  </div>
+
+  <div class="activity-content" >
+    <%= if status_title(@activity) != "" do %>
+      <details <%= if open_content?() do %>open<% end %>>
+        <summary><%= raw status_title(@activity) %></summary>
+        <div><%= activity_content(@activity) %></div>
+      </details>
+    <% else %>
+      <div><%= activity_content(@activity) %></div>
+    <% end %>
+    <%= for %{"name" => name, "url" => [url | _]} <- attachments(@activity) do %>
+      <div class="attachment">
+      <%= if sensitive?(@activity) do %>
+        <details class="nsfw">
+          <summary onClick="updateHeight()"><%= Gettext.gettext("sensitive media") %></summary>
+          <div class="nsfw-content">
+            <%= render("_attachment.html", %{name: name, url: url["href"],
+                                             mediaType: fetch_media_type(url)}) %>
+          </div>
+        </details>
+      <% else %>
+        <%= render("_attachment.html", %{name: name, url: url["href"],
+                                         mediaType: fetch_media_type(url)}) %>
+      <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <dl class="counts pull-right">
+    <dt><%= Gettext.gettext("replies") %></dt><dd><%= @counts.replies %></dd>
+    <dt><%= Gettext.gettext("announces") %></dt><dd><%= @counts.announces %></dd>
+    <dt><%= Gettext.gettext("likes") %></dt><dd><%= @counts.likes %></dd>
+  </dl>
+
+  <p class="date pull-left">
+    <%= link published(@activity), to: activity_url(@author, @activity) %>
+  </p>
+</div>
+
+<script>
+function updateHeight() {
+  window.requestAnimationFrame(function(){
+    var height = document.getElementsByTagName('html')[0].scrollHeight;
+
+    window.parent.postMessage({
+      type: 'setHeightPleromaEmbed',
+      id: window.parentId,
+      height: height,
+    }, '*');
+  })
+}
+
+window.addEventListener('message', function(e){
+  var data = e.data || {};
+
+  if (!window.parent || data.type !== 'setHeightPleromaEmbed') {
+    return;
+  }
+
+  window.parentId = data.id
+
+  updateHeight()
+});
+</script>
