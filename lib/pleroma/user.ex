@@ -237,7 +237,18 @@ defmodule Pleroma.User do
 
   def visible_for?(%User{invisible: true}, _), do: false
 
-  def visible_for?(%User{id: user_id}, %User{id: for_id}) when user_id == for_id, do: true
+  def visible_for?(%User{id: user_id}, %User{id: user_id}), do: true
+
+  def visible_for?(%User{local: local} = user, nil) do
+    cfg_key =
+      if local,
+        do: :local,
+        else: :remote
+
+    if Config.get([:restrict_unauthenticated, :profiles, cfg_key]),
+      do: false,
+      else: account_status(user) == :active
+  end
 
   def visible_for?(%User{} = user, for_user) do
     account_status(user) == :active || superuser?(for_user)
