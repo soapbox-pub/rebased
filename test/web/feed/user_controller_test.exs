@@ -52,12 +52,12 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
           }
         )
 
-      _note_activity2 = insert(:note_activity, note: note2)
+      note_activity2 = insert(:note_activity, note: note2)
       object = Object.normalize(note_activity)
 
       resp =
         conn
-        |> put_req_header("content-type", "application/atom+xml")
+        |> put_req_header("accept", "application/atom+xml")
         |> get(user_feed_path(conn, :feed, user.nickname))
         |> response(200)
 
@@ -68,12 +68,91 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
 
       assert activity_titles == ['42 This...', 'This is...']
       assert resp =~ object.data["content"]
+
+      resp =
+        conn
+        |> put_req_header("accept", "application/atom+xml")
+        |> get("/users/#{user.nickname}/feed", %{"max_id" => note_activity2.id})
+        |> response(200)
+
+      activity_titles =
+        resp
+        |> SweetXml.parse()
+        |> SweetXml.xpath(~x"//entry/title/text()"l)
+
+      assert activity_titles == ['This is...']
+    end
+
+    test "gets a rss feed", %{conn: conn} do
+      Pleroma.Config.put(
+        [:feed, :post_title],
+        %{max_length: 10, omission: "..."}
+      )
+
+      activity = insert(:note_activity)
+
+      note =
+        insert(:note,
+          data: %{
+            "content" => "This is :moominmamma: note ",
+            "attachment" => [
+              %{
+                "url" => [
+                  %{"mediaType" => "image/png", "href" => "https://pleroma.gov/image.png"}
+                ]
+              }
+            ],
+            "inReplyTo" => activity.data["id"]
+          }
+        )
+
+      note_activity = insert(:note_activity, note: note)
+      user = User.get_cached_by_ap_id(note_activity.data["actor"])
+
+      note2 =
+        insert(:note,
+          user: user,
+          data: %{
+            "content" => "42 This is :moominmamma: note ",
+            "inReplyTo" => activity.data["id"]
+          }
+        )
+
+      note_activity2 = insert(:note_activity, note: note2)
+      object = Object.normalize(note_activity)
+
+      resp =
+        conn
+        |> put_req_header("accept", "application/rss+xml")
+        |> get("/users/#{user.nickname}/feed.rss")
+        |> response(200)
+
+      activity_titles =
+        resp
+        |> SweetXml.parse()
+        |> SweetXml.xpath(~x"//item/title/text()"l)
+
+      assert activity_titles == ['42 This...', 'This is...']
+      assert resp =~ object.data["content"]
+
+      resp =
+        conn
+        |> put_req_header("accept", "application/rss+xml")
+        |> get("/users/#{user.nickname}/feed.rss", %{"max_id" => note_activity2.id})
+        |> response(200)
+
+      activity_titles =
+        resp
+        |> SweetXml.parse()
+        |> SweetXml.xpath(~x"//item/title/text()"l)
+
+      assert activity_titles == ['This is...']
     end
 
     test "returns 404 for a missing feed", %{conn: conn} do
       conn =
         conn
-        |> put_req_header("content-type", "application/atom+xml")
+        |> put_req_header("accept", "application/atom+xml")
         |> get(user_feed_path(conn, :feed, "nonexisting"))
 
       assert response(conn, 404)

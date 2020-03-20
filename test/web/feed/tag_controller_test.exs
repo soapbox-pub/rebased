@@ -8,6 +8,8 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   import Pleroma.Factory
   import SweetXml
 
+  alias Pleroma.Object
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Feed.FeedView
 
   setup do: clear_config([:feed])
@@ -19,9 +21,9 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     )
 
     user = insert(:user)
-    {:ok, activity1} = Pleroma.Web.CommonAPI.post(user, %{"status" => "yeah #PleromaArt"})
+    {:ok, activity1} = CommonAPI.post(user, %{"status" => "yeah #PleromaArt"})
 
-    object = Pleroma.Object.normalize(activity1)
+    object = Object.normalize(activity1)
 
     object_data =
       Map.put(object.data, "attachment", [
@@ -41,14 +43,13 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     |> Ecto.Changeset.change(data: object_data)
     |> Pleroma.Repo.update()
 
-    {:ok, _activity2} =
-      Pleroma.Web.CommonAPI.post(user, %{"status" => "42 This is :moominmamma #PleromaArt"})
+    {:ok, activity2} = CommonAPI.post(user, %{"status" => "42 This is :moominmamma #PleromaArt"})
 
-    {:ok, _activity3} = Pleroma.Web.CommonAPI.post(user, %{"status" => "This is :moominmamma"})
+    {:ok, _activity3} = CommonAPI.post(user, %{"status" => "This is :moominmamma"})
 
     response =
       conn
-      |> put_req_header("content-type", "application/atom+xml")
+      |> put_req_header("accept", "application/atom+xml")
       |> get(tag_feed_path(conn, :feed, "pleromaart.atom"))
       |> response(200)
 
@@ -63,6 +64,21 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
 
     assert xpath(xml, ~x"//feed/entry/author/name/text()"ls) == [user.nickname, user.nickname]
     assert xpath(xml, ~x"//feed/entry/author/id/text()"ls) == [user.ap_id, user.ap_id]
+
+    conn =
+      conn
+      |> put_req_header("accept", "application/atom+xml")
+      |> get("/tags/pleromaart.atom", %{"max_id" => activity2.id})
+
+    assert get_resp_header(conn, "content-type") == ["application/atom+xml; charset=utf-8"]
+    resp = response(conn, 200)
+    xml = parse(resp)
+
+    assert xpath(xml, ~x"//feed/title/text()") == '#pleromaart'
+
+    assert xpath(xml, ~x"//feed/entry/title/text()"l) == [
+             'yeah #PleromaArt'
+           ]
   end
 
   test "gets a feed (RSS)", %{conn: conn} do
@@ -72,9 +88,9 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     )
 
     user = insert(:user)
-    {:ok, activity1} = Pleroma.Web.CommonAPI.post(user, %{"status" => "yeah #PleromaArt"})
+    {:ok, activity1} = CommonAPI.post(user, %{"status" => "yeah #PleromaArt"})
 
-    object = Pleroma.Object.normalize(activity1)
+    object = Object.normalize(activity1)
 
     object_data =
       Map.put(object.data, "attachment", [
@@ -94,14 +110,13 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     |> Ecto.Changeset.change(data: object_data)
     |> Pleroma.Repo.update()
 
-    {:ok, activity2} =
-      Pleroma.Web.CommonAPI.post(user, %{"status" => "42 This is :moominmamma #PleromaArt"})
+    {:ok, activity2} = CommonAPI.post(user, %{"status" => "42 This is :moominmamma #PleromaArt"})
 
-    {:ok, _activity3} = Pleroma.Web.CommonAPI.post(user, %{"status" => "This is :moominmamma"})
+    {:ok, _activity3} = CommonAPI.post(user, %{"status" => "This is :moominmamma"})
 
     response =
       conn
-      |> put_req_header("content-type", "application/rss+xml")
+      |> put_req_header("accept", "application/rss+xml")
       |> get(tag_feed_path(conn, :feed, "pleromaart.rss"))
       |> response(200)
 
@@ -131,8 +146,8 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
              "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4"
            ]
 
-    obj1 = Pleroma.Object.normalize(activity1)
-    obj2 = Pleroma.Object.normalize(activity2)
+    obj1 = Object.normalize(activity1)
+    obj2 = Object.normalize(activity2)
 
     assert xpath(xml, ~x"//channel/item/description/text()"sl) == [
              HtmlEntities.decode(FeedView.activity_content(obj2)),
@@ -141,7 +156,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
 
     response =
       conn
-      |> put_req_header("content-type", "application/atom+xml")
+      |> put_req_header("accept", "application/rss+xml")
       |> get(tag_feed_path(conn, :feed, "pleromaart"))
       |> response(200)
 
@@ -150,5 +165,20 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
 
     assert xpath(xml, ~x"//channel/description/text()"s) ==
              "These are public toots tagged with #pleromaart. You can interact with them if you have an account anywhere in the fediverse."
+
+    conn =
+      conn
+      |> put_req_header("accept", "application/rss+xml")
+      |> get("/tags/pleromaart.rss", %{"max_id" => activity2.id})
+
+    assert get_resp_header(conn, "content-type") == ["application/rss+xml; charset=utf-8"]
+    resp = response(conn, 200)
+    xml = parse(resp)
+
+    assert xpath(xml, ~x"//channel/title/text()") == '#pleromaart'
+
+    assert xpath(xml, ~x"//channel/item/title/text()"l) == [
+             'yeah #PleromaArt'
+           ]
   end
 end

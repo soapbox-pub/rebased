@@ -87,7 +87,8 @@ defmodule Pleroma.Web.ControllerHelper do
     render_error(conn, :not_implemented, "Can't display this activity")
   end
 
-  @spec put_in_if_exist(map(), atom() | String.t(), any) :: map()
-  def put_in_if_exist(map, _key, nil), do: map
-  def put_in_if_exist(map, key, value), do: put_in(map, key, value)
+  @spec put_if_exist(map(), atom() | String.t(), any) :: map()
+  def put_if_exist(map, _key, nil), do: map
+
+  def put_if_exist(map, key, value), do: Map.put(map, key, value)
 end
