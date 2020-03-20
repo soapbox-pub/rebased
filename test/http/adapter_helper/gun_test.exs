@@ -28,9 +28,7 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
   end
 
   describe "options/1" do
-    clear_config([:http, :adapter]) do
-      Config.put([:http, :adapter], a: 1, b: 2)
-    end
+    setup do: clear_config([:http, :adapter], a: 1, b: 2)
 
     test "https url with default port" do
       uri = URI.parse("https://example.com")

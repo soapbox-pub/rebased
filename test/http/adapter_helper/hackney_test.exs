@@ -6,7 +6,6 @@ defmodule Pleroma.HTTP.AdapterHelper.HackneyTest do
   use ExUnit.Case, async: true
   use Pleroma.Tests.Helpers
 
-  alias Pleroma.Config
   alias Pleroma.HTTP.AdapterHelper.Hackney
 
   setup_all do
@@ -15,9 +14,7 @@ defmodule Pleroma.HTTP.AdapterHelper.HackneyTest do
   end
 
   describe "options/2" do
-    clear_config([:http, :adapter]) do
-      Config.put([:http, :adapter], a: 1, b: 2)
-    end
+    setup do: clear_config([:http, :adapter], a: 1, b: 2)
 
     test "add proxy and opts from config", %{uri: uri} do
       opts = Hackney.options([proxy: "localhost:8123"], uri)

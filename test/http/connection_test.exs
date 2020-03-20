@@ -82,7 +82,7 @@ defmodule Pleroma.HTTP.ConnectionTest do
   end
 
   describe "options/3" do
-    clear_config([:http, :proxy_url])
+    setup do: clear_config([:http, :proxy_url])
 
     test "without proxy_url in config" do
       Config.delete([:http, :proxy_url])
