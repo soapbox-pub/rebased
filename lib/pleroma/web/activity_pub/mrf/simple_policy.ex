@@ -3,21 +3,23 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
-  alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.MRF
   @moduledoc "Filter activities depending on their origin instance"
   @behaviour Pleroma.Web.ActivityPub.MRF
+
+  alias Pleroma.Config
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.MRF
 
   require Pleroma.Constants
 
   defp check_accept(%{host: actor_host} = _actor_info, object) do
     accepts =
-      Pleroma.Config.get([:mrf_simple, :accept])
+      Config.get([:mrf_simple, :accept])
       |> MRF.subdomains_regex()
 
     cond do
       accepts == [] -> {:ok, object}
-      actor_host == Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host]) -> {:ok, object}
+      actor_host == Config.get([Pleroma.Web.Endpoint, :url, :host]) -> {:ok, object}
       MRF.subdomain_match?(accepts, actor_host) -> {:ok, object}
       true -> {:reject, nil}
     end
@@ -25,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_reject(%{host: actor_host} = _actor_info, object) do
     rejects =
-      Pleroma.Config.get([:mrf_simple, :reject])
+      Config.get([:mrf_simple, :reject])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(rejects, actor_host) do
@@ -41,7 +43,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
        )
        when length(child_attachment) > 0 do
     media_removal =
-      Pleroma.Config.get([:mrf_simple, :media_removal])
+      Config.get([:mrf_simple, :media_removal])
       |> MRF.subdomains_regex()
 
     object =
@@ -65,7 +67,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          } = object
        ) do
     media_nsfw =
-      Pleroma.Config.get([:mrf_simple, :media_nsfw])
+      Config.get([:mrf_simple, :media_nsfw])
       |> MRF.subdomains_regex()
 
     object =
@@ -85,7 +87,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_ftl_removal(%{host: actor_host} = _actor_info, object) do
     timeline_removal =
-      Pleroma.Config.get([:mrf_simple, :federated_timeline_removal])
+      Config.get([:mrf_simple, :federated_timeline_removal])
       |> MRF.subdomains_regex()
 
     object =
@@ -108,7 +110,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_report_removal(%{host: actor_host} = _actor_info, %{"type" => "Flag"} = object) do
     report_removal =
-      Pleroma.Config.get([:mrf_simple, :report_removal])
+      Config.get([:mrf_simple, :report_removal])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(report_removal, actor_host) do
@@ -122,7 +124,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_avatar_removal(%{host: actor_host} = _actor_info, %{"icon" => _icon} = object) do
     avatar_removal =
-      Pleroma.Config.get([:mrf_simple, :avatar_removal])
+      Config.get([:mrf_simple, :avatar_removal])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(avatar_removal, actor_host) do
@@ -136,7 +138,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_banner_removal(%{host: actor_host} = _actor_info, %{"image" => _image} = object) do
     banner_removal =
-      Pleroma.Config.get([:mrf_simple, :banner_removal])
+      Config.get([:mrf_simple, :banner_removal])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(banner_removal, actor_host) do
@@ -197,10 +199,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   @impl true
   def describe do
-    exclusions = Pleroma.Config.get([:instance, :mrf_transparency_exclusions])
+    exclusions = Config.get([:mrf, :transparency_exclusions])
 
     mrf_simple =
-      Pleroma.Config.get(:mrf_simple)
+      Config.get(:mrf_simple)
       |> Enum.map(fn {k, v} -> {k, Enum.reject(v, fn v -> v in exclusions end)} end)
       |> Enum.into(%{})
 

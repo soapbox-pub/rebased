@@ -54,13 +54,13 @@ defmodule Pleroma.ConfigDB do
 
   defp create(params) do
     %ConfigDB{}
-    |> changeset(params)
+    |> changeset(params, transform?)
     |> Repo.insert()
   end
 
   defp update(%ConfigDB{} = config, %{value: value}) do
     config
-    |> changeset(%{value: value})
+    |> changeset(%{value: value}, transform?)
     |> Repo.update()
   end
 
@@ -167,7 +167,9 @@ defmodule Pleroma.ConfigDB do
     end)
   end
 
-  @spec delete(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
+  @spec delete(ConfigDB.t() | map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
+  def delete(%ConfigDB{} = config), do: Repo.delete(config)
+
   def delete(params) do
     search_opts = Map.delete(params, :subkeys)
 

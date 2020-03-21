@@ -4,10 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [unreleased]
-
 ### Changed
 - MFR policy to set global expiration for all local Create activities
 - OGP rich media parser merged with TwitterCard
+- Configuration: `rewrite_policy` renamed to `policies` and moved from `instance` to `mrf` group. Old config namespace is deprecated.
+- Configuration: `mrf_transparency` renamed to `transparency` and moved from `instance` to `mrf` group. Old config namespace is deprecated.
+- Configuration: `mrf_transparency_exclusions` renamed to `transparency_exclusions` and moved from `instance` to `mrf` group. Old config namespace is deprecated.
+
 <details>
   <summary>API Changes</summary>
 - **Breaking:** Emoji API: changed methods and renamed routes.

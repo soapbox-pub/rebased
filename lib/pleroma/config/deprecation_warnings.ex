@@ -3,8 +3,22 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Config.DeprecationWarnings do
+  alias Pleroma.Config
+
   require Logger
   alias Pleroma.Config
+
+  @type config_namespace() :: [atom()]
+  @type config_map() :: {config_namespace(), config_namespace(), String.t()}
+
+  @mrf_config_map [
+    {[:instance, :rewrite_policy], [:mrf, :policies],
+     "\n* `config :pleroma, :instance, rewrite_policy` is now `config :pleroma, :mrf, policies`"},
+    {[:instance, :mrf_transparency], [:mrf, :transparency],
+     "\n* `config :pleroma, :instance, mrf_transparency` is now `config :pleroma, :mrf, transparency`"},
+    {[:instance, :mrf_transparency_exclusions], [:mrf, :transparency_exclusions],
+     "\n* `config :pleroma, :instance, mrf_transparency_exclusions` is now `config :pleroma, :mrf, transparency_exclusions`"}
+  ]
 
   def check_hellthread_threshold do
     if Config.get([:mrf_hellthread, :threshold]) do
@@ -39,5 +53,35 @@ defmodule Pleroma.Config.DeprecationWarnings do
   def warn do
     check_hellthread_threshold()
     mrf_user_allowlist()
+    check_old_mrf_config()
+  end
+
+  def check_old_mrf_config do
+    warning_preface = """
+    !!!DEPRECATION WARNING!!!
+    Your config is using old namespaces for MRF configuration. They should work for now, but you are advised to change to new namespaces to prevent possible issues later:
+    """
+
+    move_namespace_and_warn(@mrf_config_map, warning_preface)
+  end
+
+  @spec move_namespace_and_warn([config_map()], String.t()) :: :ok
+  def move_namespace_and_warn(config_map, warning_preface) do
+    warning =
+      Enum.reduce(config_map, "", fn
+        {old, new, err_msg}, acc ->
+          old_config = Config.get(old)
+
+          if old_config do
+            Config.put(new, old_config)
+            acc <> err_msg
+          else
+            acc
+          end
+      end)
+
+    if warning != "" do
+      Logger.warn(warning_preface <> warning)
+    end
   end
 end
