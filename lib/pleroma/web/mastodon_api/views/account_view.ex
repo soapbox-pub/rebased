@@ -115,7 +115,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       fields: user.fields,
       bot: bot,
       source: %{
-        note: Pleroma.HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
+        note: (user.bio || "") |> String.replace(~r(<br */?>), "\n") |> Pleroma.HTML.strip_tags(),
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
