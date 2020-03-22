@@ -63,7 +63,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :ssl],
       included_applications: [:ex_syslogger]
     ]
   end
