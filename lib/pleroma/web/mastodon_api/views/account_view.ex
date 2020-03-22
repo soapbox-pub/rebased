@@ -36,25 +36,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   def render("relationship.json", %{user: %User{} = user, target: %User{} = target}) do
-    follow_state = User.get_cached_follow_state(user, target)
-
-    requested =
-      if follow_state && !User.following?(user, target) do
-        follow_state == "pending"
-      else
-        false
-      end
+    follow_state = User.get_follow_state(user, target)
 
     %{
       id: to_string(target.id),
-      following: User.following?(user, target),
+      following: follow_state == "accept",
       followed_by: User.following?(target, user),
       blocking: User.blocks_user?(user, target),
       blocked_by: User.blocks_user?(target, user),
       muting: User.mutes?(user, target),
       muting_notifications: User.muted_notifications?(user, target),
       subscribing: User.subscribed_to?(user, target),
-      requested: requested,
+      requested: follow_state == "pending",
       domain_blocking: User.blocks_domain?(user, target),
       showing_reblogs: User.showing_reblogs?(user, target),
       endorsed: false
