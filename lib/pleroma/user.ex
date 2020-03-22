@@ -292,24 +292,6 @@ defmodule Pleroma.User do
   def ap_following(%User{following_address: fa}) when is_binary(fa), do: fa
   def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
 
-  def follow_state(%User{} = user, %User{} = target) do
-    case Utils.fetch_latest_follow(user, target) do
-      %{data: %{"state" => state}} -> state
-      # Ideally this would be nil, but then Cachex does not commit the value
-      _ -> false
-    end
-  end
-
-  def get_cached_follow_state(user, target) do
-    key = "follow_state:#{user.ap_id}|#{target.ap_id}"
-    Cachex.fetch!(:user_cache, key, fn _ -> {:commit, follow_state(user, target)} end)
-  end
-
-  @spec set_follow_state_cache(String.t(), String.t(), String.t()) :: {:ok | :error, boolean()}
-  def set_follow_state_cache(user_ap_id, target_ap_id, state) do
-    Cachex.put(:user_cache, "follow_state:#{user_ap_id}|#{target_ap_id}", state)
-  end
-
   @spec restrict_deactivated(Ecto.Query.t()) :: Ecto.Query.t()
   def restrict_deactivated(query) do
     from(u in query, where: u.deactivated != ^true)

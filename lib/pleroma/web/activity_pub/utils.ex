@@ -440,22 +440,19 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> update(set: [data: fragment("jsonb_set(data, '{state}', ?)", ^state)])
     |> Repo.update_all([])
 
-    User.set_follow_state_cache(actor, object, state)
-
     activity = Activity.get_by_id(activity.id)
 
     {:ok, activity}
   end
 
   def update_follow_state(
-        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
+        %Activity{} = activity,
         state
       ) do
     new_data = Map.put(activity.data, "state", state)
     changeset = Changeset.change(activity, data: new_data)
 
     with {:ok, activity} <- Repo.update(changeset) do
-      User.set_follow_state_cache(actor, object, state)
       {:ok, activity}
     end
   end

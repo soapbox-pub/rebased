@@ -503,8 +503,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp do_follow(follower, followed, activity_id, local) do
     with data <- make_follow_data(follower, followed, activity_id),
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity),
-         _ <- User.set_follow_state_cache(follower.ap_id, followed.ap_id, activity.data["state"]) do
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
       {:error, error} -> Repo.rollback(error)
