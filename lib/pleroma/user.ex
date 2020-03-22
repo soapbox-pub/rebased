@@ -1642,8 +1642,12 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
+  def muting_reblogs?(%User{} = user, %User{} = target) do
+    UserRelationship.reblog_mute_exists?(user, target)
+  end
+
   def showing_reblogs?(%User{} = user, %User{} = target) do
-    not UserRelationship.reblog_mute_exists?(user, target)
+    not muting_reblogs?(user, target)
   end
 
   @doc """

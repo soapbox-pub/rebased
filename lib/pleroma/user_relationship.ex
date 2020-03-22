@@ -8,6 +8,7 @@ defmodule Pleroma.UserRelationship do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias FlakeId.Ecto.CompatType
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserRelationship
@@ -33,6 +34,10 @@ defmodule Pleroma.UserRelationship do
     def unquote(:"#{relationship_type}_exists?")(source, target),
       do: exists?(unquote(relationship_type), source, target)
   end
+
+  def user_relationship_types, do: Keyword.keys(user_relationship_mappings())
+
+  def user_relationship_mappings, do: UserRelationshipTypeEnum.__enum_map__()
 
   def changeset(%UserRelationship{} = user_relationship, params \\ %{}) do
     user_relationship
@@ -70,6 +75,45 @@ defmodule Pleroma.UserRelationship do
       %UserRelationship{} = existing_record -> Repo.delete(existing_record)
       nil -> {:ok, nil}
     end
+  end
+
+  def dictionary(
+        source_users,
+        target_users,
+        source_to_target_rel_types \\ nil,
+        target_to_source_rel_types \\ nil
+      )
+      when is_list(source_users) and is_list(target_users) do
+    get_bin_ids = fn user ->
+      with {:ok, bin_id} <- CompatType.dump(user.id), do: bin_id
+    end
+
+    source_user_ids = Enum.map(source_users, &get_bin_ids.(&1))
+    target_user_ids = Enum.map(target_users, &get_bin_ids.(&1))
+
+    get_rel_type_codes = fn rel_type -> user_relationship_mappings()[rel_type] end
+
+    source_to_target_rel_types =
+      Enum.map(source_to_target_rel_types || user_relationship_types(), &get_rel_type_codes.(&1))
+
+    target_to_source_rel_types =
+      Enum.map(target_to_source_rel_types || user_relationship_types(), &get_rel_type_codes.(&1))
+
+    __MODULE__
+    |> where(
+      fragment(
+        "(source_id = ANY(?) AND target_id = ANY(?) AND relationship_type = ANY(?)) OR \
+        (source_id = ANY(?) AND target_id = ANY(?) AND relationship_type = ANY(?))",
+        ^source_user_ids,
+        ^target_user_ids,
+        ^source_to_target_rel_types,
+        ^target_user_ids,
+        ^source_user_ids,
+        ^target_to_source_rel_types
+      )
+    )
+    |> select([ur], [ur.relationship_type, ur.source_id, ur.target_id])
+    |> Repo.all()
   end
 
   defp validate_not_self_relationship(%Ecto.Changeset{} = changeset) do

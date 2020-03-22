@@ -10,6 +10,19 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MediaProxy
 
+  def test_rel(user_relationships, rel_type, source, target, func) do
+    cond do
+      is_nil(source) or is_nil(target) ->
+        false
+
+      user_relationships ->
+        [rel_type, source.id, target.id] in user_relationships
+
+      true ->
+        func.(source, target)
+    end
+  end
+
   def render("index.json", %{users: users} = opts) do
     users
     |> render_many(AccountView, "show.json", opts)
@@ -35,21 +48,50 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     %{}
   end
 
-  def render("relationship.json", %{user: %User{} = user, target: %User{} = target}) do
-    follow_state = User.get_follow_state(user, target)
+  def render(
+        "relationship.json",
+        %{user: %User{} = reading_user, target: %User{} = target} = opts
+      ) do
+    user_relationships = Map.get(opts, :user_relationships)
 
+    follow_state = User.get_follow_state(reading_user, target)
+
+    # TODO: add a note on adjusting StatusView.user_relationships_opt/1 re: preloading of user relations
     %{
       id: to_string(target.id),
       following: follow_state == "accept",
-      followed_by: User.following?(target, user),
-      blocking: User.blocks_user?(user, target),
-      blocked_by: User.blocks_user?(target, user),
-      muting: User.mutes?(user, target),
-      muting_notifications: User.muted_notifications?(user, target),
-      subscribing: User.subscribed_to?(user, target),
+      followed_by: User.following?(target, reading_user),
+      blocking:
+        test_rel(user_relationships, :block, reading_user, target, &User.blocks_user?(&1, &2)),
+      blocked_by:
+        test_rel(user_relationships, :block, target, reading_user, &User.blocks_user?(&1, &2)),
+      muting: test_rel(user_relationships, :mute, reading_user, target, &User.mutes?(&1, &2)),
+      muting_notifications:
+        test_rel(
+          user_relationships,
+          :notification_mute,
+          reading_user,
+          target,
+          &User.muted_notifications?(&1, &2)
+        ),
+      subscribing:
+        test_rel(
+          user_relationships,
+          :inverse_subscription,
+          target,
+          reading_user,
+          &User.subscribed_to?(&2, &1)
+        ),
       requested: follow_state == "pending",
-      domain_blocking: User.blocks_domain?(user, target),
-      showing_reblogs: User.showing_reblogs?(user, target),
+      domain_blocking: User.blocks_domain?(reading_user, target),
+      showing_reblogs:
+        not test_rel(
+          user_relationships,
+          :reblog_mute,
+          reading_user,
+          target,
+          &User.muting_reblogs?(&1, &2)
+        ),
       endorsed: false
     }
   end
@@ -93,7 +135,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         }
       end)
 
-    relationship = render("relationship.json", %{user: opts[:for], target: user})
+    relationship =
+      render("relationship.json", %{
+        user: opts[:for],
+        target: user,
+        user_relationships: opts[:user_relationships]
+      })
 
     %{
       id: to_string(user.id),
