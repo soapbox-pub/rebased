@@ -32,7 +32,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         background: background_image,
         nickname: "shp@shitposter.club",
         name: ":karjalanpiirakka: shp",
-        bio: "<script src=\"invalid-html\"></script><span>valid html</span>",
+        bio:
+          "<script src=\"invalid-html\"></script><span>valid html</span>. a<br>b<br/>c<br >d<br />f",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
       })
 
@@ -46,7 +47,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       followers_count: 3,
       following_count: 0,
       statuses_count: 5,
-      note: "<span>valid html</span>",
+      note: "<span>valid html</span>. a<br/>b<br/>c<br/>d<br/>f",
       url: user.ap_id,
       avatar: "http://localhost:4001/images/avi.png",
       avatar_static: "http://localhost:4001/images/avi.png",
@@ -63,7 +64,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       fields: [],
       bot: false,
       source: %{
-        note: "valid html",
+        note: "valid html. a\nb\nc\nd\nf",
         sensitive: false,
         pleroma: %{
           actor_type: "Person",
