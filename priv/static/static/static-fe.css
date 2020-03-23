@@ -174,3 +174,10 @@ button {
     font-weight: 500;
     font-size: 16px;
 }
+
+img.emoji {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  vertical-align: middle;
+}
