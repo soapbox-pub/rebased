@@ -674,7 +674,14 @@ defmodule Pleroma.User do
 
   def get_follow_state(%User{} = follower, %User{} = following) do
     following_relationship = FollowingRelationship.get(follower, following)
+    get_follow_state(follower, following, following_relationship)
+  end
 
+  def get_follow_state(
+        %User{} = follower,
+        %User{} = following,
+        following_relationship
+      ) do
     case {following_relationship, following.local} do
       {nil, false} ->
         case Utils.fetch_latest_follow(follower, following) do

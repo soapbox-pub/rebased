@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
+  alias Pleroma.FollowingRelationship
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -71,22 +72,31 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     present?(user && user.ap_id in (object.data["announcements"] || []))
   end
 
-  defp user_relationships_opt(opts) do
+  defp relationships_opts(opts) do
     reading_user = opts[:for]
 
-    if reading_user do
-      activities = opts[:activities]
-      actors = Enum.map(activities, fn a -> get_user(a.data["actor"]) end)
+    {user_relationships, following_relationships} =
+      if reading_user do
+        activities = opts[:activities]
+        actors = Enum.map(activities, fn a -> get_user(a.data["actor"]) end)
 
-      UserRelationship.dictionary(
-        [reading_user],
-        actors,
-        [:block, :mute, :notification_mute, :reblog_mute],
-        [:block, :inverse_subscription]
-      )
-    else
-      []
-    end
+        user_relationships =
+          UserRelationship.dictionary(
+            [reading_user],
+            actors,
+            [:block, :mute, :notification_mute, :reblog_mute],
+            [:block, :inverse_subscription]
+          )
+
+        following_relationships =
+          FollowingRelationship.all_between_user_sets([reading_user], actors)
+
+        {user_relationships, following_relationships}
+      else
+        {[], []}
+      end
+
+    %{user_relationships: user_relationships, following_relationships: following_relationships}
   end
 
   def render("index.json", opts) do
@@ -96,7 +106,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     opts =
       opts
       |> Map.put(:replied_to_activities, replied_to_activities)
-      |> Map.put(:user_relationships, user_relationships_opt(opts))
+      |> Map.merge(relationships_opts(opts))
 
     safe_render_many(activities, StatusView, "show.json", opts)
   end
@@ -135,7 +145,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         AccountView.render("show.json", %{
           user: user,
           for: opts[:for],
-          user_relationships: opts[:user_relationships]
+          user_relationships: opts[:user_relationships],
+          following_relationships: opts[:following_relationships]
         }),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -286,7 +297,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     muted =
       thread_muted? ||
-        Pleroma.Web.MastodonAPI.AccountView.test_rel(
+        UserRelationship.exists?(
           user_relationships_opt,
           :mute,
           opts[:for],
@@ -302,7 +313,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         AccountView.render("show.json", %{
           user: user,
           for: opts[:for],
-          user_relationships: user_relationships_opt
+          user_relationships: user_relationships_opt,
+          following_relationships: opts[:following_relationships]
         }),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),

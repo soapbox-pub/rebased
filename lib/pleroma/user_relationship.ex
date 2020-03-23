@@ -116,6 +116,19 @@ defmodule Pleroma.UserRelationship do
     |> Repo.all()
   end
 
+  def exists?(dictionary, rel_type, source, target, func) do
+    cond do
+      is_nil(source) or is_nil(target) ->
+        false
+
+      dictionary ->
+        [rel_type, source.id, target.id] in dictionary
+
+      true ->
+        func.(source, target)
+    end
+  end
+
   defp validate_not_self_relationship(%Ecto.Changeset{} = changeset) do
     changeset
     |> validate_change(:target_id, fn _, target_id ->

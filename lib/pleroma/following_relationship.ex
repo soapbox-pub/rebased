@@ -129,4 +129,30 @@ defmodule Pleroma.FollowingRelationship do
         move_following(origin, target)
     end
   end
+
+  def all_between_user_sets(
+        source_users,
+        target_users
+      )
+      when is_list(source_users) and is_list(target_users) do
+    get_bin_ids = fn user ->
+      with {:ok, bin_id} <- CompatType.dump(user.id), do: bin_id
+    end
+
+    source_user_ids = Enum.map(source_users, &get_bin_ids.(&1))
+    target_user_ids = Enum.map(target_users, &get_bin_ids.(&1))
+
+    __MODULE__
+    |> where(
+      fragment(
+        "(follower_id = ANY(?) AND following_id = ANY(?)) OR \
+        (follower_id = ANY(?) AND following_id = ANY(?))",
+        ^source_user_ids,
+        ^target_user_ids,
+        ^target_user_ids,
+        ^source_user_ids
+      )
+    )
+    |> Repo.all()
+  end
 end
