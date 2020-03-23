@@ -21,9 +21,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     setup do: oauth_access(["read:statuses"])
 
     test "the home timeline", %{user: user, conn: conn} do
-      following = insert(:user)
+      following = insert(:user, nickname: "followed")
+      third_user = insert(:user, nickname: "repeated")
 
-      {:ok, _activity} = CommonAPI.post(following, %{"status" => "test"})
+      {:ok, _activity} = CommonAPI.post(following, %{"status" => "post"})
+      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "repeated post"})
+      {:ok, _, _} = CommonAPI.repeat(activity.id, following)
 
       ret_conn = get(conn, "/api/v1/timelines/home")
 
@@ -31,9 +34,55 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       {:ok, _user} = User.follow(user, following)
 
-      conn = get(conn, "/api/v1/timelines/home")
+      ret_conn = get(conn, "/api/v1/timelines/home")
 
-      assert [%{"content" => "test"}] = json_response(conn, :ok)
+      assert [
+               %{
+                 "reblog" => %{
+                   "content" => "repeated post",
+                   "account" => %{
+                     "pleroma" => %{
+                       "relationship" => %{"following" => false, "followed_by" => false}
+                     }
+                   }
+                 },
+                 "account" => %{"pleroma" => %{"relationship" => %{"following" => true}}}
+               },
+               %{
+                 "content" => "post",
+                 "account" => %{
+                   "acct" => "followed",
+                   "pleroma" => %{"relationship" => %{"following" => true}}
+                 }
+               }
+             ] = json_response(ret_conn, :ok)
+
+      {:ok, _user} = User.follow(third_user, user)
+
+      ret_conn = get(conn, "/api/v1/timelines/home")
+
+      assert [
+               %{
+                 "reblog" => %{
+                   "content" => "repeated post",
+                   "account" => %{
+                     "acct" => "repeated",
+                     "pleroma" => %{
+                       # This part does not match correctly
+                       "relationship" => %{"following" => false, "followed_by" => true}
+                     }
+                   }
+                 },
+                 "account" => %{"pleroma" => %{"relationship" => %{"following" => true}}}
+               },
+               %{
+                 "content" => "post",
+                 "account" => %{
+                   "acct" => "followed",
+                   "pleroma" => %{"relationship" => %{"following" => true}}
+                 }
+               }
+             ] = json_response(ret_conn, :ok)
     end
 
     test "the home timeline when the direct messages are excluded", %{user: user, conn: conn} do
