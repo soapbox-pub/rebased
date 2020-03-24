@@ -72,41 +72,46 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     present?(user && user.ap_id in (object.data["announcements"] || []))
   end
 
-  defp relationships_opts(opts) do
-    reading_user = opts[:for]
+  def relationships_opts(_reading_user = nil, _actors) do
+    %{user_relationships: [], following_relationships: []}
+  end
 
-    {user_relationships, following_relationships} =
-      if reading_user do
-        activities = opts[:activities]
-        actors = Enum.map(activities, fn a -> get_user(a.data["actor"]) end)
+  def relationships_opts(reading_user, actors) do
+    user_relationships =
+      UserRelationship.dictionary(
+        [reading_user],
+        actors,
+        [:block, :mute, :notification_mute, :reblog_mute],
+        [:block, :inverse_subscription]
+      )
 
-        user_relationships =
-          UserRelationship.dictionary(
-            [reading_user],
-            actors,
-            [:block, :mute, :notification_mute, :reblog_mute],
-            [:block, :inverse_subscription]
-          )
-
-        following_relationships =
-          FollowingRelationship.all_between_user_sets([reading_user], actors)
-
-        {user_relationships, following_relationships}
-      else
-        {[], []}
-      end
+    following_relationships = FollowingRelationship.all_between_user_sets([reading_user], actors)
 
     %{user_relationships: user_relationships, following_relationships: following_relationships}
   end
 
   def render("index.json", opts) do
-    activities = opts.activities
+    # To do: check AdminAPIControllerTest on the reasons behind nil activities in the list
+    activities = Enum.filter(opts.activities, & &1)
     replied_to_activities = get_replied_to_activities(activities)
+
+    parent_activities =
+      activities
+      |> Enum.filter(&(&1.data["type"] == "Announce" && &1.data["object"]))
+      |> Enum.map(&Object.normalize(&1).data["id"])
+      |> Activity.create_by_object_ap_id()
+      |> Activity.with_preloaded_object(:left)
+      |> Activity.with_preloaded_bookmark(opts[:for])
+      |> Activity.with_set_thread_muted_field(opts[:for])
+      |> Repo.all()
+
+    actors = Enum.map(activities ++ parent_activities, &get_user(&1.data["actor"]))
 
     opts =
       opts
       |> Map.put(:replied_to_activities, replied_to_activities)
-      |> Map.merge(relationships_opts(opts))
+      |> Map.put(:parent_activities, parent_activities)
+      |> Map.put(:relationships, relationships_opts(opts[:for], actors))
 
     safe_render_many(activities, StatusView, "show.json", opts)
   end
@@ -119,17 +124,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     created_at = Utils.to_masto_date(activity.data["published"])
     activity_object = Object.normalize(activity)
 
-    reblogged_activity =
-      Activity.create_by_object_ap_id(activity_object.data["id"])
-      |> Activity.with_preloaded_bookmark(opts[:for])
-      |> Activity.with_set_thread_muted_field(opts[:for])
-      |> Repo.one()
+    reblogged_parent_activity =
+      if opts[:parent_activities] do
+        Activity.Queries.find_by_object_ap_id(
+          opts[:parent_activities],
+          activity_object.data["id"]
+        )
+      else
+        Activity.create_by_object_ap_id(activity_object.data["id"])
+        |> Activity.with_preloaded_bookmark(opts[:for])
+        |> Activity.with_set_thread_muted_field(opts[:for])
+        |> Repo.one()
+      end
 
-    reblogged = render("show.json", Map.put(opts, :activity, reblogged_activity))
+    reblog_rendering_opts = Map.put(opts, :activity, reblogged_parent_activity)
+    reblogged = render("show.json", reblog_rendering_opts)
 
     favorited = opts[:for] && opts[:for].ap_id in (activity_object.data["likes"] || [])
 
-    bookmarked = Activity.get_bookmark(reblogged_activity, opts[:for]) != nil
+    bookmarked = Activity.get_bookmark(reblogged_parent_activity, opts[:for]) != nil
 
     mentions =
       activity.recipients
@@ -145,8 +158,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         AccountView.render("show.json", %{
           user: user,
           for: opts[:for],
-          user_relationships: opts[:user_relationships],
-          following_relationships: opts[:following_relationships]
+          relationships: opts[:relationships]
         }),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -156,7 +168,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogs_count: 0,
       replies_count: 0,
       favourites_count: 0,
-      reblogged: reblogged?(reblogged_activity, opts[:for]),
+      reblogged: reblogged?(reblogged_parent_activity, opts[:for]),
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
       muted: false,
@@ -293,12 +305,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         _ -> []
       end
 
-    user_relationships_opt = opts[:user_relationships]
-
     muted =
       thread_muted? ||
         UserRelationship.exists?(
-          user_relationships_opt,
+          get_in(opts, [:relationships, :user_relationships]),
           :mute,
           opts[:for],
           user,
@@ -313,8 +323,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         AccountView.render("show.json", %{
           user: user,
           for: opts[:for],
-          user_relationships: user_relationships_opt,
-          following_relationships: opts[:following_relationships]
+          relationships: opts[:relationships]
         }),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),

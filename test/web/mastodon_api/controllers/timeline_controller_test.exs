@@ -68,7 +68,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                    "account" => %{
                      "acct" => "repeated",
                      "pleroma" => %{
-                       # This part does not match correctly
                        "relationship" => %{"following" => false, "followed_by" => true}
                      }
                    }
