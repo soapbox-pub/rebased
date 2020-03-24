@@ -76,7 +76,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       conn =
         patch(conn, "/api/v1/accounts/update_credentials", %{
-          "note" => "I drink #cofe with @#{user2.nickname}"
+          "note" => "I drink #cofe with @#{user2.nickname}\n\nsuya.."
         })
 
       assert user_data = json_response(conn, 200)
@@ -84,7 +84,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user_data["note"] ==
                ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a data-user="#{
                  user2.id
-               }" class="u-url mention" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span>)
+               }" class="u-url mention" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span><br/><br/>suya..)
     end
 
     test "updates the user's locking status", %{conn: conn} do
