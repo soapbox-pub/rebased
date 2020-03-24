@@ -128,6 +128,27 @@ defmodule Pleroma.Web.NodeInfoTest do
     end
   end
 
+  test "it shows default features flags", %{conn: conn} do
+    response =
+      conn
+      |> get("/nodeinfo/2.1.json")
+      |> json_response(:ok)
+
+    assert response["metadata"]["features"] --
+             [
+               "pleroma_api",
+               "mastodon_api",
+               "mastodon_api_streaming",
+               "polls",
+               "pleroma_explicit_addressing",
+               "shareable_emoji_packs",
+               "multifetch",
+               "chat",
+               "relay",
+               "pleroma_emoji_reactions"
+             ] == []
+  end
+
   test "it shows MRF transparency data if enabled", %{conn: conn} do
     config = Pleroma.Config.get([:instance, :rewrite_policy])
     Pleroma.Config.put([:instance, :rewrite_policy], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
