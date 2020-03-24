@@ -145,7 +145,8 @@ defmodule Pleroma.Web.NodeInfoTest do
                "multifetch",
                "chat",
                "relay",
-               "pleroma_emoji_reactions"
+               "pleroma_emoji_reactions",
+               "pleroma:api/v1/notifications:include_types_filter"
              ] == []
   end
 
