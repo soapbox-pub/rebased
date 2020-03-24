@@ -414,6 +414,83 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `nicknames`
 - Response: none (code `204`)
 
+## `GET /api/pleroma/admin/users/:nickname/credentials`
+
+### Get the user's email, password, display and settings-related fields
+
+- Params:
+  - `nickname`
+
+- Response:
+
+```json
+{
+  "actor_type": "Person",
+  "allow_following_move": true,
+  "avatar": "https://pleroma.social/media/7e8e7508fd545ef580549b6881d80ec0ff2c81ed9ad37b9bdbbdf0e0d030159d.jpg",
+  "background": "https://pleroma.social/media/4de34c0bd10970d02cbdef8972bef0ebbf55f43cadc449554d4396156162fe9a.jpg",
+  "banner": "https://pleroma.social/media/8d92ba2bd244b613520abf557dd448adcd30f5587022813ee9dd068945986946.jpg",
+  "bio": "bio",
+  "default_scope": "public",
+  "discoverable": false,
+  "email": "user@example.com",
+  "fields": [
+    {
+      "name": "example",
+      "value": "<a href=\"https://example.com\" rel=\"ugc\">https://example.com</a>"
+    }
+  ],
+  "hide_favorites": false,
+  "hide_followers": false,
+  "hide_followers_count": false,
+  "hide_follows": false,
+  "hide_follows_count": false,
+  "id": "9oouHaEEUR54hls968",
+  "locked": true,
+  "name": "user",
+  "no_rich_text": true,
+  "pleroma_settings_store": {},
+  "raw_fields": [
+    {
+      "id": 1,
+      "name": "example",
+      "value": "https://example.com"
+    },
+  ],
+  "show_role": true,
+  "skip_thread_containment": false
+}
+```
+
+## `PATCH /api/pleroma/admin/users/:nickname/credentials`
+
+### Change the user's email, password, display and settings-related fields
+
+- Params:
+  - `email`
+  - `password`
+  - `name`
+  - `bio`
+  - `avatar`
+  - `locked`
+  - `no_rich_text`
+  - `default_scope`
+  - `banner`
+  - `hide_follows`
+  - `hide_followers`
+  - `hide_followers_count`
+  - `hide_follows_count`
+  - `hide_favorites`
+  - `allow_following_move`
+  - `background`
+  - `show_role`
+  - `skip_thread_containment`
+  - `fields`
+  - `discoverable`
+  - `actor_type`
+
+- Response: none (code `200`)
+
 ## `GET /api/pleroma/admin/reports`
 
 ### Get a list of reports

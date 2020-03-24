@@ -7,7 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
 
   alias Pleroma.Web.ActivityPub.MRF.KeywordPolicy
 
-  clear_config(:mrf_keyword)
+  setup do: clear_config(:mrf_keyword)
 
   setup do
     Pleroma.Config.put([:mrf_keyword], %{reject: [], federated_timeline_removal: [], replace: []})

@@ -237,7 +237,18 @@ defmodule Pleroma.User do
 
   def visible_for?(%User{invisible: true}, _), do: false
 
-  def visible_for?(%User{id: user_id}, %User{id: for_id}) when user_id == for_id, do: true
+  def visible_for?(%User{id: user_id}, %User{id: user_id}), do: true
+
+  def visible_for?(%User{local: local} = user, nil) do
+    cfg_key =
+      if local,
+        do: :local,
+        else: :remote
+
+    if Config.get([:restrict_unauthenticated, :profiles, cfg_key]),
+      do: false,
+      else: account_status(user) == :active
+  end
 
   def visible_for?(%User{} = user, for_user) do
     account_status(user) == :active || superuser?(for_user)
@@ -280,24 +291,6 @@ defmodule Pleroma.User do
   @spec ap_following(User.t()) :: Sring.t()
   def ap_following(%User{following_address: fa}) when is_binary(fa), do: fa
   def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
-
-  def follow_state(%User{} = user, %User{} = target) do
-    case Utils.fetch_latest_follow(user, target) do
-      %{data: %{"state" => state}} -> state
-      # Ideally this would be nil, but then Cachex does not commit the value
-      _ -> false
-    end
-  end
-
-  def get_cached_follow_state(user, target) do
-    key = "follow_state:#{user.ap_id}|#{target.ap_id}"
-    Cachex.fetch!(:user_cache, key, fn _ -> {:commit, follow_state(user, target)} end)
-  end
-
-  @spec set_follow_state_cache(String.t(), String.t(), String.t()) :: {:ok | :error, boolean()}
-  def set_follow_state_cache(user_ap_id, target_ap_id, state) do
-    Cachex.put(:user_cache, "follow_state:#{user_ap_id}|#{target_ap_id}", state)
-  end
 
   @spec restrict_deactivated(Ecto.Query.t()) :: Ecto.Query.t()
   def restrict_deactivated(query) do
@@ -417,7 +410,53 @@ defmodule Pleroma.User do
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
+    |> put_fields()
+    |> put_change_if_present(:bio, &{:ok, parse_bio(&1, struct)})
+    |> put_change_if_present(:avatar, &put_upload(&1, :avatar))
+    |> put_change_if_present(:banner, &put_upload(&1, :banner))
+    |> put_change_if_present(:background, &put_upload(&1, :background))
+    |> put_change_if_present(
+      :pleroma_settings_store,
+      &{:ok, Map.merge(struct.pleroma_settings_store, &1)}
+    )
     |> validate_fields(false)
+  end
+
+  defp put_fields(changeset) do
+    if raw_fields = get_change(changeset, :raw_fields) do
+      raw_fields =
+        raw_fields
+        |> Enum.filter(fn %{"name" => n} -> n != "" end)
+
+      fields =
+        raw_fields
+        |> Enum.map(fn f -> Map.update!(f, "value", &AutoLinker.link(&1)) end)
+
+      changeset
+      |> put_change(:raw_fields, raw_fields)
+      |> put_change(:fields, fields)
+    else
+      changeset
+    end
+  end
+
+  defp put_change_if_present(changeset, map_field, value_function) do
+    if value = get_change(changeset, map_field) do
+      with {:ok, new_value} <- value_function.(value) do
+        put_change(changeset, map_field, new_value)
+      else
+        _ -> changeset
+      end
+    else
+      changeset
+    end
+  end
+
+  defp put_upload(value, type) do
+    with %Plug.Upload{} <- value,
+         {:ok, object} <- ActivityPub.upload(value, type: type) do
+      {:ok, object.data}
+    end
   end
 
   def upgrade_changeset(struct, params \\ %{}, remote? \\ false) do
@@ -463,6 +502,27 @@ defmodule Pleroma.User do
     |> validate_fields(remote?)
   end
 
+  def update_as_admin_changeset(struct, params) do
+    struct
+    |> update_changeset(params)
+    |> cast(params, [:email])
+    |> delete_change(:also_known_as)
+    |> unique_constraint(:email)
+    |> validate_format(:email, @email_regex)
+  end
+
+  @spec update_as_admin(%User{}, map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def update_as_admin(user, params) do
+    params = Map.put(params, "password_confirmation", params["password"])
+    changeset = update_as_admin_changeset(user, params)
+
+    if params["password"] do
+      reset_password(user, changeset, params)
+    else
+      User.update_and_set_cache(changeset)
+    end
+  end
+
   def password_update_changeset(struct, params) do
     struct
     |> cast(params, [:password, :password_confirmation])
@@ -473,10 +533,14 @@ defmodule Pleroma.User do
   end
 
   @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def reset_password(%User{id: user_id} = user, data) do
+  def reset_password(%User{} = user, params) do
+    reset_password(user, user, params)
+  end
+
+  def reset_password(%User{id: user_id} = user, struct, params) do
     multi =
       Multi.new()
-      |> Multi.update(:user, password_update_changeset(user, data))
+      |> Multi.update(:user, password_update_changeset(struct, params))
       |> Multi.delete_all(:tokens, OAuth.Token.Query.get_by_user(user_id))
       |> Multi.delete_all(:auth, OAuth.Authorization.delete_by_user_query(user))
 
@@ -1855,6 +1919,17 @@ defmodule Pleroma.User do
   def fields(%{fields: nil}), do: []
 
   def fields(%{fields: fields}), do: fields
+
+  def sanitized_fields(%User{} = user) do
+    user
+    |> User.fields()
+    |> Enum.map(fn %{"name" => name, "value" => value} ->
+      %{
+        "name" => name,
+        "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
+      }
+    end)
+  end
 
   def validate_fields(changeset, remote? \\ false) do
     limit_name = if remote?, do: :max_remote_account_fields, else: :max_account_fields

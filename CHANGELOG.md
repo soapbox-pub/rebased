@@ -10,6 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
+### Added
+- NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
+- Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
+<details>
+  <summary>API Changes</summary>
+- Mastodon API: Support for `include_types` in `/api/v1/notifications`.
+</details>
+
 ## [2.0.0] - 2019-03-08
 ### Security
 - Mastodon API: Fix being able to request enourmous amount of statuses in timelines leading to DoS. Now limited to 40 per request.
@@ -70,6 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: User timelines will now respect blocks, unless you are getting the user timeline of somebody you blocked (which would be empty otherwise).
 - Mastodon API: Favoriting / Repeating a post multiple times will now return the identical response every time. Before, executing that action twice would return an error ("already favorited") on the second try.
 - Mastodon API: Limit timeline requests to 3 per timeline per 500ms per user/ip by default.
+- Admin API: `PATCH /api/pleroma/admin/users/:nickname/credentials` and `GET /api/pleroma/admin/users/:nickname/credentials`
 </details>
 
 ### Added

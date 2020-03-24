@@ -19,7 +19,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
     :ok
   end
 
-  clear_config([:rich_media, :enabled])
+  setup do: clear_config([:rich_media, :enabled])
 
   test "refuses to crawl incomplete URLs" do
     user = insert(:user)

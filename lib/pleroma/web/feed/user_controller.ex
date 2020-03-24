@@ -11,7 +11,7 @@ defmodule Pleroma.Web.Feed.UserController do
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.Feed.FeedView
 
-  import Pleroma.Web.ControllerHelper, only: [put_in_if_exist: 3]
+  import Pleroma.Web.ControllerHelper, only: [put_if_exist: 3]
 
   plug(Pleroma.Plugs.SetFormatPlug when action in [:feed_redirect])
 
@@ -40,19 +40,28 @@ defmodule Pleroma.Web.Feed.UserController do
   end
 
   def feed(conn, %{"nickname" => nickname} = params) do
+    format = get_format(conn)
+
+    format =
+      if format in ["rss", "atom"] do
+        format
+      else
+        "atom"
+      end
+
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
       activities =
         %{
           "type" => ["Create"],
           "actor_id" => user.ap_id
         }
-        |> put_in_if_exist("max_id", params["max_id"])
+        |> put_if_exist("max_id", params["max_id"])
         |> ActivityPub.fetch_public_activities()
 
       conn
-      |> put_resp_content_type("application/atom+xml")
+      |> put_resp_content_type("application/#{format}+xml")
       |> put_view(FeedView)
-      |> render("user.xml",
+      |> render("user.#{format}",
         user: user,
         activities: activities,
         feed_config: Pleroma.Config.get([:feed])

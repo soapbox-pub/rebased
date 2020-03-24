@@ -10,7 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.MastoFEController do
 
   import Pleroma.Factory
 
-  clear_config([:instance, :public])
+  setup do: clear_config([:instance, :public])
 
   test "put settings", %{conn: conn} do
     user = insert(:user)

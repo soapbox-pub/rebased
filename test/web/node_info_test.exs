@@ -7,8 +7,8 @@ defmodule Pleroma.Web.NodeInfoTest do
 
   import Pleroma.Factory
 
-  clear_config([:mrf_simple])
-  clear_config(:instance)
+  setup do: clear_config([:mrf_simple])
+  setup do: clear_config(:instance)
 
   test "GET /.well-known/nodeinfo", %{conn: conn} do
     links =
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.NodeInfoTest do
   end
 
   describe "`metadata/federation/enabled`" do
-    clear_config([:instance, :federating])
+    setup do: clear_config([:instance, :federating])
 
     test "it shows if federation is enabled/disabled", %{conn: conn} do
       Pleroma.Config.put([:instance, :federating], true)
