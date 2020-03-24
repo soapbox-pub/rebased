@@ -177,105 +177,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
   end
 
-  describe "GET /api/statusnet/config" do
-    test "it returns config in xml format", %{conn: conn} do
-      instance = Config.get(:instance)
-
-      response =
-        conn
-        |> put_req_header("accept", "application/xml")
-        |> get("/api/statusnet/config")
-        |> response(:ok)
-
-      assert response ==
-               "<config>\n<site>\n<name>#{Keyword.get(instance, :name)}</name>\n<site>#{
-                 Pleroma.Web.base_url()
-               }</site>\n<textlimit>#{Keyword.get(instance, :limit)}</textlimit>\n<closed>#{
-                 !Keyword.get(instance, :registrations_open)
-               }</closed>\n</site>\n</config>\n"
-    end
-
-    test "it returns config in json format", %{conn: conn} do
-      instance = Config.get(:instance)
-      Config.put([:instance, :managed_config], true)
-      Config.put([:instance, :registrations_open], false)
-      Config.put([:instance, :invites_enabled], true)
-      Config.put([:instance, :public], false)
-      Config.put([:frontend_configurations, :pleroma_fe], %{theme: "asuka-hospital"})
-
-      response =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> get("/api/statusnet/config")
-        |> json_response(:ok)
-
-      expected_data = %{
-        "site" => %{
-          "accountActivationRequired" => "0",
-          "closed" => "1",
-          "description" => Keyword.get(instance, :description),
-          "invitesEnabled" => "1",
-          "name" => Keyword.get(instance, :name),
-          "pleromafe" => %{"theme" => "asuka-hospital"},
-          "private" => "1",
-          "safeDMMentionsEnabled" => "0",
-          "server" => Pleroma.Web.base_url(),
-          "textlimit" => to_string(Keyword.get(instance, :limit)),
-          "uploadlimit" => %{
-            "avatarlimit" => to_string(Keyword.get(instance, :avatar_upload_limit)),
-            "backgroundlimit" => to_string(Keyword.get(instance, :background_upload_limit)),
-            "bannerlimit" => to_string(Keyword.get(instance, :banner_upload_limit)),
-            "uploadlimit" => to_string(Keyword.get(instance, :upload_limit))
-          },
-          "vapidPublicKey" => Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
-        }
-      }
-
-      assert response == expected_data
-    end
-
-    test "returns the state of safe_dm_mentions flag", %{conn: conn} do
-      Config.put([:instance, :safe_dm_mentions], true)
-
-      response =
-        conn
-        |> get("/api/statusnet/config.json")
-        |> json_response(:ok)
-
-      assert response["site"]["safeDMMentionsEnabled"] == "1"
-
-      Config.put([:instance, :safe_dm_mentions], false)
-
-      response =
-        conn
-        |> get("/api/statusnet/config.json")
-        |> json_response(:ok)
-
-      assert response["site"]["safeDMMentionsEnabled"] == "0"
-    end
-
-    test "it returns the managed config", %{conn: conn} do
-      Config.put([:instance, :managed_config], false)
-      Config.put([:frontend_configurations, :pleroma_fe], %{theme: "asuka-hospital"})
-
-      response =
-        conn
-        |> get("/api/statusnet/config.json")
-        |> json_response(:ok)
-
-      refute response["site"]["pleromafe"]
-
-      Config.put([:instance, :managed_config], true)
-
-      response =
-        conn
-        |> get("/api/statusnet/config.json")
-        |> json_response(:ok)
-
-      assert response["site"]["pleromafe"] == %{"theme" => "asuka-hospital"}
-    end
-  end
-
   describe "GET /api/pleroma/frontend_configurations" do
     test "returns everything in :pleroma, :frontend_configurations", %{conn: conn} do
       config = [
@@ -401,28 +302,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       user = User.get_cached_by_id(user.id)
 
       refute user.deactivated
-    end
-  end
-
-  describe "GET /api/statusnet/version" do
-    test "it returns version in xml format", %{conn: conn} do
-      response =
-        conn
-        |> put_req_header("accept", "application/xml")
-        |> get("/api/statusnet/version")
-        |> response(:ok)
-
-      assert response == "<version>#{Pleroma.Application.named_version()}</version>"
-    end
-
-    test "it returns version in json format", %{conn: conn} do
-      response =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> get("/api/statusnet/version")
-        |> json_response(:ok)
-
-      assert response == "#{Pleroma.Application.named_version()}"
     end
   end
 

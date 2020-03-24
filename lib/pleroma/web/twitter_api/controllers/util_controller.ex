@@ -13,7 +13,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Notification
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
-  alias Pleroma.Web
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.WebFinger
 
@@ -47,12 +46,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   )
 
   plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :notifications_read)
-
-  plug(Pleroma.Plugs.SetFormatPlug when action in [:config, :version])
-
-  def help_test(conn, _params) do
-    json(conn, "ok")
-  end
 
   def remote_subscribe(conn, %{"nickname" => nick, "profile" => _}) do
     with %User{} = user <- User.get_cached_by_nickname(nick),
@@ -95,88 +88,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  def config(%{assigns: %{format: "xml"}} = conn, _params) do
-    instance = Pleroma.Config.get(:instance)
-
-    response = """
-    <config>
-    <site>
-    <name>#{Keyword.get(instance, :name)}</name>
-    <site>#{Web.base_url()}</site>
-    <textlimit>#{Keyword.get(instance, :limit)}</textlimit>
-    <closed>#{!Keyword.get(instance, :registrations_open)}</closed>
-    </site>
-    </config>
-    """
-
-    conn
-    |> put_resp_content_type("application/xml")
-    |> send_resp(200, response)
-  end
-
-  def config(conn, _params) do
-    instance = Pleroma.Config.get(:instance)
-
-    vapid_public_key = Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
-
-    uploadlimit = %{
-      uploadlimit: to_string(Keyword.get(instance, :upload_limit)),
-      avatarlimit: to_string(Keyword.get(instance, :avatar_upload_limit)),
-      backgroundlimit: to_string(Keyword.get(instance, :background_upload_limit)),
-      bannerlimit: to_string(Keyword.get(instance, :banner_upload_limit))
-    }
-
-    data = %{
-      name: Keyword.get(instance, :name),
-      description: Keyword.get(instance, :description),
-      server: Web.base_url(),
-      textlimit: to_string(Keyword.get(instance, :limit)),
-      uploadlimit: uploadlimit,
-      closed: bool_to_val(Keyword.get(instance, :registrations_open), "0", "1"),
-      private: bool_to_val(Keyword.get(instance, :public, true), "0", "1"),
-      vapidPublicKey: vapid_public_key,
-      accountActivationRequired:
-        bool_to_val(Keyword.get(instance, :account_activation_required, false)),
-      invitesEnabled: bool_to_val(Keyword.get(instance, :invites_enabled, false)),
-      safeDMMentionsEnabled: bool_to_val(Pleroma.Config.get([:instance, :safe_dm_mentions]))
-    }
-
-    managed_config = Keyword.get(instance, :managed_config)
-
-    data =
-      if managed_config do
-        pleroma_fe = Pleroma.Config.get([:frontend_configurations, :pleroma_fe])
-        Map.put(data, "pleromafe", pleroma_fe)
-      else
-        data
-      end
-
-    json(conn, %{site: data})
-  end
-
-  defp bool_to_val(true), do: "1"
-  defp bool_to_val(_), do: "0"
-  defp bool_to_val(true, val, _), do: val
-  defp bool_to_val(_, _, val), do: val
-
   def frontend_configurations(conn, _params) do
     config =
       Pleroma.Config.get(:frontend_configurations, %{})
       |> Enum.into(%{})
 
     json(conn, config)
-  end
-
-  def version(%{assigns: %{format: "xml"}} = conn, _params) do
-    version = Pleroma.Application.named_version()
-
-    conn
-    |> put_resp_content_type("application/xml")
-    |> send_resp(200, "<version>#{version}</version>")
-  end
-
-  def version(conn, _params) do
-    json(conn, Pleroma.Application.named_version())
   end
 
   def emoji(conn, _params) do
