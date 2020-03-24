@@ -25,7 +25,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateNoteValidator do
   end
 
   def cast_data(data) do
-    %__MODULE__{}
-    |> cast(data, __schema__(:fields))
+    cast(%__MODULE__{}, data, __schema__(:fields))
   end
 end
