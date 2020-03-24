@@ -584,6 +584,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp do_delete(%Object{data: %{"type" => "Tombstone", "id" => ap_id}}, _) do
+    activity =
+      ap_id
+      |> Activity.Queries.by_object_id()
+      |> Activity.Queries.by_type("Delete")
+      |> Repo.one()
+
+    {:ok, activity}
+  end
+
   @spec block(User.t(), User.t(), String.t() | nil, boolean()) ::
           {:ok, Activity.t()} | {:error, any()}
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do
