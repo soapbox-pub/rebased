@@ -18,6 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 </details>
 
+### Fixed
+- Support pagination in conversations API
+
 ## [2.0.0] - 2019-03-08
 ### Security
 - Mastodon API: Fix being able to request enourmous amount of statuses in timelines leading to DoS. Now limited to 40 per request.
