@@ -5,20 +5,23 @@
 defmodule Pleroma.Web.MastodonAPI.AccountView do
   use Pleroma.Web, :view
 
+  alias Pleroma.FollowingRelationship
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
-  alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
-  defp find_following_rel(following_relationships, follower, following) do
-    Enum.find(following_relationships, fn
-      fr -> fr.follower_id == follower.id and fr.following_id == following.id
-    end)
-  end
-
   def render("index.json", %{users: users} = opts) do
+    relationships_opt =
+      if Map.has_key?(opts, :relationships) do
+        opts[:relationships]
+      else
+        UserRelationship.view_relationships_option(opts[:for], users)
+      end
+
+    opts = Map.put(opts, :relationships, relationships_opt)
+
     users
     |> render_many(AccountView, "show.json", opts)
     |> Enum.filter(&Enum.any?/1)
@@ -53,7 +56,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     follow_state =
       if following_relationships do
         user_to_target_following_relation =
-          find_following_rel(following_relationships, reading_user, target)
+          FollowingRelationship.find(following_relationships, reading_user, target)
 
         User.get_follow_state(reading_user, target, user_to_target_following_relation)
       else
@@ -62,7 +65,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
     followed_by =
       if following_relationships do
-        case find_following_rel(following_relationships, target, reading_user) do
+        case FollowingRelationship.find(following_relationships, target, reading_user) do
           %{state: "accept"} -> true
           _ -> false
         end
@@ -70,7 +73,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         User.following?(target, reading_user)
       end
 
-    # NOTE: adjust StatusView.relationships_opts/2 if adding new relation-related flags
+    # NOTE: adjust UserRelationship.view_relationships_option/2 on new relation-related flags
     %{
       id: to_string(target.id),
       following: follow_state == "accept",
@@ -129,11 +132,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     }
   end
 
-  def render("relationships.json", %{user: user, targets: targets}) do
-    relationships_opts = StatusView.relationships_opts(user, targets)
-    opts = %{as: :target, user: user, relationships: relationships_opts}
+  def render("relationships.json", %{user: user, targets: targets} = opts) do
+    relationships_opt =
+      if Map.has_key?(opts, :relationships) do
+        opts[:relationships]
+      else
+        UserRelationship.view_relationships_option(user, targets)
+      end
 
-    render_many(targets, AccountView, "relationship.json", opts)
+    render_opts = %{as: :target, user: user, relationships: relationships_opt}
+    render_many(targets, AccountView, "relationship.json", render_opts)
   end
 
   defp do_render("show.json", %{user: user} = opts) do

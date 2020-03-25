@@ -9,7 +9,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
-  alias Pleroma.FollowingRelationship
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -72,24 +71,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     present?(user && user.ap_id in (object.data["announcements"] || []))
   end
 
-  def relationships_opts(_reading_user = nil, _actors) do
-    %{user_relationships: [], following_relationships: []}
-  end
-
-  def relationships_opts(reading_user, actors) do
-    user_relationships =
-      UserRelationship.dictionary(
-        [reading_user],
-        actors,
-        [:block, :mute, :notification_mute, :reblog_mute],
-        [:block, :inverse_subscription]
-      )
-
-    following_relationships = FollowingRelationship.all_between_user_sets([reading_user], actors)
-
-    %{user_relationships: user_relationships, following_relationships: following_relationships}
-  end
-
   def render("index.json", opts) do
     # To do: check AdminAPIControllerTest on the reasons behind nil activities in the list
     activities = Enum.filter(opts.activities, & &1)
@@ -105,13 +86,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Activity.with_set_thread_muted_field(opts[:for])
       |> Repo.all()
 
-    actors = Enum.map(activities ++ parent_activities, &get_user(&1.data["actor"]))
+    relationships_opt =
+      if Map.has_key?(opts, :relationships) do
+        opts[:relationships]
+      else
+        actors = Enum.map(activities ++ parent_activities, &get_user(&1.data["actor"]))
+        UserRelationship.view_relationships_option(opts[:for], actors)
+      end
 
     opts =
       opts
       |> Map.put(:replied_to_activities, replied_to_activities)
       |> Map.put(:parent_activities, parent_activities)
-      |> Map.put(:relationships, relationships_opts(opts[:for], actors))
+      |> Map.put(:relationships, relationships_opt)
 
     safe_render_many(activities, StatusView, "show.json", opts)
   end

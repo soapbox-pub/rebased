@@ -151,4 +151,10 @@ defmodule Pleroma.FollowingRelationship do
     )
     |> Repo.all()
   end
+
+  def find(following_relationships, follower, following) do
+    Enum.find(following_relationships, fn
+      fr -> fr.follower_id == follower.id and fr.following_id == following.id
+    end)
+  end
 end

@@ -8,12 +8,13 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Activity
   alias Pleroma.Notification
   alias Pleroma.User
+  alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
 
-  def render("index.json", %{notifications: notifications, for: reading_user}) do
+  def render("index.json", %{notifications: notifications, for: reading_user} = opts) do
     activities = Enum.map(notifications, & &1.activity)
 
     parent_activities =
@@ -30,21 +31,28 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       |> Activity.with_preloaded_object(:left)
       |> Pleroma.Repo.all()
 
-    move_activities_targets =
-      activities
-      |> Enum.filter(&(Activity.mastodon_notification_type(&1) == "move"))
-      |> Enum.map(&User.get_cached_by_ap_id(&1.data["target"]))
+    relationships_opt =
+      if Map.has_key?(opts, :relationships) do
+        opts[:relationships]
+      else
+        move_activities_targets =
+          activities
+          |> Enum.filter(&(Activity.mastodon_notification_type(&1) == "move"))
+          |> Enum.map(&User.get_cached_by_ap_id(&1.data["target"]))
 
-    actors =
-      activities
-      |> Enum.map(fn a -> User.get_cached_by_ap_id(a.data["actor"]) end)
-      |> Enum.filter(& &1)
-      |> Kernel.++(move_activities_targets)
+        actors =
+          activities
+          |> Enum.map(fn a -> User.get_cached_by_ap_id(a.data["actor"]) end)
+          |> Enum.filter(& &1)
+          |> Kernel.++(move_activities_targets)
+
+        UserRelationship.view_relationships_option(reading_user, actors)
+      end
 
     opts = %{
       for: reading_user,
       parent_activities: parent_activities,
-      relationships: StatusView.relationships_opts(reading_user, actors)
+      relationships: relationships_opt
     }
 
     safe_render_many(notifications, NotificationView, "show.json", opts)
@@ -85,27 +93,27 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         }
       }
 
-      relationships_opts = %{relationships: opts[:relationships]}
+      relationships_opt = %{relationships: opts[:relationships]}
 
       case mastodon_type do
         "mention" ->
-          put_status(response, activity, reading_user, relationships_opts)
+          put_status(response, activity, reading_user, relationships_opt)
 
         "favourite" ->
-          put_status(response, parent_activity_fn.(), reading_user, relationships_opts)
+          put_status(response, parent_activity_fn.(), reading_user, relationships_opt)
 
         "reblog" ->
-          put_status(response, parent_activity_fn.(), reading_user, relationships_opts)
+          put_status(response, parent_activity_fn.(), reading_user, relationships_opt)
 
         "move" ->
-          put_target(response, activity, reading_user, relationships_opts)
+          put_target(response, activity, reading_user, relationships_opt)
 
         "follow" ->
           response
 
         "pleroma:emoji_reaction" ->
           response
-          |> put_status(parent_activity_fn.(), reading_user, relationships_opts)
+          |> put_status(parent_activity_fn.(), reading_user, relationships_opt)
           |> put_emoji(activity)
 
         _ ->

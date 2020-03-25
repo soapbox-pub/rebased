@@ -8,6 +8,7 @@ defmodule Pleroma.UserRelationship do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserRelationship
@@ -122,6 +123,25 @@ defmodule Pleroma.UserRelationship do
       true ->
         func.(source, target)
     end
+  end
+
+  @doc ":relationships option for StatusView / AccountView / NotificationView"
+  def view_relationships_option(nil = _reading_user, _actors) do
+    %{user_relationships: [], following_relationships: []}
+  end
+
+  def view_relationships_option(%User{} = reading_user, actors) do
+    user_relationships =
+      UserRelationship.dictionary(
+        [reading_user],
+        actors,
+        [:block, :mute, :notification_mute, :reblog_mute],
+        [:block, :inverse_subscription]
+      )
+
+    following_relationships = FollowingRelationship.all_between_user_sets([reading_user], actors)
+
+    %{user_relationships: user_relationships, following_relationships: following_relationships}
   end
 
   defp validate_not_self_relationship(%Ecto.Changeset{} = changeset) do

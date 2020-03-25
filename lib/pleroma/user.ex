@@ -218,7 +218,10 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "Dumps id to SQL-compatible format"
+  @doc """
+  Dumps Flake Id to SQL-compatible format (16-byte UUID).
+  E.g. "9pQtDGXuq4p3VlcJEm" -> <<0, 0, 1, 110, 179, 218, 42, 92, 213, 41, 44, 227, 95, 213, 0, 0>>
+  """
   def binary_id(source_id) when is_binary(source_id) do
     with {:ok, dumped_id} <- FlakeId.Ecto.CompatType.dump(source_id) do
       dumped_id
