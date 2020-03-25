@@ -1222,15 +1222,15 @@ defmodule Pleroma.User do
   end
 
   @doc """
-  Returns map of outgoing (blocked, muted etc.) relations' user AP IDs by relation type.
-  E.g. `outgoing_relations_ap_ids(user, [:block])` -> `%{block: ["https://some.site/users/userapid"]}`
+  Returns map of outgoing (blocked, muted etc.) relationships' user AP IDs by relation type.
+  E.g. `outgoing_relationships_ap_ids(user, [:block])` -> `%{block: ["https://some.site/users/userapid"]}`
   """
-  @spec outgoing_relations_ap_ids(User.t(), list(atom())) :: %{atom() => list(String.t())}
-  def outgoing_relations_ap_ids(_user, []), do: %{}
+  @spec outgoing_relationships_ap_ids(User.t(), list(atom())) :: %{atom() => list(String.t())}
+  def outgoing_relationships_ap_ids(_user, []), do: %{}
 
-  def outgoing_relations_ap_ids(nil, _relationship_types), do: %{}
+  def outgoing_relationships_ap_ids(nil, _relationship_types), do: %{}
 
-  def outgoing_relations_ap_ids(%User{} = user, relationship_types)
+  def outgoing_relationships_ap_ids(%User{} = user, relationship_types)
       when is_list(relationship_types) do
     db_result =
       user
@@ -1249,13 +1249,13 @@ defmodule Pleroma.User do
     )
   end
 
-  def incoming_relations_ungrouped_ap_ids(user, relationship_types, ap_ids \\ nil)
+  def incoming_relationships_ungrouped_ap_ids(user, relationship_types, ap_ids \\ nil)
 
-  def incoming_relations_ungrouped_ap_ids(_user, [], _ap_ids), do: []
+  def incoming_relationships_ungrouped_ap_ids(_user, [], _ap_ids), do: []
 
-  def incoming_relations_ungrouped_ap_ids(nil, _relationship_types, _ap_ids), do: []
+  def incoming_relationships_ungrouped_ap_ids(nil, _relationship_types, _ap_ids), do: []
 
-  def incoming_relations_ungrouped_ap_ids(%User{} = user, relationship_types, ap_ids)
+  def incoming_relationships_ungrouped_ap_ids(%User{} = user, relationship_types, ap_ids)
       when is_list(relationship_types) do
     user
     |> assoc(:incoming_relationships)

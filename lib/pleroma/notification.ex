@@ -39,11 +39,11 @@ defmodule Pleroma.Notification do
   end
 
   defp for_user_query_ap_id_opts(user, opts) do
-    ap_id_relations =
+    ap_id_relationships =
       [:block] ++
         if opts[@include_muted_option], do: [], else: [:notification_mute]
 
-    preloaded_ap_ids = User.outgoing_relations_ap_ids(user, ap_id_relations)
+    preloaded_ap_ids = User.outgoing_relationships_ap_ids(user, ap_id_relationships)
 
     exclude_blocked_opts = Map.merge(%{blocked_users_ap_ids: preloaded_ap_ids[:block]}, opts)
 
@@ -370,7 +370,7 @@ defmodule Pleroma.Notification do
     relation_restricted_ap_ids =
       activity
       |> Activity.user_actor()
-      |> User.incoming_relations_ungrouped_ap_ids([
+      |> User.incoming_relationships_ungrouped_ap_ids([
         :block,
         :notification_mute
       ])
