@@ -95,6 +95,7 @@ defmodule Pleroma.Activity do
     |> preload([activity, object: object], object: object)
   end
 
+  # Note: applies to fake activities (ActivityPub.Utils.get_notified_from_object/1 etc.)
   def user_actor(%Activity{actor: nil}), do: nil
 
   def user_actor(%Activity{} = activity) do

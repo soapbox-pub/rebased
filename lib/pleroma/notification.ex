@@ -322,6 +322,8 @@ defmodule Pleroma.Notification do
   @doc """
   Returns a tuple with 2 elements:
     {enabled notification receivers, currently disabled receivers (blocking / [thread] muting)}
+
+  NOTE: might be called for FAKE Activities, see ActivityPub.Utils.get_notified_from_object/1
   """
   def get_notified_from_activity(activity, local_only \\ true)
 
@@ -338,7 +340,7 @@ defmodule Pleroma.Notification do
     # Since even subscribers and followers can mute / thread-mute, filtering all above AP IDs
     notification_enabled_ap_ids =
       potential_receiver_ap_ids
-      |> exclude_relation_restricting_ap_ids(activity)
+      |> exclude_relationship_restricted_ap_ids(activity)
       |> exclude_thread_muter_ap_ids(activity)
 
     potential_receivers =
@@ -355,10 +357,10 @@ defmodule Pleroma.Notification do
   def get_notified_from_activity(_, _local_only), do: {[], []}
 
   @doc "Filters out AP IDs of users basing on their relationships with activity actor user"
-  def exclude_relation_restricting_ap_ids([], _activity), do: []
+  def exclude_relationship_restricted_ap_ids([], _activity), do: []
 
-  def exclude_relation_restricting_ap_ids(ap_ids, %Activity{} = activity) do
-    relation_restricted_ap_ids =
+  def exclude_relationship_restricted_ap_ids(ap_ids, %Activity{} = activity) do
+    relationship_restricted_ap_ids =
       activity
       |> Activity.user_actor()
       |> User.incoming_relationships_ungrouped_ap_ids([
@@ -366,7 +368,7 @@ defmodule Pleroma.Notification do
         :notification_mute
       ])
 
-    Enum.uniq(ap_ids) -- relation_restricted_ap_ids
+    Enum.uniq(ap_ids) -- relationship_restricted_ap_ids
   end
 
   @doc "Filters out AP IDs of users who mute activity thread"

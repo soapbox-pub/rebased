@@ -41,14 +41,15 @@ defmodule Pleroma.ThreadMute do
 
   def muter_ap_ids(context, ap_ids \\ nil)
 
-  def muter_ap_ids(context, ap_ids) when context not in [nil, ""] do
+  # Note: applies to fake activities (ActivityPub.Utils.get_notified_from_object/1 etc.)
+  def muter_ap_ids(context, _ap_ids) when is_nil(context), do: []
+
+  def muter_ap_ids(context, ap_ids) do
     context
     |> muters_query()
     |> maybe_filter_on_ap_id(ap_ids)
     |> Repo.all()
   end
-
-  def muter_ap_ids(_context, _ap_ids), do: []
 
   defp maybe_filter_on_ap_id(query, ap_ids) when is_list(ap_ids) do
     where(query, [tm, u], u.ap_id in ^ap_ids)
