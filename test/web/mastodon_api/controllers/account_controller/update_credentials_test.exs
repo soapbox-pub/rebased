@@ -118,6 +118,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user_data["pleroma"]["hide_followers"] == true
     end
 
+    test "updates the user's discoverable status", %{conn: conn} do
+      assert %{"source" => %{"pleroma" => %{"discoverable" => true}}} =
+               conn
+               |> patch("/api/v1/accounts/update_credentials", %{discoverable: "true"})
+               |> json_response(:ok)
+
+      assert %{"source" => %{"pleroma" => %{"discoverable" => false}}} =
+               conn
+               |> patch("/api/v1/accounts/update_credentials", %{discoverable: "false"})
+               |> json_response(:ok)
+    end
+
     test "updates the user's hide_followers_count and hide_follows_count", %{conn: conn} do
       conn =
         patch(conn, "/api/v1/accounts/update_credentials", %{
