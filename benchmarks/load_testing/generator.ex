@@ -24,7 +24,7 @@ defmodule Pleroma.LoadTesting.Generator do
     IO.puts("Starting generating #{opts[:users_max]} users...")
     {time, users} = :timer.tc(fn -> do_generate_users(opts) end)
 
-    IO.puts("Inserting users take #{to_sec(time)} sec.\n")
+    IO.puts("Inserting users took #{to_sec(time)} sec.\n")
     users
   end
 
