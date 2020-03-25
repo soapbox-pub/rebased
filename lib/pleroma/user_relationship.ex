@@ -21,15 +21,18 @@ defmodule Pleroma.UserRelationship do
   end
 
   for relationship_type <- Keyword.keys(UserRelationshipTypeEnum.__enum_map__()) do
-    # Definitions of `create_block/2`, `create_mute/2` etc.
+    # `def create_block/2`, `def create_mute/2`, `def create_reblog_mute/2`,
+    #   `def create_notification_mute/2`, `def create_inverse_subscription/2`
     def unquote(:"create_#{relationship_type}")(source, target),
       do: create(unquote(relationship_type), source, target)
 
-    # Definitions of `delete_block/2`, `delete_mute/2` etc.
+    # `def delete_block/2`, `def delete_mute/2`, `def delete_reblog_mute/2`,
+    #   `def delete_notification_mute/2`, `def delete_inverse_subscription/2`
     def unquote(:"delete_#{relationship_type}")(source, target),
       do: delete(unquote(relationship_type), source, target)
 
-    # Definitions of `block_exists?/2`, `mute_exists?/2` etc.
+    # `def block_exists?/2`, `def mute_exists?/2`, `def reblog_mute_exists?/2`,
+    #   `def notification_mute_exists?/2`, `def inverse_subscription_exists?/2`
     def unquote(:"#{relationship_type}_exists?")(source, target),
       do: exists?(unquote(relationship_type), source, target)
   end

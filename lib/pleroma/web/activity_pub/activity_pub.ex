@@ -1239,17 +1239,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp fetch_activities_query_ap_ids_ops(opts) do
     source_user = opts["muting_user"]
-    ap_id_relations = if source_user, do: [:mute, :reblog_mute], else: []
+    ap_id_relationships = if source_user, do: [:mute, :reblog_mute], else: []
 
-    ap_id_relations =
-      ap_id_relations ++
+    ap_id_relationships =
+      ap_id_relationships ++
         if opts["blocking_user"] && opts["blocking_user"] == source_user do
           [:block]
         else
           []
         end
 
-    preloaded_ap_ids = User.outgoing_relations_ap_ids(source_user, ap_id_relations)
+    preloaded_ap_ids = User.outgoing_relationships_ap_ids(source_user, ap_id_relationships)
 
     restrict_blocked_opts = Map.merge(%{"blocked_users_ap_ids" => preloaded_ap_ids[:block]}, opts)
     restrict_muted_opts = Map.merge(%{"muted_users_ap_ids" => preloaded_ap_ids[:mute]}, opts)
