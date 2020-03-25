@@ -135,12 +135,8 @@ defmodule Pleroma.FollowingRelationship do
         target_users
       )
       when is_list(source_users) and is_list(target_users) do
-    get_bin_ids = fn user ->
-      with {:ok, bin_id} <- CompatType.dump(user.id), do: bin_id
-    end
-
-    source_user_ids = Enum.map(source_users, &get_bin_ids.(&1))
-    target_user_ids = Enum.map(target_users, &get_bin_ids.(&1))
+    source_user_ids = User.binary_id(source_users)
+    target_user_ids = User.binary_id(target_users)
 
     __MODULE__
     |> where(

@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
   defp find_following_rel(following_relationships, follower, following) do
@@ -129,7 +130,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   def render("relationships.json", %{user: user, targets: targets}) do
-    render_many(targets, AccountView, "relationship.json", user: user, as: :target)
+    relationships_opts = StatusView.relationships_opts(user, targets)
+    opts = %{as: :target, user: user, relationships: relationships_opts}
+
+    render_many(targets, AccountView, "relationship.json", opts)
   end
 
   defp do_render("show.json", %{user: user} = opts) do

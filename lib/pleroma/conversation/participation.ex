@@ -129,21 +129,18 @@ defmodule Pleroma.Conversation.Participation do
   end
 
   def restrict_recipients(query, user, %{"recipients" => user_ids}) do
-    user_ids =
+    user_binary_ids =
       [user.id | user_ids]
       |> Enum.uniq()
-      |> Enum.reduce([], fn user_id, acc ->
-        {:ok, user_id} = FlakeId.Ecto.CompatType.dump(user_id)
-        [user_id | acc]
-      end)
+      |> User.binary_id()
 
     conversation_subquery =
       __MODULE__
       |> group_by([p], p.conversation_id)
       |> having(
         [p],
-        count(p.user_id) == ^length(user_ids) and
-          fragment("array_agg(?) @> ?", p.user_id, ^user_ids)
+        count(p.user_id) == ^length(user_binary_ids) and
+          fragment("array_agg(?) @> ?", p.user_id, ^user_binary_ids)
       )
       |> select([p], %{id: p.conversation_id})
 

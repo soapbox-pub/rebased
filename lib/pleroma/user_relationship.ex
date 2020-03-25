@@ -8,7 +8,6 @@ defmodule Pleroma.UserRelationship do
   import Ecto.Changeset
   import Ecto.Query
 
-  alias FlakeId.Ecto.CompatType
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserRelationship
@@ -84,12 +83,8 @@ defmodule Pleroma.UserRelationship do
         target_to_source_rel_types \\ nil
       )
       when is_list(source_users) and is_list(target_users) do
-    get_bin_ids = fn user ->
-      with {:ok, bin_id} <- CompatType.dump(user.id), do: bin_id
-    end
-
-    source_user_ids = Enum.map(source_users, &get_bin_ids.(&1))
-    target_user_ids = Enum.map(target_users, &get_bin_ids.(&1))
+    source_user_ids = User.binary_id(source_users)
+    target_user_ids = User.binary_id(target_users)
 
     get_rel_type_codes = fn rel_type -> user_relationship_mappings()[rel_type] end
 

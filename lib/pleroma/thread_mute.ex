@@ -24,10 +24,10 @@ defmodule Pleroma.ThreadMute do
   end
 
   def query(user_id, context) do
-    {:ok, user_id} = FlakeId.Ecto.CompatType.dump(user_id)
+    user_binary_id = User.binary_id(user_id)
 
     ThreadMute
-    |> Ecto.Query.where(user_id: ^user_id)
+    |> Ecto.Query.where(user_id: ^user_binary_id)
     |> Ecto.Query.where(context: ^context)
   end
 

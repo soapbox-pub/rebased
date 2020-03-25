@@ -218,6 +218,21 @@ defmodule Pleroma.User do
     end
   end
 
+  @doc "Dumps id to SQL-compatible format"
+  def binary_id(source_id) when is_binary(source_id) do
+    with {:ok, dumped_id} <- FlakeId.Ecto.CompatType.dump(source_id) do
+      dumped_id
+    else
+      _ -> source_id
+    end
+  end
+
+  def binary_id(source_ids) when is_list(source_ids) do
+    Enum.map(source_ids, &binary_id/1)
+  end
+
+  def binary_id(%User{} = user), do: binary_id(user.id)
+
   @doc "Returns status account"
   @spec account_status(User.t()) :: account_status()
   def account_status(%User{deactivated: true}), do: :deactivated
