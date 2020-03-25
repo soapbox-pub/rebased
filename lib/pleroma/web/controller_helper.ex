@@ -34,7 +34,12 @@ defmodule Pleroma.Web.ControllerHelper do
 
   defp param_to_integer(_, default), do: default
 
-  def add_link_headers(conn, activities, extra_params \\ %{}) do
+  def add_link_headers(conn, activities, extra_params \\ %{})
+
+  def add_link_headers(%{assigns: %{skip_link_headers: true}} = conn, _activities, _extra_params),
+    do: conn
+
+  def add_link_headers(conn, activities, extra_params) do
     case List.last(activities) do
       %{id: max_id} ->
         params =
