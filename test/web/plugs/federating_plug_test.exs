@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.FederatingPlugTest do
   use Pleroma.Web.ConnCase
 
-  clear_config([:instance, :federating])
+  setup do: clear_config([:instance, :federating])
 
   test "returns and halt the conn when federating is disabled" do
     Pleroma.Config.put([:instance, :federating], false)

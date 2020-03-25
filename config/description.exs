@@ -2915,5 +2915,65 @@ config :pleroma, :config_description, [
         suggestions: [2]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: :restrict_unauthenticated,
+    type: :group,
+    description:
+      "Disallow viewing timelines, user profiles and statuses for unauthenticated users.",
+    children: [
+      %{
+        key: :timelines,
+        type: :map,
+        description: "Settings for public and federated timelines.",
+        children: [
+          %{
+            key: :local,
+            type: :boolean,
+            description: "Disallow view public timeline."
+          },
+          %{
+            key: :federated,
+            type: :boolean,
+            description: "Disallow view federated timeline."
+          }
+        ]
+      },
+      %{
+        key: :profiles,
+        type: :map,
+        description: "Settings for user profiles.",
+        children: [
+          %{
+            key: :local,
+            type: :boolean,
+            description: "Disallow view local user profiles."
+          },
+          %{
+            key: :remote,
+            type: :boolean,
+            description: "Disallow view remote user profiles."
+          }
+        ]
+      },
+      %{
+        key: :activities,
+        type: :map,
+        description: "Settings for statuses.",
+        children: [
+          %{
+            key: :local,
+            type: :boolean,
+            description: "Disallow view local statuses."
+          },
+          %{
+            key: :remote,
+            type: :boolean,
+            description: "Disallow view remote statuses."
+          }
+        ]
+      }
+    ]
   }
 ]

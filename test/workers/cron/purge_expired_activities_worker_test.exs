@@ -11,7 +11,7 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorkerTest do
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
-  clear_config([ActivityExpiration, :enabled])
+  setup do: clear_config([ActivityExpiration, :enabled])
 
   test "deletes an expiration activity" do
     Pleroma.Config.put([ActivityExpiration, :enabled], true)

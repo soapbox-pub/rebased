@@ -8,8 +8,8 @@ defmodule Pleroma.Web.MediaProxyTest do
   import Pleroma.Web.MediaProxy
   alias Pleroma.Web.MediaProxy.MediaProxyController
 
-  clear_config([:media_proxy, :enabled])
-  clear_config(Pleroma.Upload)
+  setup do: clear_config([:media_proxy, :enabled])
+  setup do: clear_config(Pleroma.Upload)
 
   describe "when enabled" do
     setup do

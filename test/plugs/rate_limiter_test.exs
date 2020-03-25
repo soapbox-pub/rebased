@@ -12,14 +12,12 @@ defmodule Pleroma.Plugs.RateLimiterTest do
   import Pleroma.Tests.Helpers, only: [clear_config: 1, clear_config: 2]
 
   # Note: each example must work with separate buckets in order to prevent concurrency issues
-
-  clear_config([Pleroma.Web.Endpoint, :http, :ip])
-  clear_config(:rate_limit)
+  setup do: clear_config([Pleroma.Web.Endpoint, :http, :ip])
+  setup do: clear_config(:rate_limit)
 
   describe "config" do
     @limiter_name :test_init
-
-    clear_config([Pleroma.Plugs.RemoteIp, :enabled])
+    setup do: clear_config([Pleroma.Plugs.RemoteIp, :enabled])
 
     test "config is required for plug to work" do
       Config.put([:rate_limit, @limiter_name], {1, 1})

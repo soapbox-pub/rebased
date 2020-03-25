@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
   alias Pleroma.Web.ActivityPub.MRF.VocabularyPolicy
 
   describe "accept" do
-    clear_config([:mrf_vocabulary, :accept])
+    setup do: clear_config([:mrf_vocabulary, :accept])
 
     test "it accepts based on parent activity type" do
       Pleroma.Config.put([:mrf_vocabulary, :accept], ["Like"])
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
   end
 
   describe "reject" do
-    clear_config([:mrf_vocabulary, :reject])
+    setup do: clear_config([:mrf_vocabulary, :reject])
 
     test "it rejects based on parent activity type" do
       Pleroma.Config.put([:mrf_vocabulary, :reject], ["Like"])

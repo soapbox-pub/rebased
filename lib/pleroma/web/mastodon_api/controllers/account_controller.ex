@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   import Pleroma.Web.ControllerHelper,
     only: [add_link_headers: 2, truthy_param?: 1, assign_account_by_id: 2, json_response: 3]
 
-  alias Pleroma.Emoji
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
@@ -60,7 +59,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(
     Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-    when action != :create
+    when action not in [:create, :show, :statuses]
   )
 
   @relationship_actions [:follow, :unfollow]
@@ -144,17 +143,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   def update_credentials(%{assigns: %{user: original_user}} = conn, params) do
     user = original_user
 
-    params =
-      if Map.has_key?(params, "fields_attributes") do
-        Map.update!(params, "fields_attributes", fn fields ->
-          fields
-          |> normalize_fields_attributes()
-          |> Enum.filter(fn %{"name" => n} -> n != "" end)
-        end)
-      else
-        params
-      end
-
     user_params =
       [
         :no_rich_text,
@@ -173,46 +161,20 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         add_if_present(acc, params, to_string(key), key, &{:ok, truthy_param?(&1)})
       end)
       |> add_if_present(params, "display_name", :name)
-      |> add_if_present(params, "note", :bio, fn value -> {:ok, User.parse_bio(value, user)} end)
-      |> add_if_present(params, "avatar", :avatar, fn value ->
-        with %Plug.Upload{} <- value,
-             {:ok, object} <- ActivityPub.upload(value, type: :avatar) do
-          {:ok, object.data}
-        end
-      end)
-      |> add_if_present(params, "header", :banner, fn value ->
-        with %Plug.Upload{} <- value,
-             {:ok, object} <- ActivityPub.upload(value, type: :banner) do
-          {:ok, object.data}
-        end
-      end)
-      |> add_if_present(params, "pleroma_background_image", :background, fn value ->
-        with %Plug.Upload{} <- value,
-             {:ok, object} <- ActivityPub.upload(value, type: :background) do
-          {:ok, object.data}
-        end
-      end)
-      |> add_if_present(params, "fields_attributes", :fields, fn fields ->
-        fields = Enum.map(fields, fn f -> Map.update!(f, "value", &AutoLinker.link(&1)) end)
-
-        {:ok, fields}
-      end)
-      |> add_if_present(params, "fields_attributes", :raw_fields)
-      |> add_if_present(params, "pleroma_settings_store", :pleroma_settings_store, fn value ->
-        {:ok, Map.merge(user.pleroma_settings_store, value)}
-      end)
+      |> add_if_present(params, "note", :bio)
+      |> add_if_present(params, "avatar", :avatar)
+      |> add_if_present(params, "header", :banner)
+      |> add_if_present(params, "pleroma_background_image", :background)
+      |> add_if_present(
+        params,
+        "fields_attributes",
+        :raw_fields,
+        &{:ok, normalize_fields_attributes(&1)}
+      )
+      |> add_if_present(params, "pleroma_settings_store", :pleroma_settings_store)
       |> add_if_present(params, "default_scope", :default_scope)
       |> add_if_present(params, "actor_type", :actor_type)
 
-    emojis_text = (user_params["display_name"] || "") <> (user_params["note"] || "")
-
-    user_emojis =
-      user
-      |> Map.get(:emoji, [])
-      |> Enum.concat(Emoji.Formatter.get_emoji_map(emojis_text))
-      |> Enum.dedup()
-
-    user_params = Map.put(user_params, :emoji, user_emojis)
     changeset = User.update_changeset(user, user_params)
 
     with {:ok, user} <- User.update_and_set_cache(changeset) do
@@ -263,7 +225,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "GET /api/v1/accounts/:id/statuses"
   def statuses(%{assigns: %{user: reading_user}} = conn, params) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user),
+         true <- User.visible_for?(user, reading_user) do
       params =
         params
         |> Map.put("tag", params["tagged"])
@@ -275,6 +238,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> add_link_headers(activities)
       |> put_view(StatusView)
       |> render("index.json", activities: activities, for: reading_user, as: :activity)
+    else
+      _e -> render_error(conn, :not_found, "Can't find user")
     end
   end
 

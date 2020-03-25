@@ -7,7 +7,7 @@ defmodule Pleroma.ActivityExpirationTest do
   alias Pleroma.ActivityExpiration
   import Pleroma.Factory
 
-  clear_config([ActivityExpiration, :enabled])
+  setup do: clear_config([ActivityExpiration, :enabled])
 
   test "finds activities due to be deleted only" do
     activity = insert(:note_activity)
