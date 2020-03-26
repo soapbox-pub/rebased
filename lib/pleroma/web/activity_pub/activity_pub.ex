@@ -129,18 +129,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   # TODO rewrite in with style
   @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
   def persist(object, meta) do
-    local = Keyword.fetch!(meta, :local)
-    {recipients, _, _} = get_recipients(object)
-
-    {:ok, activity} =
-      Repo.insert(%Activity{
-        data: object,
-        local: local,
-        recipients: recipients,
-        actor: object["actor"]
-      })
-
-    {:ok, activity, meta}
+    with local <- Keyword.fetch!(meta, :local),
+         {recipients, _, _} <- get_recipients(object),
+         {:ok, activity} <-
+           Repo.insert(%Activity{
+             data: object,
+             local: local,
+             recipients: recipients,
+             actor: object["actor"]
+           }) do
+      {:ok, activity, meta}
+    end
   end
 
   def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
