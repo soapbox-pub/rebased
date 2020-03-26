@@ -26,8 +26,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def stringify_keys(object) do
     object
-    |> Enum.map(fn {key, val} -> {to_string(key), val} end)
-    |> Enum.into(%{})
+    |> Map.new(fn {key, val} -> {to_string(key), val} end)
   end
 
   def fetch_actor_and_object(object) do
