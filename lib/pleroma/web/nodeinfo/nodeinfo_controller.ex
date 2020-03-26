@@ -106,6 +106,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         },
         staffAccounts: staff_accounts,
         federation: federation_response,
+        characterLimit: Config.get([:instance, :limit]),
         pollLimits: Config.get([:instance, :poll_limits]),
         postFormats: Config.get([:instance, :allowed_post_formats]),
         uploadLimits: %{
@@ -125,7 +126,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         mailerEnabled: Config.get([Pleroma.Emails.Mailer, :enabled], false),
         features: features,
         restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames]),
-        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false)
+        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false),
+        vapidPublicKey: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
       }
     }
   end
