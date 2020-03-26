@@ -12,7 +12,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, :string, primary_key: true)
+    field(:id, Types.ObjectID, primary_key: true)
     field(:to, {:array, :string}, default: [])
     field(:cc, {:array, :string}, default: [])
     field(:bto, {:array, :string}, default: [])
