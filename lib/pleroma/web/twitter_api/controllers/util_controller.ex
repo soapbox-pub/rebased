@@ -88,6 +88,18 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  # Deprecated in favor of `/nodeinfo`
+  # https://git.pleroma.social/pleroma/pleroma/-/merge_requests/2327
+  # https://git.pleroma.social/pleroma/pleroma-fe/-/merge_requests/1084
+  def config(conn, _params) do
+    json(conn, %{
+      site: %{
+        textlimit: to_string(Config.get([:instance, :limit])),
+        vapidPublicKey: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+      }
+    })
+  end
+
   def frontend_configurations(conn, _params) do
     config =
       Pleroma.Config.get(:frontend_configurations, %{})
