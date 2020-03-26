@@ -22,6 +22,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
          {_, {:ok, _}} <- {:federation, maybe_federate(activity, meta)} do
       {:ok, activity, meta}
     else
+      {:mrf_object, {:reject, _}} -> {:ok, nil, meta}
       e -> {:error, e}
     end
   end
