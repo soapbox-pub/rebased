@@ -14,10 +14,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   def render("index.json", %{users: users} = opts) do
     relationships_opt =
-      if Map.has_key?(opts, :relationships) do
-        opts[:relationships]
-      else
-        UserRelationship.view_relationships_option(opts[:for], users)
+      cond do
+        Map.has_key?(opts, :relationships) ->
+          opts[:relationships]
+
+        is_nil(opts[:for]) ->
+          UserRelationship.view_relationships_option(nil, [])
+
+        true ->
+          UserRelationship.view_relationships_option(opts[:for], users)
       end
 
     opts = Map.put(opts, :relationships, relationships_opt)
@@ -134,10 +139,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   def render("relationships.json", %{user: user, targets: targets} = opts) do
     relationships_opt =
-      if Map.has_key?(opts, :relationships) do
-        opts[:relationships]
-      else
-        UserRelationship.view_relationships_option(user, targets)
+      cond do
+        Map.has_key?(opts, :relationships) ->
+          opts[:relationships]
+
+        is_nil(opts[:for]) ->
+          UserRelationship.view_relationships_option(nil, [])
+
+        true ->
+          UserRelationship.view_relationships_option(user, targets)
       end
 
     render_opts = %{as: :target, user: user, relationships: relationships_opt}

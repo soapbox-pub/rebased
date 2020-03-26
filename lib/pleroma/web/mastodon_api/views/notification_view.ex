@@ -32,21 +32,26 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       |> Pleroma.Repo.all()
 
     relationships_opt =
-      if Map.has_key?(opts, :relationships) do
-        opts[:relationships]
-      else
-        move_activities_targets =
-          activities
-          |> Enum.filter(&(Activity.mastodon_notification_type(&1) == "move"))
-          |> Enum.map(&User.get_cached_by_ap_id(&1.data["target"]))
+      cond do
+        Map.has_key?(opts, :relationships) ->
+          opts[:relationships]
 
-        actors =
-          activities
-          |> Enum.map(fn a -> User.get_cached_by_ap_id(a.data["actor"]) end)
-          |> Enum.filter(& &1)
-          |> Kernel.++(move_activities_targets)
+        is_nil(opts[:for]) ->
+          UserRelationship.view_relationships_option(nil, [])
 
-        UserRelationship.view_relationships_option(reading_user, actors)
+        true ->
+          move_activities_targets =
+            activities
+            |> Enum.filter(&(Activity.mastodon_notification_type(&1) == "move"))
+            |> Enum.map(&User.get_cached_by_ap_id(&1.data["target"]))
+
+          actors =
+            activities
+            |> Enum.map(fn a -> User.get_cached_by_ap_id(a.data["actor"]) end)
+            |> Enum.filter(& &1)
+            |> Kernel.++(move_activities_targets)
+
+          UserRelationship.view_relationships_option(reading_user, actors)
       end
 
     opts = %{

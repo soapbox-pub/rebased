@@ -87,11 +87,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Repo.all()
 
     relationships_opt =
-      if Map.has_key?(opts, :relationships) do
-        opts[:relationships]
-      else
-        actors = Enum.map(activities ++ parent_activities, &get_user(&1.data["actor"]))
-        UserRelationship.view_relationships_option(opts[:for], actors)
+      cond do
+        Map.has_key?(opts, :relationships) ->
+          opts[:relationships]
+
+        is_nil(opts[:for]) ->
+          UserRelationship.view_relationships_option(nil, [])
+
+        true ->
+          actors = Enum.map(activities ++ parent_activities, &get_user(&1.data["actor"]))
+
+          UserRelationship.view_relationships_option(opts[:for], actors)
       end
 
     opts =
