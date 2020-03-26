@@ -150,22 +150,26 @@ defmodule Pleroma.User do
            {outgoing_relation, outgoing_relation_target},
            {incoming_relation, incoming_relation_source}
          ]} <- @user_relationships_config do
-      # Definitions of `has_many :blocker_blocks`, `has_many :muter_mutes` etc.
+      # Definitions of `has_many` relations: :blocker_blocks, :muter_mutes, :reblog_muter_mutes,
+      #   :notification_muter_mutes, :subscribee_subscriptions
       has_many(outgoing_relation, UserRelationship,
         foreign_key: :source_id,
         where: [relationship_type: relationship_type]
       )
 
-      # Definitions of `has_many :blockee_blocks`, `has_many :mutee_mutes` etc.
+      # Definitions of `has_many` relations: :blockee_blocks, :mutee_mutes, :reblog_mutee_mutes,
+      #   :notification_mutee_mutes, :subscriber_subscriptions
       has_many(incoming_relation, UserRelationship,
         foreign_key: :target_id,
         where: [relationship_type: relationship_type]
       )
 
-      # Definitions of `has_many :blocked_users`, `has_many :muted_users` etc.
+      # Definitions of `has_many` relations: :blocked_users, :muted_users, :reblog_muted_users,
+      #   :notification_muted_users, :subscriber_users
       has_many(outgoing_relation_target, through: [outgoing_relation, :target])
 
-      # Definitions of `has_many :blocker_users`, `has_many :muter_users` etc.
+      # Definitions of `has_many` relations: :blocker_users, :muter_users, :reblog_muter_users,
+      #   :notification_muter_users, :subscribee_users
       has_many(incoming_relation_source, through: [incoming_relation, :source])
     end
 
@@ -185,7 +189,9 @@ defmodule Pleroma.User do
 
   for {_relationship_type, [{_outgoing_relation, outgoing_relation_target}, _]} <-
         @user_relationships_config do
-    # Definitions of `blocked_users_relation/1`, `muted_users_relation/1`, etc.
+    # `def blocked_users_relation/2`, `def muted_users_relation/2`,
+    #   `def reblog_muted_users_relation/2`, `def notification_muted_users/2`,
+    #   `def subscriber_users/2`
     def unquote(:"#{outgoing_relation_target}_relation")(user, restrict_deactivated? \\ false) do
       target_users_query = assoc(user, unquote(outgoing_relation_target))
 
@@ -196,7 +202,8 @@ defmodule Pleroma.User do
       end
     end
 
-    # Definitions of `blocked_users/1`, `muted_users/1`, etc.
+    # `def blocked_users/2`, `def muted_users/2`, `def reblog_muted_users/2`,
+    #   `def notification_muted_users/2`, `def subscriber_users/2`
     def unquote(outgoing_relation_target)(user, restrict_deactivated? \\ false) do
       __MODULE__
       |> apply(unquote(:"#{outgoing_relation_target}_relation"), [
@@ -206,7 +213,8 @@ defmodule Pleroma.User do
       |> Repo.all()
     end
 
-    # Definitions of `blocked_users_ap_ids/1`, `muted_users_ap_ids/1`, etc.
+    # `def blocked_users_ap_ids/2`, `def muted_users_ap_ids/2`, `def reblog_muted_users_ap_ids/2`,
+    #   `def notification_muted_users_ap_ids/2`, `def subscriber_users_ap_ids/2`
     def unquote(:"#{outgoing_relation_target}_ap_ids")(user, restrict_deactivated? \\ false) do
       __MODULE__
       |> apply(unquote(:"#{outgoing_relation_target}_relation"), [
@@ -1303,13 +1311,15 @@ defmodule Pleroma.User do
   end
 
   @doc """
-  Returns map of outgoing (blocked, muted etc.) relations' user AP IDs by relation type.
-  E.g. `outgoing_relations_ap_ids(user, [:block])` -> `%{block: ["https://some.site/users/userapid"]}`
+  Returns map of outgoing (blocked, muted etc.) relationships' user AP IDs by relation type.
+  E.g. `outgoing_relationships_ap_ids(user, [:block])` -> `%{block: ["https://some.site/users/userapid"]}`
   """
-  @spec outgoing_relations_ap_ids(User.t(), list(atom())) :: %{atom() => list(String.t())}
-  def outgoing_relations_ap_ids(_, []), do: %{}
+  @spec outgoing_relationships_ap_ids(User.t(), list(atom())) :: %{atom() => list(String.t())}
+  def outgoing_relationships_ap_ids(_user, []), do: %{}
 
-  def outgoing_relations_ap_ids(%User{} = user, relationship_types)
+  def outgoing_relationships_ap_ids(nil, _relationship_types), do: %{}
+
+  def outgoing_relationships_ap_ids(%User{} = user, relationship_types)
       when is_list(relationship_types) do
     db_result =
       user
@@ -1327,6 +1337,30 @@ defmodule Pleroma.User do
       fn rel_type -> {rel_type, db_result[rel_type] || []} end
     )
   end
+
+  def incoming_relationships_ungrouped_ap_ids(user, relationship_types, ap_ids \\ nil)
+
+  def incoming_relationships_ungrouped_ap_ids(_user, [], _ap_ids), do: []
+
+  def incoming_relationships_ungrouped_ap_ids(nil, _relationship_types, _ap_ids), do: []
+
+  def incoming_relationships_ungrouped_ap_ids(%User{} = user, relationship_types, ap_ids)
+      when is_list(relationship_types) do
+    user
+    |> assoc(:incoming_relationships)
+    |> join(:inner, [user_rel], u in assoc(user_rel, :source))
+    |> where([user_rel, u], user_rel.relationship_type in ^relationship_types)
+    |> maybe_filter_on_ap_id(ap_ids)
+    |> select([user_rel, u], u.ap_id)
+    |> distinct(true)
+    |> Repo.all()
+  end
+
+  defp maybe_filter_on_ap_id(query, ap_ids) when is_list(ap_ids) do
+    where(query, [user_rel, u], u.ap_id in ^ap_ids)
+  end
+
+  defp maybe_filter_on_ap_id(query, _ap_ids), do: query
 
   def deactivate_async(user, status \\ true) do
     BackgroundWorker.enqueue("deactivate_user", %{"user_id" => user.id, "status" => status})
