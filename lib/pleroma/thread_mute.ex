@@ -25,10 +25,10 @@ defmodule Pleroma.ThreadMute do
   end
 
   def query(user_id, context) do
-    {:ok, user_id} = FlakeId.Ecto.CompatType.dump(user_id)
+    user_binary_id = User.binary_id(user_id)
 
     ThreadMute
-    |> where(user_id: ^user_id)
+    |> where(user_id: ^user_binary_id)
     |> where(context: ^context)
   end
 
@@ -68,8 +68,8 @@ defmodule Pleroma.ThreadMute do
     |> Repo.delete_all()
   end
 
-  def check_muted(user_id, context) do
+  def exists?(user_id, context) do
     query(user_id, context)
-    |> Repo.all()
+    |> Repo.exists?()
   end
 end
