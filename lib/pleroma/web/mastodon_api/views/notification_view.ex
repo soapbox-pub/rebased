@@ -98,27 +98,27 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         }
       }
 
-      relationships_opt = %{relationships: opts[:relationships]}
+      render_opts = %{relationships: opts[:relationships]}
 
       case mastodon_type do
         "mention" ->
-          put_status(response, activity, reading_user, relationships_opt)
+          put_status(response, activity, reading_user, render_opts)
 
         "favourite" ->
-          put_status(response, parent_activity_fn.(), reading_user, relationships_opt)
+          put_status(response, parent_activity_fn.(), reading_user, render_opts)
 
         "reblog" ->
-          put_status(response, parent_activity_fn.(), reading_user, relationships_opt)
+          put_status(response, parent_activity_fn.(), reading_user, render_opts)
 
         "move" ->
-          put_target(response, activity, reading_user, relationships_opt)
+          put_target(response, activity, reading_user, render_opts)
 
         "follow" ->
           response
 
         "pleroma:emoji_reaction" ->
           response
-          |> put_status(parent_activity_fn.(), reading_user, relationships_opt)
+          |> put_status(parent_activity_fn.(), reading_user, render_opts)
           |> put_emoji(activity)
 
         _ ->

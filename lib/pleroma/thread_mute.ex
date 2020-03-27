@@ -68,8 +68,8 @@ defmodule Pleroma.ThreadMute do
     |> Repo.delete_all()
   end
 
-  def check_muted(user_id, context) do
+  def exists?(user_id, context) do
     query(user_id, context)
-    |> Repo.all()
+    |> Repo.exists?()
   end
 end

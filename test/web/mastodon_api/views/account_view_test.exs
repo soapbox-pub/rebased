@@ -186,7 +186,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
   describe "relationship" do
     defp test_relationship_rendering(user, other_user, expected_result) do
-      opts = %{user: user, target: other_user}
+      opts = %{user: user, target: other_user, relationships: nil}
       assert expected_result == AccountView.render("relationship.json", opts)
 
       relationships_opt = UserRelationship.view_relationships_option(user, [other_user])
