@@ -221,12 +221,13 @@ defmodule Pleroma.Web.Router do
       delete("/:name", EmojiAPIController, :delete)
 
       # Note: /download_from downloads and saves to instance, not to requester
-      post("/download_from", EmojiAPIController, :save_from)
+      post("/download_from", EmojiAPIController, :download_from)
     end
 
     # Pack info / downloading
     scope "/packs" do
       get("/", EmojiAPIController, :list_packs)
+      get("/:name", EmojiAPIController, :show)
       get("/:name/download_shared/", EmojiAPIController, :download_shared)
       get("/list_from", EmojiAPIController, :list_from)
 
