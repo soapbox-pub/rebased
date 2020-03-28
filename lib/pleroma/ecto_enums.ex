@@ -11,3 +11,9 @@ defenum(UserRelationshipTypeEnum,
   notification_mute: 4,
   inverse_subscription: 5
 )
+
+defenum(FollowingRelationshipStateEnum,
+  follow_pending: 1,
+  follow_accept: 2,
+  follow_reject: 3
+)

@@ -71,7 +71,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     followed_by =
       if following_relationships do
         case FollowingRelationship.find(following_relationships, target, reading_user) do
-          %{state: "accept"} -> true
+          %{state: :follow_accept} -> true
           _ -> false
         end
       else
@@ -81,7 +81,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     # NOTE: adjust UserRelationship.view_relationships_option/2 on new relation-related flags
     %{
       id: to_string(target.id),
-      following: follow_state == "accept",
+      following: follow_state == :follow_accept,
       followed_by: followed_by,
       blocking:
         UserRelationship.exists?(
@@ -123,7 +123,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           reading_user,
           &User.subscribed_to?(&2, &1)
         ),
-      requested: follow_state == "pending",
+      requested: follow_state == :follow_pending,
       domain_blocking: User.blocks_domain?(reading_user, target),
       showing_reblogs:
         not UserRelationship.exists?(

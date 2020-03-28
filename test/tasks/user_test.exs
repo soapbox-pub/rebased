@@ -140,7 +140,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     test "user is unsubscribed" do
       followed = insert(:user)
       user = insert(:user)
-      User.follow(user, followed, "accept")
+      User.follow(user, followed, :follow_accept)
 
       Mix.Tasks.Pleroma.User.run(["unsubscribe", user.nickname])
 
