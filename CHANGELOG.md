@@ -125,14 +125,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 <details>
   <summary>API Changes</summary>
 
-- **Breaking:** EmojiReactions: Change endpoints and responses to align with Mastodon
-- **Breaking:** Admin API: `PATCH /api/pleroma/admin/users/:nickname/force_password_reset` is now `PATCH /api/pleroma/admin/users/force_password_reset` (accepts `nicknames` array in the request body)
+- **Breaking** EmojiReactions: Change endpoints and responses to align with Mastodon
+- **Breaking** Admin API: `PATCH /api/pleroma/admin/users/:nickname/force_password_reset` is now `PATCH /api/pleroma/admin/users/force_password_reset` (accepts `nicknames` array in the request body)
 - **Breaking:** Admin API: Return link alongside with token on password reset
 - **Breaking:** Admin API: `PUT /api/pleroma/admin/reports/:id` is now `PATCH /api/pleroma/admin/reports`, see admin_api.md for details
 - **Breaking:** `/api/pleroma/admin/users/invite_token` now uses `POST`, changed accepted params and returns full invite in json instead of only token string.
-- **Breaking:** replying to reports is now "report notes", endpoint changed from `POST /api/pleroma/admin/reports/:id/respond` to `POST /api/pleroma/admin/reports/:id/notes`
+- **Breaking** replying to reports is now "report notes", endpoint changed from `POST /api/pleroma/admin/reports/:id/respond` to `POST /api/pleroma/admin/reports/:id/notes`
 - Mastodon API: stopped sanitizing display names, field names and subject fields since they are supposed to be treated as plaintext
-- **Breaking:** Pleroma API: `/api/pleroma/emoji/packs/:name/update_file` endpoint returns only updated emoji data.
 - Admin API: Return `total` when querying for reports
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
 - Admin API: Return link alongside with token on password reset
