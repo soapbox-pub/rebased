@@ -102,9 +102,9 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec remove_file(String.t(), String.t()) ::
+  @spec delete_file(String.t(), String.t()) ::
           {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
-  def remove_file(name, shortcode) when byte_size(name) > 0 and byte_size(shortcode) > 0 do
+  def delete_file(name, shortcode) when byte_size(name) > 0 and byte_size(shortcode) > 0 do
     with {_, %__MODULE__{} = pack} <- {:loaded, load_pack(name)},
          {_, {filename, files}} when not is_nil(filename) <-
            {:exists, Map.pop(pack.files, shortcode)},
@@ -131,7 +131,7 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  def remove_file(_, _), do: {:error, :empty_values}
+  def delete_file(_, _), do: {:error, :empty_values}
 
   @spec update_file(String.t(), String.t(), String.t(), String.t(), boolean()) ::
           {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
@@ -249,8 +249,8 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec list_remote_packs(String.t()) :: {:ok, map()}
-  def list_remote_packs(url) do
+  @spec list_remote(String.t()) :: {:ok, map()}
+  def list_remote(url) do
     uri =
       url
       |> String.trim()
@@ -269,8 +269,8 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec list_local_packs() :: {:ok, map()}
-  def list_local_packs do
+  @spec list_local() :: {:ok, map()}
+  def list_local do
     emoji_path = emoji_path()
 
     # Create the directory first if it does not exist. This is probably the first request made
@@ -315,8 +315,8 @@ defmodule Pleroma.Emoji.Pack do
       end)
   end
 
-  @spec download(String.t()) :: {:ok, binary()}
-  def download(name) do
+  @spec get_archive(String.t()) :: {:ok, binary()}
+  def get_archive(name) do
     with {_, %__MODULE__{} = pack} <- {:exists?, load_pack(name)},
          {_, true} <- {:can_download?, downloadable?(pack)} do
       {:ok, fetch_archive(pack)}
@@ -356,15 +356,14 @@ defmodule Pleroma.Emoji.Pack do
     result
   end
 
-  @spec download_from_source(String.t(), String.t(), String.t()) :: :ok
-  def download_from_source(name, url, as) do
+  @spec download(String.t(), String.t(), String.t()) :: :ok
+  def download(name, url, as) do
     uri =
       url
       |> String.trim()
       |> URI.parse()
 
     with {_, true} <- {:shareable, shareable_packs_available?(uri)} do
-      # TODO: why do we load all packs, if we know the name of pack we need
       remote_pack =
         uri
         |> URI.merge("/api/pleroma/emoji/packs/#{name}")
@@ -379,8 +378,7 @@ defmodule Pleroma.Emoji.Pack do
             {:ok,
              %{
                sha: sha,
-               url:
-                 URI.merge(uri, "/api/pleroma/emoji/packs/#{name}/download_shared") |> to_string()
+               url: URI.merge(uri, "/api/pleroma/emoji/packs/#{name}/archive") |> to_string()
              }}
 
           %{"fallback-src" => src, "fallback-src-sha256" => sha} when is_binary(src) ->

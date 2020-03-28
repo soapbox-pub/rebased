@@ -7,12 +7,15 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     Pleroma.Plugs.OAuthScopesPlug,
     %{scopes: ["write"], admin: true}
     when action in [
+           :import,
+           :remote,
+           :download,
            :create,
+           :update,
            :delete,
-           :download_from,
-           :import_from_fs,
+           :add_file,
            :update_file,
-           :update_metadata
+           :delete_file
          ]
   )
 
@@ -22,14 +25,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     when action in [:download_shared, :list_packs, :list_from]
   )
 
-  @doc """
-  Lists packs from the remote instance.
-
-  Since JS cannot ask remote instances for their packs due to CPS, it has to
-  be done by the server
-  """
-  def list_from(conn, %{"instance_address" => address}) do
-    with {:ok, packs} <- Pack.list_remote_packs(address) do
+  def remote(conn, %{"url" => url}) do
+    with {:ok, packs} <- Pack.list_remote(url) do
       json(conn, packs)
     else
       {:shareable, _} ->
@@ -39,20 +36,14 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  @doc """
-  Lists the packs available on the instance as JSON.
-
-  The information is public and does not require authentication. The format is
-  a map of "pack directory name" to pack.json contents.
-  """
-  def list_packs(conn, _params) do
+  def list(conn, _params) do
     emoji_path =
       Path.join(
         Pleroma.Config.get!([:instance, :static_dir]),
         "emoji"
       )
 
-    with {:ok, packs} <- Pack.list_local_packs() do
+    with {:ok, packs} <- Pack.list_local() do
       json(conn, packs)
     else
       {:create_dir, {:error, e}} ->
@@ -87,12 +78,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  @doc """
-  An endpoint for other instances (via admin UI) or users (via browser)
-  to download packs that the instance shares.
-  """
-  def download_shared(conn, %{"name" => name}) do
-    with {:ok, archive} <- Pack.download(name) do
+  def archive(conn, %{"name" => name}) do
+    with {:ok, archive} <- Pack.get_archive(name) do
       send_download(conn, {:binary, archive}, filename: "#{name}.zip")
     else
       {:can_download?, _} ->
@@ -110,15 +97,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  @doc """
-  An admin endpoint to request downloading and storing a pack named `pack_name` from the instance
-  `instance_address`.
-
-  If the requested instance's admin chose to share the pack, it will be downloaded
-  from that instance, otherwise it will be downloaded from the fallback source, if there is one.
-  """
-  def download_from(conn, %{"instance_address" => address, "pack_name" => name} = params) do
-    with :ok <- Pack.download_from_source(name, address, params["as"]) do
+  def download(conn, %{"url" => url, "name" => name} = params) do
+    with :ok <- Pack.download(name, url, params["as"]) do
       json(conn, "ok")
     else
       {:shareable, _} ->
@@ -138,9 +118,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  @doc """
-  Creates an empty pack named `name` which then can be updated via the admin UI.
-  """
   def create(conn, %{"name" => name}) do
     name = String.trim(name)
 
@@ -166,9 +143,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  @doc """
-  Deletes the pack `name` and all it's files.
-  """
   def delete(conn, %{"name" => name}) do
     name = String.trim(name)
 
@@ -192,13 +166,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  @doc """
-  An endpoint to update `pack_names`'s metadata.
-
-  `new_data` is the new metadata for the pack, that will replace the old metadata.
-  """
-  def update_metadata(conn, %{"pack_name" => name, "new_data" => new_data}) do
-    with {:ok, pack} <- Pack.update_metadata(name, new_data) do
+  def update(conn, %{"name" => name, "metadata" => metadata}) do
+    with {:ok, pack} <- Pack.update_metadata(name, metadata) do
       json(conn, pack.pack)
     else
       {:has_all_files?, _} ->
@@ -215,30 +184,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  @doc """
-  Updates a file in a pack.
-
-  Updating can mean three things:
-
-  - `add` adds an emoji named `shortcode` to the pack `pack_name`,
-    that means that the emoji file needs to be uploaded with the request
-    (thus requiring it to be a multipart request) and be named `file`.
-    There can also be an optional `filename` that will be the new emoji file name
-    (if it's not there, the name will be taken from the uploaded file).
-  - `update` changes emoji shortcode (from `shortcode` to `new_shortcode` or moves the file
-    (from the current filename to `new_filename`)
-  - `remove` removes the emoji named `shortcode` and it's associated file
-  """
-
-  # Add
-  def update_file(
-        conn,
-        %{"pack_name" => pack_name, "action" => "add"} = params
-      ) do
+  def add_file(conn, %{"name" => name} = params) do
     filename = params["filename"] || get_filename(params["file"])
     shortcode = params["shortcode"] || Path.basename(filename, Path.extname(filename))
 
-    with {:ok, pack} <- Pack.add_file(pack_name, shortcode, filename, params["file"]) do
+    with {:ok, pack} <- Pack.add_file(name, shortcode, filename, params["file"]) do
       json(conn, pack.files)
     else
       {:exists, _} ->
@@ -249,7 +199,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
       {:loaded, _} ->
         conn
         |> put_status(:bad_request)
-        |> json(%{error: "pack \"#{pack_name}\" is not found"})
+        |> json(%{error: "pack \"#{name}\" is not found"})
 
       {:error, :empty_values} ->
         conn
@@ -265,44 +215,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  # Remove
-  def update_file(conn, %{
-        "pack_name" => pack_name,
-        "action" => "remove",
-        "shortcode" => shortcode
-      }) do
-    with {:ok, pack} <- Pack.remove_file(pack_name, shortcode) do
-      json(conn, pack.files)
-    else
-      {:exists, _} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{error: "Emoji \"#{shortcode}\" does not exist"})
-
-      {:loaded, _} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{error: "pack \"#{pack_name}\" is not found"})
-
-      {:error, :empty_values} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{error: "pack name or shortcode cannot be empty"})
-
-      {:error, _} ->
-        render_error(
-          conn,
-          :internal_server_error,
-          "Unexpected error occurred while removing file from pack."
-        )
-    end
-  end
-
-  # Update
-  def update_file(
-        conn,
-        %{"pack_name" => name, "action" => "update", "shortcode" => shortcode} = params
-      ) do
+  def update_file(conn, %{"name" => name, "shortcode" => shortcode} = params) do
     new_shortcode = params["new_shortcode"]
     new_filename = params["new_filename"]
     force = params["force"] == true
@@ -342,24 +255,35 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def update_file(conn, %{"action" => action}) do
-    conn
-    |> put_status(:bad_request)
-    |> json(%{error: "Unknown action: #{action}"})
+  def delete_file(conn, %{"name" => name, "shortcode" => shortcode}) do
+    with {:ok, pack} <- Pack.delete_file(name, shortcode) do
+      json(conn, pack.files)
+    else
+      {:exists, _} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Emoji \"#{shortcode}\" does not exist"})
+
+      {:loaded, _} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "pack \"#{name}\" is not found"})
+
+      {:error, :empty_values} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "pack name or shortcode cannot be empty"})
+
+      {:error, _} ->
+        render_error(
+          conn,
+          :internal_server_error,
+          "Unexpected error occurred while removing file from pack."
+        )
+    end
   end
 
-  @doc """
-  Imports emoji from the filesystem.
-
-  Importing means checking all the directories in the
-  `$instance_static/emoji/` for directories which do not have
-  `pack.json`. If one has an emoji.txt file, that file will be used
-  to create a `pack.json` file with it's contents. If the directory has
-  neither, all the files with specific configured extenstions will be
-  assumed to be emojis and stored in the new `pack.json` file.
-  """
-
-  def import_from_fs(conn, _params) do
+  def import_from_filesystem(conn, _params) do
     with {:ok, names} <- Pack.import_from_filesystem() do
       json(conn, names)
     else
