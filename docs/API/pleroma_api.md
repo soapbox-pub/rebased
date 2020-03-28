@@ -330,6 +330,13 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params: None
 * Response: JSON, "ok" and 200 status and the JSON hashmap of "pack name" to "pack contents"
 
+## `GET /api/pleroma/emoji/packs/:name`
+### Get pack.json for the pack
+* Method `GET`
+* Authentication: not required
+* Params: None
+* Response: JSON, pack json with `files` and `pack` keys with 200 status or 404 if the pack does not exist
+
 ## `PUT /api/pleroma/emoji/packs/:name`
 ### Creates an empty custom emoji pack
 * Method `PUT`
@@ -349,15 +356,17 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Method `POST`
 * Authentication: required
 * Params:
-    * if the `action` is `add`, adds an emoji named `shortcode` to the pack `pack_name`,
-      that means that the emoji file needs to be uploaded with the request
+    * if the `action` is `add`, adds an emoji file to the pack `pack_name`,
       (thus requiring it to be a multipart request) and be named `file`.
+      If `shortcode` is not specified, `shortcode` will be used from filename.
       There can also be an optional `filename` that will be the new emoji file name
       (if it's not there, the name will be taken from the uploaded file).
     * if the `action` is `update`, changes emoji shortcode
-      (from `shortcode` to `new_shortcode` or moves the file (from the current filename to `new_filename`)
+      (from `shortcode` to `new_shortcode` or moves the file (from the current filename to `new_filename`).
+      If new_shortcode is used in another emoji 409 status will be returned. If you want to override shortcode
+      pass `force` option with `true` value.
     * if the `action` is `remove`, removes the emoji named `shortcode` and it's associated file
-* Response: JSON, emoji shortcode with filename which was added/updated/deleted and 200 status, 409 if the trying to use a shortcode
+* Response: JSON, updated "files" section of the pack and 200 status, 409 if the trying to use a shortcode
   that is already taken, 400 if there was an error with the shortcode, filename or file (additional info
   in the "error" part of the response JSON)
 
@@ -385,7 +394,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Method `POST`
 * Authentication: required
 * Params:
-  * `instance_address`: the address of the instance to download from
+  * `instance_address`: the address of the instance to get packs from
 * Response: JSON with the pack list, same as if the request was made to that instance's
   list endpoint directly + 200 status
 
