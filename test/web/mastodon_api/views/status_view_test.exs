@@ -420,6 +420,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert length(represented[:media_attachments]) == 1
   end
 
+  test "funkwhale audio" do
+    user = insert(:user)
+
+    {:ok, object} =
+      Pleroma.Object.Fetcher.fetch_object_from_id(
+        "https://channels.tests.funkwhale.audio/federation/music/uploads/42342395-0208-4fee-a38d-259a6dae0871"
+      )
+
+    %Activity{} = activity = Activity.get_create_by_object_ap_id(object.data["id"])
+
+    represented = StatusView.render("show.json", %{for: user, activity: activity})
+
+    assert represented[:id] == to_string(activity.id)
+    assert length(represented[:media_attachments]) == 1
+  end
+
   test "a Mobilizon event" do
     user = insert(:user)
 
