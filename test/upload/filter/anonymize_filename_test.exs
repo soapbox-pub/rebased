@@ -18,7 +18,7 @@ defmodule Pleroma.Upload.Filter.AnonymizeFilenameTest do
     %{upload_file: upload_file}
   end
 
-  clear_config([Pleroma.Upload.Filter.AnonymizeFilename, :text])
+  setup do: clear_config([Pleroma.Upload.Filter.AnonymizeFilename, :text])
 
   test "it replaces filename on pre-defined text", %{upload_file: upload_file} do
     Config.put([Upload.Filter.AnonymizeFilename, :text], "custom-file.png")

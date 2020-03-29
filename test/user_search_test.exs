@@ -15,7 +15,7 @@ defmodule Pleroma.UserSearchTest do
   end
 
   describe "User.search" do
-    clear_config([:instance, :limit_to_local_content])
+    setup do: clear_config([:instance, :limit_to_local_content])
 
     test "excluded invisible users from results" do
       user = insert(:user, %{nickname: "john t1000"})

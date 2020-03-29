@@ -13,7 +13,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
   alias Pleroma.Web.Metadata.Utils
   alias Pleroma.Web.Router
 
-  clear_config([Pleroma.Web.Metadata, :unfurl_nsfw])
+  setup do: clear_config([Pleroma.Web.Metadata, :unfurl_nsfw])
 
   test "it renders twitter card for user info" do
     user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")

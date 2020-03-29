@@ -11,7 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
   import Pleroma.Factory
   import Ecto.Query
 
-  clear_config([ScheduledActivity, :enabled])
+  setup do: clear_config([ScheduledActivity, :enabled])
 
   test "shows scheduled activities" do
     %{user: user, conn: conn} = oauth_access(["read:statuses"])

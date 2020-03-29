@@ -9,7 +9,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
-  clear_config([:instance, :max_account_fields])
+
+  setup do: clear_config([:instance, :max_account_fields])
 
   describe "updating credentials" do
     setup do: oauth_access(["write:accounts"])
@@ -75,7 +76,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       conn =
         patch(conn, "/api/v1/accounts/update_credentials", %{
-          "note" => "I drink #cofe with @#{user2.nickname}"
+          "note" => "I drink #cofe with @#{user2.nickname}\n\nsuya.."
         })
 
       assert user_data = json_response(conn, 200)
@@ -83,7 +84,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user_data["note"] ==
                ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a data-user="#{
                  user2.id
-               }" class="u-url mention" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span>)
+               }" class="u-url mention" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span><br/><br/>suya..)
     end
 
     test "updates the user's locking status", %{conn: conn} do
@@ -115,6 +116,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       assert user_data = json_response(conn, 200)
       assert user_data["pleroma"]["hide_followers"] == true
+    end
+
+    test "updates the user's discoverable status", %{conn: conn} do
+      assert %{"source" => %{"pleroma" => %{"discoverable" => true}}} =
+               conn
+               |> patch("/api/v1/accounts/update_credentials", %{discoverable: "true"})
+               |> json_response(:ok)
+
+      assert %{"source" => %{"pleroma" => %{"discoverable" => false}}} =
+               conn
+               |> patch("/api/v1/accounts/update_credentials", %{discoverable: "false"})
+               |> json_response(:ok)
     end
 
     test "updates the user's hide_followers_count and hide_follows_count", %{conn: conn} do

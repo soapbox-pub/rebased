@@ -504,10 +504,6 @@ config :pleroma, :workers,
     federator_outgoing: 5
   ]
 
-config :pleroma, :fetch_initial_posts,
-  enabled: false,
-  pages: 5
-
 config :auto_linker,
   opts: [
     extra: true,
@@ -627,6 +623,11 @@ config :pleroma, configurable_from_database: false
 config :pleroma, Pleroma.Repo,
   parameters: [gin_fuzzy_search_limit: "500"],
   prepare: :unnamed
+
+config :pleroma, :restrict_unauthenticated,
+  timelines: %{local: false, federated: false},
+  profiles: %{local: false, remote: false},
+  activities: %{local: false, remote: false}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

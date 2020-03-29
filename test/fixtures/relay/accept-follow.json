@@ -1,0 +1,15 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "actor": "https://relay.mastodon.host/actor",
+  "id": "https://relay.mastodon.host/activities/ec477b69-db26-4019-923e-cf809de516ab",
+  "object": {
+    "actor": "{{ap_id}}",
+    "id": "{{activity_id}}",
+    "object": "https://relay.mastodon.host/actor",
+    "type": "Follow"
+  },
+  "to": [
+    "{{ap_id}}"
+  ],
+  "type": "Accept"
+}

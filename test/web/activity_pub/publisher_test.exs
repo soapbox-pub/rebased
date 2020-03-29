@@ -23,6 +23,8 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
     :ok
   end
 
+  setup_all do: clear_config([:instance, :federating], true)
+
   describe "gather_webfinger_links/1" do
     test "it returns links" do
       user = insert(:user)

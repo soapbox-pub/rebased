@@ -8,8 +8,8 @@ defmodule Pleroma.HTTP.RequestBuilderTest do
   alias Pleroma.HTTP.RequestBuilder
 
   describe "headers/2" do
-    clear_config([:http, :send_user_agent])
-    clear_config([:http, :user_agent])
+    setup do: clear_config([:http, :send_user_agent])
+    setup do: clear_config([:http, :user_agent])
 
     test "don't send pleroma user agent" do
       assert RequestBuilder.headers(%{}, []) == %{headers: []}

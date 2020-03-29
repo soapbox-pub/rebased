@@ -1277,6 +1277,10 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 404, body: ""}}
   end
 
+  def get("https://relay.mastodon.host/actor", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/relay/relay.json")}}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{
@@ -1288,6 +1292,10 @@ defmodule HttpRequestMock do
   #
 
   def post(url, query \\ [], body \\ [], headers \\ [])
+
+  def post("https://relay.mastodon.host/inbox", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: ""}}
+  end
 
   def post("http://example.org/needs_refresh", _, _, _) do
     {:ok,

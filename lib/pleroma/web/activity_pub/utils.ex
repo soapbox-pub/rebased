@@ -440,22 +440,19 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> update(set: [data: fragment("jsonb_set(data, '{state}', ?)", ^state)])
     |> Repo.update_all([])
 
-    User.set_follow_state_cache(actor, object, state)
-
     activity = Activity.get_by_id(activity.id)
 
     {:ok, activity}
   end
 
   def update_follow_state(
-        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
+        %Activity{} = activity,
         state
       ) do
     new_data = Map.put(activity.data, "state", state)
     changeset = Changeset.change(activity, data: new_data)
 
     with {:ok, activity} <- Repo.update(changeset) do
-      User.set_follow_state_cache(actor, object, state)
       {:ok, activity}
     end
   end
@@ -783,45 +780,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   defp build_flag_object(_), do: []
-
-  @doc """
-  Fetches the OrderedCollection/OrderedCollectionPage from `from`, limiting the amount of pages fetched after
-  the first one to `pages_left` pages.
-  If the amount of pages is higher than the collection has, it returns whatever was there.
-  """
-  def fetch_ordered_collection(from, pages_left, acc \\ []) do
-    with {:ok, response} <- Tesla.get(from),
-         {:ok, collection} <- Jason.decode(response.body) do
-      case collection["type"] do
-        "OrderedCollection" ->
-          # If we've encountered the OrderedCollection and not the page,
-          # just call the same function on the page address
-          fetch_ordered_collection(collection["first"], pages_left)
-
-        "OrderedCollectionPage" ->
-          if pages_left > 0 do
-            # There are still more pages
-            if Map.has_key?(collection, "next") do
-              # There are still more pages, go deeper saving what we have into the accumulator
-              fetch_ordered_collection(
-                collection["next"],
-                pages_left - 1,
-                acc ++ collection["orderedItems"]
-              )
-            else
-              # No more pages left, just return whatever we already have
-              acc ++ collection["orderedItems"]
-            end
-          else
-            # Got the amount of pages needed, add them all to the accumulator
-            acc ++ collection["orderedItems"]
-          end
-
-        _ ->
-          {:error, "Not an OrderedCollection or OrderedCollectionPage"}
-      end
-    end
-  end
 
   #### Report-related helpers
   def get_reports(params, page, page_size) do

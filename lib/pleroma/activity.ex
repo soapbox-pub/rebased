@@ -95,6 +95,17 @@ defmodule Pleroma.Activity do
     |> preload([activity, object: object], object: object)
   end
 
+  # Note: applies to fake activities (ActivityPub.Utils.get_notified_from_object/1 etc.)
+  def user_actor(%Activity{actor: nil}), do: nil
+
+  def user_actor(%Activity{} = activity) do
+    with %User{} <- activity.user_actor do
+      activity.user_actor
+    else
+      _ -> User.get_cached_by_ap_id(activity.actor)
+    end
+  end
+
   def with_joined_user_actor(query, join_type \\ :inner) do
     join(query, join_type, [activity], u in User,
       on: u.ap_id == activity.actor,
@@ -306,6 +317,13 @@ defmodule Pleroma.Activity do
     |> Queries.by_object_id()
     |> Queries.by_type("Follow")
     |> where([a], fragment("? ->> 'state' = 'pending'", a.data))
+  end
+
+  def following_requests_for_actor(%Pleroma.User{ap_id: ap_id}) do
+    Queries.by_type("Follow")
+    |> where([a], fragment("?->>'state' = 'pending'", a.data))
+    |> where([a], a.actor == ^ap_id)
+    |> Repo.all()
   end
 
   def restrict_deactivated_users(query) do

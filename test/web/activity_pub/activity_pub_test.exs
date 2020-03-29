@@ -27,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     :ok
   end
 
-  clear_config([:instance, :federating])
+  setup do: clear_config([:instance, :federating])
 
   describe "streaming out participations" do
     test "it streams them out" do
@@ -1396,7 +1396,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "deletion" do
-    clear_config([:instance, :rewrite_policy])
+    setup do: clear_config([:instance, :rewrite_policy])
 
     test "it reverts deletion on error" do
       note = insert(:note_activity)
@@ -1423,6 +1423,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert Activity.get_by_id(delete.id) != nil
 
       assert Repo.get(Object, object.id).data["type"] == "Tombstone"
+    end
+
+    test "it doesn't fail when an activity was already deleted" do
+      {:ok, delete} = insert(:note_activity) |> Object.normalize() |> ActivityPub.delete()
+
+      assert {:ok, ^delete} = delete |> Object.normalize() |> ActivityPub.delete()
     end
 
     test "decrements user note count only for public activities" do
@@ -1580,7 +1586,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "update" do
-    clear_config([:instance, :max_pinned_statuses])
+    setup do: clear_config([:instance, :max_pinned_statuses])
 
     test "it creates an update activity with the new user data" do
       user = insert(:user)
@@ -1955,11 +1961,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activity = %Activity{activity | object: nil}
 
-      assert [%Notification{activity: ^activity}] =
-               Notification.for_user(follower, %{with_move: true})
+      assert [%Notification{activity: ^activity}] = Notification.for_user(follower)
 
-      assert [%Notification{activity: ^activity}] =
-               Notification.for_user(follower_move_opted_out, %{with_move: true})
+      assert [%Notification{activity: ^activity}] = Notification.for_user(follower_move_opted_out)
     end
 
     test "old user must be in the new user's `also_known_as` list" do

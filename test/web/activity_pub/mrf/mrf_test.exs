@@ -60,7 +60,7 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
   end
 
   describe "describe/0" do
-    clear_config([:instance, :rewrite_policy])
+    setup do: clear_config([:instance, :rewrite_policy])
 
     test "it works as expected with noop policy" do
       expected = %{

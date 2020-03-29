@@ -138,7 +138,8 @@ config :pleroma, :mrf_user_allowlist,
 ```
 
 #### :mrf_object_age
-* `threshold`: Required age (in seconds) of a post before actions are taken.
+* `threshold`: Required time offset (in seconds) compared to your server clock of an incoming post before actions are taken.
+  e.g., A value of 900 results in any post with a timestamp older than 15 minutes will be acted upon.
 * `actions`: A list of actions to apply to the post:
   * `:delist` removes the post from public timelines
   * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
@@ -150,14 +151,6 @@ config :pleroma, :mrf_user_allowlist,
 * `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
-
-### :fetch_initial_posts
-
-!!! warning
-    Be careful with this setting, fetching posts may lead to new users being discovered whose posts will then also be fetched. This can lead to serious load on your instance and database.
-
-* `enabled`: If enabled, when a new user is discovered by your instance, fetch some of their latest posts.
-* `pages`: The amount of pages to fetch
 
 ## Pleroma.ScheduledActivity
 
@@ -879,3 +872,21 @@ config :auto_linker,
 ## :configurable_from_database
 
 Boolean, enables/disables in-database configuration. Read [Transfering the config to/from the database](../administration/CLI_tasks/config.md) for more information.
+
+
+
+## Restrict entities access for unauthenticated users
+
+### :restrict_unauthenticated
+
+Restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
+
+* `timelines` - public and federated timelines
+  * `local` - public timeline
+  * `federated`
+* `profiles` - user profiles
+  * `local`
+  * `remote`
+* `activities` - statuses
+  * `local`
+  * `remote`

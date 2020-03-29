@@ -11,7 +11,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorkerTest do
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
-  clear_config([ScheduledActivity, :enabled])
+  setup do: clear_config([ScheduledActivity, :enabled])
 
   test "creates a status from the scheduled activity" do
     Pleroma.Config.put([ScheduledActivity, :enabled], true)

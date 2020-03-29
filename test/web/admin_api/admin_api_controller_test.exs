@@ -43,9 +43,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
-    clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
-      Config.put([:auth, :enforce_oauth_admin_scope_usage], true)
-    end
+    setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], true)
 
     test "GET /api/pleroma/admin/users/:nickname requires admin:read:accounts or broader scope",
          %{admin: admin} do
@@ -93,9 +91,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "unless [:auth, :enforce_oauth_admin_scope_usage]," do
-    clear_config([:auth, :enforce_oauth_admin_scope_usage]) do
-      Config.put([:auth, :enforce_oauth_admin_scope_usage], false)
-    end
+    setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], false)
 
     test "GET /api/pleroma/admin/users/:nickname requires " <>
            "read:accounts or admin:read:accounts or broader scope",
@@ -581,13 +577,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "POST /api/pleroma/admin/email_invite, with valid config" do
-    clear_config([:instance, :registrations_open]) do
-      Config.put([:instance, :registrations_open], false)
-    end
-
-    clear_config([:instance, :invites_enabled]) do
-      Config.put([:instance, :invites_enabled], true)
-    end
+    setup do: clear_config([:instance, :registrations_open], false)
+    setup do: clear_config([:instance, :invites_enabled], true)
 
     test "sends invitation and returns 204", %{admin: admin, conn: conn} do
       recipient_email = "foo@bar.com"
@@ -638,8 +629,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "POST /api/pleroma/admin/users/email_invite, with invalid config" do
-    clear_config([:instance, :registrations_open])
-    clear_config([:instance, :invites_enabled])
+    setup do: clear_config([:instance, :registrations_open])
+    setup do: clear_config([:instance, :invites_enabled])
 
     test "it returns 500 if `invites_enabled` is not enabled", %{conn: conn} do
       Config.put([:instance, :registrations_open], false)
@@ -1888,9 +1879,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "GET /api/pleroma/admin/config" do
-    clear_config(:configurable_from_database) do
-      Config.put(:configurable_from_database, true)
-    end
+    setup do: clear_config(:configurable_from_database, true)
 
     test "when configuration from database is off", %{conn: conn} do
       Config.put(:configurable_from_database, false)
@@ -2041,9 +2030,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       end)
     end
 
-    clear_config(:configurable_from_database) do
-      Config.put(:configurable_from_database, true)
-    end
+    setup do: clear_config(:configurable_from_database, true)
 
     @tag capture_log: true
     test "create new config setting in db", %{conn: conn} do
@@ -3052,9 +3039,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "GET /api/pleroma/admin/restart" do
-    clear_config(:configurable_from_database) do
-      Config.put(:configurable_from_database, true)
-    end
+    setup do: clear_config(:configurable_from_database, true)
 
     test "pleroma restarts", %{conn: conn} do
       capture_log(fn ->
@@ -3066,7 +3051,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "GET /api/pleroma/admin/statuses" do
-    test "returns all public, unlisted, and direct statuses", %{conn: conn, admin: admin} do
+    test "returns all public and unlisted statuses", %{conn: conn, admin: admin} do
       blocked = insert(:user)
       user = insert(:user)
       User.block(admin, blocked)
@@ -3085,7 +3070,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> json_response(200)
 
       refute "private" in Enum.map(response, & &1["visibility"])
-      assert length(response) == 4
+      assert length(response) == 3
     end
 
     test "returns only local statuses with local_only on", %{conn: conn} do
@@ -3102,12 +3087,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert length(response) == 1
     end
 
-    test "returns private statuses with godmode on", %{conn: conn} do
+    test "returns private and direct statuses with godmode on", %{conn: conn, admin: admin} do
       user = insert(:user)
+
+      {:ok, _} =
+        CommonAPI.post(user, %{"status" => "@#{admin.nickname}", "visibility" => "direct"})
+
       {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
       {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
       conn = get(conn, "/api/pleroma/admin/statuses?godmode=true")
-      assert json_response(conn, 200) |> length() == 2
+      assert json_response(conn, 200) |> length() == 3
     end
   end
 
@@ -3382,6 +3371,75 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert get_in(first_entry, ["data", "message"]) ==
                "@#{moderator.nickname} unfollowed relay: https://example.org/relay"
+    end
+  end
+
+  describe "GET /users/:nickname/credentials" do
+    test "gets the user credentials", %{conn: conn} do
+      user = insert(:user)
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials")
+
+      response = assert json_response(conn, 200)
+      assert response["email"] == user.email
+    end
+
+    test "returns 403 if requested by a non-admin" do
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> get("/api/pleroma/admin/users/#{user.nickname}/credentials")
+
+      assert json_response(conn, :forbidden)
+    end
+  end
+
+  describe "PATCH /users/:nickname/credentials" do
+    test "changes password and email", %{conn: conn, admin: admin} do
+      user = insert(:user)
+      assert user.password_reset_pending == false
+
+      conn =
+        patch(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials", %{
+          "password" => "new_password",
+          "email" => "new_email@example.com",
+          "name" => "new_name"
+        })
+
+      assert json_response(conn, 200) == %{"status" => "success"}
+
+      ObanHelpers.perform_all()
+
+      updated_user = User.get_by_id(user.id)
+
+      assert updated_user.email == "new_email@example.com"
+      assert updated_user.name == "new_name"
+      assert updated_user.password_hash != user.password_hash
+      assert updated_user.password_reset_pending == true
+
+      [log_entry2, log_entry1] = ModerationLog |> Repo.all() |> Enum.sort()
+
+      assert ModerationLog.get_log_entry_message(log_entry1) ==
+               "@#{admin.nickname} updated users: @#{user.nickname}"
+
+      assert ModerationLog.get_log_entry_message(log_entry2) ==
+               "@#{admin.nickname} forced password reset for users: @#{user.nickname}"
+    end
+
+    test "returns 403 if requested by a non-admin" do
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> patch("/api/pleroma/admin/users/#{user.nickname}/credentials", %{
+          "password" => "new_password",
+          "email" => "new_email@example.com",
+          "name" => "new_name"
+        })
+
+      assert json_response(conn, :forbidden)
     end
   end
 

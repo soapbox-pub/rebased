@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.AdminAPI.AccountView do
   use Pleroma.Web, :view
 
-  alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.MediaProxy
@@ -24,9 +23,47 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
     }
   end
 
+  def render("credentials.json", %{user: user, for: for_user}) do
+    user = User.sanitize_html(user, User.html_filter_policy(for_user))
+    avatar = User.avatar_url(user) |> MediaProxy.url()
+    banner = User.banner_url(user) |> MediaProxy.url()
+    background = image_url(user.background) |> MediaProxy.url()
+
+    user
+    |> Map.take([
+      :id,
+      :bio,
+      :email,
+      :fields,
+      :name,
+      :nickname,
+      :locked,
+      :no_rich_text,
+      :default_scope,
+      :hide_follows,
+      :hide_followers_count,
+      :hide_follows_count,
+      :hide_followers,
+      :hide_favorites,
+      :allow_following_move,
+      :show_role,
+      :skip_thread_containment,
+      :pleroma_settings_store,
+      :raw_fields,
+      :discoverable,
+      :actor_type
+    ])
+    |> Map.merge(%{
+      "avatar" => avatar,
+      "banner" => banner,
+      "background" => background
+    })
+  end
+
   def render("show.json", %{user: user}) do
     avatar = User.avatar_url(user) |> MediaProxy.url()
-    display_name = HTML.strip_tags(user.name || user.nickname)
+    display_name = Pleroma.HTML.strip_tags(user.name || user.nickname)
+    user = User.sanitize_html(user, FastSanitize.Sanitizer.StripTags)
 
     %{
       "id" => user.id,
@@ -104,4 +141,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
         ""
     end
   end
+
+  defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
+  defp image_url(_), do: nil
 end

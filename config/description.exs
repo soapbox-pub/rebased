@@ -1781,25 +1781,6 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :pleroma_job_queue,
-    key: :queues,
-    type: :group,
-    description: "[Deprecated] Replaced with `Oban`/`:queues` (keeping the same format)"
-  },
-  %{
-    group: :pleroma,
-    key: Pleroma.Web.Federator.RetryQueue,
-    type: :group,
-    description: "[Deprecated] See `Oban` and `:workers` sections for configuration notes",
-    children: [
-      %{
-        key: :max_retries,
-        type: :integer,
-        description: "[Deprecated] Replaced as `Oban`/`:queues`/`:outgoing_federation` value"
-      }
-    ]
-  },
-  %{
     group: :pleroma,
     key: Oban,
     type: :group,
@@ -2004,25 +1985,6 @@ config :pleroma, :config_description, [
         suggestions: [
           Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl
         ]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :fetch_initial_posts,
-    type: :group,
-    description: "Fetching initial posts settings",
-    children: [
-      %{
-        key: :enabled,
-        type: :boolean,
-        description: "Fetch posts when a new user is federated with"
-      },
-      %{
-        key: :pages,
-        type: :integer,
-        description: "The amount of pages to fetch",
-        suggestions: [5]
       }
     ]
   },
@@ -2480,7 +2442,7 @@ config :pleroma, :config_description, [
       %{
         key: :relations_actions,
         type: [:tuple, {:list, :tuple}],
-        description: "For actions on relations with all users (follow, unfollow)",
+        description: "For actions on relationships with all users (follow, unfollow)",
         suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
       },
       %{
@@ -2593,19 +2555,6 @@ config :pleroma, :config_description, [
             suggestions: ["activity+json"]
           }
         ]
-      }
-    ]
-  },
-  %{
-    group: :tesla,
-    type: :group,
-    description: "Tesla settings",
-    children: [
-      %{
-        key: :adapter,
-        type: :module,
-        description: "Tesla adapter",
-        suggestions: [Tesla.Adapter.Hackney]
       }
     ]
   },
@@ -2964,6 +2913,66 @@ config :pleroma, :config_description, [
         type: :integer,
         description: "Maximum number of workers created if pool is empty.",
         suggestions: [2]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :restrict_unauthenticated,
+    type: :group,
+    description:
+      "Disallow viewing timelines, user profiles and statuses for unauthenticated users.",
+    children: [
+      %{
+        key: :timelines,
+        type: :map,
+        description: "Settings for public and federated timelines.",
+        children: [
+          %{
+            key: :local,
+            type: :boolean,
+            description: "Disallow view public timeline."
+          },
+          %{
+            key: :federated,
+            type: :boolean,
+            description: "Disallow view federated timeline."
+          }
+        ]
+      },
+      %{
+        key: :profiles,
+        type: :map,
+        description: "Settings for user profiles.",
+        children: [
+          %{
+            key: :local,
+            type: :boolean,
+            description: "Disallow view local user profiles."
+          },
+          %{
+            key: :remote,
+            type: :boolean,
+            description: "Disallow view remote user profiles."
+          }
+        ]
+      },
+      %{
+        key: :activities,
+        type: :map,
+        description: "Settings for statuses.",
+        children: [
+          %{
+            key: :local,
+            type: :boolean,
+            description: "Disallow view local statuses."
+          },
+          %{
+            key: :remote,
+            type: :boolean,
+            description: "Disallow view remote statuses."
+          }
+        ]
       }
     ]
   }

@@ -38,7 +38,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:accounts"], admin: true}
-    when action in [:list_users, :user_show, :right_get]
+    when action in [:list_users, :user_show, :right_get, :show_user_credentials]
   )
 
   plug(
@@ -54,7 +54,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :tag_users,
            :untag_users,
            :right_add,
-           :right_delete
+           :right_delete,
+           :update_user_credentials
          ]
   )
 
@@ -658,6 +659,52 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     json_response(conn, :no_content, "")
   end
 
+  @doc "Show a given user's credentials"
+  def show_user_credentials(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
+      conn
+      |> put_view(AccountView)
+      |> render("credentials.json", %{user: user, for: admin})
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @doc "Updates a given user"
+  def update_user_credentials(
+        %{assigns: %{user: admin}} = conn,
+        %{"nickname" => nickname} = params
+      ) do
+    with {_, user} <- {:user, User.get_cached_by_nickname(nickname)},
+         {:ok, _user} <-
+           User.update_as_admin(user, params) do
+      ModerationLog.insert_log(%{
+        actor: admin,
+        subject: [user],
+        action: "updated_users"
+      })
+
+      if params["password"] do
+        User.force_password_reset_async(user)
+      end
+
+      ModerationLog.insert_log(%{
+        actor: admin,
+        subject: [user],
+        action: "force_password_reset"
+      })
+
+      json(conn, %{status: "success"})
+    else
+      {:error, changeset} ->
+        {_, {error, _}} = Enum.at(changeset.errors, 0)
+        json(conn, %{error: "New password #{error}."})
+
+      _ ->
+        json(conn, %{error: "Unable to change password."})
+    end
+  end
+
   def list_reports(conn, params) do
     {page, page_size} = page_params(params)
 
@@ -745,14 +792,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def list_statuses(%{assigns: %{user: admin}} = conn, params) do
+  def list_statuses(%{assigns: %{user: _admin}} = conn, params) do
     godmode = params["godmode"] == "true" || params["godmode"] == true
     local_only = params["local_only"] == "true" || params["local_only"] == true
     with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
     {page, page_size} = page_params(params)
 
     activities =
-      ActivityPub.fetch_statuses(admin, %{
+      ActivityPub.fetch_statuses(nil, %{
         "godmode" => godmode,
         "local_only" => local_only,
         "limit" => page_size,
@@ -834,7 +881,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       configs = ConfigDB.get_all_as_keyword()
 
       merged =
-        Config.Holder.config()
+        Config.Holder.default_config()
         |> ConfigDB.merge(configs)
         |> Enum.map(fn {group, values} ->
           Enum.map(values, fn {key, value} ->

@@ -73,6 +73,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     {:ok, _, public_key} = Keys.keys_from_pem(user.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
+    user = User.sanitize_html(user)
 
     endpoints = render("endpoints.json", %{user: user})
 
@@ -81,12 +82,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     fields =
       user
       |> User.fields()
-      |> Enum.map(fn %{"name" => name, "value" => value} ->
-        %{
-          "name" => Pleroma.HTML.strip_tags(name),
-          "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
-        }
-      end)
       |> Enum.map(&Map.put(&1, "type", "PropertyValue"))
 
     %{

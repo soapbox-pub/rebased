@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   use Pleroma.Web.ConnCase
 
+  alias Pleroma.Config
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -15,7 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   import Pleroma.Factory
 
   describe "account fetching" do
-    clear_config([:instance, :limit_to_local_content])
+    setup do: clear_config([:instance, :limit_to_local_content])
 
     test "works by id" do
       user = insert(:user)
@@ -46,7 +47,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "works by nickname for remote users" do
-      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      Config.put([:instance, :limit_to_local_content], false)
       user = insert(:user, nickname: "user@example.com", local: false)
 
       conn =
@@ -58,7 +59,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "respects limit_to_local_content == :all for remote user nicknames" do
-      Pleroma.Config.put([:instance, :limit_to_local_content], :all)
+      Config.put([:instance, :limit_to_local_content], :all)
 
       user = insert(:user, nickname: "user@example.com", local: false)
 
@@ -70,7 +71,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "respects limit_to_local_content == :unauthenticated for remote user nicknames" do
-      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
+      Config.put([:instance, :limit_to_local_content], :unauthenticated)
 
       user = insert(:user, nickname: "user@example.com", local: false)
       reading_user = insert(:user)
@@ -137,6 +138,98 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> json_response(404)
 
       assert %{"error" => "Can't find user"} = resp
+    end
+  end
+
+  defp local_and_remote_users do
+    local = insert(:user)
+    remote = insert(:user, local: false)
+    {:ok, local: local, remote: remote}
+  end
+
+  describe "user fetching with restrict unauthenticated profiles for local and remote" do
+    setup do: local_and_remote_users()
+
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :local], true)
+
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :remote], true)
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Can't find user"
+             }
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Can't find user"
+             }
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+    end
+  end
+
+  describe "user fetching with restrict unauthenticated profiles for local" do
+    setup do: local_and_remote_users()
+
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :local], true)
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Can't find user"
+             }
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+    end
+  end
+
+  describe "user fetching with restrict unauthenticated profiles for remote" do
+    setup do: local_and_remote_users()
+
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :remote], true)
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Can't find user"
+             }
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}")
+      assert %{"id" => _} = json_response(res_conn, 200)
     end
   end
 
@@ -290,6 +383,102 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(public_activity.id)
+    end
+  end
+
+  defp local_and_remote_activities(%{local: local, remote: remote}) do
+    insert(:note_activity, user: local)
+    insert(:note_activity, user: remote, local: false)
+
+    :ok
+  end
+
+  describe "statuses with restrict unauthenticated profiles for local and remote" do
+    setup do: local_and_remote_users()
+    setup :local_and_remote_activities
+
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :local], true)
+
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :remote], true)
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Can't find user"
+             }
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Can't find user"
+             }
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
+      assert length(json_response(res_conn, 200)) == 1
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
+      assert length(json_response(res_conn, 200)) == 1
+    end
+  end
+
+  describe "statuses with restrict unauthenticated profiles for local" do
+    setup do: local_and_remote_users()
+    setup :local_and_remote_activities
+
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :local], true)
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Can't find user"
+             }
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
+      assert length(json_response(res_conn, 200)) == 1
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
+      assert length(json_response(res_conn, 200)) == 1
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
+      assert length(json_response(res_conn, 200)) == 1
+    end
+  end
+
+  describe "statuses with restrict unauthenticated profiles for remote" do
+    setup do: local_and_remote_users()
+    setup :local_and_remote_activities
+
+    setup do: clear_config([:restrict_unauthenticated, :profiles, :remote], true)
+
+    test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
+      assert length(json_response(res_conn, 200)) == 1
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
+
+      assert json_response(res_conn, :not_found) == %{
+               "error" => "Can't find user"
+             }
+    end
+
+    test "if user is authenticated", %{local: local, remote: remote} do
+      %{conn: conn} = oauth_access(["read"])
+
+      res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
+      assert length(json_response(res_conn, 200)) == 1
+
+      res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
+      assert length(json_response(res_conn, 200)) == 1
     end
   end
 
@@ -601,6 +790,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       [valid_params: valid_params]
     end
 
+    setup do: clear_config([:instance, :account_activation_required])
+
     test "Account registration via Application", %{conn: conn} do
       conn =
         post(conn, "/api/v1/apps", %{
@@ -685,7 +876,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert json_response(res, 200)
 
       [{127, 0, 0, 1}, {127, 0, 0, 2}, {127, 0, 0, 3}, {127, 0, 0, 4}]
-      |> Stream.zip(valid_params)
+      |> Stream.zip(Map.delete(valid_params, :email))
       |> Enum.each(fn {ip, {attr, _}} ->
         res =
           conn
@@ -697,6 +888,54 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       end)
     end
 
+    setup do: clear_config([:instance, :account_activation_required])
+
+    test "returns bad_request if missing email params when :account_activation_required is enabled",
+         %{conn: conn, valid_params: valid_params} do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      app_token = insert(:oauth_token, user: nil)
+      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+
+      res =
+        conn
+        |> Map.put(:remote_ip, {127, 0, 0, 5})
+        |> post("/api/v1/accounts", Map.delete(valid_params, :email))
+
+      assert json_response(res, 400) == %{"error" => "Missing parameters"}
+
+      res =
+        conn
+        |> Map.put(:remote_ip, {127, 0, 0, 6})
+        |> post("/api/v1/accounts", Map.put(valid_params, :email, ""))
+
+      assert json_response(res, 400) == %{"error" => "{\"email\":[\"can't be blank\"]}"}
+    end
+
+    test "allow registration without an email", %{conn: conn, valid_params: valid_params} do
+      app_token = insert(:oauth_token, user: nil)
+      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+
+      res =
+        conn
+        |> Map.put(:remote_ip, {127, 0, 0, 7})
+        |> post("/api/v1/accounts", Map.delete(valid_params, :email))
+
+      assert json_response(res, 200)
+    end
+
+    test "allow registration with an empty email", %{conn: conn, valid_params: valid_params} do
+      app_token = insert(:oauth_token, user: nil)
+      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+
+      res =
+        conn
+        |> Map.put(:remote_ip, {127, 0, 0, 8})
+        |> post("/api/v1/accounts", Map.put(valid_params, :email, ""))
+
+      assert json_response(res, 200)
+    end
+
     test "returns forbidden if token is invalid", %{conn: conn, valid_params: valid_params} do
       conn = put_req_header(conn, "authorization", "Bearer " <> "invalid-token")
 
@@ -706,13 +945,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   end
 
   describe "create account by app / rate limit" do
-    clear_config([Pleroma.Plugs.RemoteIp, :enabled]) do
-      Pleroma.Config.put([Pleroma.Plugs.RemoteIp, :enabled], true)
-    end
-
-    clear_config([:rate_limit, :app_account_creation]) do
-      Pleroma.Config.put([:rate_limit, :app_account_creation], {10_000, 2})
-    end
+    setup do: clear_config([:rate_limit, :app_account_creation], {10_000, 2})
 
     test "respects rate limit setting", %{conn: conn} do
       app_token = insert(:oauth_token, user: nil)

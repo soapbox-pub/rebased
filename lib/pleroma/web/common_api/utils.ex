@@ -331,7 +331,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def format_input(text, "text/markdown", options) do
     text
     |> Formatter.mentions_escape(options)
-    |> Earmark.as_html!()
+    |> Earmark.as_html!(%Earmark.Options{renderer: Pleroma.EarmarkRenderer})
     |> Formatter.linkify(options)
     |> Formatter.html_escape("text/html")
   end
@@ -591,7 +591,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     limit = Pleroma.Config.get([:instance, :limit])
     length = String.length(full_payload)
 
-    if length < limit do
+    if length <= limit do
       :ok
     else
       {:error, dgettext("errors", "The status is over the character limit")}

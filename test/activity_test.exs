@@ -138,7 +138,7 @@ defmodule Pleroma.ActivityTest do
       }
     end
 
-    clear_config([:instance, :limit_to_local_content])
+    setup do: clear_config([:instance, :limit_to_local_content])
 
     test "finds utf8 text in statuses", %{
       japanese_activity: japanese_activity,

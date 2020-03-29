@@ -10,9 +10,7 @@ defmodule Pleroma.Config.TransferTaskTest do
   alias Pleroma.Config.TransferTask
   alias Pleroma.ConfigDB
 
-  clear_config(:configurable_from_database) do
-    Pleroma.Config.put(:configurable_from_database, true)
-  end
+  setup do: clear_config(:configurable_from_database, true)
 
   test "transfer config values from db to env" do
     refute Application.get_env(:pleroma, :test_key)
@@ -70,7 +68,7 @@ defmodule Pleroma.Config.TransferTaskTest do
 
     assert Application.get_env(:quack, :level) == :info
     assert Application.get_env(:quack, :meta) == [:none]
-    default = Pleroma.Config.Holder.config(:quack, :webhook_url)
+    default = Pleroma.Config.Holder.default_config(:quack, :webhook_url)
     assert Application.get_env(:quack, :webhook_url) == default
 
     on_exit(fn ->

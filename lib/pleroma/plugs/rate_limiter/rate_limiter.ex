@@ -78,7 +78,7 @@ defmodule Pleroma.Plugs.RateLimiter do
   end
 
   def call(conn, plug_opts) do
-    if disabled?() do
+    if disabled?(conn) do
       handle_disabled(conn)
     else
       action_settings = action_settings(plug_opts)
@@ -87,9 +87,9 @@ defmodule Pleroma.Plugs.RateLimiter do
   end
 
   defp handle_disabled(conn) do
-    if Config.get(:env) == :prod do
-      Logger.warn("Rate limiter is disabled for localhost/socket")
-    end
+    Logger.warn(
+      "Rate limiter disabled due to forwarded IP not being found. Please ensure your reverse proxy is providing the X-Forwarded-For header or disable the RemoteIP plug/rate limiter."
+    )
 
     conn
   end
@@ -109,16 +109,21 @@ defmodule Pleroma.Plugs.RateLimiter do
     end
   end
 
-  def disabled? do
+  def disabled?(conn) do
     localhost_or_socket =
-      Config.get([Pleroma.Web.Endpoint, :http, :ip])
-      |> Tuple.to_list()
-      |> Enum.join(".")
-      |> String.match?(~r/^local|^127.0.0.1/)
+      case Config.get([Pleroma.Web.Endpoint, :http, :ip]) do
+        {127, 0, 0, 1} -> true
+        {0, 0, 0, 0, 0, 0, 0, 1} -> true
+        {:local, _} -> true
+        _ -> false
+      end
 
-    remote_ip_disabled = not Config.get([Pleroma.Plugs.RemoteIp, :enabled])
+    remote_ip_not_found =
+      if Map.has_key?(conn.assigns, :remote_ip_found),
+        do: !conn.assigns.remote_ip_found,
+        else: false
 
-    localhost_or_socket and remote_ip_disabled
+    localhost_or_socket and remote_ip_not_found
   end
 
   @inspect_bucket_not_found {:error, :not_found}

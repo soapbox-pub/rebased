@@ -35,6 +35,13 @@ defmodule Pleroma.Activity.Queries do
     from(a in query, where: a.actor == ^ap_id)
   end
 
+  def find_by_object_ap_id(activities, object_ap_id) do
+    Enum.find(
+      activities,
+      &(object_ap_id in [is_map(&1.data["object"]) && &1.data["object"]["id"], &1.data["object"]])
+    )
+  end
+
   @spec by_object_id(query, String.t() | [String.t()]) :: query
   def by_object_id(query \\ Activity, object_id)
 

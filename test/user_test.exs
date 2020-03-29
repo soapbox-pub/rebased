@@ -24,7 +24,7 @@ defmodule Pleroma.UserTest do
     :ok
   end
 
-  clear_config([:instance, :account_activation_required])
+  setup do: clear_config([:instance, :account_activation_required])
 
   describe "service actors" do
     test "returns updated invisible actor" do
@@ -86,7 +86,7 @@ defmodule Pleroma.UserTest do
       {:ok, user: insert(:user)}
     end
 
-    test "outgoing_relations_ap_ids/1", %{user: user} do
+    test "outgoing_relationships_ap_ids/1", %{user: user} do
       rel_types = [:block, :mute, :notification_mute, :reblog_mute, :inverse_subscription]
 
       ap_ids_by_rel =
@@ -124,10 +124,10 @@ defmodule Pleroma.UserTest do
       assert ap_ids_by_rel[:inverse_subscription] ==
                Enum.sort(Enum.map(User.subscriber_users(user), & &1.ap_id))
 
-      outgoing_relations_ap_ids = User.outgoing_relations_ap_ids(user, rel_types)
+      outgoing_relationships_ap_ids = User.outgoing_relationships_ap_ids(user, rel_types)
 
       assert ap_ids_by_rel ==
-               Enum.into(outgoing_relations_ap_ids, %{}, fn {k, v} -> {k, Enum.sort(v)} end)
+               Enum.into(outgoing_relationships_ap_ids, %{}, fn {k, v} -> {k, Enum.sort(v)} end)
     end
   end
 
@@ -297,7 +297,7 @@ defmodule Pleroma.UserTest do
   end
 
   describe "unfollow/2" do
-    clear_config([:instance, :external_user_synchronization])
+    setup do: clear_config([:instance, :external_user_synchronization])
 
     test "unfollow with syncronizes external user" do
       Pleroma.Config.put([:instance, :external_user_synchronization], true)
@@ -375,10 +375,9 @@ defmodule Pleroma.UserTest do
       password_confirmation: "test",
       email: "email@example.com"
     }
-
-    clear_config([:instance, :autofollowed_nicknames])
-    clear_config([:instance, :welcome_message])
-    clear_config([:instance, :welcome_user_nickname])
+    setup do: clear_config([:instance, :autofollowed_nicknames])
+    setup do: clear_config([:instance, :welcome_message])
+    setup do: clear_config([:instance, :welcome_user_nickname])
 
     test "it autofollows accounts that are set for it" do
       user = insert(:user)
@@ -412,7 +411,11 @@ defmodule Pleroma.UserTest do
       assert activity.actor == welcome_user.ap_id
     end
 
-    test "it requires an email, name, nickname and password, bio is optional" do
+    setup do: clear_config([:instance, :account_activation_required])
+
+    test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
       @full_user_data
       |> Map.keys()
       |> Enum.each(fn key ->
@@ -420,6 +423,19 @@ defmodule Pleroma.UserTest do
         changeset = User.register_changeset(%User{}, params)
 
         assert if key == :bio, do: changeset.valid?, else: not changeset.valid?
+      end)
+    end
+
+    test "it requires an name, nickname and password, bio and email are optional when account_activation_required is disabled" do
+      Pleroma.Config.put([:instance, :account_activation_required], false)
+
+      @full_user_data
+      |> Map.keys()
+      |> Enum.each(fn key ->
+        params = Map.delete(@full_user_data, key)
+        changeset = User.register_changeset(%User{}, params)
+
+        assert if key in [:bio, :email], do: changeset.valid?, else: not changeset.valid?
       end)
     end
 
@@ -458,10 +474,7 @@ defmodule Pleroma.UserTest do
       password_confirmation: "test",
       email: "email@example.com"
     }
-
-    clear_config([:instance, :account_activation_required]) do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
-    end
+    setup do: clear_config([:instance, :account_activation_required], true)
 
     test "it creates unconfirmed user" do
       changeset = User.register_changeset(%User{}, @full_user_data)
@@ -604,9 +617,8 @@ defmodule Pleroma.UserTest do
       ap_id: "http...",
       avatar: %{some: "avatar"}
     }
-
-    clear_config([:instance, :user_bio_length])
-    clear_config([:instance, :user_name_length])
+    setup do: clear_config([:instance, :user_bio_length])
+    setup do: clear_config([:instance, :user_name_length])
 
     test "it confirms validity" do
       cs = User.remote_user_creation(@valid_remote)
@@ -1099,7 +1111,7 @@ defmodule Pleroma.UserTest do
       [user: user]
     end
 
-    clear_config([:instance, :federating])
+    setup do: clear_config([:instance, :federating])
 
     test ".delete_user_activities deletes all create activities", %{user: user} do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
@@ -1280,7 +1292,7 @@ defmodule Pleroma.UserTest do
   end
 
   describe "account_status/1" do
-    clear_config([:instance, :account_activation_required])
+    setup do: clear_config([:instance, :account_activation_required])
 
     test "return confirmation_pending for unconfirm user" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
@@ -1648,7 +1660,7 @@ defmodule Pleroma.UserTest do
   end
 
   describe "following/followers synchronization" do
-    clear_config([:instance, :external_user_synchronization])
+    setup do: clear_config([:instance, :external_user_synchronization])
 
     test "updates the counters normally on following/getting a follow when disabled" do
       Pleroma.Config.put([:instance, :external_user_synchronization], false)
@@ -1753,7 +1765,7 @@ defmodule Pleroma.UserTest do
       [local_user: local_user, remote_user: remote_user]
     end
 
-    clear_config([:instance, :limit_to_local_content])
+    setup do: clear_config([:instance, :limit_to_local_content])
 
     test "allows getting remote users by id no matter what :limit_to_local_content is set to", %{
       remote_user: remote_user

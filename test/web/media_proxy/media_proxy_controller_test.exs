@@ -7,8 +7,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
   import Mock
   alias Pleroma.Config
 
-  clear_config(:media_proxy)
-  clear_config([Pleroma.Web.Endpoint, :secret_key_base])
+  setup do: clear_config(:media_proxy)
+  setup do: clear_config([Pleroma.Web.Endpoint, :secret_key_base])
 
   test "it returns 404 when MediaProxy disabled", %{conn: conn} do
     Config.put([:media_proxy, :enabled], false)
@@ -52,9 +52,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
     url = Pleroma.Web.MediaProxy.encode_url("https://google.fn/test.png")
     invalid_url = String.replace(url, "test.png", "test-file.png")
     response = get(conn, invalid_url)
-    html = "<html><body>You are being <a href=\"#{url}\">redirected</a>.</body></html>"
     assert response.status == 302
-    assert response.resp_body == html
+    assert redirected_to(response) == url
   end
 
   test "it performs ReverseProxy.call when signature valid", %{conn: conn} do

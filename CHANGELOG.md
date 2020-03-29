@@ -3,7 +3,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [unreleased]
+### Changed
+- **Breaking:** BBCode and Markdown formatters will no longer return any `\n` and only use `<br/>` for newlines
+
+### Removed
+- **Breaking:** removed `with_move` parameter from notifications timeline.
+
+### Added
+- NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
+- Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
+<details>
+  <summary>API Changes</summary>
+- Mastodon API: Support for `include_types` in `/api/v1/notifications`.
+</details>
+
+## [2.0.0] - 2019-03-08
 ### Security
 - Mastodon API: Fix being able to request enourmous amount of statuses in timelines leading to DoS. Now limited to 40 per request.
 
@@ -38,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rate limiter is now disabled for localhost/socket (unless remoteip plug is enabled)
 - Logger: default log level changed from `warn` to `info`.
 - Config mix task `migrate_to_db` truncates `config` table before migrating the config file.
+- Allow account registration without an email
 - Default to `prepare: :unnamed` in the database configuration.
 - Instance stats are now loaded on startup instead of being empty until next hourly job.
 <details>
@@ -63,6 +79,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: User timelines will now respect blocks, unless you are getting the user timeline of somebody you blocked (which would be empty otherwise).
 - Mastodon API: Favoriting / Repeating a post multiple times will now return the identical response every time. Before, executing that action twice would return an error ("already favorited") on the second try.
 - Mastodon API: Limit timeline requests to 3 per timeline per 500ms per user/ip by default.
+- Admin API: `PATCH /api/pleroma/admin/users/:nickname/credentials` and `GET /api/pleroma/admin/users/:nickname/credentials`
 </details>
 
 ### Added
@@ -150,6 +167,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Error when trying to update reports in the "old" format
 - Mastodon API: Marking a conversation as read (`POST /api/v1/conversations/:id/read`) now no longer brings it to the top in the user's direct conversation list
 </details>
+
+## [1.1.9] - 2020-02-10
+### Fixed
+- OTP: Inability to set the upload limit (again)
+- Not being able to pin polls
+- Streaming API: incorrect handling of reblog mutes
+- Rejecting the user when field length limit is exceeded
+- OpenGraph provider: html entities in descriptions
+
+## [1.1.8] - 2020-01-10
+### Fixed
+- Captcha generation issues
+- Returned Kocaptcha endpoint to configuration
+- Captcha validity is now 5 minutes
+
+## [1.1.7] - 2019-12-13
+### Fixed
+- OTP: Inability to set the upload limit
+- OTP: Inability to override node name/distribution type to run 2 Pleroma instances on the same machine
+
+### Added
+- Integrated captcha provider
+
+### Changed
+- Captcha enabled by default
+- Default Captcha provider changed from `Pleroma.Captcha.Kocaptcha` to `Pleroma.Captcha.Native`
+- Better `Cache-Control` header for static content
+
+### Bundled Pleroma-FE Changes
+#### Added
+- Icons in the navigation panel
+
+#### Fixed
+- Improved support unauthenticated view of private instances
+
+#### Removed
+- Whitespace hack on empty post content
 
 ## [1.1.6] - 2019-11-19
 ### Fixed

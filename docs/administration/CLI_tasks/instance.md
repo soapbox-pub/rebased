@@ -4,11 +4,11 @@
 
 ## Generate a new configuration file
 ```sh tab="OTP"
- ./bin/pleroma_ctl instance gen [<options>]
+ ./bin/pleroma_ctl instance gen [option ...]
 ```
 
 ```sh tab="From Source"
-mix pleroma.instance gen [<options>]
+mix pleroma.instance gen [option ...]
 ```
 
 

@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
   import Pleroma.Factory
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Delivery
   alias Pleroma.Instances
   alias Pleroma.Object
@@ -25,12 +26,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     :ok
   end
 
-  clear_config_all([:instance, :federating],
-    do: Pleroma.Config.put([:instance, :federating], true)
-  )
+  setup do: clear_config([:instance, :federating], true)
 
   describe "/relay" do
-    clear_config([:instance, :allow_relay])
+    setup do: clear_config([:instance, :allow_relay])
 
     test "with the relay active, it returns the relay user", %{conn: conn} do
       res =
@@ -42,12 +41,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "with the relay disabled, it returns 404", %{conn: conn} do
-      Pleroma.Config.put([:instance, :allow_relay], false)
+      Config.put([:instance, :allow_relay], false)
 
       conn
       |> get(activity_pub_path(conn, :relay))
       |> json_response(404)
-      |> assert
+    end
+
+    test "on non-federating instance, it returns 404", %{conn: conn} do
+      Config.put([:instance, :federating], false)
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> get(activity_pub_path(conn, :relay))
+      |> json_response(404)
     end
   end
 
@@ -59,6 +67,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> json_response(200)
 
       assert res["id"] =~ "/fetch"
+    end
+
+    test "on non-federating instance, it returns 404", %{conn: conn} do
+      Config.put([:instance, :federating], false)
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> get(activity_pub_path(conn, :internal_fetch))
+      |> json_response(404)
     end
   end
 
@@ -123,9 +141,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(conn, 404)
     end
+
+    test "it returns error when user is not found", %{conn: conn} do
+      response =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/users/jimm")
+        |> json_response(404)
+
+      assert response == "Not found"
+    end
+
+    test "it requires authentication if instance is NOT federating", %{
+      conn: conn
+    } do
+      user = insert(:user)
+
+      conn =
+        put_req_header(
+          conn,
+          "accept",
+          "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+        )
+
+      ensure_federating_or_authenticated(conn, "/users/#{user.nickname}.json", user)
+    end
   end
 
-  describe "/object/:uuid" do
+  describe "/objects/:uuid" do
     test "it returns a json representation of the object with accept application/json", %{
       conn: conn
     } do
@@ -236,6 +279,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert "Not found" == json_response(conn2, :not_found)
     end
+
+    test "it requires authentication if instance is NOT federating", %{
+      conn: conn
+    } do
+      user = insert(:user)
+      note = insert(:note)
+      uuid = String.split(note.data["id"], "/") |> List.last()
+
+      conn = put_req_header(conn, "accept", "application/activity+json")
+
+      ensure_federating_or_authenticated(conn, "/objects/#{uuid}", user)
+    end
   end
 
   describe "/activities/:uuid" do
@@ -307,6 +362,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert "Not found" == json_response(conn2, :not_found)
     end
+
+    test "it requires authentication if instance is NOT federating", %{
+      conn: conn
+    } do
+      user = insert(:user)
+      activity = insert(:note_activity)
+      uuid = String.split(activity.data["id"], "/") |> List.last()
+
+      conn = put_req_header(conn, "accept", "application/activity+json")
+
+      ensure_federating_or_authenticated(conn, "/activities/#{uuid}", user)
+    end
   end
 
   describe "/inbox" do
@@ -340,6 +407,72 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert "ok" == json_response(conn, 200)
       assert Instances.reachable?(sender_url)
+    end
+
+    test "accept follow activity", %{conn: conn} do
+      Pleroma.Config.put([:instance, :federating], true)
+      relay = Relay.get_actor()
+
+      assert {:ok, %Activity{} = activity} = Relay.follow("https://relay.mastodon.host/actor")
+
+      followed_relay = Pleroma.User.get_by_ap_id("https://relay.mastodon.host/actor")
+      relay = refresh_record(relay)
+
+      accept =
+        File.read!("test/fixtures/relay/accept-follow.json")
+        |> String.replace("{{ap_id}}", relay.ap_id)
+        |> String.replace("{{activity_id}}", activity.data["id"])
+
+      assert "ok" ==
+               conn
+               |> assign(:valid_signature, true)
+               |> put_req_header("content-type", "application/activity+json")
+               |> post("/inbox", accept)
+               |> json_response(200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+
+      assert Pleroma.FollowingRelationship.following?(
+               relay,
+               followed_relay
+             )
+
+      Mix.shell(Mix.Shell.Process)
+
+      on_exit(fn ->
+        Mix.shell(Mix.Shell.IO)
+      end)
+
+      :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
+      assert_receive {:mix_shell, :info, ["relay.mastodon.host"]}
+    end
+
+    test "without valid signature, " <>
+           "it only accepts Create activities and requires enabled federation",
+         %{conn: conn} do
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+      non_create_data = File.read!("test/fixtures/mastodon-announce.json") |> Poison.decode!()
+
+      conn = put_req_header(conn, "content-type", "application/activity+json")
+
+      Config.put([:instance, :federating], false)
+
+      conn
+      |> post("/inbox", data)
+      |> json_response(403)
+
+      conn
+      |> post("/inbox", non_create_data)
+      |> json_response(403)
+
+      Config.put([:instance, :federating], true)
+
+      ret_conn = post(conn, "/inbox", data)
+      assert "ok" == json_response(ret_conn, 200)
+
+      conn
+      |> post("/inbox", non_create_data)
+      |> json_response(400)
     end
   end
 
@@ -479,22 +612,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "it rejects reads from other users", %{conn: conn} do
       user = insert(:user)
-      otheruser = insert(:user)
+      other_user = insert(:user)
 
       conn =
         conn
-        |> assign(:user, otheruser)
-        |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/inbox")
-
-      assert json_response(conn, 403)
-    end
-
-    test "it doesn't crash without an authenticated user", %{conn: conn} do
-      user = insert(:user)
-
-      conn =
-        conn
+        |> assign(:user, other_user)
         |> put_req_header("accept", "application/activity+json")
         |> get("/users/#{user.nickname}/inbox")
 
@@ -575,14 +697,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       refute recipient.follower_address in activity.data["cc"]
       refute recipient.follower_address in activity.data["to"]
     end
+
+    test "it requires authentication", %{conn: conn} do
+      user = insert(:user)
+      conn = put_req_header(conn, "accept", "application/activity+json")
+
+      ret_conn = get(conn, "/users/#{user.nickname}/inbox")
+      assert json_response(ret_conn, 403)
+
+      ret_conn =
+        conn
+        |> assign(:user, user)
+        |> get("/users/#{user.nickname}/inbox")
+
+      assert json_response(ret_conn, 200)
+    end
   end
 
-  describe "/users/:nickname/outbox" do
-    test "it will not bomb when there is no activity", %{conn: conn} do
+  describe "GET /users/:nickname/outbox" do
+    test "it returns 200 even if there're no activities", %{conn: conn} do
       user = insert(:user)
 
       conn =
         conn
+        |> assign(:user, user)
         |> put_req_header("accept", "application/activity+json")
         |> get("/users/#{user.nickname}/outbox")
 
@@ -597,6 +735,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       conn =
         conn
+        |> assign(:user, user)
         |> put_req_header("accept", "application/activity+json")
         |> get("/users/#{user.nickname}/outbox?page=true")
 
@@ -609,24 +748,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       conn =
         conn
+        |> assign(:user, user)
         |> put_req_header("accept", "application/activity+json")
         |> get("/users/#{user.nickname}/outbox?page=true")
 
       assert response(conn, 200) =~ announce_activity.data["object"]
     end
 
-    test "it rejects posts from other users", %{conn: conn} do
+    test "it requires authentication if instance is NOT federating", %{
+      conn: conn
+    } do
+      user = insert(:user)
+      conn = put_req_header(conn, "accept", "application/activity+json")
+
+      ensure_federating_or_authenticated(conn, "/users/#{user.nickname}/outbox", user)
+    end
+  end
+
+  describe "POST /users/:nickname/outbox" do
+    test "it rejects posts from other users / unauuthenticated users", %{conn: conn} do
       data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
       user = insert(:user)
-      otheruser = insert(:user)
+      other_user = insert(:user)
+      conn = put_req_header(conn, "content-type", "application/activity+json")
 
-      conn =
-        conn
-        |> assign(:user, otheruser)
-        |> put_req_header("content-type", "application/activity+json")
-        |> post("/users/#{user.nickname}/outbox", data)
+      conn
+      |> post("/users/#{user.nickname}/outbox", data)
+      |> json_response(403)
 
-      assert json_response(conn, 403)
+      conn
+      |> assign(:user, other_user)
+      |> post("/users/#{user.nickname}/outbox", data)
+      |> json_response(403)
     end
 
     test "it inserts an incoming create activity into the database", %{conn: conn} do
@@ -741,11 +894,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       result =
         conn
-        |> assign(:relay, true)
         |> get("/relay/followers")
         |> json_response(200)
 
       assert result["first"]["orderedItems"] == [user.ap_id]
+    end
+
+    test "on non-federating instance, it returns 404", %{conn: conn} do
+      Config.put([:instance, :federating], false)
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> get("/relay/followers")
+      |> json_response(404)
     end
   end
 
@@ -753,11 +915,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "it returns relay following", %{conn: conn} do
       result =
         conn
-        |> assign(:relay, true)
         |> get("/relay/following")
         |> json_response(200)
 
       assert result["first"]["orderedItems"] == []
+    end
+
+    test "on non-federating instance, it returns 404", %{conn: conn} do
+      Config.put([:instance, :federating], false)
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> get("/relay/following")
+      |> json_response(404)
     end
   end
 
@@ -769,32 +940,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       result =
         conn
+        |> assign(:user, user_two)
         |> get("/users/#{user_two.nickname}/followers")
         |> json_response(200)
 
       assert result["first"]["orderedItems"] == [user.ap_id]
     end
 
-    test "it returns returns a uri if the user has 'hide_followers' set", %{conn: conn} do
+    test "it returns a uri if the user has 'hide_followers' set", %{conn: conn} do
       user = insert(:user)
       user_two = insert(:user, hide_followers: true)
       User.follow(user, user_two)
 
       result =
         conn
+        |> assign(:user, user)
         |> get("/users/#{user_two.nickname}/followers")
         |> json_response(200)
 
       assert is_binary(result["first"])
     end
 
-    test "it returns a 403 error on pages, if the user has 'hide_followers' set and the request is not authenticated",
+    test "it returns a 403 error on pages, if the user has 'hide_followers' set and the request is from another user",
          %{conn: conn} do
-      user = insert(:user, hide_followers: true)
+      user = insert(:user)
+      other_user = insert(:user, hide_followers: true)
 
       result =
         conn
-        |> get("/users/#{user.nickname}/followers?page=1")
+        |> assign(:user, user)
+        |> get("/users/#{other_user.nickname}/followers?page=1")
 
       assert result.status == 403
       assert result.resp_body == ""
@@ -826,6 +1001,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       result =
         conn
+        |> assign(:user, user)
         |> get("/users/#{user.nickname}/followers")
         |> json_response(200)
 
@@ -835,11 +1011,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       result =
         conn
+        |> assign(:user, user)
         |> get("/users/#{user.nickname}/followers?page=2")
         |> json_response(200)
 
       assert length(result["orderedItems"]) == 5
       assert result["totalItems"] == 15
+    end
+
+    test "returns 403 if requester is not logged in", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> get("/users/#{user.nickname}/followers")
+      |> json_response(403)
     end
   end
 
@@ -851,6 +1036,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       result =
         conn
+        |> assign(:user, user)
         |> get("/users/#{user.nickname}/following")
         |> json_response(200)
 
@@ -858,25 +1044,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "it returns a uri if the user has 'hide_follows' set", %{conn: conn} do
-      user = insert(:user, hide_follows: true)
-      user_two = insert(:user)
+      user = insert(:user)
+      user_two = insert(:user, hide_follows: true)
       User.follow(user, user_two)
 
       result =
         conn
-        |> get("/users/#{user.nickname}/following")
+        |> assign(:user, user)
+        |> get("/users/#{user_two.nickname}/following")
         |> json_response(200)
 
       assert is_binary(result["first"])
     end
 
-    test "it returns a 403 error on pages, if the user has 'hide_follows' set and the request is not authenticated",
+    test "it returns a 403 error on pages, if the user has 'hide_follows' set and the request is from another user",
          %{conn: conn} do
-      user = insert(:user, hide_follows: true)
+      user = insert(:user)
+      user_two = insert(:user, hide_follows: true)
 
       result =
         conn
-        |> get("/users/#{user.nickname}/following?page=1")
+        |> assign(:user, user)
+        |> get("/users/#{user_two.nickname}/following?page=1")
 
       assert result.status == 403
       assert result.resp_body == ""
@@ -909,6 +1098,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       result =
         conn
+        |> assign(:user, user)
         |> get("/users/#{user.nickname}/following")
         |> json_response(200)
 
@@ -918,11 +1108,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       result =
         conn
+        |> assign(:user, user)
         |> get("/users/#{user.nickname}/following?page=2")
         |> json_response(200)
 
       assert length(result["orderedItems"]) == 5
       assert result["totalItems"] == 15
+    end
+
+    test "returns 403 if requester is not logged in", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> get("/users/#{user.nickname}/following")
+      |> json_response(403)
     end
   end
 
@@ -1008,8 +1207,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
-  describe "Additionnal ActivityPub C2S endpoints" do
-    test "/api/ap/whoami", %{conn: conn} do
+  describe "Additional ActivityPub C2S endpoints" do
+    test "GET /api/ap/whoami", %{conn: conn} do
       user = insert(:user)
 
       conn =
@@ -1020,12 +1219,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = User.get_cached_by_id(user.id)
 
       assert UserView.render("user.json", %{user: user}) == json_response(conn, 200)
+
+      conn
+      |> get("/api/ap/whoami")
+      |> json_response(403)
     end
 
-    clear_config([:media_proxy])
-    clear_config([Pleroma.Upload])
+    setup do: clear_config([:media_proxy])
+    setup do: clear_config([Pleroma.Upload])
 
-    test "uploadMedia", %{conn: conn} do
+    test "POST /api/ap/upload_media", %{conn: conn} do
       user = insert(:user)
 
       desc = "Description of the image"
@@ -1045,6 +1248,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert object["name"] == desc
       assert object["type"] == "Document"
       assert object["actor"] == user.ap_id
+
+      conn
+      |> post("/api/ap/upload_media", %{"file" => image, "description" => desc})
+      |> json_response(403)
     end
   end
 end

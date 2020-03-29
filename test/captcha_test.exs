@@ -12,8 +12,7 @@ defmodule Pleroma.CaptchaTest do
   alias Pleroma.Captcha.Native
 
   @ets_options [:ordered_set, :private, :named_table, {:read_concurrency, true}]
-
-  clear_config([Pleroma.Captcha, :enabled])
+  setup do: clear_config([Pleroma.Captcha, :enabled])
 
   describe "Kocaptcha" do
     setup do

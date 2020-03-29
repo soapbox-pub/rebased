@@ -12,10 +12,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
+
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -212,12 +214,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     {:ok, _user_relationships} = User.mute(user, other_user)
 
     {:ok, activity} = CommonAPI.post(other_user, %{"status" => "test"})
-    status = StatusView.render("show.json", %{activity: activity})
 
+    relationships_opt = UserRelationship.view_relationships_option(user, [other_user])
+
+    opts = %{activity: activity}
+    status = StatusView.render("show.json", opts)
     assert status.muted == false
 
-    status = StatusView.render("show.json", %{activity: activity, for: user})
+    status = StatusView.render("show.json", Map.put(opts, :relationships, relationships_opt))
+    assert status.muted == false
 
+    for_opts = %{activity: activity, for: user}
+    status = StatusView.render("show.json", for_opts)
+    assert status.muted == true
+
+    status = StatusView.render("show.json", Map.put(for_opts, :relationships, relationships_opt))
     assert status.muted == true
   end
 
