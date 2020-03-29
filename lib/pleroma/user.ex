@@ -305,7 +305,8 @@ defmodule Pleroma.User do
     end
   end
 
-  def profile_url(%User{source_data: %{"url" => url}}), do: url
+  def profile_url(%User{uri: url}) when url != nil, do: url
+  def profile_url(%User{source_data: %{"url" => url}}) when is_binary(url), do: url
   def profile_url(%User{ap_id: ap_id}), do: ap_id
   def profile_url(_), do: nil
 
@@ -314,7 +315,7 @@ defmodule Pleroma.User do
   def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa
   def ap_followers(%User{} = user), do: "#{ap_id(user)}/followers"
 
-  @spec ap_following(User.t()) :: Sring.t()
+  @spec ap_following(User.t()) :: String.t()
   def ap_following(%User{following_address: fa}) when is_binary(fa), do: fa
   def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
 
