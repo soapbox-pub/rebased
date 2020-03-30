@@ -157,7 +157,7 @@ defmodule Pleroma.Application do
 
   defp chat_enabled?, do: Pleroma.Config.get([:chat, :enabled])
 
-  defp streamer_child(:test), do: []
+  defp streamer_child(env) when env in [:test, :benchmark], do: []
 
   defp streamer_child(_) do
     [Pleroma.Web.Streamer.supervisor()]
