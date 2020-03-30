@@ -33,7 +33,7 @@ defmodule Pleroma.LoadTesting.Users do
   def generate_users(max) do
     IO.puts("Starting generating #{max} users...")
 
-    {time, _} =
+    {time, users} =
       :timer.tc(fn ->
         Task.async_stream(
           1..max,
@@ -41,10 +41,11 @@ defmodule Pleroma.LoadTesting.Users do
           max_concurrency: @max_concurrency,
           timeout: 30_000
         )
-        |> Stream.run()
+        |> Enum.to_list()
       end)
 
-    IO.puts("Generating users take #{to_sec(time)} sec.\n")
+    IO.puts("Generating users took #{to_sec(time)} sec.\n")
+    users
   end
 
   defp generate_user(i) do
@@ -104,7 +105,7 @@ defmodule Pleroma.LoadTesting.Users do
         |> run_stream(main_user)
       end)
 
-    IO.puts("Making friends take #{to_sec(time)} sec.\n")
+    IO.puts("Making friends took #{to_sec(time)} sec.\n")
   end
 
   def make_friends(%User{} = main_user, %User{} = user) do

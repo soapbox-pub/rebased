@@ -1,9 +1,10 @@
 defmodule Mix.Tasks.Pleroma.Benchmarks.Timelines do
   use Mix.Task
-  alias Pleroma.Repo
-  alias Pleroma.LoadTesting.Generator
+
+  import Pleroma.LoadTesting.Helper, only: [clean_tables: 0]
 
   alias Pleroma.Web.CommonAPI
+  alias Plug.Conn
 
   def run(_args) do
     Mix.Pleroma.start_pleroma()
@@ -11,7 +12,7 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Timelines do
     # Cleaning tables
     clean_tables()
 
-    [{:ok, user} | users] = Generator.generate_users(users_max: 1000)
+    [{:ok, user} | users] = Pleroma.LoadTesting.Users.generate_users(1000)
 
     # Let the user make 100 posts
 
@@ -38,8 +39,8 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Timelines do
         "user timeline, no followers" => fn reading_user ->
           conn =
             Phoenix.ConnTest.build_conn()
-            |> Plug.Conn.assign(:user, reading_user)
-            |> Plug.Conn.assign(:skip_link_headers, true)
+            |> Conn.assign(:user, reading_user)
+            |> Conn.assign(:skip_link_headers, true)
 
           Pleroma.Web.MastodonAPI.AccountController.statuses(conn, %{"id" => user.id})
         end
@@ -56,8 +57,8 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Timelines do
         "user timeline, all following" => fn reading_user ->
           conn =
             Phoenix.ConnTest.build_conn()
-            |> Plug.Conn.assign(:user, reading_user)
-            |> Plug.Conn.assign(:skip_link_headers, true)
+            |> Conn.assign(:user, reading_user)
+            |> Conn.assign(:skip_link_headers, true)
 
           Pleroma.Web.MastodonAPI.AccountController.statuses(conn, %{"id" => user.id})
         end
@@ -65,12 +66,5 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Timelines do
       inputs: %{"user" => user, "no user" => nil},
       time: 60
     )
-  end
-
-  defp clean_tables do
-    IO.puts("Deleting old data...\n")
-    Ecto.Adapters.SQL.query!(Repo, "TRUNCATE users CASCADE;")
-    Ecto.Adapters.SQL.query!(Repo, "TRUNCATE activities CASCADE;")
-    Ecto.Adapters.SQL.query!(Repo, "TRUNCATE objects CASCADE;")
   end
 end

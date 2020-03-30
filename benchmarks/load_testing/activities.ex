@@ -81,7 +81,7 @@ defmodule Pleroma.LoadTesting.Activities do
         )
       end)
 
-    IO.puts("Generating iterations of activities take #{to_sec(time)} sec.\n")
+    IO.puts("Generating iterations of activities took #{to_sec(time)} sec.\n")
     :ok
   end
 
