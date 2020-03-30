@@ -178,9 +178,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     assert represented = AccountView.render("show.json", %{user: user})
     assert represented.acct == "compositions@channels.tests.funkwhale.audio"
-    # assert represented.url == "https://channels.tests.funkwhale.audio/channels/compositions"
-    assert represented.url ==
-             "https://channels.tests.funkwhale.audio/federation/actors/compositions"
+    assert represented.url == "https://channels.tests.funkwhale.audio/channels/compositions"
   end
 
   test "Represent a deactivated user for an admin" do
