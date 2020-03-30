@@ -5,12 +5,28 @@
 defmodule Pleroma.Web.MastodonAPI.AccountView do
   use Pleroma.Web, :view
 
+  alias Pleroma.FollowingRelationship
   alias Pleroma.User
+  alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MediaProxy
 
   def render("index.json", %{users: users} = opts) do
+    relationships_opt =
+      cond do
+        Map.has_key?(opts, :relationships) ->
+          opts[:relationships]
+
+        is_nil(opts[:for]) ->
+          UserRelationship.view_relationships_option(nil, [])
+
+        true ->
+          UserRelationship.view_relationships_option(opts[:for], users)
+      end
+
+    opts = Map.put(opts, :relationships, relationships_opt)
+
     users
     |> render_many(AccountView, "show.json", opts)
     |> Enum.filter(&Enum.any?/1)
@@ -35,34 +51,107 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     %{}
   end
 
-  def render("relationship.json", %{user: %User{} = user, target: %User{} = target}) do
-    follow_state = User.get_cached_follow_state(user, target)
+  def render(
+        "relationship.json",
+        %{user: %User{} = reading_user, target: %User{} = target} = opts
+      ) do
+    user_relationships = get_in(opts, [:relationships, :user_relationships])
+    following_relationships = get_in(opts, [:relationships, :following_relationships])
 
-    requested =
-      if follow_state && !User.following?(user, target) do
-        follow_state == "pending"
+    follow_state =
+      if following_relationships do
+        user_to_target_following_relation =
+          FollowingRelationship.find(following_relationships, reading_user, target)
+
+        User.get_follow_state(reading_user, target, user_to_target_following_relation)
       else
-        false
+        User.get_follow_state(reading_user, target)
       end
 
+    followed_by =
+      if following_relationships do
+        case FollowingRelationship.find(following_relationships, target, reading_user) do
+          %{state: "accept"} -> true
+          _ -> false
+        end
+      else
+        User.following?(target, reading_user)
+      end
+
+    # NOTE: adjust UserRelationship.view_relationships_option/2 on new relation-related flags
     %{
       id: to_string(target.id),
-      following: User.following?(user, target),
-      followed_by: User.following?(target, user),
-      blocking: User.blocks_user?(user, target),
-      blocked_by: User.blocks_user?(target, user),
-      muting: User.mutes?(user, target),
-      muting_notifications: User.muted_notifications?(user, target),
-      subscribing: User.subscribed_to?(user, target),
-      requested: requested,
-      domain_blocking: User.blocks_domain?(user, target),
-      showing_reblogs: User.showing_reblogs?(user, target),
+      following: follow_state == "accept",
+      followed_by: followed_by,
+      blocking:
+        UserRelationship.exists?(
+          user_relationships,
+          :block,
+          reading_user,
+          target,
+          &User.blocks_user?(&1, &2)
+        ),
+      blocked_by:
+        UserRelationship.exists?(
+          user_relationships,
+          :block,
+          target,
+          reading_user,
+          &User.blocks_user?(&1, &2)
+        ),
+      muting:
+        UserRelationship.exists?(
+          user_relationships,
+          :mute,
+          reading_user,
+          target,
+          &User.mutes?(&1, &2)
+        ),
+      muting_notifications:
+        UserRelationship.exists?(
+          user_relationships,
+          :notification_mute,
+          reading_user,
+          target,
+          &User.muted_notifications?(&1, &2)
+        ),
+      subscribing:
+        UserRelationship.exists?(
+          user_relationships,
+          :inverse_subscription,
+          target,
+          reading_user,
+          &User.subscribed_to?(&2, &1)
+        ),
+      requested: follow_state == "pending",
+      domain_blocking: User.blocks_domain?(reading_user, target),
+      showing_reblogs:
+        not UserRelationship.exists?(
+          user_relationships,
+          :reblog_mute,
+          reading_user,
+          target,
+          &User.muting_reblogs?(&1, &2)
+        ),
       endorsed: false
     }
   end
 
-  def render("relationships.json", %{user: user, targets: targets}) do
-    render_many(targets, AccountView, "relationship.json", user: user, as: :target)
+  def render("relationships.json", %{user: user, targets: targets} = opts) do
+    relationships_opt =
+      cond do
+        Map.has_key?(opts, :relationships) ->
+          opts[:relationships]
+
+        is_nil(opts[:for]) ->
+          UserRelationship.view_relationships_option(nil, [])
+
+        true ->
+          UserRelationship.view_relationships_option(user, targets)
+      end
+
+    render_opts = %{as: :target, user: user, relationships: relationships_opt}
+    render_many(targets, AccountView, "relationship.json", render_opts)
   end
 
   defp do_render("show.json", %{user: user} = opts) do
@@ -100,7 +189,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         }
       end)
 
-    relationship = render("relationship.json", %{user: opts[:for], target: user})
+    relationship =
+      render("relationship.json", %{
+        user: opts[:for],
+        target: user,
+        relationships: opts[:relationships]
+      })
 
     %{
       id: to_string(user.id),
@@ -122,7 +216,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       fields: user.fields,
       bot: bot,
       source: %{
-        note: Pleroma.HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
+        note: (user.bio || "") |> String.replace(~r(<br */?>), "\n") |> Pleroma.HTML.strip_tags(),
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{

@@ -8,6 +8,7 @@ defmodule Pleroma.UserRelationship do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserRelationship
@@ -21,18 +22,25 @@ defmodule Pleroma.UserRelationship do
   end
 
   for relationship_type <- Keyword.keys(UserRelationshipTypeEnum.__enum_map__()) do
-    # Definitions of `create_block/2`, `create_mute/2` etc.
+    # `def create_block/2`, `def create_mute/2`, `def create_reblog_mute/2`,
+    #   `def create_notification_mute/2`, `def create_inverse_subscription/2`
     def unquote(:"create_#{relationship_type}")(source, target),
       do: create(unquote(relationship_type), source, target)
 
-    # Definitions of `delete_block/2`, `delete_mute/2` etc.
+    # `def delete_block/2`, `def delete_mute/2`, `def delete_reblog_mute/2`,
+    #   `def delete_notification_mute/2`, `def delete_inverse_subscription/2`
     def unquote(:"delete_#{relationship_type}")(source, target),
       do: delete(unquote(relationship_type), source, target)
 
-    # Definitions of `block_exists?/2`, `mute_exists?/2` etc.
+    # `def block_exists?/2`, `def mute_exists?/2`, `def reblog_mute_exists?/2`,
+    #   `def notification_mute_exists?/2`, `def inverse_subscription_exists?/2`
     def unquote(:"#{relationship_type}_exists?")(source, target),
       do: exists?(unquote(relationship_type), source, target)
   end
+
+  def user_relationship_types, do: Keyword.keys(user_relationship_mappings())
+
+  def user_relationship_mappings, do: UserRelationshipTypeEnum.__enum_map__()
 
   def changeset(%UserRelationship{} = user_relationship, params \\ %{}) do
     user_relationship
@@ -70,6 +78,73 @@ defmodule Pleroma.UserRelationship do
       %UserRelationship{} = existing_record -> Repo.delete(existing_record)
       nil -> {:ok, nil}
     end
+  end
+
+  def dictionary(
+        source_users,
+        target_users,
+        source_to_target_rel_types \\ nil,
+        target_to_source_rel_types \\ nil
+      )
+      when is_list(source_users) and is_list(target_users) do
+    source_user_ids = User.binary_id(source_users)
+    target_user_ids = User.binary_id(target_users)
+
+    get_rel_type_codes = fn rel_type -> user_relationship_mappings()[rel_type] end
+
+    source_to_target_rel_types =
+      Enum.map(source_to_target_rel_types || user_relationship_types(), &get_rel_type_codes.(&1))
+
+    target_to_source_rel_types =
+      Enum.map(target_to_source_rel_types || user_relationship_types(), &get_rel_type_codes.(&1))
+
+    __MODULE__
+    |> where(
+      fragment(
+        "(source_id = ANY(?) AND target_id = ANY(?) AND relationship_type = ANY(?)) OR \
+        (source_id = ANY(?) AND target_id = ANY(?) AND relationship_type = ANY(?))",
+        ^source_user_ids,
+        ^target_user_ids,
+        ^source_to_target_rel_types,
+        ^target_user_ids,
+        ^source_user_ids,
+        ^target_to_source_rel_types
+      )
+    )
+    |> select([ur], [ur.relationship_type, ur.source_id, ur.target_id])
+    |> Repo.all()
+  end
+
+  def exists?(dictionary, rel_type, source, target, func) do
+    cond do
+      is_nil(source) or is_nil(target) ->
+        false
+
+      dictionary ->
+        [rel_type, source.id, target.id] in dictionary
+
+      true ->
+        func.(source, target)
+    end
+  end
+
+  @doc ":relationships option for StatusView / AccountView / NotificationView"
+  def view_relationships_option(nil = _reading_user, _actors) do
+    %{user_relationships: [], following_relationships: []}
+  end
+
+  def view_relationships_option(%User{} = reading_user, actors) do
+    user_relationships =
+      UserRelationship.dictionary(
+        [reading_user],
+        actors,
+        [:block, :mute, :notification_mute, :reblog_mute],
+        [:block, :inverse_subscription]
+      )
+
+    following_relationships = FollowingRelationship.all_between_user_sets([reading_user], actors)
+
+    %{user_relationships: user_relationships, following_relationships: following_relationships}
   end
 
   defp validate_not_self_relationship(%Ecto.Changeset{} = changeset) do

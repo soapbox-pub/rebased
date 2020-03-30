@@ -16,6 +16,21 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   alias Pleroma.Web.MastodonAPI.StatusView
   import Pleroma.Factory
 
+  defp test_notifications_rendering(notifications, user, expected_result) do
+    result = NotificationView.render("index.json", %{notifications: notifications, for: user})
+
+    assert expected_result == result
+
+    result =
+      NotificationView.render("index.json", %{
+        notifications: notifications,
+        for: user,
+        relationships: nil
+      })
+
+    assert expected_result == result
+  end
+
   test "Mention notification" do
     user = insert(:user)
     mentioned_user = insert(:user)
@@ -32,10 +47,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    result =
-      NotificationView.render("index.json", %{notifications: [notification], for: mentioned_user})
-
-    assert [expected] == result
+    test_notifications_rendering([notification], mentioned_user, [expected])
   end
 
   test "Favourite notification" do
@@ -55,9 +67,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    result = NotificationView.render("index.json", %{notifications: [notification], for: user})
-
-    assert [expected] == result
+    test_notifications_rendering([notification], user, [expected])
   end
 
   test "Reblog notification" do
@@ -77,9 +87,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    result = NotificationView.render("index.json", %{notifications: [notification], for: user})
-
-    assert [expected] == result
+    test_notifications_rendering([notification], user, [expected])
   end
 
   test "Follow notification" do
@@ -96,16 +104,12 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    result =
-      NotificationView.render("index.json", %{notifications: [notification], for: followed})
-
-    assert [expected] == result
+    test_notifications_rendering([notification], followed, [expected])
 
     User.perform(:delete, follower)
     notification = Notification |> Repo.one() |> Repo.preload(:activity)
 
-    assert [] ==
-             NotificationView.render("index.json", %{notifications: [notification], for: followed})
+    test_notifications_rendering([notification], followed, [])
   end
 
   @tag capture_log: true
@@ -144,8 +148,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    assert [expected] ==
-             NotificationView.render("index.json", %{notifications: [notification], for: follower})
+    test_notifications_rendering([notification], follower, [expected])
   end
 
   test "EmojiReact notification" do
@@ -171,7 +174,6 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    assert expected ==
-             NotificationView.render("show.json", %{notification: notification, for: user})
+    test_notifications_rendering([notification], user, [expected])
   end
 end
