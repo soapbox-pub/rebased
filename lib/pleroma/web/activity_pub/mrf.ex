@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   @spec subdomain_match?([Regex.t()], String.t()) :: boolean()
   def subdomain_match?(domains, host) do
-    !!Enum.find(domains, fn domain -> Regex.match?(domain, host) end)
+    Enum.any?(domains, fn domain -> Regex.match?(domain, host) end)
   end
 
   @callback describe() :: {:ok | :error, Map.t()}

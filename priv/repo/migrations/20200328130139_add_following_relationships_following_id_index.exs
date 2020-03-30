@@ -6,6 +6,6 @@ defmodule Pleroma.Repo.Migrations.AddFollowingRelationshipsFollowingIdIndex do
   def change do
     drop_if_exists(index(:following_relationships, [:follower_id]))
 
-    create_if_not_exists(drop_if_exists(index(:following_relationships, [:following_id])))
+    create_if_not_exists(index(:following_relationships, [:following_id]))
   end
 end
