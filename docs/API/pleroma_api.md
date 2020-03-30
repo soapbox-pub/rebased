@@ -361,6 +361,12 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Authentication: required
 * Params:
   * `metadata`: metadata to replace the old one
+    * `license`: Pack license
+    * `homepage`: Pack home page url
+    * `description`: Pack description
+    * `fallback-src`: Fallback url to download pack from
+    * `fallback-src-sha256`: SHA256 encoded for fallback pack archive
+    * `share-files`: is pack allowed for sharing (boolean)
 * Response: JSON, updated "metadata" section of the pack and 200 status or 400 if there was a
   problem with the new metadata (the error is specified in the "error" part of the response JSON)
 
