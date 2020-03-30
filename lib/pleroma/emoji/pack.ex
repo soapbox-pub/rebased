@@ -188,7 +188,7 @@ defmodule Pleroma.Emoji.Pack do
 
       {:ok, names}
     else
-      {:ok, %{access: _}} -> {:error, :not_writable}
+      {:ok, %{access: _}} -> {:error, :no_read_write}
       e -> e
     end
   end
