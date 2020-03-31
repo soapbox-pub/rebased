@@ -1983,17 +1983,6 @@ defmodule Pleroma.User do
 
   def fields(%{fields: fields}), do: fields
 
-  def sanitized_fields(%User{} = user) do
-    user
-    |> User.fields()
-    |> Enum.map(fn %{"name" => name, "value" => value} ->
-      %{
-        "name" => name,
-        "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
-      }
-    end)
-  end
-
   def validate_fields(changeset, remote? \\ false) do
     limit_name = if remote?, do: :max_remote_account_fields, else: :max_account_fields
     limit = Pleroma.Config.get([:instance, limit_name], 0)
