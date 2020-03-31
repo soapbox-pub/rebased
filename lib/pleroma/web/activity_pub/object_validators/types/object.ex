@@ -4,12 +4,20 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.ObjectID do
   def type, do: :string
 
   def cast(object) when is_binary(object) do
-    {:ok, object}
+    with %URI{
+           scheme: scheme,
+           host: host
+         }
+         when scheme in ["https", "http"] and not is_nil(host) <-
+           URI.parse(object) do
+      {:ok, object}
+    else
+      _ ->
+        :error
+    end
   end
 
-  def cast(%{"id" => object}) when is_binary(object) do
-    {:ok, object}
-  end
+  def cast(%{"id" => object}), do: cast(object)
 
   def cast(_) do
     :error
