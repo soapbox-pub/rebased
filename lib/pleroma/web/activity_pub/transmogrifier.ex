@@ -615,8 +615,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with {_, {:ok, cast_data_sym}} <-
            {:casting_data,
             data |> LikeValidator.cast_data() |> Ecto.Changeset.apply_action(:insert)},
-         {_, cast_data} <-
-           {:stringify_keys, ObjectValidator.stringify_keys(cast_data_sym |> Map.from_struct())},
+         cast_data = ObjectValidator.stringify_keys(Map.from_struct(cast_data_sym)),
          :ok <- ObjectValidator.fetch_actor_and_object(cast_data),
          {_, {:ok, cast_data}} <- {:maybe_add_context, maybe_add_context_from_object(cast_data)},
          {_, {:ok, cast_data}} <-
