@@ -4,10 +4,18 @@
 
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
-  import Pleroma.Factory
+
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
+
+  import Pleroma.Factory
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "Represent a user account" do
     source_data = %{
@@ -159,6 +167,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     }
 
     assert expected == AccountView.render("show.json", %{user: user})
+  end
+
+  test "Represent a Funkwhale channel" do
+    {:ok, user} =
+      User.get_or_fetch_by_ap_id(
+        "https://channels.tests.funkwhale.audio/federation/actors/compositions"
+      )
+
+    assert represented = AccountView.render("show.json", %{user: user})
+    assert represented.acct == "compositions@channels.tests.funkwhale.audio"
+    assert represented.url == "https://channels.tests.funkwhale.audio/channels/compositions"
   end
 
   test "Represent a deactivated user for an admin" do
