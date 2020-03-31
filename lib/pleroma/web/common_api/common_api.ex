@@ -112,8 +112,22 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  @spec favorite(User.t(), binary()) :: {:ok, Activity.t()} | {:error, any()}
+  @spec favorite(User.t(), binary()) :: {:ok, Activity.t() | :already_liked} | {:error, any()}
   def favorite(%User{} = user, id) do
+    case favorite_helper(user, id) do
+      {:ok, _} = res ->
+        res
+
+      {:error, :not_found} = res ->
+        res
+
+      {:error, e} ->
+        Logger.error("Could not favorite #{id}. Error: #{inspect(e, pretty: true)}")
+        {:error, dgettext("errors", "Could not favorite")}
+    end
+  end
+
+  def favorite_helper(user, id) do
     with {_, %Activity{object: object}} <- {:find_object, Activity.get_by_id_with_object(id)},
          {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
          {_, {:ok, %Activity{} = activity, _meta}} <-
@@ -138,13 +152,11 @@ defmodule Pleroma.Web.CommonAPI do
         if {:object, {"already liked by this actor", []}} in changeset.errors do
           {:ok, :already_liked}
         else
-          Logger.error("Could not favorite #{id}. Error: #{inspect(e, pretty: true)}")
-          {:error, dgettext("errors", "Could not favorite"), e}
+          {:error, e}
         end
 
       e ->
-        Logger.error("Could not favorite #{id}. Error: #{inspect(e, pretty: true)}")
-        {:error, dgettext("errors", "Could not favorite"), e}
+        {:error, e}
     end
   end
 
