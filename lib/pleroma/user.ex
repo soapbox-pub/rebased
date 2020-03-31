@@ -769,7 +769,7 @@ defmodule Pleroma.User do
 
   defdelegate following?(follower, followed), to: FollowingRelationship
 
-  @doc "Returns follow state as FollowingRelationshipStateEnum value"
+  @doc "Returns follow state as Pleroma.FollowingRelationship.State value"
   def get_follow_state(%User{} = follower, %User{} = following) do
     following_relationship = FollowingRelationship.get(follower, following)
     get_follow_state(follower, following, following_relationship)

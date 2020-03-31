@@ -8,12 +8,13 @@ defmodule Pleroma.FollowingRelationship do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias Ecto.Changeset
   alias FlakeId.Ecto.CompatType
   alias Pleroma.Repo
   alias Pleroma.User
 
   schema "following_relationships" do
-    field(:state, FollowingRelationshipStateEnum, default: :follow_pending)
+    field(:state, Pleroma.FollowingRelationship.State, default: :follow_pending)
 
     belongs_to(:follower, User, type: CompatType)
     belongs_to(:following, User, type: CompatType)
@@ -33,13 +34,12 @@ defmodule Pleroma.FollowingRelationship do
     |> validate_not_self_relationship()
   end
 
-  def state_to_enum(state) when is_binary(state) do
-    case state do
-      "pending" -> :follow_pending
-      "accept" -> :follow_accept
-      "reject" -> :follow_reject
-      _ -> raise "State is not convertible to FollowingRelationshipStateEnum: #{state}"
-    end
+  def state_to_enum(state) when state in ["pending", "accept", "reject"] do
+    String.to_existing_atom("follow_#{state}")
+  end
+
+  def state_to_enum(state) do
+    raise "State is not convertible to Pleroma.FollowingRelationship.State: #{state}"
   end
 
   def get(%User{} = follower, %User{} = following) do
@@ -171,18 +171,26 @@ defmodule Pleroma.FollowingRelationship do
     end)
   end
 
-  defp validate_not_self_relationship(%Ecto.Changeset{} = changeset) do
+  defp validate_not_self_relationship(%Changeset{} = changeset) do
     changeset
-    |> validate_change(:following_id, fn _, following_id ->
-      if following_id == get_field(changeset, :follower_id) do
-        [target_id: "can't be equal to follower_id"]
+    |> validate_follower_id_following_id_inequality()
+    |> validate_following_id_follower_id_inequality()
+  end
+
+  defp validate_follower_id_following_id_inequality(%Changeset{} = changeset) do
+    validate_change(changeset, :follower_id, fn _, follower_id ->
+      if follower_id == get_field(changeset, :following_id) do
+        [source_id: "can't be equal to following_id"]
       else
         []
       end
     end)
-    |> validate_change(:follower_id, fn _, follower_id ->
-      if follower_id == get_field(changeset, :following_id) do
-        [source_id: "can't be equal to following_id"]
+  end
+
+  defp validate_following_id_follower_id_inequality(%Changeset{} = changeset) do
+    validate_change(changeset, :following_id, fn _, following_id ->
+      if following_id == get_field(changeset, :follower_id) do
+        [target_id: "can't be equal to follower_id"]
       else
         []
       end

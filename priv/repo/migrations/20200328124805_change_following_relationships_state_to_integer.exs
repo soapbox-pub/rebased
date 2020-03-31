@@ -1,11 +1,11 @@
 defmodule Pleroma.Repo.Migrations.ChangeFollowingRelationshipsStateToInteger do
   use Ecto.Migration
 
-  @alter_apps_scopes "ALTER TABLE following_relationships ALTER COLUMN state"
+  @alter_following_relationship_state "ALTER TABLE following_relationships ALTER COLUMN state"
 
   def up do
     execute("""
-    #{@alter_apps_scopes} TYPE integer USING
+    #{@alter_following_relationship_state} TYPE integer USING
     CASE
       WHEN state = 'pending' THEN 1
       WHEN state = 'accept' THEN 2
@@ -17,7 +17,7 @@ defmodule Pleroma.Repo.Migrations.ChangeFollowingRelationshipsStateToInteger do
 
   def down do
     execute("""
-    #{@alter_apps_scopes} TYPE varchar(255) USING
+    #{@alter_following_relationship_state} TYPE varchar(255) USING
     CASE
       WHEN state = 1 THEN 'pending'
       WHEN state = 2 THEN 'accept'

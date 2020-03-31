@@ -4,7 +4,7 @@
 
 import EctoEnum
 
-defenum(UserRelationshipTypeEnum,
+defenum(Pleroma.UserRelationship.Type,
   block: 1,
   mute: 2,
   reblog_mute: 3,
@@ -12,7 +12,7 @@ defenum(UserRelationshipTypeEnum,
   inverse_subscription: 5
 )
 
-defenum(FollowingRelationshipStateEnum,
+defenum(Pleroma.FollowingRelationship.State,
   follow_pending: 1,
   follow_accept: 2,
   follow_reject: 3
