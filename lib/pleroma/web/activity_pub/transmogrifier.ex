@@ -1267,19 +1267,25 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     {:error, :no_context}
   end
 
-  defp maybe_add_recipients_from_object(%{"to" => [_ | _], "cc" => [_ | _]} = data), do: {:ok, data}
+  defp maybe_add_recipients_from_object(%{"to" => [_ | _], "cc" => [_ | _]} = data),
+    do: {:ok, data}
 
   defp maybe_add_recipients_from_object(%{"object" => object} = data) do
     case Object.normalize(object) do
-      %{data: {"actor" => actor}} -> 
+      %{data: %{"actor" => actor}} ->
         data =
           data
           |> Map.put("to", [actor])
           |> Map.put("cc", data["cc"] || [])
 
         {:ok, data}
-      nil -> {:error, :no_object}
-      _ -> {:error, :no_actor}
+
+      nil ->
+        {:error, :no_object}
+
+      _ ->
+        {:error, :no_actor}
+    end
   end
 
   defp maybe_add_recipients_from_object(_) do
