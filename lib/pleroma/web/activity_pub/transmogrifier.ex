@@ -1255,14 +1255,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     do: {:ok, data}
 
   defp maybe_add_context_from_object(%{"object" => object} = data) when is_binary(object) do
-    if object = Object.normalize(object) do
-      data =
-        data
-        |> Map.put("context", object.data["context"])
-
-      {:ok, data}
+    with %{data: %{"context" => context}} when is_binary(context) <- Object.normalize(object) do
+      {:ok, Map.put(data, "context", context)}
     else
-      {:error, "No context on referenced object"}
+      _ ->
+        {:error, :no_context}
     end
   end
 
