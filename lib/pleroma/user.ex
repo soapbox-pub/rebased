@@ -306,6 +306,7 @@ defmodule Pleroma.User do
     end
   end
 
+  # Should probably be renamed or removed
   def ap_id(%User{nickname: nickname}), do: "#{Web.base_url()}/users/#{nickname}"
 
   def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa
@@ -339,6 +340,13 @@ defmodule Pleroma.User do
     end
   end
 
+  defp fix_follower_address(%{follower_address: _, following_address: _} = params), do: params
+
+  defp fix_follower_address(%{nickname: nickname} = params),
+    do: Map.put(params, :follower_address, ap_followers(%User{nickname: nickname}))
+
+  defp fix_follower_address(params), do: params
+
   def remote_user_creation(params) do
     bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
@@ -348,53 +356,44 @@ defmodule Pleroma.User do
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
       |> truncate_fields_param()
+      |> fix_follower_address()
 
-    changeset =
-      %User{local: false}
-      |> cast(
-        params,
-        [
-          :bio,
-          :name,
-          :ap_id,
-          :nickname,
-          :avatar,
-          :ap_enabled,
-          :source_data,
-          :banner,
-          :locked,
-          :magic_key,
-          :uri,
-          :hide_followers,
-          :hide_follows,
-          :hide_followers_count,
-          :hide_follows_count,
-          :follower_count,
-          :fields,
-          :following_count,
-          :discoverable,
-          :invisible,
-          :actor_type,
-          :also_known_as
-        ]
-      )
-      |> validate_required([:name, :ap_id])
-      |> unique_constraint(:nickname)
-      |> validate_format(:nickname, @email_regex)
-      |> validate_length(:bio, max: bio_limit)
-      |> validate_length(:name, max: name_limit)
-      |> validate_fields(true)
-
-    case params[:source_data] do
-      %{"followers" => followers, "following" => following} ->
-        changeset
-        |> put_change(:follower_address, followers)
-        |> put_change(:following_address, following)
-
-      _ ->
-        followers = ap_followers(%User{nickname: get_field(changeset, :nickname)})
-        put_change(changeset, :follower_address, followers)
-    end
+    %User{local: false}
+    |> cast(
+      params,
+      [
+        :bio,
+        :name,
+        :ap_id,
+        :nickname,
+        :avatar,
+        :ap_enabled,
+        :source_data,
+        :banner,
+        :locked,
+        :magic_key,
+        :uri,
+        :follower_address,
+        :following_address,
+        :hide_followers,
+        :hide_follows,
+        :hide_followers_count,
+        :hide_follows_count,
+        :follower_count,
+        :fields,
+        :following_count,
+        :discoverable,
+        :invisible,
+        :actor_type,
+        :also_known_as
+      ]
+    )
+    |> validate_required([:name, :ap_id])
+    |> unique_constraint(:nickname)
+    |> validate_format(:nickname, @email_regex)
+    |> validate_length(:bio, max: bio_limit)
+    |> validate_length(:name, max: name_limit)
+    |> validate_fields(true)
   end
 
   def update_changeset(struct, params \\ %{}) do
