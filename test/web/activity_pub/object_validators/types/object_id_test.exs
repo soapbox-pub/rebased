@@ -10,12 +10,11 @@ defmodule Pleroma.Web.ObjectValidators.Types.ObjectIDTest do
 
   @non_uris [
     "https://",
-    "rin"
+    "rin",
+    1,
+    :x,
+    %{"1" => 2}
   ]
-
-  test "it rejects integers" do
-    assert :error == ObjectID.cast(1)
-  end
 
   test "it accepts http uris" do
     Enum.each(@uris, fn uri ->
