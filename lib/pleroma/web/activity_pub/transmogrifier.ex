@@ -1291,6 +1291,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   defp maybe_add_recipients_from_object(_) do
-    {:error, "No referenced object"}
+    {:error, :no_object}
   end
 end
