@@ -345,6 +345,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params:
   * `url`: url of the instance to download from
   * `name`: pack to download from that instance
+  * `as`: (*optional*) name how to save pack
 * Response: JSON, "ok" with 200 status if the pack was downloaded, or 500 if there were
   errors downloading the pack
 
@@ -357,7 +358,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 
 ## `PATCH /api/pleroma/emoji/packs/:name`
 ### Updates (replaces) pack metadata
-* Method `POST`
+* Method `PATCH`
 * Authentication: required
 * Params:
   * `metadata`: metadata to replace the old one
