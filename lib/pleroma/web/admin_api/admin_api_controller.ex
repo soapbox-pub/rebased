@@ -576,9 +576,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   @doc "Sends registration invite via email"
   def email_invite(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
-    with true <-
-           Config.get([:instance, :invites_enabled]) &&
-             !Config.get([:instance, :registrations_open]),
+    with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
+         {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
          {:ok, invite_token} <- UserInviteToken.create_invite(),
          email <-
            Pleroma.Emails.UserEmail.user_invitation_email(
@@ -589,6 +588,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            ),
          {:ok, _} <- Pleroma.Emails.Mailer.deliver(email) do
       json_response(conn, :no_content, "")
+    else
+      {:registrations_open, _} ->
+        errors(
+          conn,
+          {:error, "To send invites you need set `registrations_open` option to false."}
+        )
+
+      {:invites_enabled, _} ->
+        errors(
+          conn,
+          {:error, "To send invites you need set `invites_enabled` option to true."}
+        )
     end
   end
 
