@@ -14,17 +14,20 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   plug(OAuthScopesPlug, %{scopes: ["read"]} when action == :verify_credentials)
+  plug(OpenApiSpex.Plug.CastAndValidate)
 
   @local_mastodon_name "Mastodon-Local"
 
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.AppOperation
+
   @doc "POST /api/v1/apps"
-  def create(conn, params) do
+  def create(%{body_params: params} = conn, _params) do
     scopes = Scopes.fetch_scopes(params, ["read"])
 
     app_attrs =
       params
-      |> Map.drop(["scope", "scopes"])
-      |> Map.put("scopes", scopes)
+      |> Map.take([:client_name, :redirect_uris, :website])
+      |> Map.put(:scopes, scopes)
 
     with cs <- App.register_changeset(%App{}, app_attrs),
          false <- cs.changes[:client_name] == @local_mastodon_name,

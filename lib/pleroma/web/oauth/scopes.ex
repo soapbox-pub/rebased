@@ -15,7 +15,12 @@ defmodule Pleroma.Web.OAuth.Scopes do
   Note: `scopes` is used by Mastodon — supporting it but sticking to
   OAuth's standard `scope` wherever we control it
   """
-  @spec fetch_scopes(map(), list()) :: list()
+  @spec fetch_scopes(map() | struct(), list()) :: list()
+
+  def fetch_scopes(%Pleroma.Web.ApiSpec.Schemas.AppCreateRequest{scopes: scopes}, default) do
+    parse_scopes(scopes, default)
+  end
+
   def fetch_scopes(params, default) do
     parse_scopes(params["scope"] || params["scopes"], default)
   end
