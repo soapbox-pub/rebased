@@ -1432,7 +1432,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
-    public_key = data["publicKey"]["publicKeyPem"]
+
+    public_key =
+      if is_map(data["publicKey"]) && is_binary(data["publicKey"]["publicKeyPem"]) do
+        data["publicKey"]["publicKeyPem"]
+      else
+        nil
+      end
+
+    shared_inbox =
+      if is_map(data["endpoints"]) && is_binary(data["endpoints"]["sharedInbox"]) do
+        data["endpoints"]["sharedInbox"]
+      else
+        nil
+      end
 
     user_data = %{
       ap_id: data["id"],
@@ -1451,7 +1464,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       bio: data["summary"],
       actor_type: actor_type,
       also_known_as: Map.get(data, "alsoKnownAs", []),
-      public_key: public_key
+      public_key: public_key,
+      inbox: data["inbox"],
+      shared_inbox: shared_inbox
     }
 
     # nickname can be nil because of virtual actors

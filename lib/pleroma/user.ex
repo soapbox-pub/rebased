@@ -134,6 +134,8 @@ defmodule Pleroma.User do
     field(:skip_thread_containment, :boolean, default: false)
     field(:actor_type, :string, default: "Person")
     field(:also_known_as, {:array, :string}, default: [])
+    field(:inbox, :string)
+    field(:shared_inbox, :string)
 
     embeds_one(
       :notification_settings,
@@ -367,6 +369,8 @@ defmodule Pleroma.User do
         :bio,
         :name,
         :ap_id,
+        :inbox,
+        :shared_inbox,
         :nickname,
         :public_key,
         :avatar,
@@ -411,6 +415,8 @@ defmodule Pleroma.User do
         :name,
         :avatar,
         :public_key,
+        :inbox,
+        :shared_inbox,
         :locked,
         :no_rich_text,
         :default_scope,
@@ -508,6 +514,8 @@ defmodule Pleroma.User do
         :follower_address,
         :following_address,
         :public_key,
+        :inbox,
+        :shared_inbox,
         :avatar,
         :last_refreshed_at,
         :ap_enabled,
