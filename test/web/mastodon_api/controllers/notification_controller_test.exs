@@ -452,10 +452,23 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert length(json_response(conn, 200)) == 1
   end
 
+  @tag capture_log: true
   test "see move notifications" do
     old_user = insert(:user)
     new_user = insert(:user, also_known_as: [old_user.ap_id])
     %{user: follower, conn: conn} = oauth_access(["read:notifications"])
+
+    old_user_url = old_user.ap_id
+
+    body =
+      File.read!("test/fixtures/users_mock/localhost.json")
+      |> String.replace("{{nickname}}", old_user.nickname)
+      |> Jason.encode!()
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: ^old_user_url} ->
+        %Tesla.Env{status: 200, body: body}
+    end)
 
     User.follow(follower, old_user)
     Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)

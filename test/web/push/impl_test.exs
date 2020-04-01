@@ -134,7 +134,7 @@ defmodule Pleroma.Web.Push.ImplTest do
     user = insert(:user, nickname: "Bob")
     other_user = insert(:user)
     {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, false)
 
     assert Impl.format_body(%{activity: activity}, user, object) == "@Bob has followed you"
 
