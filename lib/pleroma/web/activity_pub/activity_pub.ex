@@ -1432,6 +1432,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
+    public_key = data["publicKey"]["publicKeyPem"]
 
     user_data = %{
       ap_id: data["id"],
@@ -1449,7 +1450,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       following_address: data["following"],
       bio: data["summary"],
       actor_type: actor_type,
-      also_known_as: Map.get(data, "alsoKnownAs", [])
+      also_known_as: Map.get(data, "alsoKnownAs", []),
+      public_key: public_key
     }
 
     # nickname can be nil because of virtual actors

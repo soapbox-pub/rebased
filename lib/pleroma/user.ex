@@ -82,6 +82,7 @@ defmodule Pleroma.User do
     field(:password, :string, virtual: true)
     field(:password_confirmation, :string, virtual: true)
     field(:keys, :string)
+    field(:public_key, :string)
     field(:ap_id, :string)
     field(:avatar, :map)
     field(:local, :boolean, default: true)
@@ -366,6 +367,7 @@ defmodule Pleroma.User do
         :name,
         :ap_id,
         :nickname,
+        :public_key,
         :avatar,
         :ap_enabled,
         :source_data,
@@ -407,6 +409,7 @@ defmodule Pleroma.User do
         :bio,
         :name,
         :avatar,
+        :public_key,
         :locked,
         :no_rich_text,
         :default_scope,
@@ -503,6 +506,7 @@ defmodule Pleroma.User do
         :name,
         :follower_address,
         :following_address,
+        :public_key,
         :avatar,
         :last_refreshed_at,
         :ap_enabled,
@@ -1616,8 +1620,7 @@ defmodule Pleroma.User do
     |> set_cache()
   end
 
-  # AP style
-  def public_key(%{source_data: %{"publicKey" => %{"publicKeyPem" => public_key_pem}}}) do
+  def public_key(%{public_key: public_key_pem}) when is_binary(public_key_pem) do
     key =
       public_key_pem
       |> :public_key.pem_decode()
@@ -1627,7 +1630,7 @@ defmodule Pleroma.User do
     {:ok, key}
   end
 
-  def public_key(_), do: {:error, "not found key"}
+  def public_key(_), do: {:error, "key not found"}
 
   def get_public_key_for_ap_id(ap_id) do
     with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
