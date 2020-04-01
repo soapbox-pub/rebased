@@ -140,7 +140,7 @@ defmodule Pleroma.FormatterTest do
       archaeme =
         insert(:user,
           nickname: "archa_eme_",
-          source_data: %{"url" => "https://archeme/@archa_eme_"}
+          uri: "https://archeme/@archa_eme_"
         )
 
       archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
