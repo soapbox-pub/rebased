@@ -383,10 +383,10 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Method `POST`
 * Authentication: required
 * Params:
-  * `file`: uploaded file or link to remote file.
+  * `file`: file needs to be uploaded with the multipart request or link to remote file.
   * `shortcode`: (*optional*) shortcode for new emoji, must be uniq for all emoji. If not sended, shortcode will be taken from original filename.
   * `filename`: (*optional*) new emoji file name. If not specified will be taken from original filename.
-* Response: JSON, list of files for updated pack (hasmap -> shortcode => filename) with status 200, either error status with error message.
+* Response: JSON, list of files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
 ## `PATCH /api/pleroma/emoji/packs/:name/files`
 ### Update emoji file from pack
@@ -397,7 +397,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
   * `new_shortcode`: new emoji file shortcode
   * `new_filename`: new filename for emoji file
   * `force`: (*optional*) with true value to overwrite existing emoji with new shortcode
-* Response: JSON, list with updated files for updated pack (hasmap -> shortcode => filename) with status 200, either error status with error message.
+* Response: JSON, list with updated files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
 ## `DELETE /api/pleroma/emoji/packs/:name/files`
 ### Delete emoji file from pack
@@ -405,7 +405,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Authentication: required
 * Params:
   * `shortcode`: emoji file shortcode
-* Response: JSON, list with updated files for updated pack (hasmap -> shortcode => filename) with status 200, either error status with error message.
+* Response: JSON, list with updated files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
 ## `GET /api/pleroma/emoji/packs`
 ### Lists local custom emoji packs
@@ -422,7 +422,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Response: JSON, pack json with `files` and `pack` keys with 200 status or 404 if the pack does not exist
 
 ## `GET /api/pleroma/emoji/packs/:name/archive`
-### Requests a local pack from the instance
+### Requests a local pack archive from the instance
 * Method `GET`
 * Authentication: not required
 * Params: None
