@@ -472,6 +472,13 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       activity = insert(:note_activity, user: user, note: object)
       Pleroma.Repo.delete(object)
 
+      obj_url = activity.data["object"]
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^obj_url} ->
+          %Tesla.Env{status: 404, body: ""}
+      end)
+
       assert Utils.maybe_notify_mentioned_recipients(["test-test"], activity) == [
                "test-test"
              ]

@@ -2934,6 +2934,219 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :connections_pool,
+    type: :group,
+    description: "Advanced settings for `gun` connections pool",
+    children: [
+      %{
+        key: :checkin_timeout,
+        type: :integer,
+        description: "Timeout to checkin connection from pool. Default: 250ms.",
+        suggestions: [250]
+      },
+      %{
+        key: :max_connections,
+        type: :integer,
+        description: "Maximum number of connections in the pool. Default: 250 connections.",
+        suggestions: [250]
+      },
+      %{
+        key: :retry,
+        type: :integer,
+        description:
+          "Number of retries, while `gun` will try to reconnect if connection goes down. Default: 1.",
+        suggestions: [1]
+      },
+      %{
+        key: :retry_timeout,
+        type: :integer,
+        description:
+          "Time between retries when `gun` will try to reconnect in milliseconds. Default: 1000ms.",
+        suggestions: [1000]
+      },
+      %{
+        key: :await_up_timeout,
+        type: :integer,
+        description: "Timeout while `gun` will wait until connection is up. Default: 5000ms.",
+        suggestions: [5000]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :pools,
+    type: :group,
+    description: "Advanced settings for `gun` workers pools",
+    children: [
+      %{
+        key: :federation,
+        type: :keyword,
+        description: "Settings for federation pool.",
+        children: [
+          %{
+            key: :size,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [50]
+          },
+          %{
+            key: :max_overflow,
+            type: :integer,
+            description: "Number of additional workers if pool is under load.",
+            suggestions: [10]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `gun` will wait for response.",
+            suggestions: [150_000]
+          }
+        ]
+      },
+      %{
+        key: :media,
+        type: :keyword,
+        description: "Settings for media pool.",
+        children: [
+          %{
+            key: :size,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [50]
+          },
+          %{
+            key: :max_overflow,
+            type: :integer,
+            description: "Number of additional workers if pool is under load.",
+            suggestions: [10]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `gun` will wait for response.",
+            suggestions: [150_000]
+          }
+        ]
+      },
+      %{
+        key: :upload,
+        type: :keyword,
+        description: "Settings for upload pool.",
+        children: [
+          %{
+            key: :size,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [25]
+          },
+          %{
+            key: :max_overflow,
+            type: :integer,
+            description: "Number of additional workers if pool is under load.",
+            suggestions: [5]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `gun` will wait for response.",
+            suggestions: [300_000]
+          }
+        ]
+      },
+      %{
+        key: :default,
+        type: :keyword,
+        description: "Settings for default pool.",
+        children: [
+          %{
+            key: :size,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [10]
+          },
+          %{
+            key: :max_overflow,
+            type: :integer,
+            description: "Number of additional workers if pool is under load.",
+            suggestions: [2]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `gun` will wait for response.",
+            suggestions: [10_000]
+          }
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :hackney_pools,
+    type: :group,
+    description: "Advanced settings for `hackney` connections pools",
+    children: [
+      %{
+        key: :federation,
+        type: :keyword,
+        description: "Settings for federation pool.",
+        children: [
+          %{
+            key: :max_connections,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [50]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `hackney` will wait for response.",
+            suggestions: [150_000]
+          }
+        ]
+      },
+      %{
+        key: :media,
+        type: :keyword,
+        description: "Settings for media pool.",
+        children: [
+          %{
+            key: :max_connections,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [50]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `hackney` will wait for response.",
+            suggestions: [150_000]
+          }
+        ]
+      },
+      %{
+        key: :upload,
+        type: :keyword,
+        description: "Settings for upload pool.",
+        children: [
+          %{
+            key: :max_connections,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [25]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `hackney` will wait for response.",
+            suggestions: [300_000]
+          }
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :restrict_unauthenticated,
     type: :group,
     description:

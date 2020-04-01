@@ -5,6 +5,8 @@
 defmodule Pleroma.HTTP.RequestBuilderTest do
   use ExUnit.Case, async: true
   use Pleroma.Tests.Helpers
+  alias Pleroma.Config
+  alias Pleroma.HTTP.Request
   alias Pleroma.HTTP.RequestBuilder
 
   describe "headers/2" do
@@ -12,48 +14,31 @@ defmodule Pleroma.HTTP.RequestBuilderTest do
     setup do: clear_config([:http, :user_agent])
 
     test "don't send pleroma user agent" do
-      assert RequestBuilder.headers(%{}, []) == %{headers: []}
+      assert RequestBuilder.headers(%Request{}, []) == %Request{headers: []}
     end
 
     test "send pleroma user agent" do
-      Pleroma.Config.put([:http, :send_user_agent], true)
-      Pleroma.Config.put([:http, :user_agent], :default)
+      Config.put([:http, :send_user_agent], true)
+      Config.put([:http, :user_agent], :default)
 
-      assert RequestBuilder.headers(%{}, []) == %{
-               headers: [{"User-Agent", Pleroma.Application.user_agent()}]
+      assert RequestBuilder.headers(%Request{}, []) == %Request{
+               headers: [{"user-agent", Pleroma.Application.user_agent()}]
              }
     end
 
     test "send custom user agent" do
-      Pleroma.Config.put([:http, :send_user_agent], true)
-      Pleroma.Config.put([:http, :user_agent], "totally-not-pleroma")
+      Config.put([:http, :send_user_agent], true)
+      Config.put([:http, :user_agent], "totally-not-pleroma")
 
-      assert RequestBuilder.headers(%{}, []) == %{
-               headers: [{"User-Agent", "totally-not-pleroma"}]
+      assert RequestBuilder.headers(%Request{}, []) == %Request{
+               headers: [{"user-agent", "totally-not-pleroma"}]
              }
-    end
-  end
-
-  describe "add_optional_params/3" do
-    test "don't add if keyword is empty" do
-      assert RequestBuilder.add_optional_params(%{}, %{}, []) == %{}
-    end
-
-    test "add query parameter" do
-      assert RequestBuilder.add_optional_params(
-               %{},
-               %{query: :query, body: :body, another: :val},
-               [
-                 {:query, "param1=val1&param2=val2"},
-                 {:body, "some body"}
-               ]
-             ) == %{query: "param1=val1&param2=val2", body: "some body"}
     end
   end
 
   describe "add_param/4" do
     test "add file parameter" do
-      %{
+      %Request{
         body: %Tesla.Multipart{
           boundary: _,
           content_type_params: [],
@@ -70,7 +55,7 @@ defmodule Pleroma.HTTP.RequestBuilderTest do
             }
           ]
         }
-      } = RequestBuilder.add_param(%{}, :file, "filename.png", "some-path/filename.png")
+      } = RequestBuilder.add_param(%Request{}, :file, "filename.png", "some-path/filename.png")
     end
 
     test "add key to body" do
@@ -82,7 +67,7 @@ defmodule Pleroma.HTTP.RequestBuilderTest do
             %Tesla.Multipart.Part{
               body: "\"someval\"",
               dispositions: [name: "somekey"],
-              headers: ["Content-Type": "application/json"]
+              headers: [{"content-type", "application/json"}]
             }
           ]
         }
