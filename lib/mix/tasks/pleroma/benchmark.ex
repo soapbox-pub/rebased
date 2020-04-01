@@ -67,7 +67,8 @@ defmodule Mix.Tasks.Pleroma.Benchmark do
           Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
             activities: activities,
             for: user,
-            as: :activity
+            as: :activity,
+            skip_relationships: true
           })
         end
       },

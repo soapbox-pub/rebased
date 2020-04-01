@@ -5,7 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.StatusController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [try_render: 3, add_link_headers: 2]
+  import Pleroma.Web.ControllerHelper,
+    only: [try_render: 3, add_link_headers: 2, skip_relationships?: 1]
 
   require Ecto.Query
 
@@ -101,7 +102,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   `ids` query param is required
   """
-  def index(%{assigns: %{user: user}} = conn, %{"ids" => ids}) do
+  def index(%{assigns: %{user: user}} = conn, %{"ids" => ids} = params) do
     limit = 100
 
     activities =
@@ -110,7 +111,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
       |> Activity.all_by_ids_with_object()
       |> Enum.filter(&Visibility.visible_for_user?(&1, user))
 
-    render(conn, "index.json", activities: activities, for: user, as: :activity)
+    render(conn, "index.json",
+      activities: activities,
+      for: user,
+      as: :activity,
+      skip_relationships: skip_relationships?(params)
+    )
   end
 
   @doc """
@@ -360,7 +366,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
     conn
     |> add_link_headers(activities)
-    |> render("index.json", activities: activities, for: user, as: :activity)
+    |> render("index.json",
+      activities: activities,
+      for: user,
+      as: :activity,
+      skip_relationships: skip_relationships?(params)
+    )
   end
 
   @doc "GET /api/v1/bookmarks"
@@ -378,6 +389,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
     conn
     |> add_link_headers(bookmarks)
-    |> render("index.json", %{activities: activities, for: user, as: :activity})
+    |> render("index.json",
+      activities: activities,
+      for: user,
+      as: :activity,
+      skip_relationships: skip_relationships?(params)
+    )
   end
 end

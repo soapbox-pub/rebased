@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
 - Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
+- Configuration: `:extensions/:output_relationships_in_statuses_by_default` option (if `false`, disables the output of account/pleroma/relationship for statuses and notifications by default, breaking the compatibility with older PleromaFE versions).
 <details>
   <summary>API Changes</summary>
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
@@ -20,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [2.0.0] - 2019-03-08
 ### Security
-- Mastodon API: Fix being able to request enourmous amount of statuses in timelines leading to DoS. Now limited to 40 per request.
+- Mastodon API: Fix being able to request enormous amount of statuses in timelines leading to DoS. Now limited to 40 per request.
 
 ### Removed
 - **Breaking**: Removed 1.0+ deprecated configurations `Pleroma.Upload, :strip_exif` and `:instance, :dedupe_media`

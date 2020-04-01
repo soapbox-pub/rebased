@@ -12,6 +12,26 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
   import Pleroma.Factory
 
+  test "does NOT render account/pleroma/relationship if this is disabled by default" do
+    clear_config([:extensions, :output_relationships_in_statuses_by_default], false)
+
+    %{user: user, conn: conn} = oauth_access(["read:notifications"])
+    other_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+    {:ok, [_notification]} = Notification.create_notifications(activity)
+
+    response =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/notifications")
+      |> json_response(200)
+
+    assert Enum.all?(response, fn n ->
+             get_in(n, ["account", "pleroma", "relationship"]) == %{}
+           end)
+  end
+
   test "list of notifications" do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)

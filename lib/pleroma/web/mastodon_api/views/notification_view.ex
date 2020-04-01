@@ -51,14 +51,15 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
             |> Enum.filter(& &1)
             |> Kernel.++(move_activities_targets)
 
-          UserRelationship.view_relationships_option(reading_user, actors)
+          UserRelationship.view_relationships_option(reading_user, actors,
+            source_mutes_only: opts[:skip_relationships]
+          )
       end
 
-    opts = %{
-      for: reading_user,
-      parent_activities: parent_activities,
-      relationships: relationships_opt
-    }
+    opts =
+      opts
+      |> Map.put(:parent_activities, parent_activities)
+      |> Map.put(:relationships, relationships_opt)
 
     safe_render_many(notifications, NotificationView, "show.json", opts)
   end
@@ -82,12 +83,16 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
     mastodon_type = Activity.mastodon_notification_type(activity)
 
+    render_opts = %{
+      relationships: opts[:relationships],
+      skip_relationships: opts[:skip_relationships]
+    }
+
     with %{id: _} = account <-
-           AccountView.render("show.json", %{
-             user: actor,
-             for: reading_user,
-             relationships: opts[:relationships]
-           }) do
+           AccountView.render(
+             "show.json",
+             Map.merge(render_opts, %{user: actor, for: reading_user})
+           ) do
       response = %{
         id: to_string(notification.id),
         type: mastodon_type,
@@ -97,8 +102,6 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
           is_seen: notification.seen
         }
       }
-
-      render_opts = %{relationships: opts[:relationships]}
 
       case mastodon_type do
         "mention" ->
@@ -111,6 +114,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
           put_status(response, parent_activity_fn.(), reading_user, render_opts)
 
         "move" ->
+          # Note: :skip_relationships option being applied to _account_ rendering (here)
           put_target(response, activity, reading_user, render_opts)
 
         "follow" ->

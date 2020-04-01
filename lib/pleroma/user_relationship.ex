@@ -129,17 +129,27 @@ defmodule Pleroma.UserRelationship do
   end
 
   @doc ":relationships option for StatusView / AccountView / NotificationView"
-  def view_relationships_option(nil = _reading_user, _actors) do
+  def view_relationships_option(reading_user, actors, opts \\ [])
+
+  def view_relationships_option(nil = _reading_user, _actors, _opts) do
     %{user_relationships: [], following_relationships: []}
   end
 
-  def view_relationships_option(%User{} = reading_user, actors) do
+  def view_relationships_option(%User{} = reading_user, actors, opts) do
+    {source_to_target_rel_types, target_to_source_rel_types} =
+      if opts[:source_mutes_only] do
+        # This option is used for rendering statuses (FE needs `muted` flag for each one anyways)
+        {[:mute], []}
+      else
+        {[:block, :mute, :notification_mute, :reblog_mute], [:block, :inverse_subscription]}
+      end
+
     user_relationships =
       UserRelationship.dictionary(
         [reading_user],
         actors,
-        [:block, :mute, :notification_mute, :reblog_mute],
-        [:block, :inverse_subscription]
+        source_to_target_rel_types,
+        target_to_source_rel_types
       )
 
     following_relationships = FollowingRelationship.all_between_user_sets([reading_user], actors)
