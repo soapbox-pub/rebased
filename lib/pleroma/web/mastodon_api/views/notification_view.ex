@@ -36,7 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         Map.has_key?(opts, :relationships) ->
           opts[:relationships]
 
-        is_nil(opts[:for]) ->
+        is_nil(reading_user) ->
           UserRelationship.view_relationships_option(nil, [])
 
         true ->
