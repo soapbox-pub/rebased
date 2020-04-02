@@ -22,7 +22,21 @@ defmodule Pleroma.Web.ApiSpec do
         version: Application.spec(:pleroma, :vsn) |> to_string()
       },
       # populate the paths from a phoenix router
-      paths: OpenApiSpex.Paths.from_router(Router)
+      paths: OpenApiSpex.Paths.from_router(Router),
+      components: %OpenApiSpex.Components{
+        securitySchemes: %{
+          "oAuth" => %OpenApiSpex.SecurityScheme{
+            type: "oauth2",
+            flows: %OpenApiSpex.OAuthFlows{
+              password: %OpenApiSpex.OAuthFlow{
+                authorizationUrl: "/oauth/authorize",
+                tokenUrl: "/oauth/token",
+                scopes: %{"read" => "read"}
+              }
+            }
+          }
+        }
+      }
     }
     # discover request/response schemas from path specs
     |> OpenApiSpex.resolve_schema_modules()

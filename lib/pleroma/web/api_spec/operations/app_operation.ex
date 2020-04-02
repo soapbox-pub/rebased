@@ -51,8 +51,10 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
       summary: "Verify your app works",
       description: "Confirm that the app's OAuth2 credentials work.",
       operationId: "AppController.verify_credentials",
-      parameters: [
-        Operation.parameter(:authorization, :header, :string, "Bearer <app token>", required: true)
+      security: [
+        %{
+          "oAuth" => ["read"]
+        }
       ],
       responses: %{
         200 =>
