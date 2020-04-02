@@ -4,14 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [2.0.2] - 2020-03-31
+### Added
+- Support for Funkwhale's `Audio` activity
+- Admin API: `PATCH /api/pleroma/admin/users/:nickname/update_credentials`
+
 ### Fixed
 - Blocked/muted users still generating push notifications
 - Input textbox for bio ignoring newlines
 - OTP: Inability to use PostgreSQL databases with SSL
 - `user delete_activities` breaking when trying to delete already deleted posts
-
-### Added
-- Admin API: `PATCH /api/pleroma/admin/users/:nickname/update_credentials`
+- Incorrect URL for Funkwhale channels
 
 ## [2.0.1] - 2020-03-15
 ### Security
