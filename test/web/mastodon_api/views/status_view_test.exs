@@ -94,6 +94,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     Repo.delete(user)
     Cachex.clear(:user_cache)
 
+    finger_url =
+      "https://localhost/.well-known/webfinger?resource=acct:#{user.nickname}@localhost"
+
+    Tesla.Mock.mock_global(fn
+      %{method: :get, url: "http://localhost/.well-known/host-meta"} ->
+        %Tesla.Env{status: 404, body: ""}
+
+      %{method: :get, url: "https://localhost/.well-known/host-meta"} ->
+        %Tesla.Env{status: 404, body: ""}
+
+      %{
+        method: :get,
+        url: ^finger_url
+      } ->
+        %Tesla.Env{status: 404, body: ""}
+    end)
+
     %{account: ms_user} = StatusView.render("show.json", activity: activity)
 
     assert ms_user.acct == "erroruser@example.com"
@@ -421,6 +438,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     {:ok, object} =
       Pleroma.Object.Fetcher.fetch_object_from_id(
         "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
+      )
+
+    %Activity{} = activity = Activity.get_create_by_object_ap_id(object.data["id"])
+
+    represented = StatusView.render("show.json", %{for: user, activity: activity})
+
+    assert represented[:id] == to_string(activity.id)
+    assert length(represented[:media_attachments]) == 1
+  end
+
+  test "funkwhale audio" do
+    user = insert(:user)
+
+    {:ok, object} =
+      Pleroma.Object.Fetcher.fetch_object_from_id(
+        "https://channels.tests.funkwhale.audio/federation/music/uploads/42342395-0208-4fee-a38d-259a6dae0871"
       )
 
     %Activity{} = activity = Activity.get_create_by_object_ap_id(object.data["id"])

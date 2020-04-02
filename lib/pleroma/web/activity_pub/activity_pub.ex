@@ -1379,6 +1379,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  @spec get_actor_url(any()) :: binary() | nil
+  defp get_actor_url(url) when is_binary(url), do: url
+  defp get_actor_url(%{"href" => href}) when is_binary(href), do: href
+
+  defp get_actor_url(url) when is_list(url) do
+    url
+    |> List.first()
+    |> get_actor_url()
+  end
+
+  defp get_actor_url(_url), do: nil
+
   defp object_to_user_data(data) do
     avatar =
       data["icon"]["url"] &&
@@ -1408,6 +1420,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     user_data = %{
       ap_id: data["id"],
+      uri: get_actor_url(data["url"]),
       ap_enabled: true,
       source_data: data,
       banner: banner,

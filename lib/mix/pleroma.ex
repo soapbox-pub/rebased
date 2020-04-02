@@ -5,6 +5,7 @@
 defmodule Mix.Pleroma do
   @doc "Common functions to be reused in mix tasks"
   def start_pleroma do
+    Mix.Task.run("app.start")
     Application.put_env(:phoenix, :serve_endpoints, false, persistent: true)
 
     if Pleroma.Config.get(:env) != :test do
