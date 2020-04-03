@@ -80,27 +80,33 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(RateLimiter, [name: :app_account_creation] when action == :create)
   plug(:assign_account_by_id when action in @needs_account)
 
+  plug(
+    OpenApiSpex.Plug.CastAndValidate,
+    [render_error: Pleroma.Web.ApiSpec.RenderError] when action == :create
+  )
+
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.AccountOperation
+
   @doc "POST /api/v1/accounts"
-  def create(
-        %{assigns: %{app: app}} = conn,
-        %{"username" => nickname, "password" => _, "agreement" => true} = params
-      ) do
+  def create(%{assigns: %{app: app}, body_params: params} = conn, _params) do
     params =
       params
       |> Map.take([
-        "email",
-        "captcha_solution",
-        "captcha_token",
-        "captcha_answer_data",
-        "token",
-        "password"
+        :email,
+        :bio,
+        :captcha_solution,
+        :captcha_token,
+        :captcha_answer_data,
+        :token,
+        :password,
+        :fullname
       ])
-      |> Map.put("nickname", nickname)
-      |> Map.put("fullname", params["fullname"] || nickname)
-      |> Map.put("bio", params["bio"] || "")
-      |> Map.put("confirm", params["password"])
+      |> Map.put(:nickname, params.username)
+      |> Map.put(:fullname, params.fullname || params.username)
+      |> Map.put(:bio, params.bio || "")
+      |> Map.put(:confirm, params.password)
 
     with :ok <- validate_email_param(params),
          {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
@@ -124,7 +130,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     render_error(conn, :forbidden, "Invalid credentials")
   end
 
-  defp validate_email_param(%{"email" => _}), do: :ok
+  defp validate_email_param(%{:email => email}) when not is_nil(email), do: :ok
 
   defp validate_email_param(_) do
     case Pleroma.Config.get([:instance, :account_activation_required]) do

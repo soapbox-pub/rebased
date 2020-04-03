@@ -12,72 +12,56 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   require Pleroma.Constants
 
   def register_user(params, opts \\ []) do
-    token = params["token"]
+    params =
+      params
+      |> Map.take([
+        :nickname,
+        :password,
+        :captcha_solution,
+        :captcha_token,
+        :captcha_answer_data,
+        :token,
+        :email
+      ])
+      |> Map.put(:bio, User.parse_bio(params[:bio] || ""))
+      |> Map.put(:name, params.fullname)
+      |> Map.put(:password_confirmation, params[:confirm])
 
-    params = %{
-      nickname: params["nickname"],
-      name: params["fullname"],
-      bio: User.parse_bio(params["bio"]),
-      email: params["email"],
-      password: params["password"],
-      password_confirmation: params["confirm"],
-      captcha_solution: params["captcha_solution"],
-      captcha_token: params["captcha_token"],
-      captcha_answer_data: params["captcha_answer_data"]
-    }
+    case validate_captcha(params) do
+      :ok ->
+        if Pleroma.Config.get([:instance, :registrations_open]) do
+          create_user(params, opts)
+        else
+          create_user_with_invite(params, opts)
+        end
 
-    captcha_enabled = Pleroma.Config.get([Pleroma.Captcha, :enabled])
-    # true if captcha is disabled or enabled and valid, false otherwise
-    captcha_ok =
-      if not captcha_enabled do
-        :ok
-      else
-        Pleroma.Captcha.validate(
-          params[:captcha_token],
-          params[:captcha_solution],
-          params[:captcha_answer_data]
-        )
-      end
-
-    # Captcha invalid
-    if captcha_ok != :ok do
-      {:error, error} = captcha_ok
-      # I have no idea how this error handling works
-      {:error, %{error: Jason.encode!(%{captcha: [error]})}}
-    else
-      registration_process(
-        params,
-        %{
-          registrations_open: Pleroma.Config.get([:instance, :registrations_open]),
-          token: token
-        },
-        opts
-      )
+      {:error, error} ->
+        # I have no idea how this error handling works
+        {:error, %{error: Jason.encode!(%{captcha: [error]})}}
     end
   end
 
-  defp registration_process(params, %{registrations_open: true}, opts) do
-    create_user(params, opts)
+  defp validate_captcha(params) do
+    if Pleroma.Config.get([Pleroma.Captcha, :enabled]) do
+      Pleroma.Captcha.validate(
+        params.captcha_token,
+        params.captcha_solution,
+        params.captcha_answer_data
+      )
+    else
+      :ok
+    end
   end
 
-  defp registration_process(params, %{token: token}, opts) do
-    invite =
-      unless is_nil(token) do
-        Repo.get_by(UserInviteToken, %{token: token})
-      end
-
-    valid_invite? = invite && UserInviteToken.valid_invite?(invite)
-
-    case invite do
-      nil ->
-        {:error, "Invalid token"}
-
-      invite when valid_invite? ->
-        UserInviteToken.update_usage!(invite)
-        create_user(params, opts)
-
-      _ ->
-        {:error, "Expired token"}
+  defp create_user_with_invite(params, opts) do
+    with %{token: token} when is_binary(token) <- params,
+         %UserInviteToken{} = invite <- Repo.get_by(UserInviteToken, %{token: token}),
+         true <- UserInviteToken.valid_invite?(invite) do
+      UserInviteToken.update_usage!(invite)
+      create_user(params, opts)
+    else
+      nil -> {:error, "Invalid token"}
+      _ -> {:error, "Expired token"}
     end
   end
 

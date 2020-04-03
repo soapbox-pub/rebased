@@ -830,6 +830,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       conn =
         build_conn()
+        |> put_req_header("content-type", "multipart/form-data")
         |> put_req_header("authorization", "Bearer " <> token)
         |> post("/api/v1/accounts", %{
           username: "lain",
@@ -858,11 +859,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       _user = insert(:user, email: "lain@example.org")
       app_token = insert(:oauth_token, user: nil)
 
-      conn =
+      res =
         conn
         |> put_req_header("authorization", "Bearer " <> app_token.token)
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/accounts", valid_params)
 
-      res = post(conn, "/api/v1/accounts", valid_params)
       assert json_response(res, 400) == %{"error" => "{\"email\":[\"has already been taken\"]}"}
     end
 
@@ -872,7 +874,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     } do
       app_token = insert(:oauth_token, user: nil)
 
-      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer " <> app_token.token)
+        |> put_req_header("content-type", "application/json")
 
       res = post(conn, "/api/v1/accounts", valid_params)
       assert json_response(res, 200)
@@ -897,7 +902,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       Pleroma.Config.put([:instance, :account_activation_required], true)
 
       app_token = insert(:oauth_token, user: nil)
-      conn = put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer " <> app_token.token)
+        |> put_req_header("content-type", "application/json")
 
       res =
         conn
@@ -920,6 +929,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       res =
         conn
+        |> put_req_header("content-type", "application/json")
         |> Map.put(:remote_ip, {127, 0, 0, 7})
         |> post("/api/v1/accounts", Map.delete(valid_params, :email))
 
@@ -932,6 +942,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       res =
         conn
+        |> put_req_header("content-type", "application/json")
         |> Map.put(:remote_ip, {127, 0, 0, 8})
         |> post("/api/v1/accounts", Map.put(valid_params, :email, ""))
 
@@ -939,9 +950,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "returns forbidden if token is invalid", %{conn: conn, valid_params: valid_params} do
-      conn = put_req_header(conn, "authorization", "Bearer " <> "invalid-token")
+      res =
+        conn
+        |> put_req_header("authorization", "Bearer " <> "invalid-token")
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v1/accounts", valid_params)
 
-      res = post(conn, "/api/v1/accounts", valid_params)
       assert json_response(res, 403) == %{"error" => "Invalid credentials"}
     end
   end
@@ -956,10 +970,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         conn
         |> put_req_header("authorization", "Bearer " <> app_token.token)
         |> Map.put(:remote_ip, {15, 15, 15, 15})
+        |> put_req_header("content-type", "multipart/form-data")
 
       for i <- 1..2 do
         conn =
-          post(conn, "/api/v1/accounts", %{
+          conn
+          |> post("/api/v1/accounts", %{
             username: "#{i}lain",
             email: "#{i}lain@example.org",
             password: "PlzDontHackLain",
