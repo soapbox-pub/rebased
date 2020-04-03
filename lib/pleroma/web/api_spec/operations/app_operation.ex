@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.AppOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.AppCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AppCreateResponse
 
@@ -21,8 +22,7 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
       summary: "Create an application",
       description: "Create a new application to obtain OAuth2 credentials",
       operationId: "AppController.create",
-      requestBody:
-        Operation.request_body("Parameters", "application/json", AppCreateRequest, required: true),
+      requestBody: Helpers.request_body("Parameters", AppCreateRequest, required: true),
       responses: %{
         200 => Operation.response("App", "application/json", AppCreateResponse),
         422 =>
