@@ -103,7 +103,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       },
       "endpoints" => endpoints,
       "attachment" => fields,
-      "tag" => (user.source_data["tag"] || []) ++ emoji_tags,
+      "tag" => emoji_tags,
       "discoverable" => user.discoverable
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))

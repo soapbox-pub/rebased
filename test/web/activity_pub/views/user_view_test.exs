@@ -38,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
   end
 
   test "Renders with emoji tags" do
-    user = insert(:user, emoji: [%{"bib" => "/test"}])
+    user = insert(:user, emoji: %{"bib" => "/test"})
 
     assert %{
              "tag" => [

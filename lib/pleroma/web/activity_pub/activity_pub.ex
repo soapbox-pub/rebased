@@ -1427,6 +1427,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
       |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
 
+    emojis =
+      data
+      |> Map.get("tag", [])
+      |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
+      |> Enum.reduce(%{}, fn %{"icon" => %{"url" => url}, "name" => name}, acc ->
+        Map.put(acc, String.trim(name, ":"), url)
+      end)
+
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
@@ -1454,6 +1462,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       source_data: data,
       banner: banner,
       fields: fields,
+      emoji: emojis,
       locked: locked,
       discoverable: discoverable,
       invisible: invisible,

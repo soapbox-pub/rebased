@@ -140,9 +140,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "PATCH /api/v1/accounts/update_credentials"
-  def update_credentials(%{assigns: %{user: original_user}} = conn, params) do
-    user = original_user
-
+  def update_credentials(%{assigns: %{user: user}} = conn, params) do
     user_params =
       [
         :no_rich_text,
@@ -178,8 +176,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     changeset = User.update_changeset(user, user_params)
 
     with {:ok, user} <- User.update_and_set_cache(changeset) do
-      if original_user != user, do: CommonAPI.update(user)
-
       render(conn, "show.json", user: user, for: user, with_pleroma_settings: true)
     else
       _e -> render_error(conn, :forbidden, "Invalid request")

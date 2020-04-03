@@ -13,7 +13,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
 
   require Pleroma.Constants
@@ -58,38 +57,32 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   @doc "PATCH /api/v1/pleroma/accounts/update_avatar"
   def update_avatar(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
-    {:ok, user} =
+    {:ok, _user} =
       user
       |> Changeset.change(%{avatar: nil})
       |> User.update_and_set_cache()
-
-    CommonAPI.update(user)
 
     json(conn, %{url: nil})
   end
 
   def update_avatar(%{assigns: %{user: user}} = conn, params) do
     {:ok, %{data: data}} = ActivityPub.upload(params, type: :avatar)
-    {:ok, user} = user |> Changeset.change(%{avatar: data}) |> User.update_and_set_cache()
+    {:ok, _user} = user |> Changeset.change(%{avatar: data}) |> User.update_and_set_cache()
     %{"url" => [%{"href" => href} | _]} = data
-
-    CommonAPI.update(user)
 
     json(conn, %{url: href})
   end
 
   @doc "PATCH /api/v1/pleroma/accounts/update_banner"
   def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
-    with {:ok, user} <- User.update_banner(user, %{}) do
-      CommonAPI.update(user)
+    with {:ok, _user} <- User.update_banner(user, %{}) do
       json(conn, %{url: nil})
     end
   end
 
   def update_banner(%{assigns: %{user: user}} = conn, params) do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
-         {:ok, user} <- User.update_banner(user, object.data) do
-      CommonAPI.update(user)
+         {:ok, _user} <- User.update_banner(user, object.data) do
       %{"url" => [%{"href" => href} | _]} = object.data
 
       json(conn, %{url: href})

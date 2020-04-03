@@ -15,6 +15,7 @@ defmodule Pleroma.User do
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
+  alias Pleroma.Emoji
   alias Pleroma.FollowingRelationship
   alias Pleroma.Formatter
   alias Pleroma.HTML
@@ -124,7 +125,7 @@ defmodule Pleroma.User do
     field(:pinned_activities, {:array, :string}, default: [])
     field(:email_notifications, :map, default: %{"digest" => false})
     field(:mascot, :map, default: nil)
-    field(:emoji, {:array, :map}, default: [])
+    field(:emoji, :map, default: %{})
     field(:pleroma_settings_store, :map, default: %{})
     field(:fields, {:array, :map}, default: [])
     field(:raw_fields, {:array, :map}, default: [])
@@ -368,6 +369,7 @@ defmodule Pleroma.User do
       [
         :bio,
         :name,
+        :emoji,
         :ap_id,
         :inbox,
         :shared_inbox,
@@ -413,6 +415,7 @@ defmodule Pleroma.User do
       [
         :bio,
         :name,
+        :emoji,
         :avatar,
         :public_key,
         :inbox,
@@ -443,6 +446,7 @@ defmodule Pleroma.User do
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> put_fields()
+    |> put_emoji()
     |> put_change_if_present(:bio, &{:ok, parse_bio(&1, struct)})
     |> put_change_if_present(:avatar, &put_upload(&1, :avatar))
     |> put_change_if_present(:banner, &put_upload(&1, :banner))
@@ -478,6 +482,18 @@ defmodule Pleroma.User do
     |> elem(0)
   end
 
+  defp put_emoji(changeset) do
+    bio = get_change(changeset, :bio)
+    name = get_change(changeset, :name)
+
+    if bio || name do
+      emoji = Map.merge(Emoji.Formatter.get_emoji_map(bio), Emoji.Formatter.get_emoji_map(name))
+      put_change(changeset, :emoji, emoji)
+    else
+      changeset
+    end
+  end
+
   defp put_change_if_present(changeset, map_field, value_function) do
     if value = get_change(changeset, map_field) do
       with {:ok, new_value} <- value_function.(value) do
@@ -511,6 +527,7 @@ defmodule Pleroma.User do
       [
         :bio,
         :name,
+        :emoji,
         :follower_address,
         :following_address,
         :public_key,
@@ -618,7 +635,7 @@ defmodule Pleroma.User do
 
     struct
     |> confirmation_changeset(need_confirmation: need_confirmation?)
-    |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
+    |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation, :emoji])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
@@ -1966,12 +1983,6 @@ defmodule Pleroma.User do
   def update_background(user, background) do
     user
     |> cast(%{background: background}, [:background])
-    |> update_and_set_cache()
-  end
-
-  def update_source_data(user, source_data) do
-    user
-    |> cast(%{source_data: source_data}, [:source_data])
     |> update_and_set_cache()
   end
 

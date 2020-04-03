@@ -2182,4 +2182,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                Transmogrifier.set_replies(object.data)["replies"]
     end
   end
+
+  test "take_emoji_tags/1" do
+    user = insert(:user, %{emoji: %{"firefox" => "https://example.org/firefox.png"}})
+
+    assert Transmogrifier.take_emoji_tags(user) == [
+             %{
+               "icon" => %{"type" => "Image", "url" => "https://example.org/firefox.png"},
+               "id" => "https://example.org/firefox.png",
+               "name" => ":firefox:",
+               "type" => "Emoji",
+               "updated" => "1970-01-01T00:00:00Z"
+             }
+           ]
+  end
 end
