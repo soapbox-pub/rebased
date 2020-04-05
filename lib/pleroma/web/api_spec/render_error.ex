@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.ApiSpec.RenderError do
   @behaviour Plug
 
-  alias Plug.Conn
   alias OpenApiSpex.Plug.JsonRenderError
+  alias Plug.Conn
 
   @impl Plug
   def init(opts), do: opts

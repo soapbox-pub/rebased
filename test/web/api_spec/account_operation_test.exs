@@ -6,11 +6,18 @@ defmodule Pleroma.Web.ApiSpec.AccountOperationTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Web.ApiSpec
+  alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
 
   import OpenApiSpex.TestAssertions
   import Pleroma.Factory
+
+  test "Account example matches schema" do
+    api_spec = ApiSpec.spec()
+    schema = Account.schema()
+    assert_schema(schema.example, "Account", api_spec)
+  end
 
   test "AccountCreateRequest example matches schema" do
     api_spec = ApiSpec.spec()
