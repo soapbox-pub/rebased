@@ -8,12 +8,15 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
 
   alias Pleroma.Config
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Plugs.PlugHelper
 
   @behaviour Plug
 
   def init(%{scopes: _} = options), do: options
 
   def call(%Plug.Conn{assigns: assigns} = conn, %{scopes: scopes} = options) do
+    conn = PlugHelper.append_to_called_plugs(conn, __MODULE__)
+
     op = options[:op] || :|
     token = assigns[:token]
 

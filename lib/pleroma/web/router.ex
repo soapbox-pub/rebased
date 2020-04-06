@@ -34,6 +34,7 @@ defmodule Pleroma.Web.Router do
   pipeline :authenticated_api do
     plug(:accepts, ["json"])
     plug(:fetch_session)
+    plug(Pleroma.Plugs.AuthExpectedPlug)
     plug(Pleroma.Plugs.OAuthPlug)
     plug(Pleroma.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Plugs.UserFetcherPlug)
@@ -333,7 +334,7 @@ defmodule Pleroma.Web.Router do
     get("/accounts/relationships", AccountController, :relationships)
 
     get("/accounts/:id/lists", AccountController, :lists)
-    get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
+    get("/accounts/:id/identity_proofs", AccountController, :identity_proofs)
 
     get("/follow_requests", FollowRequestController, :index)
     get("/blocks", AccountController, :blocks)

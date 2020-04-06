@@ -29,10 +29,33 @@ defmodule Pleroma.Web do
       import Pleroma.Web.Router.Helpers
       import Pleroma.Web.TranslationHelpers
 
+      alias Pleroma.Plugs.PlugHelper
+
       plug(:set_put_layout)
 
       defp set_put_layout(conn, _) do
         put_layout(conn, Pleroma.Config.get(:app_layout, "app.html"))
+      end
+
+      # Marks a plug as intentionally skipped
+      #   (states that the plug is not called for a good reason, not by a mistake)
+      defp skip_plug(conn, plug_module) do
+        PlugHelper.append_to_skipped_plugs(conn, plug_module)
+      end
+
+      # Here we can apply before-action hooks (e.g. verify whether auth checks were preformed)
+      defp action(conn, params) do
+        if conn.private[:auth_expected] &&
+             not PlugHelper.plug_called_or_skipped?(conn, Pleroma.Plugs.OAuthScopesPlug) do
+          conn
+          |> render_error(
+            :forbidden,
+            "Security violation: OAuth scopes check was neither handled nor explicitly skipped."
+          )
+          |> halt()
+        else
+          super(conn, params)
+        end
       end
     end
   end
