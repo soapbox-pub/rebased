@@ -79,10 +79,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
     emoji_tags = Transmogrifier.take_emoji_tags(user)
 
-    fields =
-      user
-      |> User.fields()
-      |> Enum.map(&Map.put(&1, "type", "PropertyValue"))
+    fields = Enum.map(user.fields, &Map.put(&1, "type", "PropertyValue"))
 
     %{
       "id" => user.ap_id,

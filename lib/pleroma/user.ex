@@ -1993,21 +1993,6 @@ defmodule Pleroma.User do
     }
   end
 
-  # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
-  # For example: [{"name": "Pronoun", "value": "she/her"}, …]
-  def fields(%{fields: nil, source_data: %{"attachment" => attachment}}) do
-    limit = Pleroma.Config.get([:instance, :max_remote_account_fields], 0)
-
-    attachment
-    |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
-    |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
-    |> Enum.take(limit)
-  end
-
-  def fields(%{fields: nil}), do: []
-
-  def fields(%{fields: fields}), do: fields
-
   def validate_fields(changeset, remote? \\ false) do
     limit_name = if remote?, do: :max_remote_account_fields, else: :max_account_fields
     limit = Pleroma.Config.get([:instance, limit_name], 0)
@@ -2195,9 +2180,7 @@ defmodule Pleroma.User do
   # - display name
   def sanitize_html(%User{} = user, filter) do
     fields =
-      user
-      |> User.fields()
-      |> Enum.map(fn %{"name" => name, "value" => value} ->
+      Enum.map(user.fields, fn %{"name" => name, "value" => value} ->
         %{
           "name" => name,
           "value" => HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
