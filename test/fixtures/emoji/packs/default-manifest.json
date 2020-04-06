@@ -1,0 +1,10 @@
+{
+  "finmoji": {
+    "license": "CC BY-NC-ND 4.0",
+    "homepage": "https://finland.fi/emoji/",
+    "description": "Finland is the first country in the world to publish its own set of country themed emojis. The Finland emoji collection contains 56 tongue-in-cheek emotions, which were created to explain some hard-to-describe Finnish emotions, Finnish words and customs.",
+    "src": "https://finland.fi/wp-content/uploads/2017/06/finland-emojis.zip",
+    "src_sha256": "384025A1AC6314473863A11AC7AB38A12C01B851A3F82359B89B4D4211D3291D",
+    "files": "finmoji.json"
+  }
+}
