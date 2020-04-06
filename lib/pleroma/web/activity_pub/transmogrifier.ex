@@ -617,9 +617,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
             data |> LikeValidator.cast_data() |> Ecto.Changeset.apply_action(:insert)},
          cast_data = ObjectValidator.stringify_keys(Map.from_struct(cast_data_sym)),
          :ok <- ObjectValidator.fetch_actor_and_object(cast_data),
-         {_, {:ok, cast_data}} <- {:maybe_add_context, maybe_add_context_from_object(cast_data)},
+         {_, {:ok, cast_data}} <- {:ensure_context_presence, ensure_context_presence(cast_data)},
          {_, {:ok, cast_data}} <-
-           {:maybe_add_recipients, maybe_add_recipients_from_object(cast_data)},
+           {:ensure_recipients_presence, ensure_recipients_presence(cast_data)},
          {_, {:ok, activity, _meta}} <-
            {:common_pipeline, Pipeline.common_pipeline(cast_data, local: false)} do
       {:ok, activity}
@@ -1251,10 +1251,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def maybe_fix_user_object(data), do: maybe_fix_user_url(data)
 
-  defp maybe_add_context_from_object(%{"context" => context} = data) when is_binary(context),
+  defp ensure_context_presence(%{"context" => context} = data) when is_binary(context),
     do: {:ok, data}
 
-  defp maybe_add_context_from_object(%{"object" => object} = data) when is_binary(object) do
+  defp ensure_context_presence(%{"object" => object} = data) when is_binary(object) do
     with %{data: %{"context" => context}} when is_binary(context) <- Object.normalize(object) do
       {:ok, Map.put(data, "context", context)}
     else
@@ -1263,14 +1263,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  defp maybe_add_context_from_object(_) do
+  defp ensure_context_presence(_) do
     {:error, :no_context}
   end
 
-  defp maybe_add_recipients_from_object(%{"to" => [_ | _], "cc" => [_ | _]} = data),
+  defp ensure_recipients_presence(%{"to" => [_ | _], "cc" => [_ | _]} = data),
     do: {:ok, data}
 
-  defp maybe_add_recipients_from_object(%{"object" => object} = data) do
+  defp ensure_recipients_presence(%{"object" => object} = data) do
     case Object.normalize(object) do
       %{data: %{"actor" => actor}} ->
         data =
@@ -1288,7 +1288,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  defp maybe_add_recipients_from_object(_) do
+  defp ensure_recipients_presence(_) do
     {:error, :no_object}
   end
 end
