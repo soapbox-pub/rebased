@@ -58,20 +58,6 @@ config :pleroma, Pleroma.Captcha,
 
 config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
 
-config :pleroma, :hackney_pools,
-  federation: [
-    max_connections: 50,
-    timeout: 150_000
-  ],
-  media: [
-    max_connections: 50,
-    timeout: 150_000
-  ],
-  upload: [
-    max_connections: 25,
-    timeout: 300_000
-  ]
-
 # Upload configuration
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
@@ -184,21 +170,13 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :tesla, adapter: Tesla.Adapter.Hackney
-
+config :tesla, adapter: Tesla.Adapter.Gun
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
   proxy_url: nil,
   send_user_agent: true,
   user_agent: :default,
-  adapter: [
-    ssl_options: [
-      # Workaround for remote server certificate chain issues
-      partial_chain: &:hackney_connect.partial_chain/1,
-      # We don't support TLS v1.3 yet
-      versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
-    ]
-  ]
+  adapter: []
 
 config :pleroma, :instance,
   name: "Pleroma",
@@ -623,6 +601,54 @@ config :pleroma, configurable_from_database: false
 config :pleroma, Pleroma.Repo,
   parameters: [gin_fuzzy_search_limit: "500"],
   prepare: :unnamed
+
+config :pleroma, :connections_pool,
+  checkin_timeout: 250,
+  max_connections: 250,
+  retry: 1,
+  retry_timeout: 1000,
+  await_up_timeout: 5_000
+
+config :pleroma, :pools,
+  federation: [
+    size: 50,
+    max_overflow: 10,
+    timeout: 150_000
+  ],
+  media: [
+    size: 50,
+    max_overflow: 10,
+    timeout: 150_000
+  ],
+  upload: [
+    size: 25,
+    max_overflow: 5,
+    timeout: 300_000
+  ],
+  default: [
+    size: 10,
+    max_overflow: 2,
+    timeout: 10_000
+  ]
+
+config :pleroma, :hackney_pools,
+  federation: [
+    max_connections: 50,
+    timeout: 150_000
+  ],
+  media: [
+    max_connections: 50,
+    timeout: 150_000
+  ],
+  upload: [
+    max_connections: 25,
+    timeout: 300_000
+  ]
+
+config :pleroma, :restrict_unauthenticated,
+  timelines: %{local: false, federated: false},
+  profiles: %{local: false, remote: false},
+  activities: %{local: false, remote: false}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

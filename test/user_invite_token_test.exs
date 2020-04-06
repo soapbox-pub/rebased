@@ -4,7 +4,6 @@
 
 defmodule Pleroma.UserInviteTokenTest do
   use ExUnit.Case, async: true
-  use Pleroma.DataCase
   alias Pleroma.UserInviteToken
 
   describe "valid_invite?/1 one time invites" do
@@ -64,7 +63,6 @@ defmodule Pleroma.UserInviteTokenTest do
 
     test "expires yesterday returns false", %{invite: invite} do
       invite = %{invite | expires_at: Date.add(Date.utc_today(), -1)}
-      invite = Repo.insert!(invite)
       refute UserInviteToken.valid_invite?(invite)
     end
   end
@@ -82,7 +80,6 @@ defmodule Pleroma.UserInviteTokenTest do
 
     test "overdue date and less uses returns false", %{invite: invite} do
       invite = %{invite | expires_at: Date.add(Date.utc_today(), -1)}
-      invite = Repo.insert!(invite)
       refute UserInviteToken.valid_invite?(invite)
     end
 
@@ -93,7 +90,6 @@ defmodule Pleroma.UserInviteTokenTest do
 
     test "overdue date with more uses returns false", %{invite: invite} do
       invite = %{invite | expires_at: Date.add(Date.utc_today(), -1), uses: 5}
-      invite = Repo.insert!(invite)
       refute UserInviteToken.valid_invite?(invite)
     end
   end

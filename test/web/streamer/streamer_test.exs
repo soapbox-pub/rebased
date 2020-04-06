@@ -19,8 +19,7 @@ defmodule Pleroma.Web.StreamerTest do
 
   @streamer_timeout 150
   @streamer_start_wait 10
-
-  clear_config([:instance, :skip_thread_containment])
+  setup do: clear_config([:instance, :skip_thread_containment])
 
   describe "user streams" do
     setup do
@@ -122,6 +121,18 @@ defmodule Pleroma.Web.StreamerTest do
     test "it sends follow activities to the 'user:notification' stream", %{
       user: user
     } do
+      user_url = user.ap_id
+
+      body =
+        File.read!("test/fixtures/users_mock/localhost.json")
+        |> String.replace("{{nickname}}", user.nickname)
+        |> Jason.encode!()
+
+      Tesla.Mock.mock_global(fn
+        %{method: :get, url: ^user_url} ->
+          %Tesla.Env{status: 200, body: body}
+      end)
+
       user2 = insert(:user)
       task = Task.async(fn -> assert_receive {:text, _}, @streamer_timeout end)
 

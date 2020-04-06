@@ -173,6 +173,8 @@ defmodule Pleroma.Web.Router do
 
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
     patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
+    get("/users/:nickname/credentials", AdminAPIController, :show_user_credentials)
+    patch("/users/:nickname/credentials", AdminAPIController, :update_user_credentials)
 
     get("/users", AdminAPIController, :list_users)
     get("/users/:nickname", AdminAPIController, :user_show)
@@ -184,7 +186,6 @@ defmodule Pleroma.Web.Router do
     patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
 
     get("/reports", AdminAPIController, :list_reports)
-    get("/grouped_reports", AdminAPIController, :list_grouped_reports)
     get("/reports/:id", AdminAPIController, :report_show)
     patch("/reports", AdminAPIController, :reports_update)
     post("/reports/:id/notes", AdminAPIController, :report_notes_create)
@@ -513,7 +514,7 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :ostatus do
-    plug(:accepts, ["html", "xml", "atom", "activity+json", "json"])
+    plug(:accepts, ["html", "xml", "rss", "atom", "activity+json", "json"])
     plug(Pleroma.Plugs.StaticFEPlug)
   end
 

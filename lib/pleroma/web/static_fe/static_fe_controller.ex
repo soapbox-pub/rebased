@@ -60,7 +60,9 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
 
     content =
       if data["content"] do
-        Pleroma.HTML.filter_tags(data["content"])
+        data["content"]
+        |> Pleroma.HTML.filter_tags()
+        |> Pleroma.Emoji.Formatter.emojify(Map.get(data, "emoji", %{}))
       else
         nil
       end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
@@ -9,12 +9,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
   alias Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy
   alias Pleroma.Web.ActivityPub.Visibility
 
-  clear_config([:mrf_object_age]) do
-    Config.put(:mrf_object_age,
-      threshold: 172_800,
-      actions: [:delist, :strip_followers]
-    )
-  end
+  setup do:
+          clear_config(:mrf_object_age,
+            threshold: 172_800,
+            actions: [:delist, :strip_followers]
+          )
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)

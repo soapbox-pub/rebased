@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
   end
 
   describe "publish/1" do
-    clear_config([:instance, :federating])
+    setup do: clear_config([:instance, :federating])
 
     test "returns error when activity not `Create` type" do
       activity = insert(:like_activity)
@@ -88,6 +88,11 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
             "object" => "http://mastodon.example.org/eee/99541947525187367"
           }
         )
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "http://mastodon.example.org/eee/99541947525187367"} ->
+          %Tesla.Env{status: 500, body: ""}
+      end)
 
       assert capture_log(fn ->
                assert Relay.publish(activity) == {:error, nil}

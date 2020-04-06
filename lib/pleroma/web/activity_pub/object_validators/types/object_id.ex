@@ -4,14 +4,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.ObjectID do
   def type, do: :string
 
   def cast(object) when is_binary(object) do
-    with %URI{
-           scheme: scheme,
-           host: host
-         }
-         when scheme in ["https", "http"] and not is_nil(host) <-
-           URI.parse(object) do
-      {:ok, object}
-    else
+    # Host has to be present and scheme has to be an http scheme (for now)
+    case URI.parse(object) do
+      %URI{host: nil} ->
+        :error
+
+      %URI{scheme: scheme} when scheme in ["https", "http"] ->
+        {:ok, object}
+
       _ ->
         :error
     end

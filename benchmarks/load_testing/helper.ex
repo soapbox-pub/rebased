@@ -1,11 +1,14 @@
 defmodule Pleroma.LoadTesting.Helper do
-  defmacro __using__(_) do
-    quote do
-      import Ecto.Query
-      alias Pleroma.Repo
-      alias Pleroma.User
+  alias Ecto.Adapters.SQL
+  alias Pleroma.Repo
 
-      defp to_sec(microseconds), do: microseconds / 1_000_000
-    end
+  def to_sec(microseconds), do: microseconds / 1_000_000
+
+  def clean_tables do
+    IO.puts("Deleting old data...\n")
+    SQL.query!(Repo, "TRUNCATE users CASCADE;")
+    SQL.query!(Repo, "TRUNCATE activities CASCADE;")
+    SQL.query!(Repo, "TRUNCATE objects CASCADE;")
+    SQL.query!(Repo, "TRUNCATE oban_jobs CASCADE;")
   end
 end

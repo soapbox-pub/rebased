@@ -8,7 +8,7 @@ defmodule Pleroma.Workers.Cron.ClearOauthTokenWorkerTest do
   import Pleroma.Factory
   alias Pleroma.Workers.Cron.ClearOauthTokenWorker
 
-  clear_config([:oauth2, :clean_expired_tokens])
+  setup do: clear_config([:oauth2, :clean_expired_tokens])
 
   test "deletes expired tokens" do
     insert(:oauth_token,

@@ -129,4 +129,32 @@ defmodule Pleroma.FollowingRelationship do
         move_following(origin, target)
     end
   end
+
+  def all_between_user_sets(
+        source_users,
+        target_users
+      )
+      when is_list(source_users) and is_list(target_users) do
+    source_user_ids = User.binary_id(source_users)
+    target_user_ids = User.binary_id(target_users)
+
+    __MODULE__
+    |> where(
+      fragment(
+        "(follower_id = ANY(?) AND following_id = ANY(?)) OR \
+        (follower_id = ANY(?) AND following_id = ANY(?))",
+        ^source_user_ids,
+        ^target_user_ids,
+        ^target_user_ids,
+        ^source_user_ids
+      )
+    )
+    |> Repo.all()
+  end
+
+  def find(following_relationships, follower, following) do
+    Enum.find(following_relationships, fn
+      fr -> fr.follower_id == follower.id and fr.following_id == following.id
+    end)
+  end
 end

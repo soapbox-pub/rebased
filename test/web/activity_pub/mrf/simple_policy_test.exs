@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
@@ -8,18 +8,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
   alias Pleroma.Config
   alias Pleroma.Web.ActivityPub.MRF.SimplePolicy
 
-  clear_config([:mrf_simple]) do
-    Config.put(:mrf_simple,
-      media_removal: [],
-      media_nsfw: [],
-      federated_timeline_removal: [],
-      report_removal: [],
-      reject: [],
-      accept: [],
-      avatar_removal: [],
-      banner_removal: []
-    )
-  end
+  setup do:
+          clear_config(:mrf_simple,
+            media_removal: [],
+            media_nsfw: [],
+            federated_timeline_removal: [],
+            report_removal: [],
+            reject: [],
+            accept: [],
+            avatar_removal: [],
+            banner_removal: []
+          )
 
   describe "when :media_removal" do
     test "is empty" do

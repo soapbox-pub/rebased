@@ -12,8 +12,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
-  clear_config([:instance, :public])
-
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
@@ -23,9 +21,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     setup do: oauth_access(["read:statuses"])
 
     test "the home timeline", %{user: user, conn: conn} do
-      following = insert(:user)
+      following = insert(:user, nickname: "followed")
+      third_user = insert(:user, nickname: "repeated")
 
-      {:ok, _activity} = CommonAPI.post(following, %{"status" => "test"})
+      {:ok, _activity} = CommonAPI.post(following, %{"status" => "post"})
+      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "repeated post"})
+      {:ok, _, _} = CommonAPI.repeat(activity.id, following)
 
       ret_conn = get(conn, "/api/v1/timelines/home")
 
@@ -33,9 +34,54 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       {:ok, _user} = User.follow(user, following)
 
-      conn = get(conn, "/api/v1/timelines/home")
+      ret_conn = get(conn, "/api/v1/timelines/home")
 
-      assert [%{"content" => "test"}] = json_response(conn, :ok)
+      assert [
+               %{
+                 "reblog" => %{
+                   "content" => "repeated post",
+                   "account" => %{
+                     "pleroma" => %{
+                       "relationship" => %{"following" => false, "followed_by" => false}
+                     }
+                   }
+                 },
+                 "account" => %{"pleroma" => %{"relationship" => %{"following" => true}}}
+               },
+               %{
+                 "content" => "post",
+                 "account" => %{
+                   "acct" => "followed",
+                   "pleroma" => %{"relationship" => %{"following" => true}}
+                 }
+               }
+             ] = json_response(ret_conn, :ok)
+
+      {:ok, _user} = User.follow(third_user, user)
+
+      ret_conn = get(conn, "/api/v1/timelines/home")
+
+      assert [
+               %{
+                 "reblog" => %{
+                   "content" => "repeated post",
+                   "account" => %{
+                     "acct" => "repeated",
+                     "pleroma" => %{
+                       "relationship" => %{"following" => false, "followed_by" => true}
+                     }
+                   }
+                 },
+                 "account" => %{"pleroma" => %{"relationship" => %{"following" => true}}}
+               },
+               %{
+                 "content" => "post",
+                 "account" => %{
+                   "acct" => "followed",
+                   "pleroma" => %{"relationship" => %{"following" => true}}
+                 }
+               }
+             ] = json_response(ret_conn, :ok)
     end
 
     test "the home timeline when the direct messages are excluded", %{user: user, conn: conn} do
@@ -80,15 +126,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       assert [%{"content" => "test"}] = json_response(conn, :ok)
     end
 
-    test "the public timeline when public is set to false", %{conn: conn} do
-      Config.put([:instance, :public], false)
-
-      assert %{"error" => "This resource requires authentication."} ==
-               conn
-               |> get("/api/v1/timelines/public", %{"local" => "False"})
-               |> json_response(:forbidden)
-    end
-
     test "the public timeline includes only public statuses for an authenticated user" do
       %{user: user, conn: conn} = oauth_access(["read:statuses"])
 
@@ -99,6 +136,98 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       res_conn = get(conn, "/api/v1/timelines/public")
       assert length(json_response(res_conn, 200)) == 1
+    end
+  end
+
+  defp local_and_remote_activities do
+    insert(:note_activity)
+    insert(:note_activity, local: false)
+    :ok
+  end
+
+  describe "public with restrict unauthenticated timeline for local and federated timelines" do
+    setup do: local_and_remote_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :local], true)
+
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :federated], true)
+
+    test "if user is unauthenticated", %{conn: conn} do
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "true"})
+
+      assert json_response(res_conn, :unauthorized) == %{
+               "error" => "authorization required for timeline view"
+             }
+
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "false"})
+
+      assert json_response(res_conn, :unauthorized) == %{
+               "error" => "authorization required for timeline view"
+             }
+    end
+
+    test "if user is authenticated" do
+      %{conn: conn} = oauth_access(["read:statuses"])
+
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "true"})
+      assert length(json_response(res_conn, 200)) == 1
+
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "false"})
+      assert length(json_response(res_conn, 200)) == 2
+    end
+  end
+
+  describe "public with restrict unauthenticated timeline for local" do
+    setup do: local_and_remote_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :local], true)
+
+    test "if user is unauthenticated", %{conn: conn} do
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "true"})
+
+      assert json_response(res_conn, :unauthorized) == %{
+               "error" => "authorization required for timeline view"
+             }
+
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "false"})
+      assert length(json_response(res_conn, 200)) == 2
+    end
+
+    test "if user is authenticated", %{conn: _conn} do
+      %{conn: conn} = oauth_access(["read:statuses"])
+
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "true"})
+      assert length(json_response(res_conn, 200)) == 1
+
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "false"})
+      assert length(json_response(res_conn, 200)) == 2
+    end
+  end
+
+  describe "public with restrict unauthenticated timeline for remote" do
+    setup do: local_and_remote_activities()
+
+    setup do: clear_config([:restrict_unauthenticated, :timelines, :federated], true)
+
+    test "if user is unauthenticated", %{conn: conn} do
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "true"})
+      assert length(json_response(res_conn, 200)) == 1
+
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "false"})
+
+      assert json_response(res_conn, :unauthorized) == %{
+               "error" => "authorization required for timeline view"
+             }
+    end
+
+    test "if user is authenticated", %{conn: _conn} do
+      %{conn: conn} = oauth_access(["read:statuses"])
+
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "true"})
+      assert length(json_response(res_conn, 200)) == 1
+
+      res_conn = get(conn, "/api/v1/timelines/public", %{"local" => "false"})
+      assert length(json_response(res_conn, 200)) == 2
     end
   end
 

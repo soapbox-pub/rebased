@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+  <channel>
+    <guid><%= user_feed_url(@conn, :feed, @user.nickname) <> ".rss" %></guid>
+    <title><%= @user.nickname <> "'s timeline" %></title>
+    <updated><%= most_recent_update(@activities, @user) %></updated>
+    <image><%= logo(@user) %></image>
+    <link><%= '#{user_feed_url(@conn, :feed, @user.nickname)}.rss' %></link>
+
+    <%= render @view_module, "_author.rss", assigns %>
+
+    <%= if last_activity(@activities) do %>
+      <link rel="next"><%= '#{user_feed_url(@conn, :feed, @user.nickname)}.rss?max_id=#{last_activity(@activities).id}' %></link>
+    <% end %>
+
+    <%= for activity <- @activities do %>
+    <%= render @view_module, "_activity.rss", Map.merge(assigns, prepare_activity(activity)) %>
+    <% end %>
+  </channel>
+</rss>
