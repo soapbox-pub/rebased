@@ -97,7 +97,6 @@ defmodule Pleroma.User do
     field(:last_digest_emailed_at, :naive_datetime)
     field(:banner, :map, default: %{})
     field(:background, :map, default: %{})
-    field(:source_data, :map, default: %{})
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
     field(:following_count, :integer, default: 0)
@@ -377,7 +376,6 @@ defmodule Pleroma.User do
         :public_key,
         :avatar,
         :ap_enabled,
-        :source_data,
         :banner,
         :locked,
         :magic_key,
@@ -536,7 +534,6 @@ defmodule Pleroma.User do
         :avatar,
         :last_refreshed_at,
         :ap_enabled,
-        :source_data,
         :banner,
         :locked,
         :magic_key,

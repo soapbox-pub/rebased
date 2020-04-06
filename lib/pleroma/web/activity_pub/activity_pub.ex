@@ -1459,7 +1459,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
       ap_enabled: true,
-      source_data: data,
       banner: banner,
       fields: fields,
       emoji: emojis,

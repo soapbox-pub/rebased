@@ -581,7 +581,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
 
-      assert user.source_data["endpoints"]
+      assert user.inbox
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
     end
