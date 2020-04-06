@@ -157,8 +157,8 @@ defmodule Mix.Tasks.Pleroma.EmojiTest do
       assert File.exists?(files_json)
 
       on_exit(fn ->
-        File.rm_rf!(pack_json)
-        File.rm_rf!(files_json)
+        File.rm!(pack_json)
+        File.rm!(files_json)
       end)
     end
 
@@ -218,8 +218,8 @@ defmodule Mix.Tasks.Pleroma.EmojiTest do
       assert captured =~ "#{pack_json} has been updated with the pack2 pack"
 
       on_exit(fn ->
-        File.rm_rf!(pack_json)
-        File.rm_rf!(files_json)
+        File.rm!(pack_json)
+        File.rm!(files_json)
       end)
     end
   end
