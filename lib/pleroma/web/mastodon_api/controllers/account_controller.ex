@@ -83,7 +83,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(
     OpenApiSpex.Plug.CastAndValidate,
     [render_error: Pleroma.Web.ApiSpec.RenderError]
-    when action in [:create, :verify_credentials, :update_credentials, :relationships]
+    when action in [:create, :verify_credentials, :update_credentials, :relationships, :show]
   )
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
@@ -239,7 +239,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   def relationships(%{assigns: %{user: _user}} = conn, _), do: json(conn, [])
 
   @doc "GET /api/v1/accounts/:id"
-  def show(%{assigns: %{user: for_user}} = conn, %{"id" => nickname_or_id}) do
+  def show(%{assigns: %{user: for_user}} = conn, %{id: nickname_or_id}) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id, for: for_user),
          true <- User.visible_for?(user, for_user) do
       render(conn, "show.json", user: user, for: for_user)

@@ -86,7 +86,21 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   end
 
   def show_operation do
-    :ok
+    %Operation{
+      tags: ["accounts"],
+      summary: "Account",
+      operationId: "AccountController.show",
+      description: "View information about a profile.",
+      parameters: [
+        Operation.parameter(:id, :path, :string, "Account ID or nickname",
+          example: "123",
+          required: true
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Account", "application/json", Account)
+      }
+    }
   end
 
   def statuses_operation do

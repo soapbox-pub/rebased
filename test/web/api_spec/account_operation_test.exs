@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ApiSpec.AccountOperationTest do
-  use Pleroma.Web.ConnCase, async: true
+  use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.ApiSpec
   alias Pleroma.Web.ApiSpec.Schemas.Account
@@ -107,5 +107,19 @@ defmodule Pleroma.Web.ApiSpec.AccountOperationTest do
              |> json_response(:ok)
 
     assert_schema([relationship], "AccountRelationshipsResponse", api_spec)
+  end
+
+  test "/api/v1/accounts/:id produces Account", %{
+    conn: conn
+  } do
+    user = insert(:user)
+    api_spec = ApiSpec.spec()
+
+    assert resp =
+             conn
+             |> get("/api/v1/accounts/#{user.id}")
+             |> json_response(:ok)
+
+    assert_schema(resp, "Account", api_spec)
   end
 end
