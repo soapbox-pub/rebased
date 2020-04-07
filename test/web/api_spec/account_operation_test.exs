@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperationTest do
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
+  alias Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest
 
   import OpenApiSpex.TestAssertions
   import Pleroma.Factory
@@ -31,6 +32,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperationTest do
     assert_schema(schema.example, "AccountCreateResponse", api_spec)
   end
 
+  test "AccountUpdateCredentialsRequest example matches schema" do
+    api_spec = ApiSpec.spec()
+    schema = AccountUpdateCredentialsRequest.schema()
+    assert_schema(schema.example, "AccountUpdateCredentialsRequest", api_spec)
+  end
+
   test "AccountController produces a AccountCreateResponse", %{conn: conn} do
     api_spec = ApiSpec.spec()
     app_token = insert(:oauth_token, user: nil)
@@ -51,5 +58,30 @@ defmodule Pleroma.Web.ApiSpec.AccountOperationTest do
       |> json_response(200)
 
     assert_schema(json, "AccountCreateResponse", api_spec)
+  end
+
+  test "AccountUpdateCredentialsRequest produces an Account", %{conn: conn} do
+    api_spec = ApiSpec.spec()
+    token = insert(:oauth_token, scopes: ["read", "write"])
+
+    json =
+      conn
+      |> put_req_header("authorization", "Bearer " <> token.token)
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/v1/accounts/update_credentials",
+        %{
+          hide_followers_count: "true",
+          hide_follows_count: "true",
+          skip_thread_containment: "true",
+          hide_follows: "true",
+          pleroma_settings_store: %{"pleroma-fe" => %{"key" => "val"}},
+          note: "foobar",
+          fields_attributes: [%{name: "foo", value: "bar"}]
+        }
+      )
+      |> json_response(200)
+
+    assert_schema(json, "Account", api_spec)
   end
 end

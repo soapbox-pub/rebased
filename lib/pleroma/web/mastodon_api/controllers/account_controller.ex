@@ -82,7 +82,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(
     OpenApiSpex.Plug.CastAndValidate,
-    [render_error: Pleroma.Web.ApiSpec.RenderError] when action == :create
+    [render_error: Pleroma.Web.ApiSpec.RenderError]
+    when action in [:create, :verify_credentials, :update_credentials]
   )
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
@@ -152,8 +153,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "PATCH /api/v1/accounts/update_credentials"
-  def update_credentials(%{assigns: %{user: original_user}} = conn, params) do
+  def update_credentials(%{assigns: %{user: original_user}, body_params: params} = conn, _params) do
     user = original_user
+
+    params =
+      params
+      |> Map.from_struct()
+      |> Enum.filter(fn {_, value} -> not is_nil(value) end)
+      |> Enum.into(%{})
 
     user_params =
       [
@@ -170,22 +177,22 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :discoverable
       ]
       |> Enum.reduce(%{}, fn key, acc ->
-        add_if_present(acc, params, to_string(key), key, &{:ok, truthy_param?(&1)})
+        add_if_present(acc, params, key, key, &{:ok, truthy_param?(&1)})
       end)
-      |> add_if_present(params, "display_name", :name)
-      |> add_if_present(params, "note", :bio)
-      |> add_if_present(params, "avatar", :avatar)
-      |> add_if_present(params, "header", :banner)
-      |> add_if_present(params, "pleroma_background_image", :background)
+      |> add_if_present(params, :display_name, :name)
+      |> add_if_present(params, :note, :bio)
+      |> add_if_present(params, :avatar, :avatar)
+      |> add_if_present(params, :header, :banner)
+      |> add_if_present(params, :pleroma_background_image, :background)
       |> add_if_present(
         params,
-        "fields_attributes",
+        :fields_attributes,
         :raw_fields,
         &{:ok, normalize_fields_attributes(&1)}
       )
-      |> add_if_present(params, "pleroma_settings_store", :pleroma_settings_store)
-      |> add_if_present(params, "default_scope", :default_scope)
-      |> add_if_present(params, "actor_type", :actor_type)
+      |> add_if_present(params, :pleroma_settings_store, :pleroma_settings_store)
+      |> add_if_present(params, :default_scope, :default_scope)
+      |> add_if_present(params, :actor_type, :actor_type)
 
     changeset = User.update_changeset(user, user_params)
 
@@ -200,7 +207,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   defp add_if_present(map, params, params_field, map_field, value_function \\ &{:ok, &1}) do
     with true <- Map.has_key?(params, params_field),
-         {:ok, new_value} <- value_function.(params[params_field]) do
+         {:ok, new_value} <- value_function.(Map.get(params, params_field)) do
       Map.put(map, map_field, new_value)
     else
       _ -> map
@@ -211,7 +218,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     if Enum.all?(fields, &is_tuple/1) do
       Enum.map(fields, fn {_, v} -> v end)
     else
-      fields
+      Enum.map(fields, fn
+        %Pleroma.Web.ApiSpec.Schemas.AccountAttributeField{} = field ->
+          %{"name" => field.name, "value" => field.value}
+
+        field ->
+          field
+      end)
     end
   end
 

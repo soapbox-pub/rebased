@@ -14,6 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
   describe "updating credentials" do
     setup do: oauth_access(["write:accounts"])
+    setup :request_content_type
 
     test "sets user settings in a generic way", %{conn: conn} do
       res_conn =
@@ -237,6 +238,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       for token <- [token1, token2] do
         conn =
           build_conn()
+          |> put_req_header("content-type", "multipart/form-data")
           |> put_req_header("authorization", "Bearer #{token.token}")
           |> patch("/api/v1/accounts/update_credentials", %{})
 

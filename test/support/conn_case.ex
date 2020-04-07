@@ -51,6 +51,11 @@ defmodule Pleroma.Web.ConnCase do
         %{user: user, token: token, conn: conn}
       end
 
+      defp request_content_type(%{conn: conn}) do
+        conn = put_req_header(conn, "content-type", "multipart/form-data")
+        [conn: conn]
+      end
+
       defp ensure_federating_or_authenticated(conn, url, user) do
         initial_setting = Config.get([:instance, :federating])
         on_exit(fn -> Config.put([:instance, :federating], initial_setting) end)

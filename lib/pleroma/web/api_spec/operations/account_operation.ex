@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
+  alias Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest
 
   @spec open_api_operation(atom) :: Operation.t()
   def open_api_operation(action) do
@@ -44,7 +45,18 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   end
 
   def update_credentials_operation do
-    :ok
+    %Operation{
+      tags: ["accounts"],
+      summary: "Update account credentials",
+      description: "Update the user's display and preferences.",
+      operationId: "AccountController.update_credentials",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      requestBody:
+        Helpers.request_body("Parameters", AccountUpdateCredentialsRequest, required: true),
+      responses: %{
+        200 => Operation.response("Account", "application/json", Account)
+      }
+    }
   end
 
   def relationships_operation do
