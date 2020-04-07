@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperationTest do
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
+  alias Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest
 
   import OpenApiSpex.TestAssertions
@@ -83,5 +84,28 @@ defmodule Pleroma.Web.ApiSpec.AccountOperationTest do
       |> json_response(200)
 
     assert_schema(json, "Account", api_spec)
+  end
+
+  test "AccountRelationshipsResponse example matches schema" do
+    api_spec = ApiSpec.spec()
+    schema = AccountRelationshipsResponse.schema()
+    assert_schema(schema.example, "AccountRelationshipsResponse", api_spec)
+  end
+
+  test "/api/v1/accounts/relationships produces AccountRelationshipsResponse", %{
+    conn: conn
+  } do
+    token = insert(:oauth_token, scopes: ["read", "write"])
+    other_user = insert(:user)
+    {:ok, _user} = Pleroma.User.follow(token.user, other_user)
+    api_spec = ApiSpec.spec()
+
+    assert [relationship] =
+             conn
+             |> put_req_header("authorization", "Bearer " <> token.token)
+             |> get("/api/v1/accounts/relationships?id=#{other_user.id}")
+             |> json_response(:ok)
+
+    assert_schema([relationship], "AccountRelationshipsResponse", api_spec)
   end
 end

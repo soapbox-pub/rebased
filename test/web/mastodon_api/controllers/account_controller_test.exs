@@ -1062,14 +1062,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     setup do: oauth_access(["read:follows"])
 
     test "returns the relationships for the current user", %{user: user, conn: conn} do
-      other_user = insert(:user)
+      %{id: other_user_id} = other_user = insert(:user)
       {:ok, _user} = User.follow(user, other_user)
 
-      conn = get(conn, "/api/v1/accounts/relationships", %{"id" => [other_user.id]})
+      assert [%{"id" => ^other_user_id}] =
+               conn
+               |> get("/api/v1/accounts/relationships?id=#{other_user.id}")
+               |> json_response(200)
 
-      assert [relationship] = json_response(conn, 200)
-
-      assert to_string(other_user.id) == relationship["id"]
+      assert [%{"id" => ^other_user_id}] =
+               conn
+               |> get("/api/v1/accounts/relationships?id[]=#{other_user.id}")
+               |> json_response(200)
     end
 
     test "returns an empty list on a bad request", %{conn: conn} do

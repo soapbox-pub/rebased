@@ -4,10 +4,12 @@
 
 defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias OpenApiSpex.Operation
+  alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
+  alias Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest
 
   @spec open_api_operation(atom) :: Operation.t()
@@ -60,7 +62,27 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   end
 
   def relationships_operation do
-    :ok
+    %Operation{
+      tags: ["accounts"],
+      summary: "Check relationships to other accounts",
+      operationId: "AccountController.relationships",
+      description: "Find out whether a given account is followed, blocked, muted, etc.",
+      security: [%{"oAuth" => ["read:follows"]}],
+      parameters: [
+        Operation.parameter(
+          :id,
+          :query,
+          %Schema{
+            oneOf: [%Schema{type: :array, items: %Schema{type: :string}}, %Schema{type: :string}]
+          },
+          "Account IDs",
+          example: "123"
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Account", "application/json", AccountRelationshipsResponse)
+      }
+    }
   end
 
   def show_operation do
