@@ -27,16 +27,12 @@ defmodule Pleroma.Activity do
   # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
   @mastodon_notification_types %{
     "Create" => "mention",
-    "Follow" => "follow",
+    "Follow" => ["follow", "follow_request"],
     "Announce" => "reblog",
     "Like" => "favourite",
     "Move" => "move",
     "EmojiReact" => "pleroma:emoji_reaction"
   }
-
-  @mastodon_to_ap_notification_types for {k, v} <- @mastodon_notification_types,
-                                         into: %{},
-                                         do: {v, k}
 
   schema "activities" do
     field(:data, :map)
@@ -291,15 +287,41 @@ defmodule Pleroma.Activity do
 
   defp purge_web_resp_cache(nil), do: nil
 
-  for {ap_type, type} <- @mastodon_notification_types do
+  def follow_accepted?(
+        %Activity{data: %{"type" => "Follow", "object" => followed_ap_id}} = activity
+      ) do
+    with %User{} = follower <- Activity.user_actor(activity),
+         %User{} = followed <- User.get_cached_by_ap_id(followed_ap_id) do
+      Pleroma.FollowingRelationship.following?(follower, followed)
+    else
+      _ -> false
+    end
+  end
+
+  def follow_accepted?(_), do: false
+
+  for {ap_type, type} <- @mastodon_notification_types, not is_list(type) do
     def mastodon_notification_type(%Activity{data: %{"type" => unquote(ap_type)}}),
       do: unquote(type)
+  end
+
+  def mastodon_notification_type(%Activity{data: %{"type" => "Follow"}} = activity) do
+    if follow_accepted?(activity) do
+      "follow"
+    else
+      "follow_request"
+    end
   end
 
   def mastodon_notification_type(%Activity{}), do: nil
 
   def from_mastodon_notification_type(type) do
-    Map.get(@mastodon_to_ap_notification_types, type)
+    with {k, _v} <-
+           Enum.find(@mastodon_notification_types, fn {_k, v} ->
+             v == type or (is_list(v) and type in v)
+           end) do
+      k
+    end
   end
 
   def all_by_actor_and_id(actor, status_ids \\ [])

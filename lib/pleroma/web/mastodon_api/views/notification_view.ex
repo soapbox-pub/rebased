@@ -116,6 +116,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         "follow" ->
           response
 
+        "follow_request" ->
+          response
+
         "pleroma:emoji_reaction" ->
           response
           |> put_status(parent_activity_fn.(), reading_user, render_opts)

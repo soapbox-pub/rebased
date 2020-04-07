@@ -2269,6 +2269,20 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :notifications,
+    type: :group,
+    description: "Notification settings",
+    children: [
+      %{
+        key: :enable_follow_request_notifications,
+        type: :boolean,
+        description:
+          "Enables notifications on new follow requests (causes issues with older PleromaFE versions)."
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: Pleroma.Emails.UserEmail,
     type: :group,
     description: "Email template settings",
