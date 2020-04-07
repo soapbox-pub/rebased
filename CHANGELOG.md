@@ -30,6 +30,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `user delete_activities` breaking when trying to delete already deleted posts
 - Incorrect URL for Funkwhale channels
 
+### Upgrade notes
+1. Restart Pleroma
+
 ## [2.0.1] - 2020-03-15
 ### Security
 - Static-FE: Fix remote posts not being sanitized
