@@ -16,6 +16,7 @@ defmodule Pleroma.User do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Formatter
   alias Pleroma.HTML
   alias Pleroma.Keys
   alias Pleroma.Notification
@@ -441,7 +442,7 @@ defmodule Pleroma.User do
 
       fields =
         raw_fields
-        |> Enum.map(fn f -> Map.update!(f, "value", &AutoLinker.link(&1)) end)
+        |> Enum.map(fn f -> Map.update!(f, "value", &parse_fields(&1)) end)
 
       changeset
       |> put_change(:raw_fields, raw_fields)
@@ -449,6 +450,12 @@ defmodule Pleroma.User do
     else
       changeset
     end
+  end
+
+  defp parse_fields(value) do
+    value
+    |> Formatter.linkify(mentions_format: :full)
+    |> elem(0)
   end
 
   defp put_change_if_present(changeset, map_field, value_function) do
@@ -1956,17 +1963,6 @@ defmodule Pleroma.User do
   def fields(%{fields: nil}), do: []
 
   def fields(%{fields: fields}), do: fields
-
-  def sanitized_fields(%User{} = user) do
-    user
-    |> User.fields()
-    |> Enum.map(fn %{"name" => name, "value" => value} ->
-      %{
-        "name" => name,
-        "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
-      }
-    end)
-  end
 
   def validate_fields(changeset, remote? \\ false) do
     limit_name = if remote?, do: :max_remote_account_fields, else: :max_account_fields
