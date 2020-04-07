@@ -102,7 +102,7 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
       {:ok, %{id: id, object: object}} = CommonAPI.post(user, %{"status" => "test"})
       {:ok, %{object: object2}} = CommonAPI.post(user, %{"status" => "test test"})
 
-      CommonAPI.favorite(id, user2)
+      CommonAPI.favorite(user2, id)
 
       likes = %{
         "first" =>

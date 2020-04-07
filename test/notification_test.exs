@@ -550,7 +550,7 @@ defmodule Pleroma.NotificationTest do
           "status" => "hey @#{other_user.nickname}!"
         })
 
-      {:ok, activity_two, _} = CommonAPI.favorite(activity_one.id, third_user)
+      {:ok, activity_two} = CommonAPI.favorite(third_user, activity_one.id)
 
       {enabled_receivers, _disabled_receivers} =
         Notification.get_notified_from_activity(activity_two)
@@ -633,7 +633,7 @@ defmodule Pleroma.NotificationTest do
 
       assert Enum.empty?(Notification.for_user(user))
 
-      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
 
       assert length(Notification.for_user(user)) == 1
 
@@ -650,7 +650,7 @@ defmodule Pleroma.NotificationTest do
 
       assert Enum.empty?(Notification.for_user(user))
 
-      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
 
       assert length(Notification.for_user(user)) == 1
 
@@ -705,7 +705,7 @@ defmodule Pleroma.NotificationTest do
 
       assert Enum.empty?(Notification.for_user(user))
 
-      {:error, _} = CommonAPI.favorite(activity.id, other_user)
+      {:error, :not_found} = CommonAPI.favorite(other_user, activity.id)
 
       assert Enum.empty?(Notification.for_user(user))
     end

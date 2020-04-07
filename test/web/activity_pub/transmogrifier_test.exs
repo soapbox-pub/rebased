@@ -334,7 +334,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Poison.decode!()
         |> Map.put("object", activity.data["object"])
 
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
+
+      refute Enum.empty?(activity.recipients)
 
       assert data["actor"] == "http://mastodon.example.org/users/admin"
       assert data["type"] == "Like"
