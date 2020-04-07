@@ -106,10 +106,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
     end
 
     test "updates the user's default scope", %{conn: conn} do
-      conn = patch(conn, "/api/v1/accounts/update_credentials", %{default_scope: "cofe"})
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{default_scope: "unlisted"})
 
       assert user_data = json_response(conn, 200)
-      assert user_data["source"]["privacy"] == "cofe"
+      assert user_data["source"]["privacy"] == "unlisted"
     end
 
     test "updates the user's hide_followers status", %{conn: conn} do

@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.AccountAttributeField
+  alias Pleroma.Web.ApiSpec.Schemas.ActorType
+  alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
   require OpenApiSpex
 
   OpenApiSpex.schema(%{
@@ -73,10 +75,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest do
         description: "user's role (e.g admin, moderator) will be exposed to anyone in the
       API"
       },
-      default_scope: %Schema{
-        type: :string,
-        description: "The scope returned under privacy key in Source subentity"
-      },
+      default_scope: VisibilityScope,
       pleroma_settings_store: %Schema{
         type: :object,
         description: "Opaque user settings to be saved on the backend."
@@ -98,7 +97,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest do
         type: :boolean,
         description: "Discovery of this account in search results and other services is allowed."
       },
-      actor_type: %Schema{type: :string, description: "the type of this account."}
+      actor_type: ActorType
     },
     example: %{
       bot: false,

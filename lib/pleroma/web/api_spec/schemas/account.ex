@@ -6,6 +6,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.AccountEmoji
   alias Pleroma.Web.ApiSpec.Schemas.AccountField
+  alias Pleroma.Web.ApiSpec.Schemas.ActorType
+  alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
   require OpenApiSpex
 
@@ -87,12 +89,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
         properties: %{
           fields: %Schema{type: :array, items: AccountField},
           note: %Schema{type: :string},
-          privacy: %Schema{type: :string},
+          privacy: VisibilityScope,
           sensitive: %Schema{type: :boolean},
           pleroma: %Schema{
             type: :object,
             properties: %{
-              actor_type: %Schema{type: :string},
+              actor_type: ActorType,
               discoverable: %Schema{type: :boolean},
               no_rich_text: %Schema{type: :boolean},
               show_role: %Schema{type: :boolean}
