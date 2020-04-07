@@ -298,7 +298,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
              ]
     end
 
-    test "update fields by urlencoded", %{conn: conn} do
+    test "update fields via x-www-form-urlencoded", %{conn: conn} do
       fields =
         [
           "fields_attributes[1][name]=link",
