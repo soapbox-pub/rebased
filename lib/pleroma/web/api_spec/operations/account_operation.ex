@@ -14,6 +14,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.AccountsResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.ListsResponse
   alias Pleroma.Web.ApiSpec.Schemas.StatusesResponse
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
@@ -191,7 +192,22 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  def lists_operation, do: :ok
+  def lists_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Lists containing this account",
+      operationId: "AccountController.lists",
+      security: [%{"oAuth" => ["read:lists"]}],
+      description: "User lists that you have added this account to.",
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"}
+      ],
+      responses: %{
+        200 => Operation.response("Lists", "application/json", ListsResponse)
+      }
+    }
+  end
+
   def follow_operation, do: :ok
   def unfollow_operation, do: :ok
   def mute_operation, do: :ok

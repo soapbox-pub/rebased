@@ -1051,6 +1051,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> json_response(200)
 
       assert res == [%{"id" => to_string(list.id), "title" => "Test List"}]
+      assert_schema(res, "ListsResponse", ApiSpec.spec())
     end
   end
 
