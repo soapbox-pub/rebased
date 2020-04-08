@@ -584,6 +584,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(other_user.id)
+      assert_schema(json_response(conn, 200), "AccountsResponse", ApiSpec.spec())
     end
 
     test "getting following, hide_follows, other user requesting" do
@@ -598,6 +599,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> get("/api/v1/accounts/#{user.id}/following")
 
       assert [] == json_response(conn, 200)
+      assert_schema(json_response(conn, 200), "AccountsResponse", ApiSpec.spec())
     end
 
     test "getting following, hide_follows, same user requesting" do
@@ -627,12 +629,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [%{"id" => id3}, %{"id" => id2}] = json_response(res_conn, 200)
       assert id3 == following3.id
       assert id2 == following2.id
+      assert_schema(json_response(res_conn, 200), "AccountsResponse", ApiSpec.spec())
 
       res_conn = get(conn, "/api/v1/accounts/#{user.id}/following?max_id=#{following3.id}")
 
       assert [%{"id" => id2}, %{"id" => id1}] = json_response(res_conn, 200)
       assert id2 == following2.id
       assert id1 == following1.id
+      assert_schema(json_response(res_conn, 200), "AccountsResponse", ApiSpec.spec())
 
       res_conn =
         get(conn, "/api/v1/accounts/#{user.id}/following?limit=1&max_id=#{following3.id}")
@@ -643,6 +647,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert [link_header] = get_resp_header(res_conn, "link")
       assert link_header =~ ~r/min_id=#{following2.id}/
       assert link_header =~ ~r/max_id=#{following2.id}/
+      assert_schema(json_response(res_conn, 200), "AccountsResponse", ApiSpec.spec())
     end
   end
 

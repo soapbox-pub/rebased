@@ -90,7 +90,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
            :relationships,
            :show,
            :statuses,
-           :followers
+           :followers,
+           :following
          ]
   )
 
@@ -304,6 +305,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "GET /api/v1/accounts/:id/following"
   def following(%{assigns: %{user: for_user, account: user}} = conn, params) do
+    params =
+      params
+      |> Enum.map(fn {key, value} -> {to_string(key), value} end)
+      |> Enum.into(%{})
+
     followers =
       cond do
         for_user && user.id == for_user.id -> MastodonAPI.get_friends(user, params)

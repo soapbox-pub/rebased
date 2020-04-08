@@ -150,8 +150,14 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       parameters: [
         %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
         Operation.parameter(:max_id, :query, :string, "Max ID"),
+        Operation.parameter(:min_id, :query, :string, "Mix ID"),
         Operation.parameter(:since_id, :query, :string, "Since ID"),
-        Operation.parameter(:limit, :query, :integer, "Limit")
+        Operation.parameter(
+          :limit,
+          :query,
+          %Schema{type: :integer, default: 20, maximum: 40},
+          "Limit"
+        )
       ],
       responses: %{
         200 => Operation.response("Accounts", "application/json", AccountsResponse)
@@ -159,7 +165,32 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  def following_operation, do: :ok
+  def following_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Following",
+      operationId: "AccountController.following",
+      security: [%{"oAuth" => ["read:accounts"]}],
+      description:
+        "Accounts which the given account is following, if network is not hidden by the account owner.",
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        Operation.parameter(:max_id, :query, :string, "Max ID"),
+        Operation.parameter(:min_id, :query, :string, "Mix ID"),
+        Operation.parameter(:since_id, :query, :string, "Since ID"),
+        Operation.parameter(
+          :limit,
+          :query,
+          %Schema{type: :integer, default: 20, maximum: 40},
+          "Limit"
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Accounts", "application/json", AccountsResponse)
+      }
+    }
+  end
+
   def lists_operation, do: :ok
   def follow_operation, do: :ok
   def unfollow_operation, do: :ok
