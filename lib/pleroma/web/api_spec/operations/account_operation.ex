@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse
+  alias Pleroma.Web.ApiSpec.Schemas.AccountsResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
   alias Pleroma.Web.ApiSpec.Schemas.StatusesResponse
@@ -139,7 +140,23 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   end
 
   def followers_operation do
-    :ok
+    %Operation{
+      tags: ["accounts"],
+      summary: "Followers",
+      operationId: "AccountController.followers",
+      security: [%{"oAuth" => ["read:accounts"]}],
+      description:
+        "Accounts which follow the given account, if network is not hidden by the account owner.",
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        Operation.parameter(:max_id, :query, :string, "Max ID"),
+        Operation.parameter(:since_id, :query, :string, "Since ID"),
+        Operation.parameter(:limit, :query, :integer, "Limit")
+      ],
+      responses: %{
+        200 => Operation.response("Accounts", "application/json", AccountsResponse)
+      }
+    }
   end
 
   def following_operation, do: :ok
