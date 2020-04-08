@@ -8,10 +8,10 @@ defmodule Pleroma.NotificationTest do
   import Pleroma.Factory
   import Mock
 
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Notification
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.FollowingRelationship
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.NotificationView
