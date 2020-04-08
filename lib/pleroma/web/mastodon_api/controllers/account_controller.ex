@@ -83,7 +83,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(
     OpenApiSpex.Plug.CastAndValidate,
     [render_error: Pleroma.Web.ApiSpec.RenderError]
-    when action in [:create, :verify_credentials, :update_credentials, :relationships, :show]
+    when action in [
+           :create,
+           :verify_credentials,
+           :update_credentials,
+           :relationships,
+           :show,
+           :statuses
+         ]
   )
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
@@ -250,12 +257,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "GET /api/v1/accounts/:id/statuses"
   def statuses(%{assigns: %{user: reading_user}} = conn, params) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user),
+    with %User{} = user <- User.get_cached_by_nickname_or_id(params.id, for: reading_user),
          true <- User.visible_for?(user, reading_user) do
       params =
         params
-        |> Map.put("tag", params["tagged"])
-        |> Map.delete("godmode")
+        |> Map.delete(:tagged)
+        |> Enum.filter(&(not is_nil(&1)))
+        |> Map.new(fn {key, value} -> {to_string(key), value} end)
+        |> Map.put("tag", params[:tagged])
 
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 

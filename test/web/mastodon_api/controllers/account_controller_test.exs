@@ -10,9 +10,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.InternalFetchActor
+  alias Pleroma.Web.ApiSpec
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.Token
 
+  import OpenApiSpex.TestAssertions
   import Pleroma.Factory
 
   describe "account fetching" do
@@ -245,22 +247,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       {:ok, activity} = CommonAPI.post(user_two, %{"status" => "User one sux0rz"})
       {:ok, repeat, _} = CommonAPI.repeat(activity.id, user_three)
 
-      resp = get(conn, "/api/v1/accounts/#{user_two.id}/statuses")
-
-      assert [%{"id" => id}] = json_response(resp, 200)
+      assert resp = get(conn, "/api/v1/accounts/#{user_two.id}/statuses") |> json_response(200)
+      assert [%{"id" => id}] = resp
+      assert_schema(resp, "StatusesResponse", ApiSpec.spec())
       assert id == activity.id
 
       # Even a blocked user will deliver the full user timeline, there would be
       #   no point in looking at a blocked users timeline otherwise
-      resp = get(conn, "/api/v1/accounts/#{user_two.id}/statuses")
-
-      assert [%{"id" => id}] = json_response(resp, 200)
+      assert resp = get(conn, "/api/v1/accounts/#{user_two.id}/statuses") |> json_response(200)
+      assert [%{"id" => id}] = resp
       assert id == activity.id
+      assert_schema(resp, "StatusesResponse", ApiSpec.spec())
 
       # Third user's timeline includes the repeat when viewed by unauthenticated user
-      resp = get(build_conn(), "/api/v1/accounts/#{user_three.id}/statuses")
-      assert [%{"id" => id}] = json_response(resp, 200)
+      resp = get(build_conn(), "/api/v1/accounts/#{user_three.id}/statuses") |> json_response(200)
+      assert [%{"id" => id}] = resp
       assert id == repeat.id
+      assert_schema(resp, "StatusesResponse", ApiSpec.spec())
 
       # When viewing a third user's timeline, the blocked users' statuses will NOT be shown
       resp = get(conn, "/api/v1/accounts/#{user_three.id}/statuses")
@@ -286,30 +289,34 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       {:ok, private_activity} =
         CommonAPI.post(user_one, %{"status" => "private", "visibility" => "private"})
 
-      resp = get(conn, "/api/v1/accounts/#{user_one.id}/statuses")
-
-      assert [%{"id" => id}] = json_response(resp, 200)
+      resp = get(conn, "/api/v1/accounts/#{user_one.id}/statuses") |> json_response(200)
+      assert [%{"id" => id}] = resp
       assert id == to_string(activity.id)
+      assert_schema(resp, "StatusesResponse", ApiSpec.spec())
 
       resp =
         conn
         |> assign(:user, user_two)
         |> assign(:token, insert(:oauth_token, user: user_two, scopes: ["read:statuses"]))
         |> get("/api/v1/accounts/#{user_one.id}/statuses")
+        |> json_response(200)
 
-      assert [%{"id" => id_one}, %{"id" => id_two}] = json_response(resp, 200)
+      assert [%{"id" => id_one}, %{"id" => id_two}] = resp
       assert id_one == to_string(direct_activity.id)
       assert id_two == to_string(activity.id)
+      assert_schema(resp, "StatusesResponse", ApiSpec.spec())
 
       resp =
         conn
         |> assign(:user, user_three)
         |> assign(:token, insert(:oauth_token, user: user_three, scopes: ["read:statuses"]))
         |> get("/api/v1/accounts/#{user_one.id}/statuses")
+        |> json_response(200)
 
-      assert [%{"id" => id_one}, %{"id" => id_two}] = json_response(resp, 200)
+      assert [%{"id" => id_one}, %{"id" => id_two}] = resp
       assert id_one == to_string(private_activity.id)
       assert id_two == to_string(activity.id)
+      assert_schema(resp, "StatusesResponse", ApiSpec.spec())
     end
 
     test "unimplemented pinned statuses feature", %{conn: conn} do
@@ -335,40 +342,45 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       {:ok, image_post} = CommonAPI.post(user, %{"status" => "cofe", "media_ids" => [media_id]})
 
-      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses", %{"only_media" => "true"})
+      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?only_media=true")
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(image_post.id)
+      assert_schema(json_response(conn, 200), "StatusesResponse", ApiSpec.spec())
 
-      conn = get(build_conn(), "/api/v1/accounts/#{user.id}/statuses", %{"only_media" => "1"})
+      conn = get(build_conn(), "/api/v1/accounts/#{user.id}/statuses?only_media=1")
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(image_post.id)
+      assert_schema(json_response(conn, 200), "StatusesResponse", ApiSpec.spec())
     end
 
     test "gets a user's statuses without reblogs", %{user: user, conn: conn} do
       {:ok, post} = CommonAPI.post(user, %{"status" => "HI!!!"})
       {:ok, _, _} = CommonAPI.repeat(post.id, user)
 
-      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses", %{"exclude_reblogs" => "true"})
+      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?exclude_reblogs=true")
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(post.id)
+      assert_schema(json_response(conn, 200), "StatusesResponse", ApiSpec.spec())
 
-      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses", %{"exclude_reblogs" => "1"})
+      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?exclude_reblogs=1")
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(post.id)
+      assert_schema(json_response(conn, 200), "StatusesResponse", ApiSpec.spec())
     end
 
     test "filters user's statuses by a hashtag", %{user: user, conn: conn} do
       {:ok, post} = CommonAPI.post(user, %{"status" => "#hashtag"})
       {:ok, _post} = CommonAPI.post(user, %{"status" => "hashtag"})
 
-      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses", %{"tagged" => "hashtag"})
+      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?tagged=hashtag")
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(post.id)
+      assert_schema(json_response(conn, 200), "StatusesResponse", ApiSpec.spec())
     end
 
     test "the user views their own timelines and excludes direct messages", %{
@@ -378,11 +390,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       {:ok, public_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
       {:ok, _direct_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
 
-      conn =
-        get(conn, "/api/v1/accounts/#{user.id}/statuses", %{"exclude_visibilities" => ["direct"]})
+      conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?exclude_visibilities[]=direct")
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(public_activity.id)
+      assert_schema(json_response(conn, 200), "StatusesResponse", ApiSpec.spec())
     end
   end
 
@@ -420,9 +432,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
       assert length(json_response(res_conn, 200)) == 1
+      assert_schema(json_response(res_conn, 200), "StatusesResponse", ApiSpec.spec())
 
       res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
       assert length(json_response(res_conn, 200)) == 1
+      assert_schema(json_response(res_conn, 200), "StatusesResponse", ApiSpec.spec())
     end
   end
 
@@ -441,6 +455,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
       assert length(json_response(res_conn, 200)) == 1
+      assert_schema(json_response(res_conn, 200), "StatusesResponse", ApiSpec.spec())
     end
 
     test "if user is authenticated", %{local: local, remote: remote} do
@@ -448,9 +463,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
       assert length(json_response(res_conn, 200)) == 1
+      assert_schema(json_response(res_conn, 200), "StatusesResponse", ApiSpec.spec())
 
       res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
       assert length(json_response(res_conn, 200)) == 1
+      assert_schema(json_response(res_conn, 200), "StatusesResponse", ApiSpec.spec())
     end
   end
 
@@ -463,6 +480,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "if user is unauthenticated", %{conn: conn, local: local, remote: remote} do
       res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
       assert length(json_response(res_conn, 200)) == 1
+      assert_schema(json_response(res_conn, 200), "StatusesResponse", ApiSpec.spec())
 
       res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
 
@@ -476,9 +494,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       res_conn = get(conn, "/api/v1/accounts/#{local.id}/statuses")
       assert length(json_response(res_conn, 200)) == 1
+      assert_schema(json_response(res_conn, 200), "StatusesResponse", ApiSpec.spec())
 
       res_conn = get(conn, "/api/v1/accounts/#{remote.id}/statuses")
       assert length(json_response(res_conn, 200)) == 1
+      assert_schema(json_response(res_conn, 200), "StatusesResponse", ApiSpec.spec())
     end
   end
 

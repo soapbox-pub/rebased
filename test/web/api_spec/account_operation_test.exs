@@ -122,4 +122,20 @@ defmodule Pleroma.Web.ApiSpec.AccountOperationTest do
 
     assert_schema(resp, "Account", api_spec)
   end
+
+  test "/api/v1/accounts/:id/statuses produces StatusesResponse", %{
+    conn: conn
+  } do
+    user = insert(:user)
+    Pleroma.Web.CommonAPI.post(user, %{"status" => "foobar"})
+
+    api_spec = ApiSpec.spec()
+
+    assert resp =
+             conn
+             |> get("/api/v1/accounts/#{user.id}/statuses")
+             |> json_response(:ok)
+
+    assert_schema(resp, "StatusesResponse", api_spec)
+  end
 end

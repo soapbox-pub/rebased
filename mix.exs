@@ -189,7 +189,9 @@ defmodule Pleroma.Mixfile do
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:mox, "~> 0.5", only: :test},
       {:restarter, path: "./restarter"},
-      {:open_api_spex, "~> 3.6"}
+      {:open_api_spex,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
+       ref: "b862ebd78de0df95875cf46feb6e9607130dc2a8"}
     ] ++ oauth_deps()
   end
 

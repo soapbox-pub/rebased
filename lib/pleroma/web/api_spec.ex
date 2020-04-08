@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ApiSpec do
   alias OpenApiSpex.OpenApi
+  alias OpenApiSpex.Operation
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router
 
@@ -24,6 +25,13 @@ defmodule Pleroma.Web.ApiSpec do
       # populate the paths from a phoenix router
       paths: OpenApiSpex.Paths.from_router(Router),
       components: %OpenApiSpex.Components{
+        parameters: %{
+          "accountIdOrNickname" =>
+            Operation.parameter(:id, :path, :string, "Account ID or nickname",
+              example: "123",
+              required: true
+            )
+        },
         securitySchemes: %{
           "oAuth" => %OpenApiSpex.SecurityScheme{
             type: "oauth2",

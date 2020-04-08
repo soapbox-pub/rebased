@@ -38,7 +38,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest do
         description: "Whether manual approval of follow requests is required."
       },
       fields_attributes: %Schema{
-        oneOf: [%Schema{type: :array, items: AccountAttributeField}, %Schema{type: :object}]
+        oneOf: [
+          %Schema{type: :array, items: AccountAttributeField},
+          %Schema{type: :object, additionalProperties: %Schema{type: AccountAttributeField}}
+        ]
       },
       # NOTE: `source` field is not supported
       #

@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias OpenApiSpex.Operation
+  alias OpenApiSpex.Reference
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.Account
@@ -11,6 +12,9 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest
+  alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.StatusesResponse
+  alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
   @spec open_api_operation(atom) :: Operation.t()
   def open_api_operation(action) do
@@ -91,12 +95,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       summary: "Account",
       operationId: "AccountController.show",
       description: "View information about a profile.",
-      parameters: [
-        Operation.parameter(:id, :path, :string, "Account ID or nickname",
-          example: "123",
-          required: true
-        )
-      ],
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
       responses: %{
         200 => Operation.response("Account", "application/json", Account)
       }
@@ -104,7 +103,39 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   end
 
   def statuses_operation do
-    :ok
+    %Operation{
+      tags: ["accounts"],
+      summary: "Statuses",
+      operationId: "AccountController.statuses",
+      description:
+        "Statuses posted to the given account. Public (for public statuses only), or user token + `read:statuses` (for private statuses the user is authorized to see)",
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        Operation.parameter(:pinned, :query, BooleanLike, "Pinned"),
+        Operation.parameter(:tagged, :query, :string, "With tag"),
+        Operation.parameter(:only_media, :query, BooleanLike, "Only meadia"),
+        Operation.parameter(:with_muted, :query, BooleanLike, "With muted"),
+        Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblobs"),
+        Operation.parameter(
+          :exclude_visibilities,
+          :query,
+          %Schema{type: :array, items: VisibilityScope},
+          "Exclude visibilities"
+        ),
+        Operation.parameter(:max_id, :query, :string, "Max ID"),
+        Operation.parameter(:min_id, :query, :string, "Mix ID"),
+        Operation.parameter(:since_id, :query, :string, "Since ID"),
+        Operation.parameter(
+          :limit,
+          :query,
+          %Schema{type: :integer, default: 20, maximum: 40},
+          "Limit"
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Statuses", "application/json", StatusesResponse)
+      }
+    }
   end
 
   def followers_operation do
