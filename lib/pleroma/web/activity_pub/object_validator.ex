@@ -12,16 +12,44 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
 
   def validate(%{"type" => "Like"} = object, meta) do
     with {:ok, object} <-
-           object |> LikeValidator.cast_and_validate() |> Ecto.Changeset.apply_action(:insert) do
+           object
+           |> LikeValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
       object = stringify_keys(object |> Map.from_struct())
       {:ok, object, meta}
     end
+  end
+
+  def validate(%{"type" => "ChatMessage"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> ChatMessageValidator.cast_and_apply() do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => "Create"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> CreateChatMessageValidator.cast_and_apply() do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
+  def stringify_keys(%{__struct__: _} = object) do
+    object
+    |> Map.from_struct()
+    |> stringify_keys
   end
 
   def stringify_keys(object) do

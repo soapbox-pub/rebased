@@ -10,7 +10,7 @@ defmodule Pleroma.Chat do
   alias Pleroma.Repo
 
   @moduledoc """
-  Chat keeps a reference to DirectMessage conversations between a user and an recipient. The recipient can be a user (for now) or a group (not implemented yet).
+  Chat keeps a reference to ChatMessage conversations between a user and an recipient. The recipient can be a user (for now) or a group (not implemented yet).
 
   It is a helper only, to make it easy to display a list of chats with other people, ordered by last bump. The actual messages are retrieved by querying the recipients of the ChatMessages.
   """

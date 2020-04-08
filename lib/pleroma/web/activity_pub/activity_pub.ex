@@ -397,6 +397,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  # TODO: Is this even used now?
   # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
   @spec like(User.t(), Object.t(), String.t() | nil, boolean()) ::
           {:ok, Activity.t(), Object.t()} | {:error, any()}
