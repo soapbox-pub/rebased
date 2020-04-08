@@ -1425,6 +1425,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert Repo.get(Object, object.id).data["type"] == "Tombstone"
     end
 
+    test "it doesn't fail when an activity was already deleted" do
+      {:ok, delete} = insert(:note_activity) |> Object.normalize() |> ActivityPub.delete()
+
+      assert {:ok, ^delete} = delete |> Object.normalize() |> ActivityPub.delete()
+    end
+
     test "decrements user note count only for public activities" do
       user = insert(:user, note_count: 10)
 

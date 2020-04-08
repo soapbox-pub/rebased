@@ -2461,7 +2461,7 @@ config :pleroma, :config_description, [
       %{
         key: :relations_actions,
         type: [:tuple, {:list, :tuple}],
-        description: "For actions on relations with all users (follow, unfollow)",
+        description: "For actions on relationships with all users (follow, unfollow)",
         suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
       },
       %{

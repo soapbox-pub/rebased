@@ -86,7 +86,7 @@ defmodule Pleroma.UserTest do
       {:ok, user: insert(:user)}
     end
 
-    test "outgoing_relations_ap_ids/1", %{user: user} do
+    test "outgoing_relationships_ap_ids/1", %{user: user} do
       rel_types = [:block, :mute, :notification_mute, :reblog_mute, :inverse_subscription]
 
       ap_ids_by_rel =
@@ -124,10 +124,10 @@ defmodule Pleroma.UserTest do
       assert ap_ids_by_rel[:inverse_subscription] ==
                Enum.sort(Enum.map(User.subscriber_users(user), & &1.ap_id))
 
-      outgoing_relations_ap_ids = User.outgoing_relations_ap_ids(user, rel_types)
+      outgoing_relationships_ap_ids = User.outgoing_relationships_ap_ids(user, rel_types)
 
       assert ap_ids_by_rel ==
-               Enum.into(outgoing_relations_ap_ids, %{}, fn {k, v} -> {k, Enum.sort(v)} end)
+               Enum.into(outgoing_relationships_ap_ids, %{}, fn {k, v} -> {k, Enum.sort(v)} end)
     end
   end
 

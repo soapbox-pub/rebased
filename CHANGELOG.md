@@ -3,6 +3,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.2] - 2020-04-08
+### Added
+- Support for Funkwhale's `Audio` activity
+- Admin API: `PATCH /api/pleroma/admin/users/:nickname/update_credentials`
+
+### Fixed
+- Blocked/muted users still generating push notifications
+- Input textbox for bio ignoring newlines
+- OTP: Inability to use PostgreSQL databases with SSL
+- `user delete_activities` breaking when trying to delete already deleted posts
+- Incorrect URL for Funkwhale channels
+
+### Upgrade notes
+1. Restart Pleroma
+
 ## [2.0.1] - 2020-03-15
 ### Security
 - Static-FE: Fix remote posts not being sanitized
@@ -91,6 +106,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: User timelines will now respect blocks, unless you are getting the user timeline of somebody you blocked (which would be empty otherwise).
 - Mastodon API: Favoriting / Repeating a post multiple times will now return the identical response every time. Before, executing that action twice would return an error ("already favorited") on the second try.
 - Mastodon API: Limit timeline requests to 3 per timeline per 500ms per user/ip by default.
+- Admin API: `PATCH /api/pleroma/admin/users/:nickname/credentials` and `GET /api/pleroma/admin/users/:nickname/credentials`
 </details>
 
 ### Added

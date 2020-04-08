@@ -229,7 +229,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "url", url["href"])
   end
 
-  def fix_url(%{"type" => "Video", "url" => url} = object) when is_list(url) do
+  def fix_url(%{"type" => object_type, "url" => url} = object)
+      when object_type in ["Video", "Audio"] and is_list(url) do
     first_element = Enum.at(url, 0)
 
     link_element = Enum.find(url, fn x -> is_map(x) and x["mimeType"] == "text/html" end)
@@ -398,7 +399,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
         options
       )
-      when objtype in ["Article", "Event", "Note", "Video", "Page", "Question", "Answer"] do
+      when objtype in ["Article", "Event", "Note", "Video", "Page", "Question", "Answer", "Audio"] do
     actor = Containment.get_actor(data)
 
     data =
@@ -1108,13 +1109,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def add_mention_tags(object) do
-    mentions =
-      object
-      |> Utils.get_notified_from_object()
-      |> Enum.map(&build_mention_tag/1)
+    {enabled_receivers, disabled_receivers} = Utils.get_notified_from_object(object)
+    potential_receivers = enabled_receivers ++ disabled_receivers
+    mentions = Enum.map(potential_receivers, &build_mention_tag/1)
 
     tags = object["tag"] || []
-
     Map.put(object, "tag", tags ++ mentions)
   end
 

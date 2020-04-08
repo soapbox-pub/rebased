@@ -4,10 +4,18 @@
 
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
-  import Pleroma.Factory
+
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
+
+  import Pleroma.Factory
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "Represent a user account" do
     source_data = %{
@@ -32,7 +40,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         background: background_image,
         nickname: "shp@shitposter.club",
         name: ":karjalanpiirakka: shp",
-        bio: "<script src=\"invalid-html\"></script><span>valid html</span>",
+        bio:
+          "<script src=\"invalid-html\"></script><span>valid html</span>. a<br>b<br/>c<br >d<br />f",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
       })
 
@@ -46,7 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       followers_count: 3,
       following_count: 0,
       statuses_count: 5,
-      note: "<span>valid html</span>",
+      note: "<span>valid html</span>. a<br/>b<br/>c<br/>d<br/>f",
       url: user.ap_id,
       avatar: "http://localhost:4001/images/avi.png",
       avatar_static: "http://localhost:4001/images/avi.png",
@@ -63,7 +72,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       fields: [],
       bot: false,
       source: %{
-        note: "valid html",
+        note: "valid html. a\nb\nc\nd\nf",
         sensitive: false,
         pleroma: %{
           actor_type: "Person",
@@ -158,6 +167,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     }
 
     assert expected == AccountView.render("show.json", %{user: user})
+  end
+
+  test "Represent a Funkwhale channel" do
+    {:ok, user} =
+      User.get_or_fetch_by_ap_id(
+        "https://channels.tests.funkwhale.audio/federation/actors/compositions"
+      )
+
+    assert represented = AccountView.render("show.json", %{user: user})
+    assert represented.acct == "compositions@channels.tests.funkwhale.audio"
+    assert represented.url == "https://channels.tests.funkwhale.audio/channels/compositions"
   end
 
   test "Represent a deactivated user for an admin" do

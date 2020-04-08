@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.0.1"),
+      version: version("2.0.2"),
       elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -63,7 +63,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :ssl],
       included_applications: [:ex_syslogger]
     ]
   end
