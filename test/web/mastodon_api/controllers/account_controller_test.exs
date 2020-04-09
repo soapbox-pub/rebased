@@ -660,10 +660,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       ret_conn = post(conn, "/api/v1/accounts/#{other_user.id}/follow")
 
       assert %{"id" => _id, "following" => true} = json_response(ret_conn, 200)
+      assert_schema(json_response(ret_conn, 200), "AccountRelationship", ApiSpec.spec())
 
       ret_conn = post(conn, "/api/v1/accounts/#{other_user.id}/unfollow")
 
       assert %{"id" => _id, "following" => false} = json_response(ret_conn, 200)
+      assert_schema(json_response(ret_conn, 200), "AccountRelationship", ApiSpec.spec())
 
       conn = post(conn, "/api/v1/follows", %{"uri" => other_user.nickname})
 
@@ -675,11 +677,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "cancelling follow request", %{conn: conn} do
       %{id: other_user_id} = insert(:user, %{locked: true})
 
-      assert %{"id" => ^other_user_id, "following" => false, "requested" => true} =
-               conn |> post("/api/v1/accounts/#{other_user_id}/follow") |> json_response(:ok)
+      resp = conn |> post("/api/v1/accounts/#{other_user_id}/follow") |> json_response(:ok)
 
-      assert %{"id" => ^other_user_id, "following" => false, "requested" => false} =
-               conn |> post("/api/v1/accounts/#{other_user_id}/unfollow") |> json_response(:ok)
+      assert %{"id" => ^other_user_id, "following" => false, "requested" => true} = resp
+      assert_schema(resp, "AccountRelationship", ApiSpec.spec())
+
+      resp = conn |> post("/api/v1/accounts/#{other_user_id}/unfollow") |> json_response(:ok)
+
+      assert %{"id" => ^other_user_id, "following" => false, "requested" => false} = resp
+      assert_schema(resp, "AccountRelationship", ApiSpec.spec())
     end
 
     test "following without reblogs" do
@@ -690,6 +696,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       ret_conn = post(conn, "/api/v1/accounts/#{followed.id}/follow?reblogs=false")
 
       assert %{"showing_reblogs" => false} = json_response(ret_conn, 200)
+      assert_schema(json_response(ret_conn, 200), "AccountRelationship", ApiSpec.spec())
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hey"})
       {:ok, reblog, _} = CommonAPI.repeat(activity.id, followed)
@@ -701,6 +708,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       ret_conn = post(conn, "/api/v1/accounts/#{followed.id}/follow?reblogs=true")
 
       assert %{"showing_reblogs" => true} = json_response(ret_conn, 200)
+      assert_schema(json_response(ret_conn, 200), "AccountRelationship", ApiSpec.spec())
 
       conn = get(conn, "/api/v1/timelines/home")
 

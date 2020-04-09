@@ -225,7 +225,20 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  def unfollow_operation, do: :ok
+  def unfollow_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Unfollow",
+      operationId: "AccountController.unfollow",
+      security: [%{"oAuth" => ["follow", "write:follows"]}],
+      description: "Unfollow the given account",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
   def mute_operation, do: :ok
   def unmute_operation, do: :ok
   def block_operation, do: :ok
