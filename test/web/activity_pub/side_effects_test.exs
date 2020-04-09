@@ -55,6 +55,26 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       # The local user will get a chat
       chat = Chat.get(recipient.id, author.ap_id)
       assert chat
+
+      author = insert(:user, local: true)
+      recipient = insert(:user, local: true)
+
+      {:ok, chat_message_data, _meta} = Builder.chat_message(author, recipient.ap_id, "hey")
+      {:ok, chat_message_object} = Object.create(chat_message_data)
+
+      {:ok, create_activity_data, _meta} =
+        Builder.create(author, chat_message_object.data["id"], [recipient.ap_id])
+
+      {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
+
+      {:ok, _create_activity, _meta} = SideEffects.handle(create_activity)
+
+      # Both users are local and get the chat
+      chat = Chat.get(author.id, recipient.ap_id)
+      assert chat
+
+      chat = Chat.get(recipient.id, author.ap_id)
+      assert chat
     end
   end
 end
