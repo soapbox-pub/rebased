@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
+  alias Pleroma.Web.ApiSpec.Schemas.AccountMuteRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationship
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountsResponse
@@ -239,8 +240,44 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  def mute_operation, do: :ok
-  def unmute_operation, do: :ok
+  def mute_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Mute",
+      operationId: "AccountController.mute",
+      security: [%{"oAuth" => ["follow", "write:mutes"]}],
+      requestBody: Helpers.request_body("Parameters", AccountMuteRequest),
+      description:
+        "Mute the given account. Clients should filter statuses and notifications from this account, if received (e.g. due to a boost in the Home timeline).",
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        Operation.parameter(
+          :notifications,
+          :query,
+          %Schema{allOf: [BooleanLike], default: true},
+          "Mute notifications in addition to statuses? Defaults to `true`."
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
+  def unmute_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Unmute",
+      operationId: "AccountController.unmute",
+      security: [%{"oAuth" => ["follow", "write:mutes"]}],
+      description: "Unmute the given account.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
   def block_operation, do: :ok
   def unblock_operation, do: :ok
   def follows_operation, do: :ok

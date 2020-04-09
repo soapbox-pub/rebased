@@ -751,32 +751,41 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "with notifications", %{conn: conn} do
       other_user = insert(:user)
 
-      ret_conn = post(conn, "/api/v1/accounts/#{other_user.id}/mute")
+      ret_conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/accounts/#{other_user.id}/mute")
 
       response = json_response(ret_conn, 200)
 
       assert %{"id" => _id, "muting" => true, "muting_notifications" => true} = response
+      assert_schema(response, "AccountRelationship", ApiSpec.spec())
 
       conn = post(conn, "/api/v1/accounts/#{other_user.id}/unmute")
 
       response = json_response(conn, 200)
       assert %{"id" => _id, "muting" => false, "muting_notifications" => false} = response
+      assert_schema(response, "AccountRelationship", ApiSpec.spec())
     end
 
     test "without notifications", %{conn: conn} do
       other_user = insert(:user)
 
       ret_conn =
-        post(conn, "/api/v1/accounts/#{other_user.id}/mute", %{"notifications" => "false"})
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v1/accounts/#{other_user.id}/mute", %{"notifications" => "false"})
 
       response = json_response(ret_conn, 200)
 
       assert %{"id" => _id, "muting" => true, "muting_notifications" => false} = response
+      assert_schema(response, "AccountRelationship", ApiSpec.spec())
 
       conn = post(conn, "/api/v1/accounts/#{other_user.id}/unmute")
 
       response = json_response(conn, 200)
       assert %{"id" => _id, "muting" => false, "muting_notifications" => false} = response
+      assert_schema(response, "AccountRelationship", ApiSpec.spec())
     end
   end
 
