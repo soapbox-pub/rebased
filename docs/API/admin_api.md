@@ -392,6 +392,19 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `email`
   - `name`, optional
 
+- Response:
+  - On success: `204`, empty response
+  - On failure:
+    - 400 Bad Request, JSON:
+
+    ```json
+      [
+        {
+          "error": "Appropriate error message here"
+        }
+      ]
+    ```
+
 ## `GET /api/pleroma/admin/users/:nickname/password_reset`
 
 ### Get a password reset token for a given nickname

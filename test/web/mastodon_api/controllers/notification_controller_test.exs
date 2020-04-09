@@ -26,7 +26,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       |> get("/api/v1/notifications")
 
     expected_response =
-      "hi <span class=\"h-card\"><a data-user=\"#{user.id}\" class=\"u-url mention\" href=\"#{
+      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{
         user.ap_id
       }\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
 
@@ -45,7 +45,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     conn = get(conn, "/api/v1/notifications/#{notification.id}")
 
     expected_response =
-      "hi <span class=\"h-card\"><a data-user=\"#{user.id}\" class=\"u-url mention\" href=\"#{
+      "hi <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{user.id}\" href=\"#{
         user.ap_id
       }\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
 
