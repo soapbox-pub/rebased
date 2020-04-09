@@ -37,13 +37,13 @@ defmodule Pleroma.Mixfile do
         pleroma: [
           include_executables_for: [:unix],
           applications: [ex_syslogger: :load, syslog: :load],
-          steps: [:assemble, &put_files/1, &copy_files/1, &copy_nginx_config/1]
+          steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1]
         ]
       ]
     ]
   end
 
-  def put_files(%{path: target_path} = release) do
+  def put_otp_version(%{path: target_path} = release) do
     File.write!(
       Path.join([target_path, "OTP_VERSION"]),
       Pleroma.OTPVersion.version()
