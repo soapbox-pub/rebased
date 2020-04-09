@@ -80,28 +80,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(RateLimiter, [name: :app_account_creation] when action == :create)
   plug(:assign_account_by_id when action in @needs_account)
 
-  plug(
-    OpenApiSpex.Plug.CastAndValidate,
-    [render_error: Pleroma.Web.ApiSpec.RenderError]
-    when action in [
-           :create,
-           :verify_credentials,
-           :update_credentials,
-           :relationships,
-           :show,
-           :statuses,
-           :followers,
-           :following,
-           :lists,
-           :follow,
-           :unfollow,
-           :mute,
-           :unmute,
-           :block,
-           :unblock,
-           :follows
-         ]
-  )
+  plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 

@@ -1155,6 +1155,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     other_user_id = to_string(other_user.id)
     assert [%{"id" => ^other_user_id}] = json_response(conn, 200)
+    assert_schema(json_response(conn, 200), "AccountsResponse", ApiSpec.spec())
   end
 
   test "getting a list of blocks" do
@@ -1170,5 +1171,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     other_user_id = to_string(other_user.id)
     assert [%{"id" => ^other_user_id}] = json_response(conn, 200)
+    assert_schema(json_response(conn, 200), "AccountsResponse", ApiSpec.spec())
   end
 end

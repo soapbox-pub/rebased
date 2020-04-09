@@ -321,7 +321,42 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  def mutes_operation, do: :ok
-  def blocks_operation, do: :ok
-  def endorsements_operation, do: :ok
+  def mutes_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Muted accounts",
+      operationId: "AccountController.mutes",
+      description: "Accounts the user has muted.",
+      security: [%{"oAuth" => ["follow", "read:mutes"]}],
+      responses: %{
+        200 => Operation.response("Accounts", "application/json", AccountsResponse)
+      }
+    }
+  end
+
+  def blocks_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Blocked users",
+      operationId: "AccountController.blocks",
+      description: "View your blocks. See also accounts/:id/{block,unblock}",
+      security: [%{"oAuth" => ["read:blocks"]}],
+      responses: %{
+        200 => Operation.response("Accounts", "application/json", AccountsResponse)
+      }
+    }
+  end
+
+  def endorsements_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Endorsements",
+      operationId: "AccountController.endorsements",
+      description: "Not implemented",
+      security: [%{"oAuth" => ["read:accounts"]}],
+      responses: %{
+        200 => Operation.response("Empry array", "application/json", %Schema{type: :array})
+      }
+    }
+  end
 end
