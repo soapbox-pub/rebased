@@ -669,6 +669,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       assert %{"id" => id} = json_response(conn, 200)
       assert id == to_string(other_user.id)
+      assert_schema(json_response(conn, 200), "AccountRelationship", ApiSpec.spec())
     end
 
     test "cancelling follow request", %{conn: conn} do

@@ -39,7 +39,7 @@ defmodule Pleroma.Web.ApiSpec do
               password: %OpenApiSpex.OAuthFlow{
                 authorizationUrl: "/oauth/authorize",
                 tokenUrl: "/oauth/token",
-                scopes: %{"read" => "read", "write" => "write"}
+                scopes: %{"read" => "read", "write" => "write", "follow" => "follow"}
               }
             }
           }

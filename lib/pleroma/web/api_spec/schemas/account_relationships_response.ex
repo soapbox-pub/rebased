@@ -9,7 +9,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse do
     title: "AccountRelationshipsResponse",
     description: "Response schema for account relationships",
     type: :array,
-    items: Pleroma.Web.ApiSpec.Schemas.AccountRelationshipResponse,
+    items: Pleroma.Web.ApiSpec.Schemas.AccountRelationship,
     example: [
       %{
         "id" => "1",
@@ -22,6 +22,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse do
         "muting_notifications" => false,
         "requested" => false,
         "domain_blocking" => false,
+        "subscribing" => false,
         "endorsed" => true
       },
       %{
@@ -35,6 +36,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse do
         "muting_notifications" => false,
         "requested" => true,
         "domain_blocking" => false,
+        "subscribing" => false,
         "endorsed" => false
       },
       %{
@@ -48,6 +50,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse do
         "muting_notifications" => false,
         "requested" => false,
         "domain_blocking" => true,
+        "subscribing" => true,
         "endorsed" => false
       }
     ]

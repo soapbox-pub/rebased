@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
+  alias Pleroma.Web.ApiSpec.Schemas.AccountRelationship
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountsResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountUpdateCredentialsRequest
@@ -186,9 +187,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "Limit"
         )
       ],
-      responses: %{
-        200 => Operation.response("Accounts", "application/json", AccountsResponse)
-      }
+      responses: %{200 => Operation.response("Accounts", "application/json", AccountsResponse)}
     }
   end
 
@@ -199,16 +198,33 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.lists",
       security: [%{"oAuth" => ["read:lists"]}],
       description: "User lists that you have added this account to.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{200 => Operation.response("Lists", "application/json", ListsResponse)}
+    }
+  end
+
+  def follow_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Follow",
+      operationId: "AccountController.follow",
+      security: [%{"oAuth" => ["follow", "write:follows"]}],
+      description: "Follow the given account",
       parameters: [
-        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"}
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        Operation.parameter(
+          :reblogs,
+          :query,
+          BooleanLike,
+          "Receive this account's reblogs in home timeline? Defaults to true."
+        )
       ],
       responses: %{
-        200 => Operation.response("Lists", "application/json", ListsResponse)
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
       }
     }
   end
 
-  def follow_operation, do: :ok
   def unfollow_operation, do: :ok
   def mute_operation, do: :ok
   def unmute_operation, do: :ok
