@@ -278,8 +278,35 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  def block_operation, do: :ok
-  def unblock_operation, do: :ok
+  def block_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Block",
+      operationId: "AccountController.block",
+      security: [%{"oAuth" => ["follow", "write:blocks"]}],
+      description:
+        "Block the given account. Clients should filter statuses from this account if received (e.g. due to a boost in the Home timeline)",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
+  def unblock_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Unblock",
+      operationId: "AccountController.unblock",
+      security: [%{"oAuth" => ["follow", "write:blocks"]}],
+      description: "Unblock the given account.",
+      parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
+      responses: %{
+        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+      }
+    }
+  end
+
   def follows_operation, do: :ok
   def mutes_operation, do: :ok
   def blocks_operation, do: :ok

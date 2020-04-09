@@ -819,10 +819,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     ret_conn = post(conn, "/api/v1/accounts/#{other_user.id}/block")
 
     assert %{"id" => _id, "blocking" => true} = json_response(ret_conn, 200)
+    assert_schema(json_response(ret_conn, 200), "AccountRelationship", ApiSpec.spec())
 
     conn = post(conn, "/api/v1/accounts/#{other_user.id}/unblock")
 
     assert %{"id" => _id, "blocking" => false} = json_response(conn, 200)
+    assert_schema(json_response(ret_conn, 200), "AccountRelationship", ApiSpec.spec())
   end
 
   describe "create account by app" do

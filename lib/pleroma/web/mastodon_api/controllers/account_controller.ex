@@ -96,7 +96,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
            :follow,
            :unfollow,
            :mute,
-           :unmute
+           :unmute,
+           :block,
+           :unblock
          ]
   )
 
