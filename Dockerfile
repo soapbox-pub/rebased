@@ -12,6 +12,8 @@ RUN apk add git gcc g++ musl-dev make &&\
 	mkdir release &&\
 	mix release --path release
 
+RUN echo "${OTP_VERSION}" > release/OTP_VERSION
+
 FROM alpine:3.11
 
 ARG BUILD_DATE
