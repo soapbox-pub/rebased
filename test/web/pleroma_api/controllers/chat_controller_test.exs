@@ -9,6 +9,23 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
   import Pleroma.Factory
 
+  describe "POST /api/v1/pleroma/chats/:id/messages" do
+    test "it posts a message to the chat", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{"content" => "Hallo!!"})
+        |> json_response(200)
+
+      assert result["content"] == "Hallo!!"
+    end
+  end
+
   describe "GET /api/v1/pleroma/chats/:id/messages" do
     # TODO
     # - Test that statuses don't show

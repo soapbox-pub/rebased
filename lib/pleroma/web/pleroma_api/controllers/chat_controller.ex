@@ -7,8 +7,34 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.Chat
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
 
   import Ecto.Query
+
+  # TODO
+  # - Oauth stuff
+  # - Views / Representers
+  # - Error handling
+
+  def post_chat_message(%{assigns: %{user: %{id: user_id} = user}} = conn, %{
+        "id" => id,
+        "content" => content
+      }) do
+    with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id),
+         %User{} = recipient <- User.get_cached_by_ap_id(chat.recipient),
+         {:ok, activity} <- CommonAPI.post_chat_message(user, recipient, content),
+         message <- Object.normalize(activity) do
+      represented_message = %{
+        actor: message.data["actor"],
+        id: message.id,
+        content: message.data["content"]
+      }
+
+      conn
+      |> json(represented_message)
+    end
+  end
 
   def messages(%{assigns: %{user: %{id: user_id} = user}} = conn, %{"id" => id}) do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id) do
