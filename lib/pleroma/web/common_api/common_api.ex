@@ -8,6 +8,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Conversation.Participation
   alias Pleroma.FollowingRelationship
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.ThreadMute
   alias Pleroma.User
   alias Pleroma.UserRelationship
@@ -22,6 +23,28 @@ defmodule Pleroma.Web.CommonAPI do
 
   require Pleroma.Constants
   require Logger
+
+  def post_chat_message(user, recipient, content) do
+    transaction =
+      Repo.transaction(fn ->
+        with {_, {:ok, chat_message_data, _meta}} <-
+               {:build_object, Builder.chat_message(user, recipient.ap_id, content)},
+             {_, {:ok, chat_message_object}} <-
+               {:create_object, Object.create(chat_message_data)},
+             {_, {:ok, create_activity_data, _meta}} <-
+               {:build_create_activity,
+                Builder.create(user, chat_message_object.data["id"], [recipient.ap_id])},
+             {_, {:ok, %Activity{} = activity, _meta}} <-
+               {:common_pipeline, Pipeline.common_pipeline(create_activity_data, local: true)} do
+          {:ok, activity}
+        end
+      end)
+
+    case transaction do
+      {:ok, value} -> value
+      error -> error
+    end
+  end
 
   def follow(follower, followed) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])

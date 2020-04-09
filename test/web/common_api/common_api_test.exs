@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.CommonAPITest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Chat
   alias Pleroma.Conversation.Participation
   alias Pleroma.Object
   alias Pleroma.User
@@ -20,6 +21,26 @@ defmodule Pleroma.Web.CommonAPITest do
   setup do: clear_config([:instance, :safe_dm_mentions])
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
+
+  describe "posting chat messages" do
+    test "it posts a chat message" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      {:ok, activity} = CommonAPI.post_chat_message(author, recipient, "a test message")
+
+      assert activity.data["type"] == "Create"
+      assert activity.local
+      object = Object.normalize(activity)
+
+      assert object.data["type"] == "ChatMessage"
+      assert object.data["to"] == [recipient.ap_id]
+      assert object.data["content"] == "a test message"
+
+      assert Chat.get(author.id, recipient.ap_id)
+      assert Chat.get(recipient.id, author.ap_id)
+    end
+  end
 
   test "when replying to a conversation / participation, it will set the correct context id even if no explicit reply_to is given" do
     user = insert(:user)
