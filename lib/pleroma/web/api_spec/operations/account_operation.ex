@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
+  alias Pleroma.Web.ApiSpec.Schemas.AccountFollowsRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountMuteRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationship
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationshipsResponse
@@ -307,7 +308,19 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  def follows_operation, do: :ok
+  def follows_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Follows",
+      operationId: "AccountController.follows",
+      security: [%{"oAuth" => ["follow", "write:follows"]}],
+      requestBody: Helpers.request_body("Parameters", AccountFollowsRequest, required: true),
+      responses: %{
+        200 => Operation.response("Account", "application/json", Account)
+      }
+    }
+  end
+
   def mutes_operation, do: :ok
   def blocks_operation, do: :ok
   def endorsements_operation, do: :ok

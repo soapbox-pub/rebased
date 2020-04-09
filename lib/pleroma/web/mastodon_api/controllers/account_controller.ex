@@ -98,7 +98,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
            :mute,
            :unmute,
            :block,
-           :unblock
+           :unblock,
+           :follows
          ]
   )
 
@@ -401,7 +402,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "POST /api/v1/follows"
-  def follows(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
+  def follows(%{assigns: %{user: follower}, body_params: %{uri: uri}} = conn, _) do
     with {_, %User{} = followed} <- {:followed, User.get_cached_by_nickname(uri)},
          {_, true} <- {:followed, follower.id != followed.id},
          {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do

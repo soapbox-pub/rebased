@@ -667,11 +667,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{"id" => _id, "following" => false} = json_response(ret_conn, 200)
       assert_schema(json_response(ret_conn, 200), "AccountRelationship", ApiSpec.spec())
 
-      conn = post(conn, "/api/v1/follows", %{"uri" => other_user.nickname})
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/follows", %{"uri" => other_user.nickname})
 
       assert %{"id" => id} = json_response(conn, 200)
       assert id == to_string(other_user.id)
-      assert_schema(json_response(conn, 200), "AccountRelationship", ApiSpec.spec())
+      assert_schema(json_response(conn, 200), "Account", ApiSpec.spec())
     end
 
     test "cancelling follow request", %{conn: conn} do
@@ -728,7 +731,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       # self follow via uri
       user = User.get_cached_by_id(user.id)
-      conn_res = post(conn, "/api/v1/follows", %{"uri" => user.nickname})
+
+      conn_res =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v1/follows", %{"uri" => user.nickname})
+
       assert %{"error" => "Record not found"} = json_response(conn_res, 404)
 
       # follow non existing user
@@ -736,7 +744,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{"error" => "Record not found"} = json_response(conn_res, 404)
 
       # follow non existing user via uri
-      conn_res = post(conn, "/api/v1/follows", %{"uri" => "doesntexist"})
+      conn_res =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v1/follows", %{"uri" => "doesntexist"})
+
       assert %{"error" => "Record not found"} = json_response(conn_res, 404)
 
       # unfollow non existing user
