@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 <details>
   <summary>API Changes</summary>
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
+- Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 </details>
 
 ## [2.0.0] - 2019-03-08
