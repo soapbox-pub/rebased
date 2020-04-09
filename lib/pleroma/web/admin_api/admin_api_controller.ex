@@ -598,7 +598,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       {:invites_enabled, _} ->
         errors(
           conn,
-          {:error, "To send invites you need set to set the `invites_enabled` option to true."}
+          {:error, "To send invites you need to set the `invites_enabled` option to true."}
         )
     end
   end
