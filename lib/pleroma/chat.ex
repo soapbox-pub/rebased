@@ -18,23 +18,28 @@ defmodule Pleroma.Chat do
   schema "chats" do
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     field(:recipient, :string)
-    field(:unread, :integer, default: 0)
+    field(:unread, :integer, default: 0, read_after_writes: true)
 
     timestamps()
   end
 
   def creation_cng(struct, params) do
     struct
-    |> cast(params, [:user_id, :recipient])
+    |> cast(params, [:user_id, :recipient, :unread])
     |> validate_required([:user_id, :recipient])
     |> unique_constraint(:user_id, name: :chats_user_id_recipient_index)
   end
 
-  def get_or_create(user_id, recipient) do
+  def get(user_id, recipient) do
+    __MODULE__
+    |> Repo.get_by(user_id: user_id, recipient: recipient)
+  end
+
+  def bump_or_create(user_id, recipient) do
     %__MODULE__{}
-    |> creation_cng(%{user_id: user_id, recipient: recipient})
+    |> creation_cng(%{user_id: user_id, recipient: recipient, unread: 1})
     |> Repo.insert(
-      on_conflict: [set: [updated_at: NaiveDateTime.utc_now()]],
+      on_conflict: [set: [updated_at: NaiveDateTime.utc_now()], inc: [unread: 1]],
       conflict_target: [:user_id, :recipient]
     )
   end

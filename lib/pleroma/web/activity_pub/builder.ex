@@ -10,6 +10,28 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
+  def create(actor, object_id, recipients) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "actor" => actor.ap_id,
+       "to" => recipients,
+       "object" => object_id,
+       "type" => "Create"
+     }, []}
+  end
+
+  def chat_message(actor, recipient, content) do
+    {:ok,
+     %{
+       "id" => Utils.generate_object_id(),
+       "actor" => actor.ap_id,
+       "type" => "ChatMessage",
+       "to" => [recipient],
+       "content" => content
+     }, []}
+  end
+
   @spec like(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def like(actor, object) do
     object_actor = User.get_cached_by_ap_id(object.data["actor"])

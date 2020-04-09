@@ -14,7 +14,7 @@ defmodule Pleroma.ChatTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+      {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
 
       assert chat.id
     end
@@ -23,19 +23,21 @@ defmodule Pleroma.ChatTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
-      {:ok, chat_two} = Chat.get_or_create(user.id, other_user.ap_id)
+      {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
+      {:ok, chat_two} = Chat.bump_or_create(user.id, other_user.ap_id)
 
       assert chat.id == chat_two.id
     end
 
-    test "a returning chat will have an updated `update_at` field" do
+    test "a returning chat will have an updated `update_at` field and an incremented unread count" do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+      {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
+      assert chat.unread == 1
       :timer.sleep(1500)
-      {:ok, chat_two} = Chat.get_or_create(user.id, other_user.ap_id)
+      {:ok, chat_two} = Chat.bump_or_create(user.id, other_user.ap_id)
+      assert chat_two.unread == 2
 
       assert chat.id == chat_two.id
       assert chat.updated_at != chat_two.updated_at
