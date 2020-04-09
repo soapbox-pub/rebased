@@ -671,7 +671,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
 
       assert json_response(conn, :bad_request) ==
-               "To send invites you need set `invites_enabled` option to true."
+               "To send invites you need to set the `invites_enabled` option to true."
     end
 
     test "it returns 500 if `registrations_open` is enabled", %{conn: conn} do
