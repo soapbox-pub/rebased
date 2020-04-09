@@ -287,6 +287,13 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:authenticated_api)
 
+      post("/chats/by-ap-id/:ap_id", ChatController, :create)
+      get("/chats", ChatController, :index)
+    end
+
+    scope [] do
+      pipe_through(:authenticated_api)
+
       get("/conversations/:id/statuses", PleromaAPIController, :conversation_statuses)
       get("/conversations/:id", PleromaAPIController, :conversation)
       post("/conversations/read", PleromaAPIController, :read_conversations)

@@ -35,6 +35,16 @@ defmodule Pleroma.Chat do
     |> Repo.get_by(user_id: user_id, recipient: recipient)
   end
 
+  def get_or_create(user_id, recipient) do
+    %__MODULE__{}
+    |> creation_cng(%{user_id: user_id, recipient: recipient})
+    |> Repo.insert(
+      on_conflict: :nothing,
+      returning: true,
+      conflict_target: [:user_id, :recipient]
+    )
+  end
+
   def bump_or_create(user_id, recipient) do
     %__MODULE__{}
     |> creation_cng(%{user_id: user_id, recipient: recipient, unread: 1})
