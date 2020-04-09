@@ -113,16 +113,13 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         "move" ->
           put_target(response, activity, reading_user, render_opts)
 
-        "follow" ->
-          response
-
-        "follow_request" ->
-          response
-
         "pleroma:emoji_reaction" ->
           response
           |> put_status(parent_activity_fn.(), reading_user, render_opts)
           |> put_emoji(activity)
+
+        type when type in ["follow", "follow_request"] ->
+          response
 
         _ ->
           nil

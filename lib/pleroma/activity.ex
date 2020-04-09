@@ -300,6 +300,8 @@ defmodule Pleroma.Activity do
 
   def follow_accepted?(_), do: false
 
+  @spec mastodon_notification_type(Activity.t()) :: String.t() | nil
+
   for {ap_type, type} <- @mastodon_notification_types, not is_list(type) do
     def mastodon_notification_type(%Activity{data: %{"type" => unquote(ap_type)}}),
       do: unquote(type)
@@ -315,11 +317,11 @@ defmodule Pleroma.Activity do
 
   def mastodon_notification_type(%Activity{}), do: nil
 
+  @spec from_mastodon_notification_type(String.t()) :: String.t() | nil
+  @doc "Converts Mastodon notification type to AR activity type"
   def from_mastodon_notification_type(type) do
     with {k, _v} <-
-           Enum.find(@mastodon_notification_types, fn {_k, v} ->
-             v == type or (is_list(v) and type in v)
-           end) do
+           Enum.find(@mastodon_notification_types, fn {_k, v} -> type in List.wrap(v) end) do
       k
     end
   end

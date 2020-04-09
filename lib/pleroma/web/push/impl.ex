@@ -153,10 +153,10 @@ defmodule Pleroma.Web.Push.Impl do
       when type in ["Follow", "Like"] do
     mastodon_type = mastodon_type || mastodon_notification_type(notification.activity)
 
-    case {type, mastodon_type} do
-      {"Follow", "follow"} -> "@#{actor.nickname} has followed you"
-      {"Follow", "follow_request"} -> "@#{actor.nickname} has requested to follow you"
-      {"Like", _} -> "@#{actor.nickname} has favorited your post"
+    case mastodon_type do
+      "follow" -> "@#{actor.nickname} has followed you"
+      "follow_request" -> "@#{actor.nickname} has requested to follow you"
+      "favourite" -> "@#{actor.nickname} has favorited your post"
     end
   end
 
@@ -166,15 +166,16 @@ defmodule Pleroma.Web.Push.Impl do
     "New Direct Message"
   end
 
-  def format_title(%{activity: %{data: %{"type" => type}}} = notification, mastodon_type) do
-    mastodon_type = mastodon_type || mastodon_notification_type(notification.activity)
+  def format_title(%{activity: activity}, mastodon_type) do
+    mastodon_type = mastodon_type || mastodon_notification_type(activity)
 
-    case {type, mastodon_type} do
-      {"Create", _} -> "New Mention"
-      {"Follow", "follow"} -> "New Follower"
-      {"Follow", "follow_request"} -> "New Follow Request"
-      {"Announce", _} -> "New Repeat"
-      {"Like", _} -> "New Favorite"
+    case mastodon_type do
+      "mention" -> "New Mention"
+      "follow" -> "New Follower"
+      "follow_request" -> "New Follow Request"
+      "reblog" -> "New Repeat"
+      "favourite" -> "New Favorite"
+      type -> "New #{String.capitalize(type || "event")}"
     end
   end
 end
