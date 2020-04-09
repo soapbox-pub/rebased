@@ -352,9 +352,11 @@ defmodule Pleroma.Web.Router do
 
     get("/notifications", NotificationController, :index)
     get("/notifications/:id", NotificationController, :show)
+    post("/notifications/:id/dismiss", NotificationController, :dismiss)
     post("/notifications/clear", NotificationController, :clear)
-    post("/notifications/dismiss", NotificationController, :dismiss)
     delete("/notifications/destroy_multiple", NotificationController, :destroy_multiple)
+    # Deprecated: was removed in Mastodon v3, use `/notifications/:id/dismiss` instead
+    post("/notifications/dismiss", NotificationController, :dismiss)
 
     get("/scheduled_statuses", ScheduledActivityController, :index)
     get("/scheduled_statuses/:id", ScheduledActivityController, :show)
