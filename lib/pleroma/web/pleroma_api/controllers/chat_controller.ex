@@ -5,9 +5,49 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Chat
+  alias Pleroma.Object
   alias Pleroma.Repo
 
   import Ecto.Query
+
+  def messages(%{assigns: %{user: %{id: user_id} = user}} = conn, %{"id" => id}) do
+    with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id) do
+      messages =
+        from(o in Object,
+          where: fragment("?->>'type' = ?", o.data, "ChatMessage"),
+          where:
+            fragment(
+              """
+              (?->>'actor' = ? and ?->'to' = ?) 
+              OR (?->>'actor' = ? and ?->'to' = ?) 
+              """,
+              o.data,
+              ^user.ap_id,
+              o.data,
+              ^[chat.recipient],
+              o.data,
+              ^chat.recipient,
+              o.data,
+              ^[user.ap_id]
+            ),
+          order_by: [desc: o.id]
+        )
+        |> Repo.all()
+
+      represented_messages =
+        messages
+        |> Enum.map(fn message ->
+          %{
+            actor: message.data["actor"],
+            id: message.id,
+            content: message.data["content"]
+          }
+        end)
+
+      conn
+      |> json(represented_messages)
+    end
+  end
 
   def index(%{assigns: %{user: %{id: user_id}}} = conn, _params) do
     chats =

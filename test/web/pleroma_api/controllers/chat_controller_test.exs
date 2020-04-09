@@ -5,8 +5,36 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Chat
+  alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  describe "GET /api/v1/pleroma/chats/:id/messages" do
+    # TODO
+    # - Test that statuses don't show
+    # - Test the case where it's not the user's chat
+    # - Test the returned data
+    test "it returns the messages for a given chat", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+
+      {:ok, _} = CommonAPI.post_chat_message(user, other_user, "hey")
+      {:ok, _} = CommonAPI.post_chat_message(user, third_user, "hey")
+      {:ok, _} = CommonAPI.post_chat_message(user, other_user, "how are you?")
+      {:ok, _} = CommonAPI.post_chat_message(other_user, user, "fine, how about you?")
+
+      chat = Chat.get(user.id, other_user.ap_id)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
+        |> json_response(200)
+
+      assert length(result) == 3
+    end
+  end
 
   describe "POST /api/v1/pleroma/chats/by-ap-id/:id" do
     test "it creates or returns a chat", %{conn: conn} do
