@@ -15,15 +15,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.ObjectID do
 
   def cast(%{"id" => object}), do: cast(object)
 
-  def cast(_) do
-    :error
-  end
+  def cast(_), do: :error
 
-  def dump(data) do
-    {:ok, data}
-  end
+  def dump(data), do: {:ok, data}
 
-  def load(data) do
-    {:ok, data}
-  end
+  def load(data), do: {:ok, data}
 end

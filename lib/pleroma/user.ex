@@ -28,6 +28,7 @@ defmodule Pleroma.User do
   alias Pleroma.UserRelationship
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
@@ -113,7 +114,7 @@ defmodule Pleroma.User do
     field(:show_role, :boolean, default: true)
     field(:settings, :map, default: nil)
     field(:magic_key, :string, default: nil)
-    field(:uri, :string, default: nil)
+    field(:uri, Types.Uri, default: nil)
     field(:hide_followers_count, :boolean, default: false)
     field(:hide_follows_count, :boolean, default: false)
     field(:hide_followers, :boolean, default: false)
