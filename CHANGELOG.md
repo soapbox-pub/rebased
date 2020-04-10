@@ -19,9 +19,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 </details>
 
+### Fixed
+- Support pagination in conversations API
+
 ### Changed
 - MFR policy to set global expiration for all local Create activities
-
 
 ## [2.0.2] - 2020-04-08
 ### Added

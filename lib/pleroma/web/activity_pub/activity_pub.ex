@@ -732,7 +732,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp fetch_activities_for_context_query(context, opts) do
+  def fetch_activities_for_context_query(context, opts) do
     public = [Constants.as_public()]
 
     recipients =
