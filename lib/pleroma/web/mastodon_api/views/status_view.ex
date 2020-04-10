@@ -13,6 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -71,10 +72,43 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("index.json", opts) do
-    replied_to_activities = get_replied_to_activities(opts.activities)
-    opts = Map.put(opts, :replied_to_activities, replied_to_activities)
+    reading_user = opts[:for]
 
-    safe_render_many(opts.activities, StatusView, "show.json", opts)
+    # To do: check AdminAPIControllerTest on the reasons behind nil activities in the list
+    activities = Enum.filter(opts.activities, & &1)
+    replied_to_activities = get_replied_to_activities(activities)
+
+    parent_activities =
+      activities
+      |> Enum.filter(&(&1.data["type"] == "Announce" && &1.data["object"]))
+      |> Enum.map(&Object.normalize(&1).data["id"])
+      |> Activity.create_by_object_ap_id()
+      |> Activity.with_preloaded_object(:left)
+      |> Activity.with_preloaded_bookmark(reading_user)
+      |> Activity.with_set_thread_muted_field(reading_user)
+      |> Repo.all()
+
+    relationships_opt =
+      cond do
+        Map.has_key?(opts, :relationships) ->
+          opts[:relationships]
+
+        is_nil(reading_user) ->
+          UserRelationship.view_relationships_option(nil, [])
+
+        true ->
+          actors = Enum.map(activities ++ parent_activities, &get_user(&1.data["actor"]))
+
+          UserRelationship.view_relationships_option(reading_user, actors)
+      end
+
+    opts =
+      opts
+      |> Map.put(:replied_to_activities, replied_to_activities)
+      |> Map.put(:parent_activities, parent_activities)
+      |> Map.put(:relationships, relationships_opt)
+
+    safe_render_many(activities, StatusView, "show.json", opts)
   end
 
   def render(
@@ -85,17 +119,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     created_at = Utils.to_masto_date(activity.data["published"])
     activity_object = Object.normalize(activity)
 
-    reblogged_activity =
-      Activity.create_by_object_ap_id(activity_object.data["id"])
-      |> Activity.with_preloaded_bookmark(opts[:for])
-      |> Activity.with_set_thread_muted_field(opts[:for])
-      |> Repo.one()
+    reblogged_parent_activity =
+      if opts[:parent_activities] do
+        Activity.Queries.find_by_object_ap_id(
+          opts[:parent_activities],
+          activity_object.data["id"]
+        )
+      else
+        Activity.create_by_object_ap_id(activity_object.data["id"])
+        |> Activity.with_preloaded_bookmark(opts[:for])
+        |> Activity.with_set_thread_muted_field(opts[:for])
+        |> Repo.one()
+      end
 
-    reblogged = render("show.json", Map.put(opts, :activity, reblogged_activity))
+    reblog_rendering_opts = Map.put(opts, :activity, reblogged_parent_activity)
+    reblogged = render("show.json", reblog_rendering_opts)
 
     favorited = opts[:for] && opts[:for].ap_id in (activity_object.data["likes"] || [])
 
-    bookmarked = Activity.get_bookmark(reblogged_activity, opts[:for]) != nil
+    bookmarked = Activity.get_bookmark(reblogged_parent_activity, opts[:for]) != nil
 
     mentions =
       activity.recipients
@@ -107,7 +149,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       id: to_string(activity.id),
       uri: activity_object.data["id"],
       url: activity_object.data["id"],
-      account: AccountView.render("show.json", %{user: user, for: opts[:for]}),
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: opts[:for],
+          relationships: opts[:relationships]
+        }),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       reblog: reblogged,
@@ -116,7 +163,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogs_count: 0,
       replies_count: 0,
       favourites_count: 0,
-      reblogged: reblogged?(reblogged_activity, opts[:for]),
+      reblogged: reblogged?(reblogged_parent_activity, opts[:for]),
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
       muted: false,
@@ -183,9 +230,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end
 
     thread_muted? =
-      case activity.thread_muted? do
-        thread_muted? when is_boolean(thread_muted?) -> thread_muted?
-        nil -> (opts[:for] && CommonAPI.thread_muted?(opts[:for], activity)) || false
+      cond do
+        is_nil(opts[:for]) -> false
+        is_boolean(activity.thread_muted?) -> activity.thread_muted?
+        true -> CommonAPI.thread_muted?(opts[:for], activity)
       end
 
     attachment_data = object.data["attachment"] || []
@@ -253,11 +301,26 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         _ -> []
       end
 
+    muted =
+      thread_muted? ||
+        UserRelationship.exists?(
+          get_in(opts, [:relationships, :user_relationships]),
+          :mute,
+          opts[:for],
+          user,
+          fn for_user, user -> User.mutes?(for_user, user) end
+        )
+
     %{
       id: to_string(activity.id),
       uri: object.data["id"],
       url: url,
-      account: AccountView.render("show.json", %{user: user, for: opts[:for]}),
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: opts[:for],
+          relationships: opts[:relationships]
+        }),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
       reblog: nil,
@@ -270,7 +333,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogged: reblogged?(activity, opts[:for]),
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
-      muted: thread_muted? || User.mutes?(opts[:for], user),
+      muted: muted,
       pinned: pinned?(activity, user),
       sensitive: sensitive,
       spoiler_text: summary,
@@ -421,7 +484,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render_content(%{data: %{"type" => object_type}} = object)
-      when object_type in ["Video", "Event"] do
+      when object_type in ["Video", "Event", "Audio"] do
     with name when not is_nil(name) and name != "" <- object.data["name"] do
       "<p><a href=\"#{object.data["id"]}\">#{name}</a></p>#{object.data["content"]}"
     else

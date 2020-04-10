@@ -159,11 +159,11 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
       assert output ==
-               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a data-user="#{
+               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a class="u-url mention" data-user="#{
                  user.id
-               }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a data-user="#{
+               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a class="u-url mention" data-user="#{
                  user.id
-               }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
+               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
     end
   end
 
@@ -471,6 +471,13 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       activity = insert(:note_activity, user: user, note: object)
       Pleroma.Repo.delete(object)
+
+      obj_url = activity.data["object"]
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^obj_url} ->
+          %Tesla.Env{status: 404, body: ""}
+      end)
 
       assert Utils.maybe_notify_mentioned_recipients(["test-test"], activity) == [
                "test-test"

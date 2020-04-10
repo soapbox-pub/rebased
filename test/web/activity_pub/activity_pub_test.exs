@@ -1425,6 +1425,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert Repo.get(Object, object.id).data["type"] == "Tombstone"
     end
 
+    test "it doesn't fail when an activity was already deleted" do
+      {:ok, delete} = insert(:note_activity) |> Object.normalize() |> ActivityPub.delete()
+
+      assert {:ok, ^delete} = delete |> Object.normalize() |> ActivityPub.delete()
+    end
+
     test "decrements user note count only for public activities" do
       user = insert(:user, note_count: 10)
 
@@ -1894,14 +1900,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, a4} = CommonAPI.post(user2, %{"status" => "Agent Smith "})
       {:ok, a5} = CommonAPI.post(user1, %{"status" => "Red or Blue "})
 
-      {:ok, _, _} = CommonAPI.favorite(a4.id, user)
-      {:ok, _, _} = CommonAPI.favorite(a3.id, other_user)
-      {:ok, _, _} = CommonAPI.favorite(a3.id, user)
-      {:ok, _, _} = CommonAPI.favorite(a5.id, other_user)
-      {:ok, _, _} = CommonAPI.favorite(a5.id, user)
-      {:ok, _, _} = CommonAPI.favorite(a4.id, other_user)
-      {:ok, _, _} = CommonAPI.favorite(a1.id, user)
-      {:ok, _, _} = CommonAPI.favorite(a1.id, other_user)
+      {:ok, _} = CommonAPI.favorite(user, a4.id)
+      {:ok, _} = CommonAPI.favorite(other_user, a3.id)
+      {:ok, _} = CommonAPI.favorite(user, a3.id)
+      {:ok, _} = CommonAPI.favorite(other_user, a5.id)
+      {:ok, _} = CommonAPI.favorite(user, a5.id)
+      {:ok, _} = CommonAPI.favorite(other_user, a4.id)
+      {:ok, _} = CommonAPI.favorite(user, a1.id)
+      {:ok, _} = CommonAPI.favorite(other_user, a1.id)
       result = ActivityPub.fetch_favourites(user)
 
       assert Enum.map(result, & &1.id) == [a1.id, a5.id, a3.id, a4.id]

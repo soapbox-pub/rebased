@@ -4,10 +4,19 @@
 
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
-  import Pleroma.Factory
+
   alias Pleroma.User
+  alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
+
+  import Pleroma.Factory
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "Represent a user account" do
     source_data = %{
@@ -161,6 +170,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert expected == AccountView.render("show.json", %{user: user})
   end
 
+  test "Represent a Funkwhale channel" do
+    {:ok, user} =
+      User.get_or_fetch_by_ap_id(
+        "https://channels.tests.funkwhale.audio/federation/actors/compositions"
+      )
+
+    assert represented = AccountView.render("show.json", %{user: user})
+    assert represented.acct == "compositions@channels.tests.funkwhale.audio"
+    assert represented.url == "https://channels.tests.funkwhale.audio/channels/compositions"
+  end
+
   test "Represent a deactivated user for an admin" do
     admin = insert(:user, is_admin: true)
     deactivated_user = insert(:user, deactivated: true)
@@ -182,6 +202,32 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   end
 
   describe "relationship" do
+    defp test_relationship_rendering(user, other_user, expected_result) do
+      opts = %{user: user, target: other_user, relationships: nil}
+      assert expected_result == AccountView.render("relationship.json", opts)
+
+      relationships_opt = UserRelationship.view_relationships_option(user, [other_user])
+      opts = Map.put(opts, :relationships, relationships_opt)
+      assert expected_result == AccountView.render("relationship.json", opts)
+
+      assert [expected_result] ==
+               AccountView.render("relationships.json", %{user: user, targets: [other_user]})
+    end
+
+    @blank_response %{
+      following: false,
+      followed_by: false,
+      blocking: false,
+      blocked_by: false,
+      muting: false,
+      muting_notifications: false,
+      subscribing: false,
+      requested: false,
+      domain_blocking: false,
+      showing_reblogs: true,
+      endorsed: false
+    }
+
     test "represent a relationship for the following and followed user" do
       user = insert(:user)
       other_user = insert(:user)
@@ -192,23 +238,21 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       {:ok, _user_relationships} = User.mute(user, other_user, true)
       {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, other_user)
 
-      expected = %{
-        id: to_string(other_user.id),
-        following: true,
-        followed_by: true,
-        blocking: false,
-        blocked_by: false,
-        muting: true,
-        muting_notifications: true,
-        subscribing: true,
-        requested: false,
-        domain_blocking: false,
-        showing_reblogs: false,
-        endorsed: false
-      }
+      expected =
+        Map.merge(
+          @blank_response,
+          %{
+            following: true,
+            followed_by: true,
+            muting: true,
+            muting_notifications: true,
+            subscribing: true,
+            showing_reblogs: false,
+            id: to_string(other_user.id)
+          }
+        )
 
-      assert expected ==
-               AccountView.render("relationship.json", %{user: user, target: other_user})
+      test_relationship_rendering(user, other_user, expected)
     end
 
     test "represent a relationship for the blocking and blocked user" do
@@ -220,23 +264,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       {:ok, _user_relationship} = User.block(user, other_user)
       {:ok, _user_relationship} = User.block(other_user, user)
 
-      expected = %{
-        id: to_string(other_user.id),
-        following: false,
-        followed_by: false,
-        blocking: true,
-        blocked_by: true,
-        muting: false,
-        muting_notifications: false,
-        subscribing: false,
-        requested: false,
-        domain_blocking: false,
-        showing_reblogs: true,
-        endorsed: false
-      }
+      expected =
+        Map.merge(
+          @blank_response,
+          %{following: false, blocking: true, blocked_by: true, id: to_string(other_user.id)}
+        )
 
-      assert expected ==
-               AccountView.render("relationship.json", %{user: user, target: other_user})
+      test_relationship_rendering(user, other_user, expected)
     end
 
     test "represent a relationship for the user blocking a domain" do
@@ -245,8 +279,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
       {:ok, user} = User.block_domain(user, "bad.site")
 
-      assert %{domain_blocking: true, blocking: false} =
-               AccountView.render("relationship.json", %{user: user, target: other_user})
+      expected =
+        Map.merge(
+          @blank_response,
+          %{domain_blocking: true, blocking: false, id: to_string(other_user.id)}
+        )
+
+      test_relationship_rendering(user, other_user, expected)
     end
 
     test "represent a relationship for the user with a pending follow request" do
@@ -257,23 +296,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       user = User.get_cached_by_id(user.id)
       other_user = User.get_cached_by_id(other_user.id)
 
-      expected = %{
-        id: to_string(other_user.id),
-        following: false,
-        followed_by: false,
-        blocking: false,
-        blocked_by: false,
-        muting: false,
-        muting_notifications: false,
-        subscribing: false,
-        requested: true,
-        domain_blocking: false,
-        showing_reblogs: true,
-        endorsed: false
-      }
+      expected =
+        Map.merge(
+          @blank_response,
+          %{requested: true, following: false, id: to_string(other_user.id)}
+        )
 
-      assert expected ==
-               AccountView.render("relationship.json", %{user: user, target: other_user})
+      test_relationship_rendering(user, other_user, expected)
     end
   end
 

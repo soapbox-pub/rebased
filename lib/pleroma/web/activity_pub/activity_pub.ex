@@ -125,6 +125,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def increase_poll_votes_if_vote(_create_data), do: :noop
 
+  @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
+  def persist(object, meta) do
+    with local <- Keyword.fetch!(meta, :local),
+         {recipients, _, _} <- get_recipients(object),
+         {:ok, activity} <-
+           Repo.insert(%Activity{
+             data: object,
+             local: local,
+             recipients: recipients,
+             actor: object["actor"]
+           }) do
+      {:ok, activity, meta}
+    end
+  end
+
   @spec insert(map(), boolean(), boolean(), boolean()) :: {:ok, Activity.t()} | {:error, any()}
   def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
@@ -581,6 +596,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       {:error, error} ->
         Repo.rollback(error)
     end
+  end
+
+  defp do_delete(%Object{data: %{"type" => "Tombstone", "id" => ap_id}}, _) do
+    activity =
+      ap_id
+      |> Activity.Queries.by_object_id()
+      |> Activity.Queries.by_type("Delete")
+      |> Repo.one()
+
+    {:ok, activity}
   end
 
   @spec block(User.t(), User.t(), String.t() | nil, boolean()) ::
@@ -1229,17 +1254,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp fetch_activities_query_ap_ids_ops(opts) do
     source_user = opts["muting_user"]
-    ap_id_relations = if source_user, do: [:mute, :reblog_mute], else: []
+    ap_id_relationships = if source_user, do: [:mute, :reblog_mute], else: []
 
-    ap_id_relations =
-      ap_id_relations ++
+    ap_id_relationships =
+      ap_id_relationships ++
         if opts["blocking_user"] && opts["blocking_user"] == source_user do
           [:block]
         else
           []
         end
 
-    preloaded_ap_ids = User.outgoing_relations_ap_ids(source_user, ap_id_relations)
+    preloaded_ap_ids = User.outgoing_relationships_ap_ids(source_user, ap_id_relationships)
 
     restrict_blocked_opts = Map.merge(%{"blocked_users_ap_ids" => preloaded_ap_ids[:block]}, opts)
     restrict_muted_opts = Map.merge(%{"muted_users_ap_ids" => preloaded_ap_ids[:mute]}, opts)
@@ -1369,6 +1394,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  @spec get_actor_url(any()) :: binary() | nil
+  defp get_actor_url(url) when is_binary(url), do: url
+  defp get_actor_url(%{"href" => href}) when is_binary(href), do: href
+
+  defp get_actor_url(url) when is_list(url) do
+    url
+    |> List.first()
+    |> get_actor_url()
+  end
+
+  defp get_actor_url(_url), do: nil
+
   defp object_to_user_data(data) do
     avatar =
       data["icon"]["url"] &&
@@ -1398,6 +1435,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     user_data = %{
       ap_id: data["id"],
+      uri: get_actor_url(data["url"]),
       ap_enabled: true,
       source_data: data,
       banner: banner,

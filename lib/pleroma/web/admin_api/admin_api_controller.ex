@@ -38,7 +38,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:accounts"], admin: true}
-    when action in [:list_users, :user_show, :right_get]
+    when action in [:list_users, :user_show, :right_get, :show_user_credentials]
   )
 
   plug(
@@ -54,7 +54,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :tag_users,
            :untag_users,
            :right_add,
-           :right_delete
+           :right_delete,
+           :update_user_credentials
          ]
   )
 
@@ -575,9 +576,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   @doc "Sends registration invite via email"
   def email_invite(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
-    with true <-
-           Config.get([:instance, :invites_enabled]) &&
-             !Config.get([:instance, :registrations_open]),
+    with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
+         {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
          {:ok, invite_token} <- UserInviteToken.create_invite(),
          email <-
            Pleroma.Emails.UserEmail.user_invitation_email(
@@ -588,6 +588,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            ),
          {:ok, _} <- Pleroma.Emails.Mailer.deliver(email) do
       json_response(conn, :no_content, "")
+    else
+      {:registrations_open, _} ->
+        errors(
+          conn,
+          {:error, "To send invites you need to set the `registrations_open` option to false."}
+        )
+
+      {:invites_enabled, _} ->
+        errors(
+          conn,
+          {:error, "To send invites you need to set the `invites_enabled` option to true."}
+        )
     end
   end
 
@@ -658,6 +670,52 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     json_response(conn, :no_content, "")
   end
 
+  @doc "Show a given user's credentials"
+  def show_user_credentials(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
+      conn
+      |> put_view(AccountView)
+      |> render("credentials.json", %{user: user, for: admin})
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @doc "Updates a given user"
+  def update_user_credentials(
+        %{assigns: %{user: admin}} = conn,
+        %{"nickname" => nickname} = params
+      ) do
+    with {_, user} <- {:user, User.get_cached_by_nickname(nickname)},
+         {:ok, _user} <-
+           User.update_as_admin(user, params) do
+      ModerationLog.insert_log(%{
+        actor: admin,
+        subject: [user],
+        action: "updated_users"
+      })
+
+      if params["password"] do
+        User.force_password_reset_async(user)
+      end
+
+      ModerationLog.insert_log(%{
+        actor: admin,
+        subject: [user],
+        action: "force_password_reset"
+      })
+
+      json(conn, %{status: "success"})
+    else
+      {:error, changeset} ->
+        {_, {error, _}} = Enum.at(changeset.errors, 0)
+        json(conn, %{error: "New password #{error}."})
+
+      _ ->
+        json(conn, %{error: "Unable to change password."})
+    end
+  end
+
   def list_reports(conn, params) do
     {page, page_size} = page_params(params)
 
@@ -666,14 +724,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> put_view(ReportView)
     |> render("index.json", %{reports: reports})
-  end
-
-  def list_grouped_reports(conn, _params) do
-    statuses = Utils.get_reported_activities()
-
-    conn
-    |> put_view(ReportView)
-    |> render("index_grouped.json", Utils.get_reports_grouped_by_status(statuses))
   end
 
   def report_show(conn, %{"id" => id}) do
