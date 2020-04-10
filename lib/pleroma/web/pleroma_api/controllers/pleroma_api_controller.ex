@@ -110,12 +110,11 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   end
 
   def conversation_statuses(
-        %{assigns: %{user: user}} = conn,
+        %{assigns: %{user: %{id: user_id} = user}} = conn,
         %{"id" => participation_id} = params
       ) do
-    with %Participation{} = participation <-
-           Participation.get(participation_id, preload: [:conversation]),
-         true <- user.id == participation.user_id do
+    with %Participation{user_id: ^user_id} = participation <-
+           Participation.get(participation_id, preload: [:conversation]) do
       params =
         params
         |> Map.put("blocking_user", user)
@@ -124,7 +123,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
       activities =
         participation.conversation.ap_id
-        |> ActivityPub.fetch_activities_for_context(params)
+        |> ActivityPub.fetch_activities_for_context_query(params)
+        |> Pleroma.Pagination.fetch_paginated(Map.put(params, "total", false))
         |> Enum.reverse()
 
       conn
