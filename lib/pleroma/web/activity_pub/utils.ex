@@ -440,22 +440,19 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> update(set: [data: fragment("jsonb_set(data, '{state}', ?)", ^state)])
     |> Repo.update_all([])
 
-    User.set_follow_state_cache(actor, object, state)
-
     activity = Activity.get_by_id(activity.id)
 
     {:ok, activity}
   end
 
   def update_follow_state(
-        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
+        %Activity{} = activity,
         state
       ) do
     new_data = Map.put(activity.data, "state", state)
     changeset = Changeset.change(activity, data: new_data)
 
     with {:ok, activity} <- Repo.update(changeset) do
-      User.set_follow_state_cache(actor, object, state)
       {:ok, activity}
     end
   end
@@ -796,102 +793,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       |> Map.put("offset", (page - 1) * page_size)
 
     ActivityPub.fetch_activities([], params, :offset)
-  end
-
-  def parse_report_group(activity) do
-    reports = get_reports_by_status_id(activity["id"])
-    max_date = Enum.max_by(reports, &NaiveDateTime.from_iso8601!(&1.data["published"]))
-    actors = Enum.map(reports, & &1.user_actor)
-    [%{data: %{"object" => [account_id | _]}} | _] = reports
-
-    account =
-      AccountView.render("show.json", %{
-        user: User.get_by_ap_id(account_id)
-      })
-
-    status = get_status_data(activity)
-
-    %{
-      date: max_date.data["published"],
-      account: account,
-      status: status,
-      actors: Enum.uniq(actors),
-      reports: reports
-    }
-  end
-
-  defp get_status_data(status) do
-    case status["deleted"] do
-      true ->
-        %{
-          "id" => status["id"],
-          "deleted" => true
-        }
-
-      _ ->
-        Activity.get_by_ap_id(status["id"])
-    end
-  end
-
-  def get_reports_by_status_id(ap_id) do
-    from(a in Activity,
-      where: fragment("(?)->>'type' = 'Flag'", a.data),
-      where: fragment("(?)->'object' @> ?", a.data, ^[%{id: ap_id}]),
-      or_where: fragment("(?)->'object' @> ?", a.data, ^[ap_id])
-    )
-    |> Activity.with_preloaded_user_actor()
-    |> Repo.all()
-  end
-
-  @spec get_reports_grouped_by_status([String.t()]) :: %{
-          required(:groups) => [
-            %{
-              required(:date) => String.t(),
-              required(:account) => %{},
-              required(:status) => %{},
-              required(:actors) => [%User{}],
-              required(:reports) => [%Activity{}]
-            }
-          ]
-        }
-  def get_reports_grouped_by_status(activity_ids) do
-    parsed_groups =
-      activity_ids
-      |> Enum.map(fn id ->
-        id
-        |> build_flag_object()
-        |> parse_report_group()
-      end)
-
-    %{
-      groups: parsed_groups
-    }
-  end
-
-  @spec get_reported_activities() :: [
-          %{
-            required(:activity) => String.t(),
-            required(:date) => String.t()
-          }
-        ]
-  def get_reported_activities do
-    reported_activities_query =
-      from(a in Activity,
-        where: fragment("(?)->>'type' = 'Flag'", a.data),
-        select: %{
-          activity: fragment("jsonb_array_elements((? #- '{object,0}')->'object')", a.data)
-        },
-        group_by: fragment("activity")
-      )
-
-    from(a in subquery(reported_activities_query),
-      distinct: true,
-      select: %{
-        id: fragment("COALESCE(?->>'id'::text, ? #>> '{}')", a.activity, a.activity)
-      }
-    )
-    |> Repo.all()
-    |> Enum.map(& &1.id)
   end
 
   def update_report_state(%Activity{} = activity, state)

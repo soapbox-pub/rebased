@@ -74,4 +74,43 @@ defmodule Mix.Tasks.Pleroma.Benchmark do
       inputs: inputs
     )
   end
+
+  def run(["adapters"]) do
+    start_pleroma()
+
+    :ok =
+      Pleroma.Gun.Conn.open(
+        "https://httpbin.org/stream-bytes/1500",
+        :gun_connections
+      )
+
+    Process.sleep(1_500)
+
+    Benchee.run(
+      %{
+        "Without conn and without pool" => fn ->
+          {:ok, %Tesla.Env{}} =
+            Pleroma.HTTP.get("https://httpbin.org/stream-bytes/1500", [],
+              adapter: [pool: :no_pool, receive_conn: false]
+            )
+        end,
+        "Without conn and with pool" => fn ->
+          {:ok, %Tesla.Env{}} =
+            Pleroma.HTTP.get("https://httpbin.org/stream-bytes/1500", [],
+              adapter: [receive_conn: false]
+            )
+        end,
+        "With reused conn and without pool" => fn ->
+          {:ok, %Tesla.Env{}} =
+            Pleroma.HTTP.get("https://httpbin.org/stream-bytes/1500", [],
+              adapter: [pool: :no_pool]
+            )
+        end,
+        "With reused conn and with pool" => fn ->
+          {:ok, %Tesla.Env{}} = Pleroma.HTTP.get("https://httpbin.org/stream-bytes/1500")
+        end
+      },
+      parallel: 10
+    )
+  end
 end

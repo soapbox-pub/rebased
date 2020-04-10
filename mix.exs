@@ -37,10 +37,19 @@ defmodule Pleroma.Mixfile do
         pleroma: [
           include_executables_for: [:unix],
           applications: [ex_syslogger: :load, syslog: :load],
-          steps: [:assemble, &copy_files/1, &copy_nginx_config/1]
+          steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1]
         ]
       ]
     ]
+  end
+
+  def put_otp_version(%{path: target_path} = release) do
+    File.write!(
+      Path.join([target_path, "OTP_VERSION"]),
+      Pleroma.OTPVersion.version()
+    )
+
+    release
   end
 
   def copy_files(%{path: target_path} = release) do
@@ -63,7 +72,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :ssl],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -119,7 +128,15 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.3", override: true},
+      # {:tesla, "~> 1.3", override: true},
+      {:tesla,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/tesla.git",
+       ref: "61b7503cef33f00834f78ddfafe0d5d9dec2270b",
+       override: true},
+      {:castore, "~> 0.1"},
+      {:cowlib, "~> 2.8", override: true},
+      {:gun,
+       github: "ninenines/gun", ref: "e1a69b36b180a574c0ac314ced9613fdd52312cc", override: true},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
       {:ex_aws, "~> 2.1"},
@@ -171,7 +188,8 @@ defmodule Pleroma.Mixfile do
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:mox, "~> 0.5", only: :test},
-      {:restarter, path: "./restarter"}
+      {:restarter, path: "./restarter"},
+      {:open_api_spex, "~> 3.6"}
     ] ++ oauth_deps()
   end
 

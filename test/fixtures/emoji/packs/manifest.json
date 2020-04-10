@@ -1,0 +1,10 @@
+{
+  "blobs.gg": {
+    "src_sha256": "3a12f3a181678d5b3584a62095411b0d60a335118135910d879920f8ade5a57f",
+    "src": "https://git.pleroma.social/pleroma/emoji-index/raw/master/packs/blobs_gg.zip",
+    "license": "Apache 2.0",
+    "homepage": "https://blobs.gg",
+    "files": "blobs_gg.json",
+    "description": "Blob Emoji from blobs.gg repacked as apng"
+  }
+}

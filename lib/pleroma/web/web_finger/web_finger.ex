@@ -173,7 +173,8 @@ defmodule Pleroma.Web.WebFinger do
       get_template_from_xml(body)
     else
       _ ->
-        with {:ok, %{body: body}} <- HTTP.get("https://#{domain}/.well-known/host-meta", []) do
+        with {:ok, %{body: body, status: status}} when status in 200..299 <-
+               HTTP.get("https://#{domain}/.well-known/host-meta", []) do
           get_template_from_xml(body)
         else
           e -> {:error, "Can't find LRDD template: #{inspect(e)}"}
@@ -205,7 +206,7 @@ defmodule Pleroma.Web.WebFinger do
     with response <-
            HTTP.get(
              address,
-             Accept: "application/xrd+xml,application/jrd+json"
+             [{"accept", "application/xrd+xml,application/jrd+json"}]
            ),
          {:ok, %{status: status, body: body}} when status in 200..299 <- response do
       doc = XML.parse_document(body)
