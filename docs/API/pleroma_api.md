@@ -431,7 +431,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 
 # Emoji Reactions
 
-Emoji reactions work a lot like favourites do. They make it possible to react to a post with a single emoji character.
+Emoji reactions work a lot like favourites do. They make it possible to react to a post with a single emoji character. To detect the presence of this feature, you can check `pleroma_emoji_reactions` entry in the features list of nodeinfo.
 
 ## `PUT /api/v1/pleroma/statuses/:id/reactions/:emoji`
 ### React to a post with a unicode emoji

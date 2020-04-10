@@ -72,6 +72,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("index.json", opts) do
+    reading_user = opts[:for]
+
     # To do: check AdminAPIControllerTest on the reasons behind nil activities in the list
     activities = Enum.filter(opts.activities, & &1)
     replied_to_activities = get_replied_to_activities(activities)
@@ -82,8 +84,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Enum.map(&Object.normalize(&1).data["id"])
       |> Activity.create_by_object_ap_id()
       |> Activity.with_preloaded_object(:left)
-      |> Activity.with_preloaded_bookmark(opts[:for])
-      |> Activity.with_set_thread_muted_field(opts[:for])
+      |> Activity.with_preloaded_bookmark(reading_user)
+      |> Activity.with_set_thread_muted_field(reading_user)
       |> Repo.all()
 
     relationships_opt =
@@ -91,13 +93,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         Map.has_key?(opts, :relationships) ->
           opts[:relationships]
 
-        is_nil(opts[:for]) ->
+        is_nil(reading_user) ->
           UserRelationship.view_relationships_option(nil, [])
 
         true ->
           actors = Enum.map(activities ++ parent_activities, &get_user(&1.data["actor"]))
 
-          UserRelationship.view_relationships_option(opts[:for], actors)
+          UserRelationship.view_relationships_option(reading_user, actors)
       end
 
     opts =

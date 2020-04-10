@@ -49,8 +49,10 @@ defmodule Pleroma.Gun.Conn do
 
     key = "#{uri.scheme}:#{uri.host}:#{uri.port}"
 
+    max_connections = pool_opts[:max_connections] || 250
+
     conn_pid =
-      if Connections.count(name) < opts[:max_connection] do
+      if Connections.count(name) < max_connections do
         do_open(uri, opts)
       else
         close_least_used_and_do_open(name, uri, opts)
