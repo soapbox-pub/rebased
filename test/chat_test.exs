@@ -10,6 +10,13 @@ defmodule Pleroma.ChatTest do
   import Pleroma.Factory
 
   describe "creation and getting" do
+    test "it only works if the recipient is a valid user (for now)" do
+      user = insert(:user)
+
+      assert {:error, _chat} = Chat.bump_or_create(user.id, "http://some/nonexisting/account")
+      assert {:error, _chat} = Chat.get_or_create(user.id, "http://some/nonexisting/account")
+    end
+
     test "it creates a chat for a user and recipient" do
       user = insert(:user)
       other_user = insert(:user)

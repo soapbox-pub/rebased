@@ -26,6 +26,13 @@ defmodule Pleroma.Chat do
   def creation_cng(struct, params) do
     struct
     |> cast(params, [:user_id, :recipient, :unread])
+    |> validate_change(:recipient, fn
+      :recipient, recipient ->
+        case User.get_cached_by_ap_id(recipient) do
+          nil -> [recipient: "must a an existing user"]
+          _ -> []
+        end
+    end)
     |> validate_required([:user_id, :recipient])
     |> unique_constraint(:user_id, name: :chats_user_id_recipient_index)
   end
