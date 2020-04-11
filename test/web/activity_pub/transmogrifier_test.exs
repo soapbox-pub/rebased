@@ -1629,7 +1629,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         })
 
       user_two = insert(:user)
-      Pleroma.FollowingRelationship.follow(user_two, user, "accept")
+      Pleroma.FollowingRelationship.follow(user_two, user, :follow_accept)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
       {:ok, unrelated_activity} = CommonAPI.post(user_two, %{"status" => "test"})

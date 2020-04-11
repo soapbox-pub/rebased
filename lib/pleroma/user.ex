@@ -227,6 +227,24 @@ defmodule Pleroma.User do
     end
   end
 
+  @doc """
+  Dumps Flake Id to SQL-compatible format (16-byte UUID).
+  E.g. "9pQtDGXuq4p3VlcJEm" -> <<0, 0, 1, 110, 179, 218, 42, 92, 213, 41, 44, 227, 95, 213, 0, 0>>
+  """
+  def binary_id(source_id) when is_binary(source_id) do
+    with {:ok, dumped_id} <- FlakeId.Ecto.CompatType.dump(source_id) do
+      dumped_id
+    else
+      _ -> source_id
+    end
+  end
+
+  def binary_id(source_ids) when is_list(source_ids) do
+    Enum.map(source_ids, &binary_id/1)
+  end
+
+  def binary_id(%User{} = user), do: binary_id(user.id)
+
   @doc "Returns status account"
   @spec account_status(User.t()) :: account_status()
   def account_status(%User{deactivated: true}), do: :deactivated
@@ -689,7 +707,7 @@ defmodule Pleroma.User do
 
   @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
   def maybe_direct_follow(%User{} = follower, %User{local: true, locked: true} = followed) do
-    follow(follower, followed, "pending")
+    follow(follower, followed, :follow_pending)
   end
 
   def maybe_direct_follow(%User{} = follower, %User{local: true} = followed) do
@@ -709,14 +727,14 @@ defmodule Pleroma.User do
   def follow_all(follower, followeds) do
     followeds
     |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
-    |> Enum.each(&follow(follower, &1, "accept"))
+    |> Enum.each(&follow(follower, &1, :follow_accept))
 
     set_cache(follower)
   end
 
   defdelegate following(user), to: FollowingRelationship
 
-  def follow(%User{} = follower, %User{} = followed, state \\ "accept") do
+  def follow(%User{} = follower, %User{} = followed, state \\ :follow_accept) do
     deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
 
     cond do
@@ -743,7 +761,7 @@ defmodule Pleroma.User do
 
   def unfollow(%User{} = follower, %User{} = followed) do
     case get_follow_state(follower, followed) do
-      state when state in ["accept", "pending"] ->
+      state when state in [:follow_pending, :follow_accept] ->
         FollowingRelationship.unfollow(follower, followed)
         {:ok, followed} = update_follower_count(followed)
 
@@ -761,14 +779,18 @@ defmodule Pleroma.User do
 
   defdelegate following?(follower, followed), to: FollowingRelationship
 
+  @doc "Returns follow state as Pleroma.FollowingRelationship.State value"
   def get_follow_state(%User{} = follower, %User{} = following) do
     following_relationship = FollowingRelationship.get(follower, following)
 
     case {following_relationship, following.local} do
       {nil, false} ->
         case Utils.fetch_latest_follow(follower, following) do
-          %{data: %{"state" => state}} when state in ["pending", "accept"] -> state
-          _ -> nil
+          %Activity{data: %{"state" => state}} when state in ["pending", "accept"] ->
+            FollowingRelationship.state_to_enum(state)
+
+          _ ->
+            nil
         end
 
       {%{state: state}, _} ->
@@ -1267,7 +1289,7 @@ defmodule Pleroma.User do
 
   def blocks?(%User{} = user, %User{} = target) do
     blocks_user?(user, target) ||
-      (!User.following?(user, target) && blocks_domain?(user, target))
+      (blocks_domain?(user, target) and not User.following?(user, target))
   end
 
   def blocks_user?(%User{} = user, %User{} = target) do
