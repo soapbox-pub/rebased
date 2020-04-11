@@ -339,18 +339,20 @@ defmodule Pleroma.User do
     end
   end
 
-  def remote_user_creation(params) do
+  def remote_user_changeset(struct \\ %User{local: false}, params) do
     bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
     params =
       params
+      |> Map.put(:name, blank?(params[:name]) || params[:nickname])
+      |> Map.put_new(:last_refreshed_at, NaiveDateTime.utc_now())
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
       |> truncate_fields_param()
 
     changeset =
-      %User{local: false}
+      struct
       |> cast(
         params,
         [
@@ -375,7 +377,8 @@ defmodule Pleroma.User do
           :discoverable,
           :invisible,
           :actor_type,
-          :also_known_as
+          :also_known_as,
+          :last_refreshed_at
         ]
       )
       |> validate_required([:name, :ap_id])
@@ -486,49 +489,6 @@ defmodule Pleroma.User do
          {:ok, object} <- ActivityPub.upload(value, type: type) do
       {:ok, object.data}
     end
-  end
-
-  def upgrade_changeset(struct, params \\ %{}, remote? \\ false) do
-    bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
-    name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
-
-    params = Map.put(params, :last_refreshed_at, NaiveDateTime.utc_now())
-
-    params = if remote?, do: truncate_fields_param(params), else: params
-
-    struct
-    |> cast(
-      params,
-      [
-        :bio,
-        :name,
-        :follower_address,
-        :following_address,
-        :avatar,
-        :last_refreshed_at,
-        :ap_enabled,
-        :source_data,
-        :banner,
-        :locked,
-        :magic_key,
-        :follower_count,
-        :following_count,
-        :hide_follows,
-        :fields,
-        :hide_followers,
-        :allow_following_move,
-        :discoverable,
-        :hide_followers_count,
-        :hide_follows_count,
-        :actor_type,
-        :also_known_as
-      ]
-    )
-    |> unique_constraint(:nickname)
-    |> validate_format(:nickname, local_nickname_regex())
-    |> validate_length(:bio, max: bio_limit)
-    |> validate_length(:name, max: name_limit)
-    |> validate_fields(remote?)
   end
 
   def update_as_admin_changeset(struct, params) do
@@ -1641,14 +1601,6 @@ defmodule Pleroma.User do
 
   defp blank?(""), do: nil
   defp blank?(n), do: n
-
-  def insert_or_update_user(data) do
-    data
-    |> Map.put(:name, blank?(data[:name]) || data[:nickname])
-    |> remote_user_creation()
-    |> Repo.insert(on_conflict: {:replace_all_except, [:id]}, conflict_target: :nickname)
-    |> set_cache()
-  end
 
   def ap_enabled?(%User{local: true}), do: true
   def ap_enabled?(%User{ap_enabled: ap_enabled}), do: ap_enabled
