@@ -609,6 +609,21 @@ defmodule Pleroma.NotificationTest do
       assert [other_user] == disabled_receivers
       refute other_user in enabled_receivers
     end
+
+    test "it returns domain-blocking recipient in disabled recipients list" do
+      blocked_domain = "blocked.domain"
+      user = insert(:user, %{ap_id: "https://#{blocked_domain}/@actor"})
+      other_user = insert(:user)
+
+      {:ok, other_user} = User.block_domain(other_user, blocked_domain)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{other_user.nickname}!"})
+
+      {enabled_receivers, disabled_receivers} = Notification.get_notified_from_activity(activity)
+
+      assert [] == enabled_receivers
+      assert [other_user] == disabled_receivers
+    end
   end
 
   describe "notification lifecycle" do
