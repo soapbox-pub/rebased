@@ -14,8 +14,10 @@ defmodule Pleroma.Emails.NewUsersDigestEmail do
     styling = Pleroma.Config.get([Pleroma.Emails.UserEmail, :styling])
 
     logo_url =
-      Pleroma.Web.Endpoint.url() <>
-        Pleroma.Config.get([:frontend_configurations, :pleroma_fe, :logo])
+      Pleroma.Helpers.UriHelper.maybe_add_base(
+        Pleroma.Config.get([:frontend_configurations, :pleroma_fe, :logo]),
+        Pleroma.Web.Endpoint.url()
+      )
 
     new()
     |> to({to.name, to.email})
