@@ -610,7 +610,7 @@ defmodule Pleroma.NotificationTest do
       refute other_user in enabled_receivers
     end
 
-    test "it returns domain-blocking recipient in disabled recipients list" do
+    test "it returns non-following domain-blocking recipient in disabled recipients list" do
       blocked_domain = "blocked.domain"
       user = insert(:user, %{ap_id: "https://#{blocked_domain}/@actor"})
       other_user = insert(:user)
@@ -623,6 +623,22 @@ defmodule Pleroma.NotificationTest do
 
       assert [] == enabled_receivers
       assert [other_user] == disabled_receivers
+    end
+
+    test "it returns following domain-blocking recipient in enabled recipients list" do
+      blocked_domain = "blocked.domain"
+      user = insert(:user, %{ap_id: "https://#{blocked_domain}/@actor"})
+      other_user = insert(:user)
+
+      {:ok, other_user} = User.block_domain(other_user, blocked_domain)
+      {:ok, other_user} = User.follow(other_user, user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{other_user.nickname}!"})
+
+      {enabled_receivers, disabled_receivers} = Notification.get_notified_from_activity(activity)
+
+      assert [other_user] == enabled_receivers
+      assert [] == disabled_receivers
     end
   end
 
@@ -886,7 +902,7 @@ defmodule Pleroma.NotificationTest do
       assert Notification.for_user(user) == []
     end
 
-    test "it doesn't return notifications for blocked domain" do
+    test "it doesn't return notifications for domain-blocked non-followed user" do
       user = insert(:user)
       blocked = insert(:user, ap_id: "http://some-domain.com")
       {:ok, user} = User.block_domain(user, "some-domain.com")
@@ -894,6 +910,18 @@ defmodule Pleroma.NotificationTest do
       {:ok, _activity} = CommonAPI.post(blocked, %{"status" => "hey @#{user.nickname}"})
 
       assert Notification.for_user(user) == []
+    end
+
+    test "it returns notifications for domain-blocked but followed user" do
+      user = insert(:user)
+      blocked = insert(:user, ap_id: "http://some-domain.com")
+
+      {:ok, user} = User.block_domain(user, "some-domain.com")
+      {:ok, _} = User.follow(user, blocked)
+
+      {:ok, _activity} = CommonAPI.post(blocked, %{"status" => "hey @#{user.nickname}"})
+
+      assert length(Notification.for_user(user)) == 1
     end
 
     test "it doesn't return notifications for muted thread" do
@@ -926,7 +954,8 @@ defmodule Pleroma.NotificationTest do
       assert Enum.empty?(Notification.for_user(user, %{with_muted: true}))
     end
 
-    test "it doesn't return notifications from a domain-blocked user when with_muted is set" do
+    test "when with_muted is set, " <>
+           "it doesn't return notifications from a domain-blocked non-followed user" do
       user = insert(:user)
       blocked = insert(:user, ap_id: "http://some-domain.com")
       {:ok, user} = User.block_domain(user, "some-domain.com")

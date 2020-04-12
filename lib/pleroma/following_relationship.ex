@@ -69,6 +69,29 @@ defmodule Pleroma.FollowingRelationship do
     |> Repo.aggregate(:count, :id)
   end
 
+  def followers_query(%User{} = user) do
+    __MODULE__
+    |> join(:inner, [r], u in User, on: r.follower_id == u.id)
+    |> where([r], r.following_id == ^user.id)
+    |> where([r], r.state == "accept")
+  end
+
+  def followers_ap_ids(%User{} = user, from_ap_ids \\ nil) do
+    query =
+      user
+      |> followers_query()
+      |> select([r, u], u.ap_id)
+
+    query =
+      if from_ap_ids do
+        where(query, [r, u], u.ap_id in ^from_ap_ids)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
   def following_count(%User{id: nil}), do: 0
 
   def following_count(%User{} = user) do
@@ -92,12 +115,16 @@ defmodule Pleroma.FollowingRelationship do
     |> Repo.exists?()
   end
 
+  def following_query(%User{} = user) do
+    __MODULE__
+    |> join(:inner, [r], u in User, on: r.following_id == u.id)
+    |> where([r], r.follower_id == ^user.id)
+    |> where([r], r.state == "accept")
+  end
+
   def following(%User{} = user) do
     following =
-      __MODULE__
-      |> join(:inner, [r], u in User, on: r.following_id == u.id)
-      |> where([r], r.follower_id == ^user.id)
-      |> where([r], r.state == "accept")
+      following_query(user)
       |> select([r, u], u.follower_address)
       |> Repo.all()
 

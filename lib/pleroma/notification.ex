@@ -6,6 +6,7 @@ defmodule Pleroma.Notification do
   use Ecto.Schema
 
   alias Pleroma.Activity
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Pagination
@@ -81,6 +82,7 @@ defmodule Pleroma.Notification do
     |> exclude_visibility(opts)
   end
 
+  # Excludes blocked users and non-followed domain-blocked users
   defp exclude_blocked(query, user, opts) do
     blocked_ap_ids = opts[:blocked_users_ap_ids] || User.blocked_users_ap_ids(user)
 
@@ -88,7 +90,16 @@ defmodule Pleroma.Notification do
     |> where([n, a], a.actor not in ^blocked_ap_ids)
     |> where(
       [n, a],
-      fragment("substring(? from '.*://([^/]*)')", a.actor) not in ^user.domain_blocks
+      fragment(
+        # "NOT (actor's domain in domain_blocks) OR (actor is in followed AP IDs)"
+        "NOT (substring(? from '.*://([^/]*)') = ANY(?)) OR \
+          ? = ANY(SELECT ap_id FROM users AS u INNER JOIN following_relationships AS fr \
+            ON u.id = fr.following_id WHERE fr.follower_id = ? AND fr.state = 'accept')",
+        a.actor,
+        ^user.domain_blocks,
+        a.actor,
+        ^User.binary_id(user.id)
+      )
     )
   end
 
@@ -338,19 +349,11 @@ defmodule Pleroma.Notification do
       |> Utils.maybe_notify_followers(activity)
       |> Enum.uniq()
 
-    potential_receivers =
+    potential_receivers = User.get_users_from_set(potential_receiver_ap_ids, local_only)
+
+    notification_enabled_ap_ids =
       potential_receiver_ap_ids
-      |> Enum.uniq()
-      |> User.get_users_from_set(local_only)
-
-    activity_actor_domain = activity.actor && URI.parse(activity.actor).host
-
-    notification_enabled_ap_ids =
-      for u <- potential_receivers, activity_actor_domain not in u.domain_blocks, do: u.ap_id
-
-    # Since even subscribers and followers can mute / thread-mute, filtering all above AP IDs
-    notification_enabled_ap_ids =
-      notification_enabled_ap_ids
+      |> exclude_domain_blocker_ap_ids(activity, potential_receivers)
       |> exclude_relationship_restricted_ap_ids(activity)
       |> exclude_thread_muter_ap_ids(activity)
 
@@ -361,6 +364,38 @@ defmodule Pleroma.Notification do
   end
 
   def get_notified_from_activity(_, _local_only), do: {[], []}
+
+  @doc "Filters out AP IDs of users who domain-block and not follow activity actor"
+  def exclude_domain_blocker_ap_ids(ap_ids, activity, preloaded_users \\ [])
+
+  def exclude_domain_blocker_ap_ids([], _activity, _preloaded_users), do: []
+
+  def exclude_domain_blocker_ap_ids(ap_ids, %Activity{} = activity, preloaded_users) do
+    activity_actor_domain = activity.actor && URI.parse(activity.actor).host
+
+    users =
+      ap_ids
+      |> Enum.map(fn ap_id ->
+        Enum.find(preloaded_users, &(&1.ap_id == ap_id)) ||
+          User.get_cached_by_ap_id(ap_id)
+      end)
+      |> Enum.filter(& &1)
+
+    domain_blocker_ap_ids = for u <- users, activity_actor_domain in u.domain_blocks, do: u.ap_id
+
+    domain_blocker_follower_ap_ids =
+      if Enum.any?(domain_blocker_ap_ids) do
+        activity
+        |> Activity.user_actor()
+        |> FollowingRelationship.followers_ap_ids(domain_blocker_ap_ids)
+      else
+        []
+      end
+
+    ap_ids
+    |> Kernel.--(domain_blocker_ap_ids)
+    |> Kernel.++(domain_blocker_follower_ap_ids)
+  end
 
   @doc "Filters out AP IDs of users basing on their relationships with activity actor user"
   def exclude_relationship_restricted_ap_ids([], _activity), do: []
