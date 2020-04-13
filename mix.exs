@@ -37,10 +37,19 @@ defmodule Pleroma.Mixfile do
         pleroma: [
           include_executables_for: [:unix],
           applications: [ex_syslogger: :load, syslog: :load],
-          steps: [:assemble, &copy_files/1, &copy_nginx_config/1]
+          steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1]
         ]
       ]
     ]
+  end
+
+  def put_otp_version(%{path: target_path} = release) do
+    File.write!(
+      Path.join([target_path, "OTP_VERSION"]),
+      Pleroma.OTPVersion.version()
+    )
+
+    release
   end
 
   def copy_files(%{path: target_path} = release) do
@@ -108,7 +117,7 @@ defmodule Pleroma.Mixfile do
       {:ecto_enum, "~> 1.4"},
       {:ecto_sql, "~> 3.3.2"},
       {:postgrex, ">= 0.13.5"},
-      {:oban, "~> 0.12.1"},
+      {:oban, "~> 1.2"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
@@ -179,7 +188,8 @@ defmodule Pleroma.Mixfile do
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:mox, "~> 0.5", only: :test},
-      {:restarter, path: "./restarter"}
+      {:restarter, path: "./restarter"},
+      {:open_api_spex, "~> 3.6"}
     ] ++ oauth_deps()
   end
 

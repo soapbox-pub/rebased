@@ -148,7 +148,7 @@ defmodule Pleroma.User.Query do
       as: :relationships,
       on: r.following_id == ^id and r.follower_id == u.id
     )
-    |> where([relationships: r], r.state == "accept")
+    |> where([relationships: r], r.state == ^:follow_accept)
   end
 
   defp compose_query({:friends, %User{id: id}}, query) do
@@ -158,7 +158,7 @@ defmodule Pleroma.User.Query do
       as: :relationships,
       on: r.following_id == u.id and r.follower_id == ^id
     )
-    |> where([relationships: r], r.state == "accept")
+    |> where([relationships: r], r.state == ^:follow_accept)
   end
 
   defp compose_query({:recipients_from_activity, to}, query) do
@@ -173,7 +173,7 @@ defmodule Pleroma.User.Query do
     )
     |> where(
       [u, following: f, relationships: r],
-      u.ap_id in ^to or (f.follower_address in ^to and r.state == "accept")
+      u.ap_id in ^to or (f.follower_address in ^to and r.state == ^:follow_accept)
     )
     |> distinct(true)
   end

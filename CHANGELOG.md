@@ -4,20 +4,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [unreleased]
-### Changed
-- **Breaking:** BBCode and Markdown formatters will no longer return any `\n` and only use `<br/>` for newlines
-
 ### Removed
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
 - NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
+- NodeInfo: `pleroma_emoji_reactions` to the `features` list.
 - Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
 - New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
 <details>
   <summary>API Changes</summary>
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
+- Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 </details>
+
+### Fixed
+- Support pagination in conversations API
+
+## [unreleased-patch]
+
+## [2.0.2] - 2020-04-08
+### Added
+- Support for Funkwhale's `Audio` activity
+- Admin API: `PATCH /api/pleroma/admin/users/:nickname/update_credentials`
+
+### Fixed
+- Blocked/muted users still generating push notifications
+- Input textbox for bio ignoring newlines
+- OTP: Inability to use PostgreSQL databases with SSL
+- `user delete_activities` breaking when trying to delete already deleted posts
+- Incorrect URL for Funkwhale channels
+
+### Upgrade notes
+1. Restart Pleroma
+
+## [2.0.1] - 2020-03-15
+### Security
+- Static-FE: Fix remote posts not being sanitized
+
+### Fixed
+- 500 errors when no `Accept` header is present if Static-FE is enabled
+- Instance panel not being updated immediately due to wrong `Cache-Control` headers
+- Statuses posted with BBCode/Markdown having unncessary newlines in Pleroma-FE
+- OTP: Fix some settings not being migrated to in-database config properly
+- No `Cache-Control` headers on attachment/media proxy requests
+- Character limit enforcement being off by 1
+- Mastodon Streaming API: hashtag timelines not working
+
+### Changed
+- BBCode and Markdown formatters will no longer return any `\n` and only use `<br/>` for newlines
+- Mastodon API: Allow registration without email if email verification is not enabled
+
+### Upgrade notes
+#### Nginx only
+1. Remove `proxy_ignore_headers Cache-Control;` and `proxy_hide_header  Cache-Control;` from your config.
+
+#### Everyone
+1. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+2. Restart Pleroma
 
 ## [2.0.0] - 2019-03-08
 ### Security

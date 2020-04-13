@@ -70,7 +70,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     json(conn, %{})
   end
 
-  # POST /api/v1/notifications/dismiss
+  # POST /api/v1/notifications/:id/dismiss
+  # POST /api/v1/notifications/dismiss (deprecated)
   def dismiss(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
     with {:ok, _notif} <- Notification.dismiss(user, id) do
       json(conn, %{})
