@@ -243,7 +243,7 @@ defmodule Pleroma.Pool.Connections do
 
   @impl true
   def handle_info({:DOWN, _ref, :process, conn_pid, reason}, state) do
-    Logger.debug("received DOWM message for #{inspect(conn_pid)} reason -> #{inspect(reason)}")
+    Logger.debug("received DOWN message for #{inspect(conn_pid)} reason -> #{inspect(reason)}")
 
     state =
       with {key, conn} <- find_conn(state.conns, conn_pid) do
