@@ -149,7 +149,19 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   defp check_banner_removal(_actor_info, object), do: {:ok, object}
 
   @impl true
-  def filter(%{"type" => "Delete"} = object), do: {:ok, object}
+  def filter(%{"type" => "Delete", "actor" => actor} = object) do
+    %{host: actor_host} = URI.parse(actor)
+
+    reject_deletes =
+      Pleroma.Config.get([:mrf_simple, :reject_deletes])
+      |> MRF.subdomains_regex()
+
+    if MRF.subdomain_match?(reject_deletes, actor_host) do
+      {:reject, nil}
+    else
+      {:ok, object}
+    end
+  end
 
   @impl true
   def filter(%{"actor" => actor} = object) do

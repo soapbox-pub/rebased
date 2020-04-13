@@ -43,9 +43,10 @@ Once `SimplePolicy` is enabled, you can configure various groups in the `:mrf_si
 
 * `media_removal`: Servers in this group will have media stripped from incoming messages.
 * `media_nsfw`: Servers in this group will have the #nsfw tag and sensitive setting injected into incoming messages which contain media.
-* `reject`: Servers in this group will have their messages rejected.
+* `reject`: Servers in this group will have their messages (except deletions) rejected.
 * `federated_timeline_removal`: Servers in this group will have their messages unlisted from the public timelines by flipping the `to` and `cc` fields.
 * `report_removal`: Servers in this group will have their reports (flags) rejected.
+* `reject_deletes`: Deletion requests will be rejected from these servers.
 
 Servers should be configured as lists.
 
