@@ -386,47 +386,56 @@ defmodule Pleroma.LoadTesting.Fetcher do
 
     favourites = ActivityPub.fetch_favourites(user)
 
+    output_relationships =
+      !!Pleroma.Config.get([:extensions, :output_relationships_in_statuses_by_default])
+
     Benchee.run(
       %{
         "Rendering home timeline" => fn ->
           StatusView.render("index.json", %{
             activities: home_activities,
             for: user,
-            as: :activity
+            as: :activity,
+            skip_relationships: !output_relationships
           })
         end,
         "Rendering direct timeline" => fn ->
           StatusView.render("index.json", %{
             activities: direct_activities,
             for: user,
-            as: :activity
+            as: :activity,
+            skip_relationships: !output_relationships
           })
         end,
         "Rendering public timeline" => fn ->
           StatusView.render("index.json", %{
             activities: public_activities,
             for: user,
-            as: :activity
+            as: :activity,
+            skip_relationships: !output_relationships
           })
         end,
         "Rendering tag timeline" => fn ->
           StatusView.render("index.json", %{
             activities: tag_activities,
             for: user,
-            as: :activity
+            as: :activity,
+            skip_relationships: !output_relationships
           })
         end,
         "Rendering notifications" => fn ->
           Pleroma.Web.MastodonAPI.NotificationView.render("index.json", %{
             notifications: notifications,
-            for: user
+            for: user,
+            skip_relationships: !output_relationships
           })
         end,
         "Rendering favourites timeline" => fn ->
           StatusView.render("index.json", %{
             activities: favourites,
             for: user,
-            as: :activity
+            as: :activity,
+            skip_relationships: !output_relationships
           })
         end
       },
