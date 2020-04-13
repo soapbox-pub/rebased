@@ -308,6 +308,22 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://bittube.video/accounts/hanimated.moh", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/hanimated.json")
+     }}
+  end
+
+  def get("https://bittube.video/videos/watch/2aad7dfb-5c75-4ee6-a9ed-08436af0558b", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/bittube-video.json")
+     }}
+  end
+
   def get("https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39", _, _, [
         {"accept", "application/activity+json"}
       ]) do

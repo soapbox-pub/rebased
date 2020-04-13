@@ -1221,6 +1221,15 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       :error = Transmogrifier.handle_incoming(data)
     end
 
+    test "it remaps mediaType of object" do
+      {:ok, object} =
+        Fetcher.fetch_object_from_id(
+          "https://bittube.video/videos/watch/2aad7dfb-5c75-4ee6-a9ed-08436af0558b"
+        )
+
+      assert object.data["mediaType"] == "text/html"
+    end
+
     test "it remaps video URLs as attachments if necessary" do
       {:ok, object} =
         Fetcher.fetch_object_from_id(

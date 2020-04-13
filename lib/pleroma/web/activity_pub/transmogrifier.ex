@@ -35,6 +35,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_actor
     |> fix_url
     |> fix_attachments
+    |> fix_media_type
     |> fix_context
     |> fix_in_reply_to(options)
     |> fix_emoji
@@ -356,6 +357,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_type(object, _), do: object
+
+  defp fix_media_type(%{"mediaType" => _} = object) do
+    Map.put(object, "mediaType", "text/html")
+  end
+
+  defp fix_media_type(object), do: object
 
   defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
     with true <- id =~ "follows",
@@ -1207,18 +1214,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def prepare_attachments(object) do
     attachments =
-      (object["attachment"] || [])
+      object
+      |> Map.get("attachment", [])
       |> Enum.map(fn data ->
         [%{"mediaType" => media_type, "href" => href} | _] = data["url"]
-        %{"url" => href, "mediaType" => media_type, "name" => data["name"], "type" => "Document"}
+
+        %{
+          "url" => href,
+          "mediaType" => media_type,
+          "name" => data["name"],
+          "type" => "Document"
+        }
       end)
 
     Map.put(object, "attachment", attachments)
   end
 
   def strip_internal_fields(object) do
-    object
-    |> Map.drop(Pleroma.Constants.object_internal_fields())
+    Map.drop(object, Pleroma.Constants.object_internal_fields())
   end
 
   defp strip_internal_tags(%{"tag" => tags} = object) do
