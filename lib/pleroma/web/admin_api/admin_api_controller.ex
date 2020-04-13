@@ -258,7 +258,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> put_view(Pleroma.Web.AdminAPI.StatusView)
-    |> render("index.json", %{activities: activities, as: :activity})
+    |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
   end
 
   def list_user_statuses(conn, %{"nickname" => nickname} = params) do
@@ -277,7 +277,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       conn
       |> put_view(StatusView)
-      |> render("index.json", %{activities: activities, as: :activity})
+      |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
     else
       _ -> {:error, :not_found}
     end
@@ -812,7 +812,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> put_view(Pleroma.Web.AdminAPI.StatusView)
-    |> render("index.json", %{activities: activities, as: :activity})
+    |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
   end
 
   def status_update(%{assigns: %{user: admin}} = conn, %{"id" => id} = params) do
