@@ -786,6 +786,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ### Restarts pleroma application
 
+**Only works when configuration from database is enabled.**
+
 - Params: none
 - Response:
   - On failure:
@@ -795,11 +797,24 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 {}
 ```
 
+## `GET /api/pleroma/admin/need_reboot`
+
+### Returns the flag whether the pleroma should be restarted
+
+- Params: none
+- Response:
+  - `need_reboot` - boolean
+```json
+{
+  "need_reboot": false
+}
+```
+
 ## `GET /api/pleroma/admin/config`
 
 ### Get list of merged default settings with saved in database.
 
-*If `need_reboot` flag exists in response, instance must be restarted, so reboot time settings can take effect.*
+*If `need_reboot` is `true`, instance must be restarted, so reboot time settings can take effect.*
 
 **Only works when configuration from database is enabled.**
 
@@ -821,13 +836,12 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   "need_reboot": true
 }
 ```
- need_reboot - *optional*, if were changed reboot time settings.
 
 ## `POST /api/pleroma/admin/config`
 
 ### Update config settings
 
-*If `need_reboot` flag exists in response, instance must be restarted, so reboot time settings can take effect.*
+*If `need_reboot` is `true`, instance must be restarted, so reboot time settings can take effect.*
 
 **Only works when configuration from database is enabled.**
 
@@ -971,7 +985,6 @@ config :quack,
   "need_reboot": true
 }
 ```
-need_reboot - *optional*, if were changed reboot time settings.
 
 ## ` GET /api/pleroma/admin/config/descriptions`
 

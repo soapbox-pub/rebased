@@ -203,6 +203,7 @@ defmodule Pleroma.Web.Router do
     get("/config", AdminAPIController, :config_show)
     post("/config", AdminAPIController, :config_update)
     get("/config/descriptions", AdminAPIController, :config_descriptions)
+    get("/need_reboot", AdminAPIController, :need_reboot)
     get("/restart", AdminAPIController, :restart)
 
     get("/moderation_log", AdminAPIController, :list_log)
