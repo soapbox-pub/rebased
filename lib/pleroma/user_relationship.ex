@@ -8,6 +8,7 @@ defmodule Pleroma.UserRelationship do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias Ecto.Changeset
   alias Pleroma.FollowingRelationship
   alias Pleroma.Repo
   alias Pleroma.User
@@ -16,12 +17,12 @@ defmodule Pleroma.UserRelationship do
   schema "user_relationships" do
     belongs_to(:source, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:target, User, type: FlakeId.Ecto.CompatType)
-    field(:relationship_type, UserRelationshipTypeEnum)
+    field(:relationship_type, Pleroma.UserRelationship.Type)
 
     timestamps(updated_at: false)
   end
 
-  for relationship_type <- Keyword.keys(UserRelationshipTypeEnum.__enum_map__()) do
+  for relationship_type <- Keyword.keys(Pleroma.UserRelationship.Type.__enum_map__()) do
     # `def create_block/2`, `def create_mute/2`, `def create_reblog_mute/2`,
     #   `def create_notification_mute/2`, `def create_inverse_subscription/2`
     def unquote(:"create_#{relationship_type}")(source, target),
@@ -40,7 +41,7 @@ defmodule Pleroma.UserRelationship do
 
   def user_relationship_types, do: Keyword.keys(user_relationship_mappings())
 
-  def user_relationship_mappings, do: UserRelationshipTypeEnum.__enum_map__()
+  def user_relationship_mappings, do: Pleroma.UserRelationship.Type.__enum_map__()
 
   def changeset(%UserRelationship{} = user_relationship, params \\ %{}) do
     user_relationship
@@ -147,18 +148,26 @@ defmodule Pleroma.UserRelationship do
     %{user_relationships: user_relationships, following_relationships: following_relationships}
   end
 
-  defp validate_not_self_relationship(%Ecto.Changeset{} = changeset) do
+  defp validate_not_self_relationship(%Changeset{} = changeset) do
     changeset
-    |> validate_change(:target_id, fn _, target_id ->
-      if target_id == get_field(changeset, :source_id) do
-        [target_id: "can't be equal to source_id"]
+    |> validate_source_id_target_id_inequality()
+    |> validate_target_id_source_id_inequality()
+  end
+
+  defp validate_source_id_target_id_inequality(%Changeset{} = changeset) do
+    validate_change(changeset, :source_id, fn _, source_id ->
+      if source_id == get_field(changeset, :target_id) do
+        [source_id: "can't be equal to target_id"]
       else
         []
       end
     end)
-    |> validate_change(:source_id, fn _, source_id ->
-      if source_id == get_field(changeset, :target_id) do
-        [source_id: "can't be equal to target_id"]
+  end
+
+  defp validate_target_id_source_id_inequality(%Changeset{} = changeset) do
+    validate_change(changeset, :target_id, fn _, target_id ->
+      if target_id == get_field(changeset, :source_id) do
+        [target_id: "can't be equal to source_id"]
       else
         []
       end

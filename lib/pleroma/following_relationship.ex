@@ -8,12 +8,13 @@ defmodule Pleroma.FollowingRelationship do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias Ecto.Changeset
   alias FlakeId.Ecto.CompatType
   alias Pleroma.Repo
   alias Pleroma.User
 
   schema "following_relationships" do
-    field(:state, :string, default: "accept")
+    field(:state, Pleroma.FollowingRelationship.State, default: :follow_pending)
 
     belongs_to(:follower, User, type: CompatType)
     belongs_to(:following, User, type: CompatType)
@@ -27,6 +28,18 @@ defmodule Pleroma.FollowingRelationship do
     |> put_assoc(:follower, attrs.follower)
     |> put_assoc(:following, attrs.following)
     |> validate_required([:state, :follower, :following])
+    |> unique_constraint(:follower_id,
+      name: :following_relationships_follower_id_following_id_index
+    )
+    |> validate_not_self_relationship()
+  end
+
+  def state_to_enum(state) when state in ["pending", "accept", "reject"] do
+    String.to_existing_atom("follow_#{state}")
+  end
+
+  def state_to_enum(state) do
+    raise "State is not convertible to Pleroma.FollowingRelationship.State: #{state}"
   end
 
   def get(%User{} = follower, %User{} = following) do
@@ -35,7 +48,7 @@ defmodule Pleroma.FollowingRelationship do
     |> Repo.one()
   end
 
-  def update(follower, following, "reject"), do: unfollow(follower, following)
+  def update(follower, following, :follow_reject), do: unfollow(follower, following)
 
   def update(%User{} = follower, %User{} = following, state) do
     case get(follower, following) do
@@ -50,7 +63,7 @@ defmodule Pleroma.FollowingRelationship do
     end
   end
 
-  def follow(%User{} = follower, %User{} = following, state \\ "accept") do
+  def follow(%User{} = follower, %User{} = following, state \\ :follow_accept) do
     %__MODULE__{}
     |> changeset(%{follower: follower, following: following, state: state})
     |> Repo.insert(on_conflict: :nothing)
@@ -103,7 +116,7 @@ defmodule Pleroma.FollowingRelationship do
   def get_follow_requests(%User{id: id}) do
     __MODULE__
     |> join(:inner, [r], f in assoc(r, :follower))
-    |> where([r], r.state == "pending")
+    |> where([r], r.state == ^:follow_pending)
     |> where([r], r.following_id == ^id)
     |> select([r, f], f)
     |> Repo.all()
@@ -111,7 +124,7 @@ defmodule Pleroma.FollowingRelationship do
 
   def following?(%User{id: follower_id}, %User{id: followed_id}) do
     __MODULE__
-    |> where(follower_id: ^follower_id, following_id: ^followed_id, state: "accept")
+    |> where(follower_id: ^follower_id, following_id: ^followed_id, state: ^:follow_accept)
     |> Repo.exists?()
   end
 
@@ -119,7 +132,7 @@ defmodule Pleroma.FollowingRelationship do
     __MODULE__
     |> join(:inner, [r], u in User, on: r.following_id == u.id)
     |> where([r], r.follower_id == ^user.id)
-    |> where([r], r.state == "accept")
+    |> where([r], r.state == ^:follow_accept)
   end
 
   def following(%User{} = user) do
@@ -182,6 +195,32 @@ defmodule Pleroma.FollowingRelationship do
   def find(following_relationships, follower, following) do
     Enum.find(following_relationships, fn
       fr -> fr.follower_id == follower.id and fr.following_id == following.id
+    end)
+  end
+
+  defp validate_not_self_relationship(%Changeset{} = changeset) do
+    changeset
+    |> validate_follower_id_following_id_inequality()
+    |> validate_following_id_follower_id_inequality()
+  end
+
+  defp validate_follower_id_following_id_inequality(%Changeset{} = changeset) do
+    validate_change(changeset, :follower_id, fn _, follower_id ->
+      if follower_id == get_field(changeset, :following_id) do
+        [source_id: "can't be equal to following_id"]
+      else
+        []
+      end
+    end)
+  end
+
+  defp validate_following_id_follower_id_inequality(%Changeset{} = changeset) do
+    validate_change(changeset, :following_id, fn _, following_id ->
+      if following_id == get_field(changeset, :follower_id) do
+        [target_id: "can't be equal to follower_id"]
+      else
+        []
+      end
     end)
   end
 end
