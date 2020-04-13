@@ -149,6 +149,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   defp check_banner_removal(_actor_info, object), do: {:ok, object}
 
   @impl true
+  def filter(%{"type" => "Delete"} = object), do: {:ok, object}
+
+  @impl true
   def filter(%{"actor" => actor} = object) do
     actor_info = URI.parse(actor)
 

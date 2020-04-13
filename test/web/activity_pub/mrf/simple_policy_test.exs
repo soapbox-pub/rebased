@@ -258,6 +258,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       assert SimplePolicy.filter(remote_user) == {:reject, nil}
     end
+
+    test "always accept deletions" do
+      Config.put([:mrf_simple, :reject], ["remote.instance"])
+
+      deletion_message = build_remote_deletion_message()
+
+      assert SimplePolicy.filter(deletion_message) == {:ok, deletion_message}
+    end
   end
 
   describe "when :accept" do
@@ -307,6 +315,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       remote_user = build_remote_user()
 
       assert SimplePolicy.filter(remote_user) == {:ok, remote_user}
+    end
+
+    test "always accept deletions" do
+      Config.put([:mrf_simple, :accept], ["non.matching.remote"])
+
+      deletion_message = build_remote_deletion_message()
+
+      assert SimplePolicy.filter(deletion_message) == {:ok, deletion_message}
     end
   end
 
@@ -406,6 +422,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
         "type" => "Image"
       },
       "type" => "Person"
+    }
+  end
+
+  defp build_remote_deletion_message do
+    %{
+      "type" => "Delete",
+      "actor" => "https://remote.instance/users/bob"
     }
   end
 end
