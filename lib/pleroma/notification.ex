@@ -88,19 +88,7 @@ defmodule Pleroma.Notification do
 
     query
     |> where([n, a], a.actor not in ^blocked_ap_ids)
-    |> where(
-      [n, a],
-      fragment(
-        # "NOT (actor's domain in domain_blocks) OR (actor is in followed AP IDs)"
-        "NOT (substring(? from '.*://([^/]*)') = ANY(?)) OR \
-          ? = ANY(SELECT ap_id FROM users AS u INNER JOIN following_relationships AS fr \
-            ON u.id = fr.following_id WHERE fr.follower_id = ? AND fr.state = 'accept')",
-        a.actor,
-        ^user.domain_blocks,
-        a.actor,
-        ^User.binary_id(user.id)
-      )
-    )
+    |> FollowingRelationship.keep_following_or_not_domain_blocked(user)
   end
 
   defp exclude_notification_muted(query, _, %{@include_muted_option => true}) do

@@ -10,17 +10,23 @@ defmodule Pleroma.FollowingRelationship do
 
   alias Ecto.Changeset
   alias FlakeId.Ecto.CompatType
+  alias Pleroma.FollowingRelationship.State
   alias Pleroma.Repo
   alias Pleroma.User
 
   schema "following_relationships" do
-    field(:state, Pleroma.FollowingRelationship.State, default: :follow_pending)
+    field(:state, State, default: :follow_pending)
 
     belongs_to(:follower, User, type: CompatType)
     belongs_to(:following, User, type: CompatType)
 
     timestamps()
   end
+
+  @doc "Returns underlying integer code for state atom"
+  def state_int_code(state_atom), do: State.__enum_map__() |> Keyword.fetch!(state_atom)
+
+  def accept_state_code, do: state_int_code(:follow_accept)
 
   def changeset(%__MODULE__{} = following_relationship, attrs) do
     following_relationship
@@ -86,7 +92,7 @@ defmodule Pleroma.FollowingRelationship do
     __MODULE__
     |> join(:inner, [r], u in User, on: r.follower_id == u.id)
     |> where([r], r.following_id == ^user.id)
-    |> where([r], r.state == "accept")
+    |> where([r], r.state == ^:follow_accept)
   end
 
   def followers_ap_ids(%User{} = user, from_ap_ids \\ nil) do
@@ -196,6 +202,30 @@ defmodule Pleroma.FollowingRelationship do
     Enum.find(following_relationships, fn
       fr -> fr.follower_id == follower.id and fr.following_id == following.id
     end)
+  end
+
+  @doc """
+  For a query with joined activity,
+  keeps rows where activity's actor is followed by user -or- is NOT domain-blocked by user.
+  """
+  def keep_following_or_not_domain_blocked(query, user) do
+    where(
+      query,
+      [_, activity],
+      fragment(
+        # "(actor's domain NOT in domain_blocks) OR (actor IS in followed AP IDs)"
+        """
+        NOT (substring(? from '.*://([^/]*)') = ANY(?)) OR
+          ? = ANY(SELECT ap_id FROM users AS u INNER JOIN following_relationships AS fr
+            ON u.id = fr.following_id WHERE fr.follower_id = ? AND fr.state = ?)
+        """,
+        activity.actor,
+        ^user.domain_blocks,
+        activity.actor,
+        ^User.binary_id(user.id),
+        ^accept_state_code()
+      )
+    )
   end
 
   defp validate_not_self_relationship(%Changeset{} = changeset) do
