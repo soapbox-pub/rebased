@@ -123,22 +123,6 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :extensions,
-    type: :group,
-    description: "Pleroma-specific extensions",
-    children: [
-      %{
-        key: :output_relationships_in_statuses_by_default,
-        type: :beeolean,
-        description:
-          "If `true`, outputs account/pleroma/relationship map for each rendered status / notification (for all clients). " <>
-            "If `false`, outputs the above only if `with_relationships` param is tru-ish " <>
-            "(that breaks compatibility with older PleromaFE versions which do not send this param but expect the output)."
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
     key: Pleroma.Uploaders.Local,
     type: :group,
     description: "Local uploader-related settings",
