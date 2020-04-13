@@ -194,7 +194,8 @@ defmodule Pleroma.UserTest do
     CommonAPI.follow(pending_follower, locked)
     CommonAPI.follow(pending_follower, locked)
     CommonAPI.follow(accepted_follower, locked)
-    Pleroma.FollowingRelationship.update(accepted_follower, locked, "accept")
+
+    Pleroma.FollowingRelationship.update(accepted_follower, locked, :follow_accept)
 
     assert [^pending_follower] = User.get_follow_requests(locked)
   end
@@ -319,7 +320,7 @@ defmodule Pleroma.UserTest do
           following_address: "http://localhost:4001/users/fuser2/following"
         })
 
-      {:ok, user} = User.follow(user, followed, "accept")
+      {:ok, user} = User.follow(user, followed, :follow_accept)
 
       {:ok, user, _activity} = User.unfollow(user, followed)
 
@@ -332,7 +333,7 @@ defmodule Pleroma.UserTest do
       followed = insert(:user)
       user = insert(:user)
 
-      {:ok, user} = User.follow(user, followed, "accept")
+      {:ok, user} = User.follow(user, followed, :follow_accept)
 
       assert User.following(user) == [user.follower_address, followed.follower_address]
 
@@ -353,7 +354,7 @@ defmodule Pleroma.UserTest do
   test "test if a user is following another user" do
     followed = insert(:user)
     user = insert(:user)
-    User.follow(user, followed, "accept")
+    User.follow(user, followed, :follow_accept)
 
     assert User.following?(user, followed)
     refute User.following?(followed, user)
