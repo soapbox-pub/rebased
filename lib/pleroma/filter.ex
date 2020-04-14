@@ -89,11 +89,10 @@ defmodule Pleroma.Filter do
     |> Repo.delete()
   end
 
-  def update(%Pleroma.Filter{} = filter) do
-    destination = Map.from_struct(filter)
-
-    Pleroma.Filter.get(filter.filter_id, %{id: filter.user_id})
-    |> cast(destination, [:phrase, :context, :hide, :expires_at, :whole_word])
+  def update(%Pleroma.Filter{} = filter, params) do
+    filter
+    |> cast(params, [:phrase, :context, :hide, :expires_at, :whole_word])
+    |> validate_required([:phrase, :context])
     |> Repo.update()
   end
 end
