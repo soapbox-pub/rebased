@@ -7,7 +7,6 @@ defmodule Pleroma.Notification do
 
   alias Pleroma.Activity
   alias Pleroma.FollowingRelationship
-  alias Pleroma.Marker
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Pagination
