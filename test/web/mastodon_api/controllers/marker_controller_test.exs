@@ -4,8 +4,10 @@
 
 defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
   use Pleroma.Web.ConnCase
+  alias Pleroma.Web.ApiSpec
 
   import Pleroma.Factory
+  import OpenApiSpex.TestAssertions
 
   describe "GET /api/v1/markers" do
     test "gets markers with correct scopes", %{conn: conn} do
@@ -22,7 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
         conn
         |> assign(:user, user)
         |> assign(:token, token)
-        |> get("/api/v1/markers", %{timeline: ["notifications"]})
+        |> get("/api/v1/markers?timeline[]=notifications")
         |> json_response(200)
 
       assert response == %{
@@ -32,6 +34,8 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
                  "version" => 0
                }
              }
+
+      assert_schema(response, "MarkersResponse", ApiSpec.spec())
     end
 
     test "gets markers with missed scopes", %{conn: conn} do
@@ -60,6 +64,7 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
         conn
         |> assign(:user, user)
         |> assign(:token, token)
+        |> put_req_header("content-type", "application/json")
         |> post("/api/v1/markers", %{
           home: %{last_read_id: "777"},
           notifications: %{"last_read_id" => "69420"}
@@ -73,6 +78,8 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
                  "version" => 0
                }
              } = response
+
+      assert_schema(response, "MarkersResponse", ApiSpec.spec())
     end
 
     test "updates exist marker", %{conn: conn} do
@@ -89,6 +96,7 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
         conn
         |> assign(:user, user)
         |> assign(:token, token)
+        |> put_req_header("content-type", "application/json")
         |> post("/api/v1/markers", %{
           home: %{last_read_id: "777"},
           notifications: %{"last_read_id" => "69888"}
@@ -102,6 +110,8 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
                  "version" => 0
                }
              }
+
+      assert_schema(response, "MarkersResponse", ApiSpec.spec())
     end
 
     test "creates a marker with missed scopes", %{conn: conn} do
