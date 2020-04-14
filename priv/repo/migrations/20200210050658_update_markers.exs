@@ -32,7 +32,7 @@ defmodule Pleroma.Repo.Migrations.UpdateMarkers do
       end)
 
     Repo.insert_all("markers", markers_attrs,
-      on_conflict: {:replace, [:last_read_id]},
+      on_conflict: {:replace, [:last_read_id, :unread_count]},
       conflict_target: [:user_id, :timeline]
     )
   end
