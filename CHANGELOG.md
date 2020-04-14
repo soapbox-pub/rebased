@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix task to create trusted OAuth App.
 - Notifications: Added `follow_request` notification type.
 - Added `:reject_deletes` group to SimplePolicy
+- MRF (`EmojiStealPolicy`): New MRF Policy which allows to automatically download emojis from remote instances
 <details>
   <summary>API Changes</summary>
 - Mastodon API: Extended `/api/v1/instance`.
