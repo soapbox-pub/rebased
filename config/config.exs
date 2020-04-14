@@ -240,6 +240,8 @@ config :pleroma, :instance,
   extended_nickname_format: true,
   cleanup_attachments: false
 
+config :pleroma, :extensions, output_relationships_in_statuses_by_default: true
+
 config :pleroma, :feed,
   post_title: %{
     max_length: 100,

@@ -187,7 +187,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp preview?(draft) do
-    preview? = Pleroma.Web.ControllerHelper.truthy_param?(draft.params["preview"]) || false
+    preview? = Pleroma.Web.ControllerHelper.truthy_param?(draft.params["preview"])
     %__MODULE__{draft | preview?: preview?}
   end
 

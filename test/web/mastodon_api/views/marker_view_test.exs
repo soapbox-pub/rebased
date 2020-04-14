@@ -8,19 +8,21 @@ defmodule Pleroma.Web.MastodonAPI.MarkerViewTest do
   import Pleroma.Factory
 
   test "returns markers" do
-    marker1 = insert(:marker, timeline: "notifications", last_read_id: "17")
+    marker1 = insert(:marker, timeline: "notifications", last_read_id: "17", unread_count: 5)
     marker2 = insert(:marker, timeline: "home", last_read_id: "42")
 
     assert MarkerView.render("markers.json", %{markers: [marker1, marker2]}) == %{
              "home" => %{
                last_read_id: "42",
                updated_at: NaiveDateTime.to_iso8601(marker2.updated_at),
-               version: 0
+               version: 0,
+               pleroma: %{unread_count: 0}
              },
              "notifications" => %{
                last_read_id: "17",
                updated_at: NaiveDateTime.to_iso8601(marker1.updated_at),
-               version: 0
+               version: 0,
+               pleroma: %{unread_count: 5}
              }
            }
   end
