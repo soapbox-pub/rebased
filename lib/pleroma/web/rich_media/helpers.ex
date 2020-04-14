@@ -64,5 +64,8 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   def fetch_data_for_activity(_), do: %{}
 
-  def perform(:fetch, %Activity{} = activity), do: fetch_data_for_activity(activity)
+  def perform(:fetch, %Activity{} = activity) do
+    fetch_data_for_activity(activity)
+    :ok
+  end
 end
