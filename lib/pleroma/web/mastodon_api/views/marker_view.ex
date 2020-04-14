@@ -10,7 +10,10 @@ defmodule Pleroma.Web.MastodonAPI.MarkerView do
       Map.put_new(acc, m.timeline, %{
         last_read_id: m.last_read_id,
         version: m.lock_version,
-        updated_at: NaiveDateTime.to_iso8601(m.updated_at)
+        updated_at: NaiveDateTime.to_iso8601(m.updated_at),
+        pleroma: %{
+          unread_count: m.unread_count
+        }
       })
     end)
   end

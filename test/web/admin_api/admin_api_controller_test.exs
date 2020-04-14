@@ -2273,13 +2273,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           value: :erlang.term_to_binary([])
         )
 
+      Pleroma.Config.TransferTask.load_and_update_env([], false)
+
+      assert Application.get_env(:logger, :backends) == []
+
       conn =
         post(conn, "/api/pleroma/admin/config", %{
           configs: [
             %{
               group: config.group,
               key: config.key,
-              value: [":console", %{"tuple" => ["ExSyslogger", ":ex_syslogger"]}]
+              value: [":console"]
             }
           ]
         })
@@ -2290,8 +2294,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "group" => ":logger",
                    "key" => ":backends",
                    "value" => [
-                     ":console",
-                     %{"tuple" => ["ExSyslogger", ":ex_syslogger"]}
+                     ":console"
                    ],
                    "db" => [":backends"]
                  }
@@ -2299,14 +2302,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
 
       assert Application.get_env(:logger, :backends) == [
-               :console,
-               {ExSyslogger, :ex_syslogger}
+               :console
              ]
-
-      capture_log(fn ->
-        require Logger
-        Logger.warn("Ooops...")
-      end) =~ "Ooops..."
     end
 
     test "saving full setting if value is not keyword", %{conn: conn} do

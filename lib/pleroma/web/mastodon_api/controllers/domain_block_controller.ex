@@ -8,6 +8,9 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
 
+  plug(OpenApiSpex.Plug.CastAndValidate)
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.DomainBlockOperation
+
   plug(
     OAuthScopesPlug,
     %{scopes: ["follow", "read:blocks"]} when action == :index
@@ -26,13 +29,13 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
   end
 
   @doc "POST /api/v1/domain_blocks"
-  def create(%{assigns: %{user: blocker}} = conn, %{"domain" => domain}) do
+  def create(%{assigns: %{user: blocker}, body_params: %{domain: domain}} = conn, _params) do
     User.block_domain(blocker, domain)
     json(conn, %{})
   end
 
   @doc "DELETE /api/v1/domain_blocks"
-  def delete(%{assigns: %{user: blocker}} = conn, %{"domain" => domain}) do
+  def delete(%{assigns: %{user: blocker}, body_params: %{domain: domain}} = conn, _params) do
     User.unblock_domain(blocker, domain)
     json(conn, %{})
   end
