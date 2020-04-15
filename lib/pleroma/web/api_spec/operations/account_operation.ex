@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Reference
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
@@ -20,6 +19,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.ListsResponse
   alias Pleroma.Web.ApiSpec.Schemas.StatusesResponse
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
+
+  import Pleroma.Web.ApiSpec.Helpers
 
   @spec open_api_operation(atom) :: Operation.t()
   def open_api_operation(action) do
@@ -35,7 +36,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description:
         "Creates a user and account records. Returns an account access token for the app that initiated the request. The app should save this token for later, and should wait for the user to confirm their account by clicking a link in their email inbox.",
       operationId: "AccountController.create",
-      requestBody: Helpers.request_body("Parameters", AccountCreateRequest, required: true),
+      requestBody: request_body("Parameters", AccountCreateRequest, required: true),
       responses: %{
         200 => Operation.response("Account", "application/json", AccountCreateResponse)
       }
@@ -62,8 +63,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "Update the user's display and preferences.",
       operationId: "AccountController.update_credentials",
       security: [%{"oAuth" => ["write:accounts"]}],
-      requestBody:
-        Helpers.request_body("Parameters", AccountUpdateCredentialsRequest, required: true),
+      requestBody: request_body("Parameters", AccountUpdateCredentialsRequest, required: true),
       responses: %{
         200 => Operation.response("Account", "application/json", Account)
       }
@@ -114,49 +114,31 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.statuses",
       description:
         "Statuses posted to the given account. Public (for public statuses only), or user token + `read:statuses` (for private statuses the user is authorized to see)",
-      parameters: [
-        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
-        Operation.parameter(:pinned, :query, BooleanLike, "Include only pinned statuses"),
-        Operation.parameter(:tagged, :query, :string, "With tag"),
-        Operation.parameter(
-          :only_media,
-          :query,
-          BooleanLike,
-          "Include only statuses with media attached"
-        ),
-        Operation.parameter(
-          :with_muted,
-          :query,
-          BooleanLike,
-          "Include statuses from muted acccounts."
-        ),
-        Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
-        Operation.parameter(
-          :exclude_visibilities,
-          :query,
-          %Schema{type: :array, items: VisibilityScope},
-          "Exclude visibilities"
-        ),
-        Operation.parameter(:max_id, :query, :string, "Return statuses older than this ID"),
-        Operation.parameter(
-          :min_id,
-          :query,
-          :string,
-          "Return the oldest statuses newer than this ID"
-        ),
-        Operation.parameter(
-          :since_id,
-          :query,
-          :string,
-          "Return the newest statuses newer than this ID"
-        ),
-        Operation.parameter(
-          :limit,
-          :query,
-          %Schema{type: :integer, default: 20, maximum: 40},
-          "Limit"
-        )
-      ],
+      parameters:
+        [
+          %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+          Operation.parameter(:pinned, :query, BooleanLike, "Include only pinned statuses"),
+          Operation.parameter(:tagged, :query, :string, "With tag"),
+          Operation.parameter(
+            :only_media,
+            :query,
+            BooleanLike,
+            "Include only statuses with media attached"
+          ),
+          Operation.parameter(
+            :with_muted,
+            :query,
+            BooleanLike,
+            "Include statuses from muted acccounts."
+          ),
+          Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
+          Operation.parameter(
+            :exclude_visibilities,
+            :query,
+            %Schema{type: :array, items: VisibilityScope},
+            "Exclude visibilities"
+          )
+        ] ++ pagination_params(),
       responses: %{
         200 => Operation.response("Statuses", "application/json", StatusesResponse)
       }
@@ -171,18 +153,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       security: [%{"oAuth" => ["read:accounts"]}],
       description:
         "Accounts which follow the given account, if network is not hidden by the account owner.",
-      parameters: [
-        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
-        Operation.parameter(:max_id, :query, :string, "Max ID"),
-        Operation.parameter(:min_id, :query, :string, "Mix ID"),
-        Operation.parameter(:since_id, :query, :string, "Since ID"),
-        Operation.parameter(
-          :limit,
-          :query,
-          %Schema{type: :integer, default: 20, maximum: 40},
-          "Limit"
-        )
-      ],
+      parameters:
+        [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}] ++ pagination_params(),
       responses: %{
         200 => Operation.response("Accounts", "application/json", AccountsResponse)
       }
@@ -197,18 +169,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       security: [%{"oAuth" => ["read:accounts"]}],
       description:
         "Accounts which the given account is following, if network is not hidden by the account owner.",
-      parameters: [
-        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
-        Operation.parameter(:max_id, :query, :string, "Max ID"),
-        Operation.parameter(:min_id, :query, :string, "Mix ID"),
-        Operation.parameter(:since_id, :query, :string, "Since ID"),
-        Operation.parameter(
-          :limit,
-          :query,
-          %Schema{type: :integer, default: 20, maximum: 40},
-          "Limit"
-        )
-      ],
+      parameters:
+        [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}] ++ pagination_params(),
       responses: %{200 => Operation.response("Accounts", "application/json", AccountsResponse)}
     }
   end
@@ -267,7 +229,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       summary: "Mute",
       operationId: "AccountController.mute",
       security: [%{"oAuth" => ["follow", "write:mutes"]}],
-      requestBody: Helpers.request_body("Parameters", AccountMuteRequest),
+      requestBody: request_body("Parameters", AccountMuteRequest),
       description:
         "Mute the given account. Clients should filter statuses and notifications from this account, if received (e.g. due to a boost in the Home timeline).",
       parameters: [
@@ -334,7 +296,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       summary: "Follows",
       operationId: "AccountController.follows",
       security: [%{"oAuth" => ["follow", "write:follows"]}],
-      requestBody: Helpers.request_body("Parameters", AccountFollowsRequest, required: true),
+      requestBody: request_body("Parameters", AccountFollowsRequest, required: true),
       responses: %{
         200 => Operation.response("Account", "application/json", Account)
       }
