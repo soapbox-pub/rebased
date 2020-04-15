@@ -51,6 +51,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       {:ok, activity} = CommonAPI.post(third_user, %{"status" => "repeated post"})
       {:ok, _, _} = CommonAPI.repeat(activity.id, following)
 
+      # This one should not show up in the TL
+      {:ok, _activity} = CommonAPI.post_chat_message(third_user, user, ":gun:")
+
       ret_conn = get(conn, uri)
 
       assert Enum.empty?(json_response(ret_conn, :ok))

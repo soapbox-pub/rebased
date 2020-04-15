@@ -24,7 +24,7 @@ defmodule Pleroma.Web.CommonAPI do
   require Pleroma.Constants
   require Logger
 
-  def post_chat_message(user, recipient, content) do
+  def post_chat_message(%User{} = user, %User{} = recipient, content) do
     transaction =
       Repo.transaction(fn ->
         with {_, {:ok, chat_message_data, _meta}} <-

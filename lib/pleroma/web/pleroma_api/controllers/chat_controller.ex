@@ -9,6 +9,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.PleromaAPI.ChatView
+  alias Pleroma.Web.PleromaAPI.ChatMessageView
 
   import Ecto.Query
 
@@ -16,6 +18,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   # - Oauth stuff
   # - Views / Representers
   # - Error handling
+
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ChatOperation
 
   def post_chat_message(%{assigns: %{user: %{id: user_id} = user}} = conn, %{
         "id" => id,
@@ -25,14 +29,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
          %User{} = recipient <- User.get_cached_by_ap_id(chat.recipient),
          {:ok, activity} <- CommonAPI.post_chat_message(user, recipient, content),
          message <- Object.normalize(activity) do
-      represented_message = %{
-        actor: message.data["actor"],
-        id: message.id,
-        content: message.data["content"]
-      }
-
       conn
-      |> json(represented_message)
+      |> put_view(ChatMessageView)
+      |> render("show.json", for: user, object: message, chat: chat)
     end
   end
 
@@ -60,18 +59,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
         )
         |> Repo.all()
 
-      represented_messages =
-        messages
-        |> Enum.map(fn message ->
-          %{
-            actor: message.data["actor"],
-            id: message.id,
-            content: message.data["content"]
-          }
-        end)
-
       conn
-      |> json(represented_messages)
+      |> put_view(ChatMessageView)
+      |> render("index.json", for: user, objects: messages, chat: chat)
     end
   end
 
@@ -83,31 +73,18 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       )
       |> Repo.all()
 
-    represented_chats =
-      Enum.map(chats, fn chat ->
-        %{
-          id: chat.id,
-          recipient: chat.recipient,
-          unread: chat.unread
-        }
-      end)
-
     conn
-    |> json(represented_chats)
+    |> put_view(ChatView)
+    |> render("index.json", chats: chats)
   end
 
   def create(%{assigns: %{user: user}} = conn, params) do
     recipient = params["ap_id"] |> URI.decode_www_form()
 
     with {:ok, %Chat{} = chat} <- Chat.get_or_create(user.id, recipient) do
-      represented_chat = %{
-        id: chat.id,
-        recipient: chat.recipient,
-        unread: chat.unread
-      }
-
       conn
-      |> json(represented_chat)
+      |> put_view(ChatView)
+      |> render("show.json", chat: chat)
     end
   end
 end

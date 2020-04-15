@@ -23,14 +23,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> json_response(200)
 
       assert result["content"] == "Hallo!!"
+      assert result["chat_id"] == chat.id
     end
   end
 
   describe "GET /api/v1/pleroma/chats/:id/messages" do
     # TODO
-    # - Test that statuses don't show
     # - Test the case where it's not the user's chat
-    # - Test the returned data
     test "it returns the messages for a given chat", %{conn: conn} do
       user = insert(:user)
       other_user = insert(:user)
@@ -48,6 +47,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> assign(:user, user)
         |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
         |> json_response(200)
+
+      result
+      |> Enum.each(fn message ->
+        assert message["chat_id"] == chat.id
+      end)
 
       assert length(result) == 3
     end

@@ -1207,6 +1207,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp exclude_chat_messages(query, %{"include_chat_messages" => true}), do: query
+
+  defp exclude_chat_messages(query, _) do
+    if has_named_binding?(query, :object) do
+      from([activity, object: o] in query,
+        where: fragment("not(?->>'type' = ?)", o.data, "ChatMessage")
+      )
+    else
+      query
+    end
+  end
+
   defp exclude_id(query, %{"exclude_id" => id}) when is_binary(id) do
     from(activity in query, where: activity.id != ^id)
   end
@@ -1312,6 +1324,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_instance(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
+    |> exclude_chat_messages(opts)
     |> exclude_visibility(opts)
   end
 
