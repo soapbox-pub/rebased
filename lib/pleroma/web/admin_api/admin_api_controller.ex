@@ -258,7 +258,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> put_view(Pleroma.Web.AdminAPI.StatusView)
-    |> render("index.json", %{activities: activities, as: :activity})
+    |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
   end
 
   def list_user_statuses(conn, %{"nickname" => nickname} = params) do
@@ -277,7 +277,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       conn
       |> put_view(StatusView)
-      |> render("index.json", %{activities: activities, as: :activity})
+      |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
     else
       _ -> {:error, :not_found}
     end
@@ -576,9 +576,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   @doc "Sends registration invite via email"
   def email_invite(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
-    with true <-
-           Config.get([:instance, :invites_enabled]) &&
-             !Config.get([:instance, :registrations_open]),
+    with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
+         {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
          {:ok, invite_token} <- UserInviteToken.create_invite(),
          email <-
            Pleroma.Emails.UserEmail.user_invitation_email(
@@ -589,6 +588,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            ),
          {:ok, _} <- Pleroma.Emails.Mailer.deliver(email) do
       json_response(conn, :no_content, "")
+    else
+      {:registrations_open, _} ->
+        errors(
+          conn,
+          {:error, "To send invites you need to set the `registrations_open` option to false."}
+        )
+
+      {:invites_enabled, _} ->
+        errors(
+          conn,
+          {:error, "To send invites you need to set the `invites_enabled` option to true."}
+        )
     end
   end
 
@@ -801,7 +812,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> put_view(Pleroma.Web.AdminAPI.StatusView)
-    |> render("index.json", %{activities: activities, as: :activity})
+    |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
   end
 
   def status_update(%{assigns: %{user: admin}} = conn, %{"id" => id} = params) do

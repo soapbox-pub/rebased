@@ -125,6 +125,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def increase_poll_votes_if_vote(_create_data), do: :noop
 
+  @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
+  def persist(object, meta) do
+    with local <- Keyword.fetch!(meta, :local),
+         {recipients, _, _} <- get_recipients(object),
+         {:ok, activity} <-
+           Repo.insert(%Activity{
+             data: object,
+             local: local,
+             recipients: recipients,
+             actor: object["actor"]
+           }) do
+      {:ok, activity, meta}
+    end
+  end
+
   @spec insert(map(), boolean(), boolean(), boolean()) :: {:ok, Activity.t()} | {:error, any()}
   def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
@@ -706,7 +721,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp fetch_activities_for_context_query(context, opts) do
+  def fetch_activities_for_context_query(context, opts) do
     public = [Constants.as_public()]
 
     recipients =

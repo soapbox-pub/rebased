@@ -29,6 +29,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
     plug(Pleroma.Plugs.IdempotencyPlug)
+    plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
   pipeline :authenticated_api do
@@ -45,6 +46,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
     plug(Pleroma.Plugs.IdempotencyPlug)
+    plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
   pipeline :admin_api do
@@ -62,6 +64,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
     plug(Pleroma.Plugs.UserIsAdminPlug)
     plug(Pleroma.Plugs.IdempotencyPlug)
+    plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
   pipeline :mastodon_html do
@@ -95,10 +98,12 @@ defmodule Pleroma.Web.Router do
 
   pipeline :config do
     plug(:accepts, ["json", "xml"])
+    plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
   pipeline :pleroma_api do
     plug(:accepts, ["html", "json"])
+    plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
   pipeline :mailbox_preview do
@@ -348,9 +353,11 @@ defmodule Pleroma.Web.Router do
 
     get("/notifications", NotificationController, :index)
     get("/notifications/:id", NotificationController, :show)
+    post("/notifications/:id/dismiss", NotificationController, :dismiss)
     post("/notifications/clear", NotificationController, :clear)
-    post("/notifications/dismiss", NotificationController, :dismiss)
     delete("/notifications/destroy_multiple", NotificationController, :destroy_multiple)
+    # Deprecated: was removed in Mastodon v3, use `/notifications/:id/dismiss` instead
+    post("/notifications/dismiss", NotificationController, :dismiss)
 
     get("/scheduled_statuses", ScheduledActivityController, :index)
     get("/scheduled_statuses/:id", ScheduledActivityController, :show)
@@ -499,6 +506,12 @@ defmodule Pleroma.Web.Router do
       :confirm_email,
       as: :confirm_email
     )
+  end
+
+  scope "/api" do
+    pipe_through(:api)
+
+    get("/openapi", OpenApiSpex.Plug.RenderSpec, [])
   end
 
   scope "/api", Pleroma.Web, as: :authenticated_twitter_api do

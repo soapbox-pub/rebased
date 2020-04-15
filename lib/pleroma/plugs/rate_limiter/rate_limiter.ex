@@ -110,20 +110,9 @@ defmodule Pleroma.Plugs.RateLimiter do
   end
 
   def disabled?(conn) do
-    localhost_or_socket =
-      case Config.get([Pleroma.Web.Endpoint, :http, :ip]) do
-        {127, 0, 0, 1} -> true
-        {0, 0, 0, 0, 0, 0, 0, 1} -> true
-        {:local, _} -> true
-        _ -> false
-      end
-
-    remote_ip_not_found =
-      if Map.has_key?(conn.assigns, :remote_ip_found),
-        do: !conn.assigns.remote_ip_found,
-        else: false
-
-    localhost_or_socket and remote_ip_not_found
+    if Map.has_key?(conn.assigns, :remote_ip_found),
+      do: !conn.assigns.remote_ip_found,
+      else: false
   end
 
   @inspect_bucket_not_found {:error, :not_found}

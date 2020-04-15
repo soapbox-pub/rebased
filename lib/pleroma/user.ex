@@ -16,6 +16,7 @@ defmodule Pleroma.User do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Formatter
   alias Pleroma.HTML
   alias Pleroma.Keys
   alias Pleroma.Notification
@@ -452,7 +453,7 @@ defmodule Pleroma.User do
 
       fields =
         raw_fields
-        |> Enum.map(fn f -> Map.update!(f, "value", &AutoLinker.link(&1)) end)
+        |> Enum.map(fn f -> Map.update!(f, "value", &parse_fields(&1)) end)
 
       changeset
       |> put_change(:raw_fields, raw_fields)
@@ -460,6 +461,12 @@ defmodule Pleroma.User do
     else
       changeset
     end
+  end
+
+  defp parse_fields(value) do
+    value
+    |> Formatter.linkify(mentions_format: :full)
+    |> elem(0)
   end
 
   defp put_change_if_present(changeset, map_field, value_function) do
@@ -693,7 +700,7 @@ defmodule Pleroma.User do
 
   @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
   def maybe_direct_follow(%User{} = follower, %User{local: true, locked: true} = followed) do
-    follow(follower, followed, "pending")
+    follow(follower, followed, :follow_pending)
   end
 
   def maybe_direct_follow(%User{} = follower, %User{local: true} = followed) do
@@ -713,14 +720,14 @@ defmodule Pleroma.User do
   def follow_all(follower, followeds) do
     followeds
     |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
-    |> Enum.each(&follow(follower, &1, "accept"))
+    |> Enum.each(&follow(follower, &1, :follow_accept))
 
     set_cache(follower)
   end
 
   defdelegate following(user), to: FollowingRelationship
 
-  def follow(%User{} = follower, %User{} = followed, state \\ "accept") do
+  def follow(%User{} = follower, %User{} = followed, state \\ :follow_accept) do
     deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
 
     cond do
@@ -747,7 +754,7 @@ defmodule Pleroma.User do
 
   def unfollow(%User{} = follower, %User{} = followed) do
     case get_follow_state(follower, followed) do
-      state when state in ["accept", "pending"] ->
+      state when state in [:follow_pending, :follow_accept] ->
         FollowingRelationship.unfollow(follower, followed)
         {:ok, followed} = update_follower_count(followed)
 
@@ -765,6 +772,7 @@ defmodule Pleroma.User do
 
   defdelegate following?(follower, followed), to: FollowingRelationship
 
+  @doc "Returns follow state as Pleroma.FollowingRelationship.State value"
   def get_follow_state(%User{} = follower, %User{} = following) do
     following_relationship = FollowingRelationship.get(follower, following)
     get_follow_state(follower, following, following_relationship)
@@ -778,8 +786,11 @@ defmodule Pleroma.User do
     case {following_relationship, following.local} do
       {nil, false} ->
         case Utils.fetch_latest_follow(follower, following) do
-          %{data: %{"state" => state}} when state in ["pending", "accept"] -> state
-          _ -> nil
+          %Activity{data: %{"state" => state}} when state in ["pending", "accept"] ->
+            FollowingRelationship.state_to_enum(state)
+
+          _ ->
+            nil
         end
 
       {%{state: state}, _} ->
@@ -1278,7 +1289,7 @@ defmodule Pleroma.User do
 
   def blocks?(%User{} = user, %User{} = target) do
     blocks_user?(user, target) ||
-      (!User.following?(user, target) && blocks_domain?(user, target))
+      (blocks_domain?(user, target) and not User.following?(user, target))
   end
 
   def blocks_user?(%User{} = user, %User{} = target) do
@@ -1978,17 +1989,6 @@ defmodule Pleroma.User do
   def fields(%{fields: nil}), do: []
 
   def fields(%{fields: fields}), do: fields
-
-  def sanitized_fields(%User{} = user) do
-    user
-    |> User.fields()
-    |> Enum.map(fn %{"name" => name, "value" => value} ->
-      %{
-        "name" => name,
-        "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
-      }
-    end)
-  end
 
   def validate_fields(changeset, remote? \\ false) do
     limit_name = if remote?, do: :max_remote_account_fields, else: :max_account_fields

@@ -284,9 +284,12 @@ defmodule Pleroma.Web.CommonAPITest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+      {:ok, post_activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
 
-      {:ok, %Activity{}, _} = CommonAPI.favorite(activity.id, user)
+      {:ok, %Activity{data: data}} = CommonAPI.favorite(user, post_activity.id)
+      assert data["type"] == "Like"
+      assert data["actor"] == user.ap_id
+      assert data["object"] == post_activity.data["object"]
     end
 
     test "retweeting a status twice returns the status" do
@@ -298,13 +301,13 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, ^activity, ^object} = CommonAPI.repeat(activity.id, user)
     end
 
-    test "favoriting a status twice returns the status" do
+    test "favoriting a status twice returns ok, but without the like activity" do
       user = insert(:user)
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
-      {:ok, %Activity{} = activity, object} = CommonAPI.favorite(activity.id, user)
-      {:ok, ^activity, ^object} = CommonAPI.favorite(activity.id, user)
+      {:ok, %Activity{}} = CommonAPI.favorite(user, activity.id)
+      assert {:ok, :already_liked} = CommonAPI.favorite(user, activity.id)
     end
   end
 
@@ -562,7 +565,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
 
-      assert User.get_follow_state(follower, followed) == "pending"
+      assert User.get_follow_state(follower, followed) == :follow_pending
       assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
       assert User.get_follow_state(follower, followed) == nil
 
@@ -584,7 +587,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
 
-      assert User.get_follow_state(follower, followed) == "pending"
+      assert User.get_follow_state(follower, followed) == :follow_pending
       assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
       assert User.get_follow_state(follower, followed) == nil
 
