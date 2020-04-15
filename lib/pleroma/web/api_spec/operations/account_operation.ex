@@ -120,7 +120,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         Operation.parameter(:tagged, :query, :string, "With tag"),
         Operation.parameter(:only_media, :query, BooleanLike, "Only meadia"),
         Operation.parameter(:with_muted, :query, BooleanLike, "With muted"),
-        Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblobs"),
+        Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
+
         Operation.parameter(
           :exclude_visibilities,
           :query,
