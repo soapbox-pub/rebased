@@ -130,7 +130,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         ),
         Operation.parameter(:max_id, :query, :string, "Return statuses older than this id"),
         Operation.parameter(:min_id, :query, :string, "Return the oldest statuses newer than this id. "),
-        Operation.parameter(:since_id, :query, :string, "Since ID"),
+        Operation.parameter(:since_id, :query, :string, "Return the newest statuses newer than this id. "),
         Operation.parameter(
           :limit,
           :query,
