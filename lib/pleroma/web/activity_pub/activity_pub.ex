@@ -1158,7 +1158,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   # TODO: when all endpoints migrated to OpenAPI compare `pinned` with `true` (boolean) only,
-  # the same for `restrict_media/2`, `restrict_replies/2`, 'restrict_reblogs/2' and `restrict_muted/2`
+  # the same for `restrict_media/2`, `restrict_replies/2`, 'restrict_reblogs/2'
+  # and `restrict_muted/2`
+
   defp restrict_pinned(query, %{"pinned" => pinned, "pinned_activity_ids" => ids})
        when pinned in [true, "true", "1"] do
     from(activity in query, where: activity.id in ^ids)
