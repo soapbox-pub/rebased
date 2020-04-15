@@ -672,6 +672,17 @@ defmodule Pleroma.Web.Router do
     end
   end
 
+  # Test-only routes needed to test action dispatching and plug chain execution
+  if Pleroma.Config.get(:env) == :test do
+    scope "/test/authenticated_api", Pleroma.Tests do
+      pipe_through(:authenticated_api)
+
+      for action <- [:skipped_oauth, :performed_oauth, :missed_oauth] do
+        get("/#{action}", OAuthTestController, action)
+      end
+    end
+  end
+
   scope "/", Pleroma.Web.MongooseIM do
     get("/user_exists", MongooseIMController, :user_exists)
     get("/check_password", MongooseIMController, :check_password)

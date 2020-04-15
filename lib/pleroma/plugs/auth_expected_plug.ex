@@ -10,4 +10,8 @@ defmodule Pleroma.Plugs.AuthExpectedPlug do
   def call(conn, _) do
     put_private(conn, :auth_expected, true)
   end
+
+  def auth_expected?(conn) do
+    conn.private[:auth_expected]
+  end
 end

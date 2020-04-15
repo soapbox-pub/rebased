@@ -37,15 +37,21 @@ defmodule Pleroma.Web do
         put_layout(conn, Pleroma.Config.get(:app_layout, "app.html"))
       end
 
-      # Marks a plug as intentionally skipped
-      #   (states that the plug is not called for a good reason, not by a mistake)
+      # Marks a plug intentionally skipped and blocks its execution if it's present in plugs chain
       defp skip_plug(conn, plug_module) do
+        try do
+          plug_module.ensure_skippable()
+        rescue
+          UndefinedFunctionError ->
+            raise "#{plug_module} is not skippable. Append `use Pleroma.Web, :plug` to its code."
+        end
+
         PlugHelper.append_to_skipped_plugs(conn, plug_module)
       end
 
       # Here we can apply before-action hooks (e.g. verify whether auth checks were preformed)
       defp action(conn, params) do
-        if conn.private[:auth_expected] &&
+        if Pleroma.Plugs.AuthExpectedPlug.auth_expected?(conn) &&
              not PlugHelper.plug_called_or_skipped?(conn, Pleroma.Plugs.OAuthScopesPlug) do
           conn
           |> render_error(
@@ -116,6 +122,26 @@ defmodule Pleroma.Web do
       # credo:disable-for-next-line Credo.Check.Consistency.MultiAliasImportRequireUse
       use Phoenix.Channel
       import Pleroma.Web.Gettext
+    end
+  end
+
+  def plug do
+    quote do
+      alias Pleroma.Plugs.PlugHelper
+
+      def ensure_skippable, do: :noop
+
+      @impl Plug
+      @doc "If marked as skipped, returns `conn`, and calls `perform/2` otherwise."
+      def call(%Plug.Conn{} = conn, options) do
+        if PlugHelper.plug_skipped?(conn, __MODULE__) do
+          conn
+        else
+          conn
+          |> PlugHelper.append_to_called_plugs(__MODULE__)
+          |> perform(options)
+        end
+      end
     end
   end
 
