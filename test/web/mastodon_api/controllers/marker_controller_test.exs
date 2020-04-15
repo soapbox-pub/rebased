@@ -11,6 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
     test "gets markers with correct scopes", %{conn: conn} do
       user = insert(:user)
       token = insert(:oauth_token, user: user, scopes: ["read:statuses"])
+      insert_list(7, :notification, user: user)
 
       {:ok, %{"notifications" => marker}} =
         Pleroma.Marker.upsert(
@@ -29,7 +30,8 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
                "notifications" => %{
                  "last_read_id" => "69420",
                  "updated_at" => NaiveDateTime.to_iso8601(marker.updated_at),
-                 "version" => 0
+                 "version" => 0,
+                 "pleroma" => %{"unread_count" => 7}
                }
              }
     end
@@ -70,7 +72,8 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
                "notifications" => %{
                  "last_read_id" => "69420",
                  "updated_at" => _,
-                 "version" => 0
+                 "version" => 0,
+                 "pleroma" => %{"unread_count" => 0}
                }
              } = response
     end
@@ -99,7 +102,8 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
                "notifications" => %{
                  "last_read_id" => "69888",
                  "updated_at" => NaiveDateTime.to_iso8601(marker.updated_at),
-                 "version" => 0
+                 "version" => 0,
+                 "pleroma" => %{"unread_count" => 0}
                }
              }
     end
