@@ -129,7 +129,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           "Exclude visibilities"
         ),
         Operation.parameter(:max_id, :query, :string, "Max ID"),
-        Operation.parameter(:min_id, :query, :string, "Mix ID"),
+        Operation.parameter(:min_id, :query, :string, "Return the oldest statuses newer than this id. "),
         Operation.parameter(:since_id, :query, :string, "Since ID"),
         Operation.parameter(
           :limit,
