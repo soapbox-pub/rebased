@@ -116,7 +116,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         "Statuses posted to the given account. Public (for public statuses only), or user token + `read:statuses` (for private statuses the user is authorized to see)",
       parameters: [
         %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
-        Operation.parameter(:pinned, :query, BooleanLike, "Pinned"),
+        Operation.parameter(:pinned, :query, BooleanLike, "Include only pinned statuses"),
         Operation.parameter(:tagged, :query, :string, "With tag"),
         Operation.parameter(:only_media, :query, BooleanLike, "Include only statuses with media attached"),
         Operation.parameter(:with_muted, :query, BooleanLike, "Include statuses from muted acccounts."),
