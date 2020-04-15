@@ -118,7 +118,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
         Operation.parameter(:pinned, :query, BooleanLike, "Pinned"),
         Operation.parameter(:tagged, :query, :string, "With tag"),
-        Operation.parameter(:only_media, :query, BooleanLike, "Only meadia"),
+        Operation.parameter(:only_media, :query, BooleanLike, "Include only statuses with media attached"),
         Operation.parameter(:with_muted, :query, BooleanLike, "Include statuses from muted acccounts."),
         Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
 
