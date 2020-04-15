@@ -113,7 +113,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RewritePolicy do
 
   @impl true
   def describe do
-    {:ok, %{mrf_sample: %{content: "new message content"}}}`
+    {:ok, %{mrf_sample: %{content: "new message content"}}}
   end
 end
 ```
