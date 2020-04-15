@@ -119,7 +119,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         Operation.parameter(:pinned, :query, BooleanLike, "Pinned"),
         Operation.parameter(:tagged, :query, :string, "With tag"),
         Operation.parameter(:only_media, :query, BooleanLike, "Only meadia"),
-        Operation.parameter(:with_muted, :query, BooleanLike, "With muted"),
+        Operation.parameter(:with_muted, :query, BooleanLike, "Include statuses from muted acccounts."),
         Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
 
         Operation.parameter(
