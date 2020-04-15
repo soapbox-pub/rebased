@@ -118,19 +118,38 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
         Operation.parameter(:pinned, :query, BooleanLike, "Include only pinned statuses"),
         Operation.parameter(:tagged, :query, :string, "With tag"),
-        Operation.parameter(:only_media, :query, BooleanLike, "Include only statuses with media attached"),
-        Operation.parameter(:with_muted, :query, BooleanLike, "Include statuses from muted acccounts."),
+        Operation.parameter(
+          :only_media,
+          :query,
+          BooleanLike,
+          "Include only statuses with media attached"
+        ),
+        Operation.parameter(
+          :with_muted,
+          :query,
+          BooleanLike,
+          "Include statuses from muted acccounts."
+        ),
         Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
-
         Operation.parameter(
           :exclude_visibilities,
           :query,
           %Schema{type: :array, items: VisibilityScope},
           "Exclude visibilities"
         ),
-        Operation.parameter(:max_id, :query, :string, "Return statuses older than this id"),
-        Operation.parameter(:min_id, :query, :string, "Return the oldest statuses newer than this id. "),
-        Operation.parameter(:since_id, :query, :string, "Return the newest statuses newer than this id. "),
+        Operation.parameter(:max_id, :query, :string, "Return statuses older than this ID"),
+        Operation.parameter(
+          :min_id,
+          :query,
+          :string,
+          "Return the oldest statuses newer than this ID"
+        ),
+        Operation.parameter(
+          :since_id,
+          :query,
+          :string,
+          "Return the newest statuses newer than this ID"
+        ),
         Operation.parameter(
           :limit,
           :query,
