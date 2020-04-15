@@ -6,7 +6,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2]
+    only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2, skip_relationships?: 1]
 
   alias Ecto.Changeset
   alias Pleroma.Plugs.OAuthScopesPlug
@@ -139,7 +139,12 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     conn
     |> add_link_headers(activities)
     |> put_view(StatusView)
-    |> render("index.json", activities: activities, for: for_user, as: :activity)
+    |> render("index.json",
+      activities: activities,
+      for: for_user,
+      as: :activity,
+      skip_relationships: skip_relationships?(params)
+    )
   end
 
   @doc "POST /api/v1/pleroma/accounts/:id/subscribe"

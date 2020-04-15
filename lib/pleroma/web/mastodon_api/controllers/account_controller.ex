@@ -6,7 +6,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [add_link_headers: 2, truthy_param?: 1, assign_account_by_id: 2, json_response: 3]
+    only: [
+      add_link_headers: 2,
+      truthy_param?: 1,
+      assign_account_by_id: 2,
+      json_response: 3,
+      skip_relationships?: 1
+    ]
 
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
@@ -237,7 +243,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       conn
       |> add_link_headers(activities)
       |> put_view(StatusView)
-      |> render("index.json", activities: activities, for: reading_user, as: :activity)
+      |> render("index.json",
+        activities: activities,
+        for: reading_user,
+        as: :activity,
+        skip_relationships: skip_relationships?(params)
+      )
     else
       _e -> render_error(conn, :not_found, "Can't find user")
     end

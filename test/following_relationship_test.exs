@@ -15,28 +15,28 @@ defmodule Pleroma.FollowingRelationshipTest do
     test "returns following addresses without internal.fetch" do
       user = insert(:user)
       fetch_actor = InternalFetchActor.get_actor()
-      FollowingRelationship.follow(fetch_actor, user, "accept")
+      FollowingRelationship.follow(fetch_actor, user, :follow_accept)
       assert FollowingRelationship.following(fetch_actor) == [user.follower_address]
     end
 
     test "returns following addresses without relay" do
       user = insert(:user)
       relay_actor = Relay.get_actor()
-      FollowingRelationship.follow(relay_actor, user, "accept")
+      FollowingRelationship.follow(relay_actor, user, :follow_accept)
       assert FollowingRelationship.following(relay_actor) == [user.follower_address]
     end
 
     test "returns following addresses without remote user" do
       user = insert(:user)
       actor = insert(:user, local: false)
-      FollowingRelationship.follow(actor, user, "accept")
+      FollowingRelationship.follow(actor, user, :follow_accept)
       assert FollowingRelationship.following(actor) == [user.follower_address]
     end
 
     test "returns following addresses with local user" do
       user = insert(:user)
       actor = insert(:user, local: true)
-      FollowingRelationship.follow(actor, user, "accept")
+      FollowingRelationship.follow(actor, user, :follow_accept)
 
       assert FollowingRelationship.following(actor) == [
                actor.follower_address,

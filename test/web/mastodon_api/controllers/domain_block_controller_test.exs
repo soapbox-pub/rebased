@@ -6,20 +6,29 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.User
+  alias Pleroma.Web.ApiSpec
+  alias Pleroma.Web.ApiSpec.Schemas.DomainBlocksResponse
 
   import Pleroma.Factory
+  import OpenApiSpex.TestAssertions
 
   test "blocking / unblocking a domain" do
     %{user: user, conn: conn} = oauth_access(["write:blocks"])
     other_user = insert(:user, %{ap_id: "https://dogwhistle.zone/@pundit"})
 
-    ret_conn = post(conn, "/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
+    ret_conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
 
     assert %{} = json_response(ret_conn, 200)
     user = User.get_cached_by_ap_id(user.ap_id)
     assert User.blocks?(user, other_user)
 
-    ret_conn = delete(conn, "/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
+    ret_conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> delete("/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
 
     assert %{} = json_response(ret_conn, 200)
     user = User.get_cached_by_ap_id(user.ap_id)
@@ -41,5 +50,12 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockControllerTest do
 
     assert "bad.site" in domain_blocks
     assert "even.worse.site" in domain_blocks
+    assert_schema(domain_blocks, "DomainBlocksResponse", ApiSpec.spec())
+  end
+
+  test "DomainBlocksResponse example matches schema" do
+    api_spec = ApiSpec.spec()
+    schema = DomainBlocksResponse.schema()
+    assert_schema(schema.example, "DomainBlocksResponse", api_spec)
   end
 end

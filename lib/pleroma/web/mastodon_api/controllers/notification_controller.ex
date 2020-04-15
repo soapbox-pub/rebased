@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.NotificationController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
+  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2, skip_relationships?: 1]
 
   alias Pleroma.Notification
   alias Pleroma.Plugs.OAuthScopesPlug
@@ -45,7 +45,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
 
     conn
     |> add_link_headers(notifications)
-    |> render("index.json", notifications: notifications, for: user)
+    |> render("index.json",
+      notifications: notifications,
+      for: user,
+      skip_relationships: skip_relationships?(params)
+    )
   end
 
   # GET /api/v1/notifications/:id
@@ -66,7 +70,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     json(conn, %{})
   end
 
-  # POST /api/v1/notifications/dismiss
+  # POST /api/v1/notifications/:id/dismiss
+  # POST /api/v1/notifications/dismiss (deprecated)
   def dismiss(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
     with {:ok, _notif} <- Notification.dismiss(user, id) do
       json(conn, %{})

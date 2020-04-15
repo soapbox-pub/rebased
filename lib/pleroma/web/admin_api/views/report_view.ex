@@ -38,7 +38,12 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
       actor: merge_account_views(user),
       content: content,
       created_at: created_at,
-      statuses: StatusView.render("index.json", %{activities: statuses, as: :activity}),
+      statuses:
+        StatusView.render("index.json", %{
+          activities: statuses,
+          as: :activity,
+          skip_relationships: false
+        }),
       state: report.data["state"],
       notes: render(__MODULE__, "index_notes.json", %{notes: report.report_notes})
     }
