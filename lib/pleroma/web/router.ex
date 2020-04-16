@@ -35,6 +35,7 @@ defmodule Pleroma.Web.Router do
   pipeline :authenticated_api do
     plug(:accepts, ["json"])
     plug(:fetch_session)
+    plug(Pleroma.Plugs.AuthExpectedPlug)
     plug(Pleroma.Plugs.OAuthPlug)
     plug(Pleroma.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Plugs.UserFetcherPlug)
@@ -338,7 +339,7 @@ defmodule Pleroma.Web.Router do
     get("/accounts/relationships", AccountController, :relationships)
 
     get("/accounts/:id/lists", AccountController, :lists)
-    get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
+    get("/accounts/:id/identity_proofs", AccountController, :identity_proofs)
 
     get("/follow_requests", FollowRequestController, :index)
     get("/blocks", AccountController, :blocks)
@@ -668,6 +669,17 @@ defmodule Pleroma.Web.Router do
       pipe_through([:mailbox_preview])
 
       forward("/mailbox", Plug.Swoosh.MailboxPreview, base_path: "/dev/mailbox")
+    end
+  end
+
+  # Test-only routes needed to test action dispatching and plug chain execution
+  if Pleroma.Config.get(:env) == :test do
+    scope "/test/authenticated_api", Pleroma.Tests do
+      pipe_through(:authenticated_api)
+
+      for action <- [:skipped_oauth, :performed_oauth, :missed_oauth] do
+        get("/#{action}", OAuthTestController, action)
+      end
     end
   end
 

@@ -17,7 +17,7 @@ defmodule Pleroma.Web.MastoFEController do
     when action == :index
   )
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action != :index)
+  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action not in [:index, :manifest])
 
   @doc "GET /web/*path"
   def index(%{assigns: %{user: user, token: token}} = conn, _params)

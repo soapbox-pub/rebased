@@ -5,10 +5,13 @@
 defmodule Pleroma.Web.MastodonAPI.SuggestionController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Plugs.OAuthScopesPlug
+
   require Logger
 
+  plug(OAuthScopesPlug, %{scopes: ["read"]} when action == :index)
+
   @doc "GET /api/v1/suggestions"
-  def index(conn, _) do
-    json(conn, [])
-  end
+  def index(conn, params),
+    do: Pleroma.Web.MastodonAPI.MastodonAPIController.empty_array(conn, params)
 end
