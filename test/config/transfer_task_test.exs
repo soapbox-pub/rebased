@@ -16,6 +16,7 @@ defmodule Pleroma.Config.TransferTaskTest do
     refute Application.get_env(:pleroma, :test_key)
     refute Application.get_env(:idna, :test_key)
     refute Application.get_env(:quack, :test_key)
+    refute Application.get_env(:postgrex, :test_key)
     initial = Application.get_env(:logger, :level)
 
     ConfigDB.create(%{
@@ -36,6 +37,12 @@ defmodule Pleroma.Config.TransferTaskTest do
       value: [:test_value1, :test_value2]
     })
 
+    ConfigDB.create(%{
+      group: ":postgrex",
+      key: ":test_key",
+      value: :value
+    })
+
     ConfigDB.create(%{group: ":logger", key: ":level", value: :debug})
 
     TransferTask.start_link([])
@@ -44,11 +51,13 @@ defmodule Pleroma.Config.TransferTaskTest do
     assert Application.get_env(:idna, :test_key) == [live: 15, com: 35]
     assert Application.get_env(:quack, :test_key) == [:test_value1, :test_value2]
     assert Application.get_env(:logger, :level) == :debug
+    assert Application.get_env(:postgrex, :test_key) == :value
 
     on_exit(fn ->
       Application.delete_env(:pleroma, :test_key)
       Application.delete_env(:idna, :test_key)
       Application.delete_env(:quack, :test_key)
+      Application.delete_env(:postgrex, :test_key)
       Application.put_env(:logger, :level, initial)
     end)
   end
