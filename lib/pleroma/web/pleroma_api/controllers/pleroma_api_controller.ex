@@ -34,7 +34,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:conversations"]} when action == :update_conversation
+    %{scopes: ["write:conversations"]} when action in [:update_conversation, :read_conversations]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :read_notification)

@@ -7,6 +7,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
 
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Plugs.PlugHelper
   alias Pleroma.Repo
 
   import Mock
@@ -14,6 +15,18 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
 
   setup_with_mocks([{EnsurePublicOrAuthenticatedPlug, [], [call: fn conn, _ -> conn end]}]) do
     :ok
+  end
+
+  test "is not performed if marked as skipped", %{conn: conn} do
+    with_mock OAuthScopesPlug, [:passthrough], perform: &passthrough([&1, &2]) do
+      conn =
+        conn
+        |> PlugHelper.append_to_skipped_plugs(OAuthScopesPlug)
+        |> OAuthScopesPlug.call(%{scopes: ["random_scope"]})
+
+      refute called(OAuthScopesPlug.perform(:_, :_))
+      refute conn.halted
+    end
   end
 
   test "if `token.scopes` fulfills specified 'any of' conditions, " <>
