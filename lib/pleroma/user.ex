@@ -15,6 +15,7 @@ defmodule Pleroma.User do
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
+  alias Pleroma.Emoji
   alias Pleroma.FollowingRelationship
   alias Pleroma.Formatter
   alias Pleroma.HTML
@@ -28,6 +29,7 @@ defmodule Pleroma.User do
   alias Pleroma.UserRelationship
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
@@ -82,6 +84,7 @@ defmodule Pleroma.User do
     field(:password, :string, virtual: true)
     field(:password_confirmation, :string, virtual: true)
     field(:keys, :string)
+    field(:public_key, :string)
     field(:ap_id, :string)
     field(:avatar, :map)
     field(:local, :boolean, default: true)
@@ -94,7 +97,6 @@ defmodule Pleroma.User do
     field(:last_digest_emailed_at, :naive_datetime)
     field(:banner, :map, default: %{})
     field(:background, :map, default: %{})
-    field(:source_data, :map, default: %{})
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
     field(:following_count, :integer, default: 0)
@@ -112,7 +114,7 @@ defmodule Pleroma.User do
     field(:show_role, :boolean, default: true)
     field(:settings, :map, default: nil)
     field(:magic_key, :string, default: nil)
-    field(:uri, :string, default: nil)
+    field(:uri, Types.Uri, default: nil)
     field(:hide_followers_count, :boolean, default: false)
     field(:hide_follows_count, :boolean, default: false)
     field(:hide_followers, :boolean, default: false)
@@ -122,7 +124,7 @@ defmodule Pleroma.User do
     field(:pinned_activities, {:array, :string}, default: [])
     field(:email_notifications, :map, default: %{"digest" => false})
     field(:mascot, :map, default: nil)
-    field(:emoji, {:array, :map}, default: [])
+    field(:emoji, :map, default: %{})
     field(:pleroma_settings_store, :map, default: %{})
     field(:fields, {:array, :map}, default: [])
     field(:raw_fields, {:array, :map}, default: [])
@@ -132,6 +134,8 @@ defmodule Pleroma.User do
     field(:skip_thread_containment, :boolean, default: false)
     field(:actor_type, :string, default: "Person")
     field(:also_known_as, {:array, :string}, default: [])
+    field(:inbox, :string)
+    field(:shared_inbox, :string)
 
     embeds_one(
       :notification_settings,
@@ -306,6 +310,7 @@ defmodule Pleroma.User do
     end
   end
 
+  # Should probably be renamed or removed
   def ap_id(%User{nickname: nickname}), do: "#{Web.base_url()}/users/#{nickname}"
 
   def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa
@@ -339,6 +344,13 @@ defmodule Pleroma.User do
     end
   end
 
+  defp fix_follower_address(%{follower_address: _, following_address: _} = params), do: params
+
+  defp fix_follower_address(%{nickname: nickname} = params),
+    do: Map.put(params, :follower_address, ap_followers(%User{nickname: nickname}))
+
+  defp fix_follower_address(params), do: params
+
   def remote_user_changeset(struct \\ %User{local: false}, params) do
     bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
@@ -356,54 +368,48 @@ defmodule Pleroma.User do
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
       |> truncate_fields_param()
+      |> fix_follower_address()
 
-    changeset =
-      struct
-      |> cast(
-        params,
-        [
-          :bio,
-          :name,
-          :ap_id,
-          :nickname,
-          :avatar,
-          :ap_enabled,
-          :source_data,
-          :banner,
-          :locked,
-          :magic_key,
-          :uri,
-          :hide_followers,
-          :hide_follows,
-          :hide_followers_count,
-          :hide_follows_count,
-          :follower_count,
-          :fields,
-          :following_count,
-          :discoverable,
-          :invisible,
-          :actor_type,
-          :also_known_as,
-          :last_refreshed_at
-        ]
-      )
-      |> validate_required([:name, :ap_id])
-      |> unique_constraint(:nickname)
-      |> validate_format(:nickname, @email_regex)
-      |> validate_length(:bio, max: bio_limit)
-      |> validate_length(:name, max: name_limit)
-      |> validate_fields(true)
-
-    case params[:source_data] do
-      %{"followers" => followers, "following" => following} ->
-        changeset
-        |> put_change(:follower_address, followers)
-        |> put_change(:following_address, following)
-
-      _ ->
-        followers = ap_followers(%User{nickname: get_field(changeset, :nickname)})
-        put_change(changeset, :follower_address, followers)
-    end
+    struct
+    |> cast(
+      params,
+      [
+        :bio,
+        :name,
+        :emoji,
+        :ap_id,
+        :inbox,
+        :shared_inbox,
+        :nickname,
+        :public_key,
+        :avatar,
+        :ap_enabled,
+        :banner,
+        :locked,
+        :last_refreshed_at,
+        :magic_key,
+        :uri,
+        :follower_address,
+        :following_address,
+        :hide_followers,
+        :hide_follows,
+        :hide_followers_count,
+        :hide_follows_count,
+        :follower_count,
+        :fields,
+        :following_count,
+        :discoverable,
+        :invisible,
+        :actor_type,
+        :also_known_as
+      ]
+    )
+    |> validate_required([:name, :ap_id])
+    |> unique_constraint(:nickname)
+    |> validate_format(:nickname, @email_regex)
+    |> validate_length(:bio, max: bio_limit)
+    |> validate_length(:name, max: name_limit)
+    |> validate_fields(true)
   end
 
   def update_changeset(struct, params \\ %{}) do
@@ -416,7 +422,11 @@ defmodule Pleroma.User do
       [
         :bio,
         :name,
+        :emoji,
         :avatar,
+        :public_key,
+        :inbox,
+        :shared_inbox,
         :locked,
         :no_rich_text,
         :default_scope,
@@ -443,6 +453,7 @@ defmodule Pleroma.User do
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> put_fields()
+    |> put_emoji()
     |> put_change_if_present(:bio, &{:ok, parse_bio(&1, struct)})
     |> put_change_if_present(:avatar, &put_upload(&1, :avatar))
     |> put_change_if_present(:banner, &put_upload(&1, :banner))
@@ -476,6 +487,18 @@ defmodule Pleroma.User do
     value
     |> Formatter.linkify(mentions_format: :full)
     |> elem(0)
+  end
+
+  defp put_emoji(changeset) do
+    bio = get_change(changeset, :bio)
+    name = get_change(changeset, :name)
+
+    if bio || name do
+      emoji = Map.merge(Emoji.Formatter.get_emoji_map(bio), Emoji.Formatter.get_emoji_map(name))
+      put_change(changeset, :emoji, emoji)
+    else
+      changeset
+    end
   end
 
   defp put_change_if_present(changeset, map_field, value_function) do
@@ -572,7 +595,7 @@ defmodule Pleroma.User do
 
     struct
     |> confirmation_changeset(need_confirmation: need_confirmation?)
-    |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
+    |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation, :emoji])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
@@ -1587,8 +1610,7 @@ defmodule Pleroma.User do
     |> set_cache()
   end
 
-  # AP style
-  def public_key(%{source_data: %{"publicKey" => %{"publicKeyPem" => public_key_pem}}}) do
+  def public_key(%{public_key: public_key_pem}) when is_binary(public_key_pem) do
     key =
       public_key_pem
       |> :public_key.pem_decode()
@@ -1598,7 +1620,7 @@ defmodule Pleroma.User do
     {:ok, key}
   end
 
-  def public_key(_), do: {:error, "not found key"}
+  def public_key(_), do: {:error, "key not found"}
 
   def get_public_key_for_ap_id(ap_id) do
     with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
@@ -1917,33 +1939,12 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def update_source_data(user, source_data) do
-    user
-    |> cast(%{source_data: source_data}, [:source_data])
-    |> update_and_set_cache()
-  end
-
   def roles(%{is_moderator: is_moderator, is_admin: is_admin}) do
     %{
       admin: is_admin,
       moderator: is_moderator
     }
   end
-
-  # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
-  # For example: [{"name": "Pronoun", "value": "she/her"}, …]
-  def fields(%{fields: nil, source_data: %{"attachment" => attachment}}) do
-    limit = Pleroma.Config.get([:instance, :max_remote_account_fields], 0)
-
-    attachment
-    |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
-    |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
-    |> Enum.take(limit)
-  end
-
-  def fields(%{fields: nil}), do: []
-
-  def fields(%{fields: fields}), do: fields
 
   def validate_fields(changeset, remote? \\ false) do
     limit_name = if remote?, do: :max_remote_account_fields, else: :max_account_fields
@@ -2132,9 +2133,7 @@ defmodule Pleroma.User do
   # - display name
   def sanitize_html(%User{} = user, filter) do
     fields =
-      user
-      |> User.fields()
-      |> Enum.map(fn %{"name" => name, "value" => value} ->
+      Enum.map(user.fields, fn %{"name" => name, "value" => value} ->
         %{
           "name" => name,
           "value" => HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)

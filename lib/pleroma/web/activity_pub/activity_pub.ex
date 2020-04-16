@@ -1427,19 +1427,41 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
       |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
 
+    emojis =
+      data
+      |> Map.get("tag", [])
+      |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
+      |> Enum.reduce(%{}, fn %{"icon" => %{"url" => url}, "name" => name}, acc ->
+        Map.put(acc, String.trim(name, ":"), url)
+      end)
+
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
 
+    public_key =
+      if is_map(data["publicKey"]) && is_binary(data["publicKey"]["publicKeyPem"]) do
+        data["publicKey"]["publicKeyPem"]
+      else
+        nil
+      end
+
+    shared_inbox =
+      if is_map(data["endpoints"]) && is_binary(data["endpoints"]["sharedInbox"]) do
+        data["endpoints"]["sharedInbox"]
+      else
+        nil
+      end
+
     user_data = %{
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
       ap_enabled: true,
-      source_data: data,
       banner: banner,
       fields: fields,
+      emoji: emojis,
       locked: locked,
       discoverable: discoverable,
       invisible: invisible,
@@ -1449,7 +1471,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       following_address: data["following"],
       bio: data["summary"],
       actor_type: actor_type,
-      also_known_as: Map.get(data, "alsoKnownAs", [])
+      also_known_as: Map.get(data, "alsoKnownAs", []),
+      public_key: public_key,
+      inbox: data["inbox"],
+      shared_inbox: shared_inbox
     }
 
     # nickname can be nil because of virtual actors

@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emoji.FormatterTest do
-  alias Pleroma.Emoji
   alias Pleroma.Emoji.Formatter
   use Pleroma.DataCase
 
@@ -32,30 +31,19 @@ defmodule Pleroma.Emoji.FormatterTest do
     end
   end
 
-  describe "get_emoji" do
+  describe "get_emoji_map" do
     test "it returns the emoji used in the text" do
-      text = "I love :firefox:"
-
-      assert Formatter.get_emoji(text) == [
-               {"firefox",
-                %Emoji{
-                  code: "firefox",
-                  file: "/emoji/Firefox.gif",
-                  tags: ["Gif", "Fun"],
-                  safe_code: "firefox",
-                  safe_file: "/emoji/Firefox.gif"
-                }}
-             ]
+      assert Formatter.get_emoji_map("I love :firefox:") == %{
+               "firefox" => "http://localhost:4001/emoji/Firefox.gif"
+             }
     end
 
     test "it returns a nice empty result when no emojis are present" do
-      text = "I love moominamma"
-      assert Formatter.get_emoji(text) == []
+      assert Formatter.get_emoji_map("I love moominamma") == %{}
     end
 
     test "it doesn't die when text is absent" do
-      text = nil
-      assert Formatter.get_emoji(text) == []
+      assert Formatter.get_emoji_map(nil) == %{}
     end
   end
 end

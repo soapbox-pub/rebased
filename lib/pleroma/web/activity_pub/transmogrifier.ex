@@ -1160,7 +1160,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def take_emoji_tags(%User{emoji: emoji}) do
     emoji
-    |> Enum.flat_map(&Map.to_list/1)
+    |> Map.to_list()
     |> Enum.map(&build_emoji_tag/1)
   end
 
