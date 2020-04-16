@@ -343,9 +343,15 @@ defmodule Pleroma.User do
     bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
+    name =
+      case params[:name] do
+        name when is_binary(name) and byte_size(name) > 0 -> name
+        _ -> params[:nickname]
+      end
+
     params =
       params
-      |> Map.put(:name, blank?(params[:name]) || params[:nickname])
+      |> Map.put(:name, name)
       |> Map.put_new(:last_refreshed_at, NaiveDateTime.utc_now())
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
@@ -1598,9 +1604,6 @@ defmodule Pleroma.User do
       _ -> :error
     end
   end
-
-  defp blank?(""), do: nil
-  defp blank?(n), do: n
 
   def ap_enabled?(%User{local: true}), do: true
   def ap_enabled?(%User{ap_enabled: ap_enabled}), do: ap_enabled
