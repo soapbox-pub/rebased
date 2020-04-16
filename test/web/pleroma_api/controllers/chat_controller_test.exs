@@ -23,11 +23,38 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> json_response(200)
 
       assert result["content"] == "Hallo!!"
-      assert result["chat_id"] == chat.id
+      assert result["chat_id"] == chat.id |> to_string()
     end
   end
 
   describe "GET /api/v1/pleroma/chats/:id/messages" do
+    test "it paginates", %{conn: conn} do
+      user = insert(:user)
+      recipient = insert(:user)
+
+      Enum.each(1..30, fn _ ->
+        {:ok, _} = CommonAPI.post_chat_message(user, recipient, "hey")
+      end)
+
+      chat = Chat.get(user.id, recipient.ap_id)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
+        |> json_response(200)
+
+      assert length(result) == 20
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/pleroma/chats/#{chat.id}/messages", %{"max_id" => List.last(result)["id"]})
+        |> json_response(200)
+
+      assert length(result) == 10
+    end
+
     # TODO
     # - Test the case where it's not the user's chat
     test "it returns the messages for a given chat", %{conn: conn} do
@@ -50,7 +77,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result
       |> Enum.each(fn message ->
-        assert message["chat_id"] == chat.id
+        assert message["chat_id"] == chat.id |> to_string()
       end)
 
       assert length(result) == 3
@@ -73,6 +100,31 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   end
 
   describe "GET /api/v1/pleroma/chats" do
+    test "it paginates", %{conn: conn} do
+      user = insert(:user)
+
+      Enum.each(1..30, fn _ ->
+        recipient = insert(:user)
+        {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
+      end)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/pleroma/chats")
+        |> json_response(200)
+
+      assert length(result) == 20
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/pleroma/chats", %{max_id: List.last(result)["id"]})
+        |> json_response(200)
+
+      assert length(result) == 10
+    end
+
     test "it return a list of chats the current user is participating in, in descending order of updates",
          %{conn: conn} do
       user = insert(:user)
@@ -98,7 +150,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       ids = Enum.map(result, & &1["id"])
 
-      assert ids == [chat_2.id, chat_3.id, chat_1.id]
+      assert ids == [
+               chat_2.id |> to_string(),
+               chat_3.id |> to_string(),
+               chat_1.id |> to_string()
+             ]
     end
   end
 end

@@ -15,9 +15,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageView do
         }
       ) do
     %{
-      id: id,
+      id: id |> to_string(),
       content: chat_message["content"],
-      chat_id: chat_id,
+      chat_id: chat_id |> to_string(),
       actor: chat_message["actor"]
     }
   end

@@ -9,7 +9,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
 
   def render("show.json", %{chat: %Chat{} = chat}) do
     %{
-      id: chat.id,
+      id: chat.id |> to_string(),
       recipient: chat.recipient,
       unread: chat.unread
     }

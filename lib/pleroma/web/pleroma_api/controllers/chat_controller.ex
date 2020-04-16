@@ -11,6 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.ChatView
   alias Pleroma.Web.PleromaAPI.ChatMessageView
+  alias Pleroma.Pagination
 
   import Ecto.Query
 
@@ -35,7 +36,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def messages(%{assigns: %{user: %{id: user_id} = user}} = conn, %{"id" => id}) do
+  def messages(%{assigns: %{user: %{id: user_id} = user}} = conn, %{"id" => id} = params) do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id) do
       messages =
         from(o in Object,
@@ -54,10 +55,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
               ^chat.recipient,
               o.data,
               ^[user.ap_id]
-            ),
-          order_by: [desc: o.id]
+            )
         )
-        |> Repo.all()
+        |> Pagination.fetch_paginated(params)
 
       conn
       |> put_view(ChatMessageView)
@@ -65,13 +65,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def index(%{assigns: %{user: %{id: user_id}}} = conn, _params) do
+  def index(%{assigns: %{user: %{id: user_id}}} = conn, params) do
     chats =
       from(c in Chat,
         where: c.user_id == ^user_id,
         order_by: [desc: c.updated_at]
       )
-      |> Repo.all()
+      |> Pagination.fetch_paginated(params)
 
     conn
     |> put_view(ChatView)
