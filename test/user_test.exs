@@ -610,7 +610,7 @@ defmodule Pleroma.UserTest do
              ) <> "/followers"
   end
 
-  describe "remote user creation changeset" do
+  describe "remote user changeset" do
     @valid_remote %{
       bio: "hello",
       name: "Someone",
@@ -622,28 +622,28 @@ defmodule Pleroma.UserTest do
     setup do: clear_config([:instance, :user_name_length])
 
     test "it confirms validity" do
-      cs = User.remote_user_creation(@valid_remote)
+      cs = User.remote_user_changeset(@valid_remote)
       assert cs.valid?
     end
 
     test "it sets the follower_adress" do
-      cs = User.remote_user_creation(@valid_remote)
+      cs = User.remote_user_changeset(@valid_remote)
       # remote users get a fake local follower address
       assert cs.changes.follower_address ==
                User.ap_followers(%User{nickname: @valid_remote[:nickname]})
     end
 
     test "it enforces the fqn format for nicknames" do
-      cs = User.remote_user_creation(%{@valid_remote | nickname: "bla"})
+      cs = User.remote_user_changeset(%{@valid_remote | nickname: "bla"})
       assert Ecto.Changeset.get_field(cs, :local) == false
       assert cs.changes.avatar
       refute cs.valid?
     end
 
     test "it has required fields" do
-      [:name, :ap_id]
+      [:ap_id]
       |> Enum.each(fn field ->
-        cs = User.remote_user_creation(Map.delete(@valid_remote, field))
+        cs = User.remote_user_changeset(Map.delete(@valid_remote, field))
         refute cs.valid?
       end)
     end
@@ -1197,58 +1197,6 @@ defmodule Pleroma.UserTest do
 
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
-  end
-
-  describe "insert or update a user from given data" do
-    test "with normal data" do
-      user = insert(:user, %{nickname: "nick@name.de"})
-      data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
-
-    test "with overly long fields" do
-      current_max_length = Pleroma.Config.get([:instance, :account_field_value_length], 255)
-      user = insert(:user, nickname: "nickname@supergood.domain")
-
-      data = %{
-        ap_id: user.ap_id,
-        name: user.name,
-        nickname: user.nickname,
-        fields: [
-          %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
-        ]
-      }
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
-
-    test "with an overly long bio" do
-      current_max_length = Pleroma.Config.get([:instance, :user_bio_length], 5000)
-      user = insert(:user, nickname: "nickname@supergood.domain")
-
-      data = %{
-        ap_id: user.ap_id,
-        name: user.name,
-        nickname: user.nickname,
-        bio: String.duplicate("h", current_max_length + 1)
-      }
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
-
-    test "with an overly long display name" do
-      current_max_length = Pleroma.Config.get([:instance, :user_name_length], 100)
-      user = insert(:user, nickname: "nickname@supergood.domain")
-
-      data = %{
-        ap_id: user.ap_id,
-        name: String.duplicate("h", current_max_length + 1),
-        nickname: user.nickname
-      }
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
   end
 
   describe "per-user rich-text filtering" do

@@ -1551,11 +1551,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def make_user_from_ap_id(ap_id) do
-    if _user = User.get_cached_by_ap_id(ap_id) do
+    user = User.get_cached_by_ap_id(ap_id)
+
+    if user && !User.ap_enabled?(user) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
       with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
-        User.insert_or_update_user(data)
+        if user do
+          user
+          |> User.remote_user_changeset(data)
+          |> User.update_and_set_cache()
+        else
+          data
+          |> User.remote_user_changeset()
+          |> Repo.insert()
+          |> User.set_cache()
+        end
       else
         e -> {:error, e}
       end
