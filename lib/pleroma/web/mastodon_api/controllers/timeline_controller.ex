@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [add_link_headers: 2, add_link_headers: 3, truthy_param?: 1]
+    only: [add_link_headers: 2, add_link_headers: 3, truthy_param?: 1, skip_relationships?: 1]
 
   alias Pleroma.Pagination
   alias Pleroma.Plugs.OAuthScopesPlug
@@ -14,9 +14,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
-  # TODO: Replace with a macro when there is a Phoenix release with
+  # TODO: Replace with a macro when there is a Phoenix release with the following commit in it:
   # https://github.com/phoenixframework/phoenix/commit/2e8c63c01fec4dde5467dbbbf9705ff9e780735e
-  # in it
 
   plug(RateLimiter, [name: :timeline, bucket_name: :direct_timeline] when action == :direct)
   plug(RateLimiter, [name: :timeline, bucket_name: :public_timeline] when action == :public)
@@ -49,7 +48,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
     conn
     |> add_link_headers(activities)
-    |> render("index.json", activities: activities, for: user, as: :activity)
+    |> render("index.json",
+      activities: activities,
+      for: user,
+      as: :activity,
+      skip_relationships: skip_relationships?(params)
+    )
   end
 
   # GET /api/v1/timelines/direct
@@ -68,7 +72,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
     conn
     |> add_link_headers(activities)
-    |> render("index.json", activities: activities, for: user, as: :activity)
+    |> render("index.json",
+      activities: activities,
+      for: user,
+      as: :activity,
+      skip_relationships: skip_relationships?(params)
+    )
   end
 
   # GET /api/v1/timelines/public
@@ -95,7 +104,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
       conn
       |> add_link_headers(activities, %{"local" => local_only})
-      |> render("index.json", activities: activities, for: user, as: :activity)
+      |> render("index.json",
+        activities: activities,
+        for: user,
+        as: :activity,
+        skip_relationships: skip_relationships?(params)
+      )
     else
       render_error(conn, :unauthorized, "authorization required for timeline view")
     end
@@ -140,7 +154,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
     conn
     |> add_link_headers(activities, %{"local" => local_only})
-    |> render("index.json", activities: activities, for: user, as: :activity)
+    |> render("index.json",
+      activities: activities,
+      for: user,
+      as: :activity,
+      skip_relationships: skip_relationships?(params)
+    )
   end
 
   # GET /api/v1/timelines/list/:list_id
@@ -164,7 +183,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> ActivityPub.fetch_activities_bounded(following, params)
         |> Enum.reverse()
 
-      render(conn, "index.json", activities: activities, for: user, as: :activity)
+      render(conn, "index.json",
+        activities: activities,
+        for: user,
+        as: :activity,
+        skip_relationships: skip_relationships?(params)
+      )
     else
       _e -> render_error(conn, :forbidden, "Error.")
     end

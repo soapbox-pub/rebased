@@ -553,7 +553,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
 
-      assert User.get_follow_state(follower, followed) == "pending"
+      assert User.get_follow_state(follower, followed) == :follow_pending
       assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
       assert User.get_follow_state(follower, followed) == nil
 
@@ -575,7 +575,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
 
-      assert User.get_follow_state(follower, followed) == "pending"
+      assert User.get_follow_state(follower, followed) == :follow_pending
       assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
       assert User.get_follow_state(follower, followed) == nil
 

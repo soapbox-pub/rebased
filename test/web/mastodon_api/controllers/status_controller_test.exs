@@ -1047,6 +1047,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   end
 
   test "bookmarks" do
+    bookmarks_uri = "/api/v1/bookmarks?with_relationships=true"
+
     %{conn: conn} = oauth_access(["write:bookmarks", "read:bookmarks"])
     author = insert(:user)
 
@@ -1068,7 +1070,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     assert json_response(response2, 200)["bookmarked"] == true
 
-    bookmarks = get(conn, "/api/v1/bookmarks")
+    bookmarks = get(conn, bookmarks_uri)
 
     assert [json_response(response2, 200), json_response(response1, 200)] ==
              json_response(bookmarks, 200)
@@ -1077,7 +1079,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     assert json_response(response1, 200)["bookmarked"] == false
 
-    bookmarks = get(conn, "/api/v1/bookmarks")
+    bookmarks = get(conn, bookmarks_uri)
 
     assert [json_response(response2, 200)] == json_response(bookmarks, 200)
   end

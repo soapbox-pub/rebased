@@ -351,18 +351,26 @@ defmodule Pleroma.User do
 
   defp fix_follower_address(params), do: params
 
-  def remote_user_creation(params) do
+  def remote_user_changeset(struct \\ %User{local: false}, params) do
     bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
+    name =
+      case params[:name] do
+        name when is_binary(name) and byte_size(name) > 0 -> name
+        _ -> params[:nickname]
+      end
+
     params =
       params
+      |> Map.put(:name, name)
+      |> Map.put_new(:last_refreshed_at, NaiveDateTime.utc_now())
       |> truncate_if_exists(:name, name_limit)
       |> truncate_if_exists(:bio, bio_limit)
       |> truncate_fields_param()
       |> fix_follower_address()
 
-    %User{local: false}
+    struct
     |> cast(
       params,
       [
@@ -378,6 +386,7 @@ defmodule Pleroma.User do
         :ap_enabled,
         :banner,
         :locked,
+        :last_refreshed_at,
         :magic_key,
         :uri,
         :follower_address,
@@ -509,52 +518,6 @@ defmodule Pleroma.User do
          {:ok, object} <- ActivityPub.upload(value, type: type) do
       {:ok, object.data}
     end
-  end
-
-  def upgrade_changeset(struct, params \\ %{}, remote? \\ false) do
-    bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
-    name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
-
-    params = Map.put(params, :last_refreshed_at, NaiveDateTime.utc_now())
-
-    params = if remote?, do: truncate_fields_param(params), else: params
-
-    struct
-    |> cast(
-      params,
-      [
-        :bio,
-        :name,
-        :emoji,
-        :follower_address,
-        :following_address,
-        :public_key,
-        :inbox,
-        :shared_inbox,
-        :avatar,
-        :last_refreshed_at,
-        :ap_enabled,
-        :banner,
-        :locked,
-        :magic_key,
-        :follower_count,
-        :following_count,
-        :hide_follows,
-        :fields,
-        :hide_followers,
-        :allow_following_move,
-        :discoverable,
-        :hide_followers_count,
-        :hide_follows_count,
-        :actor_type,
-        :also_known_as
-      ]
-    )
-    |> unique_constraint(:nickname)
-    |> validate_format(:nickname, local_nickname_regex())
-    |> validate_length(:bio, max: bio_limit)
-    |> validate_length(:name, max: name_limit)
-    |> validate_fields(remote?)
   end
 
   def update_as_admin_changeset(struct, params) do
@@ -726,7 +689,7 @@ defmodule Pleroma.User do
 
   @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
   def maybe_direct_follow(%User{} = follower, %User{local: true, locked: true} = followed) do
-    follow(follower, followed, "pending")
+    follow(follower, followed, :follow_pending)
   end
 
   def maybe_direct_follow(%User{} = follower, %User{local: true} = followed) do
@@ -746,14 +709,14 @@ defmodule Pleroma.User do
   def follow_all(follower, followeds) do
     followeds
     |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
-    |> Enum.each(&follow(follower, &1, "accept"))
+    |> Enum.each(&follow(follower, &1, :follow_accept))
 
     set_cache(follower)
   end
 
   defdelegate following(user), to: FollowingRelationship
 
-  def follow(%User{} = follower, %User{} = followed, state \\ "accept") do
+  def follow(%User{} = follower, %User{} = followed, state \\ :follow_accept) do
     deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
 
     cond do
@@ -780,7 +743,7 @@ defmodule Pleroma.User do
 
   def unfollow(%User{} = follower, %User{} = followed) do
     case get_follow_state(follower, followed) do
-      state when state in ["accept", "pending"] ->
+      state when state in [:follow_pending, :follow_accept] ->
         FollowingRelationship.unfollow(follower, followed)
         {:ok, followed} = update_follower_count(followed)
 
@@ -798,6 +761,7 @@ defmodule Pleroma.User do
 
   defdelegate following?(follower, followed), to: FollowingRelationship
 
+  @doc "Returns follow state as Pleroma.FollowingRelationship.State value"
   def get_follow_state(%User{} = follower, %User{} = following) do
     following_relationship = FollowingRelationship.get(follower, following)
     get_follow_state(follower, following, following_relationship)
@@ -811,8 +775,11 @@ defmodule Pleroma.User do
     case {following_relationship, following.local} do
       {nil, false} ->
         case Utils.fetch_latest_follow(follower, following) do
-          %{data: %{"state" => state}} when state in ["pending", "accept"] -> state
-          _ -> nil
+          %Activity{data: %{"state" => state}} when state in ["pending", "accept"] ->
+            FollowingRelationship.state_to_enum(state)
+
+          _ ->
+            nil
         end
 
       {%{state: state}, _} ->
@@ -1311,7 +1278,7 @@ defmodule Pleroma.User do
 
   def blocks?(%User{} = user, %User{} = target) do
     blocks_user?(user, target) ||
-      (!User.following?(user, target) && blocks_domain?(user, target))
+      (blocks_domain?(user, target) and not User.following?(user, target))
   end
 
   def blocks_user?(%User{} = user, %User{} = target) do
@@ -1662,17 +1629,6 @@ defmodule Pleroma.User do
     else
       _ -> :error
     end
-  end
-
-  defp blank?(""), do: nil
-  defp blank?(n), do: n
-
-  def insert_or_update_user(data) do
-    data
-    |> Map.put(:name, blank?(data[:name]) || data[:nickname])
-    |> remote_user_creation()
-    |> Repo.insert(on_conflict: {:replace_all_except, [:id]}, conflict_target: :nickname)
-    |> set_cache()
   end
 
   def ap_enabled?(%User{local: true}), do: true
