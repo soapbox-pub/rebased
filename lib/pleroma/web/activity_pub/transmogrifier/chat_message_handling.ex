@@ -19,6 +19,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageHandling do
          {_, {:ok, object_cast_data_sym}} <-
            {:casting_object_data, object_data |> ChatMessageValidator.cast_and_apply()},
          object_cast_data = ObjectValidator.stringify_keys(object_cast_data_sym),
+         # For now, just strip HTML
+         stripped_content = Pleroma.HTML.strip_tags(object_cast_data["content"]),
+         object_cast_data = object_cast_data |> Map.put("content", stripped_content),
          {_, {:ok, validated_object, _meta}} <-
            {:validate_object, ObjectValidator.validate(object_cast_data, %{})},
          {_, {:ok, _created_object}} <- {:persist_object, Object.create(validated_object)},

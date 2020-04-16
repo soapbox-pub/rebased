@@ -56,7 +56,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
       assert activity.recipients == [recipient.ap_id, author.ap_id]
 
       %Object{} = object = Object.get_by_ap_id(activity.data["object"])
+
       assert object
+      assert object.data["content"] == "You expected a cute girl? Too bad. alert(&#39;XSS&#39;)"
     end
   end
 end
