@@ -25,6 +25,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageHandling do
          {_, {:ok, activity, _meta}} <-
            {:common_pipeline, Pipeline.common_pipeline(cast_data, local: false)} do
       {:ok, activity}
+    else
+      e ->
+        {:error, e}
     end
   end
 end

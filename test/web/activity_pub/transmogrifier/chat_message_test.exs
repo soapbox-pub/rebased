@@ -12,13 +12,43 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   describe "handle_incoming" do
-    test "it insert it" do
+    test "it rejects messages that don't contain content" do
+      data =
+        File.read!("test/fixtures/create-chat-message.json")
+        |> Poison.decode!()
+
+      object =
+        data["object"]
+        |> Map.delete("content")
+
+      data =
+        data
+        |> Map.put("object", object)
+
+      _author = insert(:user, ap_id: data["actor"], local: false)
+      _recipient = insert(:user, ap_id: List.first(data["to"]), local: true)
+
+      {:error, _} = Transmogrifier.handle_incoming(data)
+    end
+
+    test "it rejects messages that don't concern local users" do
+      data =
+        File.read!("test/fixtures/create-chat-message.json")
+        |> Poison.decode!()
+
+      _author = insert(:user, ap_id: data["actor"], local: false)
+      _recipient = insert(:user, ap_id: List.first(data["to"]), local: false)
+
+      {:error, _} = Transmogrifier.handle_incoming(data)
+    end
+
+    test "it inserts it and creates a chat" do
       data =
         File.read!("test/fixtures/create-chat-message.json")
         |> Poison.decode!()
 
       author = insert(:user, ap_id: data["actor"], local: false)
-      recipient = insert(:user, ap_id: List.first(data["to"]), local: false)
+      recipient = insert(:user, ap_id: List.first(data["to"]), local: true)
 
       {:ok, %Activity{} = activity} = Transmogrifier.handle_incoming(data)
 

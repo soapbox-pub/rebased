@@ -5,8 +5,60 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.ActivityPub.Builder
 
   import Pleroma.Factory
+
+  describe "chat messages" do
+    setup do
+      user = insert(:user)
+      recipient = insert(:user, local: false)
+
+      {:ok, valid_chat_message, _} = Builder.chat_message(user, recipient.ap_id, "hey")
+
+      %{user: user, recipient: recipient, valid_chat_message: valid_chat_message}
+    end
+
+    test "validates for a basic object we build", %{valid_chat_message: valid_chat_message} do
+      assert {:ok, _object, _meta} = ObjectValidator.validate(valid_chat_message, [])
+    end
+
+    test "does not validate if the actor or the recipient is not in our system", %{
+      valid_chat_message: valid_chat_message
+    } do
+      chat_message =
+        valid_chat_message
+        |> Map.put("actor", "https://raymoo.com/raymoo")
+
+      {:error, _} = ObjectValidator.validate(chat_message, [])
+
+      chat_message =
+        valid_chat_message
+        |> Map.put("to", ["https://raymoo.com/raymoo"])
+
+      {:error, _} = ObjectValidator.validate(chat_message, [])
+    end
+
+    test "does not validate for a message with multiple recipients", %{
+      valid_chat_message: valid_chat_message,
+      user: user,
+      recipient: recipient
+    } do
+      chat_message =
+        valid_chat_message
+        |> Map.put("to", [user.ap_id, recipient.ap_id])
+
+      assert {:error, _} = ObjectValidator.validate(chat_message, [])
+    end
+
+    test "does not validate if it doesn't concern local users" do
+      user = insert(:user, local: false)
+      recipient = insert(:user, local: false)
+
+      {:ok, valid_chat_message, _} = Builder.chat_message(user, recipient.ap_id, "hey")
+      assert {:error, _} = ObjectValidator.validate(valid_chat_message, [])
+    end
+  end
 
   describe "likes" do
     setup do

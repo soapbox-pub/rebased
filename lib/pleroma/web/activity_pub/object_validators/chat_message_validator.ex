@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   use Ecto.Schema
 
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
+  alias Pleroma.User
 
   import Ecto.Changeset
 
@@ -54,5 +55,30 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
     data_cng
     |> validate_inclusion(:type, ["ChatMessage"])
     |> validate_required([:id, :actor, :to, :type, :content])
+    |> validate_length(:to, is: 1)
+    |> validate_local_concern()
+  end
+
+  @doc "Validates if at least one of the users in this ChatMessage is a local user, otherwise we don't want the message in our system. It also validates the presence of both users in our system."
+  def validate_local_concern(cng) do
+    with actor_ap <- get_field(cng, :actor),
+         {_, %User{} = actor} <- {:find_actor, User.get_cached_by_ap_id(actor_ap)},
+         {_, %User{} = recipient} <-
+           {:find_recipient, User.get_cached_by_ap_id(get_field(cng, :to) |> hd())},
+         {_, true} <- {:local?, Enum.any?([actor, recipient], & &1.local)} do
+      cng
+    else
+      {:local?, false} ->
+        cng
+        |> add_error(:actor, "actor and recipient are both remote")
+
+      {:find_actor, _} ->
+        cng
+        |> add_error(:actor, "can't find user")
+
+      {:find_recipient, _} ->
+        cng
+        |> add_error(:to, "can't find user")
+    end
   end
 end

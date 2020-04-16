@@ -32,4 +32,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
   def cast_data(data) do
     cast(%__MODULE__{}, data, __schema__(:fields))
   end
+
+  # No validation yet
+  def cast_and_validate(data) do
+    cast_data(data)
+  end
 end

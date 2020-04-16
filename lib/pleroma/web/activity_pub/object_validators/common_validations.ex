@@ -8,7 +8,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
   alias Pleroma.Object
   alias Pleroma.User
 
-  def validate_actor_presence(cng, field_name \\ :actor) do
+  def validate_actor_presence(cng) do
+    validate_user_presence(cng, :actor)
+  end
+
+  def validate_user_presence(cng, field_name) do
     cng
     |> validate_change(field_name, fn field_name, actor ->
       if User.get_cached_by_ap_id(actor) do
