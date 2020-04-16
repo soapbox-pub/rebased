@@ -82,6 +82,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         fields: []
       },
       pleroma: %{
+        ap_id: user.ap_id,
         background_image: "https://example.com/images/asuka_hospital.png",
         confirmation_pending: false,
         tags: [],
@@ -152,6 +153,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         fields: []
       },
       pleroma: %{
+        ap_id: user.ap_id,
         background_image: nil,
         confirmation_pending: false,
         tags: [],
@@ -351,6 +353,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         fields: []
       },
       pleroma: %{
+        ap_id: user.ap_id,
         background_image: nil,
         confirmation_pending: false,
         tags: [],
