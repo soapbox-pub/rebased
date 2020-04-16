@@ -17,6 +17,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Formatter
 
   import Pleroma.Web.Gettext
   import Pleroma.Web.CommonAPI.Utils
@@ -28,7 +29,12 @@ defmodule Pleroma.Web.CommonAPI do
     transaction =
       Repo.transaction(fn ->
         with {_, {:ok, chat_message_data, _meta}} <-
-               {:build_object, Builder.chat_message(user, recipient.ap_id, content)},
+               {:build_object,
+                Builder.chat_message(
+                  user,
+                  recipient.ap_id,
+                  content |> Formatter.html_escape("text/plain")
+                )},
              {_, {:ok, chat_message_object}} <-
                {:create_object, Object.create(chat_message_data)},
              {_, {:ok, create_activity_data, _meta}} <-
