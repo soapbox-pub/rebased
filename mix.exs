@@ -183,7 +183,7 @@ defmodule Pleroma.Mixfile do
       {:flake_id, "~> 0.1.0"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
-       ref: "825dc00aaba5a1b7c4202a532b696b595dd3bcb3"},
+       ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
       {:captcha,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
