@@ -17,7 +17,10 @@ defmodule Pleroma.Repo.Migrations.UsersPopulateEmoji do
       emoji =
         user.source_data
         |> Map.get("tag", [])
-        |> Enum.filter(fn data -> data["type"] == "Emoji" and data["icon"] end)
+        |> Enum.filter(fn
+          %{"type" => t} -> t == "Emoji"
+          _ -> false
+        end)
         |> Enum.reduce(%{}, fn %{"icon" => %{"url" => url}, "name" => name}, acc ->
           Map.put(acc, String.trim(name, ":"), url)
         end)
