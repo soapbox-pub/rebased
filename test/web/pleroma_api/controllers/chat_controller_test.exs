@@ -10,15 +10,15 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   import Pleroma.Factory
 
   describe "POST /api/v1/pleroma/chats/:id/messages" do
-    test "it posts a message to the chat", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["write:statuses"])
+
+    test "it posts a message to the chat", %{conn: conn, user: user} do
       other_user = insert(:user)
 
       {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
 
       result =
         conn
-        |> assign(:user, user)
         |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{"content" => "Hallo!!"})
         |> json_response(200)
 
@@ -28,8 +28,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   end
 
   describe "GET /api/v1/pleroma/chats/:id/messages" do
-    test "it paginates", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["read:statuses"])
+
+    test "it paginates", %{conn: conn, user: user} do
       recipient = insert(:user)
 
       Enum.each(1..30, fn _ ->
@@ -40,7 +41,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
         |> json_response(200)
 
@@ -48,17 +48,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/pleroma/chats/#{chat.id}/messages", %{"max_id" => List.last(result)["id"]})
         |> json_response(200)
 
       assert length(result) == 10
     end
 
-    # TODO
-    # - Test the case where it's not the user's chat
-    test "it returns the messages for a given chat", %{conn: conn} do
-      user = insert(:user)
+    test "it returns the messages for a given chat", %{conn: conn, user: user} do
       other_user = insert(:user)
       third_user = insert(:user)
 
@@ -71,7 +67,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
         |> json_response(200)
 
@@ -81,17 +76,25 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       end)
 
       assert length(result) == 3
+
+      # Trying to get the chat of a different user
+      result =
+        conn
+        |> assign(:user, other_user)
+        |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
+
+      assert result |> json_response(404)
     end
   end
 
   describe "POST /api/v1/pleroma/chats/by-ap-id/:id" do
+    setup do: oauth_access(["write:statuses"])
+
     test "it creates or returns a chat", %{conn: conn} do
-      user = insert(:user)
       other_user = insert(:user)
 
       result =
         conn
-        |> assign(:user, user)
         |> post("/api/v1/pleroma/chats/by-ap-id/#{URI.encode_www_form(other_user.ap_id)}")
         |> json_response(200)
 
@@ -100,9 +103,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   end
 
   describe "GET /api/v1/pleroma/chats" do
-    test "it paginates", %{conn: conn} do
-      user = insert(:user)
+    setup do: oauth_access(["read:statuses"])
 
+    test "it paginates", %{conn: conn, user: user} do
       Enum.each(1..30, fn _ ->
         recipient = insert(:user)
         {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
@@ -110,7 +113,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/pleroma/chats")
         |> json_response(200)
 
@@ -118,7 +120,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/pleroma/chats", %{max_id: List.last(result)["id"]})
         |> json_response(200)
 
@@ -126,8 +127,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
     end
 
     test "it return a list of chats the current user is participating in, in descending order of updates",
-         %{conn: conn} do
-      user = insert(:user)
+         %{conn: conn, user: user} do
       har = insert(:user)
       jafnhar = insert(:user)
       tridi = insert(:user)
@@ -144,7 +144,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result =
         conn
-        |> assign(:user, user)
         |> get("/api/v1/pleroma/chats")
         |> json_response(200)
 

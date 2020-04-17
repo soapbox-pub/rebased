@@ -8,6 +8,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.ChatView
   alias Pleroma.Web.PleromaAPI.ChatMessageView
@@ -16,9 +17,17 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   import Ecto.Query
 
   # TODO
-  # - Oauth stuff
-  # - Views / Representers
   # - Error handling
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:statuses"]} when action in [:post_chat_message, :create]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:statuses"]} when action in [:messages, :index]
+  )
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ChatOperation
 
@@ -62,6 +71,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       conn
       |> put_view(ChatMessageView)
       |> render("index.json", for: user, objects: messages, chat: chat)
+    else
+      _ ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: "not found"})
     end
   end
 
