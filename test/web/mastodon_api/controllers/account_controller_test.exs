@@ -952,7 +952,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
           |> post("/api/v1/accounts", Map.delete(valid_params, attr))
           |> json_response(400)
 
-        assert res == %{"error" => "Missing parameters"}
+        assert res == %{
+                 "error" => "Missing field: #{attr}.",
+                 "errors" => [
+                   %{
+                     "message" => "Missing field: #{attr}",
+                     "source" => %{"pointer" => "/#{attr}"},
+                     "title" => "Invalid value"
+                   }
+                 ]
+               }
       end)
     end
 
