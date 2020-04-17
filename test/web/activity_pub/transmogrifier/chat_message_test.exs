@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
   import Pleroma.Factory
 
   alias Pleroma.Activity
+  alias Pleroma.Chat
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
@@ -42,6 +43,21 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
       {:error, _} = Transmogrifier.handle_incoming(data)
     end
 
+    test "it rejects messages where the `to` field of activity and object don't match" do
+      data =
+        File.read!("test/fixtures/create-chat-message.json")
+        |> Poison.decode!()
+
+      author = insert(:user, ap_id: data["actor"])
+      _recipient = insert(:user, ap_id: List.first(data["to"]))
+
+      data =
+        data
+        |> Map.put("to", author.ap_id)
+
+      {:error, _} = Transmogrifier.handle_incoming(data)
+    end
+
     test "it inserts it and creates a chat" do
       data =
         File.read!("test/fixtures/create-chat-message.json")
@@ -59,6 +75,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
 
       assert object
       assert object.data["content"] == "You expected a cute girl? Too bad. alert(&#39;XSS&#39;)"
+
+      refute Chat.get(author.id, recipient.ap_id)
+      assert Chat.get(recipient.id, author.ap_id)
     end
   end
 end
