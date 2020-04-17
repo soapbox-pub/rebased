@@ -1431,7 +1431,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       data
       |> Map.get("tag", [])
       |> Enum.filter(fn
-        %{"type" => t} -> t == "Emoji"
+        %{"type" => "Emoji"} -> true
         _ -> false
       end)
       |> Enum.reduce(%{}, fn %{"icon" => %{"url" => url}, "name" => name}, acc ->
