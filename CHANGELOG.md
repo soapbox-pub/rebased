@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [unreleased-patch]
 ### Fixed
 - Logger configuration through AdminFE
+- HTTP Basic Authentication permissions issue
 
 ### Added
 <details>
