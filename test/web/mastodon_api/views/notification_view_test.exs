@@ -6,7 +6,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
+  alias Pleroma.Chat
   alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -14,6 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.PleromaAPI.ChatMessageView
   import Pleroma.Factory
 
   defp test_notifications_rendering(notifications, user, expected_result) do
@@ -29,6 +32,29 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       })
 
     assert expected_result == result
+  end
+
+  test "ChatMessage notification" do
+    user = insert(:user)
+    recipient = insert(:user)
+    {:ok, activity} = CommonAPI.post_chat_message(user, recipient, "what's up my dude")
+
+    {:ok, [notification]} = Notification.create_notifications(activity)
+
+    object = Object.normalize(activity)
+    chat = Chat.get(recipient.id, user.ap_id)
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false},
+      type: "pleroma:chat_mention",
+      account: AccountView.render("show.json", %{user: user, for: recipient}),
+      chat_message:
+        ChatMessageView.render("show.json", %{object: object, for: recipient, chat: chat}),
+      created_at: Utils.to_masto_date(notification.inserted_at)
+    }
+
+    test_notifications_rendering([notification], recipient, [expected])
   end
 
   test "Mention notification" do

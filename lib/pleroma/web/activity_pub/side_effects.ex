@@ -28,6 +28,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     {:ok, _object} = handle_object_creation(object)
 
+    Notification.create_notifications(activity)
+
     {:ok, activity, meta}
   end
 

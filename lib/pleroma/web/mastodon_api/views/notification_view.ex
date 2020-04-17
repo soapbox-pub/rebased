@@ -8,11 +8,13 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Activity
   alias Pleroma.Notification
   alias Pleroma.User
+  alias Pleroma.Object
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.PleromaAPI.ChatMessageView
 
   def render("index.json", %{notifications: notifications, for: reading_user} = opts) do
     activities = Enum.map(notifications, & &1.activity)
@@ -81,7 +83,20 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       end
     end
 
-    mastodon_type = Activity.mastodon_notification_type(activity)
+    # This returns the notification type by activity, but both chats and statuses are in "Create" activities.
+    mastodon_type =
+      case Activity.mastodon_notification_type(activity) do
+        "mention" ->
+          object = Object.normalize(activity)
+
+          case object do
+            %{data: %{"type" => "ChatMessage"}} -> "pleroma:chat_mention"
+            _ -> "mention"
+          end
+
+        type ->
+          type
+      end
 
     render_opts = %{
       relationships: opts[:relationships],
@@ -125,6 +140,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
           |> put_status(parent_activity_fn.(), reading_user, render_opts)
           |> put_emoji(activity)
 
+        "pleroma:chat_mention" ->
+          put_chat_message(response, activity, reading_user, render_opts)
+
         _ ->
           nil
       end
@@ -135,6 +153,16 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
   defp put_emoji(response, activity) do
     Map.put(response, :emoji, activity.data["content"])
+  end
+
+  defp put_chat_message(response, activity, reading_user, opts) do
+    object = Object.normalize(activity)
+    author = User.get_cached_by_ap_id(object.data["actor"])
+    chat = Pleroma.Chat.get(reading_user.id, author.ap_id)
+    render_opts = Map.merge(opts, %{object: object, for: reading_user, chat: chat})
+    chat_message_render = ChatMessageView.render("show.json", render_opts)
+
+    Map.put(response, :chat_message, chat_message_render)
   end
 
   defp put_status(response, activity, reading_user, opts) do

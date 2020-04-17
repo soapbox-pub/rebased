@@ -6,7 +6,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   use Pleroma.DataCase
 
   alias Pleroma.Chat
+  alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.SideEffects
@@ -34,6 +36,23 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   end
 
   describe "creation of ChatMessages" do
+    test "notifies the recipient" do
+      author = insert(:user, local: false)
+      recipient = insert(:user, local: true)
+
+      {:ok, chat_message_data, _meta} = Builder.chat_message(author, recipient.ap_id, "hey")
+      {:ok, chat_message_object} = Object.create(chat_message_data)
+
+      {:ok, create_activity_data, _meta} =
+        Builder.create(author, chat_message_object.data["id"], [recipient.ap_id])
+
+      {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
+
+      {:ok, _create_activity, _meta} = SideEffects.handle(create_activity)
+
+      assert Repo.get_by(Notification, user_id: recipient.id, activity_id: create_activity.id)
+    end
+
     test "it creates a Chat for the local users and bumps the unread count" do
       author = insert(:user, local: false)
       recipient = insert(:user, local: true)
