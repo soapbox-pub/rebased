@@ -12,10 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - NodeInfo: `pleroma_emoji_reactions` to the `features` list.
 - Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
 - New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
+- Mix task to create trusted OAuth App.
 <details>
   <summary>API Changes</summary>
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
+- Admin API: endpoints for create/update/delete OAuth Apps.
 </details>
 
 ### Fixed
@@ -24,6 +26,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [unreleased-patch]
 ### Fixed
 - Logger configuration through AdminFE
+
+### Added
+<details>
+  <summary>API Changes</summary>
+- Admin API: `GET /api/pleroma/admin/need_reboot`.
+</details>
 
 ## [2.0.2] - 2020-04-08
 ### Added

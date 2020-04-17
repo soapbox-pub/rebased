@@ -21,9 +21,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
+  alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
+
+  plug(:skip_plug, OAuthScopesPlug when action == :identity_proofs)
 
   plug(
     OAuthScopesPlug,
@@ -101,6 +104,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Map.put("fullname", params["fullname"] || nickname)
       |> Map.put("bio", params["bio"] || "")
       |> Map.put("confirm", params["password"])
+      |> Map.put("trusted_app", app.trusted)
 
     with :ok <- validate_email_param(params),
          {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
@@ -146,9 +150,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "PATCH /api/v1/accounts/update_credentials"
-  def update_credentials(%{assigns: %{user: original_user}} = conn, params) do
-    user = original_user
-
+  def update_credentials(%{assigns: %{user: user}} = conn, params) do
     user_params =
       [
         :no_rich_text,
@@ -184,8 +186,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     changeset = User.update_changeset(user, user_params)
 
     with {:ok, user} <- User.update_and_set_cache(changeset) do
-      if original_user != user, do: CommonAPI.update(user)
-
       render(conn, "show.json", user: user, for: user, with_pleroma_settings: true)
     else
       _e -> render_error(conn, :forbidden, "Invalid request")
@@ -380,6 +380,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "GET /api/v1/endorsements"
-  def endorsements(conn, params),
-    do: Pleroma.Web.MastodonAPI.MastodonAPIController.empty_array(conn, params)
+  def endorsements(conn, params), do: MastodonAPIController.empty_array(conn, params)
+
+  @doc "GET /api/v1/identity_proofs"
+  def identity_proofs(conn, params), do: MastodonAPIController.empty_array(conn, params)
 end

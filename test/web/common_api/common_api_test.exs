@@ -125,18 +125,6 @@ defmodule Pleroma.Web.CommonAPITest do
     assert Object.normalize(activity).data["emoji"]["firefox"]
   end
 
-  test "it adds emoji when updating profiles" do
-    user = insert(:user, %{name: ":firefox:"})
-
-    {:ok, activity} = CommonAPI.update(user)
-    user = User.get_cached_by_ap_id(user.ap_id)
-    [firefox] = user.source_data["tag"]
-
-    assert firefox["name"] == ":firefox:"
-
-    assert Pleroma.Constants.as_public() in activity.recipients
-  end
-
   describe "posting" do
     test "it supports explicit addressing" do
       user = insert(:user)

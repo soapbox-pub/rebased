@@ -718,7 +718,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
 
       actor
-      |> User.upgrade_changeset(new_user_data, true)
+      |> User.remote_user_changeset(new_user_data)
       |> User.update_and_set_cache()
 
       ActivityPub.update(%{
@@ -1167,7 +1167,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def take_emoji_tags(%User{emoji: emoji}) do
     emoji
-    |> Enum.flat_map(&Map.to_list/1)
+    |> Map.to_list()
     |> Enum.map(&build_emoji_tag/1)
   end
 
@@ -1261,12 +1261,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def upgrade_user_from_ap_id(ap_id) do
     with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
          {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
-         already_ap <- User.ap_enabled?(user),
-         {:ok, user} <- upgrade_user(user, data) do
-      if not already_ap do
-        TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
-      end
-
+         {:ok, user} <- update_user(user, data) do
+      TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
       {:ok, user}
     else
       %User{} = user -> {:ok, user}
@@ -1274,9 +1270,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  defp upgrade_user(user, data) do
+  defp update_user(user, data) do
     user
-    |> User.upgrade_changeset(data, true)
+    |> User.remote_user_changeset(data)
     |> User.update_and_set_cache()
   end
 

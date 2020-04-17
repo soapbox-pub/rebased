@@ -361,26 +361,6 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp maybe_create_activity_expiration(result, _), do: result
 
-  # Updates the emojis for a user based on their profile
-  def update(user) do
-    emoji = emoji_from_profile(user)
-    source_data = Map.put(user.source_data, "tag", emoji)
-
-    user =
-      case User.update_source_data(user, source_data) do
-        {:ok, user} -> user
-        _ -> user
-      end
-
-    ActivityPub.update(%{
-      local: true,
-      to: [Pleroma.Constants.as_public(), user.follower_address],
-      cc: [],
-      actor: user.ap_id,
-      object: Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
-    })
-  end
-
   def pin(id_or_ap_id, %{ap_id: user_ap_id} = user) do
     with %Activity{
            actor: ^user_ap_id,

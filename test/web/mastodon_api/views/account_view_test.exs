@@ -19,16 +19,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   end
 
   test "Represent a user account" do
-    source_data = %{
-      "tag" => [
-        %{
-          "type" => "Emoji",
-          "icon" => %{"url" => "/file.png"},
-          "name" => ":karjalanpiirakka:"
-        }
-      ]
-    }
-
     background_image = %{
       "url" => [%{"href" => "https://example.com/images/asuka_hospital.png"}]
     }
@@ -37,13 +27,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       insert(:user, %{
         follower_count: 3,
         note_count: 5,
-        source_data: source_data,
         background: background_image,
         nickname: "shp@shitposter.club",
         name: ":karjalanpiirakka: shp",
         bio:
           "<script src=\"invalid-html\"></script><span>valid html</span>. a<br>b<br/>c<br >d<br />f",
-        inserted_at: ~N[2017-08-15 15:47:06.597036]
+        inserted_at: ~N[2017-08-15 15:47:06.597036],
+        emoji: %{"karjalanpiirakka" => "/file.png"}
       })
 
     expected = %{
@@ -118,7 +108,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       insert(:user, %{
         follower_count: 3,
         note_count: 5,
-        source_data: %{},
         actor_type: "Service",
         nickname: "shp@shitposter.club",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
@@ -313,7 +302,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       insert(:user, %{
         follower_count: 0,
         note_count: 5,
-        source_data: %{},
         actor_type: "Service",
         nickname: "shp@shitposter.club",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
