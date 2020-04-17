@@ -7,7 +7,6 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
 
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Plugs.PlugHelper
   alias Pleroma.Repo
 
   import Mock
@@ -21,7 +20,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
     with_mock OAuthScopesPlug, [:passthrough], perform: &passthrough([&1, &2]) do
       conn =
         conn
-        |> PlugHelper.append_to_skipped_plugs(OAuthScopesPlug)
+        |> OAuthScopesPlug.skip_plug()
         |> OAuthScopesPlug.call(%{scopes: ["random_scope"]})
 
       refute called(OAuthScopesPlug.perform(:_, :_))
