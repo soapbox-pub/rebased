@@ -97,18 +97,6 @@ defmodule Pleroma.Web.CommonAPITest do
     assert Object.normalize(activity).data["emoji"]["firefox"]
   end
 
-  test "it adds emoji when updating profiles" do
-    user = insert(:user, %{name: ":firefox:"})
-
-    {:ok, activity} = CommonAPI.update(user)
-    user = User.get_cached_by_ap_id(user.ap_id)
-    [firefox] = user.source_data["tag"]
-
-    assert firefox["name"] == ":firefox:"
-
-    assert Pleroma.Constants.as_public() in activity.recipients
-  end
-
   describe "posting" do
     test "it supports explicit addressing" do
       user = insert(:user)
@@ -565,7 +553,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
 
-      assert User.get_follow_state(follower, followed) == "pending"
+      assert User.get_follow_state(follower, followed) == :follow_pending
       assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
       assert User.get_follow_state(follower, followed) == nil
 
@@ -587,7 +575,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
 
-      assert User.get_follow_state(follower, followed) == "pending"
+      assert User.get_follow_state(follower, followed) == :follow_pending
       assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
       assert User.get_follow_state(follower, followed) == nil
 

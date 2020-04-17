@@ -194,7 +194,8 @@ defmodule Pleroma.UserTest do
     CommonAPI.follow(pending_follower, locked)
     CommonAPI.follow(pending_follower, locked)
     CommonAPI.follow(accepted_follower, locked)
-    Pleroma.FollowingRelationship.update(accepted_follower, locked, "accept")
+
+    Pleroma.FollowingRelationship.update(accepted_follower, locked, :follow_accept)
 
     assert [^pending_follower] = User.get_follow_requests(locked)
   end
@@ -319,7 +320,7 @@ defmodule Pleroma.UserTest do
           following_address: "http://localhost:4001/users/fuser2/following"
         })
 
-      {:ok, user} = User.follow(user, followed, "accept")
+      {:ok, user} = User.follow(user, followed, :follow_accept)
 
       {:ok, user, _activity} = User.unfollow(user, followed)
 
@@ -332,7 +333,7 @@ defmodule Pleroma.UserTest do
       followed = insert(:user)
       user = insert(:user)
 
-      {:ok, user} = User.follow(user, followed, "accept")
+      {:ok, user} = User.follow(user, followed, :follow_accept)
 
       assert User.following(user) == [user.follower_address, followed.follower_address]
 
@@ -353,7 +354,7 @@ defmodule Pleroma.UserTest do
   test "test if a user is following another user" do
     followed = insert(:user)
     user = insert(:user)
-    User.follow(user, followed, "accept")
+    User.follow(user, followed, :follow_accept)
 
     assert User.following?(user, followed)
     refute User.following?(followed, user)
@@ -581,7 +582,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
 
-      assert user.source_data["endpoints"]
+      assert user.inbox
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
     end
@@ -609,7 +610,7 @@ defmodule Pleroma.UserTest do
              ) <> "/followers"
   end
 
-  describe "remote user creation changeset" do
+  describe "remote user changeset" do
     @valid_remote %{
       bio: "hello",
       name: "Someone",
@@ -621,28 +622,28 @@ defmodule Pleroma.UserTest do
     setup do: clear_config([:instance, :user_name_length])
 
     test "it confirms validity" do
-      cs = User.remote_user_creation(@valid_remote)
+      cs = User.remote_user_changeset(@valid_remote)
       assert cs.valid?
     end
 
     test "it sets the follower_adress" do
-      cs = User.remote_user_creation(@valid_remote)
+      cs = User.remote_user_changeset(@valid_remote)
       # remote users get a fake local follower address
       assert cs.changes.follower_address ==
                User.ap_followers(%User{nickname: @valid_remote[:nickname]})
     end
 
     test "it enforces the fqn format for nicknames" do
-      cs = User.remote_user_creation(%{@valid_remote | nickname: "bla"})
+      cs = User.remote_user_changeset(%{@valid_remote | nickname: "bla"})
       assert Ecto.Changeset.get_field(cs, :local) == false
       assert cs.changes.avatar
       refute cs.valid?
     end
 
     test "it has required fields" do
-      [:name, :ap_id]
+      [:ap_id]
       |> Enum.each(fn field ->
-        cs = User.remote_user_creation(Map.delete(@valid_remote, field))
+        cs = User.remote_user_changeset(Map.delete(@valid_remote, field))
         refute cs.valid?
       end)
     end
@@ -1198,58 +1199,6 @@ defmodule Pleroma.UserTest do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
 
-  describe "insert or update a user from given data" do
-    test "with normal data" do
-      user = insert(:user, %{nickname: "nick@name.de"})
-      data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
-
-    test "with overly long fields" do
-      current_max_length = Pleroma.Config.get([:instance, :account_field_value_length], 255)
-      user = insert(:user, nickname: "nickname@supergood.domain")
-
-      data = %{
-        ap_id: user.ap_id,
-        name: user.name,
-        nickname: user.nickname,
-        fields: [
-          %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
-        ]
-      }
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
-
-    test "with an overly long bio" do
-      current_max_length = Pleroma.Config.get([:instance, :user_bio_length], 5000)
-      user = insert(:user, nickname: "nickname@supergood.domain")
-
-      data = %{
-        ap_id: user.ap_id,
-        name: user.name,
-        nickname: user.nickname,
-        bio: String.duplicate("h", current_max_length + 1)
-      }
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
-
-    test "with an overly long display name" do
-      current_max_length = Pleroma.Config.get([:instance, :user_name_length], 100)
-      user = insert(:user, nickname: "nickname@supergood.domain")
-
-      data = %{
-        ap_id: user.ap_id,
-        name: String.duplicate("h", current_max_length + 1),
-        nickname: user.nickname
-      }
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
-  end
-
   describe "per-user rich-text filtering" do
     test "html_filter_policy returns default policies, when rich-text is enabled" do
       user = insert(:user)
@@ -1404,7 +1353,7 @@ defmodule Pleroma.UserTest do
       bio = "A.k.a. @nick@domain.com"
 
       expected_text =
-        ~s(A.k.a. <span class="h-card"><a data-user="#{remote_user.id}" class="u-url mention" href="#{
+        ~s(A.k.a. <span class="h-card"><a class="u-url mention" data-user="#{remote_user.id}" href="#{
           remote_user.ap_id
         }" rel="ugc">@<span>nick@domain.com</span></a></span>)
 

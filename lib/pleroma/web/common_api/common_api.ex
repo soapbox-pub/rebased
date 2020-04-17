@@ -45,7 +45,7 @@ defmodule Pleroma.Web.CommonAPI do
     with {:ok, follower} <- User.follow(follower, followed),
          %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "accept"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept),
          {:ok, _activity} <-
            ActivityPub.accept(%{
              to: [follower.ap_id],
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.CommonAPI do
   def reject_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "reject"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_reject),
          {:ok, _activity} <-
            ActivityPub.reject(%{
              to: [follower.ap_id],
@@ -331,26 +331,6 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   defp maybe_create_activity_expiration(result, _), do: result
-
-  # Updates the emojis for a user based on their profile
-  def update(user) do
-    emoji = emoji_from_profile(user)
-    source_data = Map.put(user.source_data, "tag", emoji)
-
-    user =
-      case User.update_source_data(user, source_data) do
-        {:ok, user} -> user
-        _ -> user
-      end
-
-    ActivityPub.update(%{
-      local: true,
-      to: [Pleroma.Constants.as_public(), user.follower_address],
-      cc: [],
-      actor: user.ap_id,
-      object: Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
-    })
-  end
 
   def pin(id_or_ap_id, %{ap_id: user_ap_id} = user) do
     with %Activity{

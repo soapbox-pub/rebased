@@ -746,7 +746,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(activity.actor)
 
-      assert User.fields(user) == [
+      assert user.fields == [
                %{"name" => "foo", "value" => "bar"},
                %{"name" => "foo1", "value" => "bar1"}
              ]
@@ -767,7 +767,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(user.ap_id)
 
-      assert User.fields(user) == [
+      assert user.fields == [
                %{"name" => "foo", "value" => "updated"},
                %{"name" => "foo1", "value" => "updated"}
              ]
@@ -785,7 +785,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(user.ap_id)
 
-      assert User.fields(user) == [
+      assert user.fields == [
                %{"name" => "foo", "value" => "updated"},
                %{"name" => "foo1", "value" => "updated"}
              ]
@@ -796,7 +796,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(user.ap_id)
 
-      assert User.fields(user) == []
+      assert user.fields == []
     end
 
     test "it works for incoming update activities which lock the account" do
@@ -1230,19 +1230,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       attachment = %{
         "type" => "Link",
         "mediaType" => "video/mp4",
-        "href" =>
-          "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-        "mimeType" => "video/mp4",
-        "size" => 5_015_880,
         "url" => [
           %{
             "href" =>
               "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-            "mediaType" => "video/mp4",
-            "type" => "Link"
+            "mediaType" => "video/mp4"
           }
-        ],
-        "width" => 480
+        ]
       }
 
       assert object.data["url"] ==
@@ -1624,7 +1618,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         })
 
       user_two = insert(:user)
-      Pleroma.FollowingRelationship.follow(user_two, user, "accept")
+      Pleroma.FollowingRelationship.follow(user_two, user, :follow_accept)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
       {:ok, unrelated_activity} = CommonAPI.post(user_two, %{"status" => "test"})
@@ -2063,11 +2057,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                  %{
                    "mediaType" => "video/mp4",
                    "url" => [
-                     %{
-                       "href" => "https://peertube.moe/stat-480.mp4",
-                       "mediaType" => "video/mp4",
-                       "type" => "Link"
-                     }
+                     %{"href" => "https://peertube.moe/stat-480.mp4", "mediaType" => "video/mp4"}
                    ]
                  }
                ]
@@ -2085,23 +2075,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                  %{
                    "mediaType" => "video/mp4",
                    "url" => [
-                     %{
-                       "href" => "https://pe.er/stat-480.mp4",
-                       "mediaType" => "video/mp4",
-                       "type" => "Link"
-                     }
+                     %{"href" => "https://pe.er/stat-480.mp4", "mediaType" => "video/mp4"}
                    ]
                  },
                  %{
-                   "href" => "https://pe.er/stat-480.mp4",
                    "mediaType" => "video/mp4",
-                   "mimeType" => "video/mp4",
                    "url" => [
-                     %{
-                       "href" => "https://pe.er/stat-480.mp4",
-                       "mediaType" => "video/mp4",
-                       "type" => "Link"
-                     }
+                     %{"href" => "https://pe.er/stat-480.mp4", "mediaType" => "video/mp4"}
                    ]
                  }
                ]
@@ -2181,5 +2161,19 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert %{"type" => "Collection", "items" => ^replies_uris} =
                Transmogrifier.set_replies(object.data)["replies"]
     end
+  end
+
+  test "take_emoji_tags/1" do
+    user = insert(:user, %{emoji: %{"firefox" => "https://example.org/firefox.png"}})
+
+    assert Transmogrifier.take_emoji_tags(user) == [
+             %{
+               "icon" => %{"type" => "Image", "url" => "https://example.org/firefox.png"},
+               "id" => "https://example.org/firefox.png",
+               "name" => ":firefox:",
+               "type" => "Emoji",
+               "updated" => "1970-01-01T00:00:00Z"
+             }
+           ]
   end
 end

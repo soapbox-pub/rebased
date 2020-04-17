@@ -5,10 +5,18 @@
 defmodule Pleroma.Web.ControllerHelper do
   use Pleroma.Web, :controller
 
-  # As in MastoAPI, per https://api.rubyonrails.org/classes/ActiveModel/Type/Boolean.html
+  alias Pleroma.Config
+
+  # As in Mastodon API, per https://api.rubyonrails.org/classes/ActiveModel/Type/Boolean.html
   @falsy_param_values [false, 0, "0", "f", "F", "false", "False", "FALSE", "off", "OFF"]
-  def truthy_param?(blank_value) when blank_value in [nil, ""], do: nil
-  def truthy_param?(value), do: value not in @falsy_param_values
+
+  def explicitly_falsy_param?(value), do: value in @falsy_param_values
+
+  # Note: `nil` and `""` are considered falsy values in Pleroma
+  def falsy_param?(value),
+    do: explicitly_falsy_param?(value) or value in [nil, ""]
+
+  def truthy_param?(value), do: not falsy_param?(value)
 
   def json_response(conn, status, json) do
     conn
@@ -96,4 +104,14 @@ defmodule Pleroma.Web.ControllerHelper do
   def put_if_exist(map, _key, nil), do: map
 
   def put_if_exist(map, key, value), do: Map.put(map, key, value)
+
+  @doc "Whether to skip rendering `[:account][:pleroma][:relationship]`for statuses/notifications"
+  def skip_relationships?(params) do
+    if Config.get([:extensions, :output_relationships_in_statuses_by_default]) do
+      false
+    else
+      # BREAKING: older PleromaFE versions do not send this param but _do_ expect relationships.
+      not truthy_param?(params["with_relationships"])
+    end
+  end
 end

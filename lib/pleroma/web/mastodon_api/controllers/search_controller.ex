@@ -5,13 +5,14 @@
 defmodule Pleroma.Web.MastodonAPI.SearchController do
   use Pleroma.Web, :controller
 
+  import Pleroma.Web.ControllerHelper, only: [fetch_integer_param: 2, skip_relationships?: 1]
+
   alias Pleroma.Activity
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
 
@@ -66,10 +67,11 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   defp search_options(params, user) do
     [
+      skip_relationships: skip_relationships?(params),
       resolve: params["resolve"] == "true",
       following: params["following"] == "true",
-      limit: ControllerHelper.fetch_integer_param(params, "limit"),
-      offset: ControllerHelper.fetch_integer_param(params, "offset"),
+      limit: fetch_integer_param(params, "limit"),
+      offset: fetch_integer_param(params, "offset"),
       type: params["type"],
       author: get_author(params),
       for_user: user
@@ -79,12 +81,24 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   defp resource_search(_, "accounts", query, options) do
     accounts = with_fallback(fn -> User.search(query, options) end)
-    AccountView.render("index.json", users: accounts, for: options[:for_user], as: :user)
+
+    AccountView.render("index.json",
+      users: accounts,
+      for: options[:for_user],
+      as: :user,
+      skip_relationships: false
+    )
   end
 
   defp resource_search(_, "statuses", query, options) do
     statuses = with_fallback(fn -> Activity.search(options[:for_user], query, options) end)
-    StatusView.render("index.json", activities: statuses, for: options[:for_user], as: :activity)
+
+    StatusView.render("index.json",
+      activities: statuses,
+      for: options[:for_user],
+      as: :activity,
+      skip_relationships: options[:skip_relationships]
+    )
   end
 
   defp resource_search(:v2, "hashtags", query, _options) do

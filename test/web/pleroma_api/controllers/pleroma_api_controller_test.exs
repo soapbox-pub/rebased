@@ -169,6 +169,23 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     id_one = activity.id
     id_two = activity_two.id
     assert [%{"id" => ^id_one}, %{"id" => ^id_two}] = result
+
+    {:ok, %{id: id_three}} =
+      CommonAPI.post(other_user, %{
+        "status" => "Bye!",
+        "in_reply_to_status_id" => activity.id,
+        "in_reply_to_conversation_id" => participation.id
+      })
+
+    assert [%{"id" => ^id_two}, %{"id" => ^id_three}] =
+             conn
+             |> get("/api/v1/pleroma/conversations/#{participation.id}/statuses?limit=2")
+             |> json_response(:ok)
+
+    assert [%{"id" => ^id_three}] =
+             conn
+             |> get("/api/v1/pleroma/conversations/#{participation.id}/statuses?min_id=#{id_two}")
+             |> json_response(:ok)
   end
 
   test "PATCH /api/v1/pleroma/conversations/:id" do
@@ -203,7 +220,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
   test "POST /api/v1/pleroma/conversations/read" do
     user = insert(:user)
-    %{user: other_user, conn: conn} = oauth_access(["write:notifications"])
+    %{user: other_user, conn: conn} = oauth_access(["write:conversations"])
 
     {:ok, _activity} =
       CommonAPI.post(user, %{"status" => "Hi @#{other_user.nickname}", "visibility" => "direct"})

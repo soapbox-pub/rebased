@@ -392,6 +392,19 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `email`
   - `name`, optional
 
+- Response:
+  - On success: `204`, empty response
+  - On failure:
+    - 400 Bad Request, JSON:
+
+    ```json
+      [
+        {
+          "error": "Appropriate error message here"
+        }
+      ]
+    ```
+
 ## `GET /api/pleroma/admin/users/:nickname/password_reset`
 
 ### Get a password reset token for a given nickname
@@ -773,6 +786,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ### Restarts pleroma application
 
+**Only works when configuration from database is enabled.**
+
 - Params: none
 - Response:
   - On failure:
@@ -782,11 +797,24 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 {}
 ```
 
+## `GET /api/pleroma/admin/need_reboot`
+
+### Returns the flag whether the pleroma should be restarted
+
+- Params: none
+- Response:
+  - `need_reboot` - boolean
+```json
+{
+  "need_reboot": false
+}
+```
+
 ## `GET /api/pleroma/admin/config`
 
 ### Get list of merged default settings with saved in database.
 
-*If `need_reboot` flag exists in response, instance must be restarted, so reboot time settings can take effect.*
+*If `need_reboot` is `true`, instance must be restarted, so reboot time settings can take effect.*
 
 **Only works when configuration from database is enabled.**
 
@@ -808,13 +836,12 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   "need_reboot": true
 }
 ```
- need_reboot - *optional*, if were changed reboot time settings.
 
 ## `POST /api/pleroma/admin/config`
 
 ### Update config settings
 
-*If `need_reboot` flag exists in response, instance must be restarted, so reboot time settings can take effect.*
+*If `need_reboot` is `true`, instance must be restarted, so reboot time settings can take effect.*
 
 **Only works when configuration from database is enabled.**
 
@@ -958,7 +985,6 @@ config :quack,
   "need_reboot": true
 }
 ```
-need_reboot - *optional*, if were changed reboot time settings.
 
 ## ` GET /api/pleroma/admin/config/descriptions`
 
@@ -1062,3 +1088,104 @@ Loads json generated from `config/descriptions.exs`.
   }
 }
 ```
+
+## `GET /api/pleroma/admin/oauth_app`
+
+### List OAuth app
+
+- Params:
+  - *optional* `name`
+  - *optional* `client_id`
+  - *optional* `page`
+  - *optional* `page_size`
+  - *optional* `trusted`
+
+- Response:
+
+```json
+{
+  "apps": [
+    {
+      "id": 1,
+      "name": "App name",
+      "client_id": "yHoDSiWYp5mPV6AfsaVOWjdOyt5PhWRiafi6MRd1lSk",
+      "client_secret": "nLmis486Vqrv2o65eM9mLQx_m_4gH-Q6PcDpGIMl6FY",
+      "redirect_uri": "https://example.com/oauth-callback",
+      "website": "https://example.com",
+      "trusted": true
+    }
+  ],
+  "count": 17,
+  "page_size": 50
+}
+```
+
+
+## `POST /api/pleroma/admin/oauth_app`
+
+### Create OAuth App
+
+- Params:
+  - `name`
+  - `redirect_uris`
+  - `scopes`
+  - *optional* `website`
+  - *optional* `trusted`
+
+- Response:
+
+```json
+{
+  "id": 1,
+  "name": "App name",
+  "client_id": "yHoDSiWYp5mPV6AfsaVOWjdOyt5PhWRiafi6MRd1lSk",
+  "client_secret": "nLmis486Vqrv2o65eM9mLQx_m_4gH-Q6PcDpGIMl6FY",
+  "redirect_uri": "https://example.com/oauth-callback",
+  "website": "https://example.com",
+  "trusted": true
+}
+```
+
+- On failure:
+```json
+{
+  "redirect_uris": "can't be blank",
+  "name": "can't be blank"
+}
+```
+
+## `PATCH /api/pleroma/admin/oauth_app/:id`
+
+### Update OAuth App
+
+- Params:
+  -  *optional* `name`
+  -  *optional* `redirect_uris`
+  -  *optional* `scopes`
+  -  *optional* `website`
+  -  *optional* `trusted`
+
+- Response:
+
+```json
+{
+  "id": 1,
+  "name": "App name",
+  "client_id": "yHoDSiWYp5mPV6AfsaVOWjdOyt5PhWRiafi6MRd1lSk",
+  "client_secret": "nLmis486Vqrv2o65eM9mLQx_m_4gH-Q6PcDpGIMl6FY",
+  "redirect_uri": "https://example.com/oauth-callback",
+  "website": "https://example.com",
+  "trusted": true
+}
+```
+
+## `DELETE /api/pleroma/admin/oauth_app/:id`
+
+### Delete OAuth App
+
+- Params: None
+
+- Response:
+  - On success: `204`, empty response
+  - On failure:
+    - 400 Bad Request `"Invalid parameters"` when `status` is missing

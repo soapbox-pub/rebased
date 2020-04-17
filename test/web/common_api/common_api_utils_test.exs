@@ -7,7 +7,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.Endpoint
   use Pleroma.DataCase
 
   import ExUnit.CaptureLog
@@ -40,28 +39,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {:ok, user} = UserBuilder.insert()
       assert Utils.confirm_current_password(user, "test") == {:ok, user}
     end
-  end
-
-  test "parses emoji from name and bio" do
-    {:ok, user} = UserBuilder.insert(%{name: ":blank:", bio: ":firefox:"})
-
-    expected = [
-      %{
-        "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/emoji/Firefox.gif"},
-        "name" => ":firefox:"
-      },
-      %{
-        "type" => "Emoji",
-        "icon" => %{
-          "type" => "Image",
-          "url" => "#{Endpoint.url()}/emoji/blank.png"
-        },
-        "name" => ":blank:"
-      }
-    ]
-
-    assert expected == Utils.emoji_from_profile(user)
   end
 
   describe "format_input/3" do
@@ -159,11 +136,11 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
       assert output ==
-               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a data-user="#{
+               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a class="u-url mention" data-user="#{
                  user.id
-               }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a data-user="#{
+               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a class="u-url mention" data-user="#{
                  user.id
-               }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
+               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
     end
   end
 
