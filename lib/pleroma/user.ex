@@ -706,6 +706,8 @@ defmodule Pleroma.User do
   def needs_update?(_), do: true
 
   @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
+
+  # "Locked" (self-locked) users demand explicit authorization of follow requests
   def maybe_direct_follow(%User{} = follower, %User{local: true, locked: true} = followed) do
     follow(follower, followed, :follow_pending)
   end
