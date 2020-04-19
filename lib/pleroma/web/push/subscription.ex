@@ -32,6 +32,14 @@ defmodule Pleroma.Web.Push.Subscription do
     %{"alerts" => alerts}
   end
 
+  def enabled?(subscription, "follow_request") do
+    enabled?(subscription, "follow")
+  end
+
+  def enabled?(subscription, alert_type) do
+    get_in(subscription.data, ["alerts", alert_type])
+  end
+
   def create(
         %User{} = user,
         %Token{} = token,

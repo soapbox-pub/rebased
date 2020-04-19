@@ -16,6 +16,8 @@ defmodule Pleroma.Web.Push.Impl do
   require Logger
   import Ecto.Query
 
+  defdelegate mastodon_notification_type(activity), to: Activity
+
   @types ["Create", "Follow", "Announce", "Like", "Move"]
 
   @doc "Performs sending notifications for user subscriptions"
@@ -24,32 +26,32 @@ defmodule Pleroma.Web.Push.Impl do
         %{
           activity: %{data: %{"type" => activity_type}} = activity,
           user: %User{id: user_id}
-        } = notif
+        } = notification
       )
       when activity_type in @types do
-    actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+    actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
 
-    type = Activity.mastodon_notification_type(notif.activity)
+    mastodon_type = mastodon_notification_type(notification.activity)
     gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
     avatar_url = User.avatar_url(actor)
     object = Object.normalize(activity)
     user = User.get_cached_by_id(user_id)
     direct_conversation_id = Activity.direct_conversation_id(activity, user)
 
-    for subscription <- fetch_subsriptions(user_id),
-        get_in(subscription.data, ["alerts", type]) do
+    for subscription <- fetch_subscriptions(user_id),
+        Subscription.enabled?(subscription, mastodon_type) do
       %{
         access_token: subscription.token.token,
-        notification_id: notif.id,
-        notification_type: type,
+        notification_id: notification.id,
+        notification_type: mastodon_type,
         icon: avatar_url,
         preferred_locale: "en",
         pleroma: %{
-          activity_id: notif.activity.id,
+          activity_id: notification.activity.id,
           direct_conversation_id: direct_conversation_id
         }
       }
-      |> Map.merge(build_content(notif, actor, object))
+      |> Map.merge(build_content(notification, actor, object, mastodon_type))
       |> Jason.encode!()
       |> push_message(build_sub(subscription), gcm_api_key, subscription)
     end
@@ -82,7 +84,7 @@ defmodule Pleroma.Web.Push.Impl do
   end
 
   @doc "Gets user subscriptions"
-  def fetch_subsriptions(user_id) do
+  def fetch_subscriptions(user_id) do
     Subscription
     |> where(user_id: ^user_id)
     |> preload(:token)
@@ -99,28 +101,36 @@ defmodule Pleroma.Web.Push.Impl do
     }
   end
 
+  def build_content(notification, actor, object, mastodon_type \\ nil)
+
   def build_content(
         %{
           activity: %{data: %{"directMessage" => true}},
           user: %{notification_settings: %{privacy_option: true}}
         },
         actor,
-        _
+        _object,
+        _mastodon_type
       ) do
     %{title: "New Direct Message", body: "@#{actor.nickname}"}
   end
 
-  def build_content(notif, actor, object) do
+  def build_content(notification, actor, object, mastodon_type) do
+    mastodon_type = mastodon_type || mastodon_notification_type(notification.activity)
+
     %{
-      title: format_title(notif),
-      body: format_body(notif, actor, object)
+      title: format_title(notification, mastodon_type),
+      body: format_body(notification, actor, object, mastodon_type)
     }
   end
+
+  def format_body(activity, actor, object, mastodon_type \\ nil)
 
   def format_body(
         %{activity: %{data: %{"type" => "Create"}}},
         actor,
-        %{data: %{"content" => content}}
+        %{data: %{"content" => content}},
+        _mastodon_type
       ) do
     "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
   end
@@ -128,33 +138,44 @@ defmodule Pleroma.Web.Push.Impl do
   def format_body(
         %{activity: %{data: %{"type" => "Announce"}}},
         actor,
-        %{data: %{"content" => content}}
+        %{data: %{"content" => content}},
+        _mastodon_type
       ) do
     "@#{actor.nickname} repeated: #{Utils.scrub_html_and_truncate(content, 80)}"
   end
 
   def format_body(
-        %{activity: %{data: %{"type" => type}}},
+        %{activity: %{data: %{"type" => type}}} = notification,
         actor,
-        _object
+        _object,
+        mastodon_type
       )
       when type in ["Follow", "Like"] do
-    case type do
-      "Follow" -> "@#{actor.nickname} has followed you"
-      "Like" -> "@#{actor.nickname} has favorited your post"
+    mastodon_type = mastodon_type || mastodon_notification_type(notification.activity)
+
+    case mastodon_type do
+      "follow" -> "@#{actor.nickname} has followed you"
+      "follow_request" -> "@#{actor.nickname} has requested to follow you"
+      "favourite" -> "@#{actor.nickname} has favorited your post"
     end
   end
 
-  def format_title(%{activity: %{data: %{"directMessage" => true}}}) do
+  def format_title(activity, mastodon_type \\ nil)
+
+  def format_title(%{activity: %{data: %{"directMessage" => true}}}, _mastodon_type) do
     "New Direct Message"
   end
 
-  def format_title(%{activity: %{data: %{"type" => type}}}) do
-    case type do
-      "Create" -> "New Mention"
-      "Follow" -> "New Follower"
-      "Announce" -> "New Repeat"
-      "Like" -> "New Favorite"
+  def format_title(%{activity: activity}, mastodon_type) do
+    mastodon_type = mastodon_type || mastodon_notification_type(activity)
+
+    case mastodon_type do
+      "mention" -> "New Mention"
+      "follow" -> "New Follower"
+      "follow_request" -> "New Follow Request"
+      "reblog" -> "New Repeat"
+      "favourite" -> "New Favorite"
+      type -> "New #{String.capitalize(type || "event")}"
     end
   end
 end
