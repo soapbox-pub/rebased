@@ -183,7 +183,7 @@ defmodule Pleroma.Mixfile do
       {:flake_id, "~> 0.1.0"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
-       ref: "825dc00aaba5a1b7c4202a532b696b595dd3bcb3"},
+       ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
       {:captcha,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
@@ -223,19 +223,26 @@ defmodule Pleroma.Mixfile do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
     # Pre-release version, denoted from patch version with a hyphen
+    {tag, tag_err} =
+      System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true)
+
+    {describe, describe_err} = System.cmd("git", ["describe", "--tags", "--abbrev=8"])
+    {commit_hash, commit_hash_err} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+
     git_pre_release =
-      with {tag, 0} <-
-             System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true),
-           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]) do
-        describe
-        |> String.trim()
-        |> String.replace(String.trim(tag), "")
-        |> String.trim_leading("-")
-        |> String.trim()
-      else
-        _ ->
-          {commit_hash, 0} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+      cond do
+        tag_err == 0 and describe_err == 0 ->
+          describe
+          |> String.trim()
+          |> String.replace(String.trim(tag), "")
+          |> String.trim_leading("-")
+          |> String.trim()
+
+        commit_hash_err == 0 ->
           "0-g" <> String.trim(commit_hash)
+
+        true ->
+          ""
       end
 
     # Branch name as pre-release version component, denoted with a dot
@@ -253,6 +260,8 @@ defmodule Pleroma.Mixfile do
           |> String.replace(identifier_filter, "-")
 
         branch_name
+      else
+        _ -> "stable"
       end
 
     build_name =

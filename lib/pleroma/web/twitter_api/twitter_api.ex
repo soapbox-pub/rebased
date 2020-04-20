@@ -21,7 +21,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         :captcha_token,
         :captcha_answer_data,
         :token,
-        :email
+        :email,
+        :trusted_app
       ])
       |> Map.put(:bio, User.parse_bio(params[:bio] || ""))
       |> Map.put(:name, params.fullname)
@@ -42,14 +43,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   defp validate_captcha(params) do
-    if Pleroma.Config.get([Pleroma.Captcha, :enabled]) do
+    if params[:trusted_app] || not Pleroma.Config.get([Pleroma.Captcha, :enabled]) do
+      :ok
+    else
       Pleroma.Captcha.validate(
         params.captcha_token,
         params.captcha_solution,
         params.captcha_answer_data
       )
-    else
-      :ok
     end
   end
 

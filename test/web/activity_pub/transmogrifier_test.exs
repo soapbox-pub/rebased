@@ -746,7 +746,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(activity.actor)
 
-      assert User.fields(user) == [
+      assert user.fields == [
                %{"name" => "foo", "value" => "bar"},
                %{"name" => "foo1", "value" => "bar1"}
              ]
@@ -767,7 +767,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(user.ap_id)
 
-      assert User.fields(user) == [
+      assert user.fields == [
                %{"name" => "foo", "value" => "updated"},
                %{"name" => "foo1", "value" => "updated"}
              ]
@@ -785,7 +785,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(user.ap_id)
 
-      assert User.fields(user) == [
+      assert user.fields == [
                %{"name" => "foo", "value" => "updated"},
                %{"name" => "foo1", "value" => "updated"}
              ]
@@ -796,7 +796,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(user.ap_id)
 
-      assert User.fields(user) == []
+      assert user.fields == []
     end
 
     test "it works for incoming update activities which lock the account" do
@@ -2161,5 +2161,19 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert %{"type" => "Collection", "items" => ^replies_uris} =
                Transmogrifier.set_replies(object.data)["replies"]
     end
+  end
+
+  test "take_emoji_tags/1" do
+    user = insert(:user, %{emoji: %{"firefox" => "https://example.org/firefox.png"}})
+
+    assert Transmogrifier.take_emoji_tags(user) == [
+             %{
+               "icon" => %{"type" => "Image", "url" => "https://example.org/firefox.png"},
+               "id" => "https://example.org/firefox.png",
+               "name" => ":firefox:",
+               "type" => "Emoji",
+               "updated" => "1970-01-01T00:00:00Z"
+             }
+           ]
   end
 end

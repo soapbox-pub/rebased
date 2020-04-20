@@ -8,11 +8,13 @@ defmodule Pleroma.NotificationTest do
   import Pleroma.Factory
   import Mock
 
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Notification
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
 
@@ -45,9 +47,6 @@ defmodule Pleroma.NotificationTest do
       assert notified_ids == [other_user.id, third_user.id]
       assert notification.activity_id == activity.id
       assert other_notification.activity_id == activity.id
-
-      assert [%Pleroma.Marker{unread_count: 2}] =
-               Pleroma.Marker.get_markers(other_user, ["notifications"])
     end
 
     test "it creates a notification for subscribed users" do
@@ -275,16 +274,6 @@ defmodule Pleroma.NotificationTest do
       refute Notification.create_notification(activity, author)
     end
 
-    test "it doesn't create a notification for follow-unfollow-follow chains" do
-      user = insert(:user)
-      followed_user = insert(:user)
-      {:ok, _, _, activity} = CommonAPI.follow(user, followed_user)
-      Notification.create_notification(activity, followed_user)
-      CommonAPI.unfollow(user, followed_user)
-      {:ok, _, _, activity_dupe} = CommonAPI.follow(user, followed_user)
-      refute Notification.create_notification(activity_dupe, followed_user)
-    end
-
     test "it doesn't create duplicate notifications for follow+subscribed users" do
       user = insert(:user)
       subscriber = insert(:user)
@@ -304,6 +293,74 @@ defmodule Pleroma.NotificationTest do
       {:ok, status} = CommonAPI.post(user, %{"status" => "inwisible", "visibility" => "direct"})
 
       assert {:ok, []} == Notification.create_notifications(status)
+    end
+  end
+
+  describe "follow / follow_request notifications" do
+    test "it creates `follow` notification for approved Follow activity" do
+      user = insert(:user)
+      followed_user = insert(:user, locked: false)
+
+      {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
+      assert FollowingRelationship.following?(user, followed_user)
+      assert [notification] = Notification.for_user(followed_user)
+
+      assert %{type: "follow"} =
+               NotificationView.render("show.json", %{
+                 notification: notification,
+                 for: followed_user
+               })
+    end
+
+    test "if `follow_request` notifications are enabled, " <>
+           "it creates `follow_request` notification for pending Follow activity" do
+      clear_config([:notifications, :enable_follow_request_notifications], true)
+      user = insert(:user)
+      followed_user = insert(:user, locked: true)
+
+      {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
+      refute FollowingRelationship.following?(user, followed_user)
+      assert [notification] = Notification.for_user(followed_user)
+
+      render_opts = %{notification: notification, for: followed_user}
+      assert %{type: "follow_request"} = NotificationView.render("show.json", render_opts)
+
+      # After request is accepted, the same notification is rendered with type "follow":
+      assert {:ok, _} = CommonAPI.accept_follow_request(user, followed_user)
+
+      notification_id = notification.id
+      assert [%{id: ^notification_id}] = Notification.for_user(followed_user)
+      assert %{type: "follow"} = NotificationView.render("show.json", render_opts)
+    end
+
+    test "if `follow_request` notifications are disabled, " <>
+           "it does NOT create `follow*` notification for pending Follow activity" do
+      clear_config([:notifications, :enable_follow_request_notifications], false)
+      user = insert(:user)
+      followed_user = insert(:user, locked: true)
+
+      {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
+      refute FollowingRelationship.following?(user, followed_user)
+      assert [] = Notification.for_user(followed_user)
+
+      # After request is accepted, no new notifications are generated:
+      assert {:ok, _} = CommonAPI.accept_follow_request(user, followed_user)
+      assert [] = Notification.for_user(followed_user)
+    end
+
+    test "it doesn't create a notification for follow-unfollow-follow chains" do
+      user = insert(:user)
+      followed_user = insert(:user, locked: false)
+
+      {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
+      assert FollowingRelationship.following?(user, followed_user)
+      assert [notification] = Notification.for_user(followed_user)
+
+      CommonAPI.unfollow(user, followed_user)
+      {:ok, _, _, _activity_dupe} = CommonAPI.follow(user, followed_user)
+
+      notification_id = notification.id
+      assert [%{id: ^notification_id}] = Notification.for_user(followed_user)
     end
   end
 
@@ -413,16 +470,6 @@ defmodule Pleroma.NotificationTest do
       assert n1.seen == true
       assert n2.seen == true
       assert n3.seen == false
-
-      assert %Pleroma.Marker{} =
-               m =
-               Pleroma.Repo.get_by(
-                 Pleroma.Marker,
-                 user_id: other_user.id,
-                 timeline: "notifications"
-               )
-
-      assert m.last_read_id == to_string(n2.id)
     end
   end
 

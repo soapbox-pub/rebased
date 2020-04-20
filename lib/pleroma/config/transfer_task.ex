@@ -122,7 +122,7 @@ defmodule Pleroma.Config.TransferTask do
     :ok = update_env(:logger, :backends, merged)
   end
 
-  defp configure({group, key, _, merged}) do
+  defp configure({_, key, _, merged}) when key in [:console, :ex_syslogger] do
     merged =
       if key == :console do
         put_in(merged[:format], merged[:format] <> "\n")
@@ -136,7 +136,12 @@ defmodule Pleroma.Config.TransferTask do
         else: key
 
     Logger.configure_backend(backend, merged)
-    :ok = update_env(:logger, group, merged)
+    :ok = update_env(:logger, key, merged)
+  end
+
+  defp configure({_, key, _, merged}) do
+    Logger.configure([{key, merged}])
+    :ok = update_env(:logger, key, merged)
   end
 
   defp update({group, key, value, merged}) do

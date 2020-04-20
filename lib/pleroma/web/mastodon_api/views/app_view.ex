@@ -7,6 +7,21 @@ defmodule Pleroma.Web.MastodonAPI.AppView do
 
   alias Pleroma.Web.OAuth.App
 
+  def render("index.json", %{apps: apps, count: count, page_size: page_size, admin: true}) do
+    %{
+      apps: render_many(apps, Pleroma.Web.MastodonAPI.AppView, "show.json", %{admin: true}),
+      count: count,
+      page_size: page_size
+    }
+  end
+
+  def render("show.json", %{admin: true, app: %App{} = app} = assigns) do
+    "show.json"
+    |> render(Map.delete(assigns, :admin))
+    |> Map.put(:trusted, app.trusted)
+    |> Map.put(:id, app.id)
+  end
+
   def render("show.json", %{app: %App{} = app}) do
     %{
       id: app.id |> to_string,

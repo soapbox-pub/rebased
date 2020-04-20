@@ -185,15 +185,8 @@ Post here request with `grant_type=refresh_token` to obtain new access token. Re
 
 Has theses additional parameters (which are the same as in Pleroma-API):
 
- `fullname`: optional
- `bio`: optional
- `captcha_solution`: optional, contains provider-specific captcha solution,
- `captcha_token`: optional, contains provider-specific captcha token
- `token`: invite token required when the registrations aren't public.
-
-
-## Markers
-
-Has these additional fields under the `pleroma` object:
-
-- `unread_count`: contains number unread notifications
+- `fullname`: optional
+- `bio`: optional
+- `captcha_solution`: optional, contains provider-specific captcha solution,
+- `captcha_token`: optional, contains provider-specific captcha token
+- `token`: invite token required when the registrations aren't public.

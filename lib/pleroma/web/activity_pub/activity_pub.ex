@@ -1432,19 +1432,44 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
       |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
 
+    emojis =
+      data
+      |> Map.get("tag", [])
+      |> Enum.filter(fn
+        %{"type" => "Emoji"} -> true
+        _ -> false
+      end)
+      |> Enum.reduce(%{}, fn %{"icon" => %{"url" => url}, "name" => name}, acc ->
+        Map.put(acc, String.trim(name, ":"), url)
+      end)
+
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
 
+    public_key =
+      if is_map(data["publicKey"]) && is_binary(data["publicKey"]["publicKeyPem"]) do
+        data["publicKey"]["publicKeyPem"]
+      else
+        nil
+      end
+
+    shared_inbox =
+      if is_map(data["endpoints"]) && is_binary(data["endpoints"]["sharedInbox"]) do
+        data["endpoints"]["sharedInbox"]
+      else
+        nil
+      end
+
     user_data = %{
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
       ap_enabled: true,
-      source_data: data,
       banner: banner,
       fields: fields,
+      emoji: emojis,
       locked: locked,
       discoverable: discoverable,
       invisible: invisible,
@@ -1454,7 +1479,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       following_address: data["following"],
       bio: data["summary"],
       actor_type: actor_type,
-      also_known_as: Map.get(data, "alsoKnownAs", [])
+      also_known_as: Map.get(data, "alsoKnownAs", []),
+      public_key: public_key,
+      inbox: data["inbox"],
+      shared_inbox: shared_inbox
     }
 
     # nickname can be nil because of virtual actors
@@ -1556,11 +1584,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def make_user_from_ap_id(ap_id) do
-    if _user = User.get_cached_by_ap_id(ap_id) do
+    user = User.get_cached_by_ap_id(ap_id)
+
+    if user && !User.ap_enabled?(user) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
       with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
-        User.insert_or_update_user(data)
+        if user do
+          user
+          |> User.remote_user_changeset(data)
+          |> User.update_and_set_cache()
+        else
+          data
+          |> User.remote_user_changeset()
+          |> Repo.insert()
+          |> User.set_cache()
+        end
       else
         e -> {:error, e}
       end

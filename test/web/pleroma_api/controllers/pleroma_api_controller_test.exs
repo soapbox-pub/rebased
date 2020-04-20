@@ -220,7 +220,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
   test "POST /api/v1/pleroma/conversations/read" do
     user = insert(:user)
-    %{user: other_user, conn: conn} = oauth_access(["write:notifications"])
+    %{user: other_user, conn: conn} = oauth_access(["write:conversations"])
 
     {:ok, _activity} =
       CommonAPI.post(user, %{"status" => "Hi @#{other_user.nickname}", "visibility" => "direct"})
