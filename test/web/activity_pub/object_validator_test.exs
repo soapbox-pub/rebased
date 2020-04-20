@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
 
   describe "chat messages" do
     setup do
+      clear_config([:instance, :remote_limit])
       user = insert(:user)
       recipient = insert(:user, local: false)
 
@@ -21,6 +22,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
 
     test "validates for a basic object we build", %{valid_chat_message: valid_chat_message} do
       assert {:ok, _object, _meta} = ObjectValidator.validate(valid_chat_message, [])
+    end
+
+    test "does not validate if the message is longer than the remote_limit", %{
+      valid_chat_message: valid_chat_message
+    } do
+      Pleroma.Config.put([:instance, :remote_limit], 2)
+      refute match?({:ok, _object, _meta}, ObjectValidator.validate(valid_chat_message, []))
     end
 
     test "does not validate if the actor or the recipient is not in our system", %{
