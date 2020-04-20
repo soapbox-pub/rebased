@@ -7,8 +7,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
   alias Pleroma.Activity
   alias Pleroma.Notification
-  alias Pleroma.User
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -83,7 +83,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       end
     end
 
-    # This returns the notification type by activity, but both chats and statuses are in "Create" activities.
+    # This returns the notification type by activity, but both chats and statuses
+    # are in "Create" activities.
     mastodon_type =
       case Activity.mastodon_notification_type(activity) do
         "mention" ->

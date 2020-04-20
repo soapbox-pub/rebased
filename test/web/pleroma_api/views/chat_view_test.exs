@@ -6,8 +6,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Chat
-  alias Pleroma.Web.PleromaAPI.ChatView
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.PleromaAPI.ChatView
 
   import Pleroma.Factory
 

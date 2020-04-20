@@ -6,8 +6,8 @@ defmodule Pleroma.Chat do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Pleroma.User
   alias Pleroma.Repo
+  alias Pleroma.User
 
   @moduledoc """
   Chat keeps a reference to ChatMessage conversations between a user and an recipient. The recipient can be a user (for now) or a group (not implemented yet).

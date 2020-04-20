@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   use Ecto.Schema
 
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
 

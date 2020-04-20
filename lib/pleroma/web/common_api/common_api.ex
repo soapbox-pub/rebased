@@ -7,6 +7,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ThreadMute
@@ -17,7 +18,6 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
-  alias Pleroma.Formatter
 
   import Pleroma.Web.Gettext
   import Pleroma.Web.CommonAPI.Utils
