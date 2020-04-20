@@ -15,7 +15,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageViewTest do
   test "it displays a chat message" do
     user = insert(:user)
     recipient = insert(:user)
-    {:ok, activity} = CommonAPI.post_chat_message(user, recipient, "kippis")
+    {:ok, activity} = CommonAPI.post_chat_message(user, recipient, "kippis :firefox:")
 
     chat = Chat.get(user.id, recipient.ap_id)
 
@@ -24,9 +24,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageViewTest do
     chat_message = ChatMessageView.render("show.json", object: object, for: user, chat: chat)
 
     assert chat_message[:id] == object.id |> to_string()
-    assert chat_message[:content] == "kippis"
+    assert chat_message[:content] == "kippis :firefox:"
     assert chat_message[:actor] == user.ap_id
     assert chat_message[:chat_id]
+    assert chat_message[:created_at]
+    assert match?([%{shortcode: "firefox"}], chat_message[:emojis])
 
     {:ok, activity} = CommonAPI.post_chat_message(recipient, user, "gkgkgk")
 

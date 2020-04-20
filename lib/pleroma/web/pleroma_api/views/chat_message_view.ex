@@ -6,6 +6,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageView do
   use Pleroma.Web, :view
 
   alias Pleroma.Chat
+  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.MastodonAPI.StatusView
 
   def render(
         "show.json",
@@ -18,7 +20,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageView do
       id: id |> to_string(),
       content: chat_message["content"],
       chat_id: chat_id |> to_string(),
-      actor: chat_message["actor"]
+      actor: chat_message["actor"],
+      created_at: Utils.to_masto_date(chat_message["published"]),
+      emojis: StatusView.build_emojis(chat_message["emoji"])
     }
   end
 
