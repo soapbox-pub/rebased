@@ -20,6 +20,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
     field(:content, :string)
     field(:actor, Types.ObjectID)
     field(:published, Types.DateTime)
+    field(:emoji, :map, default: %{})
   end
 
   def cast_and_apply(data) do

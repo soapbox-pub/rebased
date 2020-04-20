@@ -15,13 +15,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       user = insert(:user)
       recipient = insert(:user, local: false)
 
-      {:ok, valid_chat_message, _} = Builder.chat_message(user, recipient.ap_id, "hey")
+      {:ok, valid_chat_message, _} = Builder.chat_message(user, recipient.ap_id, "hey :firefox:")
 
       %{user: user, recipient: recipient, valid_chat_message: valid_chat_message}
     end
 
     test "validates for a basic object we build", %{valid_chat_message: valid_chat_message} do
-      assert {:ok, _object, _meta} = ObjectValidator.validate(valid_chat_message, [])
+      assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
+
+      assert object == valid_chat_message
     end
 
     test "does not validate if the message is longer than the remote_limit", %{

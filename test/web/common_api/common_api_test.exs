@@ -33,7 +33,7 @@ defmodule Pleroma.Web.CommonAPITest do
         CommonAPI.post_chat_message(
           author,
           recipient,
-          "a test message <script>alert('uuu')</script>"
+          "a test message <script>alert('uuu')</script> :firefox:"
         )
 
       assert activity.data["type"] == "Create"
@@ -44,7 +44,11 @@ defmodule Pleroma.Web.CommonAPITest do
       assert object.data["to"] == [recipient.ap_id]
 
       assert object.data["content"] ==
-               "a test message &lt;script&gt;alert(&#39;uuu&#39;)&lt;/script&gt;"
+               "a test message &lt;script&gt;alert(&#39;uuu&#39;)&lt;/script&gt; :firefox:"
+
+      assert object.data["emoji"] == %{
+               "firefox" => "http://localhost:4001/emoji/Firefox.gif"
+             }
 
       assert Chat.get(author.id, recipient.ap_id)
       assert Chat.get(recipient.id, author.ap_id)

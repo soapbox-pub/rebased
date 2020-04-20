@@ -5,6 +5,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   This module encodes our addressing policies and general shape of our objects.
   """
 
+  alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
@@ -30,7 +31,8 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "type" => "ChatMessage",
        "to" => [recipient],
        "content" => content,
-       "published" => DateTime.utc_now() |> DateTime.to_iso8601()
+       "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+       "emoji" => Emoji.Formatter.get_emoji_map(content)
      }, []}
   end
 

@@ -1,19 +1,19 @@
 {
-    "actor": "http://2hu.gensokyo/users/raymoo",
-    "id": "http://2hu.gensokyo/objects/1",
-    "object": {
-        "attributedTo": "http://2hu.gensokyo/users/raymoo",
-        "content": "You expected a cute girl? Too bad. <script>alert('XSS')</script>",
-        "id": "http://2hu.gensokyo/objects/2",
-        "published": "2020-02-12T14:08:20Z",
-        "to": [
-	    "http://2hu.gensokyo/users/marisa"
-        ],
-        "type": "ChatMessage"
-    },
-    "published": "2018-02-12T14:08:20Z",
+  "actor": "http://2hu.gensokyo/users/raymoo",
+  "id": "http://2hu.gensokyo/objects/1",
+  "object": {
+    "attributedTo": "http://2hu.gensokyo/users/raymoo",
+    "content": "You expected a cute girl? Too bad. <script>alert('XSS')</script>",
+    "id": "http://2hu.gensokyo/objects/2",
+    "published": "2020-02-12T14:08:20Z",
     "to": [
-        "http://2hu.gensokyo/users/marisa"
+      "http://2hu.gensokyo/users/marisa"
     ],
-    "type": "Create"
+    "type": "ChatMessage"
+  },
+  "published": "2018-02-12T14:08:20Z",
+  "to": [
+    "http://2hu.gensokyo/users/marisa"
+  ],
+  "type": "Create"
 }
