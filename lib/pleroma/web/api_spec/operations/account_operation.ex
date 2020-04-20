@@ -341,4 +341,16 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       }
     }
   end
+
+  def identity_proofs_operation do
+    %Operation{
+      tags: ["accounts"],
+      summary: "Identity proofs",
+      operationId: "AccountController.identity_proofs",
+      description: "Not implemented",
+      responses: %{
+        200 => Operation.response("Empry array", "application/json", %Schema{type: :array})
+      }
+    }
+  end
 end
