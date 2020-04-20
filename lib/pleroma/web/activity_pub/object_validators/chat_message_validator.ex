@@ -54,7 +54,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   def validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["ChatMessage"])
-    |> validate_required([:id, :actor, :to, :type, :content])
+    |> validate_required([:id, :actor, :to, :type, :content, :published])
     |> validate_length(:to, is: 1)
     |> validate_length(:content, max: Pleroma.Config.get([:instance, :remote_limit]))
     |> validate_local_concern()

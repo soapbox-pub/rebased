@@ -17,7 +17,8 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "actor" => actor.ap_id,
        "to" => recipients,
        "object" => object_id,
-       "type" => "Create"
+       "type" => "Create",
+       "published" => DateTime.utc_now() |> DateTime.to_iso8601()
      }, []}
   end
 
@@ -28,7 +29,8 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "actor" => actor.ap_id,
        "type" => "ChatMessage",
        "to" => [recipient],
-       "content" => content
+       "content" => content,
+       "published" => DateTime.utc_now() |> DateTime.to_iso8601()
      }, []}
   end
 
