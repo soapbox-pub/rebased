@@ -49,6 +49,7 @@ Once `SimplePolicy` is enabled, you can configure various groups in the `:mrf_si
 * `banner_removal`: Banner images from these servers will be stripped from incoming messages.
 * `report_removal`: Servers in this group will have their reports (flags) rejected.
 * `federated_timeline_removal`: Servers in this group will have their messages unlisted from the public timelines by flipping the `to` and `cc` fields.
+* `reject_deletes`: Deletion requests will be rejected from these servers.
 
 Servers should be configured as lists.
 
