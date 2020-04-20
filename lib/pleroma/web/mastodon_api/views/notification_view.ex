@@ -133,9 +133,6 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
           # Note: :skip_relationships option being applied to _account_ rendering (here)
           put_target(response, activity, reading_user, render_opts)
 
-        "follow" ->
-          response
-
         "pleroma:emoji_reaction" ->
           response
           |> put_status(parent_activity_fn.(), reading_user, render_opts)
@@ -143,6 +140,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
         "pleroma:chat_mention" ->
           put_chat_message(response, activity, reading_user, render_opts)
+
+        type when type in ["follow", "follow_request"] ->
+          response
 
         _ ->
           nil

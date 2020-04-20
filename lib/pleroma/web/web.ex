@@ -40,17 +40,22 @@ defmodule Pleroma.Web do
       # Marks a plug intentionally skipped and blocks its execution if it's present in plugs chain
       defp skip_plug(conn, plug_module) do
         try do
-          plug_module.ensure_skippable()
+          plug_module.skip_plug(conn)
         rescue
           UndefinedFunctionError ->
             raise "#{plug_module} is not skippable. Append `use Pleroma.Web, :plug` to its code."
         end
-
-        PlugHelper.append_to_skipped_plugs(conn, plug_module)
       end
 
-      # Here we can apply before-action hooks (e.g. verify whether auth checks were preformed)
+      # Executed just before actual controller action, invokes before-action hooks (callbacks)
       defp action(conn, params) do
+        with %Plug.Conn{halted: false} <- maybe_halt_on_missing_oauth_scopes_check(conn) do
+          super(conn, params)
+        end
+      end
+
+      # Halts if authenticated API action neither performs nor explicitly skips OAuth scopes check
+      defp maybe_halt_on_missing_oauth_scopes_check(conn) do
         if Pleroma.Plugs.AuthExpectedPlug.auth_expected?(conn) &&
              not PlugHelper.plug_called_or_skipped?(conn, Pleroma.Plugs.OAuthScopesPlug) do
           conn
@@ -60,7 +65,7 @@ defmodule Pleroma.Web do
           )
           |> halt()
         else
-          super(conn, params)
+          conn
         end
       end
     end
@@ -129,7 +134,16 @@ defmodule Pleroma.Web do
     quote do
       alias Pleroma.Plugs.PlugHelper
 
-      def ensure_skippable, do: :noop
+      @doc """
+      Marks a plug intentionally skipped and blocks its execution if it's present in plugs chain.
+      """
+      def skip_plug(conn) do
+        PlugHelper.append_to_private_list(
+          conn,
+          PlugHelper.skipped_plugs_list_id(),
+          __MODULE__
+        )
+      end
 
       @impl Plug
       @doc "If marked as skipped, returns `conn`, and calls `perform/2` otherwise."
@@ -138,7 +152,7 @@ defmodule Pleroma.Web do
           conn
         else
           conn
-          |> PlugHelper.append_to_called_plugs(__MODULE__)
+          |> PlugHelper.append_to_private_list(PlugHelper.called_plugs_list_id(), __MODULE__)
           |> perform(options)
         end
       end

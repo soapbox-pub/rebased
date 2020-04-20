@@ -19,7 +19,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle(%{data: %{"type" => "Like"}} = object, meta) do
     liked_object = Object.get_by_ap_id(object.data["object"])
     Utils.add_like_to_object(object, liked_object)
+
     Notification.create_notifications(object)
+
     {:ok, object, meta}
   end
 
