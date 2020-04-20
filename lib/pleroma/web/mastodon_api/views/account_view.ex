@@ -15,6 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   def render("index.json", %{users: users} = opts) do
     reading_user = opts[:for]
 
+    # Note: :skip_relationships option is currently intentionally not supported for accounts
     relationships_opt =
       cond do
         Map.has_key?(opts, :relationships) ->
@@ -180,23 +181,25 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     bot = user.actor_type in ["Application", "Service"]
 
     emojis =
-      (user.source_data["tag"] || [])
-      |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
-      |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
+      Enum.map(user.emoji, fn {shortcode, url} ->
         %{
-          "shortcode" => String.trim(name, ":"),
-          "url" => MediaProxy.url(url),
-          "static_url" => MediaProxy.url(url),
+          "shortcode" => shortcode,
+          "url" => url,
+          "static_url" => url,
           "visible_in_picker" => false
         }
       end)
 
     relationship =
-      render("relationship.json", %{
-        user: opts[:for],
-        target: user,
-        relationships: opts[:relationships]
-      })
+      if opts[:skip_relationships] do
+        %{}
+      else
+        render("relationship.json", %{
+          user: opts[:for],
+          target: user,
+          relationships: opts[:relationships]
+        })
+      end
 
     %{
       id: to_string(user.id),

@@ -11,7 +11,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   @moduledoc "Filter activities depending on their age"
   @behaviour Pleroma.Web.ActivityPub.MRF
 
-  defp check_date(%{"published" => published} = message) do
+  defp check_date(%{"object" => %{"published" => published}} = message) do
     with %DateTime{} = now <- DateTime.utc_now(),
          {:ok, %DateTime{} = then, _} <- DateTime.from_iso8601(published),
          max_ttl <- Config.get([:mrf_object_age, :threshold]),
@@ -96,5 +96,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   def filter(message), do: {:ok, message}
 
   @impl true
-  def describe, do: {:ok, %{}}
+  def describe do
+    mrf_object_age =
+      Pleroma.Config.get(:mrf_object_age)
+      |> Enum.into(%{})
+
+    {:ok, %{mrf_object_age: mrf_object_age}}
+  end
 end

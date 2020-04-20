@@ -20,7 +20,30 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "home" do
     setup do: oauth_access(["read:statuses"])
 
+    test "does NOT render account/pleroma/relationship if this is disabled by default", %{
+      user: user,
+      conn: conn
+    } do
+      clear_config([:extensions, :output_relationships_in_statuses_by_default], false)
+
+      other_user = insert(:user)
+
+      {:ok, _} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/timelines/home")
+        |> json_response(200)
+
+      assert Enum.all?(response, fn n ->
+               get_in(n, ["account", "pleroma", "relationship"]) == %{}
+             end)
+    end
+
     test "the home timeline", %{user: user, conn: conn} do
+      uri = "/api/v1/timelines/home?with_relationships=true"
+
       following = insert(:user, nickname: "followed")
       third_user = insert(:user, nickname: "repeated")
 
@@ -28,13 +51,13 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       {:ok, activity} = CommonAPI.post(third_user, %{"status" => "repeated post"})
       {:ok, _, _} = CommonAPI.repeat(activity.id, following)
 
-      ret_conn = get(conn, "/api/v1/timelines/home")
+      ret_conn = get(conn, uri)
 
       assert Enum.empty?(json_response(ret_conn, :ok))
 
       {:ok, _user} = User.follow(user, following)
 
-      ret_conn = get(conn, "/api/v1/timelines/home")
+      ret_conn = get(conn, uri)
 
       assert [
                %{
@@ -59,7 +82,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       {:ok, _user} = User.follow(third_user, user)
 
-      ret_conn = get(conn, "/api/v1/timelines/home")
+      ret_conn = get(conn, uri)
 
       assert [
                %{

@@ -42,13 +42,13 @@ defmodule Pleroma.Web.Plugs.MappedSignatureToIdentityPlug do
     else
       {:user_match, false} ->
         Logger.debug("Failed to map identity from signature (payload actor mismatch)")
-        Logger.debug("key_id=#{key_id_from_conn(conn)}, actor=#{actor}")
+        Logger.debug("key_id=#{inspect(key_id_from_conn(conn))}, actor=#{inspect(actor)}")
         assign(conn, :valid_signature, false)
 
       # remove me once testsuite uses mapped capabilities instead of what we do now
       {:user, nil} ->
         Logger.debug("Failed to map identity from signature (lookup failure)")
-        Logger.debug("key_id=#{key_id_from_conn(conn)}, actor=#{actor}")
+        Logger.debug("key_id=#{inspect(key_id_from_conn(conn))}, actor=#{actor}")
         conn
     end
   end
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.Plugs.MappedSignatureToIdentityPlug do
     else
       _ ->
         Logger.debug("Failed to map identity from signature (no payload actor mismatch)")
-        Logger.debug("key_id=#{key_id_from_conn(conn)}")
+        Logger.debug("key_id=#{inspect(key_id_from_conn(conn))}")
         assign(conn, :valid_signature, false)
     end
   end

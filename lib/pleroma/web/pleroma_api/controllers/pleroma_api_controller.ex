@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
+  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2, skip_relationships?: 1]
 
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:conversations"]} when action == :update_conversation
+    %{scopes: ["write:conversations"]} when action in [:update_conversation, :read_conversations]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :read_notification)
@@ -130,7 +130,12 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
       conn
       |> add_link_headers(activities)
       |> put_view(StatusView)
-      |> render("index.json", %{activities: activities, for: user, as: :activity})
+      |> render("index.json",
+        activities: activities,
+        for: user,
+        as: :activity,
+        skip_relationships: skip_relationships?(params)
+      )
     else
       _error ->
         conn
@@ -184,13 +189,17 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def read_notification(%{assigns: %{user: user}} = conn, %{"max_id" => max_id}) do
+  def read_notification(%{assigns: %{user: user}} = conn, %{"max_id" => max_id} = params) do
     with notifications <- Notification.set_read_up_to(user, max_id) do
       notifications = Enum.take(notifications, 80)
 
       conn
       |> put_view(NotificationView)
-      |> render("index.json", %{notifications: notifications, for: user})
+      |> render("index.json",
+        notifications: notifications,
+        for: user,
+        skip_relationships: skip_relationships?(params)
+      )
     end
   end
 end

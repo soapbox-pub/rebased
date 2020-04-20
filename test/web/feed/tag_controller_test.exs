@@ -150,8 +150,8 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     obj2 = Object.normalize(activity2)
 
     assert xpath(xml, ~x"//channel/item/description/text()"sl) == [
-             HtmlEntities.decode(FeedView.activity_content(obj2)),
-             HtmlEntities.decode(FeedView.activity_content(obj1))
+             HtmlEntities.decode(FeedView.activity_content(obj2.data)),
+             HtmlEntities.decode(FeedView.activity_content(obj1.data))
            ]
 
     response =

@@ -2,11 +2,11 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.MastodonAPI.PushSubscriptionView do
+defmodule Pleroma.Web.MastodonAPI.SubscriptionView do
   use Pleroma.Web, :view
   alias Pleroma.Web.Push
 
-  def render("push_subscription.json", %{subscription: subscription}) do
+  def render("show.json", %{subscription: subscription}) do
     %{
       id: to_string(subscription.id),
       endpoint: subscription.endpoint,

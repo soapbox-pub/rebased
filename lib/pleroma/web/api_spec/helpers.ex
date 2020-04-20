@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.ApiSpec.Helpers do
   def request_body(description, schema_ref, opts \\ []) do
-    media_types = ["application/json", "multipart/form-data"]
+    media_types = ["application/json", "multipart/form-data", "application/x-www-form-urlencoded"]
 
     content =
       media_types
