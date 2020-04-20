@@ -28,7 +28,10 @@ defmodule Pleroma.Web.CommonAPI do
   def post_chat_message(%User{} = user, %User{} = recipient, content) do
     transaction =
       Repo.transaction(fn ->
-        with {_, {:ok, chat_message_data, _meta}} <-
+        with {_, true} <-
+               {:content_length,
+                String.length(content) <= Pleroma.Config.get([:instance, :chat_limit])},
+             {_, {:ok, chat_message_data, _meta}} <-
                {:build_object,
                 Builder.chat_message(
                   user,
@@ -43,6 +46,9 @@ defmodule Pleroma.Web.CommonAPI do
              {_, {:ok, %Activity{} = activity, _meta}} <-
                {:common_pipeline, Pipeline.common_pipeline(create_activity_data, local: true)} do
           {:ok, activity}
+        else
+          {:content_length, false} -> {:error, :content_too_long}
+          e -> e
         end
       end)
 

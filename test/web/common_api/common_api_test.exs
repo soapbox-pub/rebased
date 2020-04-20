@@ -23,6 +23,8 @@ defmodule Pleroma.Web.CommonAPITest do
   setup do: clear_config([:instance, :max_pinned_statuses])
 
   describe "posting chat messages" do
+    setup do: clear_config([:instance, :chat_limit])
+
     test "it posts a chat message" do
       author = insert(:user)
       recipient = insert(:user)
@@ -46,6 +48,22 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert Chat.get(author.id, recipient.ap_id)
       assert Chat.get(recipient.id, author.ap_id)
+    end
+
+    test "it reject messages over the local limit" do
+      Pleroma.Config.put([:instance, :chat_limit], 2)
+
+      author = insert(:user)
+      recipient = insert(:user)
+
+      {:error, message} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "123"
+        )
+
+      assert message == :content_too_long
     end
   end
 

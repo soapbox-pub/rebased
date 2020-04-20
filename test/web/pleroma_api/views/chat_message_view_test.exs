@@ -23,7 +23,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageViewTest do
 
     chat_message = ChatMessageView.render("show.json", object: object, for: user, chat: chat)
 
-    assert chat_message[:id] == object.id
+    assert chat_message[:id] == object.id |> to_string()
     assert chat_message[:content] == "kippis"
     assert chat_message[:actor] == user.ap_id
     assert chat_message[:chat_id]
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageViewTest do
 
     chat_message_two = ChatMessageView.render("show.json", object: object, for: user, chat: chat)
 
-    assert chat_message_two[:id] == object.id
+    assert chat_message_two[:id] == object.id |> to_string()
     assert chat_message_two[:content] == "gkgkgk"
     assert chat_message_two[:actor] == recipient.ap_id
     assert chat_message_two[:chat_id] == chat_message[:chat_id]
