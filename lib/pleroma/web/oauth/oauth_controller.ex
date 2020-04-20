@@ -27,6 +27,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   plug(:fetch_flash)
   plug(RateLimiter, [name: :authentication] when action == :create_authorization)
 
+  plug(:skip_plug, Pleroma.Plugs.OAuthScopesPlug)
+
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 
   @oob_token_redirect_uri "urn:ietf:wg:oauth:2.0:oob"

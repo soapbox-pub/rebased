@@ -284,8 +284,17 @@ defmodule Pleroma.Notification do
     end
   end
 
+  def create_notifications(%Activity{data: %{"type" => "Follow"}} = activity) do
+    if Pleroma.Config.get([:notifications, :enable_follow_request_notifications]) ||
+         Activity.follow_accepted?(activity) do
+      do_create_notifications(activity)
+    else
+      {:ok, []}
+    end
+  end
+
   def create_notifications(%Activity{data: %{"type" => type}} = activity)
-      when type in ["Like", "Announce", "Follow", "Move", "EmojiReact"] do
+      when type in ["Like", "Announce", "Move", "EmojiReact"] do
     do_create_notifications(activity)
   end
 

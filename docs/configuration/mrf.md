@@ -41,11 +41,14 @@ config :pleroma, :instance,
 
 Once `SimplePolicy` is enabled, you can configure various groups in the `:mrf_simple` config object. These groups are:
 
-* `media_removal`: Servers in this group will have media stripped from incoming messages.
+* `reject`: Servers in this group will have their messages rejected.
+* `accept`: If not empty, only messages from these instances will be accepted (whitelist federation).
 * `media_nsfw`: Servers in this group will have the #nsfw tag and sensitive setting injected into incoming messages which contain media.
-* `reject`: Servers in this group will have their messages (except deletions) rejected.
-* `federated_timeline_removal`: Servers in this group will have their messages unlisted from the public timelines by flipping the `to` and `cc` fields.
+* `media_removal`: Servers in this group will have media stripped from incoming messages.
+* `avatar_removal`: Avatars from these servers will be stripped from incoming messages.
+* `banner_removal`: Banner images from these servers will be stripped from incoming messages.
 * `report_removal`: Servers in this group will have their reports (flags) rejected.
+* `federated_timeline_removal`: Servers in this group will have their messages unlisted from the public timelines by flipping the `to` and `cc` fields.
 * `reject_deletes`: Deletion requests will be rejected from these servers.
 
 Servers should be configured as lists.
@@ -114,7 +117,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RewritePolicy do
 
   @impl true
   def describe do
-    {:ok, %{mrf_sample: %{content: "new message content"}}}`
+    {:ok, %{mrf_sample: %{content: "new message content"}}}
   end
 end
 ```

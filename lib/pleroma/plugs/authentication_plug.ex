@@ -4,8 +4,11 @@
 
 defmodule Pleroma.Plugs.AuthenticationPlug do
   alias Comeonin.Pbkdf2
-  import Plug.Conn
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
+
+  import Plug.Conn
+
   require Logger
 
   def init(options), do: options
@@ -37,6 +40,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
     if Pbkdf2.checkpw(password, password_hash) do
       conn
       |> assign(:user, auth_user)
+      |> OAuthScopesPlug.skip_plug()
     else
       conn
     end

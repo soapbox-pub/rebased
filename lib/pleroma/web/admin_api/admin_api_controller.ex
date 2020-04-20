@@ -27,7 +27,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.MastodonAPI.AppView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.Router
 
   require Logger
@@ -258,7 +260,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> put_view(Pleroma.Web.AdminAPI.StatusView)
-    |> render("index.json", %{activities: activities, as: :activity})
+    |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
   end
 
   def list_user_statuses(conn, %{"nickname" => nickname} = params) do
@@ -277,7 +279,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       conn
       |> put_view(StatusView)
-      |> render("index.json", %{activities: activities, as: :activity})
+      |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
     else
       _ -> {:error, :not_found}
     end
@@ -812,7 +814,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> put_view(Pleroma.Web.AdminAPI.StatusView)
-    |> render("index.json", %{activities: activities, as: :activity})
+    |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
   end
 
   def status_update(%{assigns: %{user: admin}} = conn, %{"id" => id} = params) do
@@ -914,16 +916,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         end)
         |> List.flatten()
 
-      response = %{configs: merged}
-
-      response =
-        if Restarter.Pleroma.need_reboot?() do
-          Map.put(response, :need_reboot, true)
-        else
-          response
-        end
-
-      json(conn, response)
+      json(conn, %{configs: merged, need_reboot: Restarter.Pleroma.need_reboot?()})
     end
   end
 
@@ -950,28 +943,22 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       Config.TransferTask.load_and_update_env(deleted, false)
 
-      need_reboot? =
-        Restarter.Pleroma.need_reboot?() ||
-          Enum.any?(updated, fn config ->
+      if !Restarter.Pleroma.need_reboot?() do
+        changed_reboot_settings? =
+          (updated ++ deleted)
+          |> Enum.any?(fn config ->
             group = ConfigDB.from_string(config.group)
             key = ConfigDB.from_string(config.key)
             value = ConfigDB.from_binary(config.value)
             Config.TransferTask.pleroma_need_restart?(group, key, value)
           end)
 
-      response = %{configs: updated}
-
-      response =
-        if need_reboot? do
-          Restarter.Pleroma.need_reboot()
-          Map.put(response, :need_reboot, need_reboot?)
-        else
-          response
-        end
+        if changed_reboot_settings?, do: Restarter.Pleroma.need_reboot()
+      end
 
       conn
       |> put_view(ConfigView)
-      |> render("index.json", response)
+      |> render("index.json", %{configs: updated, need_reboot: Restarter.Pleroma.need_reboot?()})
     end
   end
 
@@ -981,6 +968,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       json(conn, %{})
     end
+  end
+
+  def need_reboot(conn, _params) do
+    json(conn, %{need_reboot: Restarter.Pleroma.need_reboot?()})
   end
 
   defp configurable_from_database(conn) do
@@ -1026,6 +1017,83 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     })
 
     conn |> json("")
+  end
+
+  def oauth_app_create(conn, params) do
+    params =
+      if params["name"] do
+        Map.put(params, "client_name", params["name"])
+      else
+        params
+      end
+
+    result =
+      case App.create(params) do
+        {:ok, app} ->
+          AppView.render("show.json", %{app: app, admin: true})
+
+        {:error, changeset} ->
+          App.errors(changeset)
+      end
+
+    json(conn, result)
+  end
+
+  def oauth_app_update(conn, params) do
+    params =
+      if params["name"] do
+        Map.put(params, "client_name", params["name"])
+      else
+        params
+      end
+
+    with {:ok, app} <- App.update(params) do
+      json(conn, AppView.render("show.json", %{app: app, admin: true}))
+    else
+      {:error, changeset} ->
+        json(conn, App.errors(changeset))
+
+      nil ->
+        json_response(conn, :bad_request, "")
+    end
+  end
+
+  def oauth_app_list(conn, params) do
+    {page, page_size} = page_params(params)
+
+    search_params = %{
+      client_name: params["name"],
+      client_id: params["client_id"],
+      page: page,
+      page_size: page_size
+    }
+
+    search_params =
+      if Map.has_key?(params, "trusted") do
+        Map.put(search_params, :trusted, params["trusted"])
+      else
+        search_params
+      end
+
+    with {:ok, apps, count} <- App.search(search_params) do
+      json(
+        conn,
+        AppView.render("index.json",
+          apps: apps,
+          count: count,
+          page_size: page_size,
+          admin: true
+        )
+      )
+    end
+  end
+
+  def oauth_app_delete(conn, params) do
+    with {:ok, _app} <- App.destroy(params["id"]) do
+      json_response(conn, :no_content, "")
+    else
+      _ -> json_response(conn, :bad_request, "")
+    end
   end
 
   def stats(conn, _) do

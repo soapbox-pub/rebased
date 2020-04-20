@@ -35,7 +35,10 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
     quote do
       vapid_details = Application.get_env(:web_push_encryption, :vapid_details, [])
       Application.put_env(:web_push_encryption, :vapid_details, [])
-      assert "Something went wrong" == unquote(yield)
+
+      assert %{"error" => "Web push subscription is disabled on this Pleroma instance"} ==
+               unquote(yield)
+
       Application.put_env(:web_push_encryption, :vapid_details, vapid_details)
     end
   end
@@ -45,7 +48,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       assert_error_when_disable_push do
         conn
         |> post("/api/v1/push/subscription", %{})
-        |> json_response(500)
+        |> json_response(403)
       end
     end
 
@@ -74,7 +77,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       assert_error_when_disable_push do
         conn
         |> get("/api/v1/push/subscription", %{})
-        |> json_response(500)
+        |> json_response(403)
       end
     end
 
@@ -127,7 +130,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       assert_error_when_disable_push do
         conn
         |> put("/api/v1/push/subscription", %{data: %{"alerts" => %{"mention" => false}}})
-        |> json_response(500)
+        |> json_response(403)
       end
     end
 
@@ -155,7 +158,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       assert_error_when_disable_push do
         conn
         |> delete("/api/v1/push/subscription", %{})
-        |> json_response(500)
+        |> json_response(403)
       end
     end
 
