@@ -28,8 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Logger configuration through AdminFE
 - HTTP Basic Authentication permissions issue
+- ObjectAgePolicy didn't filter out old messages
 
 ### Added
+- NodeInfo: ObjectAgePolicy settings to the `federation` list.
 <details>
   <summary>API Changes</summary>
 - Admin API: `GET /api/pleroma/admin/need_reboot`.
