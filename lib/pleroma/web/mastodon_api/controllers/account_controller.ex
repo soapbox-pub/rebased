@@ -26,12 +26,24 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
-  plug(:skip_plug, OAuthScopesPlug when action == :identity_proofs)
+  plug(:skip_plug, OAuthScopesPlug when action in [:create, :identity_proofs])
+
+  plug(
+    :skip_plug,
+    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+    when action in [:create, :show, :statuses]
+  )
 
   plug(
     OAuthScopesPlug,
     %{fallback: :proceed_unauthenticated, scopes: ["read:accounts"]}
-    when action == :show
+    when action in [:show, :endorsements]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{fallback: :proceed_unauthenticated, scopes: ["read:statuses"]}
+    when action == :statuses
   )
 
   plug(
@@ -56,20 +68,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(OAuthScopesPlug, %{scopes: ["read:follows"]} when action == :relationships)
 
-  # Note: :follows (POST /api/v1/follows) is the same as :follow, consider removing :follows
   plug(
     OAuthScopesPlug,
-    %{scopes: ["follow", "write:follows"]} when action in [:follows, :follow, :unfollow]
+    %{scopes: ["follow", "write:follows"]} when action in [:follow_by_uri, :follow, :unfollow]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "read:mutes"]} when action == :mutes)
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
-
-  plug(
-    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-    when action not in [:create, :show, :statuses]
-  )
 
   @relationship_actions [:follow, :unfollow]
   @needs_account ~W(followers following lists follow unfollow mute unmute block unblock)a
@@ -356,7 +362,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "POST /api/v1/follows"
-  def follows(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
+  def follow_by_uri(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
     with {_, %User{} = followed} <- {:followed, User.get_cached_by_nickname(uri)},
          {_, true} <- {:followed, follower.id != followed.id},
          {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do

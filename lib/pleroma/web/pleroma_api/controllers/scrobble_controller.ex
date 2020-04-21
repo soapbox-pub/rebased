@@ -16,8 +16,6 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleController do
   plug(OAuthScopesPlug, %{scopes: ["read"]} when action == :user_scrobbles)
   plug(OAuthScopesPlug, %{scopes: ["write"]} when action != :user_scrobbles)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   def new_scrobble(%{assigns: %{user: user}} = conn, %{"title" => _} = params) do
     params =
       if !params["length"] do

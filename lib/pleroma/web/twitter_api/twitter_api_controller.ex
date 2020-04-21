@@ -13,11 +13,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   require Logger
 
-  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :notifications_read)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:notifications"]} when action == :mark_notifications_as_read
+  )
 
   plug(:skip_plug, OAuthScopesPlug when action in [:oauth_tokens, :revoke_token])
-
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   action_fallback(:errors)
 
@@ -64,7 +65,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> send_resp(status, json)
   end
 
-  def notifications_read(%{assigns: %{user: user}} = conn, %{"latest_id" => latest_id} = params) do
+  def mark_notifications_as_read(
+        %{assigns: %{user: user}} = conn,
+        %{"latest_id" => latest_id} = params
+      ) do
     Notification.set_read_up_to(user, latest_id)
 
     notifications = Notification.for_user(user, params)
@@ -75,7 +79,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> render("index.json", %{notifications: notifications, for: user})
   end
 
-  def notifications_read(%{assigns: %{user: _user}} = conn, _) do
+  def mark_notifications_as_read(%{assigns: %{user: _user}} = conn, _) do
     bad_request_reply(conn, "You need to specify latest_id")
   end
 

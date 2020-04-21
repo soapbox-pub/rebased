@@ -17,6 +17,13 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   require Pleroma.Constants
 
+  plug(:skip_plug, OAuthScopesPlug when action == :confirmation_resend)
+
+  plug(
+    :skip_plug,
+    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action == :confirmation_resend
+  )
+
   plug(
     OAuthScopesPlug,
     %{scopes: ["follow", "write:follows"]} when action in [:subscribe, :unsubscribe]
@@ -35,13 +42,8 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   plug(OAuthScopesPlug, %{scopes: ["read:favourites"]} when action == :favourites)
 
-  # An extra safety measure for possible actions not guarded by OAuth permissions specification
-  plug(
-    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-    when action != :confirmation_resend
-  )
-
   plug(RateLimiter, [name: :account_confirmation_resend] when action == :confirmation_resend)
+
   plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])
   plug(:put_view, Pleroma.Web.MastodonAPI.AccountView)
 

@@ -77,7 +77,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     %{scopes: ["write:bookmarks"]} when action in [:bookmark, :unbookmark]
   )
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action not in [:index, :show])
+  plug(:skip_plug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action in [:index, :show])
 
   @rate_limited_status_actions ~w(reblog unreblog favourite unfavourite create delete)a
 

@@ -11,8 +11,6 @@ defmodule Pleroma.Web.MastodonAPI.ReportController do
 
   plug(OAuthScopesPlug, %{scopes: ["write:reports"]} when action == :create)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   @doc "POST /api/v1/reports"
   def create(%{assigns: %{user: user}} = conn, params) do
     with {:ok, activity} <- Pleroma.Web.CommonAPI.report(user, params) do

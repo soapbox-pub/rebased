@@ -26,7 +26,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:home, :direct])
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :list)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action != :public)
+  plug(:skip_plug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action == :public)
 
   plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
 

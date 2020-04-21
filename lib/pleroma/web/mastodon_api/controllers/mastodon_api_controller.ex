@@ -17,8 +17,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   plug(:skip_plug, Pleroma.Plugs.OAuthScopesPlug when action in [:empty_array, :empty_object])
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   def empty_array(conn, _) do

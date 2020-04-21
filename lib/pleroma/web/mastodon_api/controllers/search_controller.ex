@@ -21,8 +21,6 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   # Note: Mastodon doesn't allow unauthenticated access (requires read:accounts / read:search)
   plug(OAuthScopesPlug, %{scopes: ["read:search"], fallback: :proceed_unauthenticated})
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   plug(RateLimiter, [name: :search] when action in [:search, :search2, :account_search])
 
   def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
