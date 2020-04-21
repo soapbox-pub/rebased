@@ -16,79 +16,60 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.UserEnabledPlug)
   end
 
-  pipeline :api do
-    plug(:accepts, ["json"])
-    plug(:fetch_session)
+  pipeline :authenticate do
     plug(Pleroma.Plugs.OAuthPlug)
     plug(Pleroma.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Plugs.UserFetcherPlug)
     plug(Pleroma.Plugs.SessionAuthenticationPlug)
     plug(Pleroma.Plugs.LegacyAuthenticationPlug)
     plug(Pleroma.Plugs.AuthenticationPlug)
+  end
+
+  pipeline :after_auth do
     plug(Pleroma.Plugs.UserEnabledPlug)
     plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
-    plug(Pleroma.Plugs.IdempotencyPlug)
+  end
+
+  pipeline :base_api do
+    plug(:accepts, ["json"])
+    plug(:fetch_session)
+    plug(:authenticate)
     plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
+  end
+
+  pipeline :api do
+    plug(:base_api)
+    plug(:after_auth)
+    plug(Pleroma.Plugs.IdempotencyPlug)
   end
 
   pipeline :authenticated_api do
-    plug(:accepts, ["json"])
-    plug(:fetch_session)
+    plug(:base_api)
     plug(Pleroma.Plugs.AuthExpectedPlug)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
-    plug(Pleroma.Plugs.UserEnabledPlug)
-    plug(Pleroma.Plugs.SetUserSessionIdPlug)
+    plug(:after_auth)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
     plug(Pleroma.Plugs.IdempotencyPlug)
-    plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
   pipeline :admin_api do
-    plug(:accepts, ["json"])
-    plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(:base_api)
     plug(Pleroma.Plugs.AdminSecretAuthenticationPlug)
-    plug(Pleroma.Plugs.UserEnabledPlug)
-    plug(Pleroma.Plugs.SetUserSessionIdPlug)
+    plug(:after_auth)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
     plug(Pleroma.Plugs.UserIsAdminPlug)
     plug(Pleroma.Plugs.IdempotencyPlug)
-    plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
   pipeline :mastodon_html do
-    plug(:accepts, ["html"])
-    plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
-    plug(Pleroma.Plugs.UserEnabledPlug)
-    plug(Pleroma.Plugs.SetUserSessionIdPlug)
-    plug(Pleroma.Plugs.EnsureUserKeyPlug)
+    plug(:browser)
+    plug(:authenticate)
+    plug(:after_auth)
   end
 
   pipeline :pleroma_html do
-    plug(:accepts, ["html"])
-    plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(:browser)
+    plug(:authenticate)
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end
 
@@ -524,7 +505,7 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api" do
-    pipe_through(:api)
+    pipe_through(:base_api)
 
     get("/openapi", OpenApiSpex.Plug.RenderSpec, [])
   end
@@ -538,10 +519,6 @@ defmodule Pleroma.Web.Router do
     post("/qvitter/statuses/notifications/read", TwitterAPI.Controller, :notifications_read)
   end
 
-  pipeline :ap_service_actor do
-    plug(:accepts, ["activity+json", "json"])
-  end
-
   pipeline :ostatus do
     plug(:accepts, ["html", "xml", "rss", "atom", "activity+json", "json"])
     plug(Pleroma.Plugs.StaticFEPlug)
@@ -552,8 +529,7 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/", Pleroma.Web do
-    pipe_through(:ostatus)
-    pipe_through(:http_signature)
+    pipe_through([:ostatus, :http_signature])
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
@@ -571,13 +547,6 @@ defmodule Pleroma.Web.Router do
     get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end
 
-  # Server to Server (S2S) AP interactions
-  pipeline :activitypub do
-    plug(:accepts, ["activity+json", "json"])
-    plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
-    plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
-  end
-
   scope "/", Pleroma.Web.ActivityPub do
     # XXX: not really ostatus
     pipe_through(:ostatus)
@@ -585,19 +554,22 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
   end
 
+  pipeline :ap_service_actor do
+    plug(:accepts, ["activity+json", "json"])
+  end
+
+  # Server to Server (S2S) AP interactions
+  pipeline :activitypub do
+    plug(:ap_service_actor)
+    plug(:http_signature)
+  end
+
   # Client to Server (C2S) AP interactions
   pipeline :activitypub_client do
-    plug(:accepts, ["activity+json", "json"])
+    plug(:ap_service_actor)
     plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
-    plug(Pleroma.Plugs.UserEnabledPlug)
-    plug(Pleroma.Plugs.SetUserSessionIdPlug)
-    plug(Pleroma.Plugs.EnsureUserKeyPlug)
+    plug(:authenticate)
+    plug(:after_auth)
   end
 
   scope "/", Pleroma.Web.ActivityPub do
@@ -669,12 +641,7 @@ defmodule Pleroma.Web.Router do
     get("/web/*path", MastoFEController, :index)
   end
 
-  pipeline :remote_media do
-  end
-
   scope "/proxy/", Pleroma.Web.MediaProxy do
-    pipe_through(:remote_media)
-
     get("/:sig/:url", MediaProxyController, :remote)
     get("/:sig/:url/:filename", MediaProxyController, :remote)
   end
