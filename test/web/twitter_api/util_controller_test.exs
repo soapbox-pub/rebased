@@ -95,6 +95,30 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         end
       end
     end
+
+    test "it imports with different nickname variations", %{conn: conn} do
+      [user2, user3, user4, user5, user6] = insert_list(5, :user)
+
+      identifiers =
+        [
+          user2.ap_id,
+          user3.nickname,
+          "  ",
+          "@" <> user4.nickname,
+          user5.nickname <> "@localhost",
+          "@" <> user6.nickname <> "@localhost"
+        ]
+        |> Enum.join("\n")
+
+      response =
+        conn
+        |> post("/api/pleroma/follow_import", %{"list" => identifiers})
+        |> json_response(:ok)
+
+      assert response == "job started"
+      assert [job_result] = ObanHelpers.perform_all()
+      assert job_result == [user2, user3, user4, user5, user6]
+    end
   end
 
   describe "POST /api/pleroma/blocks_import" do
