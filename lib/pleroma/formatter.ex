@@ -31,7 +31,7 @@ defmodule Pleroma.Formatter do
   def mention_handler("@" <> nickname, buffer, opts, acc) do
     case User.get_cached_by_nickname(nickname) do
       %User{id: id} = user ->
-        ap_id = get_ap_id(user)
+        user_url = user.uri || user.ap_id
         nickname_text = get_nickname_text(nickname, opts)
 
         link =
@@ -42,7 +42,7 @@ defmodule Pleroma.Formatter do
               ["@", Phoenix.HTML.Tag.content_tag(:span, nickname_text)],
               "data-user": id,
               class: "u-url mention",
-              href: ap_id,
+              href: user_url,
               rel: "ugc"
             ),
             class: "h-card"
@@ -145,9 +145,6 @@ defmodule Pleroma.Formatter do
       String.slice(text, 0, length_with_omission) <> omission
     end
   end
-
-  defp get_ap_id(%User{source_data: %{"url" => url}}) when is_binary(url), do: url
-  defp get_ap_id(%User{ap_id: ap_id}), do: ap_id
 
   defp get_nickname_text(nickname, %{mentions_format: :full}), do: User.full_nickname(nickname)
   defp get_nickname_text(nickname, _), do: User.local_nickname(nickname)

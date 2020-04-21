@@ -2110,7 +2110,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> get("/api/pleroma/admin/config")
         |> json_response(200)
 
-      refute Map.has_key?(configs, "need_reboot")
+      assert configs["need_reboot"] == false
     end
 
     test "update setting which need reboot, don't change reboot flag until reboot", %{conn: conn} do
@@ -2166,7 +2166,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> get("/api/pleroma/admin/config")
         |> json_response(200)
 
-      refute Map.has_key?(configs, "need_reboot")
+      assert configs["need_reboot"] == false
     end
 
     test "saving config with nested merge", %{conn: conn} do
@@ -2861,6 +2861,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  test "need_reboot flag", %{conn: conn} do
+    assert conn
+           |> get("/api/pleroma/admin/need_reboot")
+           |> json_response(200) == %{"need_reboot" => false}
+
+    Restarter.Pleroma.need_reboot()
+
+    assert conn
+           |> get("/api/pleroma/admin/need_reboot")
+           |> json_response(200) == %{"need_reboot" => true}
+
+    on_exit(fn -> Restarter.Pleroma.refresh() end)
+  end
+
   describe "GET /api/pleroma/admin/statuses" do
     test "returns all public and unlisted statuses", %{conn: conn, admin: admin} do
       blocked = insert(:user)
@@ -3501,6 +3515,191 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert %{"direct" => 0, "private" => 0, "public" => 1, "unlisted" => 2} =
                response["status_visibility"]
+    end
+  end
+
+  describe "POST /api/pleroma/admin/oauth_app" do
+    test "errors", %{conn: conn} do
+      response = conn |> post("/api/pleroma/admin/oauth_app", %{}) |> json_response(200)
+
+      assert response == %{"name" => "can't be blank", "redirect_uris" => "can't be blank"}
+    end
+
+    test "success", %{conn: conn} do
+      base_url = Pleroma.Web.base_url()
+      app_name = "Trusted app"
+
+      response =
+        conn
+        |> post("/api/pleroma/admin/oauth_app", %{
+          name: app_name,
+          redirect_uris: base_url
+        })
+        |> json_response(200)
+
+      assert %{
+               "client_id" => _,
+               "client_secret" => _,
+               "name" => ^app_name,
+               "redirect_uri" => ^base_url,
+               "trusted" => false
+             } = response
+    end
+
+    test "with trusted", %{conn: conn} do
+      base_url = Pleroma.Web.base_url()
+      app_name = "Trusted app"
+
+      response =
+        conn
+        |> post("/api/pleroma/admin/oauth_app", %{
+          name: app_name,
+          redirect_uris: base_url,
+          trusted: true
+        })
+        |> json_response(200)
+
+      assert %{
+               "client_id" => _,
+               "client_secret" => _,
+               "name" => ^app_name,
+               "redirect_uri" => ^base_url,
+               "trusted" => true
+             } = response
+    end
+  end
+
+  describe "GET /api/pleroma/admin/oauth_app" do
+    setup do
+      app = insert(:oauth_app)
+      {:ok, app: app}
+    end
+
+    test "list", %{conn: conn} do
+      response =
+        conn
+        |> get("/api/pleroma/admin/oauth_app")
+        |> json_response(200)
+
+      assert %{"apps" => apps, "count" => count, "page_size" => _} = response
+
+      assert length(apps) == count
+    end
+
+    test "with page size", %{conn: conn} do
+      insert(:oauth_app)
+      page_size = 1
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/oauth_app", %{page_size: to_string(page_size)})
+        |> json_response(200)
+
+      assert %{"apps" => apps, "count" => _, "page_size" => ^page_size} = response
+
+      assert length(apps) == page_size
+    end
+
+    test "search by client name", %{conn: conn, app: app} do
+      response =
+        conn
+        |> get("/api/pleroma/admin/oauth_app", %{name: app.client_name})
+        |> json_response(200)
+
+      assert %{"apps" => [returned], "count" => _, "page_size" => _} = response
+
+      assert returned["client_id"] == app.client_id
+      assert returned["name"] == app.client_name
+    end
+
+    test "search by client id", %{conn: conn, app: app} do
+      response =
+        conn
+        |> get("/api/pleroma/admin/oauth_app", %{client_id: app.client_id})
+        |> json_response(200)
+
+      assert %{"apps" => [returned], "count" => _, "page_size" => _} = response
+
+      assert returned["client_id"] == app.client_id
+      assert returned["name"] == app.client_name
+    end
+
+    test "only trusted", %{conn: conn} do
+      app = insert(:oauth_app, trusted: true)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/oauth_app", %{trusted: true})
+        |> json_response(200)
+
+      assert %{"apps" => [returned], "count" => _, "page_size" => _} = response
+
+      assert returned["client_id"] == app.client_id
+      assert returned["name"] == app.client_name
+    end
+  end
+
+  describe "DELETE /api/pleroma/admin/oauth_app/:id" do
+    test "with id", %{conn: conn} do
+      app = insert(:oauth_app)
+
+      response =
+        conn
+        |> delete("/api/pleroma/admin/oauth_app/" <> to_string(app.id))
+        |> json_response(:no_content)
+
+      assert response == ""
+    end
+
+    test "with non existance id", %{conn: conn} do
+      response =
+        conn
+        |> delete("/api/pleroma/admin/oauth_app/0")
+        |> json_response(:bad_request)
+
+      assert response == ""
+    end
+  end
+
+  describe "PATCH /api/pleroma/admin/oauth_app/:id" do
+    test "with id", %{conn: conn} do
+      app = insert(:oauth_app)
+
+      name = "another name"
+      url = "https://example.com"
+      scopes = ["admin"]
+      id = app.id
+      website = "http://website.com"
+
+      response =
+        conn
+        |> patch("/api/pleroma/admin/oauth_app/" <> to_string(app.id), %{
+          name: name,
+          trusted: true,
+          redirect_uris: url,
+          scopes: scopes,
+          website: website
+        })
+        |> json_response(200)
+
+      assert %{
+               "client_id" => _,
+               "client_secret" => _,
+               "id" => ^id,
+               "name" => ^name,
+               "redirect_uri" => ^url,
+               "trusted" => true,
+               "website" => ^website
+             } = response
+    end
+
+    test "without id", %{conn: conn} do
+      response =
+        conn
+        |> patch("/api/pleroma/admin/oauth_app/0")
+        |> json_response(:bad_request)
+
+      assert response == ""
     end
   end
 end

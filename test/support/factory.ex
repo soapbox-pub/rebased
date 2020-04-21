@@ -294,7 +294,7 @@ defmodule Pleroma.Factory do
 
   def oauth_app_factory do
     %Pleroma.Web.OAuth.App{
-      client_name: "Some client",
+      client_name: sequence(:client_name, &"Some client #{&1}"),
       redirect_uris: "https://example.com/callback",
       scopes: ["read", "write", "follow", "push", "admin"],
       website: "https://example.com",

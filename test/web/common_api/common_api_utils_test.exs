@@ -7,7 +7,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.Endpoint
   use Pleroma.DataCase
 
   import ExUnit.CaptureLog
@@ -40,28 +39,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {:ok, user} = UserBuilder.insert()
       assert Utils.confirm_current_password(user, "test") == {:ok, user}
     end
-  end
-
-  test "parses emoji from name and bio" do
-    {:ok, user} = UserBuilder.insert(%{name: ":blank:", bio: ":firefox:"})
-
-    expected = [
-      %{
-        "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/emoji/Firefox.gif"},
-        "name" => ":firefox:"
-      },
-      %{
-        "type" => "Emoji",
-        "icon" => %{
-          "type" => "Image",
-          "url" => "#{Endpoint.url()}/emoji/blank.png"
-        },
-        "name" => ":blank:"
-      }
-    ]
-
-    assert expected == Utils.emoji_from_profile(user)
   end
 
   describe "format_input/3" do

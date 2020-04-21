@@ -78,7 +78,7 @@ defmodule Pleroma.Web.FederatorTest do
         local: false,
         nickname: "nick1@domain.com",
         ap_id: "https://domain.com/users/nick1",
-        source_data: %{"inbox" => inbox1},
+        inbox: inbox1,
         ap_enabled: true
       })
 
@@ -86,7 +86,7 @@ defmodule Pleroma.Web.FederatorTest do
         local: false,
         nickname: "nick2@domain2.com",
         ap_id: "https://domain2.com/users/nick2",
-        source_data: %{"inbox" => inbox2},
+        inbox: inbox2,
         ap_enabled: true
       })
 

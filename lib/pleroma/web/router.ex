@@ -16,78 +16,60 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.UserEnabledPlug)
   end
 
-  pipeline :api do
-    plug(:accepts, ["json"])
-    plug(:fetch_session)
+  pipeline :authenticate do
     plug(Pleroma.Plugs.OAuthPlug)
     plug(Pleroma.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Plugs.UserFetcherPlug)
     plug(Pleroma.Plugs.SessionAuthenticationPlug)
     plug(Pleroma.Plugs.LegacyAuthenticationPlug)
     plug(Pleroma.Plugs.AuthenticationPlug)
+  end
+
+  pipeline :after_auth do
     plug(Pleroma.Plugs.UserEnabledPlug)
     plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
-    plug(Pleroma.Plugs.IdempotencyPlug)
+  end
+
+  pipeline :base_api do
+    plug(:accepts, ["json"])
+    plug(:fetch_session)
+    plug(:authenticate)
     plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
+  end
+
+  pipeline :api do
+    plug(:base_api)
+    plug(:after_auth)
+    plug(Pleroma.Plugs.IdempotencyPlug)
   end
 
   pipeline :authenticated_api do
-    plug(:accepts, ["json"])
-    plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
-    plug(Pleroma.Plugs.UserEnabledPlug)
-    plug(Pleroma.Plugs.SetUserSessionIdPlug)
+    plug(:base_api)
+    plug(Pleroma.Plugs.AuthExpectedPlug)
+    plug(:after_auth)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
     plug(Pleroma.Plugs.IdempotencyPlug)
-    plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
   pipeline :admin_api do
-    plug(:accepts, ["json"])
-    plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(:base_api)
     plug(Pleroma.Plugs.AdminSecretAuthenticationPlug)
-    plug(Pleroma.Plugs.UserEnabledPlug)
-    plug(Pleroma.Plugs.SetUserSessionIdPlug)
+    plug(:after_auth)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
     plug(Pleroma.Plugs.UserIsAdminPlug)
     plug(Pleroma.Plugs.IdempotencyPlug)
-    plug(OpenApiSpex.Plug.PutApiSpec, module: Pleroma.Web.ApiSpec)
   end
 
   pipeline :mastodon_html do
-    plug(:accepts, ["html"])
-    plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
-    plug(Pleroma.Plugs.UserEnabledPlug)
-    plug(Pleroma.Plugs.SetUserSessionIdPlug)
-    plug(Pleroma.Plugs.EnsureUserKeyPlug)
+    plug(:browser)
+    plug(:authenticate)
+    plug(:after_auth)
   end
 
   pipeline :pleroma_html do
-    plug(:accepts, ["html"])
-    plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(:browser)
+    plug(:authenticate)
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end
 
@@ -203,12 +185,18 @@ defmodule Pleroma.Web.Router do
     get("/config", AdminAPIController, :config_show)
     post("/config", AdminAPIController, :config_update)
     get("/config/descriptions", AdminAPIController, :config_descriptions)
+    get("/need_reboot", AdminAPIController, :need_reboot)
     get("/restart", AdminAPIController, :restart)
 
     get("/moderation_log", AdminAPIController, :list_log)
 
     post("/reload_emoji", AdminAPIController, :reload_emoji)
     get("/stats", AdminAPIController, :stats)
+
+    get("/oauth_app", AdminAPIController, :oauth_app_list)
+    post("/oauth_app", AdminAPIController, :oauth_app_create)
+    patch("/oauth_app/:id", AdminAPIController, :oauth_app_update)
+    delete("/oauth_app/:id", AdminAPIController, :oauth_app_delete)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -338,7 +326,7 @@ defmodule Pleroma.Web.Router do
     get("/accounts/relationships", AccountController, :relationships)
 
     get("/accounts/:id/lists", AccountController, :lists)
-    get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
+    get("/accounts/:id/identity_proofs", AccountController, :identity_proofs)
 
     get("/follow_requests", FollowRequestController, :index)
     get("/blocks", AccountController, :blocks)
@@ -508,7 +496,7 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api" do
-    pipe_through(:api)
+    pipe_through(:base_api)
 
     get("/openapi", OpenApiSpex.Plug.RenderSpec, [])
   end
@@ -522,10 +510,6 @@ defmodule Pleroma.Web.Router do
     post("/qvitter/statuses/notifications/read", TwitterAPI.Controller, :notifications_read)
   end
 
-  pipeline :ap_service_actor do
-    plug(:accepts, ["activity+json", "json"])
-  end
-
   pipeline :ostatus do
     plug(:accepts, ["html", "xml", "rss", "atom", "activity+json", "json"])
     plug(Pleroma.Plugs.StaticFEPlug)
@@ -536,8 +520,7 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/", Pleroma.Web do
-    pipe_through(:ostatus)
-    pipe_through(:http_signature)
+    pipe_through([:ostatus, :http_signature])
 
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
@@ -555,13 +538,6 @@ defmodule Pleroma.Web.Router do
     get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end
 
-  # Server to Server (S2S) AP interactions
-  pipeline :activitypub do
-    plug(:accepts, ["activity+json", "json"])
-    plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
-    plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
-  end
-
   scope "/", Pleroma.Web.ActivityPub do
     # XXX: not really ostatus
     pipe_through(:ostatus)
@@ -569,19 +545,22 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
   end
 
+  pipeline :ap_service_actor do
+    plug(:accepts, ["activity+json", "json"])
+  end
+
+  # Server to Server (S2S) AP interactions
+  pipeline :activitypub do
+    plug(:ap_service_actor)
+    plug(:http_signature)
+  end
+
   # Client to Server (C2S) AP interactions
   pipeline :activitypub_client do
-    plug(:accepts, ["activity+json", "json"])
+    plug(:ap_service_actor)
     plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
-    plug(Pleroma.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
-    plug(Pleroma.Plugs.UserEnabledPlug)
-    plug(Pleroma.Plugs.SetUserSessionIdPlug)
-    plug(Pleroma.Plugs.EnsureUserKeyPlug)
+    plug(:authenticate)
+    plug(:after_auth)
   end
 
   scope "/", Pleroma.Web.ActivityPub do
@@ -653,12 +632,7 @@ defmodule Pleroma.Web.Router do
     get("/web/*path", MastoFEController, :index)
   end
 
-  pipeline :remote_media do
-  end
-
   scope "/proxy/", Pleroma.Web.MediaProxy do
-    pipe_through(:remote_media)
-
     get("/:sig/:url", MediaProxyController, :remote)
     get("/:sig/:url/:filename", MediaProxyController, :remote)
   end
@@ -668,6 +642,17 @@ defmodule Pleroma.Web.Router do
       pipe_through([:mailbox_preview])
 
       forward("/mailbox", Plug.Swoosh.MailboxPreview, base_path: "/dev/mailbox")
+    end
+  end
+
+  # Test-only routes needed to test action dispatching and plug chain execution
+  if Pleroma.Config.get(:env) == :test do
+    scope "/test/authenticated_api", Pleroma.Tests do
+      pipe_through(:authenticated_api)
+
+      for action <- [:skipped_oauth, :performed_oauth, :missed_oauth] do
+        get("/#{action}", OAuthTestController, action)
+      end
     end
   end
 

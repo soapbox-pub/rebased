@@ -16,6 +16,18 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
     :ok
   end
 
+  test "is not performed if marked as skipped", %{conn: conn} do
+    with_mock OAuthScopesPlug, [:passthrough], perform: &passthrough([&1, &2]) do
+      conn =
+        conn
+        |> OAuthScopesPlug.skip_plug()
+        |> OAuthScopesPlug.call(%{scopes: ["random_scope"]})
+
+      refute called(OAuthScopesPlug.perform(:_, :_))
+      refute conn.halted
+    end
+  end
+
   test "if `token.scopes` fulfills specified 'any of' conditions, " <>
          "proceeds with no op",
        %{conn: conn} do

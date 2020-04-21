@@ -1317,13 +1317,13 @@ config :pleroma, :config_description, [
       %{
         key: :reject,
         type: {:list, :string},
-        description: "List of instances to reject any activities from",
+        description: "List of instances to reject activities from (except deletes)",
         suggestions: ["example.com", "*.example.com"]
       },
       %{
         key: :accept,
         type: {:list, :string},
-        description: "List of instances to accept any activities from",
+        description: "List of instances to only accept activities from (except deletes)",
         suggestions: ["example.com", "*.example.com"]
       },
       %{
@@ -1342,6 +1342,12 @@ config :pleroma, :config_description, [
         key: :banner_removal,
         type: {:list, :string},
         description: "List of instances to strip banners from",
+        suggestions: ["example.com", "*.example.com"]
+      },
+      %{
+        key: :reject_deletes,
+        type: {:list, :string},
+        description: "List of instances to reject deletions from",
         suggestions: ["example.com", "*.example.com"]
       }
     ]
@@ -2264,6 +2270,20 @@ config :pleroma, :config_description, [
             suggestions: [7]
           }
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :notifications,
+    type: :group,
+    description: "Notification settings",
+    children: [
+      %{
+        key: :enable_follow_request_notifications,
+        type: :boolean,
+        description:
+          "Enables notifications on new follow requests (causes issues with older PleromaFE versions)."
       }
     ]
   },
