@@ -4,7 +4,12 @@
 
 defmodule Pleroma.Web.ApiSpec.ChatOperation do
   alias OpenApiSpex.Operation
-  alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Helpers
+  alias Pleroma.Web.ApiSpec.Schemas.ChatMessageCreateRequest
+  alias Pleroma.Web.ApiSpec.Schemas.ChatMessageResponse
+  alias Pleroma.Web.ApiSpec.Schemas.ChatMessagesResponse
+  alias Pleroma.Web.ApiSpec.Schemas.ChatResponse
+  alias Pleroma.Web.ApiSpec.Schemas.ChatsResponse
 
   @spec open_api_operation(atom) :: Operation.t()
   def open_api_operation(action) do
@@ -16,16 +21,25 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     %Operation{
       tags: ["chat"],
       summary: "Create a chat",
+      parameters: [
+        Operation.parameter(
+          :ap_id,
+          :path,
+          :string,
+          "The ActivityPub id of the recipient of this chat.",
+          required: true,
+          example: "https://lain.com/users/lain"
+        )
+      ],
       responses: %{
         200 =>
-          Operation.response("Chat", "application/json", %Schema{
-            type: :object,
-            description: "A created chat is returned",
-            properties: %{
-              id: %Schema{type: :integer}
-            }
-          })
-      }
+          Operation.response("The created or existing chat", "application/json", ChatResponse)
+      },
+      security: [
+        %{
+          "oAuth" => ["write"]
+        }
+      ]
     }
   end
 
@@ -33,17 +47,19 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     %Operation{
       tags: ["chat"],
       summary: "Get a list of chats that you participated in",
+      parameters: [
+        Operation.parameter(:limit, :query, :integer, "How many results to return", example: 20),
+        Operation.parameter(:min_id, :query, :string, "Return only chats after this id"),
+        Operation.parameter(:max_id, :query, :string, "Return only chats before this id")
+      ],
       responses: %{
-        200 =>
-          Operation.response("Chats", "application/json", %Schema{
-            type: :array,
-            description: "A list of chats",
-            items: %Schema{
-              type: :object,
-              description: "A chat"
-            }
-          })
-      }
+        200 => Operation.response("The chats of the user", "application/json", ChatsResponse)
+      },
+      security: [
+        %{
+          "oAuth" => ["read"]
+        }
+      ]
     }
   end
 
@@ -51,17 +67,21 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     %Operation{
       tags: ["chat"],
       summary: "Get the most recent messages of the chat",
+      parameters: [
+        Operation.parameter(:id, :path, :string, "The ID of the Chat"),
+        Operation.parameter(:limit, :query, :integer, "How many results to return", example: 20),
+        Operation.parameter(:min_id, :query, :string, "Return only messages after this id"),
+        Operation.parameter(:max_id, :query, :string, "Return only messages before this id")
+      ],
       responses: %{
         200 =>
-          Operation.response("Messages", "application/json", %Schema{
-            type: :array,
-            description: "A list of chat messages",
-            items: %Schema{
-              type: :object,
-              description: "A chat message"
-            }
-          })
-      }
+          Operation.response("The messages in the chat", "application/json", ChatMessagesResponse)
+      },
+      security: [
+        %{
+          "oAuth" => ["read"]
+        }
+      ]
     }
   end
 
@@ -69,13 +89,23 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     %Operation{
       tags: ["chat"],
       summary: "Post a message to the chat",
+      parameters: [
+        Operation.parameter(:id, :path, :string, "The ID of the Chat")
+      ],
+      requestBody: Helpers.request_body("Parameters", ChatMessageCreateRequest, required: true),
       responses: %{
         200 =>
-          Operation.response("Message", "application/json", %Schema{
-            type: :object,
-            description: "A chat message"
-          })
-      }
+          Operation.response(
+            "The newly created ChatMessage",
+            "application/json",
+            ChatMessageResponse
+          )
+      },
+      security: [
+        %{
+          "oAuth" => ["write"]
+        }
+      ]
     }
   end
 end
