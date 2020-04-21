@@ -6,10 +6,10 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
   alias Pleroma.Chat
   alias Pleroma.Web.ApiSpec
-  alias Pleroma.Web.ApiSpec.Schemas.ChatResponse
-  alias Pleroma.Web.ApiSpec.Schemas.ChatsResponse
   alias Pleroma.Web.ApiSpec.Schemas.ChatMessageResponse
   alias Pleroma.Web.ApiSpec.Schemas.ChatMessagesResponse
+  alias Pleroma.Web.ApiSpec.Schemas.ChatResponse
+  alias Pleroma.Web.ApiSpec.Schemas.ChatsResponse
   alias Pleroma.Web.CommonAPI
 
   import OpenApiSpex.TestAssertions
