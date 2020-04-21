@@ -14,6 +14,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.Web.PleromaAPI.ChatMessageView
   alias Pleroma.Web.PleromaAPI.ChatView
 
+  import Pleroma.Web.ActivityPub.ObjectValidator, only: [stringify_keys: 1]
+
   import Ecto.Query
 
   # TODO
@@ -29,12 +31,16 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     %{scopes: ["read:statuses"]} when action in [:messages, :index]
   )
 
+  plug(OpenApiSpex.Plug.CastAndValidate)
+
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ChatOperation
 
-  def post_chat_message(%{assigns: %{user: %{id: user_id} = user}} = conn, %{
-        "id" => id,
-        "content" => content
-      }) do
+  def post_chat_message(
+        %{body_params: %{content: content}, assigns: %{user: %{id: user_id} = user}} = conn,
+        %{
+          id: id
+        }
+      ) do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id),
          %User{} = recipient <- User.get_cached_by_ap_id(chat.recipient),
          {:ok, activity} <- CommonAPI.post_chat_message(user, recipient, content),
@@ -45,7 +51,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def messages(%{assigns: %{user: %{id: user_id} = user}} = conn, %{"id" => id} = params) do
+  def messages(%{assigns: %{user: %{id: user_id} = user}} = conn, %{id: id} = params) do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id) do
       messages =
         from(o in Object,
@@ -66,7 +72,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
               ^[user.ap_id]
             )
         )
-        |> Pagination.fetch_paginated(params)
+        |> Pagination.fetch_paginated(params |> stringify_keys())
 
       conn
       |> put_view(ChatMessageView)
@@ -85,7 +91,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
         where: c.user_id == ^user_id,
         order_by: [desc: c.updated_at]
       )
-      |> Pagination.fetch_paginated(params)
+      |> Pagination.fetch_paginated(params |> stringify_keys)
 
     conn
     |> put_view(ChatView)
@@ -93,7 +99,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   end
 
   def create(%{assigns: %{user: user}} = conn, params) do
-    recipient = params["ap_id"] |> URI.decode_www_form()
+    recipient = params[:ap_id]
 
     with {:ok, %Chat{} = chat} <- Chat.get_or_create(user.id, recipient) do
       conn

@@ -25,6 +25,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result =
         conn
+        |> put_req_header("content-type", "application/json")
         |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{"content" => "Hallo!!"})
         |> json_response(200)
 
@@ -56,7 +57,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result =
         conn
-        |> get("/api/v1/pleroma/chats/#{chat.id}/messages", %{"max_id" => List.last(result)["id"]})
+        |> get("/api/v1/pleroma/chats/#{chat.id}/messages?max_id=#{List.last(result)["id"]}")
         |> json_response(200)
 
       assert length(result) == 10
@@ -132,7 +133,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result =
         conn
-        |> get("/api/v1/pleroma/chats", %{max_id: List.last(result)["id"]})
+        |> get("/api/v1/pleroma/chats?max_id=#{List.last(result)["id"]}")
         |> json_response(200)
 
       assert length(result) == 10

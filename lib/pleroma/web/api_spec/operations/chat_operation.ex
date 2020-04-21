@@ -21,6 +21,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     %Operation{
       tags: ["chat"],
       summary: "Create a chat",
+      operationId: "ChatController.create",
       parameters: [
         Operation.parameter(
           :ap_id,
@@ -47,6 +48,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     %Operation{
       tags: ["chat"],
       summary: "Get a list of chats that you participated in",
+      operationId: "ChatController.index",
       parameters: [
         Operation.parameter(:limit, :query, :integer, "How many results to return", example: 20),
         Operation.parameter(:min_id, :query, :string, "Return only chats after this id"),
@@ -67,6 +69,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     %Operation{
       tags: ["chat"],
       summary: "Get the most recent messages of the chat",
+      operationId: "ChatController.messages",
       parameters: [
         Operation.parameter(:id, :path, :string, "The ID of the Chat"),
         Operation.parameter(:limit, :query, :integer, "How many results to return", example: 20),
@@ -89,6 +92,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     %Operation{
       tags: ["chat"],
       summary: "Post a message to the chat",
+      operationId: "ChatController.post_chat_message",
       parameters: [
         Operation.parameter(:id, :path, :string, "The ID of the Chat")
       ],
