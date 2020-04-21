@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountEmoji
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Poll
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
@@ -43,7 +44,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       emojis: %Schema{type: :array, items: AccountEmoji},
       favourited: %Schema{type: :boolean},
       favourites_count: %Schema{type: :integer},
-      id: %Schema{type: :string},
+      id: FlakeID,
       in_reply_to_account_id: %Schema{type: :string, nullable: true},
       in_reply_to_id: %Schema{type: :string, nullable: true},
       language: %Schema{type: :string, nullable: true},

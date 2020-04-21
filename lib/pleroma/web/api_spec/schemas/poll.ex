@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.AccountEmoji
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
 
   require OpenApiSpex
 
@@ -13,7 +14,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
     description: "Response schema for account custom fields",
     type: :object,
     properties: %{
-      id: %Schema{type: :string},
+      id: FlakeID,
       expires_at: %Schema{type: :string, format: "date-time"},
       expired: %Schema{type: :boolean},
       multiple: %Schema{type: :boolean},

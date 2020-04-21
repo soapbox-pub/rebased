@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationship do
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
 
   require OpenApiSpex
 
@@ -18,7 +19,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationship do
       endorsed: %Schema{type: :boolean},
       followed_by: %Schema{type: :boolean},
       following: %Schema{type: :boolean},
-      id: %Schema{type: :string},
+      id: FlakeID,
       muting: %Schema{type: :boolean},
       muting_notifications: %Schema{type: :boolean},
       requested: %Schema{type: :boolean},

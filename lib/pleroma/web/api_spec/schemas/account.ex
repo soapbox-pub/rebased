@@ -6,7 +6,9 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.AccountEmoji
   alias Pleroma.Web.ApiSpec.Schemas.AccountField
+  alias Pleroma.Web.ApiSpec.Schemas.AccountRelationship
   alias Pleroma.Web.ApiSpec.Schemas.ActorType
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
   require OpenApiSpex
@@ -29,7 +31,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       following_count: %Schema{type: :integer},
       header_static: %Schema{type: :string, format: :uri},
       header: %Schema{type: :string, format: :uri},
-      id: %Schema{type: :string},
+      id: FlakeID,
       locked: %Schema{type: :boolean},
       note: %Schema{type: :string, format: :html},
       statuses_count: %Schema{type: :integer},
@@ -62,23 +64,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
               privacy_option: %Schema{type: :boolean}
             }
           },
-          relationship: %Schema{
-            type: :object,
-            properties: %{
-              blocked_by: %Schema{type: :boolean},
-              blocking: %Schema{type: :boolean},
-              domain_blocking: %Schema{type: :boolean},
-              endorsed: %Schema{type: :boolean},
-              followed_by: %Schema{type: :boolean},
-              following: %Schema{type: :boolean},
-              id: %Schema{type: :string},
-              muting: %Schema{type: :boolean},
-              muting_notifications: %Schema{type: :boolean},
-              requested: %Schema{type: :boolean},
-              showing_reblogs: %Schema{type: :boolean},
-              subscribing: %Schema{type: :boolean}
-            }
-          },
+          relationship: AccountRelationship,
           settings_store: %Schema{
             type: :object
           }
