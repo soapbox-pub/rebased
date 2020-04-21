@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         type: :object,
         properties: %{
           name: %Schema{type: :string},
-          website: %Schema{type: :string, nullable: true}
+          website: %Schema{type: :string, nullable: true, format: :uri}
         }
       },
       bookmarked: %Schema{type: :boolean},
@@ -29,16 +29,16 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         type: :object,
         nullable: true,
         properties: %{
-          type: %Schema{type: :string},
-          provider_name: %Schema{type: :string},
-          provider_url: %Schema{type: :string},
-          url: %Schema{type: :string},
-          image: %Schema{type: :string},
+          type: %Schema{type: :string, enum: ["link", "photo", "video", "rich"]},
+          provider_name: %Schema{type: :string, nullable: true},
+          provider_url: %Schema{type: :string, format: :uri},
+          url: %Schema{type: :string, format: :uri},
+          image: %Schema{type: :string, nullable: true, format: :uri},
           title: %Schema{type: :string},
           description: %Schema{type: :string}
         }
       },
-      content: %Schema{type: :string},
+      content: %Schema{type: :string, format: :html},
       created_at: %Schema{type: :string, format: "date-time"},
       emojis: %Schema{type: :array, items: AccountEmoji},
       favourited: %Schema{type: :boolean},
@@ -53,10 +53,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
           type: :object,
           properties: %{
             id: %Schema{type: :string},
-            url: %Schema{type: :string},
-            remote_url: %Schema{type: :string},
-            preview_url: %Schema{type: :string},
-            text_url: %Schema{type: :string},
+            url: %Schema{type: :string, format: :uri},
+            remote_url: %Schema{type: :string, format: :uri},
+            preview_url: %Schema{type: :string, format: :uri},
+            text_url: %Schema{type: :string, format: :uri},
             description: %Schema{type: :string},
             type: %Schema{type: :string, enum: ["image", "video", "audio", "unknown"]},
             pleroma: %Schema{
@@ -74,7 +74,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
             id: %Schema{type: :string},
             acct: %Schema{type: :string},
             username: %Schema{type: :string},
-            url: %Schema{type: :string}
+            url: %Schema{type: :string, format: :uri}
           }
         }
       },
@@ -120,108 +120,106 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
           type: :object,
           properties: %{
             name: %Schema{type: :string},
-            url: %Schema{type: :string}
+            url: %Schema{type: :string, format: :uri}
           }
         }
       },
-      uri: %Schema{type: :string},
-      url: %Schema{type: :string},
+      uri: %Schema{type: :string, format: :uri},
+      url: %Schema{type: :string, nullable: true, format: :uri},
       visibility: VisibilityScope
     },
     example: %{
-      "JSON" => %{
-        "account" => %{
-          "acct" => "nick6",
-          "avatar" => "http://localhost:4001/images/avi.png",
-          "avatar_static" => "http://localhost:4001/images/avi.png",
-          "bot" => false,
-          "created_at" => "2020-04-07T19:48:51.000Z",
-          "display_name" => "Test テスト User 6",
-          "emojis" => [],
-          "fields" => [],
-          "followers_count" => 1,
-          "following_count" => 0,
-          "header" => "http://localhost:4001/images/banner.png",
-          "header_static" => "http://localhost:4001/images/banner.png",
-          "id" => "9toJCsKN7SmSf3aj5c",
-          "locked" => false,
-          "note" => "Tester Number 6",
-          "pleroma" => %{
-            "background_image" => nil,
-            "confirmation_pending" => false,
-            "hide_favorites" => true,
-            "hide_followers" => false,
-            "hide_followers_count" => false,
-            "hide_follows" => false,
-            "hide_follows_count" => false,
-            "is_admin" => false,
-            "is_moderator" => false,
-            "relationship" => %{
-              "blocked_by" => false,
-              "blocking" => false,
-              "domain_blocking" => false,
-              "endorsed" => false,
-              "followed_by" => false,
-              "following" => true,
-              "id" => "9toJCsKN7SmSf3aj5c",
-              "muting" => false,
-              "muting_notifications" => false,
-              "requested" => false,
-              "showing_reblogs" => true,
-              "subscribing" => false
-            },
-            "skip_thread_containment" => false,
-            "tags" => []
-          },
-          "source" => %{
-            "fields" => [],
-            "note" => "Tester Number 6",
-            "pleroma" => %{"actor_type" => "Person", "discoverable" => false},
-            "sensitive" => false
-          },
-          "statuses_count" => 1,
-          "url" => "http://localhost:4001/users/nick6",
-          "username" => "nick6"
-        },
-        "application" => %{"name" => "Web", "website" => nil},
-        "bookmarked" => false,
-        "card" => nil,
-        "content" => "foobar",
+      "account" => %{
+        "acct" => "nick6",
+        "avatar" => "http://localhost:4001/images/avi.png",
+        "avatar_static" => "http://localhost:4001/images/avi.png",
+        "bot" => false,
         "created_at" => "2020-04-07T19:48:51.000Z",
+        "display_name" => "Test テスト User 6",
         "emojis" => [],
-        "favourited" => false,
-        "favourites_count" => 0,
-        "id" => "9toJCu5YZW7O7gfvH6",
-        "in_reply_to_account_id" => nil,
-        "in_reply_to_id" => nil,
-        "language" => nil,
-        "media_attachments" => [],
-        "mentions" => [],
-        "muted" => false,
-        "pinned" => false,
+        "fields" => [],
+        "followers_count" => 1,
+        "following_count" => 0,
+        "header" => "http://localhost:4001/images/banner.png",
+        "header_static" => "http://localhost:4001/images/banner.png",
+        "id" => "9toJCsKN7SmSf3aj5c",
+        "locked" => false,
+        "note" => "Tester Number 6",
         "pleroma" => %{
-          "content" => %{"text/plain" => "foobar"},
-          "conversation_id" => 345_972,
-          "direct_conversation_id" => nil,
-          "emoji_reactions" => [],
-          "expires_at" => nil,
-          "in_reply_to_account_acct" => nil,
-          "local" => true,
-          "spoiler_text" => %{"text/plain" => ""},
-          "thread_muted" => false
+          "background_image" => nil,
+          "confirmation_pending" => false,
+          "hide_favorites" => true,
+          "hide_followers" => false,
+          "hide_followers_count" => false,
+          "hide_follows" => false,
+          "hide_follows_count" => false,
+          "is_admin" => false,
+          "is_moderator" => false,
+          "relationship" => %{
+            "blocked_by" => false,
+            "blocking" => false,
+            "domain_blocking" => false,
+            "endorsed" => false,
+            "followed_by" => false,
+            "following" => true,
+            "id" => "9toJCsKN7SmSf3aj5c",
+            "muting" => false,
+            "muting_notifications" => false,
+            "requested" => false,
+            "showing_reblogs" => true,
+            "subscribing" => false
+          },
+          "skip_thread_containment" => false,
+          "tags" => []
         },
-        "poll" => nil,
-        "reblog" => nil,
-        "reblogged" => false,
-        "reblogs_count" => 0,
-        "replies_count" => 0,
-        "sensitive" => false,
-        "spoiler_text" => "",
-        "tags" => [],
-        "uri" => "http://localhost:4001/objects/0f5dad44-0e9e-4610-b377-a2631e499190",
-        "url" => "http://localhost:4001/notice/9toJCu5YZW7O7gfvH6",
-        "visibility" => "private"
-      }
+        "source" => %{
+          "fields" => [],
+          "note" => "Tester Number 6",
+          "pleroma" => %{"actor_type" => "Person", "discoverable" => false},
+          "sensitive" => false
+        },
+        "statuses_count" => 1,
+        "url" => "http://localhost:4001/users/nick6",
+        "username" => "nick6"
+      },
+      "application" => %{"name" => "Web", "website" => nil},
+      "bookmarked" => false,
+      "card" => nil,
+      "content" => "foobar",
+      "created_at" => "2020-04-07T19:48:51.000Z",
+      "emojis" => [],
+      "favourited" => false,
+      "favourites_count" => 0,
+      "id" => "9toJCu5YZW7O7gfvH6",
+      "in_reply_to_account_id" => nil,
+      "in_reply_to_id" => nil,
+      "language" => nil,
+      "media_attachments" => [],
+      "mentions" => [],
+      "muted" => false,
+      "pinned" => false,
+      "pleroma" => %{
+        "content" => %{"text/plain" => "foobar"},
+        "conversation_id" => 345_972,
+        "direct_conversation_id" => nil,
+        "emoji_reactions" => [],
+        "expires_at" => nil,
+        "in_reply_to_account_acct" => nil,
+        "local" => true,
+        "spoiler_text" => %{"text/plain" => ""},
+        "thread_muted" => false
+      },
+      "poll" => nil,
+      "reblog" => nil,
+      "reblogged" => false,
+      "reblogs_count" => 0,
+      "replies_count" => 0,
+      "sensitive" => false,
+      "spoiler_text" => "",
+      "tags" => [],
+      "uri" => "http://localhost:4001/objects/0f5dad44-0e9e-4610-b377-a2631e499190",
+      "url" => "http://localhost:4001/notice/9toJCu5YZW7O7gfvH6",
+      "visibility" => "private"
     }
   })
 end

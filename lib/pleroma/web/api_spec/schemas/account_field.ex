@@ -13,16 +13,14 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountField do
     type: :object,
     properties: %{
       name: %Schema{type: :string},
-      value: %Schema{type: :string},
-      verified_at: %Schema{type: :string, format: "date-time", nullable: true}
+      value: %Schema{type: :string, format: :html},
+      verified_at: %Schema{type: :string, format: :"date-time", nullable: true}
     },
     example: %{
-      "JSON" => %{
-        "name" => "Website",
-        "value" =>
-          "<a href=\"https://pleroma.com\" rel=\"me nofollow noopener noreferrer\" target=\"_blank\"><span class=\"invisible\">https://</span><span class=\"\">pleroma.com</span><span class=\"invisible\"></span></a>",
-        "verified_at" => "2019-08-29T04:14:55.571+00:00"
-      }
+      "name" => "Website",
+      "value" =>
+        "<a href=\"https://pleroma.com\" rel=\"me nofollow noopener noreferrer\" target=\"_blank\"><span class=\"invisible\">https://</span><span class=\"\">pleroma.com</span><span class=\"invisible\"></span></a>",
+      "verified_at" => "2019-08-29T04:14:55.571+00:00"
     }
   })
 end

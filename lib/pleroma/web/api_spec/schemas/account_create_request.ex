@@ -23,7 +23,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest do
           "The email address to be used for login. Required when `account_activation_required` is enabled.",
         format: :email
       },
-      password: %Schema{type: :string, description: "The password to be used for login"},
+      password: %Schema{
+        type: :string,
+        description: "The password to be used for login",
+        format: :password
+      },
       agreement: %Schema{
         type: :boolean,
         description:

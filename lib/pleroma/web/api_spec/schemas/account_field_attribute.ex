@@ -17,10 +17,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountAttributeField do
     },
     required: [:name, :value],
     example: %{
-      "JSON" => %{
-        "name" => "Website",
-        "value" => "https://pleroma.com"
-      }
+      "name" => "Website",
+      "value" => "https://pleroma.com"
     }
   })
 end

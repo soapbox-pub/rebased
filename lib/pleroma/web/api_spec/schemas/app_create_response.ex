@@ -16,9 +16,9 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AppCreateResponse do
       name: %Schema{type: :string},
       client_id: %Schema{type: :string},
       client_secret: %Schema{type: :string},
-      redirect_uri: %Schema{type: :string},
+      redirect_uri: %Schema{type: :string, format: :uri},
       vapid_key: %Schema{type: :string},
-      website: %Schema{type: :string, nullable: true}
+      website: %Schema{type: :string, nullable: true, format: :uri}
     },
     example: %{
       "id" => "123",

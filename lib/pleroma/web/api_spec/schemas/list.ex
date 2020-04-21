@@ -16,10 +16,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.List do
       title: %Schema{type: :string}
     },
     example: %{
-      "JSON" => %{
-        "id" => "123",
-        "title" => "my list"
-      }
+      "id" => "123",
+      "title" => "my list"
     }
   })
 end

@@ -11,7 +11,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountFollowsRequest do
     description: "POST body for muting an account",
     type: :object,
     properties: %{
-      uri: %Schema{type: :string}
+      uri: %Schema{type: :string, format: :uri}
     },
     required: [:uri]
   })

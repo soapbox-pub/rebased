@@ -26,20 +26,18 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountRelationship do
       subscribing: %Schema{type: :boolean}
     },
     example: %{
-      "JSON" => %{
-        "blocked_by" => false,
-        "blocking" => false,
-        "domain_blocking" => false,
-        "endorsed" => false,
-        "followed_by" => false,
-        "following" => false,
-        "id" => "9tKi3esbG7OQgZ2920",
-        "muting" => false,
-        "muting_notifications" => false,
-        "requested" => false,
-        "showing_reblogs" => true,
-        "subscribing" => false
-      }
+      "blocked_by" => false,
+      "blocking" => false,
+      "domain_blocking" => false,
+      "endorsed" => false,
+      "followed_by" => false,
+      "following" => false,
+      "id" => "9tKi3esbG7OQgZ2920",
+      "muting" => false,
+      "muting_notifications" => false,
+      "requested" => false,
+      "showing_reblogs" => true,
+      "subscribing" => false
     }
   })
 end

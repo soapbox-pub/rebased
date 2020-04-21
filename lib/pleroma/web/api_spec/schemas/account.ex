@@ -17,8 +17,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
     type: :object,
     properties: %{
       acct: %Schema{type: :string},
-      avatar_static: %Schema{type: :string},
-      avatar: %Schema{type: :string},
+      avatar_static: %Schema{type: :string, format: :uri},
+      avatar: %Schema{type: :string, format: :uri},
       bot: %Schema{type: :boolean},
       created_at: %Schema{type: :string, format: "date-time"},
       display_name: %Schema{type: :string},
@@ -27,13 +27,13 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       follow_requests_count: %Schema{type: :integer},
       followers_count: %Schema{type: :integer},
       following_count: %Schema{type: :integer},
-      header_static: %Schema{type: :string},
-      header: %Schema{type: :string},
+      header_static: %Schema{type: :string, format: :uri},
+      header: %Schema{type: :string, format: :uri},
       id: %Schema{type: :string},
       locked: %Schema{type: :boolean},
-      note: %Schema{type: :string},
+      note: %Schema{type: :string, format: :html},
       statuses_count: %Schema{type: :integer},
-      url: %Schema{type: :string},
+      url: %Schema{type: :string, format: :uri},
       username: %Schema{type: :string},
       pleroma: %Schema{
         type: :object,
@@ -104,80 +104,78 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       }
     },
     example: %{
-      "JSON" => %{
-        "acct" => "foobar",
-        "avatar" => "https://mypleroma.com/images/avi.png",
-        "avatar_static" => "https://mypleroma.com/images/avi.png",
-        "bot" => false,
-        "created_at" => "2020-03-24T13:05:58.000Z",
-        "display_name" => "foobar",
-        "emojis" => [],
+      "acct" => "foobar",
+      "avatar" => "https://mypleroma.com/images/avi.png",
+      "avatar_static" => "https://mypleroma.com/images/avi.png",
+      "bot" => false,
+      "created_at" => "2020-03-24T13:05:58.000Z",
+      "display_name" => "foobar",
+      "emojis" => [],
+      "fields" => [],
+      "follow_requests_count" => 0,
+      "followers_count" => 0,
+      "following_count" => 1,
+      "header" => "https://mypleroma.com/images/banner.png",
+      "header_static" => "https://mypleroma.com/images/banner.png",
+      "id" => "9tKi3esbG7OQgZ2920",
+      "locked" => false,
+      "note" => "cofe",
+      "pleroma" => %{
+        "allow_following_move" => true,
+        "background_image" => nil,
+        "confirmation_pending" => true,
+        "hide_favorites" => true,
+        "hide_followers" => false,
+        "hide_followers_count" => false,
+        "hide_follows" => false,
+        "hide_follows_count" => false,
+        "is_admin" => false,
+        "is_moderator" => false,
+        "skip_thread_containment" => false,
+        "chat_token" =>
+          "SFMyNTY.g3QAAAACZAAEZGF0YW0AAAASOXRLaTNlc2JHN09RZ1oyOTIwZAAGc2lnbmVkbgYARNplS3EB.Mb_Iaqew2bN1I1o79B_iP7encmVCpTKC4OtHZRxdjKc",
+        "unread_conversation_count" => 0,
+        "tags" => [],
+        "notification_settings" => %{
+          "followers" => true,
+          "follows" => true,
+          "non_followers" => true,
+          "non_follows" => true,
+          "privacy_option" => false
+        },
+        "relationship" => %{
+          "blocked_by" => false,
+          "blocking" => false,
+          "domain_blocking" => false,
+          "endorsed" => false,
+          "followed_by" => false,
+          "following" => false,
+          "id" => "9tKi3esbG7OQgZ2920",
+          "muting" => false,
+          "muting_notifications" => false,
+          "requested" => false,
+          "showing_reblogs" => true,
+          "subscribing" => false
+        },
+        "settings_store" => %{
+          "pleroma-fe" => %{}
+        }
+      },
+      "source" => %{
         "fields" => [],
-        "follow_requests_count" => 0,
-        "followers_count" => 0,
-        "following_count" => 1,
-        "header" => "https://mypleroma.com/images/banner.png",
-        "header_static" => "https://mypleroma.com/images/banner.png",
-        "id" => "9tKi3esbG7OQgZ2920",
-        "locked" => false,
-        "note" => "cofe",
+        "note" => "foobar",
         "pleroma" => %{
-          "allow_following_move" => true,
-          "background_image" => nil,
-          "confirmation_pending" => true,
-          "hide_favorites" => true,
-          "hide_followers" => false,
-          "hide_followers_count" => false,
-          "hide_follows" => false,
-          "hide_follows_count" => false,
-          "is_admin" => false,
-          "is_moderator" => false,
-          "skip_thread_containment" => false,
-          "chat_token" =>
-            "SFMyNTY.g3QAAAACZAAEZGF0YW0AAAASOXRLaTNlc2JHN09RZ1oyOTIwZAAGc2lnbmVkbgYARNplS3EB.Mb_Iaqew2bN1I1o79B_iP7encmVCpTKC4OtHZRxdjKc",
-          "unread_conversation_count" => 0,
-          "tags" => [],
-          "notification_settings" => %{
-            "followers" => true,
-            "follows" => true,
-            "non_followers" => true,
-            "non_follows" => true,
-            "privacy_option" => false
-          },
-          "relationship" => %{
-            "blocked_by" => false,
-            "blocking" => false,
-            "domain_blocking" => false,
-            "endorsed" => false,
-            "followed_by" => false,
-            "following" => false,
-            "id" => "9tKi3esbG7OQgZ2920",
-            "muting" => false,
-            "muting_notifications" => false,
-            "requested" => false,
-            "showing_reblogs" => true,
-            "subscribing" => false
-          },
-          "settings_store" => %{
-            "pleroma-fe" => %{}
-          }
+          "actor_type" => "Person",
+          "discoverable" => false,
+          "no_rich_text" => false,
+          "show_role" => true
         },
-        "source" => %{
-          "fields" => [],
-          "note" => "foobar",
-          "pleroma" => %{
-            "actor_type" => "Person",
-            "discoverable" => false,
-            "no_rich_text" => false,
-            "show_role" => true
-          },
-          "privacy" => "public",
-          "sensitive" => false
-        },
-        "statuses_count" => 0,
-        "url" => "https://mypleroma.com/users/foobar",
-        "username" => "foobar"
-      }
+        "privacy" => "public",
+        "sensitive" => false
+      },
+      "statuses_count" => 0,
+      "url" => "https://mypleroma.com/users/foobar",
+      "username" => "foobar"
     }
   })
 end

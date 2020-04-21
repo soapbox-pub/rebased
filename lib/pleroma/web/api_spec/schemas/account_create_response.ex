@@ -15,15 +15,13 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse do
       token_type: %Schema{type: :string},
       access_token: %Schema{type: :string},
       scope: %Schema{type: :array, items: %Schema{type: :string}},
-      created_at: %Schema{type: :integer}
+      created_at: %Schema{type: :integer, format: :"date-time"}
     },
     example: %{
-      "JSON" => %{
-        "access_token" => "i9hAVVzGld86Pl5JtLtizKoXVvtTlSCJvwaugCxvZzk",
-        "created_at" => 1_585_918_714,
-        "scope" => ["read", "write", "follow", "push"],
-        "token_type" => "Bearer"
-      }
+      "access_token" => "i9hAVVzGld86Pl5JtLtizKoXVvtTlSCJvwaugCxvZzk",
+      "created_at" => 1_585_918_714,
+      "scope" => ["read", "write", "follow", "push"],
+      "token_type" => "Bearer"
     }
   })
 end

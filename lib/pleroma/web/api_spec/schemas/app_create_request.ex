@@ -21,7 +21,11 @@ defmodule Pleroma.Web.ApiSpec.Schemas.AppCreateRequest do
         type: :string,
         description: "Space separated list of scopes. If none is provided, defaults to `read`."
       },
-      website: %Schema{type: :string, description: "A URL to the homepage of your app"}
+      website: %Schema{
+        type: :string,
+        description: "A URL to the homepage of your app",
+        format: :uri
+      }
     },
     required: [:client_name, :redirect_uris],
     example: %{
