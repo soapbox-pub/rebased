@@ -55,11 +55,12 @@ defmodule Pleroma.Web.Push.Impl do
       |> Jason.encode!()
       |> push_message(build_sub(subscription), gcm_api_key, subscription)
     end
+    |> (&{:ok, &1}).()
   end
 
   def perform(_) do
     Logger.warn("Unknown notification type")
-    :error
+    {:error, :unknown_type}
   end
 
   @doc "Push message to web"
