@@ -45,11 +45,11 @@ defmodule Pleroma.Stats do
   end
 
   def init(_args) do
-    {:ok, get_stat_data()}
+    {:ok, calculate_stat_data()}
   end
 
   def handle_call(:force_update, _from, _state) do
-    new_stats = get_stat_data()
+    new_stats = calculate_stat_data()
     {:reply, new_stats, new_stats}
   end
 
@@ -58,12 +58,12 @@ defmodule Pleroma.Stats do
   end
 
   def handle_cast(:run_update, _state) do
-    new_stats = get_stat_data()
+    new_stats = calculate_stat_data()
 
     {:noreply, new_stats}
   end
 
-  defp get_stat_data do
+  def calculate_stat_data do
     peers =
       from(
         u in User,
@@ -77,7 +77,16 @@ defmodule Pleroma.Stats do
 
     status_count = Repo.aggregate(User.Query.build(%{local: true}), :sum, :note_count)
 
-    user_count = Repo.aggregate(User.Query.build(%{local: true, active: true}), :count, :id)
+    users_query =
+      from(u in User,
+        where: u.deactivated != true,
+        where: u.local == true,
+        where: not is_nil(u.nickname),
+        where: fragment("? not like 'internal.%'", u.nickname),
+        where: fragment("? not like '%/relay'", u.ap_id)
+      )
+
+    user_count = Repo.aggregate(users_query, :count, :id)
 
     %{
       peers: peers,
