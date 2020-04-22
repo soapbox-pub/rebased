@@ -1180,7 +1180,9 @@ defmodule Pleroma.User do
   end
 
   @spec get_recipients_from_activity(Activity.t()) :: [User.t()]
-  def get_recipients_from_activity(%Activity{recipients: to}) do
+  def get_recipients_from_activity(%Activity{recipients: to, actor: actor}) do
+    to = [actor | to]
+
     User.Query.build(%{recipients_from_activity: to, local: true, deactivated: false})
     |> Repo.all()
   end

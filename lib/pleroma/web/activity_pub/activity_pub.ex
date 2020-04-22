@@ -118,9 +118,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def increase_poll_votes_if_vote(%{
         "object" => %{"inReplyTo" => reply_ap_id, "name" => name},
-        "type" => "Create"
+        "type" => "Create",
+        "actor" => actor
       }) do
-    Object.increase_vote_count(reply_ap_id, name)
+    Object.increase_vote_count(reply_ap_id, name, actor)
   end
 
   def increase_poll_votes_if_vote(_create_data), do: :noop

@@ -298,7 +298,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       security: [%{"oAuth" => ["follow", "write:follows"]}],
       requestBody: request_body("Parameters", AccountFollowsRequest, required: true),
       responses: %{
-        200 => Operation.response("Account", "application/json", Account)
+        200 => Operation.response("Account", "application/json", AccountRelationship)
       }
     }
   end

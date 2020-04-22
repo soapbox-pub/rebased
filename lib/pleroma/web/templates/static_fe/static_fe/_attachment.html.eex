@@ -1,8 +1,8 @@
 <%= case @mediaType do %>
 <% "audio" -> %>
-<audio src="<%= @url %>" controls="controls"></audio>
+<audio class="u-audio" src="<%= @url %>" controls="controls"></audio>
 <% "video" -> %>
-<video src="<%= @url %>" controls="controls"></video>
+<video class="u-video" src="<%= @url %>" controls="controls"></video>
 <% _ -> %>
-<img src="<%= @url %>" alt="<%= @name %>" title="<%= @name %>">
+<img class="u-photo" src="<%= @url %>" alt="<%= @name %>" title="<%= @name %>">
 <% end %>

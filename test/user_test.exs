@@ -756,8 +756,8 @@ defmodule Pleroma.UserTest do
       ]
 
       {:ok, job} = User.follow_import(user1, identifiers)
-      result = ObanHelpers.perform(job)
 
+      assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
       assert result == [user2, user3]
     end
@@ -979,14 +979,26 @@ defmodule Pleroma.UserTest do
       ]
 
       {:ok, job} = User.blocks_import(user1, identifiers)
-      result = ObanHelpers.perform(job)
 
+      assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
       assert result == [user2, user3]
     end
   end
 
   describe "get_recipients_from_activity" do
+    test "works for announces" do
+      actor = insert(:user)
+      user = insert(:user, local: true)
+
+      {:ok, activity} = CommonAPI.post(actor, %{"status" => "hello"})
+      {:ok, announce, _} = CommonAPI.repeat(activity.id, user)
+
+      recipients = User.get_recipients_from_activity(announce)
+
+      assert user in recipients
+    end
+
     test "get recipients" do
       actor = insert(:user)
       user = insert(:user, local: true)
