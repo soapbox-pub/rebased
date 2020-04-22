@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.FlakeID do
   OpenApiSpex.schema(%{
     title: "FlakeID",
     description:
-      "Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are sortable strings",
+      "Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are lexically sortable strings",
     type: :string
   })
 end
