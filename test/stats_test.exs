@@ -11,7 +11,6 @@ defmodule Pleroma.StatsTest do
     test "it ignores internal users" do
       _user = insert(:user, local: true)
       _internal = insert(:user, local: true, nickname: nil)
-      _internal = insert(:user, local: true, nickname: "internal.dude")
       _internal = Pleroma.Web.ActivityPub.Relay.get_actor()
 
       assert match?(%{stats: %{user_count: 1}}, Pleroma.Stats.calculate_stat_data())

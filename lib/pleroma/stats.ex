@@ -82,8 +82,7 @@ defmodule Pleroma.Stats do
         where: u.deactivated != true,
         where: u.local == true,
         where: not is_nil(u.nickname),
-        where: fragment("? not like 'internal.%'", u.nickname),
-        where: fragment("? not like '%/relay'", u.ap_id)
+        where: not u.invisible
       )
 
     user_count = Repo.aggregate(users_query, :count, :id)
