@@ -38,7 +38,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       on_exit(fn -> Application.put_env(:quack, :level, initial) end)
     end
 
-    test "settings are migrated to db" do
+    test "filtered settings are migrated to db" do
       assert Repo.all(ConfigDB) == []
 
       Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
@@ -47,6 +47,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       config2 = ConfigDB.get_by_params(%{group: ":pleroma", key: ":second_setting"})
       config3 = ConfigDB.get_by_params(%{group: ":quack", key: ":level"})
       refute ConfigDB.get_by_params(%{group: ":pleroma", key: "Pleroma.Repo"})
+      refute ConfigDB.get_by_params(%{group: ":postgrex", key: ":json_library"})
 
       assert ConfigDB.from_binary(config1.value) == [key: "value", key2: [Repo]]
       assert ConfigDB.from_binary(config2.value) == [key: "value2", key2: ["Activity"]]
