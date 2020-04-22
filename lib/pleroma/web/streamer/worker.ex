@@ -158,24 +158,6 @@ defmodule Pleroma.Web.Streamer.Worker do
     should_send?(user, activity)
   end
 
-  def push_to_socket(topics, topic, %Activity{data: %{"type" => "Announce"}} = item) do
-    Enum.each(topics[topic] || [], fn %StreamerSocket{
-                                        transport_pid: transport_pid,
-                                        user: socket_user
-                                      } ->
-      # Get the current user so we have up-to-date blocks etc.
-      if socket_user do
-        user = User.get_cached_by_ap_id(socket_user.ap_id)
-
-        if should_send?(user, item) do
-          send(transport_pid, {:text, StreamerView.render("update.json", item, user)})
-        end
-      else
-        send(transport_pid, {:text, StreamerView.render("update.json", item)})
-      end
-    end)
-  end
-
   def push_to_socket(topics, topic, %Participation{} = participation) do
     Enum.each(topics[topic] || [], fn %StreamerSocket{transport_pid: transport_pid} ->
       send(transport_pid, {:text, StreamerView.render("conversation.json", participation)})

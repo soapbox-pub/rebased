@@ -987,6 +987,18 @@ defmodule Pleroma.UserTest do
   end
 
   describe "get_recipients_from_activity" do
+    test "works for announces" do
+      actor = insert(:user)
+      user = insert(:user, local: true)
+
+      {:ok, activity} = CommonAPI.post(actor, %{"status" => "hello"})
+      {:ok, announce, _} = CommonAPI.repeat(activity.id, user)
+
+      recipients = User.get_recipients_from_activity(announce)
+
+      assert user in recipients
+    end
+
     test "get recipients" do
       actor = insert(:user)
       user = insert(:user, local: true)
