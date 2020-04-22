@@ -216,7 +216,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
-    User.blocks_import(blocker, _blocked_identifiers = String.split(list))
+    blocked_identifiers = list |> String.split() |> Enum.map(&String.trim_leading(&1, "@"))
+    User.blocks_import(blocker, blocked_identifiers)
     json(conn, "job started")
   end
 
