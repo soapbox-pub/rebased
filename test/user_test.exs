@@ -760,8 +760,8 @@ defmodule Pleroma.UserTest do
       ]
 
       {:ok, job} = User.follow_import(user1, identifiers)
-      result = ObanHelpers.perform(job)
 
+      assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
       assert result == [user2, user3]
     end
@@ -983,8 +983,8 @@ defmodule Pleroma.UserTest do
       ]
 
       {:ok, job} = User.blocks_import(user1, identifiers)
-      result = ObanHelpers.perform(job)
 
+      assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
       assert result == [user2, user3]
     end
