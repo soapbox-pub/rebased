@@ -2,10 +2,20 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.StateTest do
+defmodule Pleroma.StatsTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   alias Pleroma.Web.CommonAPI
+
+  describe "user count" do
+    test "it ignores internal users" do
+      _user = insert(:user, local: true)
+      _internal = insert(:user, local: true, nickname: nil)
+      _internal = Pleroma.Web.ActivityPub.Relay.get_actor()
+
+      assert match?(%{stats: %{user_count: 1}}, Pleroma.Stats.calculate_stat_data())
+    end
+  end
 
   describe "status visibility count" do
     test "on new status" do
