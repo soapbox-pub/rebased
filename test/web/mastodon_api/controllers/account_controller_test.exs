@@ -681,17 +681,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     test "following / unfollowing errors", %{user: user, conn: conn} do
       # self follow
       conn_res = post(conn, "/api/v1/accounts/#{user.id}/follow")
-      assert %{"error" => "Record not found"} = json_response(conn_res, 404)
+      assert %{"error" => "Can not follow yourself"} = json_response(conn_res, 400)
 
       # self unfollow
       user = User.get_cached_by_id(user.id)
       conn_res = post(conn, "/api/v1/accounts/#{user.id}/unfollow")
-      assert %{"error" => "Record not found"} = json_response(conn_res, 404)
+      assert %{"error" => "Can not unfollow yourself"} = json_response(conn_res, 400)
 
       # self follow via uri
       user = User.get_cached_by_id(user.id)
       conn_res = post(conn, "/api/v1/follows", %{"uri" => user.nickname})
-      assert %{"error" => "Record not found"} = json_response(conn_res, 404)
+      assert %{"error" => "Can not follow yourself"} = json_response(conn_res, 400)
 
       # follow non existing user
       conn_res = post(conn, "/api/v1/accounts/doesntexist/follow")
