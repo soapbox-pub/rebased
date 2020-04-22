@@ -33,6 +33,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       refute match?({:ok, _object, _meta}, ObjectValidator.validate(valid_chat_message, []))
     end
 
+    test "does not validate if the recipient is blocking the actor", %{
+      valid_chat_message: valid_chat_message,
+      user: user,
+      recipient: recipient
+    } do
+      Pleroma.User.block(recipient, user)
+      refute match?({:ok, _object, _meta}, ObjectValidator.validate(valid_chat_message, []))
+    end
+
     test "does not validate if the actor or the recipient is not in our system", %{
       valid_chat_message: valid_chat_message
     } do

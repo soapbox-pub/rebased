@@ -61,15 +61,25 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
     |> validate_local_concern()
   end
 
-  @doc "Validates if at least one of the users in this ChatMessage is a local user, otherwise we don't want the message in our system. It also validates the presence of both users in our system."
+  @doc """
+  Validates the following
+  - If both users are in our system
+  - If at least one of the users in this ChatMessage is a local user
+  - If the recipient is not blocking the actor
+  """
   def validate_local_concern(cng) do
     with actor_ap <- get_field(cng, :actor),
          {_, %User{} = actor} <- {:find_actor, User.get_cached_by_ap_id(actor_ap)},
          {_, %User{} = recipient} <-
            {:find_recipient, User.get_cached_by_ap_id(get_field(cng, :to) |> hd())},
+         {_, false} <- {:blocking_actor?, User.blocks?(recipient, actor)},
          {_, true} <- {:local?, Enum.any?([actor, recipient], & &1.local)} do
       cng
     else
+      {:blocking_actor?, true} ->
+        cng
+        |> add_error(:actor, "actor is blocked by recipient")
+
       {:local?, false} ->
         cng
         |> add_error(:actor, "actor and recipient are both remote")
