@@ -116,7 +116,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> json_response(:ok)
 
       assert response == "job started"
-      assert [job_result] = ObanHelpers.perform_all()
+      assert [{:ok, job_result}] = ObanHelpers.perform_all()
       assert job_result == [user2, user3, user4, user5, user6]
     end
   end
@@ -180,7 +180,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> json_response(:ok)
 
       assert response == "job started"
-      assert [job_result] = ObanHelpers.perform_all()
+      assert [{:ok, job_result}] = ObanHelpers.perform_all()
       assert job_result == [user2, user3, user4, user5, user6]
     end
   end

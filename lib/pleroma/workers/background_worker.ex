@@ -35,7 +35,7 @@ defmodule Pleroma.Workers.BackgroundWorker do
         _job
       ) do
     blocker = User.get_cached_by_id(blocker_id)
-    User.perform(:blocks_import, blocker, blocked_identifiers)
+    {:ok, User.perform(:blocks_import, blocker, blocked_identifiers)}
   end
 
   def perform(
@@ -47,7 +47,7 @@ defmodule Pleroma.Workers.BackgroundWorker do
         _job
       ) do
     follower = User.get_cached_by_id(follower_id)
-    User.perform(:follow_import, follower, followed_identifiers)
+    {:ok, User.perform(:follow_import, follower, followed_identifiers)}
   end
 
   def perform(%{"op" => "media_proxy_preload", "message" => message}, _job) do
