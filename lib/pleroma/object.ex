@@ -261,7 +261,7 @@ defmodule Pleroma.Object do
     end
   end
 
-  def increase_vote_count(ap_id, name) do
+  def increase_vote_count(ap_id, name, actor) do
     with %Object{} = object <- Object.normalize(ap_id),
          "Question" <- object.data["type"] do
       multiple = Map.has_key?(object.data, "anyOf")
@@ -276,12 +276,15 @@ defmodule Pleroma.Object do
             option
         end)
 
+      voters = [actor | object.data["voters"] || []] |> Enum.uniq()
+
       data =
         if multiple do
           Map.put(object.data, "anyOf", options)
         else
           Map.put(object.data, "oneOf", options)
         end
+        |> Map.put("voters", voters)
 
       object
       |> Object.change(%{data: data})
