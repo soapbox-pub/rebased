@@ -302,6 +302,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert [] == Repo.all(Activity)
     end
 
+    test "ignores nil values", %{conn: conn} do
+      conn =
+        post(conn, "/api/v1/statuses", %{
+          "status" => "not scheduled",
+          "scheduled_at" => nil
+        })
+
+      assert result = json_response(conn, 200)
+      assert Activity.get_by_id(result["id"])
+    end
+
     test "creates a scheduled activity with a media attachment", %{user: user, conn: conn} do
       scheduled_at = NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(120), :millisecond)
 
