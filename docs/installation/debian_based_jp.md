@@ -10,21 +10,17 @@
 ### 必要なソフトウェア
 
 - PostgreSQL 9.6以上 (Ubuntu16.04では9.5しか提供されていないので，[](https://www.postgresql.org/download/linux/ubuntu/)こちらから新しいバージョンを入手してください)
-- postgresql-contrib 9.6以上 (同上)
-- Elixir 1.5 以上 ([Debianのリポジトリからインストールしないこと！！！ ここからインストールすること！](https://elixir-lang.org/install.html#unix-and-unix-like)。または [asdf](https://github.com/asdf-vm/asdf) をpleromaユーザーでインストールしてください)
-  - erlang-dev
-- erlang-tools
-- erlang-parsetools
-- erlang-eldap (LDAP認証を有効化するときのみ必要)
-- erlang-ssh
-- erlang-xmerl
-- git
-- build-essential
+- `postgresql-contrib` 9.6以上 (同上)
+- Elixir 1.8 以上 ([Debianのリポジトリからインストールしないこと！！！ ここからインストールすること！](https://elixir-lang.org/install.html#unix-and-unix-like)。または [asdf](https://github.com/asdf-vm/asdf) をpleromaユーザーでインストールしてください)
+- `erlang-dev`
+- `erlang-nox`
+- `git`
+- `build-essential`
 
 #### このガイドで利用している追加パッケージ
 
-- nginx (おすすめです。他のリバースプロキシを使う場合は、参考となる設定をこのリポジトリから探してください)
-- certbot (または何らかのLet's Encrypt向けACMEクライアント)
+- `nginx` (おすすめです。他のリバースプロキシを使う場合は、参考となる設定をこのリポジトリから探してください)
+- `certbot` (または何らかのLet's Encrypt向けACMEクライアント)
 
 ### システムを準備する
 
@@ -51,7 +47,7 @@ sudo dpkg -i /tmp/erlang-solutions_1.0_all.deb
 * ElixirとErlangをインストールします、
 ```
 sudo apt update
-sudo apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools erlang-ssh
+sudo apt install elixir erlang-dev erlang-nox
 ```
 
 ### Pleroma BE (バックエンド) をインストールします
