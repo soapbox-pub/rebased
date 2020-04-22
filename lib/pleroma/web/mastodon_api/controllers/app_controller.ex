@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.AppController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
   alias Pleroma.Web.OAuth.App
@@ -13,7 +14,14 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
+  plug(
+    :skip_plug,
+    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug]
+    when action == :create
+  )
+
   plug(OAuthScopesPlug, %{scopes: ["read"]} when action == :verify_credentials)
+
   plug(OpenApiSpex.Plug.CastAndValidate)
 
   @local_mastodon_name "Mastodon-Local"

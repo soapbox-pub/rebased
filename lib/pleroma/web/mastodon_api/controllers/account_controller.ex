@@ -37,7 +37,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(
     OAuthScopesPlug,
     %{fallback: :proceed_unauthenticated, scopes: ["read:accounts"]}
-    when action in [:show, :endorsements]
+    when action in [:show, :followers, :following, :endorsements]
   )
 
   plug(
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:accounts"]}
-    when action in [:endorsements, :verify_credentials, :followers, :following]
+    when action in [:endorsements, :verify_credentials]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :update_credentials)

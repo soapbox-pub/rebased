@@ -28,6 +28,12 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   plug(
     OAuthScopesPlug,
+    %{scopes: ["read:statuses"], fallback: :proceed_unauthenticated}
+    when action == :emoji_reactions_by
+  )
+
+  plug(
+    OAuthScopesPlug,
     %{scopes: ["write:statuses"]}
     when action in [:react_with_emoji, :unreact_with_emoji]
   )

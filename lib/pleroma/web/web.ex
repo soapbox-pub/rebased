@@ -67,10 +67,22 @@ defmodule Pleroma.Web do
 
       # Executed just before actual controller action, invokes before-action hooks (callbacks)
       defp action(conn, params) do
-        with %Plug.Conn{halted: false} <- maybe_perform_public_or_authenticated_check(conn),
+        with %Plug.Conn{halted: false} <- maybe_drop_authentication_if_oauth_check_ignored(conn),
+             %Plug.Conn{halted: false} <- maybe_perform_public_or_authenticated_check(conn),
              %Plug.Conn{halted: false} <- maybe_perform_authenticated_check(conn),
              %Plug.Conn{halted: false} <- maybe_halt_on_missing_oauth_scopes_check(conn) do
           super(conn, params)
+        end
+      end
+
+      # For non-authenticated API actions, drops auth info if OAuth scopes check was ignored
+      #   (neither performed nor explicitly skipped)
+      defp maybe_drop_authentication_if_oauth_check_ignored(conn) do
+        if PlugHelper.plug_called?(conn, ExpectPublicOrAuthenticatedCheckPlug) and
+             not PlugHelper.plug_called_or_skipped?(conn, OAuthScopesPlug) do
+          OAuthScopesPlug.drop_auth_info(conn)
+        else
+          conn
         end
       end
 

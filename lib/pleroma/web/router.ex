@@ -313,13 +313,9 @@ defmodule Pleroma.Web.Router do
     end
 
     scope [] do
-      pipe_through(:api)
-      get("/accounts/:id/favourites", AccountController, :favourites)
-    end
-
-    scope [] do
       pipe_through(:authenticated_api)
 
+      get("/accounts/:id/favourites", AccountController, :favourites)
       post("/accounts/:id/subscribe", AccountController, :subscribe)
       post("/accounts/:id/unsubscribe", AccountController, :unsubscribe)
     end
@@ -352,6 +348,8 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/unblock", AccountController, :unblock)
     post("/accounts/:id/mute", AccountController, :mute)
     post("/accounts/:id/unmute", AccountController, :unmute)
+
+    get("/apps/verify_credentials", AppController, :verify_credentials)
 
     get("/conversations", ConversationController, :index)
     post("/conversations/:id/read", ConversationController, :mark_as_read)
@@ -431,6 +429,7 @@ defmodule Pleroma.Web.Router do
 
     get("/timelines/home", TimelineController, :home)
     get("/timelines/direct", TimelineController, :direct)
+    get("/timelines/list/:list_id", TimelineController, :list)
   end
 
   scope "/api/web", Pleroma.Web do
@@ -442,15 +441,24 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
 
-    post("/accounts", AccountController, :create)
     get("/accounts/search", SearchController, :account_search)
+    get("/search", SearchController, :search)
+
+    get("/accounts/:id/statuses", AccountController, :statuses)
+    get("/accounts/:id/followers", AccountController, :followers)
+    get("/accounts/:id/following", AccountController, :following)
+    get("/accounts/:id", AccountController, :show)
+
+    post("/accounts", AccountController, :create)
 
     get("/instance", InstanceController, :show)
     get("/instance/peers", InstanceController, :peers)
 
     post("/apps", AppController, :create)
-    get("/apps/verify_credentials", AppController, :verify_credentials)
 
+    get("/statuses", StatusController, :index)
+    get("/statuses/:id", StatusController, :show)
+    get("/statuses/:id/context", StatusController, :context)
     get("/statuses/:id/card", StatusController, :card)
     get("/statuses/:id/favourited_by", StatusController, :favourited_by)
     get("/statuses/:id/reblogged_by", StatusController, :reblogged_by)
@@ -461,20 +469,8 @@ defmodule Pleroma.Web.Router do
 
     get("/timelines/public", TimelineController, :public)
     get("/timelines/tag/:tag", TimelineController, :hashtag)
-    get("/timelines/list/:list_id", TimelineController, :list)
-
-    get("/statuses", StatusController, :index)
-    get("/statuses/:id", StatusController, :show)
-    get("/statuses/:id/context", StatusController, :context)
 
     get("/polls/:id", PollController, :show)
-
-    get("/accounts/:id/statuses", AccountController, :statuses)
-    get("/accounts/:id/followers", AccountController, :followers)
-    get("/accounts/:id/following", AccountController, :following)
-    get("/accounts/:id", AccountController, :show)
-
-    get("/search", SearchController, :search)
   end
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do

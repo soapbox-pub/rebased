@@ -18,7 +18,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     %{scopes: ["write:notifications"]} when action == :mark_notifications_as_read
   )
 
-  plug(:skip_plug, OAuthScopesPlug when action in [:oauth_tokens, :revoke_token])
+  plug(:skip_plug, OAuthScopesPlug when action in [:confirm_email, :oauth_tokens, :revoke_token])
 
   action_fallback(:errors)
 
@@ -47,13 +47,13 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     json_reply(conn, 201, "")
   end
 
-  def errors(conn, {:param_cast, _}) do
+  defp errors(conn, {:param_cast, _}) do
     conn
     |> put_status(400)
     |> json("Invalid parameters")
   end
 
-  def errors(conn, _) do
+  defp errors(conn, _) do
     conn
     |> put_status(500)
     |> json("Something went wrong")
