@@ -299,7 +299,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/follow"
   def follow(%{assigns: %{user: %{id: id}, account: %{id: id}}}, _params) do
-    {:error, :not_found}
+    {:error, "Can not follow yourself"}
   end
 
   def follow(%{assigns: %{user: follower, account: followed}} = conn, _params) do
@@ -312,7 +312,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/unfollow"
   def unfollow(%{assigns: %{user: %{id: id}, account: %{id: id}}}, _params) do
-    {:error, :not_found}
+    {:error, "Can not unfollow yourself"}
   end
 
   def unfollow(%{assigns: %{user: follower, account: followed}} = conn, _params) do
@@ -362,14 +362,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "POST /api/v1/follows"
-  def follow_by_uri(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
-    with {_, %User{} = followed} <- {:followed, User.get_cached_by_nickname(uri)},
-         {_, true} <- {:followed, follower.id != followed.id},
-         {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
-      render(conn, "show.json", user: followed, for: follower)
-    else
-      {:followed, _} -> {:error, :not_found}
-      {:error, message} -> json_response(conn, :forbidden, %{error: message})
+  def follow_by_uri(conn, %{"uri" => uri}) do
+    case User.get_cached_by_nickname(uri) do
+      %User{} = user ->
+        conn
+        |> assign(:account, user)
+        |> follow(%{})
+
+      nil ->
+        {:error, :not_found}
     end
   end
 

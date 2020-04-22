@@ -43,7 +43,8 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         %{title: "why are you even asking?", votes_count: 0}
       ],
       voted: false,
-      votes_count: 0
+      votes_count: 0,
+      voters_count: nil
     }
 
     result = PollView.render("show.json", %{object: object})
@@ -69,9 +70,20 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         }
       })
 
+    voter = insert(:user)
+
     object = Object.normalize(activity)
 
-    assert %{multiple: true} = PollView.render("show.json", %{object: object})
+    {:ok, _votes, object} = CommonAPI.vote(voter, object, [0, 1])
+
+    assert match?(
+             %{
+               multiple: true,
+               voters_count: 1,
+               votes_count: 2
+             },
+             PollView.render("show.json", %{object: object})
+           )
   end
 
   test "detects emoji" do
