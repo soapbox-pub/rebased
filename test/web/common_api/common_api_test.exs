@@ -21,6 +21,33 @@ defmodule Pleroma.Web.CommonAPITest do
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
 
+  test "favoriting race condition" do
+    user = insert(:user)
+    users_serial = insert_list(10, :user)
+    users = insert_list(10, :user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "."})
+
+    users_serial
+    |> Enum.map(fn user ->
+      CommonAPI.favorite(user, activity.id)
+    end)
+
+    object = Object.get_by_ap_id(activity.data["object"])
+    assert object.data["like_count"] == 10
+
+    users
+    |> Enum.map(fn user ->
+      Task.async(fn ->
+        CommonAPI.favorite(user, activity.id)
+      end)
+    end)
+    |> Enum.map(&Task.await/1)
+
+    object = Object.get_by_ap_id(activity.data["object"])
+    assert object.data["like_count"] == 20
+  end
+
   test "when replying to a conversation / participation, it will set the correct context id even if no explicit reply_to is given" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
