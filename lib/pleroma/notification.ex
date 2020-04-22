@@ -362,7 +362,7 @@ defmodule Pleroma.Notification do
 
   def get_notified_from_activity(_, _local_only), do: {[], []}
 
-  @doc "Filters out AP IDs of users who domain-block and not follow activity actor"
+  @doc "Filters out AP IDs domain-blocking and not following the activity's actor"
   def exclude_domain_blocker_ap_ids(ap_ids, activity, preloaded_users \\ [])
 
   def exclude_domain_blocker_ap_ids([], _activity, _preloaded_users), do: []
