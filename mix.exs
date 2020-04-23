@@ -266,7 +266,7 @@ defmodule Pleroma.Mixfile do
 
         branch_name
       else
-        _ -> "stable"
+        _ -> ""
       end
 
     build_name =
