@@ -283,6 +283,16 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, user)
     end
 
+    test "can't repeat a repeat" do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:ok, %Activity{} = announce, _} = CommonAPI.repeat(activity.id, other_user)
+
+      refute match?({:ok, %Activity{}, _}, CommonAPI.repeat(announce.id, user))
+    end
+
     test "repeating a status privately" do
       user = insert(:user)
       other_user = insert(:user)
@@ -312,8 +322,8 @@ defmodule Pleroma.Web.CommonAPITest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
-      {:ok, %Activity{} = activity, object} = CommonAPI.repeat(activity.id, user)
-      {:ok, ^activity, ^object} = CommonAPI.repeat(activity.id, user)
+      {:ok, %Activity{} = announce, object} = CommonAPI.repeat(activity.id, user)
+      {:ok, ^announce, ^object} = CommonAPI.repeat(activity.id, user)
     end
 
     test "favoriting a status twice returns ok, but without the like activity" do
@@ -387,7 +397,9 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert {:ok, ^activity} = CommonAPI.unpin(activity.id, user)
+      id = activity.id
+
+      assert match?({:ok, %{id: ^id}}, CommonAPI.unpin(activity.id, user))
 
       user = refresh_record(user)
 
