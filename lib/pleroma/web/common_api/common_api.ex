@@ -86,8 +86,9 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def repeat(id_or_ap_id, user, params \\ %{}) do
-    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)},
+  def repeat(id, user, params \\ %{}) do
+    with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
+           {:find_activity, Activity.get_by_id(id)},
          object <- Object.normalize(activity),
          announce_activity <- Utils.get_existing_announce(user.ap_id, object),
          public <- public_announce?(object, params) do
@@ -102,8 +103,9 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def unrepeat(id_or_ap_id, user) do
-    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)} do
+  def unrepeat(id, user) do
+    with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
+           {:find_activity, Activity.get_by_id(id)} do
       object = Object.normalize(activity)
       ActivityPub.unannounce(user, object)
     else
@@ -160,8 +162,9 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def unfavorite(id_or_ap_id, user) do
-    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)} do
+  def unfavorite(id, user) do
+    with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
+           {:find_activity, Activity.get_by_id(id)} do
       object = Object.normalize(activity)
       ActivityPub.unlike(user, object)
     else
@@ -332,12 +335,12 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp maybe_create_activity_expiration(result, _), do: result
 
-  def pin(id_or_ap_id, %{ap_id: user_ap_id} = user) do
+  def pin(id, %{ap_id: user_ap_id} = user) do
     with %Activity{
            actor: ^user_ap_id,
            data: %{"type" => "Create"},
            object: %Object{data: %{"type" => object_type}}
-         } = activity <- get_by_id_or_ap_id(id_or_ap_id),
+         } = activity <- Activity.get_by_id_with_object(id),
          true <- object_type in ["Note", "Article", "Question"],
          true <- Visibility.is_public?(activity),
          {:ok, _user} <- User.add_pinnned_activity(user, activity) do
@@ -348,8 +351,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def unpin(id_or_ap_id, user) do
-    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
+  def unpin(id, user) do
+    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
          {:ok, _user} <- User.remove_pinnned_activity(user, activity) do
       {:ok, activity}
     else
