@@ -75,6 +75,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
 
       assert object
       assert object.data["content"] == "You expected a cute girl? Too bad. alert(&#39;XSS&#39;)"
+      assert match?(%{"firefox" => _}, object.data["emoji"])
 
       refute Chat.get(author.id, recipient.ap_id)
       assert Chat.get(recipient.id, author.ap_id)

@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
+  import Pleroma.Web.ActivityPub.Transmogrifier, only: [fix_emoji: 1]
 
   @primary_key false
   @derive Jason.Encoder
@@ -42,6 +43,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
 
   def fix(data) do
     data
+    |> fix_emoji()
     |> Map.put_new("actor", data["attributedTo"])
   end
 
