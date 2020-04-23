@@ -220,32 +220,39 @@ defmodule Pleroma.Mixfile do
   defp version(version) do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
-    # Pre-release version, denoted from patch version with a hyphen
-    {tag, tag_err} =
-      System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true)
-
-    {describe, describe_err} = System.cmd("git", ["describe", "--tags", "--abbrev=8"])
-    {commit_hash, commit_hash_err} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+    {_gitpath, git_present} = System.cmd("sh", ["-c", "command -v git"])
 
     git_pre_release =
-      cond do
-        tag_err == 0 and describe_err == 0 ->
-          describe
-          |> String.trim()
-          |> String.replace(String.trim(tag), "")
-          |> String.trim_leading("-")
-          |> String.trim()
+      if git_present do
+        {tag, tag_err} =
+          System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true)
 
-        commit_hash_err == 0 ->
-          "0-g" <> String.trim(commit_hash)
+        {describe, describe_err} = System.cmd("git", ["describe", "--tags", "--abbrev=8"])
+        {commit_hash, commit_hash_err} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
 
-        true ->
-          ""
+        # Pre-release version, denoted from patch version with a hyphen
+        cond do
+          tag_err == 0 and describe_err == 0 ->
+            describe
+            |> String.trim()
+            |> String.replace(String.trim(tag), "")
+            |> String.trim_leading("-")
+            |> String.trim()
+
+          commit_hash_err == 0 ->
+            "0-g" <> String.trim(commit_hash)
+
+          true ->
+            ""
+        end
+      else
+        ""
       end
 
     # Branch name as pre-release version component, denoted with a dot
     branch_name =
-      with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
+      with true <- git_present,
+           {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
            branch_name <- String.trim(branch_name),
            branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
            true <-
