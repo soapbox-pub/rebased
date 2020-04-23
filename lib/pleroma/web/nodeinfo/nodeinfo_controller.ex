@@ -126,8 +126,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         mailerEnabled: Config.get([Pleroma.Emails.Mailer, :enabled], false),
         features: features,
         restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames]),
-        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false),
-        vapidPublicKey: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false)
       }
     }
   end
