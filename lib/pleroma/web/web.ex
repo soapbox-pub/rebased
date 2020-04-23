@@ -67,10 +67,10 @@ defmodule Pleroma.Web do
 
       # Executed just before actual controller action, invokes before-action hooks (callbacks)
       defp action(conn, params) do
-        with %Plug.Conn{halted: false} <- maybe_drop_authentication_if_oauth_check_ignored(conn),
-             %Plug.Conn{halted: false} <- maybe_perform_public_or_authenticated_check(conn),
-             %Plug.Conn{halted: false} <- maybe_perform_authenticated_check(conn),
-             %Plug.Conn{halted: false} <- maybe_halt_on_missing_oauth_scopes_check(conn) do
+        with %{halted: false} = conn <- maybe_drop_authentication_if_oauth_check_ignored(conn),
+             %{halted: false} = conn <- maybe_perform_public_or_authenticated_check(conn),
+             %{halted: false} = conn <- maybe_perform_authenticated_check(conn),
+             %{halted: false} = conn <- maybe_halt_on_missing_oauth_scopes_check(conn) do
           super(conn, params)
         end
       end
