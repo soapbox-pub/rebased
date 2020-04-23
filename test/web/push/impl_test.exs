@@ -63,12 +63,12 @@ defmodule Pleroma.Web.Push.ImplTest do
         activity: activity
       )
 
-    assert Impl.perform(notif) == [:ok, :ok]
+    assert Impl.perform(notif) == {:ok, [:ok, :ok]}
   end
 
   @tag capture_log: true
   test "returns error if notif does not match " do
-    assert Impl.perform(%{}) == :error
+    assert Impl.perform(%{}) == {:error, :unknown_type}
   end
 
   test "successful message sending" do

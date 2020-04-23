@@ -46,14 +46,6 @@ defmodule Pleroma.Config.TransferTask do
     with {_, true} <- {:configurable, Config.get(:configurable_from_database)} do
       # We need to restart applications for loaded settings take effect
 
-      # TODO: some problem with prometheus after restart!
-      reject_restart =
-        if restart_pleroma? do
-          [nil, :prometheus]
-        else
-          [:pleroma, nil, :prometheus]
-        end
-
       {logger, other} =
         (Repo.all(ConfigDB) ++ deleted_settings)
         |> Enum.map(&transform_and_merge/1)
@@ -65,10 +57,20 @@ defmodule Pleroma.Config.TransferTask do
 
       started_applications = Application.started_applications()
 
+      # TODO: some problem with prometheus after restart!
+      reject = [nil, :prometheus, :postgrex]
+
+      reject =
+        if restart_pleroma? do
+          reject
+        else
+          [:pleroma | reject]
+        end
+
       other
       |> Enum.map(&update/1)
       |> Enum.uniq()
-      |> Enum.reject(&(&1 in reject_restart))
+      |> Enum.reject(&(&1 in reject))
       |> maybe_set_pleroma_last()
       |> Enum.each(&restart(started_applications, &1, Config.get(:env)))
 
