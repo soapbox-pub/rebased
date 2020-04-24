@@ -48,6 +48,33 @@ defmodule Pleroma.Web.CommonAPITest do
     assert object.data["like_count"] == 20
   end
 
+  test "repeating race condition" do
+    user = insert(:user)
+    users_serial = insert_list(10, :user)
+    users = insert_list(10, :user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "."})
+
+    users_serial
+    |> Enum.map(fn user ->
+      CommonAPI.repeat(activity.id, user)
+    end)
+
+    object = Object.get_by_ap_id(activity.data["object"])
+    assert object.data["announcement_count"] == 10
+
+    users
+    |> Enum.map(fn user ->
+      Task.async(fn ->
+        CommonAPI.repeat(activity.id, user)
+      end)
+    end)
+    |> Enum.map(&Task.await/1)
+
+    object = Object.get_by_ap_id(activity.data["object"])
+    assert object.data["announcement_count"] == 20
+  end
+
   test "when replying to a conversation / participation, it will set the correct context id even if no explicit reply_to is given" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
