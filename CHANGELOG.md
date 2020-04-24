@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   <summary>API Changes</summary>
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
-- Mastodon API: Add support for filtering replies in public and friends timelines
+- Mastodon API: Add support for filtering replies in public and home timelines
 - Admin API: endpoints for create/update/delete OAuth Apps.
 </details>
 
