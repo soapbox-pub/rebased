@@ -655,11 +655,28 @@ defmodule Pleroma.Web.Router do
 
   # Test-only routes needed to test action dispatching and plug chain execution
   if Pleroma.Config.get(:env) == :test do
+    @test_actions [
+      :do_oauth_check,
+      :fallback_oauth_check,
+      :skip_oauth_check,
+      :fallback_oauth_skip_publicity_check,
+      :skip_oauth_skip_publicity_check,
+      :missing_oauth_check_definition
+    ]
+
+    scope "/test/api", Pleroma.Tests do
+      pipe_through(:api)
+
+      for action <- @test_actions do
+        get("/#{action}", AuthTestController, action)
+      end
+    end
+
     scope "/test/authenticated_api", Pleroma.Tests do
       pipe_through(:authenticated_api)
 
-      for action <- [:skipped_oauth, :performed_oauth, :missed_oauth] do
-        get("/#{action}", OAuthTestController, action)
+      for action <- @test_actions do
+        get("/#{action}", AuthTestController, action)
       end
     end
   end

@@ -15,6 +15,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
+  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:public, :hashtag])
+
   # TODO: Replace with a macro when there is a Phoenix release with the following commit in it:
   # https://github.com/phoenixframework/phoenix/commit/2e8c63c01fec4dde5467dbbbf9705ff9e780735e
 
@@ -32,8 +34,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     %{scopes: ["read:statuses"], fallback: :proceed_unauthenticated}
     when action in [:public, :hashtag]
   )
-
-  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:public, :hashtag])
 
   plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
 

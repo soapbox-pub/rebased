@@ -9,6 +9,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2, skip_relationships?: 1]
 
   alias Ecto.Changeset
+  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
@@ -17,11 +18,9 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   require Pleroma.Constants
 
-  plug(:skip_plug, OAuthScopesPlug when action == :confirmation_resend)
-
   plug(
     :skip_plug,
-    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action == :confirmation_resend
+    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :confirmation_resend
   )
 
   plug(

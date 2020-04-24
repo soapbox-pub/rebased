@@ -14,6 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       skip_relationships?: 1
     ]
 
+  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
@@ -26,18 +27,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
-  plug(:skip_plug, OAuthScopesPlug when action in [:create, :identity_proofs])
+  plug(:skip_plug, [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :create)
 
-  plug(
-    :skip_plug,
-    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-    when action in [:create, :show, :statuses]
-  )
+  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:show, :statuses])
 
   plug(
     OAuthScopesPlug,
     %{fallback: :proceed_unauthenticated, scopes: ["read:accounts"]}
-    when action in [:show, :followers, :following, :endorsements]
+    when action in [:show, :followers, :following]
   )
 
   plug(
@@ -49,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:accounts"]}
-    when action in [:endorsements, :verify_credentials]
+    when action in [:verify_credentials, :endorsements, :identity_proofs]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :update_credentials)
