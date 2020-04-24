@@ -398,36 +398,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
-  @spec like(User.t(), Object.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t(), Object.t()} | {:error, any()}
-  def like(user, object, activity_id \\ nil, local \\ true) do
-    with {:ok, result} <- Repo.transaction(fn -> do_like(user, object, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_like(
-         %User{ap_id: ap_id} = user,
-         %Object{data: %{"id" => _}} = object,
-         activity_id,
-         local
-       ) do
-    with nil <- get_existing_like(ap_id, object),
-         like_data <- make_like_data(user, object, activity_id),
-         {:ok, activity} <- insert(like_data, local),
-         {:ok, object} <- add_like_to_object(activity, object),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity, object}
-    else
-      %Activity{} = activity ->
-        {:ok, activity, object}
-
-      {:error, error} ->
-        Repo.rollback(error)
-    end
-  end
-
   @spec unlike(User.t(), Object.t(), String.t() | nil, boolean()) ::
           {:ok, Activity.t(), Activity.t(), Object.t()} | {:ok, Object.t()} | {:error, any()}
   def unlike(%User{} = actor, %Object{} = object, activity_id \\ nil, local \\ true) do
