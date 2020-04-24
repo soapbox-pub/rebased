@@ -39,7 +39,10 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
          ]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["read:favourites"]} when action == :favourites)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:favourites"], fallback: :proceed_unauthenticated} when action == :favourites
+  )
 
   plug(RateLimiter, [name: :account_confirmation_resend] when action == :confirmation_resend)
 

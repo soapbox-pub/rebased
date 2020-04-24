@@ -357,7 +357,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "GET /api/v1/favourites"
-  def favourites(%{assigns: %{user: user}} = conn, params) do
+  def favourites(%{assigns: %{user: %User{} = user}} = conn, params) do
     activities =
       ActivityPub.fetch_favourites(
         user,

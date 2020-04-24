@@ -313,9 +313,13 @@ defmodule Pleroma.Web.Router do
     end
 
     scope [] do
+      pipe_through(:api)
+      get("/accounts/:id/favourites", AccountController, :favourites)
+    end
+
+    scope [] do
       pipe_through(:authenticated_api)
 
-      get("/accounts/:id/favourites", AccountController, :favourites)
       post("/accounts/:id/subscribe", AccountController, :subscribe)
       post("/accounts/:id/unsubscribe", AccountController, :unsubscribe)
     end
@@ -404,6 +408,7 @@ defmodule Pleroma.Web.Router do
     put("/scheduled_statuses/:id", ScheduledActivityController, :update)
     delete("/scheduled_statuses/:id", ScheduledActivityController, :delete)
 
+    # Unlike `GET /api/v1/accounts/:id/favourites`, demands authentication
     get("/favourites", StatusController, :favourites)
     get("/bookmarks", StatusController, :bookmarks)
 
