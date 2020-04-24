@@ -994,72 +994,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "like an object" do
-    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
-      Config.put([:instance, :federating], true)
-      note_activity = insert(:note_activity)
-      assert object_activity = Object.normalize(note_activity)
-
-      user = insert(:user)
-
-      {:ok, like_activity, _object} = ActivityPub.like(user, object_activity)
-      assert called(Federator.publish(like_activity))
-    end
-
-    test "returns exist activity if object already liked" do
-      note_activity = insert(:note_activity)
-      assert object_activity = Object.normalize(note_activity)
-
-      user = insert(:user)
-
-      {:ok, like_activity, _object} = ActivityPub.like(user, object_activity)
-
-      {:ok, like_activity_exist, _object} = ActivityPub.like(user, object_activity)
-      assert like_activity == like_activity_exist
-    end
-
-    test "reverts like activity on error" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.like(user, object)
-      end
-
-      assert Repo.aggregate(Activity, :count, :id) == 1
-      assert Repo.get(Object, object.id) == object
-    end
-
-    test "adds a like activity to the db" do
-      note_activity = insert(:note_activity)
-      assert object = Object.normalize(note_activity)
-
-      user = insert(:user)
-      user_two = insert(:user)
-
-      {:ok, like_activity, object} = ActivityPub.like(user, object)
-
-      assert like_activity.data["actor"] == user.ap_id
-      assert like_activity.data["type"] == "Like"
-      assert like_activity.data["object"] == object.data["id"]
-      assert like_activity.data["to"] == [User.ap_followers(user), note_activity.data["actor"]]
-      assert like_activity.data["context"] == object.data["context"]
-      assert object.data["like_count"] == 1
-      assert object.data["likes"] == [user.ap_id]
-
-      # Just return the original activity if the user already liked it.
-      {:ok, same_like_activity, object} = ActivityPub.like(user, object)
-
-      assert like_activity == same_like_activity
-      assert object.data["likes"] == [user.ap_id]
-      assert object.data["like_count"] == 1
-
-      {:ok, _like_activity, object} = ActivityPub.like(user_two, object)
-      assert object.data["like_count"] == 2
-    end
-  end
-
   describe "unliking" do
     test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
       Config.put([:instance, :federating], true)
@@ -1071,7 +1005,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, object} = ActivityPub.unlike(user, object)
       refute called(Federator.publish())
 
-      {:ok, _like_activity, object} = ActivityPub.like(user, object)
+      {:ok, _like_activity} = CommonAPI.favorite(user, note_activity.id)
+      object = Object.get_by_id(object.id)
       assert object.data["like_count"] == 1
 
       {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
@@ -1082,10 +1017,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     test "reverts unliking on error" do
       note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
       user = insert(:user)
 
-      {:ok, like_activity, object} = ActivityPub.like(user, object)
+      {:ok, like_activity} = CommonAPI.favorite(user, note_activity.id)
+      object = Object.normalize(note_activity)
       assert object.data["like_count"] == 1
 
       with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
@@ -1106,7 +1041,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, object} = ActivityPub.unlike(user, object)
       assert object.data["like_count"] == 0
 
-      {:ok, like_activity, object} = ActivityPub.like(user, object)
+      {:ok, like_activity} = CommonAPI.favorite(user, note_activity.id)
+
+      object = Object.get_by_id(object.id)
       assert object.data["like_count"] == 1
 
       {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)

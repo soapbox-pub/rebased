@@ -1,12 +1,16 @@
-<div class="activity" <%= if @selected do %> id="selected" <% end %>>
+<div class="activity h-entry" <%= if @selected do %> id="selected" <% end %>>
   <p class="pull-right">
-    <%= link format_date(@published), to: @link, class: "activity-link" %>
+    <a class="activity-link u-url u-uid" href="<%= @link %>">
+      <time class="dt-published" datetime="<%= @published %>">
+        <%= format_date(@published) %>
+      </time>
+    </a>
   </p>
   <%= render("_user_card.html", %{user: @user}) %>
   <div class="activity-content">
     <%= if @title != "" do %>
       <details <%= if open_content?() do %>open<% end %>>
-        <summary><%= raw @title %></summary>
+        <summary class="p-name"><%= raw @title %></summary>
         <div class="e-content"><%= raw @content %></div>
       </details>
     <% else %>

@@ -127,7 +127,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   def create(
         %{assigns: %{user: user}} = conn,
         %{"status" => _, "scheduled_at" => scheduled_at} = params
-      ) do
+      )
+      when not is_nil(scheduled_at) do
     params = Map.put(params, "in_reply_to_status_id", params["in_reply_to_id"])
 
     with {:far_enough, true} <- {:far_enough, ScheduledActivity.far_enough?(scheduled_at)},

@@ -336,7 +336,8 @@ config :pleroma, :mrf_simple,
   reject: [],
   accept: [],
   avatar_removal: [],
-  banner_removal: []
+  banner_removal: [],
+  reject_deletes: []
 
 config :pleroma, :mrf_keyword,
   reject: [],
