@@ -6,11 +6,8 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.User
-  alias Pleroma.Web.ApiSpec
-  alias Pleroma.Web.ApiSpec.Schemas.DomainBlocksResponse
 
   import Pleroma.Factory
-  import OpenApiSpex.TestAssertions
 
   test "blocking / unblocking a domain" do
     %{user: user, conn: conn} = oauth_access(["write:blocks"])
@@ -21,7 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockControllerTest do
       |> put_req_header("content-type", "application/json")
       |> post("/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
 
-    assert %{} = json_response(ret_conn, 200)
+    assert %{} == json_response_and_validate_schema(ret_conn, 200)
     user = User.get_cached_by_ap_id(user.ap_id)
     assert User.blocks?(user, other_user)
 
@@ -30,7 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockControllerTest do
       |> put_req_header("content-type", "application/json")
       |> delete("/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
 
-    assert %{} = json_response(ret_conn, 200)
+    assert %{} == json_response_and_validate_schema(ret_conn, 200)
     user = User.get_cached_by_ap_id(user.ap_id)
     refute User.blocks?(user, other_user)
   end
@@ -41,21 +38,10 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockControllerTest do
     {:ok, user} = User.block_domain(user, "bad.site")
     {:ok, user} = User.block_domain(user, "even.worse.site")
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> get("/api/v1/domain_blocks")
-
-    domain_blocks = json_response(conn, 200)
-
-    assert "bad.site" in domain_blocks
-    assert "even.worse.site" in domain_blocks
-    assert_schema(domain_blocks, "DomainBlocksResponse", ApiSpec.spec())
-  end
-
-  test "DomainBlocksResponse example matches schema" do
-    api_spec = ApiSpec.spec()
-    schema = DomainBlocksResponse.schema()
-    assert_schema(schema.example, "DomainBlocksResponse", api_spec)
+    assert ["even.worse.site", "bad.site"] ==
+             conn
+             |> assign(:user, user)
+             |> get("/api/v1/domain_blocks")
+             |> json_response_and_validate_schema(200)
   end
 end
