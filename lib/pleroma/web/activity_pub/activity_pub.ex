@@ -270,9 +270,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            ),
          {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
-         {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          _ <- increase_replies_count_if_reply(create_data),
          _ <- increase_poll_votes_if_vote(create_data),
+         {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
@@ -700,14 +700,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         do: [opts["user"].ap_id | User.following(opts["user"])] ++ public,
         else: public
 
-    opts = Map.put(opts, "user", opts["user"])
-
     from(activity in Activity)
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
     |> maybe_set_thread_muted_field(opts)
     |> restrict_blocked(opts)
-    |> restrict_recipients(recipients, opts)
+    |> restrict_recipients(recipients, opts["user"])
     |> where(
       [activity],
       fragment(
@@ -742,10 +740,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @spec fetch_public_activities(map(), Pagination.type()) :: [Activity.t()]
   def fetch_public_activities(opts \\ %{}, pagination \\ :keyset) do
-    opts =
-      opts
-      |> Map.put("reply_user", opts["user"])
-      |> Map.delete("user")
+    opts = Map.drop(opts, ["user"])
 
     [Constants.as_public()]
     |> fetch_activities_query(opts)
@@ -981,65 +976,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_tag(query, _), do: query
 
-  defp reply_recipients(user, "following") do
-    [user.ap_id | User.get_cached_user_friends_ap_ids(user)]
+  defp restrict_recipients(query, [], _user), do: query
+
+  defp restrict_recipients(query, recipients, nil) do
+    from(activity in query, where: fragment("? && ?", ^recipients, activity.recipients))
   end
 
-  defp reply_recipients(user, "self"), do: [user.ap_id]
-
-  defp restrict_recipients(query, [], _opts), do: query
-
-  defp restrict_recipients(
-         query,
-         recipients,
-         %{"user" => nil, "reply_user" => user, "reply_visibility" => visibility}
-       )
-       when not is_nil(user) and visibility in ["following", "self"] do
-    reply_recipients = reply_recipients(user, visibility)
-
-    from([activity, object] in query,
-      where:
-        fragment(
-          "? && ? AND (?->>'inReplyTo' IS NULL OR array_remove(?, ?) && ? OR ? = ?)",
-          ^recipients,
-          activity.recipients,
-          object.data,
-          activity.recipients,
-          activity.actor,
-          ^reply_recipients,
-          activity.actor,
-          ^user.ap_id
-        )
-    )
-  end
-
-  defp restrict_recipients(query, recipients, %{"user" => nil}) do
-    from(activity in query,
-      where: fragment("? && ?", ^recipients, activity.recipients)
-    )
-  end
-
-  defp restrict_recipients(query, recipients, %{"user" => user, "reply_visibility" => visibility})
-       when visibility in ["following", "self"] do
-    reply_recipients = reply_recipients(user, visibility)
-
-    from(
-      [activity, object] in query,
-      where:
-        fragment(
-          "? && ? AND (?->>'inReplyTo' IS NULL OR array_remove(?, ?) && ?)",
-          ^recipients,
-          activity.recipients,
-          object.data,
-          activity.recipients,
-          activity.actor,
-          ^reply_recipients
-        ),
-      or_where: activity.actor == ^user.ap_id
-    )
-  end
-
-  defp restrict_recipients(query, recipients, %{"user" => user}) do
+  defp restrict_recipients(query, recipients, user) do
     from(
       activity in query,
       where: fragment("? && ?", ^recipients, activity.recipients),
@@ -1101,6 +1044,41 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     from(
       [_activity, object] in query,
       where: fragment("?->>'inReplyTo' is null", object.data)
+    )
+  end
+
+  defp restrict_replies(query, %{
+         "reply_filtering_user" => user,
+         "reply_visibility" => "self"
+       }) do
+    from(
+      [activity, object] in query,
+      where:
+        fragment(
+          "?->>'inReplyTo' is null OR ? = ANY(?)",
+          object.data,
+          ^user.ap_id,
+          activity.recipients
+        )
+    )
+  end
+
+  defp restrict_replies(query, %{
+         "reply_filtering_user" => user,
+         "reply_visibility" => "following"
+       }) do
+    from(
+      [activity, object] in query,
+      where:
+        fragment(
+          "?->>'inReplyTo' is null OR ? && array_remove(?, ?) OR ? = ?",
+          object.data,
+          ^[user.ap_id | User.get_cached_user_friends_ap_ids(user)],
+          activity.recipients,
+          activity.actor,
+          activity.actor,
+          ^user.ap_id
+        )
     )
   end
 
@@ -1311,15 +1289,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       skip_thread_containment: Config.get([:instance, :skip_thread_containment])
     }
 
-    opts = Map.put(opts, "user", opts["user"])
-
     Activity
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
     |> maybe_preload_report_notes(opts)
     |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
-    |> restrict_recipients(recipients, opts)
+    |> restrict_recipients(recipients, opts["user"])
+    |> restrict_replies(opts)
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)
     |> restrict_tag_all(opts)
@@ -1334,7 +1311,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_media(opts)
     |> restrict_visibility(opts)
     |> restrict_thread_visibility(opts, config)
-    |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(restrict_muted_reblogs_opts)

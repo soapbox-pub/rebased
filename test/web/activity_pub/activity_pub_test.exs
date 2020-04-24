@@ -1936,7 +1936,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Map.put("local_only", false)
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)
-        |> Map.put("user", user)
+        |> Map.put("reply_filtering_user", user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
 
@@ -1958,7 +1958,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)
         |> Map.put("reply_visibility", "following")
-        |> Map.put("user", user)
+        |> Map.put("reply_filtering_user", user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
 
@@ -1985,7 +1985,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)
         |> Map.put("reply_visibility", "self")
-        |> Map.put("user", user)
+        |> Map.put("reply_filtering_user", user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
 
@@ -2008,6 +2008,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)
         |> Map.put("user", user)
+        |> Map.put("reply_filtering_user", user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
@@ -2046,6 +2047,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Map.put("muting_user", user)
         |> Map.put("user", user)
         |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
@@ -2084,6 +2086,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Map.put("muting_user", user)
         |> Map.put("user", user)
         |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
@@ -2131,6 +2134,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)
         |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
         |> Map.put("user", user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
@@ -2146,6 +2150,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)
         |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
         |> Map.put("user", user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
@@ -2176,6 +2181,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Map.put("muting_user", user)
         |> Map.put("user", user)
         |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
@@ -2199,6 +2205,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> Map.put("muting_user", user)
         |> Map.put("user", user)
         |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)

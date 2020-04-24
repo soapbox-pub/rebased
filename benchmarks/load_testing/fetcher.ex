@@ -508,13 +508,13 @@ defmodule Pleroma.LoadTesting.Fetcher do
         "Public timeline with reply filtering - following" => fn ->
           public_params
           |> Map.put("reply_visibility", "following")
-          |> Map.put("user", user)
+          |> Map.put("reply_filtering_user", user)
           |> ActivityPub.fetch_public_activities()
         end,
         "Public timeline with reply filtering - self" => fn ->
           public_params
           |> Map.put("reply_visibility", "self")
-          |> Map.put("user", user)
+          |> Map.put("reply_filtering_user", user)
           |> ActivityPub.fetch_public_activities()
         end
       },
@@ -531,12 +531,19 @@ defmodule Pleroma.LoadTesting.Fetcher do
           ActivityPub.fetch_activities(recipients, private_params)
         end,
         "Home timeline with reply filtering - following" => fn ->
-          private_params = Map.put(private_params, "reply_visibility", "following")
+          private_params =
+            private_params
+            |> Map.put("reply_filtering_user", user)
+            |> Map.put("reply_visibility", "following")
 
           ActivityPub.fetch_activities(recipients, private_params)
         end,
         "Home timeline with reply filtering - self" => fn ->
-          private_params = Map.put(private_params, "reply_visibility", "self")
+          private_params =
+            private_params
+            |> Map.put("reply_filtering_user", user)
+            |> Map.put("reply_visibility", "self")
+
           ActivityPub.fetch_activities(recipients, private_params)
         end
       },
