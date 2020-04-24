@@ -313,7 +313,7 @@ defmodule Pleroma.LoadTesting.Activities do
     tasks = get_reply_tasks(visibility, group)
 
     {:ok, activity} =
-      CommonAPI.post(user, %{"status" => "Simple status", "visibility" => "unlisted"})
+      CommonAPI.post(user, %{"status" => "Simple status", "visibility" => visibility})
 
     acc = {activity.id, ["@" <> actor.nickname, "reply to status"]}
     insert_replies(tasks, visibility, user, friends, non_friends, acc)
