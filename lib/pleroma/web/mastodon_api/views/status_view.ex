@@ -45,7 +45,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
-  defp get_user(ap_id) do
+  def get_user(ap_id, fake_record_fallback \\ true) do
     cond do
       user = User.get_cached_by_ap_id(ap_id) ->
         user
@@ -53,8 +53,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       user = User.get_by_guessed_nickname(ap_id) ->
         user
 
-      true ->
+      fake_record_fallback ->
+        # TODO: refactor (fake records is never a good idea)
         User.error_user(ap_id)
+
+      true -> nil
     end
   end
 
@@ -97,7 +100,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
           UserRelationship.view_relationships_option(nil, [])
 
         true ->
-          actors = Enum.map(activities ++ parent_activities, &get_user(&1.data["actor"]))
+          # Note: unresolved users are filtered out
+          actors =
+            (activities ++ parent_activities)
+            |> Enum.map(&get_user(&1.data["actor"], false))
+            |> Enum.filter(& &1)
 
           UserRelationship.view_relationships_option(reading_user, actors,
             source_mutes_only: opts[:skip_relationships]
