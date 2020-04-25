@@ -57,7 +57,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         # TODO: refactor (fake records is never a good idea)
         User.error_user(ap_id)
 
-      true -> nil
+      true ->
+        nil
     end
   end
 
