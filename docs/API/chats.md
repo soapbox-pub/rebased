@@ -32,33 +32,21 @@ For this reasons, Chats are a new and different entity, both in the API as well 
 
 ## API
 
-In general, the way to send a `ChatMessage` is to first create a `Chat`, then post a message to that `Chat`. The actors in the API are generally given by their ActivityPub id to make it easier to support later `Group` scenarios. 
+In general, the way to send a `ChatMessage` is to first create a `Chat`, then post a message to that `Chat`. `Group`s will later be supported by making them a sub-type of `Account`.
 
 This is the overview of using the API. The API is also documented via OpenAPI, so you can view it and play with it by pointing SwaggerUI or a similar OpenAPI tool to `https://yourinstance.tld/api/openapi`.
 
 ### Creating or getting a chat.
 
-To create or get an existing Chat for a certain recipient (identified by AP ID)
+To create or get an existing Chat for a certain recipient (identified by Account ID)
 you can call:
 
-`POST /api/v1/pleroma/chats/by-ap-id/{ap_id}`
+`POST /api/v1/pleroma/chats/by-account-id/{account_id}`
 
-The ap_id of the recipients needs to be www-form encoded, so 
-
-```
-https://originalpatchou.li/user/lambda
-```
-
-would become
+The account id is the normal FlakeId of the usre
 
 ```
-https%3A%2F%2Foriginalpatchou.li%2Fuser%2Flambda
-```
-
-The full call would then be
-
-```
-POST /api/v1/pleroma/chats/by-ap-id/https%3A%2F%2Foriginalpatchou.li%2Fuser%2Flambda
+POST /api/v1/pleroma/chats/by-account-id/someflakeid
 ```
 
 There will only ever be ONE Chat for you and a given recipient, so this call
@@ -68,8 +56,7 @@ Returned data:
 
 ```json
 {
-  "recipient" : "https://dontbulling.me/users/lain",
-  "recipient_account": {
+  "account": {
     "id": "someflakeid",
     "username": "somenick",
     ...
@@ -91,8 +78,7 @@ Returned data:
 ```json
 [
    {
-      "recipient" : "https://dontbulling.me/users/lain",
-      "recipient_account": {
+      "account": {
         "id": "someflakeid",
         "username": "somenick",
         ...
@@ -120,7 +106,7 @@ Returned data:
 ```json
 [
   {
-    "actor": "https://dontbulling.me/users/lain",
+    "account_id": "someflakeid",
     "chat_id": "1",
     "content": "Check this out :firefox:",
     "created_at": "2020-04-21T15:11:46.000Z",
@@ -135,7 +121,7 @@ Returned data:
     "id": "13"
   },
   {
-    "actor": "https://dontbulling.me/users/lain",
+    "account_id": "someflakeid",
     "chat_id": "1",
     "content": "Whats' up?",
     "created_at": "2020-04-21T15:06:45.000Z",
@@ -161,7 +147,7 @@ Returned data:
 
 ```json
 {
-  "actor": "https://dontbulling.me/users/lain",
+  "account_id": "someflakeid",
   "chat_id": "1",
   "content": "Check this out :firefox:",
   "created_at": "2020-04-21T15:11:46.000Z",
@@ -190,7 +176,7 @@ There's a new `pleroma:chat_mention` notification, which has this form:
     "chat_id": "1",
     "id": "10",
     "content": "Hello",
-    "actor": "https://dontbulling.me/users/lain"
+    "account_id": "someflakeid"
   },
   "created_at": "somedate"
 }
