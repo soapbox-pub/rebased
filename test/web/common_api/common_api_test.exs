@@ -640,6 +640,14 @@ defmodule Pleroma.Web.CommonAPITest do
       assert Repo.get(Activity, follow_activity_two.id).data["state"] == "reject"
       assert Repo.get(Activity, follow_activity_three.id).data["state"] == "pending"
     end
+
+    test "doesn't create a following relationship if the corresponding follow request doesn't exist" do
+      user = insert(:user, locked: true)
+      not_follower = insert(:user)
+      CommonAPI.accept_follow_request(not_follower, user)
+
+      assert Pleroma.FollowingRelationship.following?(not_follower, user) == false
+    end
   end
 
   describe "vote/3" do

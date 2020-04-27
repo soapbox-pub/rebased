@@ -39,8 +39,8 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def accept_follow_request(follower, followed) do
-    with {:ok, follower} <- User.follow(follower, followed),
-         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+    with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follower} <- User.follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
          {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "accept"),
          {:ok, _activity} <-
