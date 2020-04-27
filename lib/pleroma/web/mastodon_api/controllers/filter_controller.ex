@@ -35,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
       context: params.context,
       hide: params.irreversible,
       whole_word: params.whole_word
-      # expires_at
+      # TODO: support `expires_in` parameter (as in Mastodon API)
     }
 
     {:ok, response} = Filter.create(query)
@@ -57,13 +57,12 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
       ) do
     params =
       params
-      |> Map.from_struct()
       |> Map.delete(:irreversible)
-      |> Map.put(:hide, params.irreversible)
+      |> Map.put(:hide, params[:irreversible])
       |> Enum.reject(fn {_key, value} -> is_nil(value) end)
       |> Map.new()
 
-    # TODO: add expires_in -> expires_at
+    # TODO: support `expires_in` parameter (as in Mastodon API)
 
     with %Filter{} = filter <- Filter.get(filter_id, user),
          {:ok, %Filter{} = filter} <- Filter.update(filter, params) do

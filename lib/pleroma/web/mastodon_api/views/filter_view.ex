@@ -7,8 +7,8 @@ defmodule Pleroma.Web.MastodonAPI.FilterView do
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.FilterView
 
-  def render("index.json", %{filters: filters} = opts) do
-    render_many(filters, FilterView, "show.json", opts)
+  def render("index.json", %{filters: filters}) do
+    render_many(filters, FilterView, "show.json")
   end
 
   def render("show.json", %{filter: filter}) do

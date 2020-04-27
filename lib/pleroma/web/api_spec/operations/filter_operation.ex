@@ -6,10 +6,6 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
-  alias Pleroma.Web.ApiSpec.Schemas.Filter
-  alias Pleroma.Web.ApiSpec.Schemas.FilterCreateRequest
-  alias Pleroma.Web.ApiSpec.Schemas.FiltersResponse
-  alias Pleroma.Web.ApiSpec.Schemas.FilterUpdateRequest
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
@@ -23,7 +19,7 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
       operationId: "FilterController.index",
       security: [%{"oAuth" => ["read:filters"]}],
       responses: %{
-        200 => Operation.response("Filters", "application/json", FiltersResponse)
+        200 => Operation.response("Filters", "application/json", array_of_filters())
       }
     }
   end
@@ -33,9 +29,9 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
       tags: ["apps"],
       summary: "Create a filter",
       operationId: "FilterController.create",
-      requestBody: Helpers.request_body("Parameters", FilterCreateRequest, required: true),
+      requestBody: Helpers.request_body("Parameters", create_request(), required: true),
       security: [%{"oAuth" => ["write:filters"]}],
-      responses: %{200 => Operation.response("Filter", "application/json", Filter)}
+      responses: %{200 => Operation.response("Filter", "application/json", filter())}
     }
   end
 
@@ -47,7 +43,7 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
       operationId: "FilterController.show",
       security: [%{"oAuth" => ["read:filters"]}],
       responses: %{
-        200 => Operation.response("Filter", "application/json", Filter)
+        200 => Operation.response("Filter", "application/json", filter())
       }
     }
   end
@@ -58,10 +54,10 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
       summary: "Update a filter",
       parameters: [id_param()],
       operationId: "FilterController.update",
-      requestBody: Helpers.request_body("Parameters", FilterUpdateRequest, required: true),
+      requestBody: Helpers.request_body("Parameters", update_request(), required: true),
       security: [%{"oAuth" => ["write:filters"]}],
       responses: %{
-        200 => Operation.response("Filter", "application/json", Filter)
+        200 => Operation.response("Filter", "application/json", filter())
       }
     }
   end
@@ -85,5 +81,147 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
 
   defp id_param do
     Operation.parameter(:id, :path, :string, "Filter ID", example: "123", required: true)
+  end
+
+  defp filter do
+    %Schema{
+      title: "Filter",
+      type: :object,
+      properties: %{
+        id: %Schema{type: :string},
+        phrase: %Schema{type: :string, description: "The text to be filtered"},
+        context: %Schema{
+          type: :array,
+          items: %Schema{type: :string, enum: ["home", "notifications", "public", "thread"]},
+          description: "The contexts in which the filter should be applied."
+        },
+        expires_at: %Schema{
+          type: :string,
+          format: :"date-time",
+          description:
+            "When the filter should no longer be applied. String (ISO 8601 Datetime), or null if the filter does not expire.",
+          nullable: true
+        },
+        irreversible: %Schema{
+          type: :boolean,
+          description:
+            "Should matching entities in home and notifications be dropped by the server?"
+        },
+        whole_word: %Schema{
+          type: :boolean,
+          description: "Should the filter consider word boundaries?"
+        }
+      },
+      example: %{
+        "id" => "5580",
+        "phrase" => "@twitter.com",
+        "context" => [
+          "home",
+          "notifications",
+          "public",
+          "thread"
+        ],
+        "whole_word" => false,
+        "expires_at" => nil,
+        "irreversible" => true
+      }
+    }
+  end
+
+  defp array_of_filters do
+    %Schema{
+      title: "ArrayOfFilters",
+      description: "Array of Filters",
+      type: :array,
+      items: filter(),
+      example: [
+        %{
+          "id" => "5580",
+          "phrase" => "@twitter.com",
+          "context" => [
+            "home",
+            "notifications",
+            "public",
+            "thread"
+          ],
+          "whole_word" => false,
+          "expires_at" => nil,
+          "irreversible" => true
+        },
+        %{
+          "id" => "6191",
+          "phrase" => ":eurovision2019:",
+          "context" => [
+            "home"
+          ],
+          "whole_word" => true,
+          "expires_at" => "2019-05-21T13:47:31.333Z",
+          "irreversible" => false
+        }
+      ]
+    }
+  end
+
+  defp create_request do
+    %Schema{
+      title: "FilterCreateRequest",
+      allOf: [
+        update_request(),
+        %Schema{
+          type: :object,
+          properties: %{
+            irreversible: %Schema{
+              type: :bolean,
+              description:
+                "Should the server irreversibly drop matching entities from home and notifications?",
+              default: false
+            }
+          }
+        }
+      ],
+      example: %{
+        "phrase" => "knights",
+        "context" => ["home"]
+      }
+    }
+  end
+
+  defp update_request do
+    %Schema{
+      title: "FilterUpdateRequest",
+      type: :object,
+      properties: %{
+        phrase: %Schema{type: :string, description: "The text to be filtered"},
+        context: %Schema{
+          type: :array,
+          items: %Schema{type: :string, enum: ["home", "notifications", "public", "thread"]},
+          description:
+            "Array of enumerable strings `home`, `notifications`, `public`, `thread`. At least one context must be specified."
+        },
+        irreversible: %Schema{
+          type: :bolean,
+          description:
+            "Should the server irreversibly drop matching entities from home and notifications?"
+        },
+        whole_word: %Schema{
+          type: :bolean,
+          description: "Consider word boundaries?",
+          default: true
+        }
+        # TODO: probably should implement filter expiration
+        # expires_in: %Schema{
+        #   type: :string,
+        #   format: :"date-time",
+        #   description:
+        #     "ISO 8601 Datetime for when the filter expires. Otherwise,
+        #  null for a filter that doesn't expire."
+        # }
+      },
+      required: [:phrase, :context],
+      example: %{
+        "phrase" => "knights",
+        "context" => ["home"]
+      }
+    }
   end
 end

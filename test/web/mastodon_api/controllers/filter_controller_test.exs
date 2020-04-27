@@ -5,14 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Web.ApiSpec
-  alias Pleroma.Web.ApiSpec.Schemas.Filter
-  alias Pleroma.Web.ApiSpec.Schemas.FilterCreateRequest
-  alias Pleroma.Web.ApiSpec.Schemas.FiltersResponse
-  alias Pleroma.Web.ApiSpec.Schemas.FilterUpdateRequest
   alias Pleroma.Web.MastodonAPI.FilterView
-
-  import OpenApiSpex.TestAssertions
 
   test "creating a filter" do
     %{conn: conn} = oauth_access(["write:filters"])
@@ -27,13 +20,12 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
       |> put_req_header("content-type", "application/json")
       |> post("/api/v1/filters", %{"phrase" => filter.phrase, context: filter.context})
 
-    assert response = json_response(conn, 200)
+    assert response = json_response_and_validate_schema(conn, 200)
     assert response["phrase"] == filter.phrase
     assert response["context"] == filter.context
     assert response["irreversible"] == false
     assert response["id"] != nil
     assert response["id"] != ""
-    assert_schema(response, "Filter", ApiSpec.spec())
   end
 
   test "fetching a list of filters" do
@@ -59,7 +51,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
     response =
       conn
       |> get("/api/v1/filters")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert response ==
              render_json(
@@ -67,8 +59,6 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
                "index.json",
                filters: [filter_two, filter_one]
              )
-
-    assert_schema(response, "FiltersResponse", ApiSpec.spec())
   end
 
   test "get a filter" do
@@ -85,8 +75,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
 
     conn = get(conn, "/api/v1/filters/#{filter.filter_id}")
 
-    assert response = json_response(conn, 200)
-    assert_schema(response, "Filter", ApiSpec.spec())
+    assert response = json_response_and_validate_schema(conn, 200)
   end
 
   test "update a filter" do
@@ -115,11 +104,10 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
         context: new.context
       })
 
-    assert response = json_response(conn, 200)
+    assert response = json_response_and_validate_schema(conn, 200)
     assert response["phrase"] == new.phrase
     assert response["context"] == new.context
     assert response["irreversible"] == true
-    assert_schema(response, "Filter", ApiSpec.spec())
   end
 
   test "delete a filter" do
@@ -136,33 +124,6 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
 
     conn = delete(conn, "/api/v1/filters/#{filter.filter_id}")
 
-    assert response = json_response(conn, 200)
-    assert response == %{}
-  end
-
-  describe "OpenAPI" do
-    test "Filter example matches schema" do
-      api_spec = ApiSpec.spec()
-      schema = Filter.schema()
-      assert_schema(schema.example, "Filter", api_spec)
-    end
-
-    test "FiltersResponse example matches schema" do
-      api_spec = ApiSpec.spec()
-      schema = FiltersResponse.schema()
-      assert_schema(schema.example, "FiltersResponse", api_spec)
-    end
-
-    test "FilterCreateRequest example matches schema" do
-      api_spec = ApiSpec.spec()
-      schema = FilterCreateRequest.schema()
-      assert_schema(schema.example, "FilterCreateRequest", api_spec)
-    end
-
-    test "FilterUpdateRequest example matches schema" do
-      api_spec = ApiSpec.spec()
-      schema = FilterUpdateRequest.schema()
-      assert_schema(schema.example, "FilterUpdateRequest", api_spec)
-    end
+    assert json_response_and_validate_schema(conn, 200) == %{}
   end
 end
