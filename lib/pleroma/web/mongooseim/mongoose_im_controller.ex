@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   plug(RateLimiter, [name: :authentication, params: ["user"]] when action == :check_password)
 
   def user_exists(conn, %{"user" => username}) do
-    with %User{} <- Repo.get_by(User, nickname: username, local: true) do
+    with %User{} <- Repo.get_by(User, nickname: username, local: true, deactivated: false) do
       conn
       |> json(true)
     else
@@ -26,41 +26,22 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   end
 
   def check_password(conn, %{"user" => username, "pass" => password}) do
-    user = Repo.get_by(User, nickname: username, local: true)
-    
-    state = case user do
-      nil -> nil
-      _ -> User.account_status(user)
-    end
-
-    case state do
-      :deactivated ->
+    with %User{password_hash: password_hash, deactivated: false} <-
+           Repo.get_by(User, nickname: username, local: true),
+         true <- Pbkdf2.checkpw(password, password_hash) do
+      conn
+      |> json(true)
+    else
+      false ->
         conn
-        |> put_status(:not_found)
-        |> json(false)
-
-      :confirmation_pending ->
-        conn
-        |> put_status(:not_found)
+        |> put_status(:forbidden)
         |> json(false)
 
       _ ->
-        with %User{password_hash: password_hash} <-
-               user,
-             true <- Pbkdf2.checkpw(password, password_hash) do
-          conn
-          |> json(true)
-        else
-          false ->
-            conn
-            |> put_status(:forbidden)
-            |> json(false)
-
-          _ ->
-            conn
-            |> put_status(:not_found)
-            |> json(false)
-        end
+        conn
+        |> put_status(:not_found)
+        |> json(false)
     end
   end
 end
+
