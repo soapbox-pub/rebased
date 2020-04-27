@@ -5,14 +5,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Chat
-  alias Pleroma.Web.ApiSpec
-  alias Pleroma.Web.ApiSpec.Schemas.ChatMessageResponse
-  alias Pleroma.Web.ApiSpec.Schemas.ChatMessagesResponse
-  alias Pleroma.Web.ApiSpec.Schemas.ChatResponse
-  alias Pleroma.Web.ApiSpec.Schemas.ChatsResponse
   alias Pleroma.Web.CommonAPI
 
-  import OpenApiSpex.TestAssertions
   import Pleroma.Factory
 
   describe "POST /api/v1/pleroma/chats/:id/messages" do
@@ -27,11 +21,10 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         conn
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{"content" => "Hallo!!"})
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert result["content"] == "Hallo!!"
       assert result["chat_id"] == chat.id |> to_string()
-      assert_schema(result, "ChatMessageResponse", ApiSpec.spec())
     end
   end
 
@@ -50,18 +43,16 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       result =
         conn
         |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert length(result) == 20
-      assert_schema(result, "ChatMessagesResponse", ApiSpec.spec())
 
       result =
         conn
         |> get("/api/v1/pleroma/chats/#{chat.id}/messages?max_id=#{List.last(result)["id"]}")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert length(result) == 10
-      assert_schema(result, "ChatMessagesResponse", ApiSpec.spec())
     end
 
     test "it returns the messages for a given chat", %{conn: conn, user: user} do
@@ -78,7 +69,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       result =
         conn
         |> get("/api/v1/pleroma/chats/#{chat.id}/messages")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       result
       |> Enum.each(fn message ->
@@ -86,7 +77,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       end)
 
       assert length(result) == 3
-      assert_schema(result, "ChatMessagesResponse", ApiSpec.spec())
 
       # Trying to get the chat of a different user
       result =
@@ -107,10 +97,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       result =
         conn
         |> post("/api/v1/pleroma/chats/by-ap-id/#{URI.encode_www_form(other_user.ap_id)}")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert result["id"]
-      assert_schema(result, "ChatResponse", ApiSpec.spec())
     end
   end
 
@@ -126,19 +115,16 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       result =
         conn
         |> get("/api/v1/pleroma/chats")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert length(result) == 20
-      assert_schema(result, "ChatsResponse", ApiSpec.spec())
 
       result =
         conn
         |> get("/api/v1/pleroma/chats?max_id=#{List.last(result)["id"]}")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert length(result) == 10
-
-      assert_schema(result, "ChatsResponse", ApiSpec.spec())
     end
 
     test "it return a list of chats the current user is participating in, in descending order of updates",
@@ -160,7 +146,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       result =
         conn
         |> get("/api/v1/pleroma/chats")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       ids = Enum.map(result, & &1["id"])
 
@@ -169,34 +155,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
                chat_3.id |> to_string(),
                chat_1.id |> to_string()
              ]
-
-      assert_schema(result, "ChatsResponse", ApiSpec.spec())
-    end
-  end
-
-  describe "schemas" do
-    test "Chat example matches schema" do
-      api_spec = ApiSpec.spec()
-      schema = ChatResponse.schema()
-      assert_schema(schema.example, "ChatResponse", api_spec)
-    end
-
-    test "Chats example matches schema" do
-      api_spec = ApiSpec.spec()
-      schema = ChatsResponse.schema()
-      assert_schema(schema.example, "ChatsResponse", api_spec)
-    end
-
-    test "ChatMessage example matches schema" do
-      api_spec = ApiSpec.spec()
-      schema = ChatMessageResponse.schema()
-      assert_schema(schema.example, "ChatMessageResponse", api_spec)
-    end
-
-    test "ChatsMessage example matches schema" do
-      api_spec = ApiSpec.spec()
-      schema = ChatMessagesResponse.schema()
-      assert_schema(schema.example, "ChatMessagesResponse", api_spec)
     end
   end
 end
