@@ -26,6 +26,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
+  plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
+
   plug(:skip_plug, OAuthScopesPlug when action == :identity_proofs)
 
   plug(
@@ -82,8 +84,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   plug(RateLimiter, [name: :relations_actions] when action in @relationship_actions)
   plug(RateLimiter, [name: :app_account_creation] when action == :create)
   plug(:assign_account_by_id when action in @needs_account)
-
-  plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 

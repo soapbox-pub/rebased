@@ -41,7 +41,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
         type: :object,
         properties: %{
           allow_following_move: %Schema{type: :boolean},
-          background_image: %Schema{type: :boolean, nullable: true},
+          background_image: %Schema{type: :string, nullable: true},
           chat_token: %Schema{type: :string},
           confirmation_pending: %Schema{type: :boolean},
           hide_favorites: %Schema{type: :boolean},

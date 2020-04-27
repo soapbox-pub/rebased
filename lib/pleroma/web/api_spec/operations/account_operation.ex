@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias OpenApiSpex.Reference
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Account
+  alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.AccountCreateResponse
   alias Pleroma.Web.ApiSpec.Schemas.AccountFollowsRequest
@@ -38,7 +39,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.create",
       requestBody: request_body("Parameters", AccountCreateRequest, required: true),
       responses: %{
-        200 => Operation.response("Account", "application/json", AccountCreateResponse)
+        200 => Operation.response("Account", "application/json", AccountCreateResponse),
+        400 => Operation.response("Error", "application/json", ApiError),
+        403 => Operation.response("Error", "application/json", ApiError),
+        429 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -65,7 +69,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       security: [%{"oAuth" => ["write:accounts"]}],
       requestBody: request_body("Parameters", AccountUpdateCredentialsRequest, required: true),
       responses: %{
-        200 => Operation.response("Account", "application/json", Account)
+        200 => Operation.response("Account", "application/json", Account),
+        403 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -102,7 +107,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "View information about a profile.",
       parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
       responses: %{
-        200 => Operation.response("Account", "application/json", Account)
+        200 => Operation.response("Account", "application/json", Account),
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -140,7 +146,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           )
         ] ++ pagination_params(),
       responses: %{
-        200 => Operation.response("Statuses", "application/json", StatusesResponse)
+        200 => Operation.response("Statuses", "application/json", StatusesResponse),
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -204,7 +211,9 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         )
       ],
       responses: %{
-        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+        200 => Operation.response("Relationship", "application/json", AccountRelationship),
+        400 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -218,7 +227,9 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "Unfollow the given account",
       parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
       responses: %{
-        200 => Operation.response("Relationship", "application/json", AccountRelationship)
+        200 => Operation.response("Relationship", "application/json", AccountRelationship),
+        400 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -298,7 +309,9 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       security: [%{"oAuth" => ["follow", "write:follows"]}],
       requestBody: request_body("Parameters", AccountFollowsRequest, required: true),
       responses: %{
-        200 => Operation.response("Account", "application/json", AccountRelationship)
+        200 => Operation.response("Account", "application/json", AccountRelationship),
+        400 => Operation.response("Error", "application/json", ApiError),
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end

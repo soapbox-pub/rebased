@@ -56,7 +56,14 @@ defmodule Pleroma.Web.ConnCase do
         [conn: conn]
       end
 
-      defp json_response_and_validate_schema(conn, status \\ nil) do
+      defp json_response_and_validate_schema(
+             %{
+               private: %{
+                 open_api_spex: %{operation_id: op_id, operation_lookup: lookup, spec: spec}
+               }
+             } = conn,
+             status
+           ) do
         content_type =
           conn
           |> Plug.Conn.get_resp_header("content-type")
@@ -64,10 +71,12 @@ defmodule Pleroma.Web.ConnCase do
           |> String.split(";")
           |> List.first()
 
-        status = status || conn.status
+        status = Plug.Conn.Status.code(status)
 
-        %{private: %{open_api_spex: %{operation_id: op_id, operation_lookup: lookup, spec: spec}}} =
-          conn
+        unless lookup[op_id].responses[status] do
+          err = "Response schema not found for #{conn.status} #{conn.method} #{conn.request_path}"
+          flunk(err)
+        end
 
         schema = lookup[op_id].responses[status].content[content_type].schema
         json = json_response(conn, status)
@@ -90,6 +99,10 @@ defmodule Pleroma.Web.ConnCase do
               }\n#{inspect(json)}"
             )
         end
+      end
+
+      defp json_response_and_validate_schema(conn, _status) do
+        flunk("Response schema not found for #{conn.method} #{conn.request_path} #{conn.status}")
       end
 
       defp ensure_federating_or_authenticated(conn, url, user) do
