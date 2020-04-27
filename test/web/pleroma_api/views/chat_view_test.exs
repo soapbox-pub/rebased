@@ -21,8 +21,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatViewTest do
 
     assert represented_chat == %{
              id: "#{chat.id}",
-             recipient: recipient.ap_id,
-             recipient_account: AccountView.render("show.json", user: recipient),
+             account: AccountView.render("show.json", user: recipient),
              unread: 0
            }
   end

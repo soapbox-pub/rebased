@@ -23,12 +23,12 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       operationId: "ChatController.create",
       parameters: [
         Operation.parameter(
-          :ap_id,
+          :id,
           :path,
           :string,
-          "The ActivityPub id of the recipient of this chat.",
+          "The account id of the recipient of this chat",
           required: true,
-          example: "https://lain.com/users/lain"
+          example: "someflakeid"
         )
       ],
       responses: %{
@@ -128,8 +128,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       items: ChatResponse,
       example: [
         %{
-          "recipient" => "https://dontbulling.me/users/lain",
-          "recipient_account" => %{
+          "account" => %{
             "pleroma" => %{
               "is_admin" => false,
               "confirmation_pending" => false,
@@ -202,10 +201,10 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
           "content" => "Check this out :firefox:",
           "id" => "13",
           "chat_id" => "1",
-          "actor" => "https://dontbulling.me/users/lain"
+          "actor_id" => "someflakeid"
         },
         %{
-          "actor" => "https://dontbulling.me/users/lain",
+          "actor_id" => "someflakeid",
           "content" => "Whats' up?",
           "id" => "12",
           "chat_id" => "1",

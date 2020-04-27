@@ -12,15 +12,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatResponse do
     description: "Response schema for a Chat",
     type: :object,
     properties: %{
-      id: %Schema{type: :string},
-      recipient: %Schema{type: :string},
-      # TODO: Make this reference the account structure.
-      recipient_account: %Schema{type: :object},
-      unread: %Schema{type: :integer}
+      id: %Schema{type: :string, nullable: false},
+      account: %Schema{type: :object, nullable: false},
+      unread: %Schema{type: :integer, nullable: false}
     },
     example: %{
-      "recipient" => "https://dontbulling.me/users/lain",
-      "recipient_account" => %{
+      "account" => %{
         "pleroma" => %{
           "is_admin" => false,
           "confirmation_pending" => false,

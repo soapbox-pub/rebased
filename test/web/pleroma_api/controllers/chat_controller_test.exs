@@ -88,7 +88,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
     end
   end
 
-  describe "POST /api/v1/pleroma/chats/by-ap-id/:id" do
+  describe "POST /api/v1/pleroma/chats/by-account-id/:id" do
     setup do: oauth_access(["write:statuses"])
 
     test "it creates or returns a chat", %{conn: conn} do
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       result =
         conn
-        |> post("/api/v1/pleroma/chats/by-ap-id/#{URI.encode_www_form(other_user.ap_id)}")
+        |> post("/api/v1/pleroma/chats/by-account-id/#{other_user.id}")
         |> json_response_and_validate_schema(200)
 
       assert result["id"]

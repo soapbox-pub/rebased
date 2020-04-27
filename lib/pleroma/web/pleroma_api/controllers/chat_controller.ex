@@ -99,9 +99,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   end
 
   def create(%{assigns: %{user: user}} = conn, params) do
-    recipient = params[:ap_id]
-
-    with {:ok, %Chat{} = chat} <- Chat.get_or_create(user.id, recipient) do
+    with %User{ap_id: recipient} <- User.get_by_id(params[:id]),
+         {:ok, %Chat{} = chat} <- Chat.get_or_create(user.id, recipient) do
       conn
       |> put_view(ChatView)
       |> render("show.json", chat: chat)

@@ -14,8 +14,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
 
     %{
       id: chat.id |> to_string(),
-      recipient: chat.recipient,
-      recipient_account: AccountView.render("show.json", Map.put(opts, :user, recipient)),
+      account: AccountView.render("show.json", Map.put(opts, :user, recipient)),
       unread: chat.unread
     }
   end
