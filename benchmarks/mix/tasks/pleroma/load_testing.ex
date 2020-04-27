@@ -44,6 +44,7 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
   ]
 
   def run(args) do
+    Logger.configure(level: :error)
     Mix.Pleroma.start_pleroma()
     clean_tables()
     {opts, _} = OptionParser.parse!(args, strict: @switches, aliases: @aliases)

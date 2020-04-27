@@ -279,7 +279,7 @@ defmodule Pleroma.LoadTesting.Activities do
     actor = get_actor(group, user, friends, non_friends)
 
     with activity_id when not is_nil(activity_id) <- get_random_create_activity_id(),
-         {:ok, _activity, _object} <- CommonAPI.favorite(activity_id, actor) do
+         {:ok, _activity} <- CommonAPI.favorite(actor, activity_id) do
       :ok
     else
       {:error, _} ->
@@ -313,7 +313,7 @@ defmodule Pleroma.LoadTesting.Activities do
     tasks = get_reply_tasks(visibility, group)
 
     {:ok, activity} =
-      CommonAPI.post(user, %{"status" => "Simple status", "visibility" => "unlisted"})
+      CommonAPI.post(user, %{"status" => "Simple status", "visibility" => visibility})
 
     acc = {activity.id, ["@" <> actor.nickname, "reply to status"]}
     insert_replies(tasks, visibility, user, friends, non_friends, acc)

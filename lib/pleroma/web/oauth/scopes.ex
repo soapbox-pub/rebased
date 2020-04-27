@@ -17,12 +17,8 @@ defmodule Pleroma.Web.OAuth.Scopes do
   """
   @spec fetch_scopes(map() | struct(), list()) :: list()
 
-  def fetch_scopes(%Pleroma.Web.ApiSpec.Schemas.AppCreateRequest{scopes: scopes}, default) do
-    parse_scopes(scopes, default)
-  end
-
   def fetch_scopes(params, default) do
-    parse_scopes(params["scope"] || params["scopes"], default)
+    parse_scopes(params["scope"] || params["scopes"] || params[:scopes], default)
   end
 
   def parse_scopes(scopes, _default) when is_list(scopes) do
