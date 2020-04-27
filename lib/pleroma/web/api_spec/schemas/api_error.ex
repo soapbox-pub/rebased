@@ -2,17 +2,18 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ApiSpec.Schemas.AccountFollowsRequest do
+defmodule Pleroma.Web.ApiSpec.Schemas.ApiError do
   alias OpenApiSpex.Schema
+
   require OpenApiSpex
 
   OpenApiSpex.schema(%{
-    title: "AccountFollowsRequest",
-    description: "POST body for muting an account",
+    title: "ApiError",
+    description: "Response schema for API error",
     type: :object,
-    properties: %{
-      uri: %Schema{type: :string, format: :uri}
-    },
-    required: [:uri]
+    properties: %{error: %Schema{type: :string}},
+    example: %{
+      "error" => "Something went wrong"
+    }
   })
 end

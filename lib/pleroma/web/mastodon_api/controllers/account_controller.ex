@@ -104,8 +104,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :fullname
       ])
       |> Map.put(:nickname, params.username)
-      |> Map.put(:fullname, params.fullname || params.username)
-      |> Map.put(:bio, params.bio || "")
+      |> Map.put(:fullname, Map.get(params, :fullname, params.username))
       |> Map.put(:confirm, params.password)
       |> Map.put(:trusted_app, app.trusted)
 
@@ -158,7 +157,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
     params =
       params
-      |> Map.from_struct()
       |> Enum.filter(fn {_, value} -> not is_nil(value) end)
       |> Enum.into(%{})
 
@@ -217,11 +215,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       Enum.map(fields, fn {_, v} -> v end)
     else
       Enum.map(fields, fn
-        %Pleroma.Web.ApiSpec.Schemas.AccountAttributeField{} = field ->
-          %{"name" => field.name, "value" => field.value}
-
-        field ->
-          field
+        %{} = field -> %{"name" => field.name, "value" => field.value}
+        field -> field
       end)
     end
   end

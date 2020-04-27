@@ -2,14 +2,14 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ApiSpec.Schemas.AccountEmoji do
+defmodule Pleroma.Web.ApiSpec.Schemas.Emoji do
   alias OpenApiSpex.Schema
 
   require OpenApiSpex
 
   OpenApiSpex.schema(%{
-    title: "AccountEmoji",
-    description: "Response schema for account custom fields",
+    title: "Emoji",
+    description: "Response schema for an emoji",
     type: :object,
     properties: %{
       shortcode: %Schema{type: :string},

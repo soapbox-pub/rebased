@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.Schemas.Status do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Account
-  alias Pleroma.Web.ApiSpec.Schemas.AccountEmoji
+  alias Pleroma.Web.ApiSpec.Schemas.Emoji
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Poll
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
@@ -41,7 +41,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       },
       content: %Schema{type: :string, format: :html},
       created_at: %Schema{type: :string, format: "date-time"},
-      emojis: %Schema{type: :array, items: AccountEmoji},
+      emojis: %Schema{type: :array, items: Emoji},
       favourited: %Schema{type: :boolean},
       favourites_count: %Schema{type: :integer},
       id: FlakeID,

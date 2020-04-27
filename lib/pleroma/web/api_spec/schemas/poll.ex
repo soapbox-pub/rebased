@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Schemas.AccountEmoji
+  alias Pleroma.Web.ApiSpec.Schemas.Emoji
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
 
   require OpenApiSpex
@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
       multiple: %Schema{type: :boolean},
       votes_count: %Schema{type: :integer},
       voted: %Schema{type: :boolean},
-      emojis: %Schema{type: :array, items: AccountEmoji},
+      emojis: %Schema{type: :array, items: Emoji},
       options: %Schema{
         type: :array,
         items: %Schema{

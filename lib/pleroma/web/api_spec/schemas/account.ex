@@ -4,10 +4,10 @@
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Account do
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Schemas.AccountEmoji
   alias Pleroma.Web.ApiSpec.Schemas.AccountField
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationship
   alias Pleroma.Web.ApiSpec.Schemas.ActorType
+  alias Pleroma.Web.ApiSpec.Schemas.Emoji
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       bot: %Schema{type: :boolean},
       created_at: %Schema{type: :string, format: "date-time"},
       display_name: %Schema{type: :string},
-      emojis: %Schema{type: :array, items: AccountEmoji},
+      emojis: %Schema{type: :array, items: Emoji},
       fields: %Schema{type: :array, items: AccountField},
       follow_requests_count: %Schema{type: :integer},
       followers_count: %Schema{type: :integer},
