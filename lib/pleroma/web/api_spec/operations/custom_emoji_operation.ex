@@ -4,7 +4,8 @@
 
 defmodule Pleroma.Web.ApiSpec.CustomEmojiOperation do
   alias OpenApiSpex.Operation
-  alias Pleroma.Web.ApiSpec.Schemas.CustomEmojisResponse
+  alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Schemas.CustomEmoji
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
@@ -18,8 +19,43 @@ defmodule Pleroma.Web.ApiSpec.CustomEmojiOperation do
       description: "Returns custom emojis that are available on the server.",
       operationId: "CustomEmojiController.index",
       responses: %{
-        200 => Operation.response("Custom Emojis", "application/json", CustomEmojisResponse)
+        200 => Operation.response("Custom Emojis", "application/json", custom_emojis_resposnse())
       }
+    }
+  end
+
+  defp custom_emojis_resposnse do
+    %Schema{
+      title: "CustomEmojisResponse",
+      description: "Response schema for custom emojis",
+      type: :array,
+      items: CustomEmoji,
+      example: [
+        %{
+          "category" => "Fun",
+          "shortcode" => "blank",
+          "static_url" => "https://lain.com/emoji/blank.png",
+          "tags" => ["Fun"],
+          "url" => "https://lain.com/emoji/blank.png",
+          "visible_in_picker" => false
+        },
+        %{
+          "category" => "Gif,Fun",
+          "shortcode" => "firefox",
+          "static_url" => "https://lain.com/emoji/Firefox.gif",
+          "tags" => ["Gif", "Fun"],
+          "url" => "https://lain.com/emoji/Firefox.gif",
+          "visible_in_picker" => true
+        },
+        %{
+          "category" => "pack:mixed",
+          "shortcode" => "sadcat",
+          "static_url" => "https://lain.com/emoji/mixed/sadcat.png",
+          "tags" => ["pack:mixed"],
+          "url" => "https://lain.com/emoji/mixed/sadcat.png",
+          "visible_in_picker" => true
+        }
+      ]
     }
   end
 end

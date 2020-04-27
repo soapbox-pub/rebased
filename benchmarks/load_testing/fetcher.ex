@@ -41,6 +41,7 @@ defmodule Pleroma.LoadTesting.Fetcher do
     fetch_notifications(user)
     fetch_favourites(user)
     fetch_long_thread(user)
+    fetch_timelines_with_reply_filtering(user)
   end
 
   defp render_views(user) do
@@ -491,6 +492,60 @@ defmodule Pleroma.LoadTesting.Fetcher do
           activity: private_activity,
           activities: private_context
         }
+      },
+      formatters: formatters()
+    )
+  end
+
+  defp fetch_timelines_with_reply_filtering(user) do
+    public_params = opts_for_public_timeline(user)
+
+    Benchee.run(
+      %{
+        "Public timeline without reply filtering" => fn ->
+          ActivityPub.fetch_public_activities(public_params)
+        end,
+        "Public timeline with reply filtering - following" => fn ->
+          public_params
+          |> Map.put("reply_visibility", "following")
+          |> Map.put("reply_filtering_user", user)
+          |> ActivityPub.fetch_public_activities()
+        end,
+        "Public timeline with reply filtering - self" => fn ->
+          public_params
+          |> Map.put("reply_visibility", "self")
+          |> Map.put("reply_filtering_user", user)
+          |> ActivityPub.fetch_public_activities()
+        end
+      },
+      formatters: formatters()
+    )
+
+    private_params = opts_for_home_timeline(user)
+
+    recipients = [user.ap_id | User.following(user)]
+
+    Benchee.run(
+      %{
+        "Home timeline without reply filtering" => fn ->
+          ActivityPub.fetch_activities(recipients, private_params)
+        end,
+        "Home timeline with reply filtering - following" => fn ->
+          private_params =
+            private_params
+            |> Map.put("reply_filtering_user", user)
+            |> Map.put("reply_visibility", "following")
+
+          ActivityPub.fetch_activities(recipients, private_params)
+        end,
+        "Home timeline with reply filtering - self" => fn ->
+          private_params =
+            private_params
+            |> Map.put("reply_filtering_user", user)
+            |> Map.put("reply_visibility", "self")
+
+          ActivityPub.fetch_activities(recipients, private_params)
+        end
       },
       formatters: formatters()
     )

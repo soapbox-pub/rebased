@@ -832,6 +832,7 @@ defmodule Pleroma.User do
   def set_cache(%User{} = user) do
     Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
     Cachex.put(:user_cache, "nickname:#{user.nickname}", user)
+    Cachex.put(:user_cache, "friends_ap_ids:#{user.nickname}", get_user_friends_ap_ids(user))
     {:ok, user}
   end
 
@@ -847,9 +848,22 @@ defmodule Pleroma.User do
     end
   end
 
+  def get_user_friends_ap_ids(user) do
+    from(u in User.get_friends_query(user), select: u.ap_id)
+    |> Repo.all()
+  end
+
+  @spec get_cached_user_friends_ap_ids(User.t()) :: [String.t()]
+  def get_cached_user_friends_ap_ids(user) do
+    Cachex.fetch!(:user_cache, "friends_ap_ids:#{user.ap_id}", fn _ ->
+      get_user_friends_ap_ids(user)
+    end)
+  end
+
   def invalidate_cache(user) do
     Cachex.del(:user_cache, "ap_id:#{user.ap_id}")
     Cachex.del(:user_cache, "nickname:#{user.nickname}")
+    Cachex.del(:user_cache, "friends_ap_ids:#{user.ap_id}")
   end
 
   @spec get_cached_by_ap_id(String.t()) :: User.t() | nil

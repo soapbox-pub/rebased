@@ -398,36 +398,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
-  @spec like(User.t(), Object.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t(), Object.t()} | {:error, any()}
-  def like(user, object, activity_id \\ nil, local \\ true) do
-    with {:ok, result} <- Repo.transaction(fn -> do_like(user, object, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_like(
-         %User{ap_id: ap_id} = user,
-         %Object{data: %{"id" => _}} = object,
-         activity_id,
-         local
-       ) do
-    with nil <- get_existing_like(ap_id, object),
-         like_data <- make_like_data(user, object, activity_id),
-         {:ok, activity} <- insert(like_data, local),
-         {:ok, object} <- add_like_to_object(activity, object),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity, object}
-    else
-      %Activity{} = activity ->
-        {:ok, activity, object}
-
-      {:error, error} ->
-        Repo.rollback(error)
-    end
-  end
-
   @spec unlike(User.t(), Object.t(), String.t() | nil, boolean()) ::
           {:ok, Activity.t(), Activity.t(), Object.t()} | {:ok, Object.t()} | {:error, any()}
   def unlike(%User{} = actor, %Object{} = object, activity_id \\ nil, local \\ true) do
@@ -468,6 +438,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp do_announce(user, object, activity_id, local, public) do
     with true <- is_announceable?(object, user, public),
+         object <- Object.get_by_id(object.id),
          announce_data <- make_announce_data(user, object, activity_id, public),
          {:ok, activity} <- insert(announce_data, local),
          {:ok, object} <- add_announce_to_object(activity, object),
@@ -1077,6 +1048,41 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
+  defp restrict_replies(query, %{
+         "reply_filtering_user" => user,
+         "reply_visibility" => "self"
+       }) do
+    from(
+      [activity, object] in query,
+      where:
+        fragment(
+          "?->>'inReplyTo' is null OR ? = ANY(?)",
+          object.data,
+          ^user.ap_id,
+          activity.recipients
+        )
+    )
+  end
+
+  defp restrict_replies(query, %{
+         "reply_filtering_user" => user,
+         "reply_visibility" => "following"
+       }) do
+    from(
+      [activity, object] in query,
+      where:
+        fragment(
+          "?->>'inReplyTo' is null OR ? && array_remove(?, ?) OR ? = ?",
+          object.data,
+          ^[user.ap_id | User.get_cached_user_friends_ap_ids(user)],
+          activity.recipients,
+          activity.actor,
+          activity.actor,
+          ^user.ap_id
+        )
+    )
+  end
+
   defp restrict_replies(query, _), do: query
 
   defp restrict_reblogs(query, %{"exclude_reblogs" => val}) when val in [true, "true", "1"] do
@@ -1296,6 +1302,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
+    |> restrict_replies(opts)
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)
     |> restrict_tag_all(opts)
@@ -1310,7 +1317,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_media(opts)
     |> restrict_visibility(opts)
     |> restrict_thread_visibility(opts, config)
-    |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
