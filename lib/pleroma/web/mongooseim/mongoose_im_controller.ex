@@ -44,4 +44,3 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
     end
   end
 end
-
