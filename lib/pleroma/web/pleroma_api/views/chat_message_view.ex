@@ -6,9 +6,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageView do
   use Pleroma.Web, :view
 
   alias Pleroma.Chat
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.User
 
   def render(
         "show.json",
