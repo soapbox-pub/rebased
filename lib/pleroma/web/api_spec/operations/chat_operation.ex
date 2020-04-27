@@ -4,11 +4,11 @@
 
 defmodule Pleroma.Web.ApiSpec.ChatOperation do
   alias OpenApiSpex.Operation
+  alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.ChatMessageCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.ChatMessageResponse
   alias Pleroma.Web.ApiSpec.Schemas.ChatResponse
-  alias OpenApiSpex.Schema
 
   @spec open_api_operation(atom) :: Operation.t()
   def open_api_operation(action) do
@@ -120,7 +120,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     }
   end
 
-  def chats_response() do
+  def chats_response do
     %Schema{
       title: "ChatsResponse",
       description: "Response schema for multiple Chats",
@@ -182,7 +182,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     }
   end
 
-  def chat_messages_response() do
+  def chat_messages_response do
     %Schema{
       title: "ChatMessagesResponse",
       description: "Response schema for multiple ChatMessages",
