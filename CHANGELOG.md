@@ -41,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Logger configuration through AdminFE
 - HTTP Basic Authentication permissions issue
 - ObjectAgePolicy didn't filter out old messages
+- Mastodon API: do not create a following relationship if the corresponding follow request doesn't exist when calling `POST /api/v1/follow_requests/:id/authorize`
 
 ### Added
 - NodeInfo: ObjectAgePolicy settings to the `federation` list.
