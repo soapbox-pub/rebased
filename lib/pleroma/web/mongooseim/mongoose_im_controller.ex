@@ -27,8 +27,13 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
 
   def check_password(conn, %{"user" => username, "pass" => password}) do
     user = Repo.get_by(User, nickname: username, local: true)
+    
+    state = case user do
+      nil -> nil
+      _ -> User.account_status(user)
+    end
 
-    case User.account_status(user) do
+    case state do
       :deactivated ->
         conn
         |> put_status(:not_found)

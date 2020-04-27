@@ -34,6 +34,7 @@ defmodule Pleroma.Web.MongooseIMController do
 
   test "/check_password", %{conn: conn} do
     user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt("cool"))
+    _deactivated_user = insert(:user, nickname: "konata", local: false, deactivated: true)
 
     res =
       conn
@@ -48,6 +49,14 @@ defmodule Pleroma.Web.MongooseIMController do
       |> json_response(403)
 
     assert res == false
+
+    res =
+      conn
+      |> get(mongoose_im_path(conn, :check_password), user: "konata", pass: "1337")
+      |> json_response(404)
+
+    assert res == false
+
 
     res =
       conn
