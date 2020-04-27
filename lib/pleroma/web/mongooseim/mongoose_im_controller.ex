@@ -26,21 +26,36 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   end
 
   def check_password(conn, %{"user" => username, "pass" => password}) do
-    with %User{password_hash: password_hash} <-
-           Repo.get_by(User, nickname: username, local: true),
-         true <- Pbkdf2.checkpw(password, password_hash) do
-      conn
-      |> json(true)
-    else
-      false ->
-        conn
-        |> put_status(:forbidden)
-        |> json(false)
+    user = Repo.get_by(User, nickname: username, local: true)
 
-      _ ->
+    case User.account_status(user) do
+      :deactivated ->
         conn
         |> put_status(:not_found)
         |> json(false)
+
+      :confirmation_pending ->
+        conn
+        |> put_status(:not_found)
+        |> json(false)
+
+      _ ->
+        with %User{password_hash: password_hash} <-
+               user,
+             true <- Pbkdf2.checkpw(password, password_hash) do
+          conn
+          |> json(true)
+        else
+          false ->
+            conn
+            |> put_status(:forbidden)
+            |> json(false)
+
+          _ ->
+            conn
+            |> put_status(:not_found)
+            |> json(false)
+        end
     end
   end
 end
