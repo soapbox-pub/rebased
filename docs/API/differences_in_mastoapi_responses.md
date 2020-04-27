@@ -191,3 +191,17 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `captcha_solution`: optional, contains provider-specific captcha solution,
 - `captcha_token`: optional, contains provider-specific captcha token
 - `token`: invite token required when the registrations aren't public.
+
+## Instance
+
+`GET /api/v1/instance` has additional fields
+
+- `max_toot_chars`: The maximum characters per post
+- `poll_limits`: The limits of polls
+- `upload_limit`: The maximum upload file size
+- `avatar_upload_limit`: The same for avatars
+- `background_upload_limit`: The same for backgrounds
+- `banner_upload_limit`: The same for banners
+- `pleroma.metadata.features`: A list of supported features
+- `pleroma.metadata.federation`: The federation restrictions of this instance
+- `vapid_public_key`: The public key needed for push messages
