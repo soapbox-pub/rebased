@@ -7,9 +7,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
   alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.ChatMessageCreateRequest
   alias Pleroma.Web.ApiSpec.Schemas.ChatMessageResponse
-  alias Pleroma.Web.ApiSpec.Schemas.ChatMessagesResponse
   alias Pleroma.Web.ApiSpec.Schemas.ChatResponse
-  alias Pleroma.Web.ApiSpec.Schemas.ChatsResponse
+  alias OpenApiSpex.Schema
 
   @spec open_api_operation(atom) :: Operation.t()
   def open_api_operation(action) do
@@ -34,7 +33,11 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       ],
       responses: %{
         200 =>
-          Operation.response("The created or existing chat", "application/json", ChatResponse)
+          Operation.response(
+            "The created or existing chat",
+            "application/json",
+            ChatResponse
+          )
       },
       security: [
         %{
@@ -55,7 +58,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
         Operation.parameter(:max_id, :query, :string, "Return only chats before this id")
       ],
       responses: %{
-        200 => Operation.response("The chats of the user", "application/json", ChatsResponse)
+        200 => Operation.response("The chats of the user", "application/json", chats_response())
       },
       security: [
         %{
@@ -78,7 +81,11 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       ],
       responses: %{
         200 =>
-          Operation.response("The messages in the chat", "application/json", ChatMessagesResponse)
+          Operation.response(
+            "The messages in the chat",
+            "application/json",
+            chat_messages_response()
+          )
       },
       security: [
         %{
@@ -108,6 +115,102 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       security: [
         %{
           "oAuth" => ["write"]
+        }
+      ]
+    }
+  end
+
+  def chats_response() do
+    %Schema{
+      title: "ChatsResponse",
+      description: "Response schema for multiple Chats",
+      type: :array,
+      items: ChatResponse,
+      example: [
+        %{
+          "recipient" => "https://dontbulling.me/users/lain",
+          "recipient_account" => %{
+            "pleroma" => %{
+              "is_admin" => false,
+              "confirmation_pending" => false,
+              "hide_followers_count" => false,
+              "is_moderator" => false,
+              "hide_favorites" => true,
+              "ap_id" => "https://dontbulling.me/users/lain",
+              "hide_follows_count" => false,
+              "hide_follows" => false,
+              "background_image" => nil,
+              "skip_thread_containment" => false,
+              "hide_followers" => false,
+              "relationship" => %{},
+              "tags" => []
+            },
+            "avatar" =>
+              "https://dontbulling.me/media/065a4dd3c6740dab13ff9c71ec7d240bb9f8be9205c9e7467fb2202117da1e32.jpg",
+            "following_count" => 0,
+            "header_static" => "https://originalpatchou.li/images/banner.png",
+            "source" => %{
+              "sensitive" => false,
+              "note" => "lain",
+              "pleroma" => %{
+                "discoverable" => false,
+                "actor_type" => "Person"
+              },
+              "fields" => []
+            },
+            "statuses_count" => 1,
+            "locked" => false,
+            "created_at" => "2020-04-16T13:40:15.000Z",
+            "display_name" => "lain",
+            "fields" => [],
+            "acct" => "lain@dontbulling.me",
+            "id" => "9u6Qw6TAZANpqokMkK",
+            "emojis" => [],
+            "avatar_static" =>
+              "https://dontbulling.me/media/065a4dd3c6740dab13ff9c71ec7d240bb9f8be9205c9e7467fb2202117da1e32.jpg",
+            "username" => "lain",
+            "followers_count" => 0,
+            "header" => "https://originalpatchou.li/images/banner.png",
+            "bot" => false,
+            "note" => "lain",
+            "url" => "https://dontbulling.me/users/lain"
+          },
+          "id" => "1",
+          "unread" => 2
+        }
+      ]
+    }
+  end
+
+  def chat_messages_response() do
+    %Schema{
+      title: "ChatMessagesResponse",
+      description: "Response schema for multiple ChatMessages",
+      type: :array,
+      items: ChatMessageResponse,
+      example: [
+        %{
+          "emojis" => [
+            %{
+              "static_url" => "https://dontbulling.me/emoji/Firefox.gif",
+              "visible_in_picker" => false,
+              "shortcode" => "firefox",
+              "url" => "https://dontbulling.me/emoji/Firefox.gif"
+            }
+          ],
+          "created_at" => "2020-04-21T15:11:46.000Z",
+          "content" => "Check this out :firefox:",
+          "id" => "13",
+          "chat_id" => "1",
+          "actor" => "https://dontbulling.me/users/lain"
+        },
+        %{
+          "actor" => "https://dontbulling.me/users/lain",
+          "content" => "Whats' up?",
+          "id" => "12",
+          "chat_id" => "1",
+          "emojis" => [],
+          "created_at" => "2020-04-21T15:06:45.000Z"
         }
       ]
     }
