@@ -1,13 +1,24 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.Recipients do
   use Ecto.Type
 
-  def type, do: {:array, :string}
+  alias Pleroma.Web.ActivityPub.ObjectValidators.Types.ObjectID
+
+  def type, do: {:array, ObjectID}
 
   def cast(object) when is_binary(object) do
     cast([object])
   end
 
-  def cast([_ | _] = data), do: {:ok, data}
+  def cast(data) when is_list(data) do
+    data
+    |> Enum.reduce({:ok, []}, fn element, acc ->
+      case {acc, ObjectID.cast(element)} do
+        {:error, _} -> :error
+        {_, :error} -> :error
+        {{:ok, list}, {:ok, id}} -> {:ok, [id | list]}
+      end
+    end)
+  end
 
   def cast(_) do
     :error
