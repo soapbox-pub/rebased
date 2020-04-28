@@ -44,6 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put("type", ["Create", "Announce"])
       |> Map.put("blocking_user", user)
       |> Map.put("muting_user", user)
+      |> Map.put("reply_filtering_user", user)
       |> Map.put("user", user)
 
     recipients = [user.ap_id | User.following(user)]
@@ -109,6 +110,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         |> Map.put("local_only", local_only)
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)
+        |> Map.put("reply_filtering_user", user)
         |> ActivityPub.fetch_public_activities()
 
       conn

@@ -21,6 +21,60 @@ defmodule Pleroma.Web.CommonAPITest do
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
 
+  test "favoriting race condition" do
+    user = insert(:user)
+    users_serial = insert_list(10, :user)
+    users = insert_list(10, :user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "."})
+
+    users_serial
+    |> Enum.map(fn user ->
+      CommonAPI.favorite(user, activity.id)
+    end)
+
+    object = Object.get_by_ap_id(activity.data["object"])
+    assert object.data["like_count"] == 10
+
+    users
+    |> Enum.map(fn user ->
+      Task.async(fn ->
+        CommonAPI.favorite(user, activity.id)
+      end)
+    end)
+    |> Enum.map(&Task.await/1)
+
+    object = Object.get_by_ap_id(activity.data["object"])
+    assert object.data["like_count"] == 20
+  end
+
+  test "repeating race condition" do
+    user = insert(:user)
+    users_serial = insert_list(10, :user)
+    users = insert_list(10, :user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "."})
+
+    users_serial
+    |> Enum.map(fn user ->
+      CommonAPI.repeat(activity.id, user)
+    end)
+
+    object = Object.get_by_ap_id(activity.data["object"])
+    assert object.data["announcement_count"] == 10
+
+    users
+    |> Enum.map(fn user ->
+      Task.async(fn ->
+        CommonAPI.repeat(activity.id, user)
+      end)
+    end)
+    |> Enum.map(&Task.await/1)
+
+    object = Object.get_by_ap_id(activity.data["object"])
+    assert object.data["announcement_count"] == 20
+  end
+
   test "when replying to a conversation / participation, it will set the correct context id even if no explicit reply_to is given" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
@@ -256,6 +310,16 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, user)
     end
 
+    test "can't repeat a repeat" do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:ok, %Activity{} = announce, _} = CommonAPI.repeat(activity.id, other_user)
+
+      refute match?({:ok, %Activity{}, _}, CommonAPI.repeat(announce.id, user))
+    end
+
     test "repeating a status privately" do
       user = insert(:user)
       other_user = insert(:user)
@@ -285,8 +349,8 @@ defmodule Pleroma.Web.CommonAPITest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
-      {:ok, %Activity{} = activity, object} = CommonAPI.repeat(activity.id, user)
-      {:ok, ^activity, ^object} = CommonAPI.repeat(activity.id, user)
+      {:ok, %Activity{} = announce, object} = CommonAPI.repeat(activity.id, user)
+      {:ok, ^announce, ^object} = CommonAPI.repeat(activity.id, user)
     end
 
     test "favoriting a status twice returns ok, but without the like activity" do
@@ -360,7 +424,9 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert {:ok, ^activity} = CommonAPI.unpin(activity.id, user)
+      id = activity.id
+
+      assert match?({:ok, %{id: ^id}}, CommonAPI.unpin(activity.id, user))
 
       user = refresh_record(user)
 

@@ -6,8 +6,6 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
-  alias Pleroma.Web.ApiSpec.Schemas.AppCreateRequest
-  alias Pleroma.Web.ApiSpec.Schemas.AppCreateResponse
 
   @spec open_api_operation(atom) :: Operation.t()
   def open_api_operation(action) do
@@ -22,9 +20,9 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
       summary: "Create an application",
       description: "Create a new application to obtain OAuth2 credentials",
       operationId: "AppController.create",
-      requestBody: Helpers.request_body("Parameters", AppCreateRequest, required: true),
+      requestBody: Helpers.request_body("Parameters", create_request(), required: true),
       responses: %{
-        200 => Operation.response("App", "application/json", AppCreateResponse),
+        200 => Operation.response("App", "application/json", create_response()),
         422 =>
           Operation.response(
             "Unprocessable Entity",
@@ -51,11 +49,7 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
       summary: "Verify your app works",
       description: "Confirm that the app's OAuth2 credentials work.",
       operationId: "AppController.verify_credentials",
-      security: [
-        %{
-          "oAuth" => ["read"]
-        }
-      ],
+      security: [%{"oAuth" => ["read"]}],
       responses: %{
         200 =>
           Operation.response("App", "application/json", %Schema{
@@ -90,6 +84,60 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
               }
             }
           )
+      }
+    }
+  end
+
+  defp create_request do
+    %Schema{
+      title: "AppCreateRequest",
+      description: "POST body for creating an app",
+      type: :object,
+      properties: %{
+        client_name: %Schema{type: :string, description: "A name for your application."},
+        redirect_uris: %Schema{
+          type: :string,
+          description:
+            "Where the user should be redirected after authorization. To display the authorization code to the user instead of redirecting to a web page, use `urn:ietf:wg:oauth:2.0:oob` in this parameter."
+        },
+        scopes: %Schema{
+          type: :string,
+          description: "Space separated list of scopes",
+          default: "read"
+        },
+        website: %Schema{type: :string, description: "A URL to the homepage of your app"}
+      },
+      required: [:client_name, :redirect_uris],
+      example: %{
+        "client_name" => "My App",
+        "redirect_uris" => "https://myapp.com/auth/callback",
+        "website" => "https://myapp.com/"
+      }
+    }
+  end
+
+  defp create_response do
+    %Schema{
+      title: "AppCreateResponse",
+      description: "Response schema for an app",
+      type: :object,
+      properties: %{
+        id: %Schema{type: :string},
+        name: %Schema{type: :string},
+        client_id: %Schema{type: :string},
+        client_secret: %Schema{type: :string},
+        redirect_uri: %Schema{type: :string},
+        vapid_key: %Schema{type: :string},
+        website: %Schema{type: :string, nullable: true}
+      },
+      example: %{
+        "id" => "123",
+        "name" => "My App",
+        "client_id" => "TWhM-tNSuncnqN7DBJmoyeLnk6K3iJJ71KKXxgL1hPM",
+        "client_secret" => "ZEaFUFmF0umgBX1qKJDjaU99Q31lDkOU8NutzTOoliw",
+        "vapid_key" =>
+          "BCk-QqERU0q-CfYZjcuB6lnyyOYfJ2AifKqfeGIm7Z-HiTU5T9eTG5GxVA0_OH5mMlI4UkkDTpaZwozy0TzdZ2M=",
+        "website" => "https://myapp.com/"
       }
     }
   end
