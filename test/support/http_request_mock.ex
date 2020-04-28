@@ -308,19 +308,19 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://bittube.video/accounts/hanimated.moh", _, _, _) do
+  def get("https://peertube.social/accounts/craigmaloney", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/hanimated.json")
+       body: File.read!("test/fixtures/tesla_mock/craigmaloney.json")
      }}
   end
 
-  def get("https://bittube.video/videos/watch/2aad7dfb-5c75-4ee6-a9ed-08436af0558b", _, _, _) do
+  def get("https://peertube.social/videos/watch/278d2b7c-0f38-4aaa-afe6-9ecc0c4a34fe", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!("test/fixtures/tesla_mock/bittube-video.json")
+       body: File.read!("test/fixtures/tesla_mock/peertube-social.json")
      }}
   end
 

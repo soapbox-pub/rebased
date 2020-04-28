@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   A module to handle coding from internal to wire ActivityPub and back.
   """
   alias Pleroma.Activity
+  alias Pleroma.EarmarkRenderer
   alias Pleroma.FollowingRelationship
   alias Pleroma.Object
   alias Pleroma.Object.Containment
@@ -35,7 +36,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_actor
     |> fix_url
     |> fix_attachments
-    |> fix_media_type
     |> fix_context
     |> fix_in_reply_to(options)
     |> fix_emoji
@@ -44,6 +44,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_addressing
     |> fix_summary
     |> fix_type(options)
+    |> fix_content
   end
 
   def fix_summary(%{"summary" => nil} = object) do
@@ -358,11 +359,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_type(object, _), do: object
 
-  defp fix_media_type(%{"mediaType" => _} = object) do
-    Map.put(object, "mediaType", "text/html")
+  defp fix_content(%{"mediaType" => "text/markdown", "content" => content} = object)
+       when is_binary(content) do
+    html_content =
+      content
+      |> Earmark.as_html!(%Earmark.Options{renderer: EarmarkRenderer})
+      |> Pleroma.HTML.filter_tags()
+
+    Map.merge(object, %{"content" => html_content, "mediaType" => "text/html"})
   end
 
-  defp fix_media_type(object), do: object
+  defp fix_content(object), do: object
 
   defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
     with true <- id =~ "follows",
