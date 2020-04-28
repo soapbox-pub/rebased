@@ -30,8 +30,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     result
   end
 
-  def handle(%{data: %{"type" => "Create", "object" => object_id}} = activity, meta) do
-    object = Object.get_by_ap_id(object_id)
+  def handle(%{data: %{"type" => "Create"}} = activity, meta) do
+    object = Object.normalize(activity, false)
 
     {:ok, _object} = handle_object_creation(object)
 
