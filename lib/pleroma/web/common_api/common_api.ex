@@ -40,12 +40,11 @@ defmodule Pleroma.Web.CommonAPI do
                 )},
              {_, {:ok, create_activity_data, _meta}} <-
                {:build_create_activity,
-                Builder.create(user, chat_message_data["id"], [recipient.ap_id])},
+                Builder.create(user, chat_message_data, [recipient.ap_id])},
              {_, {:ok, %Activity{} = activity, _meta}} <-
                {:common_pipeline,
                 Pipeline.common_pipeline(create_activity_data,
-                  local: true,
-                  object_data: chat_message_data
+                  local: true
                 )} do
           {:ok, activity}
         else

@@ -11,13 +11,13 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
-  def create(actor, object_id, recipients) do
+  def create(actor, object, recipients) do
     {:ok,
      %{
        "id" => Utils.generate_activity_id(),
        "actor" => actor.ap_id,
        "to" => recipients,
-       "object" => object_id,
+       "object" => object,
        "type" => "Create",
        "published" => DateTime.utc_now() |> DateTime.to_iso8601()
      }, []}

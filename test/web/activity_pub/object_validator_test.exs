@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       {:ok, activity} = CommonAPI.post_chat_message(user, recipient, "hey")
       object = Object.normalize(activity, false)
 
-      {:ok, create_data, _} = Builder.create(user, object.data["id"], [recipient.ap_id])
+      {:ok, create_data, _} = Builder.create(user, object.data, [recipient.ap_id])
 
       {:error, cng} = ObjectValidator.validate(create_data, [])
 

@@ -38,15 +38,23 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
-  def validate(%{"type" => "Create"} = object, meta) do
-    with {:ok, object} <-
-           object
+  def validate(%{"type" => "Create", "object" => object} = create_activity, meta) do
+    with {:ok, object_data} <- cast_and_apply(object),
+         meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
+         {:ok, create_activity} <-
+           create_activity
            |> CreateChatMessageValidator.cast_and_validate(meta)
            |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
+      create_activity = stringify_keys(create_activity)
+      {:ok, create_activity, meta}
     end
   end
+
+  def cast_and_apply(%{"type" => "ChatMessage"} = object) do
+    ChatMessageValidator.cast_and_apply(object)
+  end
+
+  def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
 
   def stringify_keys(%{__struct__: _} = object) do
     object
