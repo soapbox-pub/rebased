@@ -5,10 +5,10 @@
 # NOTES
 # - Can probably be a generic create validator
 # - doesn't embed, will only get the object id
-# - object has to be validated first, maybe with some meta info from the surrounding create
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
   use Ecto.Schema
 
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
@@ -43,6 +43,18 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
     |> validate_required([:id, :actor, :to, :type, :object])
     |> validate_inclusion(:type, ["Create"])
     |> validate_recipients_match(meta)
+    |> validate_object_nonexistence()
+  end
+
+  def validate_object_nonexistence(cng) do
+    cng
+    |> validate_change(:object, fn :object, object_id ->
+      if Object.get_cached_by_ap_id(object_id) do
+        [{:object, "The object to create already exists"}]
+      else
+        []
+      end
+    end)
   end
 
   def validate_recipients_match(cng, meta) do

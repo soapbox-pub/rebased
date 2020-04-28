@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
@@ -8,6 +9,21 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  describe "chat message create activities" do
+    test "it is invalid if the object already exists" do
+      user = insert(:user)
+      recipient = insert(:user)
+      {:ok, activity} = CommonAPI.post_chat_message(user, recipient, "hey")
+      object = Object.normalize(activity, false)
+
+      {:ok, create_data, _} = Builder.create(user, object.data["id"], [recipient.ap_id])
+
+      {:error, cng} = ObjectValidator.validate(create_data, [])
+
+      assert {:object, {"The object to create already exists", []}} in cng.errors
+    end
+  end
 
   describe "chat messages" do
     setup do
