@@ -17,7 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
     OAuthScopesPlug,
     %{scopes: ["write:filters"]} when action not in @oauth_read_actions
   )
-  
+
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.FilterOperation
 
   @doc "GET /api/v1/filters"
