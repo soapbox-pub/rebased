@@ -1911,6 +1911,499 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  test "doesn't retrieve replies activities with exclude_replies" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "yeah"})
+
+    {:ok, _reply} =
+      CommonAPI.post(user, %{"status" => "yeah", "in_reply_to_status_id" => activity.id})
+
+    [result] = ActivityPub.fetch_public_activities(%{"exclude_replies" => "true"})
+
+    assert result.id == activity.id
+
+    assert length(ActivityPub.fetch_public_activities()) == 2
+  end
+
+  describe "replies filtering with public messages" do
+    setup :public_messages
+
+    test "public timeline", %{users: %{u1: user}} do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("reply_filtering_user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 16
+    end
+
+    test "public timeline with reply_visibility `following`", %{
+      users: %{u1: user},
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4,
+      activities: activities
+    } do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 14
+
+      visible_ids =
+        Map.values(u1) ++ Map.values(u2) ++ Map.values(u4) ++ Map.values(activities) ++ [u3[:r1]]
+
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+
+    test "public timeline with reply_visibility `self`", %{
+      users: %{u1: user},
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4,
+      activities: activities
+    } do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 10
+      visible_ids = Map.values(u1) ++ [u2[:r1], u3[:r1], u4[:r1]] ++ Map.values(activities)
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+
+    test "home timeline", %{
+      users: %{u1: user},
+      activities: activities,
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4
+    } do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> Map.put("reply_filtering_user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 13
+
+      visible_ids =
+        Map.values(u1) ++
+          Map.values(u3) ++
+          [
+            activities[:a1],
+            activities[:a2],
+            activities[:a4],
+            u2[:r1],
+            u2[:r3],
+            u4[:r1],
+            u4[:r2]
+          ]
+
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+
+    test "home timeline with reply_visibility `following`", %{
+      users: %{u1: user},
+      activities: activities,
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4
+    } do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 11
+
+      visible_ids =
+        Map.values(u1) ++
+          [
+            activities[:a1],
+            activities[:a2],
+            activities[:a4],
+            u2[:r1],
+            u2[:r3],
+            u3[:r1],
+            u4[:r1],
+            u4[:r2]
+          ]
+
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+
+    test "home timeline with reply_visibility `self`", %{
+      users: %{u1: user},
+      activities: activities,
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4
+    } do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 9
+
+      visible_ids =
+        Map.values(u1) ++
+          [
+            activities[:a1],
+            activities[:a2],
+            activities[:a4],
+            u2[:r1],
+            u3[:r1],
+            u4[:r1]
+          ]
+
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+  end
+
+  describe "replies filtering with private messages" do
+    setup :private_messages
+
+    test "public timeline", %{users: %{u1: user}} do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert activities_ids == []
+    end
+
+    test "public timeline with default reply_visibility `following`", %{users: %{u1: user}} do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
+        |> Map.put("user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert activities_ids == []
+    end
+
+    test "public timeline with default reply_visibility `self`", %{users: %{u1: user}} do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
+        |> Map.put("user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert activities_ids == []
+    end
+
+    test "home timeline", %{users: %{u1: user}} do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 12
+    end
+
+    test "home timeline with default reply_visibility `following`", %{users: %{u1: user}} do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 12
+    end
+
+    test "home timeline with default reply_visibility `self`", %{
+      users: %{u1: user},
+      activities: activities,
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4
+    } do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 10
+
+      visible_ids =
+        Map.values(u1) ++ Map.values(u4) ++ [u2[:r1], u3[:r1]] ++ Map.values(activities)
+
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+  end
+
+  defp public_messages(_) do
+    [u1, u2, u3, u4] = insert_list(4, :user)
+    {:ok, u1} = User.follow(u1, u2)
+    {:ok, u2} = User.follow(u2, u1)
+    {:ok, u1} = User.follow(u1, u4)
+    {:ok, u4} = User.follow(u4, u1)
+
+    {:ok, u2} = User.follow(u2, u3)
+    {:ok, u3} = User.follow(u3, u2)
+
+    {:ok, a1} = CommonAPI.post(u1, %{"status" => "Status"})
+
+    {:ok, r1_1} =
+      CommonAPI.post(u2, %{
+        "status" => "@#{u1.nickname} reply from u2 to u1",
+        "in_reply_to_status_id" => a1.id
+      })
+
+    {:ok, r1_2} =
+      CommonAPI.post(u3, %{
+        "status" => "@#{u1.nickname} reply from u3 to u1",
+        "in_reply_to_status_id" => a1.id
+      })
+
+    {:ok, r1_3} =
+      CommonAPI.post(u4, %{
+        "status" => "@#{u1.nickname} reply from u4 to u1",
+        "in_reply_to_status_id" => a1.id
+      })
+
+    {:ok, a2} = CommonAPI.post(u2, %{"status" => "Status"})
+
+    {:ok, r2_1} =
+      CommonAPI.post(u1, %{
+        "status" => "@#{u2.nickname} reply from u1 to u2",
+        "in_reply_to_status_id" => a2.id
+      })
+
+    {:ok, r2_2} =
+      CommonAPI.post(u3, %{
+        "status" => "@#{u2.nickname} reply from u3 to u2",
+        "in_reply_to_status_id" => a2.id
+      })
+
+    {:ok, r2_3} =
+      CommonAPI.post(u4, %{
+        "status" => "@#{u2.nickname} reply from u4 to u2",
+        "in_reply_to_status_id" => a2.id
+      })
+
+    {:ok, a3} = CommonAPI.post(u3, %{"status" => "Status"})
+
+    {:ok, r3_1} =
+      CommonAPI.post(u1, %{
+        "status" => "@#{u3.nickname} reply from u1 to u3",
+        "in_reply_to_status_id" => a3.id
+      })
+
+    {:ok, r3_2} =
+      CommonAPI.post(u2, %{
+        "status" => "@#{u3.nickname} reply from u2 to u3",
+        "in_reply_to_status_id" => a3.id
+      })
+
+    {:ok, r3_3} =
+      CommonAPI.post(u4, %{
+        "status" => "@#{u3.nickname} reply from u4 to u3",
+        "in_reply_to_status_id" => a3.id
+      })
+
+    {:ok, a4} = CommonAPI.post(u4, %{"status" => "Status"})
+
+    {:ok, r4_1} =
+      CommonAPI.post(u1, %{
+        "status" => "@#{u4.nickname} reply from u1 to u4",
+        "in_reply_to_status_id" => a4.id
+      })
+
+    {:ok, r4_2} =
+      CommonAPI.post(u2, %{
+        "status" => "@#{u4.nickname} reply from u2 to u4",
+        "in_reply_to_status_id" => a4.id
+      })
+
+    {:ok, r4_3} =
+      CommonAPI.post(u3, %{
+        "status" => "@#{u4.nickname} reply from u3 to u4",
+        "in_reply_to_status_id" => a4.id
+      })
+
+    {:ok,
+     users: %{u1: u1, u2: u2, u3: u3, u4: u4},
+     activities: %{a1: a1.id, a2: a2.id, a3: a3.id, a4: a4.id},
+     u1: %{r1: r1_1.id, r2: r1_2.id, r3: r1_3.id},
+     u2: %{r1: r2_1.id, r2: r2_2.id, r3: r2_3.id},
+     u3: %{r1: r3_1.id, r2: r3_2.id, r3: r3_3.id},
+     u4: %{r1: r4_1.id, r2: r4_2.id, r3: r4_3.id}}
+  end
+
+  defp private_messages(_) do
+    [u1, u2, u3, u4] = insert_list(4, :user)
+    {:ok, u1} = User.follow(u1, u2)
+    {:ok, u2} = User.follow(u2, u1)
+    {:ok, u1} = User.follow(u1, u3)
+    {:ok, u3} = User.follow(u3, u1)
+    {:ok, u1} = User.follow(u1, u4)
+    {:ok, u4} = User.follow(u4, u1)
+
+    {:ok, u2} = User.follow(u2, u3)
+    {:ok, u3} = User.follow(u3, u2)
+
+    {:ok, a1} = CommonAPI.post(u1, %{"status" => "Status", "visibility" => "private"})
+
+    {:ok, r1_1} =
+      CommonAPI.post(u2, %{
+        "status" => "@#{u1.nickname} reply from u2 to u1",
+        "in_reply_to_status_id" => a1.id,
+        "visibility" => "private"
+      })
+
+    {:ok, r1_2} =
+      CommonAPI.post(u3, %{
+        "status" => "@#{u1.nickname} reply from u3 to u1",
+        "in_reply_to_status_id" => a1.id,
+        "visibility" => "private"
+      })
+
+    {:ok, r1_3} =
+      CommonAPI.post(u4, %{
+        "status" => "@#{u1.nickname} reply from u4 to u1",
+        "in_reply_to_status_id" => a1.id,
+        "visibility" => "private"
+      })
+
+    {:ok, a2} = CommonAPI.post(u2, %{"status" => "Status", "visibility" => "private"})
+
+    {:ok, r2_1} =
+      CommonAPI.post(u1, %{
+        "status" => "@#{u2.nickname} reply from u1 to u2",
+        "in_reply_to_status_id" => a2.id,
+        "visibility" => "private"
+      })
+
+    {:ok, r2_2} =
+      CommonAPI.post(u3, %{
+        "status" => "@#{u2.nickname} reply from u3 to u2",
+        "in_reply_to_status_id" => a2.id,
+        "visibility" => "private"
+      })
+
+    {:ok, a3} = CommonAPI.post(u3, %{"status" => "Status", "visibility" => "private"})
+
+    {:ok, r3_1} =
+      CommonAPI.post(u1, %{
+        "status" => "@#{u3.nickname} reply from u1 to u3",
+        "in_reply_to_status_id" => a3.id,
+        "visibility" => "private"
+      })
+
+    {:ok, r3_2} =
+      CommonAPI.post(u2, %{
+        "status" => "@#{u3.nickname} reply from u2 to u3",
+        "in_reply_to_status_id" => a3.id,
+        "visibility" => "private"
+      })
+
+    {:ok, a4} = CommonAPI.post(u4, %{"status" => "Status", "visibility" => "private"})
+
+    {:ok, r4_1} =
+      CommonAPI.post(u1, %{
+        "status" => "@#{u4.nickname} reply from u1 to u4",
+        "in_reply_to_status_id" => a4.id,
+        "visibility" => "private"
+      })
+
+    {:ok,
+     users: %{u1: u1, u2: u2, u3: u3, u4: u4},
+     activities: %{a1: a1.id, a2: a2.id, a3: a3.id, a4: a4.id},
+     u1: %{r1: r1_1.id, r2: r1_2.id, r3: r1_3.id},
+     u2: %{r1: r2_1.id, r2: r2_2.id},
+     u3: %{r1: r3_1.id, r2: r3_2.id},
+     u4: %{r1: r4_1.id}}
+  end
+
   describe "global activity expiration" do
     setup do: clear_config([:instance, :rewrite_policy])
 

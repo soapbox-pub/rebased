@@ -84,13 +84,17 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | attachments: attachments}
   end
 
-  defp in_reply_to(draft) do
-    case Map.get(draft.params, "in_reply_to_status_id") do
-      "" -> draft
-      nil -> draft
-      id -> %__MODULE__{draft | in_reply_to: Activity.get_by_id(id)}
-    end
+  defp in_reply_to(%{params: %{"in_reply_to_status_id" => ""}} = draft), do: draft
+
+  defp in_reply_to(%{params: %{"in_reply_to_status_id" => id}} = draft) when is_binary(id) do
+    %__MODULE__{draft | in_reply_to: Activity.get_by_id(id)}
   end
+
+  defp in_reply_to(%{params: %{"in_reply_to_status_id" => %Activity{} = in_reply_to}} = draft) do
+    %__MODULE__{draft | in_reply_to: in_reply_to}
+  end
+
+  defp in_reply_to(draft), do: draft
 
   defp in_reply_to_conversation(draft) do
     in_reply_to_conversation = Participation.get(draft.params["in_reply_to_conversation_id"])

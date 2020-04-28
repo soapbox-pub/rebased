@@ -449,6 +449,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp do_announce(user, object, activity_id, local, public) do
     with true <- is_announceable?(object, user, public),
+         object <- Object.get_by_id(object.id),
          announce_data <- make_announce_data(user, object, activity_id, public),
          {:ok, activity} <- insert(announce_data, local),
          {:ok, object} <- add_announce_to_object(activity, object),
@@ -1058,6 +1059,41 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
+  defp restrict_replies(query, %{
+         "reply_filtering_user" => user,
+         "reply_visibility" => "self"
+       }) do
+    from(
+      [activity, object] in query,
+      where:
+        fragment(
+          "?->>'inReplyTo' is null OR ? = ANY(?)",
+          object.data,
+          ^user.ap_id,
+          activity.recipients
+        )
+    )
+  end
+
+  defp restrict_replies(query, %{
+         "reply_filtering_user" => user,
+         "reply_visibility" => "following"
+       }) do
+    from(
+      [activity, object] in query,
+      where:
+        fragment(
+          "?->>'inReplyTo' is null OR ? && array_remove(?, ?) OR ? = ?",
+          object.data,
+          ^[user.ap_id | User.get_cached_user_friends_ap_ids(user)],
+          activity.recipients,
+          activity.actor,
+          activity.actor,
+          ^user.ap_id
+        )
+    )
+  end
+
   defp restrict_replies(query, _), do: query
 
   defp restrict_reblogs(query, %{"exclude_reblogs" => val}) when val == "true" or val == "1" do
@@ -1272,6 +1308,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
+    |> restrict_replies(opts)
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)
     |> restrict_tag_all(opts)
@@ -1286,7 +1323,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_media(opts)
     |> restrict_visibility(opts)
     |> restrict_thread_visibility(opts, config)
-    |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
