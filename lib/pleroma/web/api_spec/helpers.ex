@@ -46,4 +46,12 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
       )
     ]
   end
+
+  def empty_object_response do
+    Operation.response("Empty object", "application/json", %Schema{type: :object, example: %{}})
+  end
+
+  def empty_array_response do
+    Operation.response("Empty array", "application/json", %Schema{type: :array, example: []})
+  end
 end
