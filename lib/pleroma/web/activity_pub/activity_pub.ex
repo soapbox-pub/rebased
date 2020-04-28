@@ -825,7 +825,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
-       when visibility not in @valid_visibilities do
+       when visibility not in [nil | @valid_visibilities] do
     Logger.error("Could not exclude visibility to #{visibility}")
     query
   end
@@ -1032,7 +1032,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     raise "Can't use the child object without preloading!"
   end
 
-  defp restrict_media(query, %{"only_media" => val}) when val == "true" or val == "1" do
+  defp restrict_media(query, %{"only_media" => val}) when val in [true, "true", "1"] do
     from(
       [_activity, object] in query,
       where: fragment("not (?)->'attachment' = (?)", object.data, ^[])
@@ -1041,7 +1041,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_media(query, _), do: query
 
-  defp restrict_replies(query, %{"exclude_replies" => val}) when val == "true" or val == "1" do
+  defp restrict_replies(query, %{"exclude_replies" => val}) when val in [true, "true", "1"] do
     from(
       [_activity, object] in query,
       where: fragment("?->>'inReplyTo' is null", object.data)
@@ -1085,7 +1085,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_replies(query, _), do: query
 
-  defp restrict_reblogs(query, %{"exclude_reblogs" => val}) when val == "true" or val == "1" do
+  defp restrict_reblogs(query, %{"exclude_reblogs" => val}) when val in [true, "true", "1"] do
     from(activity in query, where: fragment("?->>'type' != 'Announce'", activity.data))
   end
 
@@ -1164,7 +1164,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
-  defp restrict_pinned(query, %{"pinned" => "true", "pinned_activity_ids" => ids}) do
+  # TODO: when all endpoints migrated to OpenAPI compare `pinned` with `true` (boolean) only,
+  # the same for `restrict_media/2`, `restrict_replies/2`, 'restrict_reblogs/2'
+  # and `restrict_muted/2`
+
+  defp restrict_pinned(query, %{"pinned" => pinned, "pinned_activity_ids" => ids})
+       when pinned in [true, "true", "1"] do
     from(activity in query, where: activity.id in ^ids)
   end
 

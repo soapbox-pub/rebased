@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.CustomEmojiOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Schemas.CustomEmoji
+  alias Pleroma.Web.ApiSpec.Schemas.Emoji
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
@@ -19,17 +19,17 @@ defmodule Pleroma.Web.ApiSpec.CustomEmojiOperation do
       description: "Returns custom emojis that are available on the server.",
       operationId: "CustomEmojiController.index",
       responses: %{
-        200 => Operation.response("Custom Emojis", "application/json", custom_emojis_resposnse())
+        200 => Operation.response("Custom Emojis", "application/json", resposnse())
       }
     }
   end
 
-  defp custom_emojis_resposnse do
+  defp resposnse do
     %Schema{
       title: "CustomEmojisResponse",
       description: "Response schema for custom emojis",
       type: :array,
-      items: CustomEmoji,
+      items: custom_emoji(),
       example: [
         %{
           "category" => "Fun",
@@ -56,6 +56,33 @@ defmodule Pleroma.Web.ApiSpec.CustomEmojiOperation do
           "visible_in_picker" => true
         }
       ]
+    }
+  end
+
+  defp custom_emoji do
+    %Schema{
+      title: "CustomEmoji",
+      description: "Schema for a CustomEmoji",
+      allOf: [
+        Emoji,
+        %Schema{
+          type: :object,
+          properties: %{
+            category: %Schema{type: :string},
+            tags: %Schema{type: :array}
+          }
+        }
+      ],
+      example: %{
+        "category" => "Fun",
+        "shortcode" => "aaaa",
+        "url" =>
+          "https://files.mastodon.social/custom_emojis/images/000/007/118/original/aaaa.png",
+        "static_url" =>
+          "https://files.mastodon.social/custom_emojis/images/000/007/118/static/aaaa.png",
+        "visible_in_picker" => true,
+        "tags" => ["Gif", "Fun"]
+      }
     }
   end
 end

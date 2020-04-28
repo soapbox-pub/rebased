@@ -4,8 +4,6 @@
 
 defmodule Pleroma.Web.MastodonAPI.CustomEmojiControllerTest do
   use Pleroma.Web.ConnCase, async: true
-  alias Pleroma.Web.ApiSpec
-  import OpenApiSpex.TestAssertions
 
   test "with tags", %{conn: conn} do
     assert resp =
@@ -21,6 +19,5 @@ defmodule Pleroma.Web.MastodonAPI.CustomEmojiControllerTest do
     assert Map.has_key?(emoji, "category")
     assert Map.has_key?(emoji, "url")
     assert Map.has_key?(emoji, "visible_in_picker")
-    assert_schema(emoji, "CustomEmoji", ApiSpec.spec())
   end
 end
