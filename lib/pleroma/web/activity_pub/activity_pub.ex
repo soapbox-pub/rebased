@@ -126,7 +126,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def increase_poll_votes_if_vote(_create_data), do: :noop
 
+  @object_types ["ChatMessage"]
   @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
+  def persist(%{"type" => type} = object, meta) when type in @object_types do
+    with {:ok, object} <- Object.create(object) do
+      {:ok, object, meta}
+    end
+  end
+
   def persist(object, meta) do
     with local <- Keyword.fetch!(meta, :local),
          {recipients, _, _} <- get_recipients(object),

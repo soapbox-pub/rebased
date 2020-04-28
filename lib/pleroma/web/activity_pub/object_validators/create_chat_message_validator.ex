@@ -33,8 +33,31 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
     cast(%__MODULE__{}, data, __schema__(:fields))
   end
 
-  # No validation yet
-  def cast_and_validate(data) do
+  def cast_and_validate(data, meta \\ []) do
     cast_data(data)
+    |> validate_data(meta)
+  end
+
+  def validate_data(cng, meta \\ []) do
+    cng
+    |> validate_required([:id, :actor, :to, :type, :object])
+    |> validate_inclusion(:type, ["Create"])
+    |> validate_recipients_match(meta)
+  end
+
+  def validate_recipients_match(cng, meta) do
+    object_recipients = meta[:object_data]["to"] || []
+
+    cng
+    |> validate_change(:to, fn :to, recipients ->
+      activity_set = MapSet.new(recipients)
+      object_set = MapSet.new(object_recipients)
+
+      if MapSet.equal?(activity_set, object_set) do
+        []
+      else
+        [{:to, "Recipients don't match with object recipients"}]
+      end
+    end)
   end
 end

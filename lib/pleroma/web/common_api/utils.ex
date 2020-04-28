@@ -425,7 +425,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         %Activity{data: %{"to" => _to, "type" => type} = data} = activity
       )
       when type == "Create" do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, false)
 
     object_data =
       cond do

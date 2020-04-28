@@ -8,7 +8,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Chat
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
 
   def handle(object, meta \\ [])
@@ -30,14 +32,17 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     result
   end
 
+  # Tasks this handles
+  # - Actually create object
+  # - Rollback if we couldn't create it
+  # - Set up notifications
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
-    object = Object.normalize(activity, false)
-
-    {:ok, _object} = handle_object_creation(object)
-
-    Notification.create_notifications(activity)
-
-    {:ok, activity, meta}
+    with {:ok, _object, _meta} <- handle_object_creation(meta[:object_data], meta) do
+      Notification.create_notifications(activity)
+      {:ok, activity, meta}
+    else
+      e -> Repo.rollback(e)
+    end
   end
 
   # Nothing to do
@@ -45,18 +50,20 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
-  def handle_object_creation(%{data: %{"type" => "ChatMessage"}} = object) do
-    actor = User.get_cached_by_ap_id(object.data["actor"])
-    recipient = User.get_cached_by_ap_id(hd(object.data["to"]))
+  def handle_object_creation(%{"type" => "ChatMessage"} = object, meta) do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
+      actor = User.get_cached_by_ap_id(object.data["actor"])
+      recipient = User.get_cached_by_ap_id(hd(object.data["to"]))
 
-    [[actor, recipient], [recipient, actor]]
-    |> Enum.each(fn [user, other_user] ->
-      if user.local do
-        Chat.bump_or_create(user.id, other_user.ap_id)
-      end
-    end)
+      [[actor, recipient], [recipient, actor]]
+      |> Enum.each(fn [user, other_user] ->
+        if user.local do
+          Chat.bump_or_create(user.id, other_user.ap_id)
+        end
+      end)
 
-    {:ok, object}
+      {:ok, object, meta}
+    end
   end
 
   # Nothing to do

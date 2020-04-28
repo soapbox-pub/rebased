@@ -275,7 +275,7 @@ defmodule Pleroma.Notification do
   end
 
   def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity) do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, false)
 
     if object && object.data["type"] == "Answer" do
       {:ok, []}

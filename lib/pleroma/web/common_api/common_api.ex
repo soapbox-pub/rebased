@@ -38,13 +38,15 @@ defmodule Pleroma.Web.CommonAPI do
                   recipient.ap_id,
                   content |> Formatter.html_escape("text/plain")
                 )},
-             {_, {:ok, chat_message_object}} <-
-               {:create_object, Object.create(chat_message_data)},
              {_, {:ok, create_activity_data, _meta}} <-
                {:build_create_activity,
-                Builder.create(user, chat_message_object.data["id"], [recipient.ap_id])},
+                Builder.create(user, chat_message_data["id"], [recipient.ap_id])},
              {_, {:ok, %Activity{} = activity, _meta}} <-
-               {:common_pipeline, Pipeline.common_pipeline(create_activity_data, local: true)} do
+               {:common_pipeline,
+                Pipeline.common_pipeline(create_activity_data,
+                  local: true,
+                  object_data: chat_message_data
+                )} do
           {:ok, activity}
         else
           {:content_length, false} -> {:error, :content_too_long}

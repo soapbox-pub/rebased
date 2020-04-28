@@ -55,7 +55,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
         data
         |> Map.put("to", author.ap_id)
 
-      {:error, _} = Transmogrifier.handle_incoming(data)
+      assert match?({:error, _}, Transmogrifier.handle_incoming(data))
+      refute Object.get_by_ap_id(data["object"]["id"])
     end
 
     test "it inserts it and creates a chat" do

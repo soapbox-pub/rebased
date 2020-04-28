@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
     field(:id, Types.ObjectID, primary_key: true)
     field(:to, Types.Recipients, default: [])
     field(:type, :string)
-    field(:content, :string)
+    field(:content, Types.SafeText)
     field(:actor, Types.ObjectID)
     field(:published, Types.DateTime)
     field(:emoji, :map, default: %{})
