@@ -1,12 +1,79 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  describe "deletes" do
+    setup do
+      user = insert(:user)
+      {:ok, post_activity} = CommonAPI.post(user, %{"status" => "cancel me daddy"})
+
+      {:ok, valid_post_delete, _} = Builder.delete(user, post_activity.data["object"])
+
+      %{user: user, valid_post_delete: valid_post_delete}
+    end
+
+    test "it is valid for a post deletion", %{valid_post_delete: valid_post_delete} do
+      assert match?({:ok, _, _}, ObjectValidator.validate(valid_post_delete, []))
+    end
+
+    test "it's invalid if the id is missing", %{valid_post_delete: valid_post_delete} do
+      no_id =
+        valid_post_delete
+        |> Map.delete("id")
+
+      {:error, cng} = ObjectValidator.validate(no_id, [])
+
+      assert {:id, {"can't be blank", [validation: :required]}} in cng.errors
+    end
+
+    test "it's invalid if the object doesn't exist", %{valid_post_delete: valid_post_delete} do
+      missing_object =
+        valid_post_delete
+        |> Map.put("object", "http://does.not/exist")
+
+      {:error, cng} = ObjectValidator.validate(missing_object, [])
+
+      assert {:object, {"can't find object", []}} in cng.errors
+    end
+
+    test "it's invalid if the actor of the object and the actor of delete are from different domains",
+         %{valid_post_delete: valid_post_delete} do
+      valid_other_actor =
+        valid_post_delete
+        |> Map.put("actor", valid_post_delete["actor"] <> "1")
+
+      assert match?({:ok, _, _}, ObjectValidator.validate(valid_other_actor, []))
+
+      invalid_other_actor =
+        valid_post_delete
+        |> Map.put("actor", "https://gensokyo.2hu/users/raymoo")
+
+      {:error, cng} = ObjectValidator.validate(invalid_other_actor, [])
+
+      assert {:actor, {"is not allowed to delete object", []}} in cng.errors
+    end
+
+    test "it's invalid if all the recipient fields are empty", %{
+      valid_post_delete: valid_post_delete
+    } do
+      empty_recipients =
+        valid_post_delete
+        |> Map.put("to", [])
+        |> Map.put("cc", [])
+
+      {:error, cng} = ObjectValidator.validate(empty_recipients, [])
+
+      assert {:to, {"no recipients in any field", []}} in cng.errors
+      assert {:cc, {"no recipients in any field", []}} in cng.errors
+    end
+  end
 
   describe "likes" do
     setup do

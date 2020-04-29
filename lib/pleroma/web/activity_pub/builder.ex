@@ -10,6 +10,22 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
+  @spec delete(User.t(), String.t()) :: {:ok, map(), keyword()}
+  def delete(actor, object_id) do
+    object = Object.normalize(object_id)
+
+    to = (object.data["to"] || []) ++ (object.data["cc"] || [])
+
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "actor" => actor.ap_id,
+       "object" => object_id,
+       "to" => to,
+       "type" => "Delete"
+     }, []}
+  end
+
   @spec like(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def like(actor, object) do
     object_actor = User.get_cached_by_ap_id(object.data["actor"])

@@ -12,9 +12,20 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
+
+  def validate(%{"type" => "Delete"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> DeleteValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
 
   def validate(%{"type" => "Like"} = object, meta) do
     with {:ok, object} <-
@@ -22,6 +33,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
       object = stringify_keys(object |> Map.from_struct())
       {:ok, object, meta}
     end
+  end
+
+  def stringify_keys(%{__struct__: _} = object) do
+    object
+    |> Map.from_struct()
+    |> stringify_keys
   end
 
   def stringify_keys(object) do
