@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
+  import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
 
   @primary_key false
 
@@ -42,6 +43,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
     cng
     |> validate_required([:id, :actor, :to, :type, :object])
     |> validate_inclusion(:type, ["Create"])
+    |> validate_actor_presence()
     |> validate_recipients_match(meta)
     |> validate_object_nonexistence()
   end

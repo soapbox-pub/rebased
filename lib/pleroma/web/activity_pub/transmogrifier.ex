@@ -647,10 +647,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => "ChatMessage"}} = data,
         _options
       ) do
-    case Pipeline.common_pipeline(data, local: false) do
-      {:ok, activity, _} ->
-        {:ok, activity}
-
+    with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
+         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+      {:ok, activity}
+    else
       e ->
         e
     end

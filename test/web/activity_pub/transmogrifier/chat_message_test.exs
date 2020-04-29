@@ -26,8 +26,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
         data
         |> Map.put("object", object)
 
-      _author = insert(:user, ap_id: data["actor"], local: false)
-      _recipient = insert(:user, ap_id: List.first(data["to"]), local: true)
+      _author =
+        insert(:user, ap_id: data["actor"], local: false, last_refreshed_at: DateTime.utc_now())
+
+      _recipient =
+        insert(:user,
+          ap_id: List.first(data["to"]),
+          local: true,
+          last_refreshed_at: DateTime.utc_now()
+        )
 
       {:error, _} = Transmogrifier.handle_incoming(data)
     end
@@ -37,8 +44,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
         File.read!("test/fixtures/create-chat-message.json")
         |> Poison.decode!()
 
-      _author = insert(:user, ap_id: data["actor"], local: false)
-      _recipient = insert(:user, ap_id: List.first(data["to"]), local: false)
+      _author =
+        insert(:user, ap_id: data["actor"], local: false, last_refreshed_at: DateTime.utc_now())
+
+      _recipient =
+        insert(:user,
+          ap_id: List.first(data["to"]),
+          local: false,
+          last_refreshed_at: DateTime.utc_now()
+        )
 
       {:error, _} = Transmogrifier.handle_incoming(data)
     end
@@ -59,12 +73,28 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
       refute Object.get_by_ap_id(data["object"]["id"])
     end
 
+    test "it fetches the actor if they aren't in our system" do
+      Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+
+      data =
+        File.read!("test/fixtures/create-chat-message.json")
+        |> Poison.decode!()
+        |> Map.put("actor", "http://mastodon.example.org/users/admin")
+        |> put_in(["object", "actor"], "http://mastodon.example.org/users/admin")
+
+      _recipient = insert(:user, ap_id: List.first(data["to"]), local: true)
+
+      {:ok, %Activity{} = _activity} = Transmogrifier.handle_incoming(data)
+    end
+
     test "it inserts it and creates a chat" do
       data =
         File.read!("test/fixtures/create-chat-message.json")
         |> Poison.decode!()
 
-      author = insert(:user, ap_id: data["actor"], local: false)
+      author =
+        insert(:user, ap_id: data["actor"], local: false, last_refreshed_at: DateTime.utc_now())
+
       recipient = insert(:user, ap_id: List.first(data["to"]), local: true)
 
       {:ok, %Activity{} = activity} = Transmogrifier.handle_incoming(data)
