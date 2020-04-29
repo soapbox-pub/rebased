@@ -45,6 +45,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
     |> validate_inclusion(:type, ["Create"])
     |> validate_actor_presence()
     |> validate_recipients_match(meta)
+    |> validate_actors_match(meta)
     |> validate_object_nonexistence()
   end
 
@@ -55,6 +56,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
         [{:object, "The object to create already exists"}]
       else
         []
+      end
+    end)
+  end
+
+  def validate_actors_match(cng, meta) do
+    object_actor = meta[:object_data]["actor"]
+
+    cng
+    |> validate_change(:actor, fn :actor, actor ->
+      if actor == object_actor do
+        []
+      else
+        [{:actor, "Actor doesn't match with object actor"}]
       end
     end)
   end

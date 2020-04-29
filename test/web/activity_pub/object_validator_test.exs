@@ -23,6 +23,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
 
       assert {:object, {"The object to create already exists", []}} in cng.errors
     end
+
+    test "it is invalid if the object data has a different `to` or `actor` field" do
+      user = insert(:user)
+      recipient = insert(:user)
+      {:ok, object_data, _} = Builder.chat_message(recipient, user.ap_id, "Hey")
+
+      {:ok, create_data, _} = Builder.create(user, object_data, [recipient.ap_id])
+
+      {:error, cng} = ObjectValidator.validate(create_data, [])
+
+      assert {:to, {"Recipients don't match with object recipients", []}} in cng.errors
+      assert {:actor, {"Actor doesn't match with object actor", []}} in cng.errors
+    end
   end
 
   describe "chat messages" do
