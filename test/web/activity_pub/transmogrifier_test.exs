@@ -870,7 +870,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     @tag capture_log: true
     test "it works for incoming user deletes" do
-      %{ap_id: ap_id} = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
+      %{ap_id: ap_id} =
+        insert(:user, ap_id: "http://mastodon.example.org/users/admin", local: false)
 
       data =
         File.read!("test/fixtures/mastodon-delete-user.json")

@@ -92,7 +92,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ " deleted"
 
-      refute User.get_by_nickname(user.nickname)
+      assert %{deactivated: true} = User.get_by_nickname(user.nickname)
     end
 
     test "no user to delete" do

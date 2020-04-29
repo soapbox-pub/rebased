@@ -53,7 +53,10 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
           else
             users =
               Enum.map(user_ap_ids, &User.get_cached_by_ap_id/1)
-              |> Enum.filter(& &1)
+              |> Enum.filter(fn
+                %{deactivated: false} -> true
+                _ -> false
+              end)
 
             %{
               name: emoji,
