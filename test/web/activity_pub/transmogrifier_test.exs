@@ -1221,6 +1221,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       :error = Transmogrifier.handle_incoming(data)
     end
 
+    test "skip converting the content when it is nil" do
+      object_id = "https://peertube.social/videos/watch/278d2b7c-0f38-4aaa-afe6-9ecc0c4a34fe"
+
+      {:ok, object} = Fetcher.fetch_and_contain_remote_object_from_id(object_id)
+
+      result =
+        Pleroma.Web.ActivityPub.Transmogrifier.fix_object(Map.merge(object, %{"content" => nil}))
+
+      assert result["content"] == nil
+    end
+
     test "it converts content of object to html" do
       object_id = "https://peertube.social/videos/watch/278d2b7c-0f38-4aaa-afe6-9ecc0c4a34fe"
 
