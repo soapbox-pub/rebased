@@ -68,6 +68,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
       recipient = insert(:user, ap_id: List.first(data["to"]), local: true)
 
       {:ok, %Activity{} = activity} = Transmogrifier.handle_incoming(data)
+      assert activity.local == false
 
       assert activity.actor == author.ap_id
       assert activity.recipients == [recipient.ap_id, author.ap_id]

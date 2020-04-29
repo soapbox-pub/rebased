@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.Pipeline do
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.ObjectValidator
@@ -14,6 +15,16 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   @spec common_pipeline(map(), keyword()) ::
           {:ok, Activity.t() | Object.t(), keyword()} | {:error, any()}
   def common_pipeline(object, meta) do
+    case Repo.transaction(fn -> do_common_pipeline(object, meta) end) do
+      {:ok, value} ->
+        value
+
+      {:error, e} ->
+        {:error, e}
+    end
+  end
+
+  def do_common_pipeline(object, meta) do
     with {_, {:ok, validated_object, meta}} <-
            {:validate_object, ObjectValidator.validate(object, meta)},
          {_, {:ok, mrfd_object}} <- {:mrf_object, MRF.filter(validated_object)},

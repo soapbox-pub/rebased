@@ -9,7 +9,6 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.FollowingRelationship
   alias Pleroma.Formatter
   alias Pleroma.Object
-  alias Pleroma.Repo
   alias Pleroma.ThreadMute
   alias Pleroma.User
   alias Pleroma.UserRelationship
@@ -26,36 +25,27 @@ defmodule Pleroma.Web.CommonAPI do
   require Logger
 
   def post_chat_message(%User{} = user, %User{} = recipient, content) do
-    transaction =
-      Repo.transaction(fn ->
-        with {_, true} <-
-               {:content_length,
-                String.length(content) <= Pleroma.Config.get([:instance, :chat_limit])},
-             {_, {:ok, chat_message_data, _meta}} <-
-               {:build_object,
-                Builder.chat_message(
-                  user,
-                  recipient.ap_id,
-                  content |> Formatter.html_escape("text/plain")
-                )},
-             {_, {:ok, create_activity_data, _meta}} <-
-               {:build_create_activity,
-                Builder.create(user, chat_message_data, [recipient.ap_id])},
-             {_, {:ok, %Activity{} = activity, _meta}} <-
-               {:common_pipeline,
-                Pipeline.common_pipeline(create_activity_data,
-                  local: true
-                )} do
-          {:ok, activity}
-        else
-          {:content_length, false} -> {:error, :content_too_long}
-          e -> e
-        end
-      end)
-
-    case transaction do
-      {:ok, value} -> value
-      error -> error
+    with {_, true} <-
+           {:content_length,
+            String.length(content) <= Pleroma.Config.get([:instance, :chat_limit])},
+         {_, {:ok, chat_message_data, _meta}} <-
+           {:build_object,
+            Builder.chat_message(
+              user,
+              recipient.ap_id,
+              content |> Formatter.html_escape("text/plain")
+            )},
+         {_, {:ok, create_activity_data, _meta}} <-
+           {:build_create_activity, Builder.create(user, chat_message_data, [recipient.ap_id])},
+         {_, {:ok, %Activity{} = activity, _meta}} <-
+           {:common_pipeline,
+            Pipeline.common_pipeline(create_activity_data,
+              local: true
+            )} do
+      {:ok, activity}
+    else
+      {:content_length, false} -> {:error, :content_too_long}
+      e -> e
     end
   end
 
