@@ -16,7 +16,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
   alias Pleroma.Web.ActivityPub.Pipeline
-  alias Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageHandling
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
@@ -646,9 +645,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def handle_incoming(
         %{"type" => "Create", "object" => %{"type" => "ChatMessage"}} = data,
-        options
-      ),
-      do: ChatMessageHandling.handle_incoming(data, options)
+        _options
+      ) do
+    case Pipeline.common_pipeline(data, local: false) do
+      {:ok, activity, _} ->
+        {:ok, activity}
+
+      e ->
+        e
+    end
+  end
 
   def handle_incoming(%{"type" => "Like"} = data, _options) do
     with {_, {:ok, cast_data_sym}} <-
