@@ -7,36 +7,12 @@ defmodule Pleroma.Captcha do
   alias Plug.Crypto.KeyGenerator
   alias Plug.Crypto.MessageEncryptor
 
-  use GenServer
-
-  @doc false
-  def start_link(_) do
-    GenServer.start_link(__MODULE__, [], name: __MODULE__)
-  end
-
-  @doc false
-  def init(_) do
-    {:ok, nil}
-  end
-
   @doc """
   Ask the configured captcha service for a new captcha
   """
   def new do
-    GenServer.call(__MODULE__, :new)
-  end
-
-  @doc """
-  Ask the configured captcha service to validate the captcha
-  """
-  def validate(token, captcha, answer_data) do
-    GenServer.call(__MODULE__, {:validate, token, captcha, answer_data})
-  end
-
-  @doc false
-  def handle_call(:new, _from, state) do
     if not enabled?() do
-      {:reply, %{type: :none}, state}
+      %{type: :none}
     else
       new_captcha = method().new()
 
@@ -53,18 +29,22 @@ defmodule Pleroma.Captcha do
         |> :erlang.term_to_binary()
         |> MessageEncryptor.encrypt(secret, sign_secret)
 
-      {
-        :reply,
-        # Replace the answer with the encrypted answer
-        %{new_captcha | answer_data: encrypted_captcha_answer},
-        state
-      }
+      # Replace the answer with the encrypted answer
+      %{new_captcha | answer_data: encrypted_captcha_answer}
     end
   end
 
-  @doc false
-  def handle_call({:validate, token, captcha, answer_data}, _from, state) do
-    {:reply, do_validate(token, captcha, answer_data), state}
+  @doc """
+  Ask the configured captcha service to validate the captcha
+  """
+  def validate(token, captcha, answer_data) do
+    with {:ok, %{at: at, answer_data: answer_md5}} <- validate_answer_data(token, answer_data),
+         :ok <- validate_expiration(at),
+         :ok <- validate_usage(token),
+         :ok <- method().validate(token, captcha, answer_md5),
+         {:ok, _} <- mark_captcha_as_used(token) do
+      :ok
+    end
   end
 
   def enabled?, do: Pleroma.Config.get([__MODULE__, :enabled], false)
@@ -77,16 +57,6 @@ defmodule Pleroma.Captcha do
     sign_secret = KeyGenerator.generate(secret_key_base, token <> "_sign")
 
     {secret, sign_secret}
-  end
-
-  defp do_validate(token, captcha, answer_data) do
-    with {:ok, %{at: at, answer_data: answer_md5}} <- validate_answer_data(token, answer_data),
-         :ok <- validate_expiration(at),
-         :ok <- validate_usage(token),
-         :ok <- method().validate(token, captcha, answer_md5),
-         {:ok, _} <- mark_captcha_as_used(token) do
-      :ok
-    end
   end
 
   defp validate_answer_data(token, answer_data) do
