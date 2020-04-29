@@ -29,7 +29,7 @@ defmodule Pleroma.Chat do
     |> validate_change(:recipient, fn
       :recipient, recipient ->
         case User.get_cached_by_ap_id(recipient) do
-          nil -> [recipient: "must a an existing user"]
+          nil -> [recipient: "must be an existing user"]
           _ -> []
         end
     end)
