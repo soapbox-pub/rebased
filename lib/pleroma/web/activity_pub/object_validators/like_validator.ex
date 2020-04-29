@@ -19,8 +19,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
     field(:object, Types.ObjectID)
     field(:actor, Types.ObjectID)
     field(:context, :string)
-    field(:to, {:array, :string})
-    field(:cc, {:array, :string})
+    field(:to, Types.Recipients)
+    field(:cc, Types.Recipients)
   end
 
   def cast_and_validate(data) do
