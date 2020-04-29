@@ -25,13 +25,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     when action == :follow_import
   )
 
-  # Note: follower can submit the form (with password auth) not being signed in (having no token)
-  plug(
-    OAuthScopesPlug,
-    %{fallback: :proceed_unauthenticated, scopes: ["follow", "write:follows"]}
-    when action == :do_remote_follow
-  )
-
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks_import)
 
   plug(

@@ -294,13 +294,13 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  def follows_operation do
+  def follow_by_uri_operation do
     %Operation{
       tags: ["accounts"],
-      summary: "Follows",
+      summary: "Follow by URI",
       operationId: "AccountController.follows",
       security: [%{"oAuth" => ["follow", "write:follows"]}],
-      requestBody: request_body("Parameters", follows_request(), required: true),
+      requestBody: request_body("Parameters", follow_by_uri_request(), required: true),
       responses: %{
         200 => Operation.response("Account", "application/json", AccountRelationship),
         400 => Operation.response("Error", "application/json", ApiError),
@@ -615,7 +615,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  defp follows_request do
+  defp follow_by_uri_request do
     %Schema{
       title: "AccountFollowsRequest",
       description: "POST body for muting an account",

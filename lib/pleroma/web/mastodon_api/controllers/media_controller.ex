@@ -15,8 +15,6 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
 
   plug(OAuthScopesPlug, %{scopes: ["write:media"]})
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   @doc "POST /api/v1/media"
   def create(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-
