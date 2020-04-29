@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessageResponse do
       account_id: %Schema{type: :string, description: "The Mastodon API id of the actor"},
       chat_id: %Schema{type: :string},
       content: %Schema{type: :string},
-      created_at: %Schema{type: :string, format: :datetime},
+      created_at: %Schema{type: :string, format: :"date-time"},
       emojis: %Schema{type: :array}
     },
     example: %{
