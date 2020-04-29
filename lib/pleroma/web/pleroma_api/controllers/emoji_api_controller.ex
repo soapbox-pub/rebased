@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug
   alias Pleroma.Plugs.OAuthScopesPlug
 
   require Logger
@@ -11,17 +12,20 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     when action in [
            :create,
            :delete,
-           :download_from,
-           :list_from,
+           :save_from,
            :import_from_fs,
            :update_file,
            :update_metadata
          ]
   )
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  plug(
+    :skip_plug,
+    [OAuthScopesPlug, ExpectPublicOrAuthenticatedCheckPlug]
+    when action in [:download_shared, :list_packs, :list_from]
+  )
 
-  def emoji_dir_path do
+  defp emoji_dir_path do
     Path.join(
       Pleroma.Config.get!([:instance, :static_dir]),
       "emoji"
@@ -212,13 +216,13 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   end
 
   @doc """
-  An admin endpoint to request downloading a pack named `pack_name` from the instance
+  An admin endpoint to request downloading and storing a pack named `pack_name` from the instance
   `instance_address`.
 
   If the requested instance's admin chose to share the pack, it will be downloaded
   from that instance, otherwise it will be downloaded from the fallback source, if there is one.
   """
-  def download_from(conn, %{"instance_address" => address, "pack_name" => name} = data) do
+  def save_from(conn, %{"instance_address" => address, "pack_name" => name} = data) do
     address = String.trim(address)
 
     if shareable_packs_available(address) do

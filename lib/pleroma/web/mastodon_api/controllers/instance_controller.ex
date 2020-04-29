@@ -5,6 +5,12 @@
 defmodule Pleroma.Web.MastodonAPI.InstanceController do
   use Pleroma.Web, :controller
 
+  plug(
+    :skip_plug,
+    [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug]
+    when action in [:show, :peers]
+  )
+
   @doc "GET /api/v1/instance"
   def show(conn, _params) do
     render(conn, "show.json")

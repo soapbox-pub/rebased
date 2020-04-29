@@ -38,8 +38,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
   end
 
   test "listing remote packs" do
-    admin = insert(:user, is_admin: true)
-    %{conn: conn} = oauth_access(["admin:write"], user: admin)
+    conn = build_conn()
 
     resp =
       build_conn()
@@ -76,7 +75,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
     assert Enum.find(arch, fn {n, _} -> n == 'blank.png' end)
   end
 
-  test "downloading shared & unshared packs from another instance via download_from, deleting them" do
+  test "downloading shared & unshared packs from another instance, deleting them" do
     on_exit(fn ->
       File.rm_rf!("#{@emoji_dir_path}/test_pack2")
       File.rm_rf!("#{@emoji_dir_path}/test_pack_nonshared2")
@@ -136,7 +135,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
             |> post(
               emoji_api_path(
                 conn,
-                :download_from
+                :save_from
               ),
               %{
                 instance_address: "https://old-instance",
@@ -152,7 +151,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
            |> post(
              emoji_api_path(
                conn,
-               :download_from
+               :save_from
              ),
              %{
                instance_address: "https://example.com",
@@ -179,7 +178,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
            |> post(
              emoji_api_path(
                conn,
-               :download_from
+               :save_from
              ),
              %{
                instance_address: "https://example.com",

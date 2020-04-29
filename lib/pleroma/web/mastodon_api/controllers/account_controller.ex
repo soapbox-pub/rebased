@@ -14,6 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       skip_relationships?: 1
     ]
 
+  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
@@ -28,18 +29,26 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
 
-  plug(:skip_plug, OAuthScopesPlug when action == :identity_proofs)
+  plug(:skip_plug, [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :create)
+
+  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:show, :statuses])
 
   plug(
     OAuthScopesPlug,
     %{fallback: :proceed_unauthenticated, scopes: ["read:accounts"]}
-    when action == :show
+    when action in [:show, :followers, :following]
+  )
+
+  plug(
+    OAuthScopesPlug,
+    %{fallback: :proceed_unauthenticated, scopes: ["read:statuses"]}
+    when action == :statuses
   )
 
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:accounts"]}
-    when action in [:endorsements, :verify_credentials, :followers, :following]
+    when action in [:verify_credentials, :endorsements, :identity_proofs]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :update_credentials)
@@ -58,20 +67,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(OAuthScopesPlug, %{scopes: ["read:follows"]} when action == :relationships)
 
-  # Note: :follows (POST /api/v1/follows) is the same as :follow, consider removing :follows
   plug(
     OAuthScopesPlug,
-    %{scopes: ["follow", "write:follows"]} when action in [:follows, :follow, :unfollow]
+    %{scopes: ["follow", "write:follows"]} when action in [:follow_by_uri, :follow, :unfollow]
   )
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "read:mutes"]} when action == :mutes)
 
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:mutes"]} when action in [:mute, :unmute])
-
-  plug(
-    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-    when action not in [:create, :show, :statuses]
-  )
 
   @relationship_actions [:follow, :unfollow]
   @needs_account ~W(followers following lists follow unfollow mute unmute block unblock)a
@@ -378,7 +381,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "POST /api/v1/follows"
-  def follows(%{body_params: %{uri: uri}} = conn, _) do
+  def follow_by_uri(%{body_params: %{uri: uri}} = conn, _) do
     case User.get_cached_by_nickname(uri) do
       %User{} = user ->
         conn

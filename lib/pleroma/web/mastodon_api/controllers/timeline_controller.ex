@@ -9,10 +9,13 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     only: [add_link_headers: 2, add_link_headers: 3, truthy_param?: 1, skip_relationships?: 1]
 
   alias Pleroma.Pagination
+  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+
+  plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:public, :hashtag])
 
   # TODO: Replace with a macro when there is a Phoenix release with the following commit in it:
   # https://github.com/phoenixframework/phoenix/commit/2e8c63c01fec4dde5467dbbbf9705ff9e780735e
@@ -26,7 +29,11 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in [:home, :direct])
   plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action == :list)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action != :public)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read:statuses"], fallback: :proceed_unauthenticated}
+    when action in [:public, :hashtag]
+  )
 
   plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
 
@@ -94,7 +101,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
     restrict? = Pleroma.Config.get([:restrict_unauthenticated, :timelines, cfg_key])
 
-    if not (restrict? and is_nil(user)) do
+    if restrict? and is_nil(user) do
+      render_error(conn, :unauthorized, "authorization required for timeline view")
+    else
       activities =
         params
         |> Map.put("type", ["Create", "Announce"])
@@ -112,12 +121,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         as: :activity,
         skip_relationships: skip_relationships?(params)
       )
-    else
-      render_error(conn, :unauthorized, "authorization required for timeline view")
     end
   end
 
-  def hashtag_fetching(params, user, local_only) do
+  defp hashtag_fetching(params, user, local_only) do
     tags =
       [params["tag"], params["any"]]
       |> List.flatten()

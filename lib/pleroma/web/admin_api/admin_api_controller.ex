@@ -48,6 +48,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     %{scopes: ["write:accounts"], admin: true}
     when action in [
            :get_password_reset,
+           :force_password_reset,
            :user_delete,
            :users_create,
            :user_toggle_activation,
@@ -56,7 +57,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :tag_users,
            :untag_users,
            :right_add,
+           :right_add_multiple,
            :right_delete,
+           :right_delete_multiple,
            :update_user_credentials
          ]
   )
@@ -84,13 +87,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:reports"], admin: true}
-    when action in [:reports_update]
+    when action in [:reports_update, :report_notes_create, :report_notes_delete]
   )
 
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"], admin: true}
-    when action == :list_user_statuses
+    when action in [:list_statuses, :list_user_statuses, :list_instance_statuses]
   )
 
   plug(
@@ -102,13 +105,30 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read"], admin: true}
-    when action in [:config_show, :list_log, :stats]
+    when action in [
+           :config_show,
+           :list_log,
+           :stats,
+           :relay_list,
+           :config_descriptions,
+           :need_reboot
+         ]
   )
 
   plug(
     OAuthScopesPlug,
     %{scopes: ["write"], admin: true}
-    when action == :config_update
+    when action in [
+           :restart,
+           :config_update,
+           :resend_confirmation_email,
+           :confirm_email,
+           :oauth_app_create,
+           :oauth_app_list,
+           :oauth_app_update,
+           :oauth_app_delete,
+           :reload_emoji
+         ]
   )
 
   action_fallback(:errors)
@@ -1103,25 +1123,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(%{"status_visibility" => count})
   end
 
-  def errors(conn, {:error, :not_found}) do
+  defp errors(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
     |> json(dgettext("errors", "Not found"))
   end
 
-  def errors(conn, {:error, reason}) do
+  defp errors(conn, {:error, reason}) do
     conn
     |> put_status(:bad_request)
     |> json(reason)
   end
 
-  def errors(conn, {:param_cast, _}) do
+  defp errors(conn, {:param_cast, _}) do
     conn
     |> put_status(:bad_request)
     |> json(dgettext("errors", "Invalid parameters"))
   end
 
-  def errors(conn, _) do
+  defp errors(conn, _) do
     conn
     |> put_status(:internal_server_error)
     |> json(dgettext("errors", "Something went wrong"))

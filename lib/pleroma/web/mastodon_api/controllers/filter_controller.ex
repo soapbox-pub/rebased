@@ -17,8 +17,6 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
     %{scopes: ["write:filters"]} when action not in @oauth_read_actions
   )
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   @doc "GET /api/v1/filters"
   def index(%{assigns: %{user: user}} = conn, _) do
     filters = Filter.get_filters(user)

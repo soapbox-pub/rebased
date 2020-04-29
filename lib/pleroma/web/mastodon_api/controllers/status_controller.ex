@@ -24,6 +24,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
 
+  plug(:skip_plug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action in [:index, :show])
+
   @unauthenticated_access %{fallback: :proceed_unauthenticated, scopes: []}
 
   plug(
@@ -76,8 +78,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     OAuthScopesPlug,
     %{scopes: ["write:bookmarks"]} when action in [:bookmark, :unbookmark]
   )
-
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action not in [:index, :show])
 
   @rate_limited_status_actions ~w(reblog unreblog favourite unfavourite create delete)a
 
@@ -358,7 +358,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "GET /api/v1/favourites"
-  def favourites(%{assigns: %{user: user}} = conn, params) do
+  def favourites(%{assigns: %{user: %User{} = user}} = conn, params) do
     activities =
       ActivityPub.fetch_favourites(
         user,

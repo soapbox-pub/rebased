@@ -14,9 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationController do
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action == :index)
-  plug(OAuthScopesPlug, %{scopes: ["write:conversations"]} when action == :read)
-
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  plug(OAuthScopesPlug, %{scopes: ["write:conversations"]} when action != :index)
 
   @doc "GET /api/v1/conversations"
   def index(%{assigns: %{user: user}} = conn, params) do
@@ -28,7 +26,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationController do
   end
 
   @doc "POST /api/v1/conversations/:id/read"
-  def read(%{assigns: %{user: user}} = conn, %{"id" => participation_id}) do
+  def mark_as_read(%{assigns: %{user: user}} = conn, %{"id" => participation_id}) do
     with %Participation{} = participation <-
            Repo.get_by(Participation, id: participation_id, user_id: user.id),
          {:ok, participation} <- Participation.mark_as_read(participation) do
