@@ -1445,8 +1445,15 @@ defmodule Pleroma.User do
     end)
 
     delete_user_activities(user)
-    invalidate_cache(user)
-    Repo.delete(user)
+
+    if user.local do
+      user
+      |> change(%{deactivated: true, email: nil})
+      |> update_and_set_cache()
+    else
+      invalidate_cache(user)
+      Repo.delete(user)
+    end
   end
 
   def perform(:deactivate_async, user, status), do: deactivate(user, status)
