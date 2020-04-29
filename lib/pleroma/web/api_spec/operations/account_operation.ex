@@ -131,6 +131,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             "Include statuses from muted acccounts."
           ),
           Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
+          Operation.parameter(:exclude_replies, :query, BooleanLike, "Exclude replies"),
           Operation.parameter(
             :exclude_visibilities,
             :query,
