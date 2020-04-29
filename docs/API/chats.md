@@ -99,7 +99,7 @@ For a given Chat id, you can get the associated messages with
 `GET /api/v1/pleroma/chats/{id}/messages`
 
 This will return all messages, sorted by most recent to least recent. The usual
-pagination options are implemented
+pagination options are implemented.
 
 Returned data:
 
