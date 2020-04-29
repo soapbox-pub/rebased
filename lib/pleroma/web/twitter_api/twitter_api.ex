@@ -47,9 +47,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       :ok
     else
       Pleroma.Captcha.validate(
-        params.captcha_token,
-        params.captcha_solution,
-        params.captcha_answer_data
+        params[:captcha_token],
+        params[:captcha_solution],
+        params[:captcha_answer_data]
       )
     end
   end
