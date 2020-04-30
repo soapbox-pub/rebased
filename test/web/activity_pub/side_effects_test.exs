@@ -10,8 +10,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
-  alias Pleroma.User
   alias Pleroma.Tests.ObanHelpers
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.SideEffects
