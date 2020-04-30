@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   """
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
 
   def handle(object, meta \\ [])
@@ -33,10 +34,27 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Replace object with Tombstone
   # - Set up notification
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
-    with %Object{} = deleted_object <- Object.normalize(deleted_object),
-         {:ok, _, _} <- Object.delete(deleted_object) do
+    deleted_object =
+      Object.normalize(deleted_object, false) || User.get_cached_by_ap_id(deleted_object)
+
+    result =
+      case deleted_object do
+        %Object{} ->
+          with {:ok, _, _} <- Object.delete(deleted_object) do
+            :ok
+          end
+
+        %User{} ->
+          with {:ok, _} <- User.delete(deleted_object) do
+            :ok
+          end
+      end
+
+    if result == :ok do
       Notification.create_notifications(object)
       {:ok, object, meta}
+    else
+      {:error, result}
     end
   end
 
