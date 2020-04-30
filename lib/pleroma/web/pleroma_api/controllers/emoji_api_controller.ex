@@ -7,7 +7,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     Pleroma.Plugs.OAuthScopesPlug,
     %{scopes: ["write"], admin: true}
     when action in [
-           :import,
+           :import_from_filesystem,
            :remote,
            :download,
            :create,
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
   plug(
     :skip_plug,
     [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug]
-    when action in [:download_shared, :list_packs, :list_from]
+    when action in [:archive, :show, :list]
   )
 
   def remote(conn, %{"url" => url}) do
