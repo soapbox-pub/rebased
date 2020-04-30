@@ -8,8 +8,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
 
   def handle(object, meta \\ [])
 
