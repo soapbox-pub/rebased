@@ -59,20 +59,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
 
       assert {:actor, {"is not allowed to delete object", []}} in cng.errors
     end
-
-    test "it's invalid if all the recipient fields are empty", %{
-      valid_post_delete: valid_post_delete
-    } do
-      empty_recipients =
-        valid_post_delete
-        |> Map.put("to", [])
-        |> Map.put("cc", [])
-
-      {:error, cng} = ObjectValidator.validate(empty_recipients, [])
-
-      assert {:to, {"no recipients in any field", []}} in cng.errors
-      assert {:cc, {"no recipients in any field", []}} in cng.errors
-    end
   end
 
   describe "likes" do

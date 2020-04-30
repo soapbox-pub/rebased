@@ -32,7 +32,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
     |> validate_inclusion(:type, ["Delete"])
     |> validate_same_domain()
     |> validate_object_presence()
-    |> validate_recipients_presence()
   end
 
   def validate_same_domain(cng) do
