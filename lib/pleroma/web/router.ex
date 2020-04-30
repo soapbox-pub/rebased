@@ -214,24 +214,24 @@ defmodule Pleroma.Web.Router do
     scope "/packs" do
       pipe_through(:admin_api)
 
-      post("/import_from_fs", EmojiAPIController, :import_from_fs)
-      post("/:pack_name/update_file", EmojiAPIController, :update_file)
-      post("/:pack_name/update_metadata", EmojiAPIController, :update_metadata)
-      put("/:name", EmojiAPIController, :create)
+      get("/import", EmojiAPIController, :import_from_filesystem)
+      get("/remote", EmojiAPIController, :remote)
+      post("/download", EmojiAPIController, :download)
+
+      post("/:name", EmojiAPIController, :create)
+      patch("/:name", EmojiAPIController, :update)
       delete("/:name", EmojiAPIController, :delete)
 
-      # Note: /download_from downloads and saves to instance, not to requester
-      post("/download_from", EmojiAPIController, :save_from)
+      post("/:name/files", EmojiAPIController, :add_file)
+      patch("/:name/files", EmojiAPIController, :update_file)
+      delete("/:name/files", EmojiAPIController, :delete_file)
     end
 
     # Pack info / downloading
     scope "/packs" do
-      get("/", EmojiAPIController, :list_packs)
-      get("/:name/download_shared/", EmojiAPIController, :download_shared)
-      get("/list_from", EmojiAPIController, :list_from)
-
-      # Deprecated: POST /api/pleroma/emoji/packs/list_from (use GET instead)
-      post("/list_from", EmojiAPIController, :list_from)
+      get("/", EmojiAPIController, :list)
+      get("/:name", EmojiAPIController, :show)
+      get("/:name/archive", EmojiAPIController, :archive)
     end
   end
 
