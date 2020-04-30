@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   def handle(object, meta \\ [])
 
@@ -40,9 +41,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     result =
       case deleted_object do
         %Object{} ->
-          with {:ok, _, activity} <- Object.delete(deleted_object),
+          with {:ok, deleted_object, activity} <- Object.delete(deleted_object),
                %User{} = user <- User.get_cached_by_ap_id(deleted_object.data["actor"]) do
             User.remove_pinnned_activity(user, activity)
+
+            ActivityPub.stream_out(object)
+            ActivityPub.stream_out_participations(deleted_object, user)
             :ok
           end
 
