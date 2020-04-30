@@ -362,6 +362,16 @@ defmodule Pleroma.NotificationTest do
       notification_id = notification.id
       assert [%{id: ^notification_id}] = Notification.for_user(followed_user)
     end
+
+    test "dismisses the notification on follow request rejection" do
+      clear_config([:notifications, :enable_follow_request_notifications], true)
+      user = insert(:user, locked: true)
+      follower = insert(:user)
+      {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, user)
+      assert [notification] = Notification.for_user(user)
+      {:ok, _follower} = CommonAPI.reject_follow_request(follower, user)
+      assert [] = Notification.for_user(user)
+    end
   end
 
   describe "get notification" do
