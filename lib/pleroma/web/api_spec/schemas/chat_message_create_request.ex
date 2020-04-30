@@ -13,6 +13,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessageCreateRequest do
     properties: %{
       content: %Schema{type: :string, description: "The content of your message"}
     },
+    required: [:content],
     example: %{
       "content" => "Hey wanna buy feet pics?"
     }
