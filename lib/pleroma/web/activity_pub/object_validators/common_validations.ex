@@ -49,4 +49,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
       end
     end)
   end
+
+  def validate_object_or_user_presence(cng, field_name \\ :object) do
+    cng
+    |> validate_change(field_name, fn field_name, object ->
+      if Object.get_cached_by_ap_id(object) || User.get_cached_by_ap_id(object) do
+        []
+      else
+        [{field_name, "can't find object"}]
+      end
+    end)
+  end
 end

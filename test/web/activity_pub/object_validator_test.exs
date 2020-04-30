@@ -15,12 +15,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       {:ok, post_activity} = CommonAPI.post(user, %{"status" => "cancel me daddy"})
 
       {:ok, valid_post_delete, _} = Builder.delete(user, post_activity.data["object"])
+      {:ok, valid_user_delete, _} = Builder.delete(user, user.ap_id)
 
-      %{user: user, valid_post_delete: valid_post_delete}
+      %{user: user, valid_post_delete: valid_post_delete, valid_user_delete: valid_user_delete}
     end
 
     test "it is valid for a post deletion", %{valid_post_delete: valid_post_delete} do
       assert match?({:ok, _, _}, ObjectValidator.validate(valid_post_delete, []))
+    end
+
+    test "it is valid for a user deletion", %{valid_user_delete: valid_user_delete} do
+      assert match?({:ok, _, _}, ObjectValidator.validate(valid_user_delete, []))
     end
 
     test "it's invalid if the id is missing", %{valid_post_delete: valid_post_delete} do
