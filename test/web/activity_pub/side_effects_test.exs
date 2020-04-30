@@ -18,6 +18,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+  import Mock
 
   describe "delete objects" do
     setup do
@@ -33,9 +34,16 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
     test "it handles object deletions", %{delete: delete, post: post, object: object} do
       # In object deletions, the object is replaced by a tombstone and the
-      # create activity is deleted
+      # create activity is deleted.
 
-      {:ok, _delete, _} = SideEffects.handle(delete)
+      with_mock Pleroma.Web.ActivityPub.ActivityPub,
+        stream_out: fn _ -> nil end,
+        stream_out_participations: fn _, _ -> nil end do
+        {:ok, delete, _} = SideEffects.handle(delete)
+        user = User.get_cached_by_ap_id(object.data["actor"])
+        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out(delete))
+        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out_participations(object, user))
+      end
 
       object = Object.get_by_id(object.id)
       assert object.data["type"] == "Tombstone"
