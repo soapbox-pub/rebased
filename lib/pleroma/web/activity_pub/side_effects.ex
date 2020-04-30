@@ -35,6 +35,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Replace object with Tombstone
   # - Set up notification
   # - Reduce the user note count
+  # - TODO: Reduce the reply count
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
     deleted_object =
       Object.normalize(deleted_object, false) || User.get_cached_by_ap_id(deleted_object)
@@ -47,6 +48,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             User.remove_pinnned_activity(user, activity)
 
             {:ok, user} = ActivityPub.decrease_note_count_if_public(user, deleted_object)
+
+            if in_reply_to = deleted_object.data["inReplyTo"] do
+              Object.decrease_replies_count(in_reply_to)
+            end
+
             ActivityPub.stream_out(object)
             ActivityPub.stream_out_participations(deleted_object, user)
             :ok

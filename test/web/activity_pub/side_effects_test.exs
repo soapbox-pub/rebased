@@ -23,19 +23,25 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   describe "delete objects" do
     setup do
       user = insert(:user)
-      {:ok, post} = CommonAPI.post(user, %{"status" => "hey"})
+      other_user = insert(:user)
+
+      {:ok, op} = CommonAPI.post(other_user, %{"status" => "big oof"})
+      {:ok, post} = CommonAPI.post(user, %{"status" => "hey", "in_reply_to_id" => op})
       object = Object.normalize(post)
       {:ok, delete_data, _meta} = Builder.delete(user, object.data["id"])
       {:ok, delete_user_data, _meta} = Builder.delete(user, user.ap_id)
       {:ok, delete, _meta} = ActivityPub.persist(delete_data, local: true)
       {:ok, delete_user, _meta} = ActivityPub.persist(delete_user_data, local: true)
-      %{user: user, delete: delete, post: post, object: object, delete_user: delete_user}
+      %{user: user, delete: delete, post: post, object: object, delete_user: delete_user, op: op}
     end
 
-    test "it handles object deletions", %{delete: delete, post: post, object: object, user: user} do
-      # In object deletions, the object is replaced by a tombstone and the
-      # create activity is deleted.
-
+    test "it handles object deletions", %{
+      delete: delete,
+      post: post,
+      object: object,
+      user: user,
+      op: op
+    } do
       with_mock Pleroma.Web.ActivityPub.ActivityPub, [:passthrough],
         stream_out: fn _ -> nil end,
         stream_out_participations: fn _, _ -> nil end do
@@ -52,6 +58,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
       user = User.get_by_id(user.id)
       assert user.note_count == 0
+
+      object = Object.normalize(op.data["object"], false)
+
+      assert object.data["repliesCount"] == 0
     end
 
     test "it handles user deletions", %{delete_user: delete, user: user} do
