@@ -35,7 +35,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Replace object with Tombstone
   # - Set up notification
   # - Reduce the user note count
-  # - TODO: Reduce the reply count
+  # - Reduce the reply count
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
     deleted_object =
       Object.normalize(deleted_object, false) || User.get_cached_by_ap_id(deleted_object)

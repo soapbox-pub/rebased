@@ -15,7 +15,6 @@ defmodule Pleroma.UserTest do
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  import Mock
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
@@ -1131,7 +1130,7 @@ defmodule Pleroma.UserTest do
 
       User.delete_user_activities(user)
 
-      # TODO: Remove favorites, repeats, delete activities.
+      # TODO: Test removal favorites, repeats, delete activities.
       refute Activity.get_by_id(activity.id)
     end
 
@@ -1179,31 +1178,6 @@ defmodule Pleroma.UserTest do
       refute Activity.get_by_id(like.id)
       refute Activity.get_by_id(like_two.id)
       refute Activity.get_by_id(repeat.id)
-    end
-
-    test_with_mock "it sends out User Delete activity",
-                   %{user: user},
-                   Pleroma.Web.ActivityPub.Publisher,
-                   [:passthrough],
-                   [] do
-      Pleroma.Config.put([:instance, :federating], true)
-
-      {:ok, follower} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
-      {:ok, _} = User.follow(follower, user)
-
-      {:ok, job} = User.delete(user)
-      {:ok, _user} = ObanHelpers.perform(job)
-
-      assert ObanHelpers.member?(
-               %{
-                 "op" => "publish_one",
-                 "params" => %{
-                   "inbox" => "http://mastodon.example.org/inbox",
-                   "id" => "pleroma:fakeid"
-                 }
-               },
-               all_enqueued(worker: Pleroma.Workers.PublisherWorker)
-             )
     end
   end
 
