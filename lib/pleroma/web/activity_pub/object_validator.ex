@@ -19,11 +19,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   def validate(object, meta)
 
   def validate(%{"type" => "Delete"} = object, meta) do
-    with {:ok, object} <-
-           object
-           |> DeleteValidator.cast_and_validate()
-           |> Ecto.Changeset.apply_action(:insert) do
+    with cng <- DeleteValidator.cast_and_validate(object),
+         do_not_federate <- DeleteValidator.do_not_federate?(cng),
+         {:ok, object} <- Ecto.Changeset.apply_action(cng, :insert) do
       object = stringify_keys(object)
+      meta = Keyword.put(meta, :do_not_federate, do_not_federate)
       {:ok, object, meta}
     end
   end

@@ -52,9 +52,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
 
     test "it's invalid if the actor of the object and the actor of delete are from different domains",
          %{valid_post_delete: valid_post_delete} do
+      valid_user = insert(:user)
+
       valid_other_actor =
         valid_post_delete
-        |> Map.put("actor", valid_post_delete["actor"] <> "1")
+        |> Map.put("actor", valid_user.ap_id)
 
       assert match?({:ok, _, _}, ObjectValidator.validate(valid_other_actor, []))
 
@@ -65,6 +67,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       {:error, cng} = ObjectValidator.validate(invalid_other_actor, [])
 
       assert {:actor, {"is not allowed to delete object", []}} in cng.errors
+    end
+
+    test "it's valid if the actor of the object is a local superuser",
+         %{valid_post_delete: valid_post_delete} do
+      user =
+        insert(:user, local: true, is_moderator: true, ap_id: "https://gensokyo.2hu/users/raymoo")
+
+      valid_other_actor =
+        valid_post_delete
+        |> Map.put("actor", user.ap_id)
+
+      {:ok, _, meta} = ObjectValidator.validate(valid_other_actor, [])
+      assert meta[:do_not_federate]
     end
   end
 
