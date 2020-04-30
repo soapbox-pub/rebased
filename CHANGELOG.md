@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [unreleased-patch]
 ### Security
+- Disallow re-registration of previously deleted users, which allowed viewing direct messages addressed to them
 - Mastodon API: Fix `POST /api/v1/follow_requests/:id/authorize` allowing to force a follow from a local user even if they didn't request to follow
 
 ### Fixed
