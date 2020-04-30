@@ -32,15 +32,16 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       %{user: user, delete: delete, post: post, object: object, delete_user: delete_user}
     end
 
-    test "it handles object deletions", %{delete: delete, post: post, object: object} do
+    test "it handles object deletions", %{delete: delete, post: post, object: object, user: user} do
       # In object deletions, the object is replaced by a tombstone and the
       # create activity is deleted.
 
-      with_mock Pleroma.Web.ActivityPub.ActivityPub,
+      with_mock Pleroma.Web.ActivityPub.ActivityPub, [:passthrough],
         stream_out: fn _ -> nil end,
         stream_out_participations: fn _, _ -> nil end do
         {:ok, delete, _} = SideEffects.handle(delete)
         user = User.get_cached_by_ap_id(object.data["actor"])
+
         assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out(delete))
         assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out_participations(object, user))
       end
@@ -48,6 +49,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       object = Object.get_by_id(object.id)
       assert object.data["type"] == "Tombstone"
       refute Activity.get_by_id(post.id)
+
+      user = User.get_by_id(user.id)
+      assert user.note_count == 0
     end
 
     test "it handles user deletions", %{delete_user: delete, user: user} do
