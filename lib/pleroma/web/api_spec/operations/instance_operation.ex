@@ -26,7 +26,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
   def peers_operation do
     %Operation{
       tags: ["Instance"],
-      summary: "List of connected domains",
+      summary: "List of known hosts",
       operationId: "InstanceController.peers",
       responses: %{
         200 => Operation.response("Array of domains", "application/json", array_of_domains())
