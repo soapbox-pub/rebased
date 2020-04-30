@@ -151,15 +151,18 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       assert like["id"] == activity.id
     end
 
-    test "does not return favorites for specified user_id when user is not logged in", %{
+    test "returns favorites for specified user_id when requester is not logged in", %{
       user: user
     } do
       activity = insert(:note_activity)
       CommonAPI.favorite(user, activity.id)
 
-      build_conn()
-      |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-      |> json_response(403)
+      response =
+        build_conn()
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+        |> json_response(200)
+
+      assert length(response) == 1
     end
 
     test "returns favorited DM only when user is logged in and he is one of recipients", %{
@@ -185,9 +188,12 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
         assert length(response) == 1
       end
 
-      build_conn()
-      |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-      |> json_response(403)
+      response =
+        build_conn()
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+        |> json_response(200)
+
+      assert length(response) == 0
     end
 
     test "does not return others' favorited DM when user is not one of recipients", %{

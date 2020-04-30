@@ -28,18 +28,26 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   plug(
     OAuthScopesPlug,
+    %{scopes: ["read:statuses"], fallback: :proceed_unauthenticated}
+    when action == :emoji_reactions_by
+  )
+
+  plug(
+    OAuthScopesPlug,
     %{scopes: ["write:statuses"]}
     when action in [:react_with_emoji, :unreact_with_emoji]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:conversations"]} when action in [:update_conversation, :read_conversations]
+    %{scopes: ["write:conversations"]}
+    when action in [:update_conversation, :mark_conversations_as_read]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :read_notification)
-
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:notifications"]} when action == :mark_notifications_as_read
+  )
 
   def emoji_reactions_by(%{assigns: %{user: user}} = conn, %{"id" => activity_id} = params) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
@@ -167,7 +175,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def read_conversations(%{assigns: %{user: user}} = conn, _params) do
+  def mark_conversations_as_read(%{assigns: %{user: user}} = conn, _params) do
     with {:ok, _, participations} <- Participation.mark_all_as_read(user) do
       conn
       |> add_link_headers(participations)
@@ -176,7 +184,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def read_notification(%{assigns: %{user: user}} = conn, %{"id" => notification_id}) do
+  def mark_notifications_as_read(%{assigns: %{user: user}} = conn, %{"id" => notification_id}) do
     with {:ok, notification} <- Notification.read_one(user, notification_id) do
       conn
       |> put_view(NotificationView)
@@ -189,7 +197,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def read_notification(%{assigns: %{user: user}} = conn, %{"max_id" => max_id} = params) do
+  def mark_notifications_as_read(%{assigns: %{user: user}} = conn, %{"max_id" => max_id} = params) do
     with notifications <- Notification.set_read_up_to(user, max_id) do
       notifications = Enum.take(notifications, 80)
 

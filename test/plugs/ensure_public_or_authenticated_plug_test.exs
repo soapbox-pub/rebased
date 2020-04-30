@@ -29,7 +29,7 @@ defmodule Pleroma.Plugs.EnsurePublicOrAuthenticatedPlugTest do
       conn
       |> EnsurePublicOrAuthenticatedPlug.call(%{})
 
-    assert ret_conn == conn
+    refute ret_conn.halted
   end
 
   test "it continues if a user is assigned, even if not public", %{conn: conn} do
@@ -43,6 +43,6 @@ defmodule Pleroma.Plugs.EnsurePublicOrAuthenticatedPlugTest do
       conn
       |> EnsurePublicOrAuthenticatedPlug.call(%{})
 
-    assert ret_conn == conn
+    refute ret_conn.halted
   end
 end

@@ -20,8 +20,6 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
 
   plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action not in @oauth_read_actions)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   # GET /api/v1/notifications
   def index(conn, %{"account_id" => account_id} = params) do
     case Pleroma.User.get_cached_by_id(account_id) do

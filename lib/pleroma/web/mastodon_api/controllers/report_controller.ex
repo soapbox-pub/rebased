@@ -11,7 +11,6 @@ defmodule Pleroma.Web.MastodonAPI.ReportController do
 
   plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
   plug(OAuthScopesPlug, %{scopes: ["write:reports"]} when action == :create)
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ReportOperation
 
