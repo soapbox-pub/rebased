@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Activity
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -14,6 +15,28 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  describe "delete objects" do
+    setup do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{"status" => "hey"})
+      object = Object.normalize(post)
+      {:ok, delete_data, _meta} = Builder.delete(user, object.data["id"])
+      {:ok, delete, _meta} = ActivityPub.persist(delete_data, local: true)
+      %{user: user, delete: delete, post: post, object: object}
+    end
+
+    test "it handles object deletions", %{delete: delete, post: post, object: object} do
+      # In object deletions, the object is replaced by a tombstone and the
+      # create activity is deleted
+
+      {:ok, _delete, _} = SideEffects.handle(delete)
+
+      object = Object.get_by_id(object.id)
+      assert object.data["type"] == "Tombstone"
+      refute Activity.get_by_id(post.id)
+    end
+  end
 
   describe "like objects" do
     setup do

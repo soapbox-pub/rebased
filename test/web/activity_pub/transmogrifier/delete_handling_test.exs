@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
       |> Map.put("object", object)
 
     assert capture_log(fn ->
-             :error = Transmogrifier.handle_incoming(data)
+             {:error, _} = Transmogrifier.handle_incoming(data)
            end) =~
              "[error] Could not decode user at fetch http://mastodon.example.org/users/gargron, {:error, :nxdomain}"
 
@@ -97,9 +97,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
       |> Poison.decode!()
       |> Map.put("actor", ap_id)
 
-    assert capture_log(fn ->
-             assert :error == Transmogrifier.handle_incoming(data)
-           end) =~ "Object containment failed"
+    assert match?({:error, _}, Transmogrifier.handle_incoming(data))
 
     assert User.get_cached_by_ap_id(ap_id)
   end

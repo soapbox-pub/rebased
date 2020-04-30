@@ -28,6 +28,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     result
   end
 
+  # Tasks this handles:
+  # - Delete create activity
+  # - Replace object with Tombstone
+  # - Set up notification
+  def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
+    with %Object{} = deleted_object <- Object.normalize(deleted_object),
+         {:ok, _, _} <- Object.delete(deleted_object) do
+      Notification.create_notifications(object)
+      {:ok, object, meta}
+    end
+  end
+
   # Nothing to do
   def handle(object, meta) do
     {:ok, object, meta}
