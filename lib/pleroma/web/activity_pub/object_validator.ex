@@ -46,8 +46,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     |> Map.new(fn {key, val} -> {to_string(key), val} end)
   end
 
+  def fetch_actor(object) do
+    with {:ok, actor} <- Types.ObjectID.cast(object["actor"]) do
+      User.get_or_fetch_by_ap_id(actor)
+    end
+  end
+
   def fetch_actor_and_object(object) do
-    User.get_or_fetch_by_ap_id(object["actor"])
+    fetch_actor(object)
     Object.normalize(object["object"])
     :ok
   end
