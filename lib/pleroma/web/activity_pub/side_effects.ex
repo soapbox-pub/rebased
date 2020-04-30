@@ -30,7 +30,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   # Tasks this handles:
-  # - Delete create activity
+  # - Delete and unpins the create activity
   # - Replace object with Tombstone
   # - Set up notification
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
@@ -40,7 +40,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     result =
       case deleted_object do
         %Object{} ->
-          with {:ok, _, _} <- Object.delete(deleted_object) do
+          with {:ok, _, activity} <- Object.delete(deleted_object),
+               %User{} = user <- User.get_cached_by_ap_id(deleted_object.data["actor"]) do
+            User.remove_pinnned_activity(user, activity)
             :ok
           end
 
