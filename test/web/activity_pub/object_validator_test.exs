@@ -21,7 +21,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
     end
 
     test "it is valid for a post deletion", %{valid_post_delete: valid_post_delete} do
-      assert match?({:ok, _, _}, ObjectValidator.validate(valid_post_delete, []))
+      {:ok, valid_post_delete_u, _} = ObjectValidator.validate(valid_post_delete, [])
+
+      assert valid_post_delete_u["deleted_activity_id"]
     end
 
     test "it is valid for a user deletion", %{valid_user_delete: valid_user_delete} do
