@@ -12,8 +12,6 @@ defmodule Pleroma.Web.PleromaAPI.MascotController do
   plug(OAuthScopesPlug, %{scopes: ["read:accounts"]} when action == :show)
   plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action != :show)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   @doc "GET /api/v1/pleroma/mascot"
   def show(%{assigns: %{user: user}} = conn, _params) do
     json(conn, User.get_mascot(user))

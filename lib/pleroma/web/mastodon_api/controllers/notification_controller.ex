@@ -22,8 +22,6 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
 
   plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action not in @oauth_read_actions)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.NotificationOperation
 
   # GET /api/v1/notifications

@@ -11,15 +11,15 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
 
   plug(:list_by_id_and_user when action not in [:index, :create])
 
-  plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action in [:index, :show, :list_accounts])
+  @oauth_read_actions [:index, :show, :list_accounts]
+
+  plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action in @oauth_read_actions)
 
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:lists"]}
-    when action in [:create, :update, :delete, :add_to_list, :remove_from_list]
+    when action not in @oauth_read_actions
   )
-
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 

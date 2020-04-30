@@ -766,7 +766,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "POST /users/:nickname/outbox" do
-    test "it rejects posts from other users / unauuthenticated users", %{conn: conn} do
+    test "it rejects posts from other users / unauthenticated users", %{conn: conn} do
       data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
       user = insert(:user)
       other_user = insert(:user)

@@ -22,8 +22,6 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
 
   plug(OAuthScopesPlug, %{scopes: ["write:statuses"]} when action == :vote)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   @doc "GET /api/v1/polls/:id"
   def show(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Object{} = object <- Object.get_by_id_and_maybe_refetch(id, interval: 60),

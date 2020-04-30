@@ -4,7 +4,9 @@
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
+
   require Logger
+
   alias Pleroma.User
   alias Pleroma.Web.Metadata
 
