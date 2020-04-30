@@ -271,6 +271,16 @@ defmodule Pleroma.Notification do
     |> Repo.delete_all()
   end
 
+  def dismiss(%Pleroma.Activity{} = activity) do
+    Notification
+    |> where([n], n.activity_id == ^activity.id)
+    |> Repo.delete_all()
+    |> case do
+      {_, notifications} -> {:ok, notifications}
+      _ -> {:error, "Cannot dismiss notification"}
+    end
+  end
+
   def dismiss(%{id: user_id} = _user, id) do
     notification = Repo.get(Notification, id)
 
