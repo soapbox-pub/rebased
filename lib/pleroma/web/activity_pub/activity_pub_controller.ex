@@ -414,7 +414,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   defp handle_user_activity(%User{} = user, %{"type" => "Delete"} = params) do
     with %Object{} = object <- Object.normalize(params["object"]),
          true <- user.is_moderator || user.ap_id == object.data["actor"],
-         {:ok, delete} <- ActivityPub.delete(object) do
+         {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
+         {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
       {:ok, delete}
     else
       _ -> {:error, dgettext("errors", "Can't delete object")}
