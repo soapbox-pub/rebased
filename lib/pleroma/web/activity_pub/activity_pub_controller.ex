@@ -34,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   plug(
     EnsureAuthenticatedPlug,
-    [unless_func: &FederatingPlug.federating?/0] when action not in @federating_only_actions
+    [unless_func: &FederatingPlug.federating?/1] when action not in @federating_only_actions
   )
 
   plug(

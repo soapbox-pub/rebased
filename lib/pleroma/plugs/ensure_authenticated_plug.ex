@@ -19,22 +19,7 @@ defmodule Pleroma.Plugs.EnsureAuthenticatedPlug do
     conn
   end
 
-  def perform(conn, options) do
-    perform =
-      cond do
-        options[:if_func] -> options[:if_func].()
-        options[:unless_func] -> !options[:unless_func].()
-        true -> true
-      end
-
-    if perform do
-      fail(conn)
-    else
-      conn
-    end
-  end
-
-  def fail(conn) do
+  def perform(conn, _) do
     conn
     |> render_error(:forbidden, "Invalid credentials.")
     |> halt()
