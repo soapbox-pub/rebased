@@ -41,8 +41,8 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
       Operation.parameter(
         :limit,
         :query,
-        %Schema{type: :integer, default: 20, maximum: 40},
-        "Limit"
+        %Schema{type: :integer, default: 20},
+        "Maximum number of items to return. Will be ignored if it's more than 40"
       )
     ]
   end
