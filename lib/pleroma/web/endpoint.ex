@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :pleroma
 
+  require Pleroma.Constants
+
   socket("/socket", Pleroma.Web.UserSocket)
 
   plug(Pleroma.Plugs.SetLocalePlug)
@@ -34,8 +36,7 @@ defmodule Pleroma.Web.Endpoint do
     Plug.Static,
     at: "/",
     from: :pleroma,
-    only:
-      ~w(index.html robots.txt static finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc),
+    only: Pleroma.Constants.static_only_files(),
     # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
     gzip: true,
     cache_control_for_etags: @static_cache_control,
