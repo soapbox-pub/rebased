@@ -133,18 +133,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   action_fallback(:errors)
 
-  def user_delete(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
-    user = User.get_cached_by_nickname(nickname)
-    User.delete(user)
-
-    ModerationLog.insert_log(%{
-      actor: admin,
-      subject: [user],
-      action: "delete"
-    })
-
-    conn
-    |> json(nickname)
+  def user_delete(conn, %{"nickname" => nickname}) do
+    user_delete(conn, %{"nicknames" => [nickname]})
   end
 
   def user_delete(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do

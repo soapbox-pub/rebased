@@ -156,7 +156,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert ModerationLog.get_log_entry_message(log_entry) ==
                "@#{admin.nickname} deleted users: @#{user.nickname}"
 
-      assert json_response(conn, 200) == user.nickname
+      assert json_response(conn, 200) == [user.nickname]
     end
 
     test "multiple users", %{admin: admin, conn: conn} do
