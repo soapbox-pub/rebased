@@ -8,7 +8,6 @@ defmodule Pleroma.Signature do
   alias Pleroma.Keys
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   def key_id_to_actor_id(key_id) do
     uri =
@@ -22,16 +21,14 @@ defmodule Pleroma.Signature do
         uri
       end
 
-    maybe_ap_id = URI.to_string(uri)
-
-    case Types.ObjectID.cast(maybe_ap_id) do
-      {:ok, ap_id} ->
-        {:ok, ap_id}
+    case uri do
+      %URI{scheme: scheme} when scheme in ["https", "http"] ->
+        {:ok, URI.to_string(uri)}
 
       _ ->
-        case Pleroma.Web.WebFinger.finger(maybe_ap_id) do
+        case Pleroma.Web.WebFinger.finger(URI.to_string(uri)) do
           %{"ap_id" => ap_id} -> {:ok, ap_id}
-          _ -> {:error, maybe_ap_id}
+          _ -> {:error, URI.to_string(uri)}
         end
     end
   end
