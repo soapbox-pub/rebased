@@ -382,9 +382,9 @@ defmodule Pleroma.Web.CommonAPI do
     ThreadMute.exists?(user.id, activity.data["context"])
   end
 
-  def report(user, %{"account_id" => account_id} = data) do
-    with {:ok, account} <- get_reported_account(account_id),
-         {:ok, {content_html, _, _}} <- make_report_content_html(data["comment"]),
+  def report(user, data) do
+    with {:ok, account} <- get_reported_account(data.account_id),
+         {:ok, {content_html, _, _}} <- make_report_content_html(data[:comment]),
          {:ok, statuses} <- get_report_statuses(account, data) do
       ActivityPub.flag(%{
         context: Utils.generate_context_id(),
@@ -392,12 +392,10 @@ defmodule Pleroma.Web.CommonAPI do
         account: account,
         statuses: statuses,
         content: content_html,
-        forward: data["forward"] || false
+        forward: Map.get(data, :forward, false)
       })
     end
   end
-
-  def report(_user, _params), do: {:error, dgettext("errors", "Valid `account_id` required")}
 
   defp get_reported_account(account_id) do
     case User.get_cached_by_id(account_id) do
