@@ -28,7 +28,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end
   end
 
-  def validate_actor_presence(cng, field_name \\ :actor) do
+  def validate_actor_presence(cng, options \\ []) do
+    field_name = Keyword.get(options, :field_name, :actor)
+
     cng
     |> validate_change(field_name, fn field_name, actor ->
       if User.get_cached_by_ap_id(actor) do
@@ -39,25 +41,39 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end)
   end
 
-  def validate_object_presence(cng, field_name \\ :object) do
+  def validate_object_presence(cng, options \\ []) do
+    field_name = Keyword.get(options, :field_name, :object)
+    allowed_types = Keyword.get(options, :allowed_types, false)
+
     cng
-    |> validate_change(field_name, fn field_name, object ->
-      if Object.get_cached_by_ap_id(object) do
-        []
-      else
-        [{field_name, "can't find object"}]
+    |> validate_change(field_name, fn field_name, object_id ->
+      object = Object.get_cached_by_ap_id(object_id)
+
+      cond do
+        !object ->
+          [{field_name, "can't find object"}]
+
+        object && allowed_types && object.data["type"] not in allowed_types ->
+          [{field_name, "object not in allowed types"}]
+
+        true ->
+          []
       end
     end)
   end
 
-  def validate_object_or_user_presence(cng, field_name \\ :object) do
-    cng
-    |> validate_change(field_name, fn field_name, object ->
-      if Object.get_cached_by_ap_id(object) || User.get_cached_by_ap_id(object) do
-        []
-      else
-        [{field_name, "can't find object"}]
-      end
-    end)
+  def validate_object_or_user_presence(cng, options \\ []) do
+    field_name = Keyword.get(options, :field_name, :object)
+    options = Keyword.put(options, :field_name, field_name)
+
+    actor_cng =
+      cng
+      |> validate_actor_presence(options)
+
+    object_cng =
+      cng
+      |> validate_object_presence(options)
+
+    if actor_cng.valid?, do: actor_cng, else: object_cng
   end
 end

@@ -42,13 +42,23 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
     end
   end
 
+  @deletable_types ~w{
+    Answer
+    Article
+    Audio
+    Event
+    Note
+    Page
+    Question
+    Video
+  }
   def validate_data(cng) do
     cng
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_inclusion(:type, ["Delete"])
     |> validate_actor_presence()
     |> validate_deletion_rights()
-    |> validate_object_or_user_presence()
+    |> validate_object_or_user_presence(allowed_types: @deletable_types)
     |> add_deleted_activity_id()
   end
 

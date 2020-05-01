@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
@@ -24,6 +25,24 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       {:ok, valid_post_delete, _} = ObjectValidator.validate(valid_post_delete, [])
 
       assert valid_post_delete["deleted_activity_id"]
+    end
+
+    test "it is invalid if the object isn't in a list of certain types", %{
+      valid_post_delete: valid_post_delete
+    } do
+      object = Object.get_by_ap_id(valid_post_delete["object"])
+
+      data =
+        object.data
+        |> Map.put("type", "Like")
+
+      {:ok, _object} =
+        object
+        |> Ecto.Changeset.change(%{data: data})
+        |> Object.update_and_set_cache()
+
+      {:error, cng} = ObjectValidator.validate(valid_post_delete, [])
+      assert {:object, {"object not in allowed types", []}} in cng.errors
     end
 
     test "it is valid for a user deletion", %{valid_user_delete: valid_user_delete} do
