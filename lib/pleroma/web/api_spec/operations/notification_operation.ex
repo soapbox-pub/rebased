@@ -178,7 +178,16 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
   defp notification_type do
     %Schema{
       type: :string,
-      enum: ["follow", "favourite", "reblog", "mention", "poll", "pleroma:emoji_reaction", "move"],
+      enum: [
+        "follow",
+        "favourite",
+        "reblog",
+        "mention",
+        "poll",
+        "pleroma:emoji_reaction",
+        "move",
+        "follow_request"
+      ],
       description: """
       The type of event that resulted in the notification.
 
