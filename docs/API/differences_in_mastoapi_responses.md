@@ -202,4 +202,5 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `bio`: optional
 - `captcha_solution`: optional, contains provider-specific captcha solution,
 - `captcha_token`: optional, contains provider-specific captcha token
+- `captcha_answer_data`: optional, contains provider-specific captcha data
 - `token`: invite token required when the registrations aren't public.
