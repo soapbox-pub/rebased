@@ -42,7 +42,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         title: %Schema{type: :string, description: "The title of the website"},
         description: %Schema{
           type: :string,
-          description: "Admin-defined description of the Mastodon site"
+          description: "Admin-defined description of the Pleroma site"
         },
         version: %Schema{
           type: :string,
