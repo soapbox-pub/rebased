@@ -3,6 +3,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.3] - 2020-05-02
+
+### Security
+- Disallow re-registration of previously deleted users, which allowed viewing direct messages addressed to them
+- Mastodon API: Fix `POST /api/v1/follow_requests/:id/authorize` allowing to force a follow from a local user even if they didn't request to follow
+- CSP: Sandbox uploads
+
+### Fixed
+- Notifications from blocked domains
+- Potential federation issues with Mastodon versions before 3.0.0
+- HTTP Basic Authentication permissions issue
+- Follow/Block imports not being able to find the user if the nickname started with an `@`
+- Instance stats counting internal users
+- Inability to run a From Source release without git
+- ObjectAgePolicy didn't filter out old messages
+- `blob:` urls not being allowed by CSP
+
+### Added
+- NodeInfo: ObjectAgePolicy settings to the `federation` list.
+- Follow request notifications
+<details>
+  <summary>API Changes</summary>
+- Admin API: `GET /api/pleroma/admin/need_reboot`.
+</details>
+
+### Upgrade notes
+
+1. Restart Pleroma
+2. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+
 ## [2.0.2] - 2020-04-08
 ### Added
 - Support for Funkwhale's `Audio` activity
