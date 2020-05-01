@@ -5,8 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
-
   setup do: oauth_access(["read"])
 
   test "returns empty result", %{conn: conn} do
