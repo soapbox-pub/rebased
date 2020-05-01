@@ -3,9 +3,9 @@
         "license": "Test license",
         "homepage": "https://pleroma.social",
         "description": "Test description",
-        "fallback-src": "https://nonshared-pack",
-        "fallback-src-sha256": "74409E2674DAA06C072729C6C8426C4CB3B7E0B85ED77792DB7A436E11D76DAF",
-        "share-files": false
+        "can-download": true,
+        "share-files": true,
+        "download-sha256": "57482F30674FD3DE821FF48C81C00DA4D4AF1F300209253684ABA7075E5FC238"
     },
     "files": {
         "blank": "blank.png"
