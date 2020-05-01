@@ -13,8 +13,9 @@ defmodule Pleroma.Web.Plugs.MappedSignatureToIdentityPlug do
   def init(options), do: options
 
   defp key_id_from_conn(conn) do
-    with %{"keyId" => key_id} <- HTTPSignatures.signature_for_conn(conn) do
-      Signature.key_id_to_actor_id(key_id)
+    with %{"keyId" => key_id} <- HTTPSignatures.signature_for_conn(conn),
+         {:ok, ap_id} <- Signature.key_id_to_actor_id(key_id) do
+      ap_id
     else
       _ ->
         nil

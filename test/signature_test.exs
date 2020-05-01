@@ -49,7 +49,8 @@ defmodule Pleroma.SignatureTest do
 
     test "it returns error when not found user" do
       assert capture_log(fn ->
-               assert Signature.fetch_public_key(make_fake_conn("test-ap_id")) == {:error, :error}
+               assert Signature.fetch_public_key(make_fake_conn("https://test-ap-id")) ==
+                        {:error, :error}
              end) =~ "[error] Could not decode user"
     end
 
@@ -69,7 +70,7 @@ defmodule Pleroma.SignatureTest do
 
     test "it returns error when not found user" do
       assert capture_log(fn ->
-               {:error, _} = Signature.refetch_public_key(make_fake_conn("test-ap_id"))
+               {:error, _} = Signature.refetch_public_key(make_fake_conn("https://test-ap_id"))
              end) =~ "[error] Could not decode user"
     end
   end
@@ -105,12 +106,21 @@ defmodule Pleroma.SignatureTest do
   describe "key_id_to_actor_id/1" do
     test "it properly deduces the actor id for misskey" do
       assert Signature.key_id_to_actor_id("https://example.com/users/1234/publickey") ==
-               "https://example.com/users/1234"
+               {:ok, "https://example.com/users/1234"}
     end
 
     test "it properly deduces the actor id for mastodon and pleroma" do
       assert Signature.key_id_to_actor_id("https://example.com/users/1234#main-key") ==
-               "https://example.com/users/1234"
+               {:ok, "https://example.com/users/1234"}
+    end
+
+    test "it calls webfinger for 'acct:' accounts" do
+      with_mock(Pleroma.Web.WebFinger,
+        finger: fn _ -> %{"ap_id" => "https://gensokyo.2hu/users/raymoo"} end
+      ) do
+        assert Signature.key_id_to_actor_id("acct:raymoo@gensokyo.2hu") ==
+                 {:ok, "https://gensokyo.2hu/users/raymoo"}
+      end
     end
   end
 
