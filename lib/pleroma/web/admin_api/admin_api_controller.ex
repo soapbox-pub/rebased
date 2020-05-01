@@ -17,6 +17,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
@@ -138,8 +140,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def user_delete(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
-    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
-    User.delete(users)
+    users =
+      nicknames
+      |> Enum.map(&User.get_cached_by_nickname/1)
+
+    users
+    |> Enum.each(fn user ->
+      {:ok, delete_data, _} = Builder.delete(admin, user.ap_id)
+      Pipeline.common_pipeline(delete_data, local: true)
+    end)
 
     ModerationLog.insert_log(%{
       actor: admin,
