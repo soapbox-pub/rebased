@@ -46,14 +46,6 @@ defmodule Pleroma.Config.TransferTask do
     with {_, true} <- {:configurable, Config.get(:configurable_from_database)} do
       # We need to restart applications for loaded settings take effect
 
-      # TODO: some problem with prometheus after restart!
-      reject_restart =
-        if restart_pleroma? do
-          [nil, :prometheus]
-        else
-          [:pleroma, nil, :prometheus]
-        end
-
       {logger, other} =
         (Repo.all(ConfigDB) ++ deleted_settings)
         |> Enum.map(&transform_and_merge/1)
@@ -65,10 +57,20 @@ defmodule Pleroma.Config.TransferTask do
 
       started_applications = Application.started_applications()
 
+      # TODO: some problem with prometheus after restart!
+      reject = [nil, :prometheus, :postgrex]
+
+      reject =
+        if restart_pleroma? do
+          reject
+        else
+          [:pleroma | reject]
+        end
+
       other
       |> Enum.map(&update/1)
       |> Enum.uniq()
-      |> Enum.reject(&(&1 in reject_restart))
+      |> Enum.reject(&(&1 in reject))
       |> maybe_set_pleroma_last()
       |> Enum.each(&restart(started_applications, &1, Config.get(:env)))
 
@@ -122,7 +124,7 @@ defmodule Pleroma.Config.TransferTask do
     :ok = update_env(:logger, :backends, merged)
   end
 
-  defp configure({group, key, _, merged}) do
+  defp configure({_, key, _, merged}) when key in [:console, :ex_syslogger] do
     merged =
       if key == :console do
         put_in(merged[:format], merged[:format] <> "\n")
@@ -136,7 +138,12 @@ defmodule Pleroma.Config.TransferTask do
         else: key
 
     Logger.configure_backend(backend, merged)
-    :ok = update_env(:logger, group, merged)
+    :ok = update_env(:logger, key, merged)
+  end
+
+  defp configure({_, key, _, merged}) do
+    Logger.configure([{key, merged}])
+    :ok = update_env(:logger, key, merged)
   end
 
   defp update({group, key, value, merged}) do

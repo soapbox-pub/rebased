@@ -20,7 +20,7 @@ defmodule Pleroma.Plugs.EnsureAuthenticatedPlugTest do
       conn = assign(conn, :user, %User{})
       ret_conn = EnsureAuthenticatedPlug.call(conn, %{})
 
-      assert ret_conn == conn
+      refute ret_conn.halted
     end
   end
 
@@ -34,20 +34,22 @@ defmodule Pleroma.Plugs.EnsureAuthenticatedPlugTest do
 
     test "it continues if a user is assigned", %{conn: conn, true_fn: true_fn, false_fn: false_fn} do
       conn = assign(conn, :user, %User{})
-      assert EnsureAuthenticatedPlug.call(conn, if_func: true_fn) == conn
-      assert EnsureAuthenticatedPlug.call(conn, if_func: false_fn) == conn
-      assert EnsureAuthenticatedPlug.call(conn, unless_func: true_fn) == conn
-      assert EnsureAuthenticatedPlug.call(conn, unless_func: false_fn) == conn
+      refute EnsureAuthenticatedPlug.call(conn, if_func: true_fn).halted
+      refute EnsureAuthenticatedPlug.call(conn, if_func: false_fn).halted
+      refute EnsureAuthenticatedPlug.call(conn, unless_func: true_fn).halted
+      refute EnsureAuthenticatedPlug.call(conn, unless_func: false_fn).halted
     end
 
     test "it continues if a user is NOT assigned but :if_func evaluates to `false`",
          %{conn: conn, false_fn: false_fn} do
-      assert EnsureAuthenticatedPlug.call(conn, if_func: false_fn) == conn
+      ret_conn = EnsureAuthenticatedPlug.call(conn, if_func: false_fn)
+      refute ret_conn.halted
     end
 
     test "it continues if a user is NOT assigned but :unless_func evaluates to `true`",
          %{conn: conn, true_fn: true_fn} do
-      assert EnsureAuthenticatedPlug.call(conn, unless_func: true_fn) == conn
+      ret_conn = EnsureAuthenticatedPlug.call(conn, unless_func: true_fn)
+      refute ret_conn.halted
     end
 
     test "it halts if a user is NOT assigned and :if_func evaluates to `true`",

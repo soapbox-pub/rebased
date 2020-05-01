@@ -54,13 +54,13 @@ defmodule Pleroma.User.Query do
             select: term(),
             limit: pos_integer()
           }
-          | %{}
+          | map()
 
   @ilike_criteria [:nickname, :name, :query]
   @equal_criteria [:email]
   @contains_criteria [:ap_id, :nickname]
 
-  @spec build(criteria()) :: Query.t()
+  @spec build(Query.t(), criteria()) :: Query.t()
   def build(query \\ base_query(), criteria) do
     prepare_query(query, criteria)
   end

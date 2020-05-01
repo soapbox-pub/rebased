@@ -9,14 +9,19 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2, skip_relationships?: 1]
 
   alias Ecto.Changeset
+  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
 
   require Pleroma.Constants
+
+  plug(
+    :skip_plug,
+    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :confirmation_resend
+  )
 
   plug(
     OAuthScopesPlug,
@@ -34,15 +39,13 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
          ]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["read:favourites"]} when action == :favourites)
-
-  # An extra safety measure for possible actions not guarded by OAuth permissions specification
   plug(
-    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-    when action != :confirmation_resend
+    OAuthScopesPlug,
+    %{scopes: ["read:favourites"], fallback: :proceed_unauthenticated} when action == :favourites
   )
 
   plug(RateLimiter, [name: :account_confirmation_resend] when action == :confirmation_resend)
+
   plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])
   plug(:put_view, Pleroma.Web.MastodonAPI.AccountView)
 
@@ -58,38 +61,32 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   @doc "PATCH /api/v1/pleroma/accounts/update_avatar"
   def update_avatar(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
-    {:ok, user} =
+    {:ok, _user} =
       user
       |> Changeset.change(%{avatar: nil})
       |> User.update_and_set_cache()
-
-    CommonAPI.update(user)
 
     json(conn, %{url: nil})
   end
 
   def update_avatar(%{assigns: %{user: user}} = conn, params) do
     {:ok, %{data: data}} = ActivityPub.upload(params, type: :avatar)
-    {:ok, user} = user |> Changeset.change(%{avatar: data}) |> User.update_and_set_cache()
+    {:ok, _user} = user |> Changeset.change(%{avatar: data}) |> User.update_and_set_cache()
     %{"url" => [%{"href" => href} | _]} = data
-
-    CommonAPI.update(user)
 
     json(conn, %{url: href})
   end
 
   @doc "PATCH /api/v1/pleroma/accounts/update_banner"
   def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
-    with {:ok, user} <- User.update_banner(user, %{}) do
-      CommonAPI.update(user)
+    with {:ok, _user} <- User.update_banner(user, %{}) do
       json(conn, %{url: nil})
     end
   end
 
   def update_banner(%{assigns: %{user: user}} = conn, params) do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
-         {:ok, user} <- User.update_banner(user, object.data) do
-      CommonAPI.update(user)
+         {:ok, _user} <- User.update_banner(user, object.data) do
       %{"url" => [%{"href" => href} | _]} = object.data
 
       json(conn, %{url: href})

@@ -27,7 +27,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.MastodonAPI.AppView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.Router
 
   require Logger
@@ -46,6 +48,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     %{scopes: ["write:accounts"], admin: true}
     when action in [
            :get_password_reset,
+           :force_password_reset,
            :user_delete,
            :users_create,
            :user_toggle_activation,
@@ -54,7 +57,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :tag_users,
            :untag_users,
            :right_add,
+           :right_add_multiple,
            :right_delete,
+           :right_delete_multiple,
            :update_user_credentials
          ]
   )
@@ -82,13 +87,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:reports"], admin: true}
-    when action in [:reports_update]
+    when action in [:reports_update, :report_notes_create, :report_notes_delete]
   )
 
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"], admin: true}
-    when action == :list_user_statuses
+    when action in [:list_statuses, :list_user_statuses, :list_instance_statuses]
   )
 
   plug(
@@ -100,13 +105,30 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read"], admin: true}
-    when action in [:config_show, :list_log, :stats]
+    when action in [
+           :config_show,
+           :list_log,
+           :stats,
+           :relay_list,
+           :config_descriptions,
+           :need_reboot
+         ]
   )
 
   plug(
     OAuthScopesPlug,
     %{scopes: ["write"], admin: true}
-    when action == :config_update
+    when action in [
+           :restart,
+           :config_update,
+           :resend_confirmation_email,
+           :confirm_email,
+           :oauth_app_create,
+           :oauth_app_list,
+           :oauth_app_update,
+           :oauth_app_delete,
+           :reload_emoji
+         ]
   )
 
   action_fallback(:errors)
@@ -914,16 +936,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         end)
         |> List.flatten()
 
-      response = %{configs: merged}
-
-      response =
-        if Restarter.Pleroma.need_reboot?() do
-          Map.put(response, :need_reboot, true)
-        else
-          response
-        end
-
-      json(conn, response)
+      json(conn, %{configs: merged, need_reboot: Restarter.Pleroma.need_reboot?()})
     end
   end
 
@@ -950,28 +963,22 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       Config.TransferTask.load_and_update_env(deleted, false)
 
-      need_reboot? =
-        Restarter.Pleroma.need_reboot?() ||
-          Enum.any?(updated, fn config ->
+      if !Restarter.Pleroma.need_reboot?() do
+        changed_reboot_settings? =
+          (updated ++ deleted)
+          |> Enum.any?(fn config ->
             group = ConfigDB.from_string(config.group)
             key = ConfigDB.from_string(config.key)
             value = ConfigDB.from_binary(config.value)
             Config.TransferTask.pleroma_need_restart?(group, key, value)
           end)
 
-      response = %{configs: updated}
-
-      response =
-        if need_reboot? do
-          Restarter.Pleroma.need_reboot()
-          Map.put(response, :need_reboot, need_reboot?)
-        else
-          response
-        end
+        if changed_reboot_settings?, do: Restarter.Pleroma.need_reboot()
+      end
 
       conn
       |> put_view(ConfigView)
-      |> render("index.json", response)
+      |> render("index.json", %{configs: updated, need_reboot: Restarter.Pleroma.need_reboot?()})
     end
   end
 
@@ -981,6 +988,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       json(conn, %{})
     end
+  end
+
+  def need_reboot(conn, _params) do
+    json(conn, %{need_reboot: Restarter.Pleroma.need_reboot?()})
   end
 
   defp configurable_from_database(conn) do
@@ -1028,6 +1039,83 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn |> json("")
   end
 
+  def oauth_app_create(conn, params) do
+    params =
+      if params["name"] do
+        Map.put(params, "client_name", params["name"])
+      else
+        params
+      end
+
+    result =
+      case App.create(params) do
+        {:ok, app} ->
+          AppView.render("show.json", %{app: app, admin: true})
+
+        {:error, changeset} ->
+          App.errors(changeset)
+      end
+
+    json(conn, result)
+  end
+
+  def oauth_app_update(conn, params) do
+    params =
+      if params["name"] do
+        Map.put(params, "client_name", params["name"])
+      else
+        params
+      end
+
+    with {:ok, app} <- App.update(params) do
+      json(conn, AppView.render("show.json", %{app: app, admin: true}))
+    else
+      {:error, changeset} ->
+        json(conn, App.errors(changeset))
+
+      nil ->
+        json_response(conn, :bad_request, "")
+    end
+  end
+
+  def oauth_app_list(conn, params) do
+    {page, page_size} = page_params(params)
+
+    search_params = %{
+      client_name: params["name"],
+      client_id: params["client_id"],
+      page: page,
+      page_size: page_size
+    }
+
+    search_params =
+      if Map.has_key?(params, "trusted") do
+        Map.put(search_params, :trusted, params["trusted"])
+      else
+        search_params
+      end
+
+    with {:ok, apps, count} <- App.search(search_params) do
+      json(
+        conn,
+        AppView.render("index.json",
+          apps: apps,
+          count: count,
+          page_size: page_size,
+          admin: true
+        )
+      )
+    end
+  end
+
+  def oauth_app_delete(conn, params) do
+    with {:ok, _app} <- App.destroy(params["id"]) do
+      json_response(conn, :no_content, "")
+    else
+      _ -> json_response(conn, :bad_request, "")
+    end
+  end
+
   def stats(conn, _) do
     count = Stats.get_status_visibility_count()
 
@@ -1035,25 +1123,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(%{"status_visibility" => count})
   end
 
-  def errors(conn, {:error, :not_found}) do
+  defp errors(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
     |> json(dgettext("errors", "Not found"))
   end
 
-  def errors(conn, {:error, reason}) do
+  defp errors(conn, {:error, reason}) do
     conn
     |> put_status(:bad_request)
     |> json(reason)
   end
 
-  def errors(conn, {:param_cast, _}) do
+  defp errors(conn, {:param_cast, _}) do
     conn
     |> put_status(:bad_request)
     |> json(dgettext("errors", "Invalid parameters"))
   end
 
-  def errors(conn, _) do
+  defp errors(conn, _) do
     conn
     |> put_status(:internal_server_error)
     |> json(dgettext("errors", "Something went wrong"))

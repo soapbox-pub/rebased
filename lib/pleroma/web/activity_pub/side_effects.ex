@@ -15,10 +15,17 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Add like to object
   # - Set up notification
   def handle(%{data: %{"type" => "Like"}} = object, meta) do
-    liked_object = Object.get_by_ap_id(object.data["object"])
-    Utils.add_like_to_object(object, liked_object)
-    Notification.create_notifications(object)
-    {:ok, object, meta}
+    {:ok, result} =
+      Pleroma.Repo.transaction(fn ->
+        liked_object = Object.get_by_ap_id(object.data["object"])
+        Utils.add_like_to_object(object, liked_object)
+
+        Notification.create_notifications(object)
+
+        {:ok, object, meta}
+      end)
+
+    result
   end
 
   # Nothing to do

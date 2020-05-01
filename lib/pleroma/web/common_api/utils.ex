@@ -10,7 +10,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
-  alias Pleroma.Emoji
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.Plugs.AuthenticationPlug
@@ -18,29 +17,10 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
-  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
   require Logger
   require Pleroma.Constants
-
-  # This is a hack for twidere.
-  def get_by_id_or_ap_id(id) do
-    activity =
-      with true <- FlakeId.flake_id?(id),
-           %Activity{} = activity <- Activity.get_by_id_with_object(id) do
-        activity
-      else
-        _ -> Activity.get_create_by_object_ap_id_with_object(id)
-      end
-
-    activity &&
-      if activity.data["type"] == "Create" do
-        activity
-      else
-        Activity.get_create_by_object_ap_id_with_object(activity.data["object"])
-      end
-  end
 
   def attachments_from_ids(%{"media_ids" => ids, "descriptions" => desc} = _) do
     attachments_from_ids_descs(ids, desc)
@@ -175,7 +155,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
             "replies" => %{"type" => "Collection", "totalItems" => 0}
           }
 
-          {note, Map.merge(emoji, Emoji.Formatter.get_emoji_map(option))}
+          {note, Map.merge(emoji, Pleroma.Emoji.Formatter.get_emoji_map(option))}
         end)
 
       end_time =
@@ -429,19 +409,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     else
       _ -> {:error, dgettext("errors", "Invalid password.")}
     end
-  end
-
-  def emoji_from_profile(%User{bio: bio, name: name}) do
-    [bio, name]
-    |> Enum.map(&Emoji.Formatter.get_emoji/1)
-    |> Enum.concat()
-    |> Enum.map(fn {shortcode, %Emoji{file: path}} ->
-      %{
-        "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{path}"},
-        "name" => ":#{shortcode}:"
-      }
-    end)
   end
 
   def maybe_notify_to_recipients(

@@ -28,6 +28,42 @@ defmodule Pleroma.Web.StreamerTest do
       {:ok, %{user: user, notify: notify}}
     end
 
+    test "it streams the user's post in the 'user' stream", %{user: user} do
+      task =
+        Task.async(fn ->
+          assert_receive {:text, _}, @streamer_timeout
+        end)
+
+      Streamer.add_socket(
+        "user",
+        %{transport_pid: task.pid, assigns: %{user: user}}
+      )
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+
+      Streamer.stream("user", activity)
+      Task.await(task)
+    end
+
+    test "it streams boosts of the user in the 'user' stream", %{user: user} do
+      task =
+        Task.async(fn ->
+          assert_receive {:text, _}, @streamer_timeout
+        end)
+
+      Streamer.add_socket(
+        "user",
+        %{transport_pid: task.pid, assigns: %{user: user}}
+      )
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hey"})
+      {:ok, announce, _} = CommonAPI.repeat(activity.id, user)
+
+      Streamer.stream("user", announce)
+      Task.await(task)
+    end
+
     test "it sends notify to in the 'user' stream", %{user: user, notify: notify} do
       task =
         Task.async(fn ->

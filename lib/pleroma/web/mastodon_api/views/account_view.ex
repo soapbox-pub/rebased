@@ -181,13 +181,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     bot = user.actor_type in ["Application", "Service"]
 
     emojis =
-      (user.source_data["tag"] || [])
-      |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
-      |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
+      Enum.map(user.emoji, fn {shortcode, url} ->
         %{
-          "shortcode" => String.trim(name, ":"),
-          "url" => MediaProxy.url(url),
-          "static_url" => MediaProxy.url(url),
+          "shortcode" => shortcode,
+          "url" => url,
+          "static_url" => url,
           "visible_in_picker" => false
         }
       end)

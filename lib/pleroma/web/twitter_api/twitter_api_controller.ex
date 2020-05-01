@@ -6,6 +6,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
 
   alias Pleroma.Notification
+  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
@@ -13,9 +14,17 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   require Logger
 
-  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :notifications_read)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:notifications"]} when action == :mark_notifications_as_read
+  )
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  plug(
+    :skip_plug,
+    [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :confirm_email
+  )
+
+  plug(:skip_plug, OAuthScopesPlug when action in [:oauth_tokens, :revoke_token])
 
   action_fallback(:errors)
 
@@ -44,13 +53,13 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     json_reply(conn, 201, "")
   end
 
-  def errors(conn, {:param_cast, _}) do
+  defp errors(conn, {:param_cast, _}) do
     conn
     |> put_status(400)
     |> json("Invalid parameters")
   end
 
-  def errors(conn, _) do
+  defp errors(conn, _) do
     conn
     |> put_status(500)
     |> json("Something went wrong")
@@ -62,7 +71,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> send_resp(status, json)
   end
 
-  def notifications_read(%{assigns: %{user: user}} = conn, %{"latest_id" => latest_id} = params) do
+  def mark_notifications_as_read(
+        %{assigns: %{user: user}} = conn,
+        %{"latest_id" => latest_id} = params
+      ) do
     Notification.set_read_up_to(user, latest_id)
 
     notifications = Notification.for_user(user, params)
@@ -73,7 +85,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> render("index.json", %{notifications: notifications, for: user})
   end
 
-  def notifications_read(%{assigns: %{user: _user}} = conn, _) do
+  def mark_notifications_as_read(%{assigns: %{user: _user}} = conn, _) do
     bad_request_reply(conn, "You need to specify latest_id")
   end
 

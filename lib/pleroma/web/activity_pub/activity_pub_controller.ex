@@ -12,8 +12,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Plugs.EnsureAuthenticatedPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.ObjectView
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.UserView
@@ -421,7 +423,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   defp handle_user_activity(%User{} = user, %{"type" => "Like"} = params) do
     with %Object{} = object <- Object.normalize(params["object"]),
-         {:ok, activity, _object} <- ActivityPub.like(user, object) do
+         {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
+         {_, {:ok, %Activity{} = activity, _meta}} <-
+           {:common_pipeline,
+            Pipeline.common_pipeline(like_object, Keyword.put(meta, :local, true))} do
       {:ok, activity}
     else
       _ -> {:error, dgettext("errors", "Can't like object")}

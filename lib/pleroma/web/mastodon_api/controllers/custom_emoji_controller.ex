@@ -5,6 +5,16 @@
 defmodule Pleroma.Web.MastodonAPI.CustomEmojiController do
   use Pleroma.Web, :controller
 
+  plug(OpenApiSpex.Plug.CastAndValidate)
+
+  plug(
+    :skip_plug,
+    [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug]
+    when action == :index
+  )
+
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.CustomEmojiOperation
+
   def index(conn, _params) do
     render(conn, "index.json", custom_emojis: Pleroma.Emoji.get_all())
   end

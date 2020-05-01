@@ -72,19 +72,24 @@ defmodule Pleroma.Web.Federator do
     # actor shouldn't be acting on objects outside their own AP server.
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.normalize(params["id"]),
-         :ok <- Containment.contain_origin_from_id(params["actor"], params),
+         {_, :ok} <-
+           {:correct_origin?, Containment.contain_origin_from_id(params["actor"], params)},
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
       {:ok, activity}
     else
+      {:correct_origin?, _} ->
+        Logger.debug("Origin containment failure for #{params["id"]}")
+        {:error, :origin_containment_failed}
+
       %Activity{} ->
         Logger.debug("Already had #{params["id"]}")
-        :error
+        {:error, :already_present}
 
-      _e ->
+      e ->
         # Just drop those for now
         Logger.debug("Unhandled activity")
         Logger.debug(Jason.encode!(params, pretty: true))
-        :error
+        {:error, e}
     end
   end
 

@@ -21,8 +21,6 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
     %{scopes: ["follow", "write:blocks"]} when action != :index
   )
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   @doc "GET /api/v1/domain_blocks"
   def index(%{assigns: %{user: user}} = conn, _) do
     json(conn, Map.get(user, :domain_blocks, []))

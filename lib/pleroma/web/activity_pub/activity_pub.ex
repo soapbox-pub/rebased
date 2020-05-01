@@ -118,9 +118,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def increase_poll_votes_if_vote(%{
         "object" => %{"inReplyTo" => reply_ap_id, "name" => name},
-        "type" => "Create"
+        "type" => "Create",
+        "actor" => actor
       }) do
-    Object.increase_vote_count(reply_ap_id, name)
+    Object.increase_vote_count(reply_ap_id, name, actor)
   end
 
   def increase_poll_votes_if_vote(_create_data), do: :noop
@@ -397,36 +398,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
-  @spec like(User.t(), Object.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t(), Object.t()} | {:error, any()}
-  def like(user, object, activity_id \\ nil, local \\ true) do
-    with {:ok, result} <- Repo.transaction(fn -> do_like(user, object, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_like(
-         %User{ap_id: ap_id} = user,
-         %Object{data: %{"id" => _}} = object,
-         activity_id,
-         local
-       ) do
-    with nil <- get_existing_like(ap_id, object),
-         like_data <- make_like_data(user, object, activity_id),
-         {:ok, activity} <- insert(like_data, local),
-         {:ok, object} <- add_like_to_object(activity, object),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity, object}
-    else
-      %Activity{} = activity ->
-        {:ok, activity, object}
-
-      {:error, error} ->
-        Repo.rollback(error)
-    end
-  end
-
   @spec unlike(User.t(), Object.t(), String.t() | nil, boolean()) ::
           {:ok, Activity.t(), Activity.t(), Object.t()} | {:ok, Object.t()} | {:error, any()}
   def unlike(%User{} = actor, %Object{} = object, activity_id \\ nil, local \\ true) do
@@ -467,6 +438,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp do_announce(user, object, activity_id, local, public) do
     with true <- is_announceable?(object, user, public),
+         object <- Object.get_by_id(object.id),
          announce_data <- make_announce_data(user, object, activity_id, public),
          {:ok, activity} <- insert(announce_data, local),
          {:ok, object} <- add_announce_to_object(activity, object),
@@ -853,7 +825,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
-       when visibility not in @valid_visibilities do
+       when visibility not in [nil | @valid_visibilities] do
     Logger.error("Could not exclude visibility to #{visibility}")
     query
   end
@@ -1060,7 +1032,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     raise "Can't use the child object without preloading!"
   end
 
-  defp restrict_media(query, %{"only_media" => val}) when val == "true" or val == "1" do
+  defp restrict_media(query, %{"only_media" => val}) when val in [true, "true", "1"] do
     from(
       [_activity, object] in query,
       where: fragment("not (?)->'attachment' = (?)", object.data, ^[])
@@ -1069,16 +1041,51 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_media(query, _), do: query
 
-  defp restrict_replies(query, %{"exclude_replies" => val}) when val == "true" or val == "1" do
+  defp restrict_replies(query, %{"exclude_replies" => val}) when val in [true, "true", "1"] do
     from(
       [_activity, object] in query,
       where: fragment("?->>'inReplyTo' is null", object.data)
     )
   end
 
+  defp restrict_replies(query, %{
+         "reply_filtering_user" => user,
+         "reply_visibility" => "self"
+       }) do
+    from(
+      [activity, object] in query,
+      where:
+        fragment(
+          "?->>'inReplyTo' is null OR ? = ANY(?)",
+          object.data,
+          ^user.ap_id,
+          activity.recipients
+        )
+    )
+  end
+
+  defp restrict_replies(query, %{
+         "reply_filtering_user" => user,
+         "reply_visibility" => "following"
+       }) do
+    from(
+      [activity, object] in query,
+      where:
+        fragment(
+          "?->>'inReplyTo' is null OR ? && array_remove(?, ?) OR ? = ?",
+          object.data,
+          ^[user.ap_id | User.get_cached_user_friends_ap_ids(user)],
+          activity.recipients,
+          activity.actor,
+          activity.actor,
+          ^user.ap_id
+        )
+    )
+  end
+
   defp restrict_replies(query, _), do: query
 
-  defp restrict_reblogs(query, %{"exclude_reblogs" => val}) when val == "true" or val == "1" do
+  defp restrict_reblogs(query, %{"exclude_reblogs" => val}) when val in [true, "true", "1"] do
     from(activity in query, where: fragment("?->>'type' != 'Announce'", activity.data))
   end
 
@@ -1157,7 +1164,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
-  defp restrict_pinned(query, %{"pinned" => "true", "pinned_activity_ids" => ids}) do
+  # TODO: when all endpoints migrated to OpenAPI compare `pinned` with `true` (boolean) only,
+  # the same for `restrict_media/2`, `restrict_replies/2`, 'restrict_reblogs/2'
+  # and `restrict_muted/2`
+
+  defp restrict_pinned(query, %{"pinned" => pinned, "pinned_activity_ids" => ids})
+       when pinned in [true, "true", "1"] do
     from(activity in query, where: activity.id in ^ids)
   end
 
@@ -1290,6 +1302,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
+    |> restrict_replies(opts)
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)
     |> restrict_tag_all(opts)
@@ -1304,7 +1317,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_media(opts)
     |> restrict_visibility(opts)
     |> restrict_thread_visibility(opts, config)
-    |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
@@ -1427,19 +1439,44 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
       |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
 
+    emojis =
+      data
+      |> Map.get("tag", [])
+      |> Enum.filter(fn
+        %{"type" => "Emoji"} -> true
+        _ -> false
+      end)
+      |> Enum.reduce(%{}, fn %{"icon" => %{"url" => url}, "name" => name}, acc ->
+        Map.put(acc, String.trim(name, ":"), url)
+      end)
+
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
     actor_type = data["type"] || "Person"
 
+    public_key =
+      if is_map(data["publicKey"]) && is_binary(data["publicKey"]["publicKeyPem"]) do
+        data["publicKey"]["publicKeyPem"]
+      else
+        nil
+      end
+
+    shared_inbox =
+      if is_map(data["endpoints"]) && is_binary(data["endpoints"]["sharedInbox"]) do
+        data["endpoints"]["sharedInbox"]
+      else
+        nil
+      end
+
     user_data = %{
       ap_id: data["id"],
       uri: get_actor_url(data["url"]),
       ap_enabled: true,
-      source_data: data,
       banner: banner,
       fields: fields,
+      emoji: emojis,
       locked: locked,
       discoverable: discoverable,
       invisible: invisible,
@@ -1449,7 +1486,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       following_address: data["following"],
       bio: data["summary"],
       actor_type: actor_type,
-      also_known_as: Map.get(data, "alsoKnownAs", [])
+      also_known_as: Map.get(data, "alsoKnownAs", []),
+      public_key: public_key,
+      inbox: data["inbox"],
+      shared_inbox: shared_inbox
     }
 
     # nickname can be nil because of virtual actors
@@ -1551,11 +1591,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def make_user_from_ap_id(ap_id) do
-    if _user = User.get_cached_by_ap_id(ap_id) do
+    user = User.get_cached_by_ap_id(ap_id)
+
+    if user && !User.ap_enabled?(user) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
       with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
-        User.insert_or_update_user(data)
+        if user do
+          user
+          |> User.remote_user_changeset(data)
+          |> User.update_and_set_cache()
+        else
+          data
+          |> User.remote_user_changeset()
+          |> Repo.insert()
+          |> User.set_cache()
+        end
       else
         e -> {:error, e}
       end
