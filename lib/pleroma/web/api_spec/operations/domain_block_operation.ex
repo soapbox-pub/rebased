@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Helpers
+  import Pleroma.Web.ApiSpec.Helpers
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
@@ -46,9 +46,7 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
       operationId: "DomainBlockController.create",
       requestBody: domain_block_request(),
       security: [%{"oAuth" => ["follow", "write:blocks"]}],
-      responses: %{
-        200 => Operation.response("Empty object", "application/json", %Schema{type: :object})
-      }
+      responses: %{200 => empty_object_response()}
     }
   end
 
@@ -67,7 +65,7 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
   end
 
   defp domain_block_request do
-    Helpers.request_body(
+    request_body(
       "Parameters",
       %Schema{
         type: :object,

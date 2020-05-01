@@ -396,7 +396,7 @@ defmodule Pleroma.Web.Router do
     post("/notifications/clear", NotificationController, :clear)
     delete("/notifications/destroy_multiple", NotificationController, :destroy_multiple)
     # Deprecated: was removed in Mastodon v3, use `/notifications/:id/dismiss` instead
-    post("/notifications/dismiss", NotificationController, :dismiss)
+    post("/notifications/dismiss", NotificationController, :dismiss_via_body)
 
     post("/polls/:id/votes", PollController, :vote)
 
