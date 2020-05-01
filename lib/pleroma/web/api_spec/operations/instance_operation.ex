@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         },
         version: %Schema{
           type: :string,
-          description: "The version of Mastodon installed on the instance"
+          description: "The version of Pleroma installed on the instance"
         },
         email: %Schema{
           type: :string,
