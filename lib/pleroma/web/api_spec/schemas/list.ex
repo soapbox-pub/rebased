@@ -9,7 +9,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.List do
 
   OpenApiSpex.schema(%{
     title: "List",
-    description: "Represents a list of some users that the authenticated user follows",
+    description: "Represents a list of users",
     type: :object,
     properties: %{
       id: %Schema{type: :string, description: "The internal database ID of the list"},

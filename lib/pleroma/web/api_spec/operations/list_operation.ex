@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
   def create_operation do
     %Operation{
       tags: ["Lists"],
-      summary: "Show a single list",
+      summary: "Create  a list",
       description: "Fetch the list with the given ID. Used for verifying the title of a list.",
       operationId: "ListController.create",
       requestBody: create_update_request(),
@@ -111,8 +111,7 @@ defmodule Pleroma.Web.ApiSpec.ListOperation do
     %Operation{
       tags: ["Lists"],
       summary: "Add accounts to list",
-      description:
-        "Add accounts to the given list. Note that the user must be following these accounts.",
+      description: "Add accounts to the given list.",
       operationId: "ListController.add_to_list",
       parameters: [id_param()],
       requestBody: add_remove_accounts_request(),
