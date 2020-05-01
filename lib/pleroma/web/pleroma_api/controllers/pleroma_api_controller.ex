@@ -66,7 +66,13 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
             %{
               name: emoji,
               count: length(users),
-              accounts: AccountView.render("index.json", %{users: users, for: user, as: :user}),
+              accounts:
+                AccountView.render("index.json", %{
+                  users: users,
+                  for: user,
+                  as: :user,
+                  skip_relationships: true
+                }),
               me: !!(user && user.ap_id in user_ap_ids)
             }
           end

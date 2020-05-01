@@ -15,6 +15,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", %{notifications: notifications, for: reading_user} = opts) do
+    opts = Map.merge(%{skip_relationships: true}, opts)
+
     activities = Enum.map(notifications, & &1.activity)
 
     parent_activities =
@@ -71,6 +73,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
           for: reading_user
         } = opts
       ) do
+    opts = Map.merge(%{skip_relationships: true}, opts)
+
     actor = User.get_cached_by_ap_id(activity.data["actor"])
 
     parent_activity_fn = fn ->

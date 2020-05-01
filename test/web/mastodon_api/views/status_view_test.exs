@@ -555,7 +555,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     end
   end
 
-  test "embeds a relationship in the account" do
+  test "does not embed a relationship in the account" do
     user = insert(:user)
     other_user = insert(:user)
 
@@ -566,11 +566,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     result = StatusView.render("show.json", %{activity: activity, for: other_user})
 
-    assert result[:account][:pleroma][:relationship] ==
-             AccountView.render("relationship.json", %{user: other_user, target: user})
+    assert result[:account][:pleroma][:relationship] == %{}
   end
 
-  test "embeds a relationship in the account in reposts" do
+  test "does not embed a relationship in the account in reposts" do
     user = insert(:user)
     other_user = insert(:user)
 
@@ -583,11 +582,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     result = StatusView.render("show.json", %{activity: activity, for: user})
 
-    assert result[:account][:pleroma][:relationship] ==
-             AccountView.render("relationship.json", %{user: user, target: other_user})
-
-    assert result[:reblog][:account][:pleroma][:relationship] ==
-             AccountView.render("relationship.json", %{user: user, target: user})
+    assert result[:account][:pleroma][:relationship] == %{}
+    assert result[:reblog][:account][:pleroma][:relationship] == %{}
   end
 
   test "visibility/list" do

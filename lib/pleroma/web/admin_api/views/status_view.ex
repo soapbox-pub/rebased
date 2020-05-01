@@ -8,6 +8,8 @@ defmodule Pleroma.Web.AdminAPI.StatusView do
   require Pleroma.Constants
 
   alias Pleroma.User
+  alias Pleroma.Web.AdminAPI
+  alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", opts) do
@@ -22,8 +24,8 @@ defmodule Pleroma.Web.AdminAPI.StatusView do
   end
 
   defp merge_account_views(%User{} = user) do
-    Pleroma.Web.MastodonAPI.AccountView.render("show.json", %{user: user})
-    |> Map.merge(Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user}))
+    MastodonAPI.AccountView.render("show.json", %{user: user, skip_relationships: true})
+    |> Map.merge(AdminAPI.AccountView.render("show.json", %{user: user}))
   end
 
   defp merge_account_views(_), do: %{}

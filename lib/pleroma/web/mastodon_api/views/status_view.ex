@@ -76,6 +76,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("index.json", opts) do
+    opts = Map.merge(%{skip_relationships: true}, opts)
+
     reading_user = opts[:for]
 
     # To do: check AdminAPIControllerTest on the reasons behind nil activities in the list
@@ -125,6 +127,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         "show.json",
         %{activity: %{data: %{"type" => "Announce", "object" => _object}} = activity} = opts
       ) do
+    opts = Map.merge(%{skip_relationships: true}, opts)
+
     user = get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
     activity_object = Object.normalize(activity)
@@ -198,6 +202,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("show.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
+    opts = Map.merge(%{skip_relationships: true}, opts)
+
     object = Object.normalize(activity)
 
     user = get_user(activity.data["actor"])

@@ -20,12 +20,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "home" do
     setup do: oauth_access(["read:statuses"])
 
-    test "does NOT render account/pleroma/relationship if this is disabled by default", %{
+    test "does NOT render account/pleroma/relationship by default", %{
       user: user,
       conn: conn
     } do
-      clear_config([:extensions, :output_relationships_in_statuses_by_default], false)
-
       other_user = insert(:user)
 
       {:ok, _} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
@@ -41,7 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
              end)
     end
 
-    test "the home timeline", %{user: user, conn: conn} do
+    test "embeds account relationships with `with_relationships=true`", %{user: user, conn: conn} do
       uri = "/api/v1/timelines/home?with_relationships=true"
 
       following = insert(:user, nickname: "followed")
@@ -69,13 +67,19 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                      }
                    }
                  },
-                 "account" => %{"pleroma" => %{"relationship" => %{"following" => true}}}
+                 "account" => %{
+                   "pleroma" => %{
+                     "relationship" => %{"following" => true}
+                   }
+                 }
                },
                %{
                  "content" => "post",
                  "account" => %{
                    "acct" => "followed",
-                   "pleroma" => %{"relationship" => %{"following" => true}}
+                   "pleroma" => %{
+                     "relationship" => %{"following" => true}
+                   }
                  }
                }
              ] = json_response(ret_conn, :ok)
@@ -95,13 +99,19 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
                      }
                    }
                  },
-                 "account" => %{"pleroma" => %{"relationship" => %{"following" => true}}}
+                 "account" => %{
+                   "pleroma" => %{
+                     "relationship" => %{"following" => true}
+                   }
+                 }
                },
                %{
                  "content" => "post",
                  "account" => %{
                    "acct" => "followed",
-                   "pleroma" => %{"relationship" => %{"following" => true}}
+                   "pleroma" => %{
+                     "relationship" => %{"following" => true}
+                   }
                  }
                }
              ] = json_response(ret_conn, :ok)

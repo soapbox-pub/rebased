@@ -86,7 +86,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
       users: accounts,
       for: options[:for_user],
       as: :user,
-      skip_relationships: false
+      skip_relationships: true
     )
   end
 

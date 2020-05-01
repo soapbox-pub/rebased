@@ -5,8 +5,6 @@
 defmodule Pleroma.Web.ControllerHelper do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Config
-
   # As in Mastodon API, per https://api.rubyonrails.org/classes/ActiveModel/Type/Boolean.html
   @falsy_param_values [false, 0, "0", "f", "F", "false", "False", "FALSE", "off", "OFF"]
 
@@ -106,13 +104,8 @@ defmodule Pleroma.Web.ControllerHelper do
 
   def put_if_exist(map, key, value), do: Map.put(map, key, value)
 
-  @doc "Whether to skip rendering `[:account][:pleroma][:relationship]`for statuses/notifications"
+  @doc "Whether to skip `account.pleroma.relationship` rendering for statuses/notifications"
   def skip_relationships?(params) do
-    if Config.get([:extensions, :output_relationships_in_statuses_by_default]) do
-      false
-    else
-      # BREAKING: older PleromaFE versions do not send this param but _do_ expect relationships.
-      not truthy_param?(params["with_relationships"])
-    end
+    not truthy_param?(params["with_relationships"])
   end
 end

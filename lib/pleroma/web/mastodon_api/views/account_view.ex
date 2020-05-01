@@ -13,15 +13,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.Web.MediaProxy
 
   def render("index.json", %{users: users} = opts) do
+    opts = Map.merge(%{skip_relationships: false}, opts)
+
     reading_user = opts[:for]
 
-    # Note: :skip_relationships option is currently intentionally not supported for accounts
     relationships_opt =
       cond do
         Map.has_key?(opts, :relationships) ->
           opts[:relationships]
 
-        is_nil(reading_user) ->
+        is_nil(reading_user) || opts[:skip_relationships] ->
           UserRelationship.view_relationships_option(nil, [])
 
         true ->
@@ -158,6 +159,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp do_render("show.json", %{user: user} = opts) do
+    opts = Map.merge(%{skip_relationships: false}, opts)
+
     user = User.sanitize_html(user, User.html_filter_policy(opts[:for]))
     display_name = user.name || user.nickname
 
