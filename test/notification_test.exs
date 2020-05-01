@@ -356,7 +356,7 @@ defmodule Pleroma.NotificationTest do
       insert(:filter, user: user, phrase: "tesla", hide: true)
 
       {:ok, activity_one} = CommonAPI.post(user, %{"status" => "wow tesla"})
-      {:ok, activity_two, _} = CommonAPI.favorite(activity_one.id, other_user)
+      {:ok, activity_two} = CommonAPI.favorite(other_user, activity_one.id)
 
       {:ok, [notification]} = Notification.create_notifications(activity_two)
 
@@ -1157,7 +1157,7 @@ defmodule Pleroma.NotificationTest do
       another_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "Give me my cofe!"})
-      {:ok, _, _} = CommonAPI.favorite(activity.id, another_user)
+      {:ok, _} = CommonAPI.favorite(another_user, activity.id)
 
       assert length(Notification.for_user(user)) == 1
     end
