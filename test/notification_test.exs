@@ -312,9 +312,7 @@ defmodule Pleroma.NotificationTest do
                })
     end
 
-    test "if `follow_request` notifications are enabled, " <>
-           "it creates `follow_request` notification for pending Follow activity" do
-      clear_config([:notifications, :enable_follow_request_notifications], true)
+    test "it creates `follow_request` notification for pending Follow activity" do
       user = insert(:user)
       followed_user = insert(:user, locked: true)
 
@@ -333,21 +331,6 @@ defmodule Pleroma.NotificationTest do
       assert %{type: "follow"} = NotificationView.render("show.json", render_opts)
     end
 
-    test "if `follow_request` notifications are disabled, " <>
-           "it does NOT create `follow*` notification for pending Follow activity" do
-      clear_config([:notifications, :enable_follow_request_notifications], false)
-      user = insert(:user)
-      followed_user = insert(:user, locked: true)
-
-      {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
-      refute FollowingRelationship.following?(user, followed_user)
-      assert [] = Notification.for_user(followed_user)
-
-      # After request is accepted, no new notifications are generated:
-      assert {:ok, _} = CommonAPI.accept_follow_request(user, followed_user)
-      assert [] = Notification.for_user(followed_user)
-    end
-
     test "it doesn't create a notification for follow-unfollow-follow chains" do
       user = insert(:user)
       followed_user = insert(:user, locked: false)
@@ -361,6 +344,15 @@ defmodule Pleroma.NotificationTest do
 
       notification_id = notification.id
       assert [%{id: ^notification_id}] = Notification.for_user(followed_user)
+    end
+
+    test "dismisses the notification on follow request rejection" do
+      user = insert(:user, locked: true)
+      follower = insert(:user)
+      {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, user)
+      assert [notification] = Notification.for_user(user)
+      {:ok, _follower} = CommonAPI.reject_follow_request(follower, user)
+      assert [] = Notification.for_user(user)
     end
   end
 
