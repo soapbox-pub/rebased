@@ -1532,9 +1532,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp maybe_update_follow_information(data) do
     with {:enabled, true} <- {:enabled, Config.get([:instance, :external_user_synchronization])},
-         {:ok, info} <- fetch_follow_information_for_user(data) do
+         {:ok, info} <- fetch_follow_information_for_user(data),
+         {:ok, actor_type} <- Map.fetch(data, :actor_type) do
       info = Map.merge(data[:info] || %{}, info)
-      Map.put(data, :info, info)
+
+      cond do
+        actor_type in ["Person", "Service"] -> Map.put(data, :info, info)
+        true -> data
+      end
     else
       {:enabled, false} ->
         data
