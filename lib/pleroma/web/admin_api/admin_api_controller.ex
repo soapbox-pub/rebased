@@ -911,16 +911,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         end)
         |> List.flatten()
 
-      response = %{configs: merged}
-
-      response =
-        if Restarter.Pleroma.need_reboot?() do
-          Map.put(response, :need_reboot, true)
-        else
-          response
-        end
-
-      json(conn, response)
+      json(conn, %{configs: merged, need_reboot: Restarter.Pleroma.need_reboot?()})
     end
   end
 
@@ -947,28 +938,22 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       Config.TransferTask.load_and_update_env(deleted, false)
 
-      need_reboot? =
-        Restarter.Pleroma.need_reboot?() ||
-          Enum.any?(updated, fn config ->
+      if !Restarter.Pleroma.need_reboot?() do
+        changed_reboot_settings? =
+          (updated ++ deleted)
+          |> Enum.any?(fn config ->
             group = ConfigDB.from_string(config.group)
             key = ConfigDB.from_string(config.key)
             value = ConfigDB.from_binary(config.value)
             Config.TransferTask.pleroma_need_restart?(group, key, value)
           end)
 
-      response = %{configs: updated}
-
-      response =
-        if need_reboot? do
-          Restarter.Pleroma.need_reboot()
-          Map.put(response, :need_reboot, need_reboot?)
-        else
-          response
-        end
+        if changed_reboot_settings?, do: Restarter.Pleroma.need_reboot()
+      end
 
       conn
       |> put_view(ConfigView)
-      |> render("index.json", response)
+      |> render("index.json", %{configs: updated, need_reboot: Restarter.Pleroma.need_reboot?()})
     end
   end
 
@@ -978,6 +963,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       json(conn, %{})
     end
+  end
+
+  def need_reboot(conn, _params) do
+    json(conn, %{need_reboot: Restarter.Pleroma.need_reboot?()})
   end
 
   defp configurable_from_database(conn) do

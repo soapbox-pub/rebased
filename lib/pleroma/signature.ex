@@ -21,12 +21,21 @@ defmodule Pleroma.Signature do
         uri
       end
 
-    URI.to_string(uri)
+    case uri do
+      %URI{scheme: scheme} when scheme in ["https", "http"] ->
+        {:ok, URI.to_string(uri)}
+
+      _ ->
+        case Pleroma.Web.WebFinger.finger(URI.to_string(uri)) do
+          %{"ap_id" => ap_id} -> {:ok, ap_id}
+          _ -> {:error, URI.to_string(uri)}
+        end
+    end
   end
 
   def fetch_public_key(conn) do
     with %{"keyId" => kid} <- HTTPSignatures.signature_for_conn(conn),
-         actor_id <- key_id_to_actor_id(kid),
+         {:ok, actor_id} <- key_id_to_actor_id(kid),
          {:ok, public_key} <- User.get_public_key_for_ap_id(actor_id) do
       {:ok, public_key}
     else
@@ -37,7 +46,7 @@ defmodule Pleroma.Signature do
 
   def refetch_public_key(conn) do
     with %{"keyId" => kid} <- HTTPSignatures.signature_for_conn(conn),
-         actor_id <- key_id_to_actor_id(kid),
+         {:ok, actor_id} <- key_id_to_actor_id(kid),
          {:ok, _user} <- ActivityPub.make_user_from_ap_id(actor_id),
          {:ok, public_key} <- User.get_public_key_for_ap_id(actor_id) do
       {:ok, public_key}

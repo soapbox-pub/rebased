@@ -2291,7 +2291,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> get("/api/pleroma/admin/config")
         |> json_response(200)
 
-      refute Map.has_key?(configs, "need_reboot")
+      assert configs["need_reboot"] == false
     end
 
     test "update setting which need reboot, don't change reboot flag until reboot", %{conn: conn} do
@@ -2347,7 +2347,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> get("/api/pleroma/admin/config")
         |> json_response(200)
 
-      refute Map.has_key?(configs, "need_reboot")
+      assert configs["need_reboot"] == false
     end
 
     test "saving config with nested merge", %{conn: conn} do
@@ -3063,6 +3063,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       refute Restarter.Pleroma.need_reboot?()
     end
+  end
+
+  test "need_reboot flag", %{conn: conn} do
+    assert conn
+           |> get("/api/pleroma/admin/need_reboot")
+           |> json_response(200) == %{"need_reboot" => false}
+
+    Restarter.Pleroma.need_reboot()
+
+    assert conn
+           |> get("/api/pleroma/admin/need_reboot")
+           |> json_response(200) == %{"need_reboot" => true}
+
+    on_exit(fn -> Restarter.Pleroma.refresh() end)
   end
 
   describe "GET /api/pleroma/admin/statuses" do

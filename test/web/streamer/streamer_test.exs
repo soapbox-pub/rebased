@@ -198,7 +198,7 @@ defmodule Pleroma.Web.StreamerTest do
       Pleroma.Config.put([:instance, :skip_thread_containment], false)
       author = insert(:user)
       user = insert(:user)
-      User.follow(user, author, "accept")
+      User.follow(user, author, :follow_accept)
 
       activity =
         insert(:note_activity,
@@ -221,7 +221,7 @@ defmodule Pleroma.Web.StreamerTest do
       Pleroma.Config.put([:instance, :skip_thread_containment], true)
       author = insert(:user)
       user = insert(:user)
-      User.follow(user, author, "accept")
+      User.follow(user, author, :follow_accept)
 
       activity =
         insert(:note_activity,
@@ -244,7 +244,7 @@ defmodule Pleroma.Web.StreamerTest do
       Pleroma.Config.put([:instance, :skip_thread_containment], false)
       author = insert(:user)
       user = insert(:user, skip_thread_containment: true)
-      User.follow(user, author, "accept")
+      User.follow(user, author, :follow_accept)
 
       activity =
         insert(:note_activity,

@@ -358,26 +358,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     end
   end
 
-  describe "get_by_id_or_ap_id/1" do
-    test "get activity by id" do
-      activity = insert(:note_activity)
-      %Pleroma.Activity{} = note = Utils.get_by_id_or_ap_id(activity.id)
-      assert note.id == activity.id
-    end
-
-    test "get activity by ap_id" do
-      activity = insert(:note_activity)
-      %Pleroma.Activity{} = note = Utils.get_by_id_or_ap_id(activity.data["object"])
-      assert note.id == activity.id
-    end
-
-    test "get activity by object when type isn't `Create` " do
-      activity = insert(:like_activity)
-      %Pleroma.Activity{} = like = Utils.get_by_id_or_ap_id(activity.id)
-      assert like.data["object"] == activity.data["object"]
-    end
-  end
-
   describe "to_master_date/1" do
     test "removes microseconds from date (NaiveDateTime)" do
       assert Utils.to_masto_date(~N[2015-01-23 23:50:07.123]) == "2015-01-23T23:50:07.000Z"

@@ -271,6 +271,16 @@ defmodule Pleroma.Notification do
     |> Repo.delete_all()
   end
 
+  def dismiss(%Pleroma.Activity{} = activity) do
+    Notification
+    |> where([n], n.activity_id == ^activity.id)
+    |> Repo.delete_all()
+    |> case do
+      {_, notifications} -> {:ok, notifications}
+      _ -> {:error, "Cannot dismiss notification"}
+    end
+  end
+
   def dismiss(%{id: user_id} = _user, id) do
     notification = Repo.get(Notification, id)
 
@@ -294,7 +304,7 @@ defmodule Pleroma.Notification do
   end
 
   def create_notifications(%Activity{data: %{"type" => type}} = activity)
-      when type in ["Like", "Announce", "Follow", "Move", "EmojiReact"] do
+      when type in ["Follow", "Like", "Announce", "Move", "EmojiReact"] do
     do_create_notifications(activity)
   end
 

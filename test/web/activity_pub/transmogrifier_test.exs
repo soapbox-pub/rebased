@@ -870,7 +870,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     @tag capture_log: true
     test "it works for incoming user deletes" do
-      %{ap_id: ap_id} = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
+      %{ap_id: ap_id} =
+        insert(:user, ap_id: "http://mastodon.example.org/users/admin", local: false)
 
       data =
         File.read!("test/fixtures/mastodon-delete-user.json")
@@ -1628,7 +1629,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         })
 
       user_two = insert(:user)
-      Pleroma.FollowingRelationship.follow(user_two, user, "accept")
+      Pleroma.FollowingRelationship.follow(user_two, user, :follow_accept)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
       {:ok, unrelated_activity} = CommonAPI.post(user_two, %{"status" => "test"})

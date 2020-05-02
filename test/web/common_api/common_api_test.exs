@@ -268,6 +268,16 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, user)
     end
 
+    test "can't repeat a repeat" do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:ok, %Activity{} = announce, _} = CommonAPI.repeat(activity.id, other_user)
+
+      refute match?({:ok, %Activity{}, _}, CommonAPI.repeat(announce.id, user))
+    end
+
     test "repeating a status privately" do
       user = insert(:user)
       other_user = insert(:user)
@@ -294,8 +304,8 @@ defmodule Pleroma.Web.CommonAPITest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
-      {:ok, %Activity{} = activity, object} = CommonAPI.repeat(activity.id, user)
-      {:ok, ^activity, ^object} = CommonAPI.repeat(activity.id, user)
+      {:ok, %Activity{} = announce, object} = CommonAPI.repeat(activity.id, user)
+      {:ok, ^announce, ^object} = CommonAPI.repeat(activity.id, user)
     end
 
     test "favoriting a status twice returns the status" do
@@ -369,7 +379,9 @@ defmodule Pleroma.Web.CommonAPITest do
 
       user = refresh_record(user)
 
-      assert {:ok, ^activity} = CommonAPI.unpin(activity.id, user)
+      id = activity.id
+
+      assert match?({:ok, %{id: ^id}}, CommonAPI.unpin(activity.id, user))
 
       user = refresh_record(user)
 
@@ -562,7 +574,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
 
-      assert User.get_follow_state(follower, followed) == "pending"
+      assert User.get_follow_state(follower, followed) == :follow_pending
       assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
       assert User.get_follow_state(follower, followed) == nil
 
@@ -584,7 +596,7 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:ok, follower, followed, %{id: activity_id, data: %{"state" => "pending"}}} =
                CommonAPI.follow(follower, followed)
 
-      assert User.get_follow_state(follower, followed) == "pending"
+      assert User.get_follow_state(follower, followed) == :follow_pending
       assert {:ok, follower} = CommonAPI.unfollow(follower, followed)
       assert User.get_follow_state(follower, followed) == nil
 
@@ -639,6 +651,14 @@ defmodule Pleroma.Web.CommonAPITest do
       assert Repo.get(Activity, follow_activity.id).data["state"] == "reject"
       assert Repo.get(Activity, follow_activity_two.id).data["state"] == "reject"
       assert Repo.get(Activity, follow_activity_three.id).data["state"] == "pending"
+    end
+
+    test "doesn't create a following relationship if the corresponding follow request doesn't exist" do
+      user = insert(:user, locked: true)
+      not_follower = insert(:user)
+      CommonAPI.accept_follow_request(not_follower, user)
+
+      assert Pleroma.FollowingRelationship.following?(not_follower, user) == false
     end
   end
 

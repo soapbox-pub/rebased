@@ -194,7 +194,8 @@ defmodule Pleroma.UserTest do
     CommonAPI.follow(pending_follower, locked)
     CommonAPI.follow(pending_follower, locked)
     CommonAPI.follow(accepted_follower, locked)
-    Pleroma.FollowingRelationship.update(accepted_follower, locked, "accept")
+
+    Pleroma.FollowingRelationship.update(accepted_follower, locked, :follow_accept)
 
     assert [^pending_follower] = User.get_follow_requests(locked)
   end
@@ -319,7 +320,7 @@ defmodule Pleroma.UserTest do
           following_address: "http://localhost:4001/users/fuser2/following"
         })
 
-      {:ok, user} = User.follow(user, followed, "accept")
+      {:ok, user} = User.follow(user, followed, :follow_accept)
 
       {:ok, user, _activity} = User.unfollow(user, followed)
 
@@ -332,7 +333,7 @@ defmodule Pleroma.UserTest do
       followed = insert(:user)
       user = insert(:user)
 
-      {:ok, user} = User.follow(user, followed, "accept")
+      {:ok, user} = User.follow(user, followed, :follow_accept)
 
       assert User.following(user) == [user.follower_address, followed.follower_address]
 
@@ -353,7 +354,7 @@ defmodule Pleroma.UserTest do
   test "test if a user is following another user" do
     followed = insert(:user)
     user = insert(:user)
-    User.follow(user, followed, "accept")
+    User.follow(user, followed, :follow_accept)
 
     assert User.following?(user, followed)
     refute User.following?(followed, user)
@@ -760,8 +761,8 @@ defmodule Pleroma.UserTest do
       ]
 
       {:ok, job} = User.follow_import(user1, identifiers)
-      result = ObanHelpers.perform(job)
 
+      assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
       assert result == [user2, user3]
     end
@@ -983,8 +984,8 @@ defmodule Pleroma.UserTest do
       ]
 
       {:ok, job} = User.blocks_import(user1, identifiers)
-      result = ObanHelpers.perform(job)
 
+      assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
       assert result == [user2, user3]
     end
@@ -1127,16 +1128,7 @@ defmodule Pleroma.UserTest do
       refute Activity.get_by_id(activity.id)
     end
 
-    test "it deletes deactivated user" do
-      {:ok, user} = insert(:user, deactivated: true) |> User.set_cache()
-
-      {:ok, job} = User.delete(user)
-      {:ok, _user} = ObanHelpers.perform(job)
-
-      refute User.get_by_id(user.id)
-    end
-
-    test "it deletes a user, all follow relationships and all activities", %{user: user} do
+    test "it deactivates a user, all follow relationships and all activities", %{user: user} do
       follower = insert(:user)
       {:ok, follower} = User.follow(follower, user)
 
@@ -1156,8 +1148,7 @@ defmodule Pleroma.UserTest do
       follower = User.get_cached_by_id(follower.id)
 
       refute User.following?(follower, user)
-      refute User.get_by_id(user.id)
-      assert {:ok, nil} == Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
+      assert %{deactivated: true} = User.get_by_id(user.id)
 
       user_activities =
         user.ap_id
