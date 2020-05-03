@@ -194,13 +194,15 @@ defmodule Pleroma.Web.WebFinger do
           URI.parse(account).host
       end
 
+    encoded_account = URI.encode("acct:#{account}")
+
     address =
       case find_lrdd_template(domain) do
         {:ok, template} ->
-          String.replace(template, "{uri}", URI.encode(account))
+          String.replace(template, "{uri}", encoded_account)
 
         _ ->
-          "https://#{domain}/.well-known/webfinger?resource=acct:#{account}"
+          "https://#{domain}/.well-known/webfinger?resource=#{encoded_account}"
       end
 
     with response <-
