@@ -13,7 +13,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Pleroma.Factory
-  import ExUnit.CaptureLog
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -27,22 +26,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
     data =
       File.read!("test/fixtures/mastodon-delete.json")
       |> Poison.decode!()
-
-    object =
-      data["object"]
-      |> Map.put("id", activity.data["object"])
-
-    data =
-      data
-      |> Map.put("object", object)
       |> Map.put("actor", deleting_user.ap_id)
+      |> put_in(["object", "id"], activity.data["object"])
 
     {:ok, %Activity{actor: actor, local: false, data: %{"id" => id}}} =
       Transmogrifier.handle_incoming(data)
 
     assert id == data["id"]
 
-    # We delete the Create activity because base our timelines on it.
+    # We delete the Create activity because we base our timelines on it.
     # This should be changed after we unify objects and activities
     refute Activity.get_by_id(activity.id)
     assert actor == deleting_user.ap_id
@@ -54,25 +46,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
 
   test "it fails for incoming deletes with spoofed origin" do
     activity = insert(:note_activity)
+    %{ap_id: ap_id} = insert(:user, ap_id: "https://gensokyo.2hu/users/raymoo")
 
     data =
       File.read!("test/fixtures/mastodon-delete.json")
       |> Poison.decode!()
+      |> Map.put("actor", ap_id)
+      |> put_in(["object", "id"], activity.data["object"])
 
-    object =
-      data["object"]
-      |> Map.put("id", activity.data["object"])
-
-    data =
-      data
-      |> Map.put("object", object)
-
-    assert capture_log(fn ->
-             {:error, _} = Transmogrifier.handle_incoming(data)
-           end) =~
-             "[error] Could not decode user at fetch http://mastodon.example.org/users/gargron, {:error, :nxdomain}"
-
-    assert Activity.get_by_id(activity.id)
+    assert match?({:error, _}, Transmogrifier.handle_incoming(data))
   end
 
   @tag capture_log: true

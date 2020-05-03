@@ -733,8 +733,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Delete"} = data,
         _options
       ) do
-    with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
-         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+    with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     end
   end
