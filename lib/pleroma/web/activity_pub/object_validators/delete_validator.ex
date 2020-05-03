@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
     field(:actor, Types.ObjectID)
     field(:to, Types.Recipients, default: [])
     field(:cc, Types.Recipients, default: [])
-    field(:deleted_activity_id)
+    field(:deleted_activity_id, Types.ObjectID)
     field(:object, Types.ObjectID)
   end
 
