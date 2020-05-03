@@ -562,8 +562,6 @@ config :pleroma, :email_notifications,
     inactivity_threshold: 7
   }
 
-config :pleroma, :notifications, enable_follow_request_notifications: false
-
 config :pleroma, :oauth2,
   token_expires_in: 600,
   issue_new_refresh_token: true,

@@ -1144,6 +1144,35 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       :error = Transmogrifier.handle_incoming(data)
     end
 
+    test "skip converting the content when it is nil" do
+      object_id = "https://peertube.social/videos/watch/278d2b7c-0f38-4aaa-afe6-9ecc0c4a34fe"
+
+      {:ok, object} = Fetcher.fetch_and_contain_remote_object_from_id(object_id)
+
+      result =
+        Pleroma.Web.ActivityPub.Transmogrifier.fix_object(Map.merge(object, %{"content" => nil}))
+
+      assert result["content"] == nil
+    end
+
+    test "it converts content of object to html" do
+      object_id = "https://peertube.social/videos/watch/278d2b7c-0f38-4aaa-afe6-9ecc0c4a34fe"
+
+      {:ok, %{"content" => content_markdown}} =
+        Fetcher.fetch_and_contain_remote_object_from_id(object_id)
+
+      {:ok, %Pleroma.Object{data: %{"content" => content}} = object} =
+        Fetcher.fetch_object_from_id(object_id)
+
+      assert content_markdown ==
+               "Support this and our other Michigan!/usr/group videos and meetings. Learn more at http://mug.org/membership\n\nTwenty Years in Jail: FreeBSD's Jails, Then and Now\n\nJails started as a limited virtualization system, but over the last two years they've..."
+
+      assert content ==
+               "<p>Support this and our other Michigan!/usr/group videos and meetings. Learn more at <a href=\"http://mug.org/membership\">http://mug.org/membership</a></p><p>Twenty Years in Jail: FreeBSD’s Jails, Then and Now</p><p>Jails started as a limited virtualization system, but over the last two years they’ve…</p>"
+
+      assert object.data["mediaType"] == "text/html"
+    end
+
     test "it remaps video URLs as attachments if necessary" do
       {:ok, object} =
         Fetcher.fetch_object_from_id(

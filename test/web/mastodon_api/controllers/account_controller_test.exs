@@ -925,7 +925,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> Map.put(:remote_ip, {127, 0, 0, 5})
         |> post("/api/v1/accounts", Map.delete(valid_params, :email))
 
-      assert json_response_and_validate_schema(res, 400) == %{"error" => "Missing parameters"}
+      assert json_response_and_validate_schema(res, 400) ==
+               %{"error" => "Missing parameter: email"}
 
       res =
         conn
@@ -1090,6 +1091,91 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert json_response_and_validate_schema(conn, :too_many_requests) == %{
                "error" => "Throttled"
              }
+    end
+  end
+
+  describe "create account with enabled captcha" do
+    setup %{conn: conn} do
+      app_token = insert(:oauth_token, user: nil)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer " <> app_token.token)
+        |> put_req_header("content-type", "multipart/form-data")
+
+      [conn: conn]
+    end
+
+    setup do: clear_config([Pleroma.Captcha, :enabled], true)
+
+    test "creates an account and returns 200 if captcha is valid", %{conn: conn} do
+      %{token: token, answer_data: answer_data} = Pleroma.Captcha.new()
+
+      params = %{
+        username: "lain",
+        email: "lain@example.org",
+        password: "PlzDontHackLain",
+        agreement: true,
+        captcha_solution: Pleroma.Captcha.Mock.solution(),
+        captcha_token: token,
+        captcha_answer_data: answer_data
+      }
+
+      assert %{
+               "access_token" => access_token,
+               "created_at" => _,
+               "scope" => ["read"],
+               "token_type" => "Bearer"
+             } =
+               conn
+               |> post("/api/v1/accounts", params)
+               |> json_response_and_validate_schema(:ok)
+
+      assert Token |> Repo.get_by(token: access_token) |> Repo.preload(:user) |> Map.get(:user)
+
+      Cachex.del(:used_captcha_cache, token)
+    end
+
+    test "returns 400 if any captcha field is not provided", %{conn: conn} do
+      captcha_fields = [:captcha_solution, :captcha_token, :captcha_answer_data]
+
+      valid_params = %{
+        username: "lain",
+        email: "lain@example.org",
+        password: "PlzDontHackLain",
+        agreement: true,
+        captcha_solution: "xx",
+        captcha_token: "xx",
+        captcha_answer_data: "xx"
+      }
+
+      for field <- captcha_fields do
+        expected = %{
+          "error" => "{\"captcha\":[\"Invalid CAPTCHA (Missing parameter: #{field})\"]}"
+        }
+
+        assert expected ==
+                 conn
+                 |> post("/api/v1/accounts", Map.delete(valid_params, field))
+                 |> json_response_and_validate_schema(:bad_request)
+      end
+    end
+
+    test "returns an error if captcha is invalid", %{conn: conn} do
+      params = %{
+        username: "lain",
+        email: "lain@example.org",
+        password: "PlzDontHackLain",
+        agreement: true,
+        captcha_solution: "cofe",
+        captcha_token: "cofe",
+        captcha_answer_data: "cofe"
+      }
+
+      assert %{"error" => "{\"captcha\":[\"Invalid answer data\"]}"} ==
+               conn
+               |> post("/api/v1/accounts", params)
+               |> json_response_and_validate_schema(:bad_request)
     end
   end
 

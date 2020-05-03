@@ -15,15 +15,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
+- Instance: Extend `/api/v1/instance` with Pleroma-specific information.
 - NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
 - NodeInfo: `pleroma_emoji_reactions` to the `features` list.
 - Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
 - New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
 - Mix task to create trusted OAuth App.
-- Notifications: Added `follow_request` notification type (configurable, see `[:notifications, :enable_follow_request_notifications]` setting).
+- Notifications: Added `follow_request` notification type.
 - Added `:reject_deletes` group to SimplePolicy
 <details>
   <summary>API Changes</summary>
+- Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 - Mastodon API: Add support for filtering replies in public and home timelines
@@ -37,6 +39,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Filtering of push notifications on activities from blocked domains
 
 ## [unreleased-patch]
+### Security
+- Disallow re-registration of previously deleted users, which allowed viewing direct messages addressed to them
+- Mastodon API: Fix `POST /api/v1/follow_requests/:id/authorize` allowing to force a follow from a local user even if they didn't request to follow
+
 ### Fixed
 - Logger configuration through AdminFE
 - HTTP Basic Authentication permissions issue

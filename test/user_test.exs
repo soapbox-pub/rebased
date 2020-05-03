@@ -1134,16 +1134,7 @@ defmodule Pleroma.UserTest do
       refute Activity.get_by_id(activity.id)
     end
 
-    test "it deletes deactivated user" do
-      {:ok, user} = insert(:user, deactivated: true) |> User.set_cache()
-
-      {:ok, job} = User.delete(user)
-      {:ok, _user} = ObanHelpers.perform(job)
-
-      refute User.get_by_id(user.id)
-    end
-
-    test "it deletes a user, all follow relationships and all activities", %{user: user} do
+    test "it deactivates a user, all follow relationships and all activities", %{user: user} do
       follower = insert(:user)
       {:ok, follower} = User.follow(follower, user)
 
@@ -1163,8 +1154,7 @@ defmodule Pleroma.UserTest do
       follower = User.get_cached_by_id(follower.id)
 
       refute User.following?(follower, user)
-      refute User.get_by_id(user.id)
-      assert {:ok, nil} == Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
+      assert %{deactivated: true} = User.get_by_id(user.id)
 
       user_activities =
         user.ap_id

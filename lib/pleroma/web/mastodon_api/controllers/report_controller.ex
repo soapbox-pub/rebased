@@ -9,10 +9,13 @@ defmodule Pleroma.Web.MastodonAPI.ReportController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
+  plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
   plug(OAuthScopesPlug, %{scopes: ["write:reports"]} when action == :create)
 
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ReportOperation
+
   @doc "POST /api/v1/reports"
-  def create(%{assigns: %{user: user}} = conn, params) do
+  def create(%{assigns: %{user: user}, body_params: params} = conn, _) do
     with {:ok, activity} <- Pleroma.Web.CommonAPI.report(user, params) do
       render(conn, "show.json", activity: activity)
     end

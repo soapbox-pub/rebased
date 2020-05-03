@@ -34,6 +34,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "banner_upload_limit" => _
            } = result
 
+    assert result["pleroma"]["metadata"]["features"]
+    assert result["pleroma"]["metadata"]["federation"]
+    assert result["pleroma"]["vapid_public_key"]
+
     assert email == from_config_email
   end
 

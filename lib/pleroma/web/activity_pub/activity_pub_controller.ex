@@ -37,9 +37,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     [unless_func: &FederatingPlug.federating?/0] when action not in @federating_only_actions
   )
 
+  # Note: :following and :followers must be served even without authentication (as via :api)
   plug(
     EnsureAuthenticatedPlug
-    when action in [:read_inbox, :update_outbox, :whoami, :upload_media, :following, :followers]
+    when action in [:read_inbox, :update_outbox, :whoami, :upload_media]
   )
 
   plug(

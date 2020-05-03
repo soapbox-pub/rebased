@@ -396,7 +396,7 @@ defmodule Pleroma.Web.Router do
     post("/notifications/clear", NotificationController, :clear)
     delete("/notifications/destroy_multiple", NotificationController, :destroy_multiple)
     # Deprecated: was removed in Mastodon v3, use `/notifications/:id/dismiss` instead
-    post("/notifications/dismiss", NotificationController, :dismiss)
+    post("/notifications/dismiss", NotificationController, :dismiss_via_body)
 
     post("/polls/:id/votes", PollController, :vote)
 
@@ -585,6 +585,7 @@ defmodule Pleroma.Web.Router do
     post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
     post("/api/ap/upload_media", ActivityPubController, :upload_media)
 
+    # The following two are S2S as well, see `ActivityPub.fetch_follow_information_for_user/1`:
     get("/users/:nickname/followers", ActivityPubController, :followers)
     get("/users/:nickname/following", ActivityPubController, :following)
   end

@@ -94,24 +94,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts"
   def create(%{assigns: %{app: app}, body_params: params} = conn, _params) do
-    params =
-      params
-      |> Map.take([
-        :email,
-        :bio,
-        :captcha_solution,
-        :captcha_token,
-        :captcha_answer_data,
-        :token,
-        :password,
-        :fullname
-      ])
-      |> Map.put(:nickname, params.username)
-      |> Map.put(:fullname, Map.get(params, :fullname, params.username))
-      |> Map.put(:confirm, params.password)
-      |> Map.put(:trusted_app, app.trusted)
-
     with :ok <- validate_email_param(params),
+         :ok <- TwitterAPI.validate_captcha(app, params),
          {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
          {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
       json(conn, %{
@@ -121,7 +105,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         created_at: Token.Utils.format_created_at(token)
       })
     else
-      {:error, errors} -> json_response(conn, :bad_request, errors)
+      {:error, error} -> json_response(conn, :bad_request, %{error: error})
     end
   end
 
@@ -133,11 +117,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     render_error(conn, :forbidden, "Invalid credentials")
   end
 
-  defp validate_email_param(%{:email => email}) when not is_nil(email), do: :ok
+  defp validate_email_param(%{email: email}) when not is_nil(email), do: :ok
 
   defp validate_email_param(_) do
     case Pleroma.Config.get([:instance, :account_activation_required]) do
-      true -> {:error, %{"error" => "Missing parameters"}}
+      true -> {:error, dgettext("errors", "Missing parameter: %{name}", name: "email")}
       _ -> :ok
     end
   end
