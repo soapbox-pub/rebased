@@ -67,19 +67,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
   end
 
   defp same_domain?(cng) do
-    actor_domain =
+    actor_uri =
       cng
       |> get_field(:actor)
       |> URI.parse()
-      |> (& &1.host).()
 
-    object_domain =
+    object_uri =
       cng
       |> get_field(:object)
       |> URI.parse()
-      |> (& &1.host).()
 
-    object_domain == actor_domain
+    object_uri.host == actor_uri.host
   end
 
   def validate_deletion_rights(cng) do
