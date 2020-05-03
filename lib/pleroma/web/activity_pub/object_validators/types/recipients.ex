@@ -11,11 +11,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.Recipients do
 
   def cast(data) when is_list(data) do
     data
-    |> Enum.reduce({:ok, []}, fn element, acc ->
-      case {acc, ObjectID.cast(element)} do
-        {:error, _} -> :error
-        {_, :error} -> :error
-        {{:ok, list}, {:ok, id}} -> {:ok, [id | list]}
+    |> Enum.reduce_while({:ok, []}, fn element, {:ok, list} ->
+      case ObjectID.cast(element) do
+        {:ok, id} ->
+          {:cont, {:ok, [id | list]}}
+
+        _ ->
+          {:halt, :error}
       end
     end)
   end
