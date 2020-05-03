@@ -156,7 +156,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
         ObanHelpers.perform_all()
 
-        refute User.get_by_nickname(user.nickname)
+        assert User.get_by_nickname(user.nickname).deactivated
 
         log_entry = Repo.one(ModerationLog)
 

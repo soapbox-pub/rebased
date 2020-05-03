@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
     {:ok, _} = Transmogrifier.handle_incoming(data)
     ObanHelpers.perform_all()
 
-    refute User.get_cached_by_ap_id(ap_id)
+    assert User.get_cached_by_ap_id(ap_id).deactivated
   end
 
   test "it fails for incoming user deletes with spoofed origin" do
