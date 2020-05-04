@@ -44,11 +44,25 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
   def fix_after_cast(cng) do
     cng
     |> fix_recipients()
+    |> fix_context()
+  end
+
+  def fix_context(cng) do
+    object = get_field(cng, :object)
+
+    with nil <- get_field(cng, :context),
+         %Object{data: %{"context" => context}} <- Object.get_cached_by_ap_id(object) do
+      cng
+      |> put_change(:context, context)
+    else
+      _ ->
+        cng
+    end
   end
 
   def fix_recipients(cng) do
-    to = get_field(cng, :to) || []
-    cc = get_field(cng, :cc) || []
+    to = get_field(cng, :to)
+    cc = get_field(cng, :cc)
     object = get_field(cng, :object)
 
     with {[], []} <- {to, cc},
