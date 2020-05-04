@@ -1055,12 +1055,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert result["totalItems"] == 15
     end
 
-    test "returns 403 if requester is not logged in", %{conn: conn} do
+    test "does not require authentication", %{conn: conn} do
       user = insert(:user)
 
       conn
       |> get("/users/#{user.nickname}/followers")
-      |> json_response(403)
+      |> json_response(200)
     end
   end
 
@@ -1152,12 +1152,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert result["totalItems"] == 15
     end
 
-    test "returns 403 if requester is not logged in", %{conn: conn} do
+    test "does not require authentication", %{conn: conn} do
       user = insert(:user)
 
       conn
       |> get("/users/#{user.nickname}/following")
-      |> json_response(403)
+      |> json_response(200)
     end
   end
 
