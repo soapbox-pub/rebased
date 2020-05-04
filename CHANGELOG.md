@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: SimplePolicy `:reject` and `:accept` allow deletions again
 - Fix follower/blocks import when nicknames starts with @
 - Filtering of push notifications on activities from blocked domains
+- Resolving Peertube accounts with Webfinger
 
 ## [unreleased-patch]
 ### Security
