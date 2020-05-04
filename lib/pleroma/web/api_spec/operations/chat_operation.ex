@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Chat
   alias Pleroma.Web.ApiSpec.Schemas.ChatMessage
-  alias Pleroma.Web.ApiSpec.Schemas.ChatMessageCreateRequest
 
   import Pleroma.Web.ApiSpec.Helpers
 
@@ -97,7 +96,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       parameters: [
         Operation.parameter(:id, :path, :string, "The ID of the Chat")
       ],
-      requestBody: request_body("Parameters", ChatMessageCreateRequest, required: true),
+      requestBody: request_body("Parameters", chat_message_create(), required: true),
       responses: %{
         200 =>
           Operation.response(
@@ -206,6 +205,21 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
           "created_at" => "2020-04-21T15:06:45.000Z"
         }
       ]
+    }
+  end
+
+  def chat_message_create do
+    %Schema{
+      title: "ChatMessageCreateRequest",
+      description: "POST body for creating an chat message",
+      type: :object,
+      properties: %{
+        content: %Schema{type: :string, description: "The content of your message"}
+      },
+      required: [:content],
+      example: %{
+        "content" => "Hey wanna buy feet pics?"
+      }
     }
   end
 end
