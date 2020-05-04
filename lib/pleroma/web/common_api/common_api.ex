@@ -26,9 +26,7 @@ defmodule Pleroma.Web.CommonAPI do
   require Logger
 
   def post_chat_message(%User{} = user, %User{} = recipient, content) do
-    with {_, true} <-
-           {:content_length,
-            String.length(content) <= Pleroma.Config.get([:instance, :chat_limit])},
+    with :ok <- validate_chat_content_length(content),
          {_, {:ok, chat_message_data, _meta}} <-
            {:build_object,
             Builder.chat_message(
@@ -44,9 +42,14 @@ defmodule Pleroma.Web.CommonAPI do
               local: true
             )} do
       {:ok, activity}
+    end
+  end
+
+  defp validate_chat_content_length(content) do
+    if String.length(content) <= Pleroma.Config.get([:instance, :chat_limit]) do
+      :ok
     else
-      {:content_length, false} -> {:error, :content_too_long}
-      e -> e
+      {:error, :content_too_long}
     end
   end
 
