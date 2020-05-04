@@ -66,6 +66,27 @@ Returned data:
 }
 ```
 
+### Marking a chat as read
+
+To set the `unread` count of a chat to 0, call
+
+`POST /api/v1/pleroma/chats/:id/read`
+
+Returned data:
+
+```json
+{
+  "account": {
+    "id": "someflakeid",
+    "username": "somenick",
+    ...
+  },
+  "id" : "1",
+  "unread" : 0
+}
+```
+
+
 ### Getting a list of Chats
 
 `GET /api/v1/pleroma/chats`
