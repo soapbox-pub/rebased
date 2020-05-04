@@ -110,6 +110,10 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
             %{reason: :unexpected_field, name: name, path: [name]}, params ->
               Map.delete(params, name)
 
+            %{reason: :invalid_enum, name: nil, path: path, value: value}, params ->
+              path = path |> Enum.reverse() |> tl() |> Enum.reverse() |> list_items_to_string()
+              update_in(params, path, &List.delete(&1, value))
+
             _, params ->
               params
           end)
@@ -117,5 +121,12 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
         conn = %Conn{conn | query_params: query_params}
         OpenApiSpex.cast_and_validate(spec, operation, conn, content_type)
     end
+  end
+
+  defp list_items_to_string(list) do
+    Enum.map(list, fn
+      i when is_atom(i) -> to_string(i)
+      i -> i
+    end)
   end
 end
