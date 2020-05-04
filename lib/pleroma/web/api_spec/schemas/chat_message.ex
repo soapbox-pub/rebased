@@ -2,13 +2,13 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessageResponse do
+defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
   alias OpenApiSpex.Schema
 
   require OpenApiSpex
 
   OpenApiSpex.schema(%{
-    title: "ChatMessageResponse",
+    title: "ChatMessage",
     description: "Response schema for a ChatMessage",
     type: :object,
     properties: %{

@@ -6,8 +6,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.ChatMessageCreateRequest
-  alias Pleroma.Web.ApiSpec.Schemas.ChatMessageResponse
-  alias Pleroma.Web.ApiSpec.Schemas.ChatResponse
+  alias Pleroma.Web.ApiSpec.Schemas.ChatMessage
+  alias Pleroma.Web.ApiSpec.Schemas.Chat
 
   import Pleroma.Web.ApiSpec.Helpers
 
@@ -37,7 +37,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
           Operation.response(
             "The created or existing chat",
             "application/json",
-            ChatResponse
+            Chat
           )
       },
       security: [
@@ -103,7 +103,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
           Operation.response(
             "The newly created ChatMessage",
             "application/json",
-            ChatMessageResponse
+            ChatMessage
           )
       },
       security: [
@@ -119,7 +119,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       title: "ChatsResponse",
       description: "Response schema for multiple Chats",
       type: :array,
-      items: ChatResponse,
+      items: Chat,
       example: [
         %{
           "account" => %{
@@ -180,7 +180,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       title: "ChatMessagesResponse",
       description: "Response schema for multiple ChatMessages",
       type: :array,
-      items: ChatMessageResponse,
+      items: ChatMessage,
       example: [
         %{
           "emojis" => [
