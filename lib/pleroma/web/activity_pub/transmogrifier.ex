@@ -15,7 +15,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ObjectValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -668,16 +667,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(%{"type" => "Like"} = data, _options) do
-    with {_, {:ok, cast_data_sym}} <-
-           {:casting_data,
-            data |> LikeValidator.cast_data() |> Ecto.Changeset.apply_action(:insert)},
-         cast_data = ObjectValidator.stringify_keys(Map.from_struct(cast_data_sym)),
-         :ok <- ObjectValidator.fetch_actor_and_object(cast_data),
-         {_, {:ok, cast_data}} <- {:ensure_context_presence, ensure_context_presence(cast_data)},
-         {_, {:ok, cast_data}} <-
-           {:ensure_recipients_presence, ensure_recipients_presence(cast_data)},
-         {_, {:ok, activity, _meta}} <-
-           {:common_pipeline, Pipeline.common_pipeline(cast_data, local: false)} do
+    with :ok <- ObjectValidator.fetch_actor_and_object(data),
+         {:ok, activity, _meta} <-
+           Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     else
       e -> {:error, e}
@@ -1306,45 +1298,4 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def maybe_fix_user_url(data), do: data
 
   def maybe_fix_user_object(data), do: maybe_fix_user_url(data)
-
-  defp ensure_context_presence(%{"context" => context} = data) when is_binary(context),
-    do: {:ok, data}
-
-  defp ensure_context_presence(%{"object" => object} = data) when is_binary(object) do
-    with %{data: %{"context" => context}} when is_binary(context) <- Object.normalize(object) do
-      {:ok, Map.put(data, "context", context)}
-    else
-      _ ->
-        {:error, :no_context}
-    end
-  end
-
-  defp ensure_context_presence(_) do
-    {:error, :no_context}
-  end
-
-  defp ensure_recipients_presence(%{"to" => [_ | _], "cc" => [_ | _]} = data),
-    do: {:ok, data}
-
-  defp ensure_recipients_presence(%{"object" => object} = data) do
-    case Object.normalize(object) do
-      %{data: %{"actor" => actor}} ->
-        data =
-          data
-          |> Map.put("to", [actor])
-          |> Map.put("cc", data["cc"] || [])
-
-        {:ok, data}
-
-      nil ->
-        {:error, :no_object}
-
-      _ ->
-        {:error, :no_actor}
-    end
-  end
-
-  defp ensure_recipients_presence(_) do
-    {:error, :no_object}
-  end
 end
