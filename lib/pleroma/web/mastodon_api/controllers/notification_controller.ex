@@ -13,7 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
 
   @oauth_read_actions [:show, :index]
 
-  plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
     OAuthScopesPlug,

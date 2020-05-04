@@ -9,7 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.ReportController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
-  plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["write:reports"]} when action == :create)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ReportOperation
