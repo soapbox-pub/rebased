@@ -2260,6 +2260,7 @@ config :pleroma, :config_description, [
         children: [
           %{
             key: :active,
+            label: "Enabled",
             type: :boolean,
             description: "Globally enable or disable digest emails"
           },
