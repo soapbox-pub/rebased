@@ -60,4 +60,10 @@ defmodule Pleroma.Chat do
       conflict_target: [:user_id, :recipient]
     )
   end
+
+  def mark_as_read(chat) do
+    chat
+    |> change(%{unread: 0})
+    |> Repo.update()
+  end
 end

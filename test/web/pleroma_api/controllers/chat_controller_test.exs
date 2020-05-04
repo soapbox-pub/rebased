@@ -9,6 +9,29 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
   import Pleroma.Factory
 
+  describe "POST /api/v1/pleroma/chats/:id/read" do
+    setup do: oauth_access(["write:statuses"])
+
+    test "it marks all messages in a chat as read", %{conn: conn, user: user} do
+      other_user = insert(:user)
+
+      {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
+
+      assert chat.unread == 1
+
+      result =
+        conn
+        |> post("/api/v1/pleroma/chats/#{chat.id}/read")
+        |> json_response_and_validate_schema(200)
+
+      assert result["unread"] == 0
+
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+
+      assert chat.unread == 0
+    end
+  end
+
   describe "POST /api/v1/pleroma/chats/:id/messages" do
     setup do: oauth_access(["write:statuses"])
 

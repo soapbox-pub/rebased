@@ -23,7 +23,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:statuses"]} when action in [:post_chat_message, :create]
+    %{scopes: ["write:statuses"]} when action in [:post_chat_message, :create, :mark_as_read]
   )
 
   plug(
@@ -48,6 +48,15 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       conn
       |> put_view(ChatMessageView)
       |> render("show.json", for: user, object: message, chat: chat)
+    end
+  end
+
+  def mark_as_read(%{assigns: %{user: %{id: user_id}}} = conn, %{id: id}) do
+    with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id),
+         {:ok, chat} <- Chat.mark_as_read(chat) do
+      conn
+      |> put_view(ChatView)
+      |> render("show.json", chat: chat)
     end
   end
 

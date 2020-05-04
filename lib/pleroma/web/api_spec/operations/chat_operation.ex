@@ -16,6 +16,28 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     apply(__MODULE__, operation, [])
   end
 
+  def mark_as_read_operation do
+    %Operation{
+      tags: ["chat"],
+      summary: "Mark all messages in the chat as read",
+      operationId: "ChatController.mark_as_read",
+      parameters: [Operation.parameter(:id, :path, :string, "The ID of the Chat")],
+      responses: %{
+        200 =>
+          Operation.response(
+            "The updated chat",
+            "application/json",
+            Chat
+          )
+      },
+      security: [
+        %{
+          "oAuth" => ["write"]
+        }
+      ]
+    }
+  end
+
   def create_operation do
     %Operation{
       tags: ["chat"],
