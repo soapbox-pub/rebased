@@ -8,6 +8,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Conversation.Participation
   alias Pleroma.FollowingRelationship
   alias Pleroma.Formatter
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.ThreadMute
   alias Pleroma.User
@@ -68,8 +69,8 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def accept_follow_request(follower, followed) do
-    with {:ok, follower} <- User.follow(follower, followed),
-         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+    with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follower} <- User.follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
          {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept),
          {:ok, _activity} <-
@@ -87,6 +88,7 @@ defmodule Pleroma.Web.CommonAPI do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
          {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_reject),
+         {:ok, _notifications} <- Notification.dismiss(follow_activity),
          {:ok, _activity} <-
            ActivityPub.reject(%{
              to: [follower.ap_id],
@@ -406,9 +408,9 @@ defmodule Pleroma.Web.CommonAPI do
     ThreadMute.exists?(user.id, activity.data["context"])
   end
 
-  def report(user, %{"account_id" => account_id} = data) do
-    with {:ok, account} <- get_reported_account(account_id),
-         {:ok, {content_html, _, _}} <- make_report_content_html(data["comment"]),
+  def report(user, data) do
+    with {:ok, account} <- get_reported_account(data.account_id),
+         {:ok, {content_html, _, _}} <- make_report_content_html(data[:comment]),
          {:ok, statuses} <- get_report_statuses(account, data) do
       ActivityPub.flag(%{
         context: Utils.generate_context_id(),
@@ -416,12 +418,10 @@ defmodule Pleroma.Web.CommonAPI do
         account: account,
         statuses: statuses,
         content: content_html,
-        forward: data["forward"] || false
+        forward: Map.get(data, :forward, false)
       })
     end
   end
-
-  def report(_user, _params), do: {:error, dgettext("errors", "Valid `account_id` required")}
 
   defp get_reported_account(account_id) do
     case User.get_cached_by_id(account_id) do

@@ -308,6 +308,22 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://peertube.social/accounts/craigmaloney", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/craigmaloney.json")
+     }}
+  end
+
+  def get("https://peertube.social/videos/watch/278d2b7c-0f38-4aaa-afe6-9ecc0c4a34fe", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/peertube-social.json")
+     }}
+  end
+
   def get("https://mobilizon.org/events/252d5816-00a3-4a89-a66f-15bf65c33e39", _, _, [
         {"accept", "application/activity+json"}
       ]) do

@@ -41,9 +41,17 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
       Operation.parameter(
         :limit,
         :query,
-        %Schema{type: :integer, default: 20, maximum: 40},
-        "Limit"
+        %Schema{type: :integer, default: 20},
+        "Maximum number of items to return. Will be ignored if it's more than 40"
       )
     ]
+  end
+
+  def empty_object_response do
+    Operation.response("Empty object", "application/json", %Schema{type: :object, example: %{}})
+  end
+
+  def empty_array_response do
+    Operation.response("Empty array", "application/json", %Schema{type: :array, example: []})
   end
 end

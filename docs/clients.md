@@ -49,11 +49,11 @@ Feel free to contact us to be added to this list!
 - Platforms: Android
 - Features: Streaming Ready
 
-### Roma
-- Homepage: <https://www.pleroma.com/#mobileApps>
-- Source Code: [iOS](https://github.com/roma-apps/roma-ios), [Android](https://github.com/roma-apps/roma-android)
+### Fedi
+- Homepage: <https://www.fediapp.com/>
+- Source Code: Proprietary, but free
 - Platforms: iOS, Android
-- Features: No Streaming
+- Features: Pleroma-specific features like Reactions
 
 ### Tusky
 - Homepage: <https://tuskyapp.github.io/>

@@ -131,6 +131,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
             "Include statuses from muted acccounts."
           ),
           Operation.parameter(:exclude_reblogs, :query, BooleanLike, "Exclude reblogs"),
+          Operation.parameter(:exclude_replies, :query, BooleanLike, "Exclude replies"),
           Operation.parameter(
             :exclude_visibilities,
             :query,
@@ -343,7 +344,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "Not implemented",
       security: [%{"oAuth" => ["read:accounts"]}],
       responses: %{
-        200 => Operation.response("Empry array", "application/json", %Schema{type: :array})
+        200 => empty_array_response()
       }
     }
   end
@@ -355,7 +356,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       operationId: "AccountController.identity_proofs",
       description: "Not implemented",
       responses: %{
-        200 => Operation.response("Empry array", "application/json", %Schema{type: :array})
+        200 => empty_array_response()
       }
     }
   end
