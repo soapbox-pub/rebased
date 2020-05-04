@@ -7,9 +7,10 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
   @moduledoc """
   This plug is based on [`OpenApiSpex.Plug.CastAndValidate`]
   (https://github.com/open-api-spex/open_api_spex/blob/master/lib/open_api_spex/plug/cast_and_validate.ex).
-  The main difference is ignoring unexpected query params
-  instead of throwing an error. Also, the default rendering
-  error module is `Pleroma.Web.ApiSpec.RenderError`.
+  The main difference is ignoring unexpected query params instead of throwing
+  an error and a config option (`[Pleroma.Web.ApiSpec.CastAndValidate, :strict]`)
+  to disable this behavior. Also, the default rendering error module
+  is `Pleroma.Web.ApiSpec.RenderError`.
   """
 
   @behaviour Plug
@@ -45,7 +46,7 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
     private_data = Map.put(private_data, :operation_id, operation_id)
     conn = Conn.put_private(conn, :open_api_spex, private_data)
 
-    case cast_and_validate(spec, operation, conn, content_type) do
+    case cast_and_validate(spec, operation, conn, content_type, strict?()) do
       {:ok, conn} ->
         conn
 
@@ -98,7 +99,11 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
 
   def call(conn, opts), do: OpenApiSpex.Plug.CastAndValidate.call(conn, opts)
 
-  defp cast_and_validate(spec, operation, conn, content_type) do
+  defp cast_and_validate(spec, operation, conn, content_type, true = _strict) do
+    OpenApiSpex.cast_and_validate(spec, operation, conn, content_type)
+  end
+
+  defp cast_and_validate(spec, operation, conn, content_type, false = _strict) do
     case OpenApiSpex.cast_and_validate(spec, operation, conn, content_type) do
       {:ok, conn} ->
         {:ok, conn}
@@ -129,4 +134,6 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
       i -> i
     end)
   end
+
+  defp strict?, do: Pleroma.Config.get([__MODULE__, :strict], false)
 end
