@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.ApiSpec.ChatOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Schemas.ChatMessageCreateRequest
-  alias Pleroma.Web.ApiSpec.Schemas.ChatMessage
   alias Pleroma.Web.ApiSpec.Schemas.Chat
+  alias Pleroma.Web.ApiSpec.Schemas.ChatMessage
+  alias Pleroma.Web.ApiSpec.Schemas.ChatMessageCreateRequest
 
   import Pleroma.Web.ApiSpec.Helpers
 
