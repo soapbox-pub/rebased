@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
 
   def handle(object, meta \\ [])
@@ -56,6 +57,17 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle_undoing(%{data: %{"type" => "Announce"}} = object) do
     with %Object{} = liked_object <- Object.get_by_ap_id(object.data["object"]),
          {:ok, _} <- Utils.remove_announce_from_object(object, liked_object),
+         {:ok, _} <- Repo.delete(object) do
+      :ok
+    end
+  end
+
+  def handle_undoing(
+        %{data: %{"type" => "Block", "actor" => blocker, "object" => blocked}} = object
+      ) do
+    with %User{} = blocker <- User.get_cached_by_ap_id(blocker),
+         %User{} = blocked <- User.get_cached_by_ap_id(blocked),
+         {:ok, _} <- User.unblock(blocker, blocked),
          {:ok, _} <- Repo.delete(object) do
       :ok
     end

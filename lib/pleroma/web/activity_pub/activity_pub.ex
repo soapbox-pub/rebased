@@ -532,27 +532,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec unblock(User.t(), User.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t()} | {:error, any()} | nil
-  def unblock(blocker, blocked, activity_id \\ nil, local \\ true) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_unblock(blocker, blocked, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_unblock(blocker, blocked, activity_id, local) do
-    with %Activity{} = block_activity <- fetch_latest_block(blocker, blocked),
-         unblock_data <- make_unblock_data(blocker, blocked, block_activity, activity_id),
-         {:ok, activity} <- insert(unblock_data, local),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    else
-      nil -> nil
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
   @spec flag(map()) :: {:ok, Activity.t()} | {:error, any()}
   def flag(
         %{

@@ -24,6 +24,14 @@ defmodule Pleroma.Web.CommonAPI do
   require Pleroma.Constants
   require Logger
 
+  def unblock(blocker, blocked) do
+    with %Activity{} = block <- Utils.fetch_latest_block(blocker, blocked),
+         {:ok, unblock_data, _} <- Builder.undo(blocker, block),
+         {:ok, unblock, _} <- Pipeline.common_pipeline(unblock_data, local: true) do
+      {:ok, unblock}
+    end
+  end
+
   def follow(follower, followed) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
 

@@ -790,45 +790,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{
           "type" => "Undo",
-          "object" => %{"type" => "Block", "object" => blocked},
-          "actor" => blocker,
-          "id" => id
-        } = _data,
-        _options
-      ) do
-    with %User{local: true} = blocked <- User.get_cached_by_ap_id(blocked),
-         {:ok, %User{} = blocker} <- User.get_or_fetch_by_ap_id(blocker),
-         {:ok, activity} <- ActivityPub.unblock(blocker, blocked, id, false) do
-      User.unblock(blocker, blocked)
-      {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data,
-        _options
-      ) do
-    with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
-         {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
-         {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
-      User.unfollow(blocker, blocked)
-      User.block(blocker, blocked)
-      {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{
-          "type" => "Undo",
           "object" => %{"type" => type}
         } = data,
         _options
       )
-      when type in ["Like", "EmojiReact", "Announce"] do
+      when type in ["Like", "EmojiReact", "Announce", "Block"] do
     with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     end
@@ -847,6 +813,21 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       activity
       |> Map.put("object", data)
       |> handle_incoming(options)
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data,
+        _options
+      ) do
+    with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
+         {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
+         {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
+      User.unfollow(blocker, blocked)
+      User.block(blocker, blocked)
+      {:ok, activity}
     else
       _e -> :error
     end

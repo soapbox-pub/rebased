@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.SideEffects
@@ -24,6 +25,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, like} = CommonAPI.favorite(user, post.id)
       {:ok, reaction, _} = CommonAPI.react_with_emoji(post.id, user, "👍")
       {:ok, announce, _} = CommonAPI.repeat(post.id, user)
+      {:ok, block} = ActivityPub.block(user, poster)
+      User.block(user, poster)
 
       {:ok, undo_data, _meta} = Builder.undo(user, like)
       {:ok, like_undo, _meta} = ActivityPub.persist(undo_data, local: true)
@@ -34,6 +37,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, undo_data, _meta} = Builder.undo(user, announce)
       {:ok, announce_undo, _meta} = ActivityPub.persist(undo_data, local: true)
 
+      {:ok, undo_data, _meta} = Builder.undo(user, block)
+      {:ok, block_undo, _meta} = ActivityPub.persist(undo_data, local: true)
+
       %{
         like_undo: like_undo,
         post: post,
@@ -41,8 +47,25 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
         reaction_undo: reaction_undo,
         reaction: reaction,
         announce_undo: announce_undo,
-        announce: announce
+        announce: announce,
+        block_undo: block_undo,
+        block: block,
+        poster: poster,
+        user: user
       }
+    end
+
+    test "deletes the original block", %{block_undo: block_undo, block: block} do
+      {:ok, _block_undo, _} = SideEffects.handle(block_undo)
+      refute Activity.get_by_id(block.id)
+    end
+
+    test "unblocks the blocked user", %{block_undo: block_undo, block: block} do
+      blocker = User.get_by_ap_id(block.data["actor"])
+      blocked = User.get_by_ap_id(block.data["object"])
+
+      {:ok, _block_undo, _} = SideEffects.handle(block_undo)
+      refute User.blocks?(blocker, blocked)
     end
 
     test "an announce undo removes the announce from the object", %{

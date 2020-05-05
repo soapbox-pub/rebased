@@ -1114,7 +1114,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "blocking / unblocking" do
+  describe "blocking" do
     test "reverts block activity on error" do
       [blocker, blocked] = insert_list(2, :user)
 
@@ -1135,38 +1135,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["type"] == "Block"
       assert activity.data["actor"] == blocker.ap_id
       assert activity.data["object"] == blocked.ap_id
-    end
-
-    test "reverts unblock activity on error" do
-      [blocker, blocked] = insert_list(2, :user)
-      {:ok, block_activity} = ActivityPub.block(blocker, blocked)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.unblock(blocker, blocked)
-      end
-
-      assert block_activity.data["type"] == "Block"
-      assert block_activity.data["actor"] == blocker.ap_id
-
-      assert Repo.aggregate(Activity, :count, :id) == 1
-      assert Repo.aggregate(Object, :count, :id) == 1
-    end
-
-    test "creates an undo activity for the last block" do
-      blocker = insert(:user)
-      blocked = insert(:user)
-
-      {:ok, block_activity} = ActivityPub.block(blocker, blocked)
-      {:ok, activity} = ActivityPub.unblock(blocker, blocked)
-
-      assert activity.data["type"] == "Undo"
-      assert activity.data["actor"] == blocker.ap_id
-
-      embedded_object = activity.data["object"]
-      assert is_map(embedded_object)
-      assert embedded_object["type"] == "Block"
-      assert embedded_object["object"] == blocked.ap_id
-      assert embedded_object["id"] == block_activity.data["id"]
     end
   end
 
