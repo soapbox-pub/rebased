@@ -4,8 +4,9 @@
 
 defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
+  alias Pleroma.Web.ApiSpec.Schemas.Attachment
   alias Pleroma.Web.ApiSpec.Schemas.Poll
+  alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
   require OpenApiSpex
 
@@ -17,7 +18,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
     properties: %{
       id: %Schema{type: :string},
       scheduled_at: %Schema{type: :string, format: :"date-time"},
-      media_attachments: %Schema{type: :array, format: :"date-time"},
+      media_attachments: %Schema{type: :array, items: Attachment},
       params: %Schema{
         type: :object,
         required: [:text, :visibility],
@@ -47,7 +48,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ScheduledStatus do
         idempotency: nil,
         in_reply_to_id: nil
       },
-      media_attachments: []
+      media_attachments: [Attachment.schema().example]
     }
   })
 end
