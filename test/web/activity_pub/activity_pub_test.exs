@@ -874,71 +874,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "react to an object" do
-    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
-      Config.put([:instance, :federating], true)
-      user = insert(:user)
-      reactor = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
-      assert object = Object.normalize(activity)
-
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
-
-      assert called(Federator.publish(reaction_activity))
-    end
-
-    test "adds an emoji reaction activity to the db" do
-      user = insert(:user)
-      reactor = insert(:user)
-      third_user = insert(:user)
-      fourth_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
-      assert object = Object.normalize(activity)
-
-      {:ok, reaction_activity, object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
-
-      assert reaction_activity
-
-      assert reaction_activity.data["actor"] == reactor.ap_id
-      assert reaction_activity.data["type"] == "EmojiReact"
-      assert reaction_activity.data["content"] == "🔥"
-      assert reaction_activity.data["object"] == object.data["id"]
-      assert reaction_activity.data["to"] == [User.ap_followers(reactor), activity.data["actor"]]
-      assert reaction_activity.data["context"] == object.data["context"]
-      assert object.data["reaction_count"] == 1
-      assert object.data["reactions"] == [["🔥", [reactor.ap_id]]]
-
-      {:ok, _reaction_activity, object} = ActivityPub.react_with_emoji(third_user, object, "☕")
-
-      assert object.data["reaction_count"] == 2
-      assert object.data["reactions"] == [["🔥", [reactor.ap_id]], ["☕", [third_user.ap_id]]]
-
-      {:ok, _reaction_activity, object} = ActivityPub.react_with_emoji(fourth_user, object, "🔥")
-
-      assert object.data["reaction_count"] == 3
-
-      assert object.data["reactions"] == [
-               ["🔥", [fourth_user.ap_id, reactor.ap_id]],
-               ["☕", [third_user.ap_id]]
-             ]
-    end
-
-    test "reverts emoji reaction on error" do
-      [user, reactor] = insert_list(2, :user)
-
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "Status"})
-      object = Object.normalize(activity)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.react_with_emoji(reactor, object, "😀")
-      end
-
-      object = Object.get_by_ap_id(object.data["id"])
-      refute object.data["reaction_count"]
-      refute object.data["reactions"]
-    end
-  end
-
   describe "unreacting to an object" do
     test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
       Config.put([:instance, :federating], true)
@@ -947,7 +882,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
       assert object = Object.normalize(activity)
 
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+      {:ok, reaction_activity} = CommonAPI.react_with_emoji(activity.id, reactor, "🔥")
 
       assert called(Federator.publish(reaction_activity))
 
@@ -963,7 +898,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
       assert object = Object.normalize(activity)
 
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+      {:ok, reaction_activity} = CommonAPI.react_with_emoji(activity.id, reactor, "🔥")
 
       {:ok, unreaction_activity, _object} =
         ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
@@ -981,7 +916,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "Status"})
       object = Object.normalize(activity)
 
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "😀")
+      {:ok, reaction_activity} = CommonAPI.react_with_emoji(activity.id, reactor, "😀")
 
       with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
         assert {:error, :reverted} =

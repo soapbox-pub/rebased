@@ -24,7 +24,7 @@ defmodule Pleroma.NotificationTest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "yeah"})
-      {:ok, activity, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+      {:ok, activity} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
 
       {:ok, [notification]} = Notification.create_notifications(activity)
 

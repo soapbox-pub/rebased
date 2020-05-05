@@ -329,7 +329,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
-      {:ok, reaction_activity, _object} = CommonAPI.react_with_emoji(activity.id, user, "👌")
+      {:ok, reaction_activity} = CommonAPI.react_with_emoji(activity.id, user, "👌")
 
       data =
         File.read!("test/fixtures/mastodon-undo-like.json")
@@ -562,7 +562,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it strips internal reactions" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
-      {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, user, "📢")
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, user, "📢")
 
       %{object: object} = Activity.get_by_id_with_object(activity.id)
       assert Map.has_key?(object.data, "reactions")

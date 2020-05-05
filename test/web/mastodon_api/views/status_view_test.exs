@@ -32,9 +32,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     third_user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "dae cofe??"})
 
-    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, user, "☕")
-    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, third_user, "🍵")
-    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, user, "☕")
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, third_user, "🍵")
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
     activity = Repo.get(Activity, activity.id)
     status = StatusView.render("show.json", activity: activity)
 

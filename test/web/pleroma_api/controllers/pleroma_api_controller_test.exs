@@ -41,7 +41,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     other_user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
-    {:ok, activity, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+    {:ok, activity} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
 
     result =
       conn
@@ -71,8 +71,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     assert result == []
 
-    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
-    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, doomed_user, "🎅")
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, doomed_user, "🎅")
 
     User.perform(:delete, doomed_user)
 
@@ -109,8 +109,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     assert result == []
 
-    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
-    {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
 
     result =
       conn
