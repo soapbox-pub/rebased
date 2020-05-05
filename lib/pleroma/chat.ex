@@ -46,7 +46,8 @@ defmodule Pleroma.Chat do
     %__MODULE__{}
     |> creation_cng(%{user_id: user_id, recipient: recipient})
     |> Repo.insert(
-      on_conflict: :nothing,
+      # Need to set something, otherwise we get nothing back at all
+      on_conflict: [set: [recipient: recipient]],
       returning: true,
       conflict_target: [:user_id, :recipient]
     )

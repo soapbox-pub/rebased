@@ -26,12 +26,23 @@ defmodule Pleroma.ChatTest do
       assert chat.id
     end
 
-    test "it returns a chat for a user and recipient if it already exists" do
+    test "it returns and bumps a chat for a user and recipient if it already exists" do
       user = insert(:user)
       other_user = insert(:user)
 
       {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
       {:ok, chat_two} = Chat.bump_or_create(user.id, other_user.ap_id)
+
+      assert chat.id == chat_two.id
+      assert chat_two.unread == 2
+    end
+
+    test "it returns a chat for a user and recipient if it already exists" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+      {:ok, chat_two} = Chat.get_or_create(user.id, other_user.ap_id)
 
       assert chat.id == chat_two.id
     end
