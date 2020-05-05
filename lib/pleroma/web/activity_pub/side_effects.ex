@@ -23,6 +23,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
+  # Tasks this handles:
+  # - Add reaction to object
+  # - Set up notification
+  def handle(%{data: %{"type" => "EmojiReact"}} = object, meta) do
+    reacted_object = Object.get_by_ap_id(object.data["object"])
+    Utils.add_emoji_reaction_to_object(object, reacted_object)
+
+    Notification.create_notifications(object)
+
+    {:ok, object, meta}
+  end
+
   # Nothing to do
   def handle(object, meta) do
     {:ok, object, meta}

@@ -10,6 +10,18 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
+  @spec emoji_react(User.t(), Object.t(), String.t()) :: {:ok, map(), keyword()}
+  def emoji_react(actor, object, emoji) do
+    with {:ok, data, meta} <- like(actor, object) do
+      data =
+        data
+        |> Map.put("content", emoji)
+        |> Map.put("type", "EmojiReact")
+
+      {:ok, data, meta}
+    end
+  end
+
   @spec like(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def like(actor, object) do
     object_actor = User.get_cached_by_ap_id(object.data["actor"])

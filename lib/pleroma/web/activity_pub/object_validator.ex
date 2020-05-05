@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
@@ -19,6 +20,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   def validate(%{"type" => "Like"} = object, meta) do
     with {:ok, object} <-
            object |> LikeValidator.cast_and_validate() |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object |> Map.from_struct())
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => "EmojiReact"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> EmojiReactValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
       object = stringify_keys(object |> Map.from_struct())
       {:ok, object, meta}
     end
