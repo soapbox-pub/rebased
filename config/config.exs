@@ -647,8 +647,10 @@ config :pleroma, Pleroma.Repo,
   prepare: :unnamed
 
 config :pleroma, :connections_pool,
+  reclaim_multiplier: 0.1,
   checkin_timeout: 250,
   max_connections: 250,
+  max_idle_time: 30_000,
   retry: 1,
   retry_timeout: 1000,
   await_up_timeout: 5_000

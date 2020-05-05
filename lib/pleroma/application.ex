@@ -223,9 +223,7 @@ defmodule Pleroma.Application do
 
   # start hackney and gun pools in tests
   defp http_children(_, :test) do
-    hackney_options = Config.get([:hackney_pools, :federation])
-    hackney_pool = :hackney_pool.child_spec(:federation, hackney_options)
-    [hackney_pool, Pleroma.Pool.Supervisor]
+    http_children(Tesla.Adapter.Hackney, nil) ++ http_children(Tesla.Adapter.Gun, nil)
   end
 
   defp http_children(Tesla.Adapter.Hackney, _) do
@@ -244,7 +242,9 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp http_children(Tesla.Adapter.Gun, _), do: [Pleroma.Pool.Supervisor]
+  defp http_children(Tesla.Adapter.Gun, _) do
+    [{Registry, keys: :unique, name: Pleroma.Gun.ConnectionPool}]
+  end
 
   defp http_children(_, _), do: []
 end

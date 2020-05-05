@@ -5,8 +5,8 @@
 defmodule Pleroma.HTTP.AdapterHelper.Gun do
   @behaviour Pleroma.HTTP.AdapterHelper
 
+  alias Pleroma.Gun.ConnectionPool
   alias Pleroma.HTTP.AdapterHelper
-  alias Pleroma.Pool.Connections
 
   require Logger
 
@@ -31,13 +31,13 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     |> Keyword.merge(config_opts)
     |> add_scheme_opts(uri)
     |> AdapterHelper.maybe_add_proxy(proxy)
-    |> maybe_get_conn(uri, incoming_opts)
+    |> Keyword.merge(incoming_opts)
   end
 
   @spec after_request(keyword()) :: :ok
   def after_request(opts) do
     if opts[:conn] && opts[:body_as] != :chunks do
-      Connections.checkout(opts[:conn], self(), :gun_connections)
+      ConnectionPool.release_conn(opts[:conn])
     end
 
     :ok
@@ -51,27 +51,11 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     |> Keyword.put(:tls_opts, log_level: :warning)
   end
 
-  defp maybe_get_conn(adapter_opts, uri, incoming_opts) do
-    {receive_conn?, opts} =
-      adapter_opts
-      |> Keyword.merge(incoming_opts)
-      |> Keyword.pop(:receive_conn, true)
-
-    if Connections.alive?(:gun_connections) and receive_conn? do
-      checkin_conn(uri, opts)
-    else
-      opts
-    end
-  end
-
-  defp checkin_conn(uri, opts) do
-    case Connections.checkin(uri, :gun_connections) do
-      nil ->
-        Task.start(Pleroma.Gun.Conn, :open, [uri, :gun_connections, opts])
-        opts
-
-      conn when is_pid(conn) ->
-        Keyword.merge(opts, conn: conn, close_conn: false)
+  @spec get_conn(URI.t(), keyword()) :: {:ok, keyword()} | {:error, atom()}
+  def get_conn(uri, opts) do
+    case ConnectionPool.get_conn(uri, opts) do
+      {:ok, conn_pid} -> {:ok, Keyword.merge(opts, conn: conn_pid, close_conn: false)}
+      err -> err
     end
   end
 end
