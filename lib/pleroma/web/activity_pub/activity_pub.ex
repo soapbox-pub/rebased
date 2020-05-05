@@ -836,7 +836,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp exclude_visibility(query, %{"exclude_visibilities" => visibility})
-       when visibility not in @valid_visibilities do
+       when visibility not in [nil | @valid_visibilities] do
     Logger.error("Could not exclude visibility to #{visibility}")
     query
   end
@@ -1043,7 +1043,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     raise "Can't use the child object without preloading!"
   end
 
-  defp restrict_media(query, %{"only_media" => val}) when val == "true" or val == "1" do
+  defp restrict_media(query, %{"only_media" => val}) when val in [true, "true", "1"] do
     from(
       [_activity, object] in query,
       where: fragment("not (?)->'attachment' = (?)", object.data, ^[])
@@ -1052,7 +1052,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_media(query, _), do: query
 
-  defp restrict_replies(query, %{"exclude_replies" => val}) when val == "true" or val == "1" do
+  defp restrict_replies(query, %{"exclude_replies" => val}) when val in [true, "true", "1"] do
     from(
       [_activity, object] in query,
       where: fragment("?->>'inReplyTo' is null", object.data)
@@ -1096,7 +1096,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_replies(query, _), do: query
 
-  defp restrict_reblogs(query, %{"exclude_reblogs" => val}) when val == "true" or val == "1" do
+  defp restrict_reblogs(query, %{"exclude_reblogs" => val}) when val in [true, "true", "1"] do
     from(activity in query, where: fragment("?->>'type' != 'Announce'", activity.data))
   end
 
@@ -1175,7 +1175,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
-  defp restrict_pinned(query, %{"pinned" => "true", "pinned_activity_ids" => ids}) do
+  # TODO: when all endpoints migrated to OpenAPI compare `pinned` with `true` (boolean) only,
+  # the same for `restrict_media/2`, `restrict_replies/2`, 'restrict_reblogs/2'
+  # and `restrict_muted/2`
+
+  defp restrict_pinned(query, %{"pinned" => pinned, "pinned_activity_ids" => ids})
+       when pinned in [true, "true", "1"] do
     from(activity in query, where: activity.id in ^ids)
   end
 
@@ -1536,21 +1541,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp normalize_counter(counter) when is_integer(counter), do: counter
   defp normalize_counter(_), do: 0
 
-  defp maybe_update_follow_information(data) do
+  def maybe_update_follow_information(user_data) do
     with {:enabled, true} <- {:enabled, Config.get([:instance, :external_user_synchronization])},
-         {:ok, info} <- fetch_follow_information_for_user(data) do
-      info = Map.merge(data[:info] || %{}, info)
-      Map.put(data, :info, info)
+         {_, true} <- {:user_type_check, user_data[:type] in ["Person", "Service"]},
+         {_, true} <-
+           {:collections_available,
+            !!(user_data[:following_address] && user_data[:follower_address])},
+         {:ok, info} <-
+           fetch_follow_information_for_user(user_data) do
+      info = Map.merge(user_data[:info] || %{}, info)
+
+      user_data
+      |> Map.put(:info, info)
     else
+      {:user_type_check, false} ->
+        user_data
+
+      {:collections_available, false} ->
+        user_data
+
       {:enabled, false} ->
-        data
+        user_data
 
       e ->
         Logger.error(
-          "Follower/Following counter update for #{data.ap_id} failed.\n" <> inspect(e)
+          "Follower/Following counter update for #{user_data.ap_id} failed.\n" <> inspect(e)
         )
 
-        data
+        user_data
     end
   end
 

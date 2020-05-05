@@ -4,7 +4,7 @@ A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma
 
 ## Flake IDs
 
-Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are sortable strings
+Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are lexically sortable strings
 
 ## Attachment cap
 
@@ -120,6 +120,18 @@ Accepts additional parameters:
 - `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
 - `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
 
+## DELETE `/api/v1/notifications/destroy_multiple`
+
+An endpoint to delete multiple statuses by IDs.
+
+Required parameters:
+
+- `ids`: array of activity ids
+
+Usage example: `DELETE /api/v1/notifications/destroy_multiple/?ids[]=1&ids[]=2`.
+
+Returns on success: 200 OK `{}`
+
 ## POST `/api/v1/statuses`
 
 Additional parameters can be added to the JSON body/Form data:
@@ -190,4 +202,19 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `bio`: optional
 - `captcha_solution`: optional, contains provider-specific captcha solution,
 - `captcha_token`: optional, contains provider-specific captcha token
+- `captcha_answer_data`: optional, contains provider-specific captcha data
 - `token`: invite token required when the registrations aren't public.
+
+## Instance
+
+`GET /api/v1/instance` has additional fields
+
+- `max_toot_chars`: The maximum characters per post
+- `poll_limits`: The limits of polls
+- `upload_limit`: The maximum upload file size
+- `avatar_upload_limit`: The same for avatars
+- `background_upload_limit`: The same for backgrounds
+- `banner_upload_limit`: The same for banners
+- `pleroma.metadata.features`: A list of supported features
+- `pleroma.metadata.federation`: The federation restrictions of this instance
+- `vapid_public_key`: The public key needed for push messages

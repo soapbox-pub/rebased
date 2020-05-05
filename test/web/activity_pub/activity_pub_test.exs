@@ -18,9 +18,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Federator
 
+  import ExUnit.CaptureLog
+  import Mock
   import Pleroma.Factory
   import Tesla.Mock
-  import Mock
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -2402,6 +2403,53 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
      u2: %{r1: r2_1.id, r2: r2_2.id},
      u3: %{r1: r3_1.id, r2: r3_2.id},
      u4: %{r1: r4_1.id}}
+  end
+
+  describe "maybe_update_follow_information/1" do
+    setup do
+      clear_config([:instance, :external_user_synchronization], true)
+
+      user = %{
+        local: false,
+        ap_id: "https://gensokyo.2hu/users/raymoo",
+        following_address: "https://gensokyo.2hu/users/following",
+        follower_address: "https://gensokyo.2hu/users/followers",
+        type: "Person"
+      }
+
+      %{user: user}
+    end
+
+    test "logs an error when it can't fetch the info", %{user: user} do
+      assert capture_log(fn ->
+               ActivityPub.maybe_update_follow_information(user)
+             end) =~ "Follower/Following counter update for #{user.ap_id} failed"
+    end
+
+    test "just returns the input if the user type is Application", %{
+      user: user
+    } do
+      user =
+        user
+        |> Map.put(:type, "Application")
+
+      refute capture_log(fn ->
+               assert ^user = ActivityPub.maybe_update_follow_information(user)
+             end) =~ "Follower/Following counter update for #{user.ap_id} failed"
+    end
+
+    test "it just returns the input if the user has no following/follower addresses", %{
+      user: user
+    } do
+      user =
+        user
+        |> Map.put(:following_address, nil)
+        |> Map.put(:follower_address, nil)
+
+      refute capture_log(fn ->
+               assert ^user = ActivityPub.maybe_update_follow_information(user)
+             end) =~ "Follower/Following counter update for #{user.ap_id} failed"
+    end
   end
 
   describe "global activity expiration" do

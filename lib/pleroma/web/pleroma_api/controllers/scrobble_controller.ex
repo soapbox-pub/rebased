@@ -13,10 +13,12 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
 
-  plug(OAuthScopesPlug, %{scopes: ["read"]} when action == :user_scrobbles)
-  plug(OAuthScopesPlug, %{scopes: ["write"]} when action != :user_scrobbles)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["read"], fallback: :proceed_unauthenticated} when action == :user_scrobbles
+  )
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  plug(OAuthScopesPlug, %{scopes: ["write"]} when action != :user_scrobbles)
 
   def new_scrobble(%{assigns: %{user: user}} = conn, %{"title" => _} = params) do
     params =

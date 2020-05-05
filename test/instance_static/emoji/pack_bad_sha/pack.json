@@ -1,0 +1,13 @@
+{
+    "pack": {
+        "license": "Test license",
+        "homepage": "https://pleroma.social",
+        "description": "Test description",
+        "can-download": true,
+        "share-files": true,
+        "download-sha256": "57482F30674FD3DE821FF48C81C00DA4D4AF1F300209253684ABA7075E5FC238"
+    },
+    "files": {
+        "blank": "blank.png"
+    }
+}

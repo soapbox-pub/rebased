@@ -325,62 +325,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert object_data["cc"] == to
     end
 
-    test "it works for incoming likes" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
-
-      data =
-        File.read!("test/fixtures/mastodon-like.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-
-      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
-
-      refute Enum.empty?(activity.recipients)
-
-      assert data["actor"] == "http://mastodon.example.org/users/admin"
-      assert data["type"] == "Like"
-      assert data["id"] == "http://mastodon.example.org/users/admin#likes/2"
-      assert data["object"] == activity.data["object"]
-    end
-
-    test "it works for incoming misskey likes, turning them into EmojiReacts" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
-
-      data =
-        File.read!("test/fixtures/misskey-like.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["actor"] == data["actor"]
-      assert data["type"] == "EmojiReact"
-      assert data["id"] == data["id"]
-      assert data["object"] == activity.data["object"]
-      assert data["content"] == "🍮"
-    end
-
-    test "it works for incoming misskey likes that contain unicode emojis, turning them into EmojiReacts" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
-
-      data =
-        File.read!("test/fixtures/misskey-like.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-        |> Map.put("_misskey_reaction", "⭐")
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["actor"] == data["actor"]
-      assert data["type"] == "EmojiReact"
-      assert data["id"] == data["id"]
-      assert data["object"] == activity.data["object"]
-      assert data["content"] == "⭐"
-    end
-
     test "it works for incoming emoji reactions" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
@@ -872,7 +816,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     @tag capture_log: true
     test "it works for incoming user deletes" do
-      %{ap_id: ap_id} = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
+      %{ap_id: ap_id} =
+        insert(:user, ap_id: "http://mastodon.example.org/users/admin", local: false)
 
       data =
         File.read!("test/fixtures/mastodon-delete-user.json")
@@ -1219,6 +1164,35 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("id", "")
 
       :error = Transmogrifier.handle_incoming(data)
+    end
+
+    test "skip converting the content when it is nil" do
+      object_id = "https://peertube.social/videos/watch/278d2b7c-0f38-4aaa-afe6-9ecc0c4a34fe"
+
+      {:ok, object} = Fetcher.fetch_and_contain_remote_object_from_id(object_id)
+
+      result =
+        Pleroma.Web.ActivityPub.Transmogrifier.fix_object(Map.merge(object, %{"content" => nil}))
+
+      assert result["content"] == nil
+    end
+
+    test "it converts content of object to html" do
+      object_id = "https://peertube.social/videos/watch/278d2b7c-0f38-4aaa-afe6-9ecc0c4a34fe"
+
+      {:ok, %{"content" => content_markdown}} =
+        Fetcher.fetch_and_contain_remote_object_from_id(object_id)
+
+      {:ok, %Pleroma.Object{data: %{"content" => content}} = object} =
+        Fetcher.fetch_object_from_id(object_id)
+
+      assert content_markdown ==
+               "Support this and our other Michigan!/usr/group videos and meetings. Learn more at http://mug.org/membership\n\nTwenty Years in Jail: FreeBSD's Jails, Then and Now\n\nJails started as a limited virtualization system, but over the last two years they've..."
+
+      assert content ==
+               "<p>Support this and our other Michigan!/usr/group videos and meetings. Learn more at <a href=\"http://mug.org/membership\">http://mug.org/membership</a></p><p>Twenty Years in Jail: FreeBSD’s Jails, Then and Now</p><p>Jails started as a limited virtualization system, but over the last two years they’ve…</p>"
+
+      assert object.data["mediaType"] == "text/html"
     end
 
     test "it remaps video URLs as attachments if necessary" do

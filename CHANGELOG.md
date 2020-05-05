@@ -4,19 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [unreleased]
+
+### Changed
+<details>
+  <summary>API Changes</summary>
+- **Breaking:** Emoji API: changed methods and renamed routes.
+</details>
+
 ### Removed
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
+- Instance: Extend `/api/v1/instance` with Pleroma-specific information.
 - NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
 - NodeInfo: `pleroma_emoji_reactions` to the `features` list.
 - Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
 - New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
 - Mix task to create trusted OAuth App.
-- Notifications: Added `follow_request` notification type (configurable, see `[:notifications, :enable_follow_request_notifications]` setting).
+- Notifications: Added `follow_request` notification type.
 - Added `:reject_deletes` group to SimplePolicy
 <details>
   <summary>API Changes</summary>
+- Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 - Mastodon API: Add support for filtering replies in public and home timelines
@@ -27,11 +36,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Support pagination in conversations API
 - **Breaking**: SimplePolicy `:reject` and `:accept` allow deletions again
 - Fix follower/blocks import when nicknames starts with @
+- Filtering of push notifications on activities from blocked domains
 
 ### Changed
 - MFR policy to set global expiration for all local Create activities
 
 ## [unreleased-patch]
+### Security
+- Disallow re-registration of previously deleted users, which allowed viewing direct messages addressed to them
+- Mastodon API: Fix `POST /api/v1/follow_requests/:id/authorize` allowing to force a follow from a local user even if they didn't request to follow
+
 ### Fixed
 - Logger configuration through AdminFE
 - HTTP Basic Authentication permissions issue
@@ -132,7 +146,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Admin API: Return link alongside with token on password reset
 - **Breaking:** Admin API: `PUT /api/pleroma/admin/reports/:id` is now `PATCH /api/pleroma/admin/reports`, see admin_api.md for details
 - **Breaking:** `/api/pleroma/admin/users/invite_token` now uses `POST`, changed accepted params and returns full invite in json instead of only token string.
-- **Breaking** replying to reports is now "report notes", enpoint changed from `POST /api/pleroma/admin/reports/:id/respond` to `POST /api/pleroma/admin/reports/:id/notes`
+- **Breaking** replying to reports is now "report notes", endpoint changed from `POST /api/pleroma/admin/reports/:id/respond` to `POST /api/pleroma/admin/reports/:id/notes`
 - Mastodon API: stopped sanitizing display names, field names and subject fields since they are supposed to be treated as plaintext
 - Admin API: Return `total` when querying for reports
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)

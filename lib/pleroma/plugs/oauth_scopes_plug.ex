@@ -7,15 +7,12 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
   import Pleroma.Web.Gettext
 
   alias Pleroma.Config
-  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-  alias Pleroma.Plugs.PlugHelper
 
   use Pleroma.Web, :plug
 
-  @behaviour Plug
-
   def init(%{scopes: _} = options), do: options
 
+  @impl true
   def perform(%Plug.Conn{assigns: assigns} = conn, %{scopes: scopes} = options) do
     op = options[:op] || :|
     token = assigns[:token]
@@ -31,10 +28,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
         conn
 
       options[:fallback] == :proceed_unauthenticated ->
-        conn
-        |> assign(:user, nil)
-        |> assign(:token, nil)
-        |> maybe_perform_instance_privacy_check(options)
+        drop_auth_info(conn)
 
       true ->
         missing_scopes = scopes -- matched_scopes
@@ -48,6 +42,15 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
         |> send_resp(:forbidden, Jason.encode!(%{error: error_message}))
         |> halt()
     end
+  end
+
+  @doc "Drops authentication info from connection"
+  def drop_auth_info(conn) do
+    # To simplify debugging, setting a private variable on `conn` if auth info is dropped
+    conn
+    |> put_private(:authentication_ignored, true)
+    |> assign(:user, nil)
+    |> assign(:token, nil)
   end
 
   @doc "Filters descendants of supported scopes"
@@ -69,14 +72,6 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
       Config.oauth_admin_scopes(scopes)
     else
       scopes
-    end
-  end
-
-  defp maybe_perform_instance_privacy_check(%Plug.Conn{} = conn, options) do
-    if options[:skip_instance_privacy_check] do
-      conn
-    else
-      EnsurePublicOrAuthenticatedPlug.call(conn, [])
     end
   end
 end

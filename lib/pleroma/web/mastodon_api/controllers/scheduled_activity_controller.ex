@@ -18,8 +18,6 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityController do
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in @oauth_read_actions)
   plug(OAuthScopesPlug, %{scopes: ["write:statuses"]} when action not in @oauth_read_actions)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
-
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   @doc "GET /api/v1/scheduled_statuses"

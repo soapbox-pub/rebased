@@ -18,11 +18,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "it registers a new user and returns the user." do
     data = %{
-      "nickname" => "lain",
-      "email" => "lain@wired.jp",
-      "fullname" => "lain iwakura",
-      "password" => "bear",
-      "confirm" => "bear"
+      :username => "lain",
+      :email => "lain@wired.jp",
+      :fullname => "lain iwakura",
+      :password => "bear",
+      :confirm => "bear"
     }
 
     {:ok, user} = TwitterAPI.register_user(data)
@@ -35,12 +35,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "it registers a new user with empty string in bio and returns the user." do
     data = %{
-      "nickname" => "lain",
-      "email" => "lain@wired.jp",
-      "fullname" => "lain iwakura",
-      "bio" => "",
-      "password" => "bear",
-      "confirm" => "bear"
+      :username => "lain",
+      :email => "lain@wired.jp",
+      :fullname => "lain iwakura",
+      :bio => "",
+      :password => "bear",
+      :confirm => "bear"
     }
 
     {:ok, user} = TwitterAPI.register_user(data)
@@ -60,12 +60,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     data = %{
-      "nickname" => "lain",
-      "email" => "lain@wired.jp",
-      "fullname" => "lain iwakura",
-      "bio" => "",
-      "password" => "bear",
-      "confirm" => "bear"
+      :username => "lain",
+      :email => "lain@wired.jp",
+      :fullname => "lain iwakura",
+      :bio => "",
+      :password => "bear",
+      :confirm => "bear"
     }
 
     {:ok, user} = TwitterAPI.register_user(data)
@@ -87,23 +87,23 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "it registers a new user and parses mentions in the bio" do
     data1 = %{
-      "nickname" => "john",
-      "email" => "john@gmail.com",
-      "fullname" => "John Doe",
-      "bio" => "test",
-      "password" => "bear",
-      "confirm" => "bear"
+      :username => "john",
+      :email => "john@gmail.com",
+      :fullname => "John Doe",
+      :bio => "test",
+      :password => "bear",
+      :confirm => "bear"
     }
 
     {:ok, user1} = TwitterAPI.register_user(data1)
 
     data2 = %{
-      "nickname" => "lain",
-      "email" => "lain@wired.jp",
-      "fullname" => "lain iwakura",
-      "bio" => "@john test",
-      "password" => "bear",
-      "confirm" => "bear"
+      :username => "lain",
+      :email => "lain@wired.jp",
+      :fullname => "lain iwakura",
+      :bio => "@john test",
+      :password => "bear",
+      :confirm => "bear"
     }
 
     {:ok, user2} = TwitterAPI.register_user(data2)
@@ -123,13 +123,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:ok, invite} = UserInviteToken.create_invite()
 
       data = %{
-        "nickname" => "vinny",
-        "email" => "pasta@pizza.vs",
-        "fullname" => "Vinny Vinesauce",
-        "bio" => "streamer",
-        "password" => "hiptofbees",
-        "confirm" => "hiptofbees",
-        "token" => invite.token
+        :username => "vinny",
+        :email => "pasta@pizza.vs",
+        :fullname => "Vinny Vinesauce",
+        :bio => "streamer",
+        :password => "hiptofbees",
+        :confirm => "hiptofbees",
+        :token => invite.token
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
@@ -145,13 +145,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     test "returns error on invalid token" do
       data = %{
-        "nickname" => "GrimReaper",
-        "email" => "death@reapers.afterlife",
-        "fullname" => "Reaper Grim",
-        "bio" => "Your time has come",
-        "password" => "scythe",
-        "confirm" => "scythe",
-        "token" => "DudeLetMeInImAFairy"
+        :username => "GrimReaper",
+        :email => "death@reapers.afterlife",
+        :fullname => "Reaper Grim",
+        :bio => "Your time has come",
+        :password => "scythe",
+        :confirm => "scythe",
+        :token => "DudeLetMeInImAFairy"
       }
 
       {:error, msg} = TwitterAPI.register_user(data)
@@ -165,13 +165,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       UserInviteToken.update_invite!(invite, used: true)
 
       data = %{
-        "nickname" => "GrimReaper",
-        "email" => "death@reapers.afterlife",
-        "fullname" => "Reaper Grim",
-        "bio" => "Your time has come",
-        "password" => "scythe",
-        "confirm" => "scythe",
-        "token" => invite.token
+        :username => "GrimReaper",
+        :email => "death@reapers.afterlife",
+        :fullname => "Reaper Grim",
+        :bio => "Your time has come",
+        :password => "scythe",
+        :confirm => "scythe",
+        :token => invite.token
       }
 
       {:error, msg} = TwitterAPI.register_user(data)
@@ -186,16 +186,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     setup do
       data = %{
-        "nickname" => "vinny",
-        "email" => "pasta@pizza.vs",
-        "fullname" => "Vinny Vinesauce",
-        "bio" => "streamer",
-        "password" => "hiptofbees",
-        "confirm" => "hiptofbees"
+        :username => "vinny",
+        :email => "pasta@pizza.vs",
+        :fullname => "Vinny Vinesauce",
+        :bio => "streamer",
+        :password => "hiptofbees",
+        :confirm => "hiptofbees"
       }
 
       check_fn = fn invite ->
-        data = Map.put(data, "token", invite.token)
+        data = Map.put(data, :token, invite.token)
         {:ok, user} = TwitterAPI.register_user(data)
         fetched_user = User.get_cached_by_nickname("vinny")
 
@@ -250,13 +250,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       UserInviteToken.update_invite!(invite, uses: 99)
 
       data = %{
-        "nickname" => "vinny",
-        "email" => "pasta@pizza.vs",
-        "fullname" => "Vinny Vinesauce",
-        "bio" => "streamer",
-        "password" => "hiptofbees",
-        "confirm" => "hiptofbees",
-        "token" => invite.token
+        :username => "vinny",
+        :email => "pasta@pizza.vs",
+        :fullname => "Vinny Vinesauce",
+        :bio => "streamer",
+        :password => "hiptofbees",
+        :confirm => "hiptofbees",
+        :token => invite.token
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
@@ -269,13 +269,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
                AccountView.render("show.json", %{user: fetched_user})
 
       data = %{
-        "nickname" => "GrimReaper",
-        "email" => "death@reapers.afterlife",
-        "fullname" => "Reaper Grim",
-        "bio" => "Your time has come",
-        "password" => "scythe",
-        "confirm" => "scythe",
-        "token" => invite.token
+        :username => "GrimReaper",
+        :email => "death@reapers.afterlife",
+        :fullname => "Reaper Grim",
+        :bio => "Your time has come",
+        :password => "scythe",
+        :confirm => "scythe",
+        :token => invite.token
       }
 
       {:error, msg} = TwitterAPI.register_user(data)
@@ -292,13 +292,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.utc_today(), max_use: 100})
 
       data = %{
-        "nickname" => "vinny",
-        "email" => "pasta@pizza.vs",
-        "fullname" => "Vinny Vinesauce",
-        "bio" => "streamer",
-        "password" => "hiptofbees",
-        "confirm" => "hiptofbees",
-        "token" => invite.token
+        :username => "vinny",
+        :email => "pasta@pizza.vs",
+        :fullname => "Vinny Vinesauce",
+        :bio => "streamer",
+        :password => "hiptofbees",
+        :confirm => "hiptofbees",
+        :token => invite.token
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
@@ -317,13 +317,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       UserInviteToken.update_invite!(invite, uses: 99)
 
       data = %{
-        "nickname" => "vinny",
-        "email" => "pasta@pizza.vs",
-        "fullname" => "Vinny Vinesauce",
-        "bio" => "streamer",
-        "password" => "hiptofbees",
-        "confirm" => "hiptofbees",
-        "token" => invite.token
+        :username => "vinny",
+        :email => "pasta@pizza.vs",
+        :fullname => "Vinny Vinesauce",
+        :bio => "streamer",
+        :password => "hiptofbees",
+        :confirm => "hiptofbees",
+        :token => invite.token
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
@@ -335,13 +335,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
                AccountView.render("show.json", %{user: fetched_user})
 
       data = %{
-        "nickname" => "GrimReaper",
-        "email" => "death@reapers.afterlife",
-        "fullname" => "Reaper Grim",
-        "bio" => "Your time has come",
-        "password" => "scythe",
-        "confirm" => "scythe",
-        "token" => invite.token
+        :username => "GrimReaper",
+        :email => "death@reapers.afterlife",
+        :fullname => "Reaper Grim",
+        :bio => "Your time has come",
+        :password => "scythe",
+        :confirm => "scythe",
+        :token => invite.token
       }
 
       {:error, msg} = TwitterAPI.register_user(data)
@@ -355,13 +355,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         UserInviteToken.create_invite(%{expires_at: Date.add(Date.utc_today(), -1), max_use: 100})
 
       data = %{
-        "nickname" => "GrimReaper",
-        "email" => "death@reapers.afterlife",
-        "fullname" => "Reaper Grim",
-        "bio" => "Your time has come",
-        "password" => "scythe",
-        "confirm" => "scythe",
-        "token" => invite.token
+        :username => "GrimReaper",
+        :email => "death@reapers.afterlife",
+        :fullname => "Reaper Grim",
+        :bio => "Your time has come",
+        :password => "scythe",
+        :confirm => "scythe",
+        :token => invite.token
       }
 
       {:error, msg} = TwitterAPI.register_user(data)
@@ -377,13 +377,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       UserInviteToken.update_invite!(invite, uses: 100)
 
       data = %{
-        "nickname" => "GrimReaper",
-        "email" => "death@reapers.afterlife",
-        "fullname" => "Reaper Grim",
-        "bio" => "Your time has come",
-        "password" => "scythe",
-        "confirm" => "scythe",
-        "token" => invite.token
+        :username => "GrimReaper",
+        :email => "death@reapers.afterlife",
+        :fullname => "Reaper Grim",
+        :bio => "Your time has come",
+        :password => "scythe",
+        :confirm => "scythe",
+        :token => invite.token
       }
 
       {:error, msg} = TwitterAPI.register_user(data)
@@ -395,16 +395,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "it returns the error on registration problems" do
     data = %{
-      "nickname" => "lain",
-      "email" => "lain@wired.jp",
-      "fullname" => "lain iwakura",
-      "bio" => "close the world.",
-      "password" => "bear"
+      :username => "lain",
+      :email => "lain@wired.jp",
+      :fullname => "lain iwakura",
+      :bio => "close the world."
     }
 
-    {:error, error_object} = TwitterAPI.register_user(data)
+    {:error, error} = TwitterAPI.register_user(data)
 
-    assert is_binary(error_object[:error])
+    assert is_binary(error)
     refute User.get_cached_by_nickname("lain")
   end
 

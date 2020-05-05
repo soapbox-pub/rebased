@@ -25,7 +25,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       conn
       |> assign(:user, user)
       |> get("/api/v1/notifications")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert Enum.all?(response, fn n ->
              get_in(n, ["account", "pleroma", "relationship"]) == %{}
@@ -50,7 +50,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
         user.ap_id
       }\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
 
-    assert [%{"status" => %{"content" => response}} | _rest] = json_response(conn, 200)
+    assert [%{"status" => %{"content" => response}} | _rest] =
+             json_response_and_validate_schema(conn, 200)
+
     assert response == expected_response
   end
 
@@ -69,7 +71,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
         user.ap_id
       }\" rel=\"ugc\">@<span>#{user.nickname}</span></a></span>"
 
-    assert %{"status" => %{"content" => response}} = json_response(conn, 200)
+    assert %{"status" => %{"content" => response}} = json_response_and_validate_schema(conn, 200)
     assert response == expected_response
   end
 
@@ -84,9 +86,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     conn =
       conn
       |> assign(:user, user)
-      |> post("/api/v1/notifications/dismiss", %{"id" => notification.id})
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/notifications/dismiss", %{"id" => to_string(notification.id)})
 
-    assert %{} = json_response(conn, 200)
+    assert %{} = json_response_and_validate_schema(conn, 200)
   end
 
   test "dismissing a single notification" do
@@ -102,7 +105,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       |> assign(:user, user)
       |> post("/api/v1/notifications/#{notification.id}/dismiss")
 
-    assert %{} = json_response(conn, 200)
+    assert %{} = json_response_and_validate_schema(conn, 200)
   end
 
   test "clearing all notifications" do
@@ -115,11 +118,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     ret_conn = post(conn, "/api/v1/notifications/clear")
 
-    assert %{} = json_response(ret_conn, 200)
+    assert %{} = json_response_and_validate_schema(ret_conn, 200)
 
     ret_conn = get(conn, "/api/v1/notifications")
 
-    assert all = json_response(ret_conn, 200)
+    assert all = json_response_and_validate_schema(ret_conn, 200)
     assert all == []
   end
 
@@ -143,7 +146,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     result =
       conn
       |> get("/api/v1/notifications?limit=2&min_id=#{notification1_id}")
-      |> json_response(:ok)
+      |> json_response_and_validate_schema(:ok)
 
     assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
 
@@ -151,7 +154,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     result =
       conn
       |> get("/api/v1/notifications?limit=2&since_id=#{notification1_id}")
-      |> json_response(:ok)
+      |> json_response_and_validate_schema(:ok)
 
     assert [%{"id" => ^notification4_id}, %{"id" => ^notification3_id}] = result
 
@@ -159,7 +162,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     result =
       conn
       |> get("/api/v1/notifications?limit=2&max_id=#{notification4_id}")
-      |> json_response(:ok)
+      |> json_response_and_validate_schema(:ok)
 
     assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
   end
@@ -181,36 +184,28 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       {:ok, private_activity} =
         CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "private"})
 
-      conn_res =
-        get(conn, "/api/v1/notifications", %{
-          exclude_visibilities: ["public", "unlisted", "private"]
-        })
+      query = params_to_query(%{exclude_visibilities: ["public", "unlisted", "private"]})
+      conn_res = get(conn, "/api/v1/notifications?" <> query)
 
-      assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+      assert [%{"status" => %{"id" => id}}] = json_response_and_validate_schema(conn_res, 200)
       assert id == direct_activity.id
 
-      conn_res =
-        get(conn, "/api/v1/notifications", %{
-          exclude_visibilities: ["public", "unlisted", "direct"]
-        })
+      query = params_to_query(%{exclude_visibilities: ["public", "unlisted", "direct"]})
+      conn_res = get(conn, "/api/v1/notifications?" <> query)
 
-      assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+      assert [%{"status" => %{"id" => id}}] = json_response_and_validate_schema(conn_res, 200)
       assert id == private_activity.id
 
-      conn_res =
-        get(conn, "/api/v1/notifications", %{
-          exclude_visibilities: ["public", "private", "direct"]
-        })
+      query = params_to_query(%{exclude_visibilities: ["public", "private", "direct"]})
+      conn_res = get(conn, "/api/v1/notifications?" <> query)
 
-      assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+      assert [%{"status" => %{"id" => id}}] = json_response_and_validate_schema(conn_res, 200)
       assert id == unlisted_activity.id
 
-      conn_res =
-        get(conn, "/api/v1/notifications", %{
-          exclude_visibilities: ["unlisted", "private", "direct"]
-        })
+      query = params_to_query(%{exclude_visibilities: ["unlisted", "private", "direct"]})
+      conn_res = get(conn, "/api/v1/notifications?" <> query)
 
-      assert [%{"status" => %{"id" => id}}] = json_response(conn_res, 200)
+      assert [%{"status" => %{"id" => id}}] = json_response_and_validate_schema(conn_res, 200)
       assert id == public_activity.id
     end
 
@@ -237,8 +232,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
       activity_ids =
         conn
-        |> get("/api/v1/notifications", %{exclude_visibilities: ["direct"]})
-        |> json_response(200)
+        |> get("/api/v1/notifications?exclude_visibilities[]=direct")
+        |> json_response_and_validate_schema(200)
         |> Enum.map(& &1["status"]["id"])
 
       assert public_activity.id in activity_ids
@@ -248,8 +243,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
       activity_ids =
         conn
-        |> get("/api/v1/notifications", %{exclude_visibilities: ["unlisted"]})
-        |> json_response(200)
+        |> get("/api/v1/notifications?exclude_visibilities[]=unlisted")
+        |> json_response_and_validate_schema(200)
         |> Enum.map(& &1["status"]["id"])
 
       assert public_activity.id in activity_ids
@@ -259,8 +254,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
       activity_ids =
         conn
-        |> get("/api/v1/notifications", %{exclude_visibilities: ["private"]})
-        |> json_response(200)
+        |> get("/api/v1/notifications?exclude_visibilities[]=private")
+        |> json_response_and_validate_schema(200)
         |> Enum.map(& &1["status"]["id"])
 
       assert public_activity.id in activity_ids
@@ -270,8 +265,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
       activity_ids =
         conn
-        |> get("/api/v1/notifications", %{exclude_visibilities: ["public"]})
-        |> json_response(200)
+        |> get("/api/v1/notifications?exclude_visibilities[]=public")
+        |> json_response_and_validate_schema(200)
         |> Enum.map(& &1["status"]["id"])
 
       refute public_activity.id in activity_ids
@@ -295,8 +290,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
       activity_ids =
         conn
-        |> get("/api/v1/notifications", %{exclude_visibilities: ["unlisted"]})
-        |> json_response(200)
+        |> get("/api/v1/notifications?exclude_visibilities[]=unlisted")
+        |> json_response_and_validate_schema(200)
         |> Enum.map(& &1["status"]["id"])
 
       assert public_activity.id in activity_ids
@@ -319,25 +314,27 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     reblog_notification_id = get_notification_id_by_activity(reblog_activity)
     follow_notification_id = get_notification_id_by_activity(follow_activity)
 
-    conn_res =
-      get(conn, "/api/v1/notifications", %{exclude_types: ["mention", "favourite", "reblog"]})
+    query = params_to_query(%{exclude_types: ["mention", "favourite", "reblog"]})
+    conn_res = get(conn, "/api/v1/notifications?" <> query)
 
-    assert [%{"id" => ^follow_notification_id}] = json_response(conn_res, 200)
+    assert [%{"id" => ^follow_notification_id}] = json_response_and_validate_schema(conn_res, 200)
 
-    conn_res =
-      get(conn, "/api/v1/notifications", %{exclude_types: ["favourite", "reblog", "follow"]})
+    query = params_to_query(%{exclude_types: ["favourite", "reblog", "follow"]})
+    conn_res = get(conn, "/api/v1/notifications?" <> query)
 
-    assert [%{"id" => ^mention_notification_id}] = json_response(conn_res, 200)
+    assert [%{"id" => ^mention_notification_id}] =
+             json_response_and_validate_schema(conn_res, 200)
 
-    conn_res =
-      get(conn, "/api/v1/notifications", %{exclude_types: ["reblog", "follow", "mention"]})
+    query = params_to_query(%{exclude_types: ["reblog", "follow", "mention"]})
+    conn_res = get(conn, "/api/v1/notifications?" <> query)
 
-    assert [%{"id" => ^favorite_notification_id}] = json_response(conn_res, 200)
+    assert [%{"id" => ^favorite_notification_id}] =
+             json_response_and_validate_schema(conn_res, 200)
 
-    conn_res =
-      get(conn, "/api/v1/notifications", %{exclude_types: ["follow", "mention", "favourite"]})
+    query = params_to_query(%{exclude_types: ["follow", "mention", "favourite"]})
+    conn_res = get(conn, "/api/v1/notifications?" <> query)
 
-    assert [%{"id" => ^reblog_notification_id}] = json_response(conn_res, 200)
+    assert [%{"id" => ^reblog_notification_id}] = json_response_and_validate_schema(conn_res, 200)
   end
 
   test "filters notifications using include_types" do
@@ -355,32 +352,34 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     reblog_notification_id = get_notification_id_by_activity(reblog_activity)
     follow_notification_id = get_notification_id_by_activity(follow_activity)
 
-    conn_res = get(conn, "/api/v1/notifications", %{include_types: ["follow"]})
+    conn_res = get(conn, "/api/v1/notifications?include_types[]=follow")
 
-    assert [%{"id" => ^follow_notification_id}] = json_response(conn_res, 200)
+    assert [%{"id" => ^follow_notification_id}] = json_response_and_validate_schema(conn_res, 200)
 
-    conn_res = get(conn, "/api/v1/notifications", %{include_types: ["mention"]})
+    conn_res = get(conn, "/api/v1/notifications?include_types[]=mention")
 
-    assert [%{"id" => ^mention_notification_id}] = json_response(conn_res, 200)
+    assert [%{"id" => ^mention_notification_id}] =
+             json_response_and_validate_schema(conn_res, 200)
 
-    conn_res = get(conn, "/api/v1/notifications", %{include_types: ["favourite"]})
+    conn_res = get(conn, "/api/v1/notifications?include_types[]=favourite")
 
-    assert [%{"id" => ^favorite_notification_id}] = json_response(conn_res, 200)
+    assert [%{"id" => ^favorite_notification_id}] =
+             json_response_and_validate_schema(conn_res, 200)
 
-    conn_res = get(conn, "/api/v1/notifications", %{include_types: ["reblog"]})
+    conn_res = get(conn, "/api/v1/notifications?include_types[]=reblog")
 
-    assert [%{"id" => ^reblog_notification_id}] = json_response(conn_res, 200)
+    assert [%{"id" => ^reblog_notification_id}] = json_response_and_validate_schema(conn_res, 200)
 
-    result = conn |> get("/api/v1/notifications") |> json_response(200)
+    result = conn |> get("/api/v1/notifications") |> json_response_and_validate_schema(200)
 
     assert length(result) == 4
 
+    query = params_to_query(%{include_types: ["follow", "mention", "favourite", "reblog"]})
+
     result =
       conn
-      |> get("/api/v1/notifications", %{
-        include_types: ["follow", "mention", "favourite", "reblog"]
-      })
-      |> json_response(200)
+      |> get("/api/v1/notifications?" <> query)
+      |> json_response_and_validate_schema(200)
 
     assert length(result) == 4
   end
@@ -402,7 +401,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     result =
       conn
       |> get("/api/v1/notifications")
-      |> json_response(:ok)
+      |> json_response_and_validate_schema(:ok)
 
     assert [%{"id" => ^notification2_id}, %{"id" => ^notification1_id}] = result
 
@@ -414,22 +413,19 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     result =
       conn2
       |> get("/api/v1/notifications")
-      |> json_response(:ok)
+      |> json_response_and_validate_schema(:ok)
 
     assert [%{"id" => ^notification4_id}, %{"id" => ^notification3_id}] = result
 
-    conn_destroy =
-      conn
-      |> delete("/api/v1/notifications/destroy_multiple", %{
-        "ids" => [notification1_id, notification2_id]
-      })
+    query = params_to_query(%{ids: [notification1_id, notification2_id]})
+    conn_destroy = delete(conn, "/api/v1/notifications/destroy_multiple?" <> query)
 
-    assert json_response(conn_destroy, 200) == %{}
+    assert json_response_and_validate_schema(conn_destroy, 200) == %{}
 
     result =
       conn2
       |> get("/api/v1/notifications")
-      |> json_response(:ok)
+      |> json_response_and_validate_schema(:ok)
 
     assert [%{"id" => ^notification4_id}, %{"id" => ^notification3_id}] = result
   end
@@ -443,13 +439,13 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     ret_conn = get(conn, "/api/v1/notifications")
 
-    assert length(json_response(ret_conn, 200)) == 1
+    assert length(json_response_and_validate_schema(ret_conn, 200)) == 1
 
     {:ok, _user_relationships} = User.mute(user, user2)
 
     conn = get(conn, "/api/v1/notifications")
 
-    assert json_response(conn, 200) == []
+    assert json_response_and_validate_schema(conn, 200) == []
   end
 
   test "see notifications after muting user without notifications" do
@@ -461,13 +457,13 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     ret_conn = get(conn, "/api/v1/notifications")
 
-    assert length(json_response(ret_conn, 200)) == 1
+    assert length(json_response_and_validate_schema(ret_conn, 200)) == 1
 
     {:ok, _user_relationships} = User.mute(user, user2, false)
 
     conn = get(conn, "/api/v1/notifications")
 
-    assert length(json_response(conn, 200)) == 1
+    assert length(json_response_and_validate_schema(conn, 200)) == 1
   end
 
   test "see notifications after muting user with notifications and with_muted parameter" do
@@ -479,13 +475,13 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     ret_conn = get(conn, "/api/v1/notifications")
 
-    assert length(json_response(ret_conn, 200)) == 1
+    assert length(json_response_and_validate_schema(ret_conn, 200)) == 1
 
     {:ok, _user_relationships} = User.mute(user, user2)
 
-    conn = get(conn, "/api/v1/notifications", %{"with_muted" => "true"})
+    conn = get(conn, "/api/v1/notifications?with_muted=true")
 
-    assert length(json_response(conn, 200)) == 1
+    assert length(json_response_and_validate_schema(conn, 200)) == 1
   end
 
   @tag capture_log: true
@@ -512,7 +508,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
     conn = get(conn, "/api/v1/notifications")
 
-    assert length(json_response(conn, 200)) == 1
+    assert length(json_response_and_validate_schema(conn, 200)) == 1
   end
 
   describe "link headers" do
@@ -538,10 +534,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       conn =
         conn
         |> assign(:user, user)
-        |> get("/api/v1/notifications", %{media_only: true})
+        |> get("/api/v1/notifications?limit=5")
 
       assert [link_header] = get_resp_header(conn, "link")
-      assert link_header =~ ~r/media_only=true/
+      assert link_header =~ ~r/limit=5/
       assert link_header =~ ~r/min_id=#{notification2.id}/
       assert link_header =~ ~r/max_id=#{notification1.id}/
     end
@@ -560,14 +556,14 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       assert [%{"account" => %{"id" => ^account_id}}] =
                conn
                |> assign(:user, user)
-               |> get("/api/v1/notifications", %{account_id: account_id})
-               |> json_response(200)
+               |> get("/api/v1/notifications?account_id=#{account_id}")
+               |> json_response_and_validate_schema(200)
 
       assert %{"error" => "Account is not found"} =
                conn
                |> assign(:user, user)
-               |> get("/api/v1/notifications", %{account_id: "cofe"})
-               |> json_response(404)
+               |> get("/api/v1/notifications?account_id=cofe")
+               |> json_response_and_validate_schema(404)
     end
   end
 
@@ -576,5 +572,12 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     |> Repo.get_by(activity_id: id)
     |> Map.get(:id)
     |> to_string()
+  end
+
+  defp params_to_query(%{} = params) do
+    Enum.map_join(params, "&", fn
+      {k, v} when is_list(v) -> Enum.map_join(v, "&", &"#{k}[]=#{&1}")
+      {k, v} -> k <> "=" <> v
+    end)
   end
 end

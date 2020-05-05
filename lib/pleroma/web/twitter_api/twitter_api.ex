@@ -3,82 +3,39 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
+  import Pleroma.Web.Gettext
+
   alias Pleroma.Emails.Mailer
   alias Pleroma.Emails.UserEmail
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserInviteToken
 
-  require Pleroma.Constants
-
   def register_user(params, opts \\ []) do
-    token = params["token"]
-    trusted_app? = params["trusted_app"]
+    params =
+      params
+      |> Map.take([:email, :token, :password])
+      |> Map.put(:bio, params |> Map.get(:bio, "") |> User.parse_bio())
+      |> Map.put(:nickname, params[:username])
+      |> Map.put(:name, Map.get(params, :fullname, params[:username]))
+      |> Map.put(:password_confirmation, params[:password])
 
-    params = %{
-      nickname: params["nickname"],
-      name: params["fullname"],
-      bio: User.parse_bio(params["bio"]),
-      email: params["email"],
-      password: params["password"],
-      password_confirmation: params["confirm"],
-      captcha_solution: params["captcha_solution"],
-      captcha_token: params["captcha_token"],
-      captcha_answer_data: params["captcha_answer_data"]
-    }
-
-    captcha_enabled = Pleroma.Config.get([Pleroma.Captcha, :enabled])
-    # true if captcha is disabled or enabled and valid, false otherwise
-    captcha_ok =
-      if trusted_app? || not captcha_enabled do
-        :ok
-      else
-        Pleroma.Captcha.validate(
-          params[:captcha_token],
-          params[:captcha_solution],
-          params[:captcha_answer_data]
-        )
-      end
-
-    # Captcha invalid
-    if captcha_ok != :ok do
-      {:error, error} = captcha_ok
-      # I have no idea how this error handling works
-      {:error, %{error: Jason.encode!(%{captcha: [error]})}}
+    if Pleroma.Config.get([:instance, :registrations_open]) do
+      create_user(params, opts)
     else
-      registration_process(
-        params,
-        %{
-          registrations_open: Pleroma.Config.get([:instance, :registrations_open]),
-          token: token
-        },
-        opts
-      )
+      create_user_with_invite(params, opts)
     end
   end
 
-  defp registration_process(params, %{registrations_open: true}, opts) do
-    create_user(params, opts)
-  end
-
-  defp registration_process(params, %{token: token}, opts) do
-    invite =
-      unless is_nil(token) do
-        Repo.get_by(UserInviteToken, %{token: token})
-      end
-
-    valid_invite? = invite && UserInviteToken.valid_invite?(invite)
-
-    case invite do
-      nil ->
-        {:error, "Invalid token"}
-
-      invite when valid_invite? ->
-        UserInviteToken.update_usage!(invite)
-        create_user(params, opts)
-
-      _ ->
-        {:error, "Expired token"}
+  defp create_user_with_invite(params, opts) do
+    with %{token: token} when is_binary(token) <- params,
+         %UserInviteToken{} = invite <- Repo.get_by(UserInviteToken, %{token: token}),
+         true <- UserInviteToken.valid_invite?(invite) do
+      UserInviteToken.update_usage!(invite)
+      create_user(params, opts)
+    else
+      nil -> {:error, "Invalid token"}
+      _ -> {:error, "Expired token"}
     end
   end
 
@@ -91,16 +48,17 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
       {:error, changeset} ->
         errors =
-          Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+          changeset
+          |> Ecto.Changeset.traverse_errors(fn {msg, _opts} -> msg end)
           |> Jason.encode!()
 
-        {:error, %{error: errors}}
+        {:error, errors}
     end
   end
 
   def password_reset(nickname_or_email) do
     with true <- is_binary(nickname_or_email),
-         %User{local: true, email: email} = user when not is_nil(email) <-
+         %User{local: true, email: email} = user when is_binary(email) <-
            User.get_by_nickname_or_email(nickname_or_email),
          {:ok, token_record} <- Pleroma.PasswordResetToken.create_token(user) do
       user
@@ -122,4 +80,58 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         {:error, "unknown user"}
     end
   end
+
+  def validate_captcha(app, params) do
+    if app.trusted || not Pleroma.Captcha.enabled?() do
+      :ok
+    else
+      do_validate_captcha(params)
+    end
+  end
+
+  defp do_validate_captcha(params) do
+    with :ok <- validate_captcha_presence(params),
+         :ok <-
+           Pleroma.Captcha.validate(
+             params[:captcha_token],
+             params[:captcha_solution],
+             params[:captcha_answer_data]
+           ) do
+      :ok
+    else
+      {:error, :captcha_error} ->
+        captcha_error(dgettext("errors", "CAPTCHA Error"))
+
+      {:error, :invalid} ->
+        captcha_error(dgettext("errors", "Invalid CAPTCHA"))
+
+      {:error, :kocaptcha_service_unavailable} ->
+        captcha_error(dgettext("errors", "Kocaptcha service unavailable"))
+
+      {:error, :expired} ->
+        captcha_error(dgettext("errors", "CAPTCHA expired"))
+
+      {:error, :already_used} ->
+        captcha_error(dgettext("errors", "CAPTCHA already used"))
+
+      {:error, :invalid_answer_data} ->
+        captcha_error(dgettext("errors", "Invalid answer data"))
+
+      {:error, error} ->
+        captcha_error(error)
+    end
+  end
+
+  defp validate_captcha_presence(params) do
+    [:captcha_solution, :captcha_token, :captcha_answer_data]
+    |> Enum.find_value(:ok, fn key ->
+      unless is_binary(params[key]) do
+        error = dgettext("errors", "Invalid CAPTCHA (Missing parameter: %{name})", name: key)
+        {:error, error}
+      end
+    end)
+  end
+
+  # For some reason FE expects error message to be a serialized JSON
+  defp captcha_error(error), do: {:error, Jason.encode!(%{captcha: [error]})}
 end
