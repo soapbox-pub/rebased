@@ -166,9 +166,12 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unfavorite(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
-           {:find_activity, Activity.get_by_id(id)} do
-      object = Object.normalize(activity)
-      ActivityPub.unlike(user, object)
+           {:find_activity, Activity.get_by_id(id)},
+         %Object{} = note <- Object.normalize(activity, false),
+         %Activity{} = like <- Utils.get_existing_like(user.ap_id, note),
+         {:ok, undo, _} <- Builder.undo(user, like),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: false) do
+      {:ok, activity}
     else
       {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not unfavorite")}

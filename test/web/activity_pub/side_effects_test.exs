@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Activity
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -14,6 +15,34 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  describe "Undo objects" do
+    setup do
+      poster = insert(:user)
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(poster, %{"status" => "hey"})
+      {:ok, like} = CommonAPI.favorite(user, post.id)
+
+      {:ok, undo_data, _meta} = Builder.undo(user, like)
+      {:ok, like_undo, _meta} = ActivityPub.persist(undo_data, local: true)
+
+      %{like_undo: like_undo, post: post, like: like}
+    end
+
+    test "a like undo removes the like from the object", %{like_undo: like_undo, post: post} do
+      {:ok, _like_undo, _} = SideEffects.handle(like_undo)
+
+      object = Object.get_by_ap_id(post.data["object"])
+
+      assert object.data["like_count"] == 0
+      assert object.data["likes"] == []
+    end
+
+    test "deletes the original like", %{like_undo: like_undo, like: like} do
+      {:ok, _like_undo, _} = SideEffects.handle(like_undo)
+      refute Activity.get_by_id(like.id)
+    end
+  end
 
   describe "like objects" do
     setup do

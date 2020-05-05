@@ -995,66 +995,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "unliking" do
-    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
-      Config.put([:instance, :federating], true)
-
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      {:ok, object} = ActivityPub.unlike(user, object)
-      refute called(Federator.publish())
-
-      {:ok, _like_activity} = CommonAPI.favorite(user, note_activity.id)
-      object = Object.get_by_id(object.id)
-      assert object.data["like_count"] == 1
-
-      {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
-      assert object.data["like_count"] == 0
-
-      assert called(Federator.publish(unlike_activity))
-    end
-
-    test "reverts unliking on error" do
-      note_activity = insert(:note_activity)
-      user = insert(:user)
-
-      {:ok, like_activity} = CommonAPI.favorite(user, note_activity.id)
-      object = Object.normalize(note_activity)
-      assert object.data["like_count"] == 1
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.unlike(user, object)
-      end
-
-      assert Object.get_by_ap_id(object.data["id"]) == object
-      assert object.data["like_count"] == 1
-      assert Activity.get_by_id(like_activity.id)
-    end
-
-    test "unliking a previously liked object" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      # Unliking something that hasn't been liked does nothing
-      {:ok, object} = ActivityPub.unlike(user, object)
-      assert object.data["like_count"] == 0
-
-      {:ok, like_activity} = CommonAPI.favorite(user, note_activity.id)
-
-      object = Object.get_by_id(object.id)
-      assert object.data["like_count"] == 1
-
-      {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
-      assert object.data["like_count"] == 0
-
-      assert Activity.get_by_id(like_activity.id) == nil
-      assert note_activity.actor in unlike_activity.recipients
-    end
-  end
-
   describe "announcing an object" do
     test "adds an announce activity to the db" do
       note_activity = insert(:note_activity)

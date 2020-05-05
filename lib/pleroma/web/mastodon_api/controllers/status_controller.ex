@@ -222,9 +222,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/unfavourite"
-  def unfavourite(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, _, _, %{data: %{"id" => id}}} <- CommonAPI.unfavorite(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
+  def unfavourite(%{assigns: %{user: user}} = conn, %{"id" => activity_id}) do
+    with {:ok, _unfav} <- CommonAPI.unfavorite(activity_id, user),
+         %Activity{} = activity <- Activity.get_by_id(activity_id) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
   end

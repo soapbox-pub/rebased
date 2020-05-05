@@ -29,7 +29,9 @@ defmodule Pleroma.User do
   alias Pleroma.UserRelationship
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
@@ -1553,11 +1555,13 @@ defmodule Pleroma.User do
   end
 
   defp delete_activity(%{data: %{"type" => "Like"}} = activity) do
-    object = Object.normalize(activity)
+    actor =
+      activity.actor
+      |> get_cached_by_ap_id()
 
-    activity.actor
-    |> get_cached_by_ap_id()
-    |> ActivityPub.unlike(object)
+    {:ok, undo, _} = Builder.undo(actor, activity)
+
+    Pipeline.common_pipeline(undo, local: true)
   end
 
   defp delete_activity(%{data: %{"type" => "Announce"}} = activity) do

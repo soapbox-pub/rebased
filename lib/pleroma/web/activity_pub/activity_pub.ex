@@ -398,29 +398,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec unlike(User.t(), Object.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t(), Activity.t(), Object.t()} | {:ok, Object.t()} | {:error, any()}
-  def unlike(%User{} = actor, %Object{} = object, activity_id \\ nil, local \\ true) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_unlike(actor, object, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_unlike(actor, object, activity_id, local) do
-    with %Activity{} = like_activity <- get_existing_like(actor.ap_id, object),
-         unlike_data <- make_unlike_data(actor, like_activity, activity_id),
-         {:ok, unlike_activity} <- insert(unlike_data, local),
-         {:ok, _activity} <- Repo.delete(like_activity),
-         {:ok, object} <- remove_like_from_object(like_activity, object),
-         :ok <- maybe_federate(unlike_activity) do
-      {:ok, unlike_activity, like_activity, object}
-    else
-      nil -> {:ok, object}
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
   @spec announce(User.t(), Object.t(), String.t() | nil, boolean(), boolean()) ::
           {:ok, Activity.t(), Object.t()} | {:error, any()}
   def announce(

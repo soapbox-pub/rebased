@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
@@ -67,7 +68,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
     assert data["actor"] == "http://mastodon.example.org/users/admin"
     assert data["type"] == "Undo"
     assert data["id"] == "http://mastodon.example.org/users/admin#likes/2/undo"
-    assert data["object"]["id"] == "http://mastodon.example.org/users/admin#likes/2"
+    assert data["object"] == "http://mastodon.example.org/users/admin#likes/2"
+
+    note = Object.get_by_ap_id(like_data["object"])
+    assert note.data["like_count"] == 0
+    assert note.data["likes"] == []
   end
 
   test "it works for incoming unlikes with an existing like activity and a compact object" do
@@ -94,7 +99,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
     assert data["actor"] == "http://mastodon.example.org/users/admin"
     assert data["type"] == "Undo"
     assert data["id"] == "http://mastodon.example.org/users/admin#likes/2/undo"
-    assert data["object"]["id"] == "http://mastodon.example.org/users/admin#likes/2"
+    assert data["object"] == "http://mastodon.example.org/users/admin#likes/2"
   end
 
   test "it works for incoming unannounces with an existing notice" do
