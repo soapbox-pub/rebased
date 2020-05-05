@@ -325,62 +325,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert object_data["cc"] == to
     end
 
-    test "it works for incoming likes" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
-
-      data =
-        File.read!("test/fixtures/mastodon-like.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-
-      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
-
-      refute Enum.empty?(activity.recipients)
-
-      assert data["actor"] == "http://mastodon.example.org/users/admin"
-      assert data["type"] == "Like"
-      assert data["id"] == "http://mastodon.example.org/users/admin#likes/2"
-      assert data["object"] == activity.data["object"]
-    end
-
-    test "it works for incoming misskey likes, turning them into EmojiReacts" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
-
-      data =
-        File.read!("test/fixtures/misskey-like.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["actor"] == data["actor"]
-      assert data["type"] == "EmojiReact"
-      assert data["id"] == data["id"]
-      assert data["object"] == activity.data["object"]
-      assert data["content"] == "🍮"
-    end
-
-    test "it works for incoming misskey likes that contain unicode emojis, turning them into EmojiReacts" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
-
-      data =
-        File.read!("test/fixtures/misskey-like.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-        |> Map.put("_misskey_reaction", "⭐")
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["actor"] == data["actor"]
-      assert data["type"] == "EmojiReact"
-      assert data["id"] == data["id"]
-      assert data["object"] == activity.data["object"]
-      assert data["content"] == "⭐"
-    end
-
     test "it works for incoming emoji reactions" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})

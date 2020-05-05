@@ -130,6 +130,32 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       assert LikeValidator.cast_and_validate(valid_like).valid?
     end
 
+    test "sets the 'to' field to the object actor if no recipients are given", %{
+      valid_like: valid_like,
+      user: user
+    } do
+      without_recipients =
+        valid_like
+        |> Map.delete("to")
+
+      {:ok, object, _meta} = ObjectValidator.validate(without_recipients, [])
+
+      assert object["to"] == [user.ap_id]
+    end
+
+    test "sets the context field to the context of the object if no context is given", %{
+      valid_like: valid_like,
+      post_activity: post_activity
+    } do
+      without_context =
+        valid_like
+        |> Map.delete("context")
+
+      {:ok, object, _meta} = ObjectValidator.validate(without_context, [])
+
+      assert object["context"] == post_activity.data["context"]
+    end
+
     test "it errors when the actor is missing or not known", %{valid_like: valid_like} do
       without_actor = Map.delete(valid_like, "actor")
 
