@@ -702,6 +702,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert object["content"] == activity["object"]["content"]
     end
 
+    test "it rejects anything beyond 'Note' creations", %{conn: conn, activity: activity} do
+      user = insert(:user)
+
+      activity =
+        activity
+        |> put_in(["object", "type"], "Benis")
+
+      _result =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", activity)
+        |> json_response(400)
+    end
+
     test "it inserts an incoming sensitive activity into the database", %{
       conn: conn,
       activity: activity
