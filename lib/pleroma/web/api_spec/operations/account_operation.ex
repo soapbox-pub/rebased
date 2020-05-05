@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.ActorType
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.List
   alias Pleroma.Web.ApiSpec.Schemas.Status
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
@@ -646,28 +647,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  defp list do
-    %Schema{
-      title: "List",
-      description: "Response schema for a list",
-      type: :object,
-      properties: %{
-        id: %Schema{type: :string},
-        title: %Schema{type: :string}
-      },
-      example: %{
-        "id" => "123",
-        "title" => "my list"
-      }
-    }
-  end
-
   defp array_of_lists do
     %Schema{
       title: "ArrayOfLists",
       description: "Response schema for lists",
       type: :array,
-      items: list(),
+      items: List,
       example: [
         %{"id" => "123", "title" => "my list"},
         %{"id" => "1337", "title" => "anotehr list"}
