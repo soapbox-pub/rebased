@@ -10,6 +10,19 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
+  @spec undo(User.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def undo(actor, object) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "actor" => actor.ap_id,
+       "type" => "Undo",
+       "object" => object.data["id"],
+       "to" => object.data["to"] || [],
+       "cc" => object.data["cc"] || []
+     }, []}
+  end
+
   @spec like(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def like(actor, object) do
     object_actor = User.get_cached_by_ap_id(object.data["actor"])

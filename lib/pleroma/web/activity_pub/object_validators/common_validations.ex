@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
   import Ecto.Changeset
 
+  alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.User
 
@@ -22,7 +23,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
   def validate_object_presence(cng, field_name \\ :object) do
     cng
     |> validate_change(field_name, fn field_name, object ->
-      if Object.get_cached_by_ap_id(object) do
+      if Object.get_cached_by_ap_id(object) || Activity.get_by_ap_id(object) do
         []
       else
         [{field_name, "can't find object"}]
