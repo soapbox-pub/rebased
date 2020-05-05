@@ -67,10 +67,10 @@ defmodule Pleroma.Web.WebFingerTest do
       assert data["magic_key"] == nil
       assert data["salmon"] == nil
 
-      assert data["topic"] == "https://mstdn.jp/users/kPherox.atom"
+      assert data["topic"] == nil
       assert data["subject"] == "acct:kPherox@mstdn.jp"
       assert data["ap_id"] == "https://mstdn.jp/users/kPherox"
-      assert data["subscribe_address"] == "https://mstdn.jp/authorize_interaction?acct={uri}"
+      assert data["subscribe_address"] == nil
     end
 
     test "it works for friendica" do
