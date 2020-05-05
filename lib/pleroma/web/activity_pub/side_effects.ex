@@ -45,5 +45,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  def handle_undoing(%{data: %{"type" => "EmojiReact"}} = object) do
+    with %Object{} = reacted_object <- Object.get_by_ap_id(object.data["object"]),
+         {:ok, _} <- Utils.remove_emoji_reaction_from_object(object, reacted_object),
+         {:ok, _} <- Repo.delete(object) do
+      :ok
+    end
+  end
+
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
 end

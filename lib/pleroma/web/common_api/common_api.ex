@@ -170,7 +170,7 @@ defmodule Pleroma.Web.CommonAPI do
          %Object{} = note <- Object.normalize(activity, false),
          %Activity{} = like <- Utils.get_existing_like(user.ap_id, note),
          {:ok, undo, _} <- Builder.undo(user, like),
-         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: false) do
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
       {:ok, activity}
     else
       {:find_activity, _} -> {:error, :not_found}
@@ -189,8 +189,10 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def unreact_with_emoji(id, user, emoji) do
-    with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji) do
-      ActivityPub.unreact_with_emoji(user, reaction_activity.data["id"])
+    with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji),
+         {:ok, undo, _} <- Builder.undo(user, reaction_activity),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
+      {:ok, activity}
     else
       _ ->
         {:error, dgettext("errors", "Could not remove reaction emoji")}

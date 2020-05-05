@@ -23,10 +23,38 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, post} = CommonAPI.post(poster, %{"status" => "hey"})
       {:ok, like} = CommonAPI.favorite(user, post.id)
 
+      {:ok, reaction, _} = CommonAPI.react_with_emoji(post.id, user, "👍")
+
       {:ok, undo_data, _meta} = Builder.undo(user, like)
       {:ok, like_undo, _meta} = ActivityPub.persist(undo_data, local: true)
 
-      %{like_undo: like_undo, post: post, like: like}
+      {:ok, undo_data, _meta} = Builder.undo(user, reaction)
+      {:ok, reaction_undo, _meta} = ActivityPub.persist(undo_data, local: true)
+
+      %{
+        like_undo: like_undo,
+        post: post,
+        like: like,
+        reaction_undo: reaction_undo,
+        reaction: reaction
+      }
+    end
+
+    test "a reaction undo removes the reaction from the object", %{
+      reaction_undo: reaction_undo,
+      post: post
+    } do
+      {:ok, _reaction_undo, _} = SideEffects.handle(reaction_undo)
+
+      object = Object.get_by_ap_id(post.data["object"])
+
+      assert object.data["reaction_count"] == 0
+      assert object.data["reactions"] == []
+    end
+
+    test "deletes the original reaction", %{reaction_undo: reaction_undo, reaction: reaction} do
+      {:ok, _reaction_undo, _} = SideEffects.handle(reaction_undo)
+      refute Activity.get_by_id(reaction.id)
     end
 
     test "a like undo removes the like from the object", %{like_undo: like_undo, post: post} do

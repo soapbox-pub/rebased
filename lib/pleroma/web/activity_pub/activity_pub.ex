@@ -373,31 +373,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec unreact_with_emoji(User.t(), String.t(), keyword()) ::
-          {:ok, Activity.t(), Object.t()} | {:error, any()}
-  def unreact_with_emoji(user, reaction_id, options \\ []) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_unreact_with_emoji(user, reaction_id, options) end) do
-      result
-    end
-  end
-
-  defp do_unreact_with_emoji(user, reaction_id, options) do
-    with local <- Keyword.get(options, :local, true),
-         activity_id <- Keyword.get(options, :activity_id, nil),
-         user_ap_id <- user.ap_id,
-         %Activity{actor: ^user_ap_id} = reaction_activity <- Activity.get_by_ap_id(reaction_id),
-         object <- Object.normalize(reaction_activity),
-         unreact_data <- make_undo_data(user, reaction_activity, activity_id),
-         {:ok, activity} <- insert(unreact_data, local),
-         {:ok, object} <- remove_emoji_reaction_from_object(reaction_activity, object),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity, object}
-    else
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
   @spec announce(User.t(), Object.t(), String.t() | nil, boolean(), boolean()) ::
           {:ok, Activity.t(), Object.t()} | {:error, any()}
   def announce(
