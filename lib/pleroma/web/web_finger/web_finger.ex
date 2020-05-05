@@ -88,6 +88,11 @@ defmodule Pleroma.Web.WebFinger do
 
   defp webfinger_from_xml(doc) do
     with subject <- XML.string_from_xpath("//Subject", doc),
+         subscribe_address <-
+           XML.string_from_xpath(
+             ~s{//Link[@rel="http://ostatus.org/schema/1.0/subscribe"]/@template},
+             doc
+           ),
          ap_id <-
            XML.string_from_xpath(
              ~s{//Link[@rel="self" and @type="application/activity+json"]/@href},
@@ -95,6 +100,7 @@ defmodule Pleroma.Web.WebFinger do
            ) do
       data = %{
         "subject" => subject,
+        "subscribe_address" => subscribe_address,
         "ap_id" => ap_id
       }
 
