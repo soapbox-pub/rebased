@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.CustomEmojiController do
   use Pleroma.Web, :controller
 
-  plug(OpenApiSpex.Plug.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
     :skip_plug,
