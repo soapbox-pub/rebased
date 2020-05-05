@@ -1008,52 +1008,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "unannouncing an object" do
-    test "unannouncing a previously announced object" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      # Unannouncing an object that is not announced does nothing
-      {:ok, object} = ActivityPub.unannounce(user, object)
-      refute object.data["announcement_count"]
-
-      {:ok, announce_activity, object} = ActivityPub.announce(user, object)
-      assert object.data["announcement_count"] == 1
-
-      {:ok, unannounce_activity, object} = ActivityPub.unannounce(user, object)
-      assert object.data["announcement_count"] == 0
-
-      assert unannounce_activity.data["to"] == [
-               User.ap_followers(user),
-               object.data["actor"]
-             ]
-
-      assert unannounce_activity.data["type"] == "Undo"
-      assert unannounce_activity.data["object"] == announce_activity.data
-      assert unannounce_activity.data["actor"] == user.ap_id
-      assert unannounce_activity.data["context"] == announce_activity.data["context"]
-
-      assert Activity.get_by_id(announce_activity.id) == nil
-    end
-
-    test "reverts unannouncing on error" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      {:ok, _announce_activity, object} = ActivityPub.announce(user, object)
-      assert object.data["announcement_count"] == 1
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.unannounce(user, object)
-      end
-
-      object = Object.get_by_ap_id(object.data["id"])
-      assert object.data["announcement_count"] == 1
-    end
-  end
-
   describe "uploading files" do
     test "copies the file to the configured folder" do
       file = %Plug.Upload{

@@ -771,25 +771,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{
           "type" => "Undo",
-          "object" => %{"type" => "Announce", "object" => object_id},
-          "actor" => _actor,
-          "id" => id
-        } = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         {:ok, activity, _} <- ActivityPub.unannounce(actor, object, id, false) do
-      {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{
-          "type" => "Undo",
           "object" => %{"type" => "Follow", "object" => followed},
           "actor" => follower,
           "id" => id
@@ -847,7 +828,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         } = data,
         _options
       )
-      when type in ["Like", "EmojiReact"] do
+      when type in ["Like", "EmojiReact", "Announce"] do
     with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     end

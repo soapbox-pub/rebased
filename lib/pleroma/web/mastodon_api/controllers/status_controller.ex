@@ -206,9 +206,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/unreblog"
-  def unreblog(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, _unannounce, %{data: %{"id" => id}}} <- CommonAPI.unrepeat(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_by_object_ap_id_with_object(id) do
+  def unreblog(%{assigns: %{user: user}} = conn, %{"id" => activity_id}) do
+    with {:ok, _unannounce} <- CommonAPI.unrepeat(activity_id, user),
+         %Activity{} = activity <- Activity.get_by_id(activity_id) do
       try_render(conn, "show.json", %{activity: activity, for: user, as: :activity})
     end
   end

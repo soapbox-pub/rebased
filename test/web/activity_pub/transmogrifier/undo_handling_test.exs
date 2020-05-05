@@ -125,11 +125,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
     {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
 
     assert data["type"] == "Undo"
-    assert object_data = data["object"]
-    assert object_data["type"] == "Announce"
-    assert object_data["object"] == activity.data["object"]
 
-    assert object_data["id"] ==
+    assert data["object"] ==
              "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
   end
 

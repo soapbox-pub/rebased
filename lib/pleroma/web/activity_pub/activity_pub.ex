@@ -402,34 +402,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec unannounce(User.t(), Object.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t(), Object.t()} | {:ok, Object.t()} | {:error, any()}
-  def unannounce(
-        %User{} = actor,
-        %Object{} = object,
-        activity_id \\ nil,
-        local \\ true
-      ) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_unannounce(actor, object, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_unannounce(actor, object, activity_id, local) do
-    with %Activity{} = announce_activity <- get_existing_announce(actor.ap_id, object),
-         unannounce_data <- make_unannounce_data(actor, announce_activity, activity_id),
-         {:ok, unannounce_activity} <- insert(unannounce_data, local),
-         :ok <- maybe_federate(unannounce_activity),
-         {:ok, _activity} <- Repo.delete(announce_activity),
-         {:ok, object} <- remove_announce_from_object(announce_activity, object) do
-      {:ok, unannounce_activity, object}
-    else
-      nil -> {:ok, object}
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
   @spec follow(User.t(), User.t(), String.t() | nil, boolean()) ::
           {:ok, Activity.t()} | {:error, any()}
   def follow(follower, followed, activity_id \\ nil, local \\ true) do

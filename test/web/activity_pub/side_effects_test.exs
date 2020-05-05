@@ -22,8 +22,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       user = insert(:user)
       {:ok, post} = CommonAPI.post(poster, %{"status" => "hey"})
       {:ok, like} = CommonAPI.favorite(user, post.id)
-
       {:ok, reaction, _} = CommonAPI.react_with_emoji(post.id, user, "👍")
+      {:ok, announce, _} = CommonAPI.repeat(post.id, user)
 
       {:ok, undo_data, _meta} = Builder.undo(user, like)
       {:ok, like_undo, _meta} = ActivityPub.persist(undo_data, local: true)
@@ -31,13 +31,35 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, undo_data, _meta} = Builder.undo(user, reaction)
       {:ok, reaction_undo, _meta} = ActivityPub.persist(undo_data, local: true)
 
+      {:ok, undo_data, _meta} = Builder.undo(user, announce)
+      {:ok, announce_undo, _meta} = ActivityPub.persist(undo_data, local: true)
+
       %{
         like_undo: like_undo,
         post: post,
         like: like,
         reaction_undo: reaction_undo,
-        reaction: reaction
+        reaction: reaction,
+        announce_undo: announce_undo,
+        announce: announce
       }
+    end
+
+    test "an announce undo removes the announce from the object", %{
+      announce_undo: announce_undo,
+      post: post
+    } do
+      {:ok, _announce_undo, _} = SideEffects.handle(announce_undo)
+
+      object = Object.get_by_ap_id(post.data["object"])
+
+      assert object.data["announcement_count"] == 0
+      assert object.data["announcements"] == []
+    end
+
+    test "deletes the original announce", %{announce_undo: announce_undo, announce: announce} do
+      {:ok, _announce_undo, _} = SideEffects.handle(announce_undo)
+      refute Activity.get_by_id(announce.id)
     end
 
     test "a reaction undo removes the reaction from the object", %{

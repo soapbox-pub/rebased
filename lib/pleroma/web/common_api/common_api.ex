@@ -107,9 +107,12 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unrepeat(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
-           {:find_activity, Activity.get_by_id(id)} do
-      object = Object.normalize(activity)
-      ActivityPub.unannounce(user, object)
+           {:find_activity, Activity.get_by_id(id)},
+         %Object{} = note <- Object.normalize(activity, false),
+         %Activity{} = announce <- Utils.get_existing_announce(user.ap_id, note),
+         {:ok, undo, _} <- Builder.undo(user, announce),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
+      {:ok, activity}
     else
       {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not unrepeat")}

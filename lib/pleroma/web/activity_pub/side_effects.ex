@@ -53,5 +53,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  def handle_undoing(%{data: %{"type" => "Announce"}} = object) do
+    with %Object{} = liked_object <- Object.get_by_ap_id(object.data["object"]),
+         {:ok, _} <- Utils.remove_announce_from_object(object, liked_object),
+         {:ok, _} <- Repo.delete(object) do
+      :ok
+    end
+  end
+
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
 end
