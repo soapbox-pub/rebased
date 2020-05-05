@@ -755,6 +755,17 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
   - On success: `204`, empty response
 
+## `GET /api/pleroma/admin/statuses/:id`
+
+### Show status by id
+
+- Params:
+  - `id`: required, status id
+- Response:
+  - On failure:
+    - 404 Not Found `"Not Found"`
+  - On success: JSON, Mastodon Status entity
+
 ## `PUT /api/pleroma/admin/statuses/:id`
 
 ### Change the scope of an individual reported status
