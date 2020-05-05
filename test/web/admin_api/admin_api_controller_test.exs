@@ -1620,6 +1620,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "GET /api/pleroma/admin/statuses/:id" do
+    test "not found", %{conn: conn} do
+      assert conn
+             |> get("/api/pleroma/admin/statuses/not_found")
+             |> json_response(:not_found)
+    end
+
+    test "shows activity", %{conn: conn} do
+      activity = insert(:note_activity)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/statuses/#{activity.id}")
+        |> json_response(200)
+
+      assert response["id"] == activity.id
+    end
+  end
+
   describe "PUT /api/pleroma/admin/statuses/:id" do
     setup do
       activity = insert(:note_activity)
