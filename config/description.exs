@@ -3194,5 +3194,19 @@ config :pleroma, :config_description, [
         ]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.ApiSpec.CastAndValidate,
+    type: :group,
+    children: [
+      %{
+        key: :strict,
+        type: :boolean,
+        description:
+          "Enables strict input validation (useful in development, not recommended in production)",
+        suggestions: [false]
+      }
+    ]
   }
 ]

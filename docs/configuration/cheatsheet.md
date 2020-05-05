@@ -925,3 +925,7 @@ Restrict access for unauthenticated users to timelines (public and federate), us
 * `activities` - statuses
   * `local`
   * `remote`
+
+## Pleroma.Web.ApiSpec.CastAndValidate
+
+* `:strict` a boolean, enables strict input validation (useful in development, not recommended in production). Defaults to `false`.
