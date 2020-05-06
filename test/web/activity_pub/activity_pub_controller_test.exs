@@ -820,21 +820,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       activity: activity
     } do
       user = insert(:user)
+      conn = assign(conn, :user, user)
       object = Map.put(activity["object"], "sensitive", true)
       activity = Map.put(activity, "object", object)
 
-      result =
+      response =
         conn
-        |> assign(:user, user)
         |> put_req_header("content-type", "application/activity+json")
         |> post("/users/#{user.nickname}/outbox", activity)
         |> json_response(201)
 
-      assert Activity.get_by_ap_id(result["id"])
-      assert result["object"]
-      assert %Object{data: object} = Object.normalize(result["object"])
-      assert object["sensitive"] == activity["object"]["sensitive"]
-      assert object["content"] == activity["object"]["content"]
+      assert Activity.get_by_ap_id(response["id"])
+      assert response["object"]
+      assert %Object{data: response_object} = Object.normalize(response["object"])
+      assert response_object["sensitive"] == true
+      assert response_object["content"] == activity["object"]["content"]
+
+      representation =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(response["id"])
+        |> json_response(200)
+
+      assert representation["object"]["sensitive"] == true
     end
 
     test "it rejects an incoming activity with bogus type", %{conn: conn, activity: activity} do

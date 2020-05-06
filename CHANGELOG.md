@@ -49,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Logger configuration through AdminFE
 - HTTP Basic Authentication permissions issue
 - ObjectAgePolicy didn't filter out old messages
+- Transmogrifier: Keep object sensitive settings for outgoing representation (AP C2S)
 
 ### Added
 - NodeInfo: ObjectAgePolicy settings to the `federation` list.
