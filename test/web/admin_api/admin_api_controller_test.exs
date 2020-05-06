@@ -6,8 +6,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  import Pleroma.Factory
   import ExUnit.CaptureLog
+  import Mock
+  import Pleroma.Factory
 
   alias Pleroma.Activity
   alias Pleroma.Config
@@ -147,17 +148,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "single user", %{admin: admin, conn: conn} do
       user = insert(:user)
 
-      conn =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> delete("/api/pleroma/admin/users?nickname=#{user.nickname}")
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        conn =
+          conn
+          |> put_req_header("accept", "application/json")
+          |> delete("/api/pleroma/admin/users?nickname=#{user.nickname}")
 
-      log_entry = Repo.one(ModerationLog)
+        ObanHelpers.perform_all()
 
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} deleted users: @#{user.nickname}"
+        assert User.get_by_nickname(user.nickname).deactivated
 
-      assert json_response(conn, 200) == user.nickname
+        log_entry = Repo.one(ModerationLog)
+
+        assert ModerationLog.get_log_entry_message(log_entry) ==
+                 "@#{admin.nickname} deleted users: @#{user.nickname}"
+
+        assert json_response(conn, 200) == [user.nickname]
+
+        assert called(Pleroma.Web.Federator.publish(:_))
+      end
     end
 
     test "multiple users", %{admin: admin, conn: conn} do
