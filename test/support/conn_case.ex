@@ -74,7 +74,7 @@ defmodule Pleroma.Web.ConnCase do
         status = Plug.Conn.Status.code(status)
 
         unless lookup[op_id].responses[status] do
-          err = "Response schema not found for #{conn.status} #{conn.method} #{conn.request_path}"
+          err = "Response schema not found for #{status} #{conn.method} #{conn.request_path}"
           flunk(err)
         end
 
