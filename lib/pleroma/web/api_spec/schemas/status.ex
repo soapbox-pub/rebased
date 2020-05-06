@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.Schemas.Status do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Account
+  alias Pleroma.Web.ApiSpec.Schemas.Attachment
   alias Pleroma.Web.ApiSpec.Schemas.Emoji
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Poll
@@ -50,22 +51,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       language: %Schema{type: :string, nullable: true},
       media_attachments: %Schema{
         type: :array,
-        items: %Schema{
-          type: :object,
-          properties: %{
-            id: %Schema{type: :string},
-            url: %Schema{type: :string, format: :uri},
-            remote_url: %Schema{type: :string, format: :uri},
-            preview_url: %Schema{type: :string, format: :uri},
-            text_url: %Schema{type: :string, format: :uri},
-            description: %Schema{type: :string},
-            type: %Schema{type: :string, enum: ["image", "video", "audio", "unknown"]},
-            pleroma: %Schema{
-              type: :object,
-              properties: %{mime_type: %Schema{type: :string}}
-            }
-          }
-        }
+        items: Attachment
       },
       mentions: %Schema{
         type: :array,
