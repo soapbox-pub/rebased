@@ -1,6 +1,15 @@
 defmodule Pleroma.Gun.ConnectionPool do
   @registry __MODULE__
 
+  alias Pleroma.Gun.ConnectionPool.WorkerSupervisor
+
+  def children do
+    [
+      {Registry, keys: :unique, name: @registry},
+      Pleroma.Gun.ConnectionPool.WorkerSupervisor
+    ]
+  end
+
   def get_conn(uri, opts) do
     key = "#{uri.scheme}:#{uri.host}:#{uri.port}"
 
@@ -14,93 +23,21 @@ defmodule Pleroma.Gun.ConnectionPool do
         {:ok, gun_pid}
 
       [] ->
-        case enforce_pool_limits() do
-          :ok ->
-            # :gun.set_owner fails in :connected state for whatevever reason,
-            # so we open the connection in the process directly and send it's pid back
-            # We trust gun to handle timeouts by itself
-            case GenServer.start(Pleroma.Gun.ConnectionPool.Worker, [uri, key, opts, self()],
-                   timeout: :infinity
-                 ) do
-              {:ok, _worker_pid} ->
-                receive do
-                  {:conn_pid, pid} -> {:ok, pid}
-                end
-
-              {:error, {:error, {:already_registered, worker_pid}}} ->
-                get_gun_pid_from_worker(worker_pid)
-
-              err ->
-                err
+        # :gun.set_owner fails in :connected state for whatevever reason,
+        # so we open the connection in the process directly and send it's pid back
+        # We trust gun to handle timeouts by itself
+        case WorkerSupervisor.start_worker([uri, key, opts, self()]) do
+          {:ok, _worker_pid} ->
+            receive do
+              {:conn_pid, pid} -> {:ok, pid}
             end
 
-          :error ->
-            {:error, :pool_full}
+          {:error, {:error, {:already_registered, worker_pid}}} ->
+            get_gun_pid_from_worker(worker_pid)
+
+          err ->
+            err
         end
-    end
-  end
-
-  @enforcer_key "enforcer"
-  defp enforce_pool_limits() do
-    max_connections = Pleroma.Config.get([:connections_pool, :max_connections])
-
-    if Registry.count(@registry) >= max_connections do
-      case Registry.lookup(@registry, @enforcer_key) do
-        [] ->
-          pid =
-            spawn(fn ->
-              {:ok, _pid} = Registry.register(@registry, @enforcer_key, nil)
-
-              reclaim_max =
-                [:connections_pool, :reclaim_multiplier]
-                |> Pleroma.Config.get()
-                |> Kernel.*(max_connections)
-                |> round
-                |> max(1)
-
-              unused_conns =
-                Registry.select(
-                  @registry,
-                  [
-                    {{:_, :"$1", {:_, :"$2", :"$3", :"$4"}}, [{:==, :"$2", []}],
-                     [{{:"$1", :"$3", :"$4"}}]}
-                  ]
-                )
-
-              case unused_conns do
-                [] ->
-                  exit(:pool_full)
-
-                unused_conns ->
-                  unused_conns
-                  |> Enum.sort(fn {_pid1, crf1, last_reference1},
-                                  {_pid2, crf2, last_reference2} ->
-                    crf1 <= crf2 and last_reference1 <= last_reference2
-                  end)
-                  |> Enum.take(reclaim_max)
-                  |> Enum.each(fn {pid, _, _} -> GenServer.call(pid, :idle_close) end)
-              end
-            end)
-
-          wait_for_enforcer_finish(pid)
-
-        [{pid, _}] ->
-          wait_for_enforcer_finish(pid)
-      end
-    else
-      :ok
-    end
-  end
-
-  defp wait_for_enforcer_finish(pid) do
-    ref = Process.monitor(pid)
-
-    receive do
-      {:DOWN, ^ref, :process, ^pid, :pool_full} ->
-        :error
-
-      {:DOWN, ^ref, :process, ^pid, :normal} ->
-        :ok
     end
   end
 

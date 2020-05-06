@@ -243,7 +243,7 @@ defmodule Pleroma.Application do
   end
 
   defp http_children(Tesla.Adapter.Gun, _) do
-    [{Registry, keys: :unique, name: Pleroma.Gun.ConnectionPool}]
+    Pleroma.Gun.ConnectionPool.children()
   end
 
   defp http_children(_, _), do: []

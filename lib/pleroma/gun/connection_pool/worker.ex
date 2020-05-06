@@ -1,8 +1,12 @@
 defmodule Pleroma.Gun.ConnectionPool.Worker do
   alias Pleroma.Gun
-  use GenServer
+  use GenServer, restart: :temporary
 
   @registry Pleroma.Gun.ConnectionPool
+
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts)
+  end
 
   @impl true
   def init([uri, key, opts, client_pid]) do
@@ -80,12 +84,6 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   @impl true
   def handle_info({:gun_down, _pid, _protocol, _reason, _killed_streams} = down_message, state) do
     {:stop, {:error, down_message}, state}
-  end
-
-  @impl true
-  def handle_call(:idle_close, _, %{key: key} = state) do
-    Registry.unregister(@registry, key)
-    {:stop, :normal, state}
   end
 
   # LRFU policy: https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.55.1478
