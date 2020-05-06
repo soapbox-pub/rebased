@@ -108,11 +108,11 @@ defmodule Pleroma.Web.Push.Impl do
         %{
           user: %{notification_settings: %{privacy_option: true}}
         } = notification,
-        actor,
+        _actor,
         _object,
         mastodon_type
       ) do
-    %{title: format_title(notification, mastodon_type), body: "@#{actor.nickname}"}
+    %{body: format_title(notification, mastodon_type)}
   end
 
   def build_content(notification, actor, object, mastodon_type) do

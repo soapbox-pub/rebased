@@ -209,8 +209,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       object = Object.normalize(activity)
 
       assert Impl.build_content(notif, actor, object) == %{
-               body: "@Bob",
-               title: "New Direct Message"
+               body: "New Direct Message"
              }
     end
 
