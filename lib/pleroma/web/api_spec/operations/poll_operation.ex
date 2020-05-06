@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ApiSpec.PollOperation do
   def vote_operation do
     %Operation{
       tags: ["Polls"],
-      summary: "Block a domain",
+      summary: "Vote on a poll",
       parameters: [id_param()],
       operationId: "PollController.vote",
       requestBody: vote_request(),
