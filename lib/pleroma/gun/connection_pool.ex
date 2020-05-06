@@ -2,20 +2,20 @@ defmodule Pleroma.Gun.ConnectionPool do
   @registry __MODULE__
 
   def get_conn(uri, opts) do
-    case enforce_pool_limits() do
-      :ok ->
-        key = "#{uri.scheme}:#{uri.host}:#{uri.port}"
+    key = "#{uri.scheme}:#{uri.host}:#{uri.port}"
 
-        case Registry.lookup(@registry, key) do
-          # The key has already been registered, but connection is not up yet
-          [{worker_pid, {nil, _used_by, _crf, _last_reference}}] ->
-            get_gun_pid_from_worker(worker_pid)
+    case Registry.lookup(@registry, key) do
+      # The key has already been registered, but connection is not up yet
+      [{worker_pid, {nil, _used_by, _crf, _last_reference}}] ->
+        get_gun_pid_from_worker(worker_pid)
 
-          [{worker_pid, {gun_pid, _used_by, _crf, _last_reference}}] ->
-            GenServer.cast(worker_pid, {:add_client, self(), false})
-            {:ok, gun_pid}
+      [{worker_pid, {gun_pid, _used_by, _crf, _last_reference}}] ->
+        GenServer.cast(worker_pid, {:add_client, self(), false})
+        {:ok, gun_pid}
 
-          [] ->
+      [] ->
+        case enforce_pool_limits() do
+          :ok ->
             # :gun.set_owner fails in :connected state for whatevever reason,
             # so we open the connection in the process directly and send it's pid back
             # We trust gun to handle timeouts by itself
@@ -33,10 +33,10 @@ defmodule Pleroma.Gun.ConnectionPool do
               err ->
                 err
             end
-        end
 
-      :error ->
-        {:error, :pool_full}
+          :error ->
+            {:error, :pool_full}
+        end
     end
   end
 
