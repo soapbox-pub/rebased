@@ -1530,21 +1530,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp normalize_counter(counter) when is_integer(counter), do: counter
   defp normalize_counter(_), do: 0
 
-  defp maybe_update_follow_information(data) do
+  def maybe_update_follow_information(user_data) do
     with {:enabled, true} <- {:enabled, Config.get([:instance, :external_user_synchronization])},
-         {:ok, info} <- fetch_follow_information_for_user(data) do
-      info = Map.merge(data[:info] || %{}, info)
-      Map.put(data, :info, info)
+         {_, true} <- {:user_type_check, user_data[:type] in ["Person", "Service"]},
+         {_, true} <-
+           {:collections_available,
+            !!(user_data[:following_address] && user_data[:follower_address])},
+         {:ok, info} <-
+           fetch_follow_information_for_user(user_data) do
+      info = Map.merge(user_data[:info] || %{}, info)
+
+      user_data
+      |> Map.put(:info, info)
     else
+      {:user_type_check, false} ->
+        user_data
+
+      {:collections_available, false} ->
+        user_data
+
       {:enabled, false} ->
-        data
+        user_data
 
       e ->
         Logger.error(
-          "Follower/Following counter update for #{data.ap_id} failed.\n" <> inspect(e)
+          "Follower/Following counter update for #{user_data.ap_id} failed.\n" <> inspect(e)
         )
 
-        data
+        user_data
     end
   end
 

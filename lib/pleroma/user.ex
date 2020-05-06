@@ -113,7 +113,6 @@ defmodule Pleroma.User do
     field(:is_admin, :boolean, default: false)
     field(:show_role, :boolean, default: true)
     field(:settings, :map, default: nil)
-    field(:magic_key, :string, default: nil)
     field(:uri, Types.Uri, default: nil)
     field(:hide_followers_count, :boolean, default: false)
     field(:hide_follows_count, :boolean, default: false)
@@ -387,7 +386,6 @@ defmodule Pleroma.User do
         :banner,
         :locked,
         :last_refreshed_at,
-        :magic_key,
         :uri,
         :follower_address,
         :following_address,

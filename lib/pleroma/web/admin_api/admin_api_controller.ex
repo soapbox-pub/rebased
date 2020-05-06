@@ -93,7 +93,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"], admin: true}
-    when action in [:list_statuses, :list_user_statuses, :list_instance_statuses]
+    when action in [:list_statuses, :list_user_statuses, :list_instance_statuses, :status_show]
   )
 
   plug(
@@ -835,6 +835,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> put_view(Pleroma.Web.AdminAPI.StatusView)
     |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
+  end
+
+  def status_show(conn, %{"id" => id}) do
+    with %Activity{} = activity <- Activity.get_by_id(id) do
+      conn
+      |> put_view(StatusView)
+      |> render("show.json", %{activity: activity})
+    else
+      _ -> errors(conn, {:error, :not_found})
+    end
   end
 
   def status_update(%{assigns: %{user: admin}} = conn, %{"id" => id} = params) do
