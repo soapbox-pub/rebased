@@ -392,29 +392,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       email: params["email"]
     }
 
-    with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)),
-         {:ok, users, count} <- filter_service_users(users, count),
-         do:
-           conn
-           |> json(
-             AccountView.render("index.json",
-               users: users,
-               count: count,
-               page_size: page_size
-             )
-           )
-  end
-
-  defp filter_service_users(users, count) do
-    filtered_users = Enum.reject(users, &service_user?/1)
-    count = if Enum.any?(users, &service_user?/1), do: length(filtered_users), else: count
-
-    {:ok, filtered_users, count}
-  end
-
-  defp service_user?(user) do
-    String.match?(user.ap_id, ~r/.*\/relay$/) or
-      String.match?(user.ap_id, ~r/.*\/internal\/fetch$/)
+    with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)) do
+      json(
+        conn,
+        AccountView.render("index.json", users: users, count: count, page_size: page_size)
+      )
+    end
   end
 
   @filters ~w(local external active deactivated is_admin is_moderator)
