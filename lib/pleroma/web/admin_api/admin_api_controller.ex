@@ -93,7 +93,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"], admin: true}
-    when action in [:list_statuses, :list_user_statuses, :list_instance_statuses]
+    when action in [:list_statuses, :list_user_statuses, :list_instance_statuses, :status_show]
   )
 
   plug(
@@ -392,29 +392,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       email: params["email"]
     }
 
-    with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)),
-         {:ok, users, count} <- filter_service_users(users, count),
-         do:
-           conn
-           |> json(
-             AccountView.render("index.json",
-               users: users,
-               count: count,
-               page_size: page_size
-             )
-           )
-  end
-
-  defp filter_service_users(users, count) do
-    filtered_users = Enum.reject(users, &service_user?/1)
-    count = if Enum.any?(users, &service_user?/1), do: length(filtered_users), else: count
-
-    {:ok, filtered_users, count}
-  end
-
-  defp service_user?(user) do
-    String.match?(user.ap_id, ~r/.*\/relay$/) or
-      String.match?(user.ap_id, ~r/.*\/internal\/fetch$/)
+    with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)) do
+      json(
+        conn,
+        AccountView.render("index.json", users: users, count: count, page_size: page_size)
+      )
+    end
   end
 
   @filters ~w(local external active deactivated is_admin is_moderator)
@@ -835,6 +818,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> put_view(Pleroma.Web.AdminAPI.StatusView)
     |> render("index.json", %{activities: activities, as: :activity, skip_relationships: false})
+  end
+
+  def status_show(conn, %{"id" => id}) do
+    with %Activity{} = activity <- Activity.get_by_id(id) do
+      conn
+      |> put_view(StatusView)
+      |> render("show.json", %{activity: activity})
+    else
+      _ -> errors(conn, {:error, :not_found})
+    end
   end
 
   def status_update(%{assigns: %{user: admin}} = conn, %{"id" => id} = params) do

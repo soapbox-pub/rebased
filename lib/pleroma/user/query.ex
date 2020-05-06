@@ -45,6 +45,7 @@ defmodule Pleroma.User.Query do
             is_admin: boolean(),
             is_moderator: boolean(),
             super_users: boolean(),
+            exclude_service_users: boolean(),
             followers: User.t(),
             friends: User.t(),
             recipients_from_activity: [String.t()],
@@ -88,6 +89,10 @@ defmodule Pleroma.User.Query do
     where(query, [u], ilike(field(u, ^key), ^"%#{value}%"))
   end
 
+  defp compose_query({:exclude_service_users, _}, query) do
+    where(query, [u], not like(u.ap_id, "%/relay") and not like(u.ap_id, "%/internal/fetch"))
+  end
+
   defp compose_query({key, value}, query)
        when key in @equal_criteria and not_empty_string(value) do
     where(query, [u], ^[{key, value}])
@@ -98,7 +103,7 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query({:tags, tags}, query) when is_list(tags) and length(tags) > 0 do
-    Enum.reduce(tags, query, &prepare_tag_criteria/2)
+    where(query, [u], fragment("? && ?", u.tags, ^tags))
   end
 
   defp compose_query({:is_admin, _}, query) do
@@ -191,10 +196,6 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query(_unsupported_param, query), do: query
-
-  defp prepare_tag_criteria(tag, query) do
-    or_where(query, [u], fragment("? = any(?)", ^tag, u.tags))
-  end
 
   defp location_query(query, local) do
     where(query, [u], u.local == ^local)

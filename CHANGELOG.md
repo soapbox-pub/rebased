@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 - Mastodon API: Add support for filtering replies in public and home timelines
 - Admin API: endpoints for create/update/delete OAuth Apps.
+- Admin API: endpoint for status view.
 </details>
 
 ### Fixed
@@ -37,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: SimplePolicy `:reject` and `:accept` allow deletions again
 - Fix follower/blocks import when nicknames starts with @
 - Filtering of push notifications on activities from blocked domains
+- Resolving Peertube accounts with Webfinger
 
 ## [unreleased-patch]
 ### Security
@@ -47,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Logger configuration through AdminFE
 - HTTP Basic Authentication permissions issue
 - ObjectAgePolicy didn't filter out old messages
+- Transmogrifier: Keep object sensitive settings for outgoing representation (AP C2S)
 
 ### Added
 - NodeInfo: ObjectAgePolicy settings to the `federation` list.

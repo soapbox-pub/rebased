@@ -19,6 +19,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.UserInviteToken
+  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MediaProxy
@@ -735,6 +736,39 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "page_size" => 50,
                "users" => users
              }
+    end
+
+    test "pagination works correctly with service users", %{conn: conn} do
+      service1 = insert(:user, ap_id: Web.base_url() <> "/relay")
+      service2 = insert(:user, ap_id: Web.base_url() <> "/internal/fetch")
+      insert_list(25, :user)
+
+      assert %{"count" => 26, "page_size" => 10, "users" => users1} =
+               conn
+               |> get("/api/pleroma/admin/users?page=1&filters=", %{page_size: "10"})
+               |> json_response(200)
+
+      assert Enum.count(users1) == 10
+      assert service1 not in [users1]
+      assert service2 not in [users1]
+
+      assert %{"count" => 26, "page_size" => 10, "users" => users2} =
+               conn
+               |> get("/api/pleroma/admin/users?page=2&filters=", %{page_size: "10"})
+               |> json_response(200)
+
+      assert Enum.count(users2) == 10
+      assert service1 not in [users2]
+      assert service2 not in [users2]
+
+      assert %{"count" => 26, "page_size" => 10, "users" => users3} =
+               conn
+               |> get("/api/pleroma/admin/users?page=3&filters=", %{page_size: "10"})
+               |> json_response(200)
+
+      assert Enum.count(users3) == 6
+      assert service1 not in [users3]
+      assert service2 not in [users3]
     end
 
     test "renders empty array for the second page", %{conn: conn} do
@@ -1617,6 +1651,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = get(build_conn(), "/api/pleroma/admin/reports")
 
       assert json_response(conn, :forbidden) == %{"error" => "Invalid credentials."}
+    end
+  end
+
+  describe "GET /api/pleroma/admin/statuses/:id" do
+    test "not found", %{conn: conn} do
+      assert conn
+             |> get("/api/pleroma/admin/statuses/not_found")
+             |> json_response(:not_found)
+    end
+
+    test "shows activity", %{conn: conn} do
+      activity = insert(:note_activity)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/statuses/#{activity.id}")
+        |> json_response(200)
+
+      assert response["id"] == activity.id
     end
   end
 
@@ -3526,7 +3579,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "success", %{conn: conn} do
-      base_url = Pleroma.Web.base_url()
+      base_url = Web.base_url()
       app_name = "Trusted app"
 
       response =
@@ -3547,7 +3600,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "with trusted", %{conn: conn} do
-      base_url = Pleroma.Web.base_url()
+      base_url = Web.base_url()
       app_name = "Trusted app"
 
       response =

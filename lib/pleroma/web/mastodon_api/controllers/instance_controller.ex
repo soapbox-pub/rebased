@@ -5,11 +5,15 @@
 defmodule Pleroma.Web.MastodonAPI.InstanceController do
   use Pleroma.Web, :controller
 
+  plug(OpenApiSpex.Plug.CastAndValidate)
+
   plug(
     :skip_plug,
     [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug]
     when action in [:show, :peers]
   )
+
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.InstanceOperation
 
   @doc "GET /api/v1/instance"
   def show(conn, _params) do
