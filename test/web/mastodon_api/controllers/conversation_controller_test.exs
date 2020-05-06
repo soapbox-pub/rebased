@@ -36,7 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     res_conn = get(conn, "/api/v1/conversations")
 
-    assert response = json_response(res_conn, 200)
+    assert response = json_response_and_validate_schema(res_conn, 200)
 
     assert [
              %{
@@ -91,18 +91,18 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
         "visibility" => "direct"
       })
 
-    [conversation1, conversation2] =
-      conn
-      |> get("/api/v1/conversations", %{"recipients" => [user_two.id]})
-      |> json_response(200)
+    assert [conversation1, conversation2] =
+             conn
+             |> get("/api/v1/conversations?recipients[]=#{user_two.id}")
+             |> json_response_and_validate_schema(200)
 
     assert conversation1["last_status"]["id"] == direct5.id
     assert conversation2["last_status"]["id"] == direct1.id
 
     [conversation1] =
       conn
-      |> get("/api/v1/conversations", %{"recipients" => [user_two.id, user_three.id]})
-      |> json_response(200)
+      |> get("/api/v1/conversations?recipients[]=#{user_two.id}&recipients[]=#{user_three.id}")
+      |> json_response_and_validate_schema(200)
 
     assert conversation1["last_status"]["id"] == direct3.id
   end
@@ -126,7 +126,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     [%{"last_status" => res_last_status}] =
       conn
       |> get("/api/v1/conversations")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert res_last_status["id"] == direct_reply.id
   end
@@ -154,12 +154,12 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     [%{"id" => direct_conversation_id, "unread" => true}] =
       user_two_conn
       |> get("/api/v1/conversations")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     %{"unread" => false} =
       user_two_conn
       |> post("/api/v1/conversations/#{direct_conversation_id}/read")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
     assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
@@ -175,7 +175,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     [%{"unread" => true}] =
       conn
       |> get("/api/v1/conversations")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert User.get_cached_by_id(user_one.id).unread_conversation_count == 1
     assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
