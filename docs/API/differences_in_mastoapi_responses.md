@@ -61,6 +61,7 @@ Has these additional fields under the `pleroma` object:
 - `deactivated`: boolean, true when the user is deactivated
 - `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
+- `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
 
 ### Source
 

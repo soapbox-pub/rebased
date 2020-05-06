@@ -1196,12 +1196,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   describe "verify_credentials" do
     test "verify_credentials" do
       %{user: user, conn: conn} = oauth_access(["read:accounts"])
+      [notification | _] = insert_list(7, :notification, user: user)
+      Pleroma.Notification.set_read_up_to(user, notification.id)
       conn = get(conn, "/api/v1/accounts/verify_credentials")
 
       response = json_response_and_validate_schema(conn, 200)
 
       assert %{"id" => id, "source" => %{"privacy" => "public"}} = response
       assert response["pleroma"]["chat_token"]
+      assert response["pleroma"]["unread_notifications_count"] == 6
       assert id == to_string(user.id)
     end
 

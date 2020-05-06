@@ -36,6 +36,14 @@ defmodule Pleroma.Notification do
     timestamps()
   end
 
+  @spec unread_notifications_count(User.t()) :: integer()
+  def unread_notifications_count(%User{id: user_id}) do
+    from(q in __MODULE__,
+      where: q.user_id == ^user_id and q.seen == false
+    )
+    |> Repo.aggregate(:count, :id)
+  end
+
   def changeset(%Notification{} = notification, attrs) do
     notification
     |> cast(attrs, [:seen])
