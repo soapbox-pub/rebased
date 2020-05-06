@@ -7,9 +7,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageViewTest do
 
   alias Pleroma.Chat
   alias Pleroma.Object
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.PleromaAPI.ChatMessageView
-  alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Pleroma.Factory
 

@@ -6,8 +6,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   use Ecto.Schema
 
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.Transmogrifier, only: [fix_emoji: 1]
