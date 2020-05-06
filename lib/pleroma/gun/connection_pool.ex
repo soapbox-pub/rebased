@@ -119,11 +119,17 @@ defmodule Pleroma.Gun.ConnectionPool do
   end
 
   def release_conn(conn_pid) do
-    [worker_pid] =
+    query_result =
       Registry.select(@registry, [
         {{:_, :"$1", {:"$2", :_, :_, :_}}, [{:==, :"$2", conn_pid}], [:"$1"]}
       ])
 
-    GenServer.cast(worker_pid, {:remove_client, self()})
+    case query_result do
+      [worker_pid] ->
+        GenServer.cast(worker_pid, {:remove_client, self()})
+
+      [] ->
+        :ok
+    end
   end
 end
