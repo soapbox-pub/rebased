@@ -23,7 +23,10 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageView do
       chat_id: chat_id |> to_string(),
       account_id: User.get_cached_by_ap_id(chat_message["actor"]).id,
       created_at: Utils.to_masto_date(chat_message["published"]),
-      emojis: StatusView.build_emojis(chat_message["emoji"])
+      emojis: StatusView.build_emojis(chat_message["emoji"]),
+      attachment:
+        chat_message["attachment"] &&
+          StatusView.render("attachment.json", attachment: chat_message["attachment"])
     }
   end
 

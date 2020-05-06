@@ -236,7 +236,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       description: "POST body for creating an chat message",
       type: :object,
       properties: %{
-        content: %Schema{type: :string, description: "The content of your message"}
+        content: %Schema{type: :string, description: "The content of your message"},
+        media_id: %Schema{type: :string, description: "The id of an upload"}
       },
       required: [:content],
       example: %{

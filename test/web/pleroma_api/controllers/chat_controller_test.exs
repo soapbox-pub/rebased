@@ -6,6 +6,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
   alias Pleroma.Chat
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Pleroma.Factory
 
@@ -44,6 +45,32 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         conn
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{"content" => "Hallo!!"})
+        |> json_response_and_validate_schema(200)
+
+      assert result["content"] == "Hallo!!"
+      assert result["chat_id"] == chat.id |> to_string()
+    end
+
+    test "it works with an attachment", %{conn: conn, user: user} do
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+
+      other_user = insert(:user)
+
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{
+          "content" => "Hallo!!",
+          "media_id" => to_string(upload.id)
+        })
         |> json_response_and_validate_schema(200)
 
       assert result["content"] == "Hallo!!"

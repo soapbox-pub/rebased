@@ -25,14 +25,16 @@ defmodule Pleroma.Web.CommonAPI do
   require Pleroma.Constants
   require Logger
 
-  def post_chat_message(%User{} = user, %User{} = recipient, content) do
+  def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
     with :ok <- validate_chat_content_length(content),
+         maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
          {_, {:ok, chat_message_data, _meta}} <-
            {:build_object,
             Builder.chat_message(
               user,
               recipient.ap_id,
-              content |> Formatter.html_escape("text/plain")
+              content |> Formatter.html_escape("text/plain"),
+              attachment: maybe_attachment
             )},
          {_, {:ok, create_activity_data, _meta}} <-
            {:build_create_activity, Builder.create(user, chat_message_data, [recipient.ap_id])},

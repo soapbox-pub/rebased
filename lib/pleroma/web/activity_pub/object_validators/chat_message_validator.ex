@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
 
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.Transmogrifier, only: [fix_emoji: 1]
@@ -22,6 +23,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
     field(:actor, Types.ObjectID)
     field(:published, Types.DateTime)
     field(:emoji, :map, default: %{})
+
+    embeds_one(:attachment, AttachmentValidator)
   end
 
   def cast_and_apply(data) do
@@ -51,7 +54,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
     data = fix(data)
 
     struct
-    |> cast(data, __schema__(:fields))
+    |> cast(data, List.delete(__schema__(:fields), :attachment))
+    |> cast_embed(:attachment)
   end
 
   def validate_data(data_cng) do

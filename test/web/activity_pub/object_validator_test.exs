@@ -2,13 +2,40 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   use Pleroma.DataCase
 
   alias Pleroma.Object
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  describe "attachments" do
+    test "it turns mastodon attachments into our attachments" do
+      attachment = %{
+        "url" =>
+          "http://mastodon.example.org/system/media_attachments/files/000/000/002/original/334ce029e7bfb920.jpg",
+        "type" => "Document",
+        "name" => nil,
+        "mediaType" => "image/jpeg"
+      }
+
+      {:ok, attachment} =
+        AttachmentValidator.cast_and_validate(attachment)
+        |> Ecto.Changeset.apply_action(:insert)
+
+      assert [
+               %{
+                 href:
+                   "http://mastodon.example.org/system/media_attachments/files/000/000/002/original/334ce029e7bfb920.jpg",
+                 type: "Link",
+                 mediaType: "image/jpeg"
+               }
+             ] = attachment.url
+    end
+  end
 
   describe "chat message create activities" do
     test "it is invalid if the object already exists" do
@@ -52,7 +79,28 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
     test "validates for a basic object we build", %{valid_chat_message: valid_chat_message} do
       assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
 
-      assert object == valid_chat_message
+      assert Map.put(valid_chat_message, "attachment", nil) == object
+    end
+
+    test "validates for a basic object with an attachment", %{
+      valid_chat_message: valid_chat_message,
+      user: user
+    } do
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
+
+      valid_chat_message =
+        valid_chat_message
+        |> Map.put("attachment", attachment.data)
+
+      assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
+
+      assert object["attachment"]
     end
 
     test "does not validate if the message is longer than the remote_limit", %{

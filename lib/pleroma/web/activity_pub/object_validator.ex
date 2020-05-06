@@ -63,10 +63,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     |> stringify_keys
   end
 
-  def stringify_keys(object) do
+  def stringify_keys(object) when is_map(object) do
     object
-    |> Map.new(fn {key, val} -> {to_string(key), val} end)
+    |> Map.new(fn {key, val} -> {to_string(key), stringify_keys(val)} end)
   end
+
+  def stringify_keys(object) when is_list(object) do
+    object
+    |> Enum.map(&stringify_keys/1)
+  end
+
+  def stringify_keys(object), do: object
 
   def fetch_actor(object) do
     with {:ok, actor} <- Types.ObjectID.cast(object["actor"]) do

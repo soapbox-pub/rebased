@@ -17,7 +17,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
       chat_id: %Schema{type: :string},
       content: %Schema{type: :string},
       created_at: %Schema{type: :string, format: :"date-time"},
-      emojis: %Schema{type: :array}
+      emojis: %Schema{type: :array},
+      attachment: %Schema{type: :object, nullable: true}
     },
     example: %{
       "account_id" => "someflakeid",
@@ -32,7 +33,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
           "url" => "https://dontbulling.me/emoji/Firefox.gif"
         }
       ],
-      "id" => "14"
+      "id" => "14",
+      "attachment" => nil
     }
   })
 end
