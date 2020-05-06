@@ -210,6 +210,12 @@ defmodule Pleroma.Web.StreamerTest do
     Worker.push_to_socket(topics, "public", activity)
 
     Task.await(task)
+  end
+
+  test "works for deletions" do
+    user = insert(:user)
+    other_user = insert(:user)
+    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "Test"})
 
     task =
       Task.async(fn ->

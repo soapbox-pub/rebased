@@ -526,67 +526,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec delete(User.t() | Object.t(), keyword()) :: {:ok, User.t() | Object.t()} | {:error, any()}
-  def delete(entity, options \\ []) do
-    with {:ok, result} <- Repo.transaction(fn -> do_delete(entity, options) end) do
-      result
-    end
-  end
-
-  defp do_delete(%User{ap_id: ap_id, follower_address: follower_address} = user, _) do
-    with data <- %{
-           "to" => [follower_address],
-           "type" => "Delete",
-           "actor" => ap_id,
-           "object" => %{"type" => "Person", "id" => ap_id}
-         },
-         {:ok, activity} <- insert(data, true, true, true),
-         :ok <- maybe_federate(activity) do
-      {:ok, user}
-    end
-  end
-
-  defp do_delete(%Object{data: %{"id" => id, "actor" => actor}} = object, options) do
-    local = Keyword.get(options, :local, true)
-    activity_id = Keyword.get(options, :activity_id, nil)
-    actor = Keyword.get(options, :actor, actor)
-
-    user = User.get_cached_by_ap_id(actor)
-    to = (object.data["to"] || []) ++ (object.data["cc"] || [])
-
-    with create_activity <- Activity.get_create_by_object_ap_id(id),
-         data <-
-           %{
-             "type" => "Delete",
-             "actor" => actor,
-             "object" => id,
-             "to" => to,
-             "deleted_activity_id" => create_activity && create_activity.id
-           }
-           |> maybe_put("id", activity_id),
-         {:ok, activity} <- insert(data, local, false),
-         {:ok, object, _create_activity} <- Object.delete(object),
-         stream_out_participations(object, user),
-         _ <- decrease_replies_count_if_reply(object),
-         {:ok, _actor} <- decrease_note_count_if_public(user, object),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    else
-      {:error, error} ->
-        Repo.rollback(error)
-    end
-  end
-
-  defp do_delete(%Object{data: %{"type" => "Tombstone", "id" => ap_id}}, _) do
-    activity =
-      ap_id
-      |> Activity.Queries.by_object_id()
-      |> Activity.Queries.by_type("Delete")
-      |> Repo.one()
-
-    {:ok, activity}
-  end
-
   @spec block(User.t(), User.t(), String.t() | nil, boolean()) ::
           {:ok, Activity.t()} | {:error, any()}
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do

@@ -110,8 +110,8 @@ defmodule Pleroma.Web.CommonAPI do
            {:find_activity, Activity.get_by_id_with_object(activity_id)},
          %Object{} = object <- Object.normalize(activity),
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
-         {:ok, _} <- unpin(activity_id, user),
-         {:ok, delete} <- ActivityPub.delete(object) do
+         {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
+         {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
       {:ok, delete}
     else
       {:find_activity, _} -> {:error, :not_found}

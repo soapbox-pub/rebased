@@ -11,6 +11,33 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
+  @spec delete(User.t(), String.t()) :: {:ok, map(), keyword()}
+  def delete(actor, object_id) do
+    object = Object.normalize(object_id, false)
+
+    user = !object && User.get_cached_by_ap_id(object_id)
+
+    to =
+      case {object, user} do
+        {%Object{}, _} ->
+          # We are deleting an object, address everyone who was originally mentioned
+          (object.data["to"] || []) ++ (object.data["cc"] || [])
+
+        {_, %User{follower_address: follower_address}} ->
+          # We are deleting a user, address the followers of that user
+          [follower_address]
+      end
+
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "actor" => actor.ap_id,
+       "object" => object_id,
+       "to" => to,
+       "type" => "Delete"
+     }, []}
+  end
+
   def create(actor, object, recipients) do
     {:ok,
      %{

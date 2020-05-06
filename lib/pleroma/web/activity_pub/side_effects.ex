@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
 
@@ -37,6 +38,49 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       {:ok, activity, meta}
     else
       e -> Repo.rollback(e)
+    end
+  end
+
+  # Tasks this handles:
+  # - Delete and unpins the create activity
+  # - Replace object with Tombstone
+  # - Set up notification
+  # - Reduce the user note count
+  # - Reduce the reply count
+  # - Stream out the activity
+  def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
+    deleted_object =
+      Object.normalize(deleted_object, false) || User.get_cached_by_ap_id(deleted_object)
+
+    result =
+      case deleted_object do
+        %Object{} ->
+          with {:ok, deleted_object, activity} <- Object.delete(deleted_object),
+               %User{} = user <- User.get_cached_by_ap_id(deleted_object.data["actor"]) do
+            User.remove_pinnned_activity(user, activity)
+
+            {:ok, user} = ActivityPub.decrease_note_count_if_public(user, deleted_object)
+
+            if in_reply_to = deleted_object.data["inReplyTo"] do
+              Object.decrease_replies_count(in_reply_to)
+            end
+
+            ActivityPub.stream_out(object)
+            ActivityPub.stream_out_participations(deleted_object, user)
+            :ok
+          end
+
+        %User{} ->
+          with {:ok, _} <- User.delete(deleted_object) do
+            :ok
+          end
+      end
+
+    if result == :ok do
+      Notification.create_notifications(object)
+      {:ok, object, meta}
+    else
+      {:error, result}
     end
   end
 
