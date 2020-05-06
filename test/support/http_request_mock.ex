@@ -211,7 +211,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "https://squeet.me/xrd/?uri=lain@squeet.me",
+        "https://squeet.me/xrd/?uri=acct:lain@squeet.me",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -870,7 +870,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "https://social.heldscal.la/.well-known/webfinger?resource=shp@social.heldscal.la",
+        "https://social.heldscal.la/.well-known/webfinger?resource=acct:shp@social.heldscal.la",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -883,7 +883,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "https://social.heldscal.la/.well-known/webfinger?resource=invalid_content@social.heldscal.la",
+        "https://social.heldscal.la/.well-known/webfinger?resource=acct:invalid_content@social.heldscal.la",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -900,7 +900,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "http://framatube.org/main/xrd?uri=framasoft@framatube.org",
+        "http://framatube.org/main/xrd?uri=acct:framasoft@framatube.org",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -959,7 +959,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "https://gerzilla.de/xrd/?uri=kaniini@gerzilla.de",
+        "https://gerzilla.de/xrd/?uri=acct:kaniini@gerzilla.de",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -1155,7 +1155,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "https://zetsubou.xn--q9jyb4c/.well-known/webfinger?resource=lain@zetsubou.xn--q9jyb4c",
+        "https://zetsubou.xn--q9jyb4c/.well-known/webfinger?resource=acct:lain@zetsubou.xn--q9jyb4c",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
@@ -1168,7 +1168,7 @@ defmodule HttpRequestMock do
   end
 
   def get(
-        "https://zetsubou.xn--q9jyb4c/.well-known/webfinger?resource=https://zetsubou.xn--q9jyb4c/users/lain",
+        "https://zetsubou.xn--q9jyb4c/.well-known/webfinger?resource=acct:https://zetsubou.xn--q9jyb4c/users/lain",
         _,
         _,
         [{"accept", "application/xrd+xml,application/jrd+json"}]
