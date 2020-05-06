@@ -427,7 +427,7 @@ defmodule Pleroma.Web.Router do
     post("/statuses/:id/unmute", StatusController, :unmute_conversation)
 
     post("/push/subscription", SubscriptionController, :create)
-    get("/push/subscription", SubscriptionController, :get)
+    get("/push/subscription", SubscriptionController, :show)
     put("/push/subscription", SubscriptionController, :update)
     delete("/push/subscription", SubscriptionController, :delete)
 
