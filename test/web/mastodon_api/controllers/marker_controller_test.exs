@@ -23,8 +23,8 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
         conn
         |> assign(:user, user)
         |> assign(:token, token)
-        |> get("/api/v1/markers", %{timeline: ["notifications"]})
-        |> json_response(200)
+        |> get("/api/v1/markers?timeline[]=notifications")
+        |> json_response_and_validate_schema(200)
 
       assert response == %{
                "notifications" => %{
@@ -47,7 +47,7 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
         |> assign(:user, user)
         |> assign(:token, token)
         |> get("/api/v1/markers", %{timeline: ["notifications"]})
-        |> json_response(403)
+        |> json_response_and_validate_schema(403)
 
       assert response == %{"error" => "Insufficient permissions: read:statuses."}
     end
@@ -62,11 +62,12 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
         conn
         |> assign(:user, user)
         |> assign(:token, token)
+        |> put_req_header("content-type", "application/json")
         |> post("/api/v1/markers", %{
           home: %{last_read_id: "777"},
           notifications: %{"last_read_id" => "69420"}
         })
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert %{
                "notifications" => %{
@@ -92,11 +93,12 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
         conn
         |> assign(:user, user)
         |> assign(:token, token)
+        |> put_req_header("content-type", "application/json")
         |> post("/api/v1/markers", %{
           home: %{last_read_id: "777"},
           notifications: %{"last_read_id" => "69888"}
         })
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert response == %{
                "notifications" => %{
@@ -116,11 +118,12 @@ defmodule Pleroma.Web.MastodonAPI.MarkerControllerTest do
         conn
         |> assign(:user, user)
         |> assign(:token, token)
+        |> put_req_header("content-type", "application/json")
         |> post("/api/v1/markers", %{
           home: %{last_read_id: "777"},
           notifications: %{"last_read_id" => "69420"}
         })
-        |> json_response(403)
+        |> json_response_and_validate_schema(403)
 
       assert response == %{"error" => "Insufficient permissions: write:statuses."}
     end

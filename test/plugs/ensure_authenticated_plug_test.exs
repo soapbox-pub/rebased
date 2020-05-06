@@ -27,8 +27,8 @@ defmodule Pleroma.Plugs.EnsureAuthenticatedPlugTest do
   describe "with :if_func / :unless_func options" do
     setup do
       %{
-        true_fn: fn -> true end,
-        false_fn: fn -> false end
+        true_fn: fn _conn -> true end,
+        false_fn: fn _conn -> false end
       }
     end
 

@@ -72,7 +72,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
         properties: %{
           content: %Schema{type: :object, additionalProperties: %Schema{type: :string}},
           conversation_id: %Schema{type: :integer},
-          direct_conversation_id: %Schema{type: :string, nullable: true},
+          direct_conversation_id: %Schema{
+            type: :integer,
+            nullable: true,
+            description:
+              "The ID of the Mastodon direct message conversation the status is associated with (if any)"
+          },
           emoji_reactions: %Schema{
             type: :array,
             items: %Schema{

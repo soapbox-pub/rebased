@@ -200,11 +200,17 @@ defmodule Pleroma.Web do
 
       @impl Plug
       @doc """
-      If marked as skipped, returns `conn`, otherwise calls `perform/2`.
+      Before-plug hook that
+        * ensures the plug is not skipped
+        * processes `:if_func` / `:unless_func` functional pre-run conditions
+        * adds plug to the list of called plugs and calls `perform/2` if checks are passed
+
       Note: multiple invocations of the same plug (with different or same options) are allowed.
       """
       def call(%Plug.Conn{} = conn, options) do
-        if PlugHelper.plug_skipped?(conn, __MODULE__) do
+        if PlugHelper.plug_skipped?(conn, __MODULE__) ||
+             (options[:if_func] && !options[:if_func].(conn)) ||
+             (options[:unless_func] && options[:unless_func].(conn)) do
           conn
         else
           conn =

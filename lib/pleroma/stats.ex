@@ -91,7 +91,7 @@ defmodule Pleroma.Stats do
       peers: peers,
       stats: %{
         domain_count: domain_count,
-        status_count: status_count,
+        status_count: status_count || 0,
         user_count: user_count
       }
     }

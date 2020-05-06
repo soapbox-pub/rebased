@@ -10,7 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
   test "get instance information", %{conn: conn} do
     conn = get(conn, "/api/v1/instance")
-    assert result = json_response(conn, 200)
+    assert result = json_response_and_validate_schema(conn, 200)
 
     email = Pleroma.Config.get([:instance, :email])
     # Note: not checking for "max_toot_chars" since it's optional
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
     conn = get(conn, "/api/v1/instance")
 
-    assert result = json_response(conn, 200)
+    assert result = json_response_and_validate_schema(conn, 200)
 
     stats = result["stats"]
 
@@ -74,7 +74,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
     conn = get(conn, "/api/v1/instance/peers")
 
-    assert result = json_response(conn, 200)
+    assert result = json_response_and_validate_schema(conn, 200)
 
     assert ["peer1.com", "peer2.com"] == Enum.sort(result)
   end
