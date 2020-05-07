@@ -409,6 +409,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ### Get a password reset token for a given nickname
 
+
 - Params: none
 - Response:
 
@@ -426,6 +427,14 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - `nicknames`
 - Response: none (code `204`)
+
+## PUT `/api/pleroma/admin/users/disable_mfa`
+
+### Disable mfa for user's account.
+
+- Params:
+  - `nickname`
+- Response: User’s nickname
 
 ## `GET /api/pleroma/admin/users/:nickname/credentials`
 

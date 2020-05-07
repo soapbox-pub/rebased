@@ -15,6 +15,8 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"], fallback: :proceed_unauthenticated} when action == :show
@@ -22,8 +24,10 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
 
   plug(OAuthScopesPlug, %{scopes: ["write:statuses"]} when action == :vote)
 
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PollOperation
+
   @doc "GET /api/v1/polls/:id"
-  def show(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def show(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Object{} = object <- Object.get_by_id_and_maybe_refetch(id, interval: 60),
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user) do
@@ -35,7 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
   end
 
   @doc "POST /api/v1/polls/:id/votes"
-  def vote(%{assigns: %{user: user}} = conn, %{"id" => id, "choices" => choices}) do
+  def vote(%{assigns: %{user: user}, body_params: %{choices: choices}} = conn, %{id: id}) do
     with %Object{data: %{"type" => "Question"}} = object <- Object.get_by_id(id),
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user),

@@ -14,6 +14,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.Config
   alias Pleroma.ConfigDB
   alias Pleroma.HTML
+  alias Pleroma.MFA
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.ReportNote
@@ -1276,6 +1277,38 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     assert ModerationLog.get_log_entry_message(log_entry) ==
              "@#{admin.nickname} deactivated users: @#{user.nickname}"
+  end
+
+  describe "PUT disable_mfa" do
+    test "returns 200 and disable 2fa", %{conn: conn} do
+      user =
+        insert(:user,
+          multi_factor_authentication_settings: %MFA.Settings{
+            enabled: true,
+            totp: %MFA.Settings.TOTP{secret: "otp_secret", confirmed: true}
+          }
+        )
+
+      response =
+        conn
+        |> put("/api/pleroma/admin/users/disable_mfa", %{nickname: user.nickname})
+        |> json_response(200)
+
+      assert response == user.nickname
+      mfa_settings = refresh_record(user).multi_factor_authentication_settings
+
+      refute mfa_settings.enabled
+      refute mfa_settings.totp.confirmed
+    end
+
+    test "returns 404 if user not found", %{conn: conn} do
+      response =
+        conn
+        |> put("/api/pleroma/admin/users/disable_mfa", %{nickname: "nickname"})
+        |> json_response(404)
+
+      assert response == "Not found"
+    end
   end
 
   describe "POST /api/pleroma/admin/users/invite_token" do

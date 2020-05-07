@@ -177,12 +177,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
       BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
 
-      Notification.create_notifications(activity)
-
-      conversation = create_or_bump_conversation(activity, map["actor"])
-      participations = get_participations(conversation)
-      stream_out(activity)
-      stream_out_participations(participations)
       {:ok, activity}
     else
       %Activity{} = activity ->
@@ -203,6 +197,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       error ->
         {:error, error}
     end
+  end
+
+  def notify_and_stream(activity) do
+    Notification.create_notifications(activity)
+
+    conversation = create_or_bump_conversation(activity, activity.actor)
+    participations = get_participations(conversation)
+    stream_out(activity)
+    stream_out_participations(participations)
   end
 
   defp create_or_bump_conversation(activity, actor) do
@@ -281,6 +284,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          _ <- increase_poll_votes_if_vote(create_data),
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -308,6 +312,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              additional
            ),
          {:ok, activity} <- insert(listen_data, local),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
@@ -332,6 +337,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            %{"to" => to, "type" => type, "actor" => actor.ap_id, "object" => object}
            |> Utils.maybe_put("id", activity_id),
          {:ok, activity} <- insert(data, local),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
@@ -351,6 +357,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          },
          data <- Utils.maybe_put(data, "id", activity_id),
          {:ok, activity} <- insert(data, local),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
@@ -372,6 +379,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          reaction_data <- make_emoji_reaction_data(user, object, emoji, activity_id),
          {:ok, activity} <- insert(reaction_data, local),
          {:ok, object} <- add_emoji_reaction_to_object(activity, object),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity, object}
     else
@@ -398,6 +406,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          unreact_data <- make_undo_data(user, reaction_activity, activity_id),
          {:ok, activity} <- insert(unreact_data, local),
          {:ok, object} <- remove_emoji_reaction_from_object(reaction_activity, object),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity, object}
     else
@@ -420,6 +429,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, unlike_activity} <- insert(unlike_data, local),
          {:ok, _activity} <- Repo.delete(like_activity),
          {:ok, object} <- remove_like_from_object(like_activity, object),
+         _ <- notify_and_stream(unlike_activity),
          :ok <- maybe_federate(unlike_activity) do
       {:ok, unlike_activity, like_activity, object}
     else
@@ -449,6 +459,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          announce_data <- make_announce_data(user, object, activity_id, public),
          {:ok, activity} <- insert(announce_data, local),
          {:ok, object} <- add_announce_to_object(activity, object),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity, object}
     else
@@ -475,6 +486,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with %Activity{} = announce_activity <- get_existing_announce(actor.ap_id, object),
          unannounce_data <- make_unannounce_data(actor, announce_activity, activity_id),
          {:ok, unannounce_activity} <- insert(unannounce_data, local),
+         _ <- notify_and_stream(unannounce_activity),
          :ok <- maybe_federate(unannounce_activity),
          {:ok, _activity} <- Repo.delete(announce_activity),
          {:ok, object} <- remove_announce_from_object(announce_activity, object) do
@@ -497,6 +509,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp do_follow(follower, followed, activity_id, local) do
     with data <- make_follow_data(follower, followed, activity_id),
          {:ok, activity} <- insert(data, local),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -518,6 +531,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, follow_activity} <- update_follow_state(follow_activity, "cancelled"),
          unfollow_data <- make_unfollow_data(follower, followed, follow_activity, activity_id),
          {:ok, activity} <- insert(unfollow_data, local),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -547,6 +561,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with true <- outgoing_blocks,
          block_data <- make_block_data(blocker, blocked, activity_id),
          {:ok, activity} <- insert(block_data, local),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -567,6 +582,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with %Activity{} = block_activity <- fetch_latest_block(blocker, blocked),
          unblock_data <- make_unblock_data(blocker, blocked, block_activity, activity_id),
          {:ok, activity} <- insert(unblock_data, local),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -601,6 +617,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with flag_data <- make_flag_data(params, additional),
          {:ok, activity} <- insert(flag_data, local),
          {:ok, stripped_activity} <- strip_report_status_data(activity),
+         _ <- notify_and_stream(activity),
          :ok <- maybe_federate(stripped_activity) do
       User.all_superusers()
       |> Enum.filter(fn user -> not is_nil(user.email) end)
@@ -624,7 +641,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     }
 
     with true <- origin.ap_id in target.also_known_as,
-         {:ok, activity} <- insert(params, local) do
+         {:ok, activity} <- insert(params, local),
+         _ <- notify_and_stream(activity) do
       maybe_federate(activity)
 
       BackgroundWorker.enqueue("move_following", %{
