@@ -14,16 +14,14 @@ defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
     )
   end
 
-  def start_worker(opts) do
+  def start_worker(opts, retry \\ false) do
     case DynamicSupervisor.start_child(__MODULE__, {Pleroma.Gun.ConnectionPool.Worker, opts}) do
       {:error, :max_children} ->
-        case free_pool() do
-          :ok ->
-            start_worker(opts)
-
-          :error ->
-            :telemetry.execute([:pleroma, :connection_pool, :provision_failure], %{opts: opts})
-            {:error, :pool_full}
+        if retry or free_pool() == :error do
+          :telemetry.execute([:pleroma, :connection_pool, :provision_failure], %{opts: opts})
+          {:error, :pool_full}
+        else
+          start_worker(opts, true)
         end
 
       res ->
