@@ -1557,16 +1557,13 @@ defmodule Pleroma.User do
   defp delete_activity(%{data: %{"type" => "Create", "object" => object}}, user) do
     {:ok, delete_data, _} = Builder.delete(user, object)
 
-    Pipeline.common_pipeline(delete_data, local: true)
+    Pipeline.common_pipeline(delete_data, local: user.local)
   end
 
-  defp delete_activity(%{data: %{"type" => type}} = activity) when type in ["Like", "Announce"] do
-    actor =
-      activity.actor
-      |> get_cached_by_ap_id()
-
-    {:ok, undo, _} = Builder.undo(actor, activity)
-    Pipeline.common_pipeline(undo, local: true)
+  defp delete_activity(%{data: %{"type" => type}} = activity, user)
+       when type in ["Like", "Announce"] do
+    {:ok, undo, _} = Builder.undo(user, activity)
+    Pipeline.common_pipeline(undo, local: user.local)
   end
 
   defp delete_activity(_activity, _user), do: "Doing nothing"

@@ -107,7 +107,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       {:error, cng} = ObjectValidator.validate(missing_object, [])
 
       assert {:object, {"can't find object", []}} in cng.errors
-      assert length(cng.errors) == 1
     end
 
     test "it's invalid if the actor of the object and the actor of delete are from different domains",

@@ -21,8 +21,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def validate(%{"type" => "Undo"} = object, meta) do
     with {:ok, object} <-
-           object |> UndoValidator.cast_and_validate() |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object |> Map.from_struct())
+           object
+           |> UndoValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
       {:ok, object, meta}
     end
   end
