@@ -44,7 +44,7 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
           :following,
           :query,
           %Schema{allOf: [BooleanLike], default: false},
-          "Only who the user is following."
+          "Only include accounts that the user is following"
         )
       ],
       responses: %{
