@@ -378,7 +378,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["actor"] == "http://mastodon.example.org/users/admin"
       assert data["type"] == "Undo"
       assert data["id"] == "http://mastodon.example.org/users/admin#likes/2/undo"
-      assert data["object"]["id"] == "http://mastodon.example.org/users/admin#likes/2"
+      assert data["object"] == "http://mastodon.example.org/users/admin#likes/2"
     end
 
     test "it works for incoming unlikes with an existing like activity and a compact object" do
@@ -403,7 +403,44 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["actor"] == "http://mastodon.example.org/users/admin"
       assert data["type"] == "Undo"
       assert data["id"] == "http://mastodon.example.org/users/admin#likes/2/undo"
-      assert data["object"]["id"] == "http://mastodon.example.org/users/admin#likes/2"
+      assert data["object"] == "http://mastodon.example.org/users/admin#likes/2"
+    end
+
+    test "it works for incoming emoji reactions" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+
+      data =
+        File.read!("test/fixtures/emoji-reaction.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "EmojiReact"
+      assert data["id"] == "http://mastodon.example.org/users/admin#reactions/2"
+      assert data["object"] == activity.data["object"]
+      assert data["content"] == "👌"
+    end
+
+    test "it reject invalid emoji reactions" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+
+      data =
+        File.read!("test/fixtures/emoji-reaction-too-long.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+
+      assert {:error, _} = Transmogrifier.handle_incoming(data)
+
+      data =
+        File.read!("test/fixtures/emoji-reaction-no-emoji.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+
+      assert {:error, _} = Transmogrifier.handle_incoming(data)
     end
 
     test "it works for incoming announces" do
@@ -729,35 +766,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.locked == true
     end
 
-    test "it works for incoming unannounces with an existing notice" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
-
-      announce_data =
-        File.read!("test/fixtures/mastodon-announce.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-
-      {:ok, %Activity{data: announce_data, local: false}} =
-        Transmogrifier.handle_incoming(announce_data)
-
-      data =
-        File.read!("test/fixtures/mastodon-undo-announce.json")
-        |> Poison.decode!()
-        |> Map.put("object", announce_data)
-        |> Map.put("actor", announce_data["actor"])
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["type"] == "Undo"
-      assert object_data = data["object"]
-      assert object_data["type"] == "Announce"
-      assert object_data["object"] == activity.data["object"]
-
-      assert object_data["id"] ==
-               "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
-    end
-
     test "it works for incomming unfollows with an existing follow" do
       user = insert(:user)
 
@@ -850,32 +858,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       refute User.following?(blocker, blocked)
       refute User.following?(blocked, blocker)
-    end
-
-    test "it works for incoming unblocks with an existing block" do
-      user = insert(:user)
-
-      block_data =
-        File.read!("test/fixtures/mastodon-block-activity.json")
-        |> Poison.decode!()
-        |> Map.put("object", user.ap_id)
-
-      {:ok, %Activity{data: _, local: false}} = Transmogrifier.handle_incoming(block_data)
-
-      data =
-        File.read!("test/fixtures/mastodon-unblock-activity.json")
-        |> Poison.decode!()
-        |> Map.put("object", block_data)
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      assert data["type"] == "Undo"
-      assert data["object"]["type"] == "Block"
-      assert data["object"]["object"] == user.ap_id
-      assert data["actor"] == "http://mastodon.example.org/users/admin"
-
-      blocker = User.get_cached_by_ap_id(data["actor"])
-
-      refute User.blocks?(blocker, user)
     end
 
     test "it works for incoming accepts which were pre-accepted" do

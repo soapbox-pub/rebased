@@ -22,6 +22,19 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     end
   end
 
+  @spec undo(User.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def undo(actor, object) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "actor" => actor.ap_id,
+       "type" => "Undo",
+       "object" => object.data["id"],
+       "to" => object.data["to"] || [],
+       "cc" => object.data["cc"] || []
+     }, []}
+  end
+
   @spec delete(User.t(), String.t()) :: {:ok, map(), keyword()}
   def delete(actor, object_id) do
     object = Object.normalize(object_id, false)

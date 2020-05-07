@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
   import Ecto.Changeset
 
+  alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.User
 
@@ -47,7 +48,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
 
     cng
     |> validate_change(field_name, fn field_name, object_id ->
-      object = Object.get_cached_by_ap_id(object_id)
+      object = Object.get_cached_by_ap_id(object_id) || Activity.get_by_ap_id(object_id)
 
       cond do
         !object ->
