@@ -40,7 +40,11 @@ defmodule Pleroma.DataCase do
     end
 
     if tags[:needs_streamer] do
-      start_supervised(Pleroma.Web.Streamer.supervisor())
+      start_supervised(%{
+        id: Pleroma.Web.Streamer.registry(),
+        start:
+          {Registry, :start_link, [[keys: :duplicate, name: Pleroma.Web.Streamer.registry()]]}
+      })
     end
 
     :ok
