@@ -13,8 +13,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
+  alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
