@@ -728,7 +728,7 @@ defmodule Pleroma.NotificationTest do
 
       assert length(Notification.for_user(user)) == 1
 
-      {:ok, _, _, _} = CommonAPI.unfavorite(activity.id, other_user)
+      {:ok, _} = CommonAPI.unfavorite(activity.id, other_user)
 
       assert Enum.empty?(Notification.for_user(user))
     end
@@ -762,7 +762,7 @@ defmodule Pleroma.NotificationTest do
 
       assert length(Notification.for_user(user)) == 1
 
-      {:ok, _, _} = CommonAPI.unrepeat(activity.id, other_user)
+      {:ok, _} = CommonAPI.unrepeat(activity.id, other_user)
 
       assert Enum.empty?(Notification.for_user(user))
     end

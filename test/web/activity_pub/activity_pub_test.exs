@@ -939,122 +939,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "unreacting to an object" do
-    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
-      Config.put([:instance, :federating], true)
-      user = insert(:user)
-      reactor = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
-      assert object = Object.normalize(activity)
-
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
-
-      assert called(Federator.publish(reaction_activity))
-
-      {:ok, unreaction_activity, _object} =
-        ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
-
-      assert called(Federator.publish(unreaction_activity))
-    end
-
-    test "adds an undo activity to the db" do
-      user = insert(:user)
-      reactor = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
-      assert object = Object.normalize(activity)
-
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
-
-      {:ok, unreaction_activity, _object} =
-        ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
-
-      assert unreaction_activity.actor == reactor.ap_id
-      assert unreaction_activity.data["object"] == reaction_activity.data["id"]
-
-      object = Object.get_by_ap_id(object.data["id"])
-      assert object.data["reaction_count"] == 0
-      assert object.data["reactions"] == []
-    end
-
-    test "reverts emoji unreact on error" do
-      [user, reactor] = insert_list(2, :user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "Status"})
-      object = Object.normalize(activity)
-
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "😀")
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} =
-                 ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
-      end
-
-      object = Object.get_by_ap_id(object.data["id"])
-
-      assert object.data["reaction_count"] == 1
-      assert object.data["reactions"] == [["😀", [reactor.ap_id]]]
-    end
-  end
-
-  describe "unliking" do
-    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
-      Config.put([:instance, :federating], true)
-
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      {:ok, object} = ActivityPub.unlike(user, object)
-      refute called(Federator.publish())
-
-      {:ok, _like_activity} = CommonAPI.favorite(user, note_activity.id)
-      object = Object.get_by_id(object.id)
-      assert object.data["like_count"] == 1
-
-      {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
-      assert object.data["like_count"] == 0
-
-      assert called(Federator.publish(unlike_activity))
-    end
-
-    test "reverts unliking on error" do
-      note_activity = insert(:note_activity)
-      user = insert(:user)
-
-      {:ok, like_activity} = CommonAPI.favorite(user, note_activity.id)
-      object = Object.normalize(note_activity)
-      assert object.data["like_count"] == 1
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.unlike(user, object)
-      end
-
-      assert Object.get_by_ap_id(object.data["id"]) == object
-      assert object.data["like_count"] == 1
-      assert Activity.get_by_id(like_activity.id)
-    end
-
-    test "unliking a previously liked object" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      # Unliking something that hasn't been liked does nothing
-      {:ok, object} = ActivityPub.unlike(user, object)
-      assert object.data["like_count"] == 0
-
-      {:ok, like_activity} = CommonAPI.favorite(user, note_activity.id)
-
-      object = Object.get_by_id(object.id)
-      assert object.data["like_count"] == 1
-
-      {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
-      assert object.data["like_count"] == 0
-
-      assert Activity.get_by_id(like_activity.id) == nil
-      assert note_activity.actor in unlike_activity.recipients
-    end
-  end
-
   describe "announcing an object" do
     test "adds an announce activity to the db" do
       note_activity = insert(:note_activity)
@@ -1121,52 +1005,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       object = Object.normalize(note_activity)
 
       assert {:error, _} = ActivityPub.announce(announcer, object, nil, true, false)
-    end
-  end
-
-  describe "unannouncing an object" do
-    test "unannouncing a previously announced object" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      # Unannouncing an object that is not announced does nothing
-      {:ok, object} = ActivityPub.unannounce(user, object)
-      refute object.data["announcement_count"]
-
-      {:ok, announce_activity, object} = ActivityPub.announce(user, object)
-      assert object.data["announcement_count"] == 1
-
-      {:ok, unannounce_activity, object} = ActivityPub.unannounce(user, object)
-      assert object.data["announcement_count"] == 0
-
-      assert unannounce_activity.data["to"] == [
-               User.ap_followers(user),
-               object.data["actor"]
-             ]
-
-      assert unannounce_activity.data["type"] == "Undo"
-      assert unannounce_activity.data["object"] == announce_activity.data
-      assert unannounce_activity.data["actor"] == user.ap_id
-      assert unannounce_activity.data["context"] == announce_activity.data["context"]
-
-      assert Activity.get_by_id(announce_activity.id) == nil
-    end
-
-    test "reverts unannouncing on error" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      {:ok, _announce_activity, object} = ActivityPub.announce(user, object)
-      assert object.data["announcement_count"] == 1
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.unannounce(user, object)
-      end
-
-      object = Object.get_by_ap_id(object.data["id"])
-      assert object.data["announcement_count"] == 1
     end
   end
 
@@ -1276,7 +1114,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "blocking / unblocking" do
+  describe "blocking" do
     test "reverts block activity on error" do
       [blocker, blocked] = insert_list(2, :user)
 
@@ -1297,38 +1135,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["type"] == "Block"
       assert activity.data["actor"] == blocker.ap_id
       assert activity.data["object"] == blocked.ap_id
-    end
-
-    test "reverts unblock activity on error" do
-      [blocker, blocked] = insert_list(2, :user)
-      {:ok, block_activity} = ActivityPub.block(blocker, blocked)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.unblock(blocker, blocked)
-      end
-
-      assert block_activity.data["type"] == "Block"
-      assert block_activity.data["actor"] == blocker.ap_id
-
-      assert Repo.aggregate(Activity, :count, :id) == 1
-      assert Repo.aggregate(Object, :count, :id) == 1
-    end
-
-    test "creates an undo activity for the last block" do
-      blocker = insert(:user)
-      blocked = insert(:user)
-
-      {:ok, block_activity} = ActivityPub.block(blocker, blocked)
-      {:ok, activity} = ActivityPub.unblock(blocker, blocked)
-
-      assert activity.data["type"] == "Undo"
-      assert activity.data["actor"] == blocker.ap_id
-
-      embedded_object = activity.data["object"]
-      assert is_map(embedded_object)
-      assert embedded_object["type"] == "Block"
-      assert embedded_object["object"] == blocked.ap_id
-      assert embedded_object["id"] == block_activity.data["id"]
     end
   end
 

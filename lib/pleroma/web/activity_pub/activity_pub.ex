@@ -381,56 +381,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec unreact_with_emoji(User.t(), String.t(), keyword()) ::
-          {:ok, Activity.t(), Object.t()} | {:error, any()}
-  def unreact_with_emoji(user, reaction_id, options \\ []) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_unreact_with_emoji(user, reaction_id, options) end) do
-      result
-    end
-  end
-
-  defp do_unreact_with_emoji(user, reaction_id, options) do
-    with local <- Keyword.get(options, :local, true),
-         activity_id <- Keyword.get(options, :activity_id, nil),
-         user_ap_id <- user.ap_id,
-         %Activity{actor: ^user_ap_id} = reaction_activity <- Activity.get_by_ap_id(reaction_id),
-         object <- Object.normalize(reaction_activity),
-         unreact_data <- make_undo_data(user, reaction_activity, activity_id),
-         {:ok, activity} <- insert(unreact_data, local),
-         {:ok, object} <- remove_emoji_reaction_from_object(reaction_activity, object),
-         _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity, object}
-    else
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
-  @spec unlike(User.t(), Object.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t(), Activity.t(), Object.t()} | {:ok, Object.t()} | {:error, any()}
-  def unlike(%User{} = actor, %Object{} = object, activity_id \\ nil, local \\ true) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_unlike(actor, object, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_unlike(actor, object, activity_id, local) do
-    with %Activity{} = like_activity <- get_existing_like(actor.ap_id, object),
-         unlike_data <- make_unlike_data(actor, like_activity, activity_id),
-         {:ok, unlike_activity} <- insert(unlike_data, local),
-         {:ok, _activity} <- Repo.delete(like_activity),
-         {:ok, object} <- remove_like_from_object(like_activity, object),
-         _ <- notify_and_stream(unlike_activity),
-         :ok <- maybe_federate(unlike_activity) do
-      {:ok, unlike_activity, like_activity, object}
-    else
-      nil -> {:ok, object}
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
   @spec announce(User.t(), Object.t(), String.t() | nil, boolean(), boolean()) ::
           {:ok, Activity.t(), Object.t()} | {:error, any()}
   def announce(
@@ -457,35 +407,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       {:ok, activity, object}
     else
       false -> {:error, false}
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
-  @spec unannounce(User.t(), Object.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t(), Object.t()} | {:ok, Object.t()} | {:error, any()}
-  def unannounce(
-        %User{} = actor,
-        %Object{} = object,
-        activity_id \\ nil,
-        local \\ true
-      ) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_unannounce(actor, object, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_unannounce(actor, object, activity_id, local) do
-    with %Activity{} = announce_activity <- get_existing_announce(actor.ap_id, object),
-         unannounce_data <- make_unannounce_data(actor, announce_activity, activity_id),
-         {:ok, unannounce_activity} <- insert(unannounce_data, local),
-         _ <- notify_and_stream(unannounce_activity),
-         :ok <- maybe_federate(unannounce_activity),
-         {:ok, _activity} <- Repo.delete(announce_activity),
-         {:ok, object} <- remove_announce_from_object(announce_activity, object) do
-      {:ok, unannounce_activity, object}
-    else
-      nil -> {:ok, object}
       {:error, error} -> Repo.rollback(error)
     end
   end
@@ -558,28 +479,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
-  @spec unblock(User.t(), User.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t()} | {:error, any()} | nil
-  def unblock(blocker, blocked, activity_id \\ nil, local \\ true) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_unblock(blocker, blocked, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_unblock(blocker, blocked, activity_id, local) do
-    with %Activity{} = block_activity <- fetch_latest_block(blocker, blocked),
-         unblock_data <- make_unblock_data(blocker, blocked, block_activity, activity_id),
-         {:ok, activity} <- insert(unblock_data, local),
-         _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    else
-      nil -> nil
       {:error, error} -> Repo.rollback(error)
     end
   end
