@@ -512,7 +512,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   #### Announce-related helpers
 
   @doc """
-  Retruns an existing announce activity if the notice has already been announced
+  Returns an existing announce activity if the notice has already been announced
   """
   @spec get_existing_announce(String.t(), map()) :: Activity.t() | nil
   def get_existing_announce(actor, %{data: %{"id" => ap_id}}) do

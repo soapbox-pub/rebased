@@ -1,0 +1,13 @@
+<%= if @error do %>
+<h2><%= @error %></h2>
+<% end %>
+<h2>Two-factor authentication</h2>
+<p><%= @followee.nickname %></p>
+<img height="128" width="128" src="<%= avatar_url(@followee) %>">
+<%= form_for @conn, remote_follow_path(@conn, :do_follow), [as: "mfa"], fn f -> %>
+<%= text_input f, :code, placeholder: "Authentication code", required: true %>
+<br>
+<%= hidden_input f, :id, value: @followee.id %>
+<%= hidden_input f, :token, value: @mfa_token %>
+<%= submit "Authorize" %>
+<% end %>

@@ -24,7 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
 
       conn = get(conn, "/api/v1/polls/#{object.id}")
 
-      response = json_response(conn, 200)
+      response = json_response_and_validate_schema(conn, 200)
       id = to_string(object.id)
       assert %{"id" => ^id, "expired" => false, "multiple" => false} = response
     end
@@ -43,7 +43,7 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
 
       conn = get(conn, "/api/v1/polls/#{object.id}")
 
-      assert json_response(conn, 404)
+      assert json_response_and_validate_schema(conn, 404)
     end
   end
 
@@ -65,9 +65,12 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
 
       object = Object.normalize(activity)
 
-      conn = post(conn, "/api/v1/polls/#{object.id}/votes", %{"choices" => [0, 1, 2]})
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [0, 1, 2]})
 
-      assert json_response(conn, 200)
+      assert json_response_and_validate_schema(conn, 200)
       object = Object.get_by_id(object.id)
 
       assert Enum.all?(object.data["anyOf"], fn %{"replies" => %{"totalItems" => total_items}} ->
@@ -85,8 +88,9 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
       object = Object.normalize(activity)
 
       assert conn
+             |> put_req_header("content-type", "application/json")
              |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [1]})
-             |> json_response(422) == %{"error" => "Poll's author can't vote"}
+             |> json_response_and_validate_schema(422) == %{"error" => "Poll's author can't vote"}
 
       object = Object.get_by_id(object.id)
 
@@ -105,8 +109,9 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
       object = Object.normalize(activity)
 
       assert conn
+             |> put_req_header("content-type", "application/json")
              |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [0, 1]})
-             |> json_response(422) == %{"error" => "Too many choices"}
+             |> json_response_and_validate_schema(422) == %{"error" => "Too many choices"}
 
       object = Object.get_by_id(object.id)
 
@@ -126,15 +131,21 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
 
       object = Object.normalize(activity)
 
-      conn = post(conn, "/api/v1/polls/#{object.id}/votes", %{"choices" => [2]})
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [2]})
 
-      assert json_response(conn, 422) == %{"error" => "Invalid indices"}
+      assert json_response_and_validate_schema(conn, 422) == %{"error" => "Invalid indices"}
     end
 
     test "returns 404 error when object is not exist", %{conn: conn} do
-      conn = post(conn, "/api/v1/polls/1/votes", %{"choices" => [0]})
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/polls/1/votes", %{"choices" => [0]})
 
-      assert json_response(conn, 404) == %{"error" => "Record not found"}
+      assert json_response_and_validate_schema(conn, 404) == %{"error" => "Record not found"}
     end
 
     test "returns 404 when poll is private and not available for user", %{conn: conn} do
@@ -149,9 +160,12 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
 
       object = Object.normalize(activity)
 
-      conn = post(conn, "/api/v1/polls/#{object.id}/votes", %{"choices" => [0]})
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [0]})
 
-      assert json_response(conn, 404) == %{"error" => "Record not found"}
+      assert json_response_and_validate_schema(conn, 404) == %{"error" => "Record not found"}
     end
   end
 end

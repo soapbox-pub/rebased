@@ -238,7 +238,18 @@ config :pleroma, :instance,
   account_field_value_length: 2048,
   external_user_synchronization: true,
   extended_nickname_format: true,
-  cleanup_attachments: false
+  cleanup_attachments: false,
+  multi_factor_authentication: [
+    totp: [
+      # digits 6 or 8
+      digits: 6,
+      period: 30
+    ],
+    backup_codes: [
+      number: 5,
+      length: 16
+    ]
+  ]
 
 config :pleroma, :extensions, output_relationships_in_statuses_by_default: true
 
@@ -652,6 +663,8 @@ config :pleroma, :restrict_unauthenticated,
   timelines: %{local: false, federated: false},
   profiles: %{local: false, remote: false},
   activities: %{local: false, remote: false}
+
+config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

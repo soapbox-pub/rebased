@@ -763,6 +763,60 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert User.get_cached_by_ap_id(ap_id)
     end
 
+    test "it works for incoming unannounces with an existing notice" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+
+      announce_data =
+        File.read!("test/fixtures/mastodon-announce.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+
+      {:ok, %Activity{data: announce_data, local: false}} =
+        Transmogrifier.handle_incoming(announce_data)
+
+      data =
+        File.read!("test/fixtures/mastodon-undo-announce.json")
+        |> Poison.decode!()
+        |> Map.put("object", announce_data)
+        |> Map.put("actor", announce_data["actor"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["type"] == "Undo"
+      assert object_data = data["object"]
+      assert object_data["type"] == "Announce"
+      assert object_data["object"] == activity.data["object"]
+
+      assert object_data["id"] ==
+               "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
+    end
+
+    test "it works for incomming unfollows with an existing follow" do
+      user = insert(:user)
+
+      follow_data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: _, local: false}} = Transmogrifier.handle_incoming(follow_data)
+
+      data =
+        File.read!("test/fixtures/mastodon-unfollow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", follow_data)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["type"] == "Undo"
+      assert data["object"]["type"] == "Follow"
+      assert data["object"]["object"] == user.ap_id
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+
+      refute User.following?(User.get_cached_by_ap_id(data["actor"]), user)
+    end
+
     test "it works for incoming follows to locked account" do
       pending_follower = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
       user = insert(:user, locked: true)
