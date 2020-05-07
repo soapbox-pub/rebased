@@ -11,26 +11,72 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Poll do
 
   OpenApiSpex.schema(%{
     title: "Poll",
-    description: "Response schema for account custom fields",
+    description: "Represents a poll attached to a status",
     type: :object,
     properties: %{
       id: FlakeID,
-      expires_at: %Schema{type: :string, format: "date-time"},
-      expired: %Schema{type: :boolean},
-      multiple: %Schema{type: :boolean},
-      votes_count: %Schema{type: :integer},
-      voted: %Schema{type: :boolean},
-      emojis: %Schema{type: :array, items: Emoji},
+      expires_at: %Schema{
+        type: :string,
+        format: :"date-time",
+        nullable: true,
+        description: "When the poll ends"
+      },
+      expired: %Schema{type: :boolean, description: "Is the poll currently expired?"},
+      multiple: %Schema{
+        type: :boolean,
+        description: "Does the poll allow multiple-choice answers?"
+      },
+      votes_count: %Schema{
+        type: :integer,
+        nullable: true,
+        description: "How many votes have been received. Number, or null if `multiple` is false."
+      },
+      voted: %Schema{
+        type: :boolean,
+        nullable: true,
+        description:
+          "When called with a user token, has the authorized user voted? Boolean, or null if no current user."
+      },
+      emojis: %Schema{
+        type: :array,
+        items: Emoji,
+        description: "Custom emoji to be used for rendering poll options."
+      },
       options: %Schema{
         type: :array,
         items: %Schema{
+          title: "PollOption",
           type: :object,
           properties: %{
             title: %Schema{type: :string},
             votes_count: %Schema{type: :integer}
           }
-        }
+        },
+        description: "Possible answers for the poll."
       }
+    },
+    example: %{
+      id: "34830",
+      expires_at: "2019-12-05T04:05:08.302Z",
+      expired: true,
+      multiple: false,
+      votes_count: 10,
+      voters_count: nil,
+      voted: true,
+      own_votes: [
+        1
+      ],
+      options: [
+        %{
+          title: "accept",
+          votes_count: 6
+        },
+        %{
+          title: "deny",
+          votes_count: 4
+        }
+      ],
+      emojis: []
     }
   })
 end

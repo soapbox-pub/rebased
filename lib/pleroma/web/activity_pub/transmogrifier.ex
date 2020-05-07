@@ -714,36 +714,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  # TODO: We presently assume that any actor on the same origin domain as the object being
-  # deleted has the rights to delete that object.  A better way to validate whether or not
-  # the object should be deleted is to refetch the object URI, which should return either
-  # an error or a tombstone.  This would allow us to verify that a deletion actually took
-  # place.
   def handle_incoming(
-        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => id} = data,
+        %{"type" => "Delete"} = data,
         _options
       ) do
-    object_id = Utils.get_ap_id(object_id)
-
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         :ok <- Containment.contain_origin(actor.ap_id, object.data),
-         {:ok, activity} <-
-           ActivityPub.delete(object, local: false, activity_id: id, actor: actor.ap_id) do
+    with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
-    else
-      nil ->
-        case User.get_cached_by_ap_id(object_id) do
-          %User{ap_id: ^actor} = user ->
-            User.delete(user)
-
-          nil ->
-            :error
-        end
-
-      _e ->
-        :error
     end
   end
 
@@ -1172,6 +1148,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def set_conversation(object) do
     Map.put(object, "conversation", object["context"])
+  end
+
+  def set_sensitive(%{"sensitive" => true} = object) do
+    object
   end
 
   def set_sensitive(object) do

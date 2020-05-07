@@ -11,6 +11,7 @@ defmodule Pleroma.Builders.UserBuilder do
       bio: "A tester.",
       ap_id: "some id",
       last_digest_emailed_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
+      multi_factor_authentication_settings: %Pleroma.MFA.Settings{},
       notification_settings: %Pleroma.User.NotificationSetting{}
     }
 

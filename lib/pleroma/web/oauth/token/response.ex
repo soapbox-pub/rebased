@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.OAuth.Token.Response do
   @moduledoc false
 
+  alias Pleroma.MFA
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token.Utils
 
@@ -29,6 +30,14 @@ defmodule Pleroma.Web.OAuth.Token.Response do
       created_at: Utils.format_created_at(token),
       expires_in: expires_in(),
       scope: Enum.join(token.scopes, " ")
+    }
+  end
+
+  def build_for_mfa_token(user, mfa_token) do
+    %{
+      error: "mfa_required",
+      mfa_token: mfa_token.token,
+      supported_challenge_types: MFA.supported_methods(user)
     }
   end
 

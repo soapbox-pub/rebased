@@ -402,11 +402,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       pleroma: %{mime_type: "image/png"}
     }
 
+    api_spec = Pleroma.Web.ApiSpec.spec()
+
     assert expected == StatusView.render("attachment.json", %{attachment: object})
+    OpenApiSpex.TestAssertions.assert_schema(expected, "Attachment", api_spec)
 
     # If theres a "id", use that instead of the generated one
     object = Map.put(object, "id", 2)
-    assert %{id: "2"} = StatusView.render("attachment.json", %{attachment: object})
+    result = StatusView.render("attachment.json", %{attachment: object})
+
+    assert %{id: "2"} = result
+    OpenApiSpex.TestAssertions.assert_schema(result, "Attachment", api_spec)
   end
 
   test "put the url advertised in the Activity in to the url attribute" do
