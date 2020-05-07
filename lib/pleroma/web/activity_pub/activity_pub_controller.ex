@@ -396,7 +396,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> json(err)
   end
 
-  defp handle_user_activity(%User{} = user, %{"type" => "Create"} = params) do
+  defp handle_user_activity(
+         %User{} = user,
+         %{"type" => "Create", "object" => %{"type" => "Note"}} = params
+       ) do
     object =
       params["object"]
       |> Map.merge(Map.take(params, ["to", "cc"]))
