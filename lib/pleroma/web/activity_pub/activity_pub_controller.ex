@@ -21,6 +21,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.FederatingPlug
   alias Pleroma.Web.Federator
@@ -251,6 +252,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_view(UserView)
       |> render("activity_collection_page.json", %{
         activities: activities,
+        pagination: ControllerHelper.get_pagination_fields(conn, activities, %{"limit" => "10"}),
         iri: "#{user.ap_id}/outbox"
       })
     end
@@ -368,6 +370,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> put_view(UserView)
     |> render("activity_collection_page.json", %{
       activities: activities,
+      pagination: ControllerHelper.get_pagination_fields(conn, activities, %{"limit" => "10"}),
       iri: "#{user.ap_id}/inbox"
     })
   end

@@ -51,10 +51,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put("reply_filtering_user", user)
       |> Map.put("user", user)
 
-    recipients = [user.ap_id | User.following(user)]
-
     activities =
-      recipients
+      [user.ap_id | User.following(user)]
       |> ActivityPub.fetch_activities(params)
       |> Enum.reverse()
 
