@@ -21,7 +21,15 @@ defmodule Pleroma.Builders.ActivityBuilder do
 
   def insert(data \\ %{}, opts \\ %{}) do
     activity = build(data, opts)
-    ActivityPub.insert(activity)
+
+    case ActivityPub.insert(activity) do
+      ok = {:ok, activity} ->
+        ActivityPub.notify_and_stream(activity)
+        ok
+
+      error ->
+        error
+    end
   end
 
   def insert_list(times, data \\ %{}, opts \\ %{}) do
