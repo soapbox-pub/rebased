@@ -15,6 +15,20 @@ defmodule Pleroma.Plugs.EnsureAuthenticatedPlug do
   end
 
   @impl true
+  def perform(
+        %{
+          assigns: %{
+            auth_credentials: %{password: _},
+            user: %User{multi_factor_authentication_settings: %{enabled: true}}
+          }
+        } = conn,
+        _
+      ) do
+    conn
+    |> render_error(:forbidden, "Two-factor authentication enabled, you must use a access token.")
+    |> halt()
+  end
+
   def perform(%{assigns: %{user: %User{}}} = conn, _) do
     conn
   end

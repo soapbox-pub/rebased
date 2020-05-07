@@ -919,6 +919,62 @@ config :pleroma, :config_description, [
         key: :external_user_synchronization,
         type: :boolean,
         description: "Enabling following/followers counters synchronization for external users"
+      },
+      %{
+        key: :multi_factor_authentication,
+        type: :keyword,
+        description: "Multi-factor authentication settings",
+        suggestions: [
+          [
+            totp: [digits: 6, period: 30],
+            backup_codes: [number: 5, length: 16]
+          ]
+        ],
+        children: [
+          %{
+            key: :totp,
+            type: :keyword,
+            description: "TOTP settings",
+            suggestions: [digits: 6, period: 30],
+            children: [
+              %{
+                key: :digits,
+                type: :integer,
+                suggestions: [6],
+                description:
+                  "Determines the length of a one-time pass-code, in characters. Defaults to 6 characters."
+              },
+              %{
+                key: :period,
+                type: :integer,
+                suggestions: [30],
+                description:
+                  "a period for which the TOTP code will be valid, in seconds. Defaults to 30 seconds."
+              }
+            ]
+          },
+          %{
+            key: :backup_codes,
+            type: :keyword,
+            description: "MFA backup codes settings",
+            suggestions: [number: 5, length: 16],
+            children: [
+              %{
+                key: :number,
+                type: :integer,
+                suggestions: [5],
+                description: "number of backup codes to generate."
+              },
+              %{
+                key: :length,
+                type: :integer,
+                suggestions: [16],
+                description:
+                  "Determines the length of backup one-time pass-codes, in characters. Defaults to 16 characters."
+              }
+            ]
+          }
+        ]
       }
     ]
   },
