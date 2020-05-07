@@ -35,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   def render("show.json", %{user: user} = opts) do
-    if User.visible_for?(user, opts[:for]) do
+    if User.visible_for(user, opts[:for]) == true do
       do_render("show.json", opts)
     else
       %{}

@@ -262,37 +262,51 @@ defmodule Pleroma.User do
   def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
 
   def account_status(%User{confirmation_pending: true}) do
-    case Config.get([:instance, :account_activation_required]) do
-      true -> :confirmation_pending
-      _ -> :active
+    if Config.get([:instance, :account_activation_required]) do
+      :confirmation_pending
+    else
+      :active
     end
   end
 
   def account_status(%User{}), do: :active
 
-  @spec visible_for?(User.t(), User.t() | nil) :: boolean()
-  def visible_for?(user, for_user \\ nil)
+  @spec visible_for(User.t(), User.t() | nil) ::
+          boolean()
+          | :invisible
+          | :restricted_unauthenticated
+          | :deactivated
+          | :confirmation_pending
+  def visible_for(user, for_user \\ nil)
 
-  def visible_for?(%User{invisible: true}, _), do: false
+  def visible_for(%User{invisible: true}, _), do: :invisible
 
-  def visible_for?(%User{id: user_id}, %User{id: user_id}), do: true
+  def visible_for(%User{id: user_id}, %User{id: user_id}), do: true
 
-  def visible_for?(%User{local: local} = user, nil) do
-    cfg_key =
-      if local,
-        do: :local,
-        else: :remote
-
-    if Config.get([:restrict_unauthenticated, :profiles, cfg_key]),
-      do: false,
-      else: account_status(user) == :active
+  def visible_for(%User{} = user, nil) do
+    if restrict_unauthenticated?(user) do
+      :restrict_unauthenticated
+    else
+      visible_account_status(user)
+    end
   end
 
-  def visible_for?(%User{} = user, for_user) do
-    account_status(user) == :active || superuser?(for_user)
+  def visible_for(%User{} = user, for_user) do
+    superuser?(for_user) || visible_account_status(user)
   end
 
-  def visible_for?(_, _), do: false
+  def visible_for(_, _), do: false
+
+  defp restrict_unauthenticated?(%User{local: local}) do
+    config_key = if local, do: :local, else: :remote
+
+    Config.get([:restrict_unauthenticated, :profiles, config_key], false)
+  end
+
+  defp visible_account_status(user) do
+    status = account_status(user)
+    status in [:active, :password_reset_pending] || status
+  end
 
   @spec superuser?(User.t()) :: boolean()
   def superuser?(%User{local: true, is_admin: true}), do: true
