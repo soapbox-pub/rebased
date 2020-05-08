@@ -9,24 +9,34 @@ defmodule Pleroma.Marker do
   import Ecto.Query
 
   alias Ecto.Multi
+  alias Pleroma.Notification
   alias Pleroma.Repo
   alias Pleroma.User
+  alias __MODULE__
 
   @timelines ["notifications"]
+  @type t :: %__MODULE__{}
 
   schema "markers" do
     field(:last_read_id, :string, default: "")
     field(:timeline, :string, default: "")
     field(:lock_version, :integer, default: 0)
+    field(:unread_count, :integer, default: 0, virtual: true)
 
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     timestamps()
   end
 
+  @doc "Gets markers by user and timeline."
+  @spec get_markers(User.t(), list(String)) :: list(t())
   def get_markers(user, timelines \\ []) do
-    Repo.all(get_query(user, timelines))
+    user
+    |> get_query(timelines)
+    |> unread_count_query()
+    |> Repo.all()
   end
 
+  @spec upsert(User.t(), map()) :: {:ok | :error, any()}
   def upsert(%User{} = user, attrs) do
     attrs
     |> Map.take(@timelines)
@@ -44,6 +54,27 @@ defmodule Pleroma.Marker do
     end)
     |> Repo.transaction()
   end
+
+  @spec multi_set_last_read_id(Multi.t(), User.t(), String.t()) :: Multi.t()
+  def multi_set_last_read_id(multi, %User{} = user, "notifications") do
+    multi
+    |> Multi.run(:counters, fn _repo, _changes ->
+      {:ok, %{last_read_id: Repo.one(Notification.last_read_query(user))}}
+    end)
+    |> Multi.insert(
+      :marker,
+      fn %{counters: attrs} ->
+        %Marker{timeline: "notifications", user_id: user.id}
+        |> struct(attrs)
+        |> Ecto.Changeset.change()
+      end,
+      returning: true,
+      on_conflict: {:replace, [:last_read_id]},
+      conflict_target: [:user_id, :timeline]
+    )
+  end
+
+  def multi_set_last_read_id(multi, _, _), do: multi
 
   defp get_marker(user, timeline) do
     case Repo.find_resource(get_query(user, timeline)) do
@@ -70,5 +101,17 @@ defmodule Pleroma.Marker do
     __MODULE__
     |> by_user_id(user.id)
     |> by_timeline(timelines)
+  end
+
+  defp unread_count_query(query) do
+    from(
+      q in query,
+      left_join: n in "notifications",
+      on: n.user_id == q.user_id and n.seen == false,
+      group_by: [:id],
+      select_merge: %{
+        unread_count: fragment("count(?)", n.id)
+      }
+    )
   end
 end
