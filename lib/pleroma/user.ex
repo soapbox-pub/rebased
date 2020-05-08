@@ -1431,6 +1431,25 @@ defmodule Pleroma.User do
     BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
   end
 
+  defp delete_and_invalidate_cache(%User{} = user) do
+    invalidate_cache(user)
+    Repo.delete(user)
+  end
+
+  defp delete_or_deactivate(%User{local: false} = user), do: delete_and_invalidate_cache(user)
+
+  defp delete_or_deactivate(%User{local: true} = user) do
+    status = account_status(user)
+
+    if status == :confirmation_pending do
+      delete_and_invalidate_cache(user)
+    else
+      user
+      |> change(%{deactivated: true, email: nil})
+      |> update_and_set_cache()
+    end
+  end
+
   def perform(:force_password_reset, user), do: force_password_reset(user)
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
@@ -1452,14 +1471,7 @@ defmodule Pleroma.User do
 
     delete_user_activities(user)
 
-    if user.local do
-      user
-      |> change(%{deactivated: true, email: nil})
-      |> update_and_set_cache()
-    else
-      invalidate_cache(user)
-      Repo.delete(user)
-    end
+    delete_or_deactivate(user)
   end
 
   def perform(:deactivate_async, user, status), do: deactivate(user, status)
