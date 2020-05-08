@@ -20,4 +20,9 @@ defmodule Pleroma.Constants do
       "deleted_activity_id"
     ]
   )
+
+  const(static_only_files,
+    do:
+      ~w(index.html robots.txt static static-fe finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc)
+  )
 end

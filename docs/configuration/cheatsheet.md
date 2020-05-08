@@ -8,6 +8,10 @@ For from source installations Pleroma configuration works by first importing the
 
 To add configuration to your config file, you can copy it from the base config. The latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs). You can also use this file if you don't know how an option is supposed to be formatted.
 
+## :chat
+
+* `enabled` - Enables the backend chat. Defaults to `true`.
+
 ## :instance
 * `name`: The instance’s name.
 * `email`: Email used to reach an Administrator/Moderator of the instance.
@@ -903,12 +907,18 @@ config :auto_linker,
 
 * `runtime_dir`: A path to custom Elixir modules (such as MRF policies).
 
-
 ## :configurable_from_database
 
 Boolean, enables/disables in-database configuration. Read [Transfering the config to/from the database](../administration/CLI_tasks/config.md) for more information.
 
 
+### Multi-factor authentication -  :two_factor_authentication
+* `totp` - a list containing TOTP configuration
+  - `digits` - Determines the length of a one-time pass-code in characters. Defaults to 6 characters.
+  - `period` - a period for which the TOTP code will be valid in seconds. Defaults to 30 seconds.
+* `backup_codes` - a list containing backup codes configuration
+  - `number` - number of backup codes to generate.
+  - `length` - backup code length. Defaults to 16 characters.
 
 ## Restrict entities access for unauthenticated users
 
@@ -925,3 +935,8 @@ Restrict access for unauthenticated users to timelines (public and federate), us
 * `activities` - statuses
   * `local`
   * `remote`
+
+
+## Pleroma.Web.ApiSpec.CastAndValidate
+
+* `:strict` a boolean, enables strict input validation (useful in development, not recommended in production). Defaults to `false`.

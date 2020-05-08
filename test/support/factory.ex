@@ -32,7 +32,9 @@ defmodule Pleroma.Factory do
       password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
       bio: sequence(:bio, &"Tester Number #{&1}"),
       last_digest_emailed_at: NaiveDateTime.utc_now(),
-      notification_settings: %Pleroma.User.NotificationSetting{}
+      last_refreshed_at: NaiveDateTime.utc_now(),
+      notification_settings: %Pleroma.User.NotificationSetting{},
+      multi_factor_authentication_settings: %Pleroma.MFA.Settings{}
     }
 
     %{
@@ -419,6 +421,15 @@ defmodule Pleroma.Factory do
       timeline: "notifications",
       lock_version: 0,
       last_read_id: "1"
+    }
+  end
+
+  def mfa_token_factory do
+    %Pleroma.MFA.Token{
+      token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false),
+      authorization: build(:oauth_authorization),
+      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10),
+      user: build(:user)
     }
   end
 end

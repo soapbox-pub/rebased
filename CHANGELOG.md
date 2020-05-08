@@ -15,19 +15,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
+- Instance: Extend `/api/v1/instance` with Pleroma-specific information.
 - NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
 - NodeInfo: `pleroma_emoji_reactions` to the `features` list.
 - Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
 - New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
 - Mix task to create trusted OAuth App.
-- Notifications: Added `follow_request` notification type (configurable, see `[:notifications, :enable_follow_request_notifications]` setting).
+- Notifications: Added `follow_request` notification type.
 - Added `:reject_deletes` group to SimplePolicy
 <details>
   <summary>API Changes</summary>
+- Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 - Mastodon API: Add support for filtering replies in public and home timelines
 - Admin API: endpoints for create/update/delete OAuth Apps.
+- Admin API: endpoint for status view.
 </details>
 
 ### Fixed
@@ -35,12 +38,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: SimplePolicy `:reject` and `:accept` allow deletions again
 - Fix follower/blocks import when nicknames starts with @
 - Filtering of push notifications on activities from blocked domains
+- Resolving Peertube accounts with Webfinger
 
 ## [unreleased-patch]
+### Security
+- Disallow re-registration of previously deleted users, which allowed viewing direct messages addressed to them
+- Mastodon API: Fix `POST /api/v1/follow_requests/:id/authorize` allowing to force a follow from a local user even if they didn't request to follow
+
 ### Fixed
 - Logger configuration through AdminFE
 - HTTP Basic Authentication permissions issue
 - ObjectAgePolicy didn't filter out old messages
+- Transmogrifier: Keep object sensitive settings for outgoing representation (AP C2S)
 
 ### Added
 - NodeInfo: ObjectAgePolicy settings to the `federation` list.
@@ -147,6 +156,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `pleroma.thread_muted` to the Status entity
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
 - Mastodon API, streaming: Add `pleroma.direct_conversation_id` to the `conversation` stream event payload.
+- Mastodon API: Add `pleroma.unread_count` to the Marker entity
 - Admin API: Render whole status in grouped reports
 - Mastodon API: User timelines will now respect blocks, unless you are getting the user timeline of somebody you blocked (which would be empty otherwise).
 - Mastodon API: Favoriting / Repeating a post multiple times will now return the identical response every time. Before, executing that action twice would return an error ("already favorited") on the second try.

@@ -61,7 +61,10 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
           else
             users =
               Enum.map(user_ap_ids, &User.get_cached_by_ap_id/1)
-              |> Enum.filter(& &1)
+              |> Enum.filter(fn
+                %{deactivated: false} -> true
+                _ -> false
+              end)
 
             %{
               name: emoji,
@@ -89,7 +92,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   end
 
   def react_with_emoji(%{assigns: %{user: user}} = conn, %{"id" => activity_id, "emoji" => emoji}) do
-    with {:ok, _activity, _object} <- CommonAPI.react_with_emoji(activity_id, user, emoji),
+    with {:ok, _activity} <- CommonAPI.react_with_emoji(activity_id, user, emoji),
          activity <- Activity.get_by_id(activity_id) do
       conn
       |> put_view(StatusView)
@@ -101,7 +104,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
         "id" => activity_id,
         "emoji" => emoji
       }) do
-    with {:ok, _activity, _object} <- CommonAPI.unreact_with_emoji(activity_id, user, emoji),
+    with {:ok, _activity} <-
+           CommonAPI.unreact_with_emoji(activity_id, user, emoji),
          activity <- Activity.get_by_id(activity_id) do
       conn
       |> put_view(StatusView)

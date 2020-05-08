@@ -166,7 +166,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     other_user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
-    {:ok, _activity, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+    {:ok, _activity} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
 
     activity = Repo.get(Activity, activity.id)
 

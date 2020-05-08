@@ -106,14 +106,13 @@ defmodule Pleroma.Web.Push.Impl do
 
   def build_content(
         %{
-          activity: %{data: %{"directMessage" => true}},
           user: %{notification_settings: %{privacy_option: true}}
-        },
-        actor,
+        } = notification,
+        _actor,
         _object,
-        _mastodon_type
+        mastodon_type
       ) do
-    %{title: "New Direct Message", body: "@#{actor.nickname}"}
+    %{body: format_title(notification, mastodon_type)}
   end
 
   def build_content(notification, actor, object, mastodon_type) do

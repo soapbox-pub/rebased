@@ -21,6 +21,7 @@ defmodule Pleroma.Web.AdminAPI.Search do
     query =
       params
       |> Map.drop([:page, :page_size])
+      |> Map.put(:exclude_service_users, true)
       |> User.Query.build()
       |> order_by([u], u.nickname)
 

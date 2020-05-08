@@ -12,6 +12,8 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Notification
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.NotificationView
@@ -24,7 +26,7 @@ defmodule Pleroma.NotificationTest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "yeah"})
-      {:ok, activity, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+      {:ok, activity} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
 
       {:ok, [notification]} = Notification.create_notifications(activity)
 
@@ -47,6 +49,9 @@ defmodule Pleroma.NotificationTest do
       assert notified_ids == [other_user.id, third_user.id]
       assert notification.activity_id == activity.id
       assert other_notification.activity_id == activity.id
+
+      assert [%Pleroma.Marker{unread_count: 2}] =
+               Pleroma.Marker.get_markers(other_user, ["notifications"])
     end
 
     test "it creates a notification for subscribed users" do
@@ -162,14 +167,18 @@ defmodule Pleroma.NotificationTest do
     @tag needs_streamer: true
     test "it creates a notification for user and send to the 'user' and the 'user:notification' stream" do
       user = insert(:user)
-      task = Task.async(fn -> assert_receive {:text, _}, 4_000 end)
-      task_user_notification = Task.async(fn -> assert_receive {:text, _}, 4_000 end)
-      Streamer.add_socket("user", %{transport_pid: task.pid, assigns: %{user: user}})
 
-      Streamer.add_socket(
-        "user:notification",
-        %{transport_pid: task_user_notification.pid, assigns: %{user: user}}
-      )
+      task =
+        Task.async(fn ->
+          Streamer.add_socket("user", user)
+          assert_receive {:render_with_user, _, _, _}, 4_000
+        end)
+
+      task_user_notification =
+        Task.async(fn ->
+          Streamer.add_socket("user:notification", user)
+          assert_receive {:render_with_user, _, _, _}, 4_000
+        end)
 
       activity = insert(:note_activity)
 
@@ -312,9 +321,7 @@ defmodule Pleroma.NotificationTest do
                })
     end
 
-    test "if `follow_request` notifications are enabled, " <>
-           "it creates `follow_request` notification for pending Follow activity" do
-      clear_config([:notifications, :enable_follow_request_notifications], true)
+    test "it creates `follow_request` notification for pending Follow activity" do
       user = insert(:user)
       followed_user = insert(:user, locked: true)
 
@@ -333,21 +340,6 @@ defmodule Pleroma.NotificationTest do
       assert %{type: "follow"} = NotificationView.render("show.json", render_opts)
     end
 
-    test "if `follow_request` notifications are disabled, " <>
-           "it does NOT create `follow*` notification for pending Follow activity" do
-      clear_config([:notifications, :enable_follow_request_notifications], false)
-      user = insert(:user)
-      followed_user = insert(:user, locked: true)
-
-      {:ok, _, _, _activity} = CommonAPI.follow(user, followed_user)
-      refute FollowingRelationship.following?(user, followed_user)
-      assert [] = Notification.for_user(followed_user)
-
-      # After request is accepted, no new notifications are generated:
-      assert {:ok, _} = CommonAPI.accept_follow_request(user, followed_user)
-      assert [] = Notification.for_user(followed_user)
-    end
-
     test "it doesn't create a notification for follow-unfollow-follow chains" do
       user = insert(:user)
       followed_user = insert(:user, locked: false)
@@ -364,7 +356,6 @@ defmodule Pleroma.NotificationTest do
     end
 
     test "dismisses the notification on follow request rejection" do
-      clear_config([:notifications, :enable_follow_request_notifications], true)
       user = insert(:user, locked: true)
       follower = insert(:user)
       {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, user)
@@ -480,6 +471,16 @@ defmodule Pleroma.NotificationTest do
       assert n1.seen == true
       assert n2.seen == true
       assert n3.seen == false
+
+      assert %Pleroma.Marker{} =
+               m =
+               Pleroma.Repo.get_by(
+                 Pleroma.Marker,
+                 user_id: other_user.id,
+                 timeline: "notifications"
+               )
+
+      assert m.last_read_id == to_string(n2.id)
     end
   end
 
@@ -615,6 +616,28 @@ defmodule Pleroma.NotificationTest do
       assert other_user not in enabled_receivers
     end
 
+    test "it only notifies the post's author in likes" do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+
+      {:ok, activity_one} =
+        CommonAPI.post(user, %{
+          "status" => "hey @#{other_user.nickname}!"
+        })
+
+      {:ok, like_data, _} = Builder.like(third_user, activity_one.object)
+
+      {:ok, like, _} =
+        like_data
+        |> Map.put("to", [other_user.ap_id | like_data["to"]])
+        |> ActivityPub.persist(local: true)
+
+      {enabled_receivers, _disabled_receivers} = Notification.get_notified_from_activity(like)
+
+      assert other_user not in enabled_receivers
+    end
+
     test "it does not send notification to mentioned users in announces" do
       user = insert(:user)
       other_user = insert(:user)
@@ -742,7 +765,7 @@ defmodule Pleroma.NotificationTest do
 
       assert length(Notification.for_user(user)) == 1
 
-      {:ok, _, _, _} = CommonAPI.unfavorite(activity.id, other_user)
+      {:ok, _} = CommonAPI.unfavorite(activity.id, other_user)
 
       assert Enum.empty?(Notification.for_user(user))
     end
@@ -776,7 +799,7 @@ defmodule Pleroma.NotificationTest do
 
       assert length(Notification.for_user(user)) == 1
 
-      {:ok, _, _} = CommonAPI.unrepeat(activity.id, other_user)
+      {:ok, _} = CommonAPI.unrepeat(activity.id, other_user)
 
       assert Enum.empty?(Notification.for_user(user))
     end

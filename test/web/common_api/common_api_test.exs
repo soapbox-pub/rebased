@@ -9,17 +9,97 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+  import Mock
 
   require Pleroma.Constants
 
   setup do: clear_config([:instance, :safe_dm_mentions])
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
+
+  describe "deletion" do
+    test "it allows users to delete their posts" do
+      user = insert(:user)
+
+      {:ok, post} = CommonAPI.post(user, %{"status" => "namu amida butsu"})
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        assert {:ok, delete} = CommonAPI.delete(post.id, user)
+        assert delete.local
+        assert called(Pleroma.Web.Federator.publish(delete))
+      end
+
+      refute Activity.get_by_id(post.id)
+    end
+
+    test "it does not allow a user to delete their posts" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, post} = CommonAPI.post(user, %{"status" => "namu amida butsu"})
+
+      assert {:error, "Could not delete"} = CommonAPI.delete(post.id, other_user)
+      assert Activity.get_by_id(post.id)
+    end
+
+    test "it allows moderators to delete other user's posts" do
+      user = insert(:user)
+      moderator = insert(:user, is_moderator: true)
+
+      {:ok, post} = CommonAPI.post(user, %{"status" => "namu amida butsu"})
+
+      assert {:ok, delete} = CommonAPI.delete(post.id, moderator)
+      assert delete.local
+
+      refute Activity.get_by_id(post.id)
+    end
+
+    test "it allows admins to delete other user's posts" do
+      user = insert(:user)
+      moderator = insert(:user, is_admin: true)
+
+      {:ok, post} = CommonAPI.post(user, %{"status" => "namu amida butsu"})
+
+      assert {:ok, delete} = CommonAPI.delete(post.id, moderator)
+      assert delete.local
+
+      refute Activity.get_by_id(post.id)
+    end
+
+    test "superusers deleting non-local posts won't federate the delete" do
+      # This is the user of the ingested activity
+      _user =
+        insert(:user,
+          local: false,
+          ap_id: "http://mastodon.example.org/users/admin",
+          last_refreshed_at: NaiveDateTime.utc_now()
+        )
+
+      moderator = insert(:user, is_admin: true)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Jason.decode!()
+
+      {:ok, post} = Transmogrifier.handle_incoming(data)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        assert {:ok, delete} = CommonAPI.delete(post.id, moderator)
+        assert delete.local
+        refute called(Pleroma.Web.Federator.publish(:_))
+      end
+
+      refute Activity.get_by_id(post.id)
+    end
+  end
 
   test "favoriting race condition" do
     user = insert(:user)
@@ -278,7 +358,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
 
-      {:ok, reaction, _} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+      {:ok, reaction} = CommonAPI.react_with_emoji(activity.id, user, "👍")
 
       assert reaction.data["actor"] == user.ap_id
       assert reaction.data["content"] == "👍"
@@ -293,12 +373,13 @@ defmodule Pleroma.Web.CommonAPITest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
-      {:ok, reaction, _} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+      {:ok, reaction} = CommonAPI.react_with_emoji(activity.id, user, "👍")
 
-      {:ok, unreaction, _} = CommonAPI.unreact_with_emoji(activity.id, user, "👍")
+      {:ok, unreaction} = CommonAPI.unreact_with_emoji(activity.id, user, "👍")
 
       assert unreaction.data["type"] == "Undo"
       assert unreaction.data["object"] == reaction.data["id"]
+      assert unreaction.local
     end
 
     test "repeating a status" do
@@ -696,6 +777,14 @@ defmodule Pleroma.Web.CommonAPITest do
       assert Repo.get(Activity, follow_activity.id).data["state"] == "reject"
       assert Repo.get(Activity, follow_activity_two.id).data["state"] == "reject"
       assert Repo.get(Activity, follow_activity_three.id).data["state"] == "pending"
+    end
+
+    test "doesn't create a following relationship if the corresponding follow request doesn't exist" do
+      user = insert(:user, locked: true)
+      not_follower = insert(:user)
+      CommonAPI.accept_follow_request(not_follower, user)
+
+      assert Pleroma.FollowingRelationship.following?(not_follower, user) == false
     end
   end
 

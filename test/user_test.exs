@@ -15,7 +15,6 @@ defmodule Pleroma.UserTest do
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  import Mock
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
@@ -1131,20 +1130,11 @@ defmodule Pleroma.UserTest do
 
       User.delete_user_activities(user)
 
-      # TODO: Remove favorites, repeats, delete activities.
+      # TODO: Test removal favorites, repeats, delete activities.
       refute Activity.get_by_id(activity.id)
     end
 
-    test "it deletes deactivated user" do
-      {:ok, user} = insert(:user, deactivated: true) |> User.set_cache()
-
-      {:ok, job} = User.delete(user)
-      {:ok, _user} = ObanHelpers.perform(job)
-
-      refute User.get_by_id(user.id)
-    end
-
-    test "it deletes a user, all follow relationships and all activities", %{user: user} do
+    test "it deactivates a user, all follow relationships and all activities", %{user: user} do
       follower = insert(:user)
       {:ok, follower} = User.follow(follower, user)
 
@@ -1164,8 +1154,7 @@ defmodule Pleroma.UserTest do
       follower = User.get_cached_by_id(follower.id)
 
       refute User.following?(follower, user)
-      refute User.get_by_id(user.id)
-      assert {:ok, nil} == Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
+      assert %{deactivated: true} = User.get_by_id(user.id)
 
       user_activities =
         user.ap_id
@@ -1179,31 +1168,6 @@ defmodule Pleroma.UserTest do
       refute Activity.get_by_id(like.id)
       refute Activity.get_by_id(like_two.id)
       refute Activity.get_by_id(repeat.id)
-    end
-
-    test_with_mock "it sends out User Delete activity",
-                   %{user: user},
-                   Pleroma.Web.ActivityPub.Publisher,
-                   [:passthrough],
-                   [] do
-      Pleroma.Config.put([:instance, :federating], true)
-
-      {:ok, follower} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
-      {:ok, _} = User.follow(follower, user)
-
-      {:ok, job} = User.delete(user)
-      {:ok, _user} = ObanHelpers.perform(job)
-
-      assert ObanHelpers.member?(
-               %{
-                 "op" => "publish_one",
-                 "params" => %{
-                   "inbox" => "http://mastodon.example.org/inbox",
-                   "id" => "pleroma:fakeid"
-                 }
-               },
-               all_enqueued(worker: Pleroma.Workers.PublisherWorker)
-             )
     end
   end
 

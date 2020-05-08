@@ -815,26 +815,49 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert object["content"] == activity["object"]["content"]
     end
 
+    test "it rejects anything beyond 'Note' creations", %{conn: conn, activity: activity} do
+      user = insert(:user)
+
+      activity =
+        activity
+        |> put_in(["object", "type"], "Benis")
+
+      _result =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", activity)
+        |> json_response(400)
+    end
+
     test "it inserts an incoming sensitive activity into the database", %{
       conn: conn,
       activity: activity
     } do
       user = insert(:user)
+      conn = assign(conn, :user, user)
       object = Map.put(activity["object"], "sensitive", true)
       activity = Map.put(activity, "object", object)
 
-      result =
+      response =
         conn
-        |> assign(:user, user)
         |> put_req_header("content-type", "application/activity+json")
         |> post("/users/#{user.nickname}/outbox", activity)
         |> json_response(201)
 
-      assert Activity.get_by_ap_id(result["id"])
-      assert result["object"]
-      assert %Object{data: object} = Object.normalize(result["object"])
-      assert object["sensitive"] == activity["object"]["sensitive"]
-      assert object["content"] == activity["object"]["content"]
+      assert Activity.get_by_ap_id(response["id"])
+      assert response["object"]
+      assert %Object{data: response_object} = Object.normalize(response["object"])
+      assert response_object["sensitive"] == true
+      assert response_object["content"] == activity["object"]["content"]
+
+      representation =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(response["id"])
+        |> json_response(200)
+
+      assert representation["object"]["sensitive"] == true
     end
 
     test "it rejects an incoming activity with bogus type", %{conn: conn, activity: activity} do
@@ -1055,12 +1078,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert result["totalItems"] == 15
     end
 
-    test "returns 403 if requester is not logged in", %{conn: conn} do
+    test "does not require authentication", %{conn: conn} do
       user = insert(:user)
 
       conn
       |> get("/users/#{user.nickname}/followers")
-      |> json_response(403)
+      |> json_response(200)
     end
   end
 
@@ -1152,12 +1175,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert result["totalItems"] == 15
     end
 
-    test "returns 403 if requester is not logged in", %{conn: conn} do
+    test "does not require authentication", %{conn: conn} do
       user = insert(:user)
 
       conn
       |> get("/users/#{user.nickname}/following")
-      |> json_response(403)
+      |> json_response(200)
     end
   end
 

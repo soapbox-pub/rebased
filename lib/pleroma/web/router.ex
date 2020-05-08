@@ -132,6 +132,7 @@ defmodule Pleroma.Web.Router do
     post("/users/follow", AdminAPIController, :user_follow)
     post("/users/unfollow", AdminAPIController, :user_unfollow)
 
+    put("/users/disable_mfa", AdminAPIController, :disable_mfa)
     delete("/users", AdminAPIController, :user_delete)
     post("/users", AdminAPIController, :users_create)
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
@@ -188,6 +189,7 @@ defmodule Pleroma.Web.Router do
     post("/reports/:id/notes", AdminAPIController, :report_notes_create)
     delete("/reports/:report_id/notes/:id", AdminAPIController, :report_notes_delete)
 
+    get("/statuses/:id", AdminAPIController, :status_show)
     put("/statuses/:id", AdminAPIController, :status_update)
     delete("/statuses/:id", AdminAPIController, :status_delete)
     get("/statuses", AdminAPIController, :list_statuses)
@@ -257,6 +259,16 @@ defmodule Pleroma.Web.Router do
     post("/follow_import", UtilController, :follow_import)
   end
 
+  scope "/api/pleroma", Pleroma.Web.PleromaAPI do
+    pipe_through(:authenticated_api)
+
+    get("/accounts/mfa", TwoFactorAuthenticationController, :settings)
+    get("/accounts/mfa/backup_codes", TwoFactorAuthenticationController, :backup_codes)
+    get("/accounts/mfa/setup/:method", TwoFactorAuthenticationController, :setup)
+    post("/accounts/mfa/confirm/:method", TwoFactorAuthenticationController, :confirm)
+    delete("/accounts/mfa/:method", TwoFactorAuthenticationController, :disable)
+  end
+
   scope "/oauth", Pleroma.Web.OAuth do
     scope [] do
       pipe_through(:oauth)
@@ -267,6 +279,10 @@ defmodule Pleroma.Web.Router do
     post("/token", OAuthController, :token_exchange)
     post("/revoke", OAuthController, :token_revoke)
     get("/registration_details", OAuthController, :registration_details)
+
+    post("/mfa/challenge", MFAController, :challenge)
+    post("/mfa/verify", MFAController, :verify, as: :mfa_verify)
+    get("/mfa", MFAController, :show)
 
     scope [] do
       pipe_through(:browser)
@@ -426,7 +442,7 @@ defmodule Pleroma.Web.Router do
     post("/statuses/:id/unmute", StatusController, :unmute_conversation)
 
     post("/push/subscription", SubscriptionController, :create)
-    get("/push/subscription", SubscriptionController, :get)
+    get("/push/subscription", SubscriptionController, :show)
     put("/push/subscription", SubscriptionController, :update)
     delete("/push/subscription", SubscriptionController, :delete)
 
@@ -585,6 +601,7 @@ defmodule Pleroma.Web.Router do
     post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
     post("/api/ap/upload_media", ActivityPubController, :upload_media)
 
+    # The following two are S2S as well, see `ActivityPub.fetch_follow_information_for_user/1`:
     get("/users/:nickname/followers", ActivityPubController, :followers)
     get("/users/:nickname/following", ActivityPubController, :following)
   end

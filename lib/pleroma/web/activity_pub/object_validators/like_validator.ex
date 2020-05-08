@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
   use Ecto.Schema
 
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Utils
 
@@ -19,8 +20,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
     field(:object, Types.ObjectID)
     field(:actor, Types.ObjectID)
     field(:context, :string)
-    field(:to, {:array, :string})
-    field(:cc, {:array, :string})
+    field(:to, Types.Recipients, default: [])
+    field(:cc, Types.Recipients, default: [])
   end
 
   def cast_and_validate(data) do
@@ -31,7 +32,48 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
 
   def cast_data(data) do
     %__MODULE__{}
-    |> cast(data, [:id, :type, :object, :actor, :context, :to, :cc])
+    |> changeset(data)
+  end
+
+  def changeset(struct, data) do
+    struct
+    |> cast(data, __schema__(:fields))
+    |> fix_after_cast()
+  end
+
+  def fix_after_cast(cng) do
+    cng
+    |> fix_recipients()
+    |> fix_context()
+  end
+
+  def fix_context(cng) do
+    object = get_field(cng, :object)
+
+    with nil <- get_field(cng, :context),
+         %Object{data: %{"context" => context}} <- Object.get_cached_by_ap_id(object) do
+      cng
+      |> put_change(:context, context)
+    else
+      _ ->
+        cng
+    end
+  end
+
+  def fix_recipients(cng) do
+    to = get_field(cng, :to)
+    cc = get_field(cng, :cc)
+    object = get_field(cng, :object)
+
+    with {[], []} <- {to, cc},
+         %Object{data: %{"actor" => actor}} <- Object.get_cached_by_ap_id(object),
+         {:ok, actor} <- Types.ObjectID.cast(actor) do
+      cng
+      |> put_change(:to, [actor])
+    else
+      _ ->
+        cng
+    end
   end
 
   def validate_data(data_cng) do

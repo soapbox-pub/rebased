@@ -4,14 +4,17 @@
 
 defmodule Mix.Tasks.Pleroma.UserTest do
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
 
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
 
-  import Pleroma.Factory
   import ExUnit.CaptureIO
+  import Mock
+  import Pleroma.Factory
 
   setup_all do
     Mix.shell(Mix.Shell.Process)
@@ -87,12 +90,17 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     test "user is deleted" do
       user = insert(:user)
 
-      Mix.Tasks.Pleroma.User.run(["rm", user.nickname])
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        Mix.Tasks.Pleroma.User.run(["rm", user.nickname])
+        ObanHelpers.perform_all()
 
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ " deleted"
+        assert_received {:mix_shell, :info, [message]}
+        assert message =~ " deleted"
+        assert %{deactivated: true} = User.get_by_nickname(user.nickname)
 
-      refute User.get_by_nickname(user.nickname)
+        assert called(Pleroma.Web.Federator.publish(:_))
+      end
     end
 
     test "no user to delete" do

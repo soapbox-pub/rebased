@@ -15,7 +15,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ObjectValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -657,41 +656,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> handle_incoming(options)
   end
 
-  def handle_incoming(%{"type" => "Like"} = data, _options) do
-    with {_, {:ok, cast_data_sym}} <-
-           {:casting_data,
-            data |> LikeValidator.cast_data() |> Ecto.Changeset.apply_action(:insert)},
-         cast_data = ObjectValidator.stringify_keys(Map.from_struct(cast_data_sym)),
-         :ok <- ObjectValidator.fetch_actor_and_object(cast_data),
-         {_, {:ok, cast_data}} <- {:ensure_context_presence, ensure_context_presence(cast_data)},
-         {_, {:ok, cast_data}} <-
-           {:ensure_recipients_presence, ensure_recipients_presence(cast_data)},
-         {_, {:ok, activity, _meta}} <-
-           {:common_pipeline, Pipeline.common_pipeline(cast_data, local: false)} do
+  def handle_incoming(%{"type" => type} = data, _options) when type in ["Like", "EmojiReact"] do
+    with :ok <- ObjectValidator.fetch_actor_and_object(data),
+         {:ok, activity, _meta} <-
+           Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     else
       e -> {:error, e}
-    end
-  end
-
-  def handle_incoming(
-        %{
-          "type" => "EmojiReact",
-          "object" => object_id,
-          "actor" => _actor,
-          "id" => id,
-          "content" => emoji
-        } = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         {:ok, activity, _object} <-
-           ActivityPub.react_with_emoji(actor, object, emoji, activity_id: id, local: false) do
-      {:ok, activity}
-    else
-      _e -> :error
     end
   end
 
@@ -743,55 +714,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  # TODO: We presently assume that any actor on the same origin domain as the object being
-  # deleted has the rights to delete that object.  A better way to validate whether or not
-  # the object should be deleted is to refetch the object URI, which should return either
-  # an error or a tombstone.  This would allow us to verify that a deletion actually took
-  # place.
   def handle_incoming(
-        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => id} = data,
+        %{"type" => "Delete"} = data,
         _options
       ) do
-    object_id = Utils.get_ap_id(object_id)
-
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         :ok <- Containment.contain_origin(actor.ap_id, object.data),
-         {:ok, activity} <-
-           ActivityPub.delete(object, local: false, activity_id: id, actor: actor.ap_id) do
+    with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
-    else
-      nil ->
-        case User.get_cached_by_ap_id(object_id) do
-          %User{ap_id: ^actor} = user ->
-            User.delete(user)
-
-          nil ->
-            :error
-        end
-
-      _e ->
-        :error
-    end
-  end
-
-  def handle_incoming(
-        %{
-          "type" => "Undo",
-          "object" => %{"type" => "Announce", "object" => object_id},
-          "actor" => _actor,
-          "id" => id
-        } = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         {:ok, activity, _} <- ActivityPub.unannounce(actor, object, id, false) do
-      {:ok, activity}
-    else
-      _e -> :error
     end
   end
 
@@ -817,75 +745,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{
           "type" => "Undo",
-          "object" => %{"type" => "EmojiReact", "id" => reaction_activity_id},
-          "actor" => _actor,
-          "id" => id
+          "object" => %{"type" => type}
         } = data,
         _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, activity, _} <-
-           ActivityPub.unreact_with_emoji(actor, reaction_activity_id,
-             activity_id: id,
-             local: false
-           ) do
+      )
+      when type in ["Like", "EmojiReact", "Announce", "Block"] do
+    with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{
-          "type" => "Undo",
-          "object" => %{"type" => "Block", "object" => blocked},
-          "actor" => blocker,
-          "id" => id
-        } = _data,
-        _options
-      ) do
-    with %User{local: true} = blocked <- User.get_cached_by_ap_id(blocked),
-         {:ok, %User{} = blocker} <- User.get_or_fetch_by_ap_id(blocker),
-         {:ok, activity} <- ActivityPub.unblock(blocker, blocked, id, false) do
-      User.unblock(blocker, blocked)
-      {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data,
-        _options
-      ) do
-    with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
-         {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
-         {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
-      User.unfollow(blocker, blocked)
-      User.block(blocker, blocked)
-      {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{
-          "type" => "Undo",
-          "object" => %{"type" => "Like", "object" => object_id},
-          "actor" => _actor,
-          "id" => id
-        } = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         {:ok, activity, _, _} <- ActivityPub.unlike(actor, object, id, false) do
-      {:ok, activity}
-    else
-      _e -> :error
     end
   end
 
@@ -902,6 +768,21 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       activity
       |> Map.put("object", data)
       |> handle_incoming(options)
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data,
+        _options
+      ) do
+    with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
+         {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
+         {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
+      User.unfollow(blocker, blocked)
+      User.block(blocker, blocked)
+      {:ok, activity}
     else
       _e -> :error
     end
@@ -1203,6 +1084,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "conversation", object["context"])
   end
 
+  def set_sensitive(%{"sensitive" => true} = object) do
+    object
+  end
+
   def set_sensitive(object) do
     tags = object["tag"] || []
     Map.put(object, "sensitive", "nsfw" in tags)
@@ -1296,45 +1181,4 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def maybe_fix_user_url(data), do: data
 
   def maybe_fix_user_object(data), do: maybe_fix_user_url(data)
-
-  defp ensure_context_presence(%{"context" => context} = data) when is_binary(context),
-    do: {:ok, data}
-
-  defp ensure_context_presence(%{"object" => object} = data) when is_binary(object) do
-    with %{data: %{"context" => context}} when is_binary(context) <- Object.normalize(object) do
-      {:ok, Map.put(data, "context", context)}
-    else
-      _ ->
-        {:error, :no_context}
-    end
-  end
-
-  defp ensure_context_presence(_) do
-    {:error, :no_context}
-  end
-
-  defp ensure_recipients_presence(%{"to" => [_ | _], "cc" => [_ | _]} = data),
-    do: {:ok, data}
-
-  defp ensure_recipients_presence(%{"object" => object} = data) do
-    case Object.normalize(object) do
-      %{data: %{"actor" => actor}} ->
-        data =
-          data
-          |> Map.put("to", [actor])
-          |> Map.put("cc", data["cc"] || [])
-
-        {:ok, data}
-
-      nil ->
-        {:error, :no_object}
-
-      _ ->
-        {:error, :no_actor}
-    end
-  end
-
-  defp ensure_recipients_presence(_) do
-    {:error, :no_object}
-  end
 end

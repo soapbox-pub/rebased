@@ -61,6 +61,7 @@ Has these additional fields under the `pleroma` object:
 - `deactivated`: boolean, true when the user is deactivated
 - `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
+- `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
 
 ### Source
 
@@ -204,3 +205,23 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `captcha_token`: optional, contains provider-specific captcha token
 - `captcha_answer_data`: optional, contains provider-specific captcha data
 - `token`: invite token required when the registrations aren't public.
+
+## Instance
+
+`GET /api/v1/instance` has additional fields
+
+- `max_toot_chars`: The maximum characters per post
+- `poll_limits`: The limits of polls
+- `upload_limit`: The maximum upload file size
+- `avatar_upload_limit`: The same for avatars
+- `background_upload_limit`: The same for backgrounds
+- `banner_upload_limit`: The same for banners
+- `pleroma.metadata.features`: A list of supported features
+- `pleroma.metadata.federation`: The federation restrictions of this instance
+- `vapid_public_key`: The public key needed for push messages
+
+## Markers
+
+Has these additional fields under the `pleroma` object:
+
+- `unread_count`: contains number unread notifications

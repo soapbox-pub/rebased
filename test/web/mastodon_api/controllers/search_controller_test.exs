@@ -27,8 +27,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         capture_log(fn ->
           results =
             conn
-            |> get("/api/v2/search", %{"q" => "2hu"})
-            |> json_response(200)
+            |> get("/api/v2/search?q=2hu")
+            |> json_response_and_validate_schema(200)
 
           assert results["accounts"] == []
           assert results["statuses"] == []
@@ -54,8 +54,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v2/search", %{"q" => "2hu #private"})
-        |> json_response(200)
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "2hu #private"})}")
+        |> json_response_and_validate_schema(200)
 
       [account | _] = results["accounts"]
       assert account["id"] == to_string(user_three.id)
@@ -68,8 +68,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       assert status["id"] == to_string(activity.id)
 
       results =
-        get(conn, "/api/v2/search", %{"q" => "天子"})
-        |> json_response(200)
+        get(conn, "/api/v2/search?q=天子")
+        |> json_response_and_validate_schema(200)
 
       [status] = results["statuses"]
       assert status["id"] == to_string(activity.id)
@@ -89,8 +89,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         conn
         |> assign(:user, user)
         |> assign(:token, insert(:oauth_token, user: user, scopes: ["read"]))
-        |> get("/api/v2/search", %{"q" => "Agent"})
-        |> json_response(200)
+        |> get("/api/v2/search?q=Agent")
+        |> json_response_and_validate_schema(200)
 
       status_ids = Enum.map(results["statuses"], fn g -> g["id"] end)
 
@@ -107,8 +107,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v1/accounts/search", %{"q" => "shp"})
-        |> json_response(200)
+        |> get("/api/v1/accounts/search?q=shp")
+        |> json_response_and_validate_schema(200)
 
       result_ids = for result <- results, do: result["acct"]
 
@@ -117,8 +117,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v1/accounts/search", %{"q" => "2hu"})
-        |> json_response(200)
+        |> get("/api/v1/accounts/search?q=2hu")
+        |> json_response_and_validate_schema(200)
 
       result_ids = for result <- results, do: result["acct"]
 
@@ -130,8 +130,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v1/accounts/search", %{"q" => "shp@shitposter.club xxx "})
-        |> json_response(200)
+        |> get("/api/v1/accounts/search?q=shp@shitposter.club xxx")
+        |> json_response_and_validate_schema(200)
 
       assert length(results) == 1
     end
@@ -146,8 +146,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         capture_log(fn ->
           results =
             conn
-            |> get("/api/v1/search", %{"q" => "2hu"})
-            |> json_response(200)
+            |> get("/api/v1/search?q=2hu")
+            |> json_response_and_validate_schema(200)
 
           assert results["accounts"] == []
           assert results["statuses"] == []
@@ -173,8 +173,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v1/search", %{"q" => "2hu"})
-        |> json_response(200)
+        |> get("/api/v1/search?q=2hu")
+        |> json_response_and_validate_schema(200)
 
       [account | _] = results["accounts"]
       assert account["id"] == to_string(user_three.id)
@@ -194,8 +194,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
         results =
           conn
-          |> get("/api/v1/search", %{"q" => "https://shitposter.club/notice/2827873"})
-          |> json_response(200)
+          |> get("/api/v1/search?q=https://shitposter.club/notice/2827873")
+          |> json_response_and_validate_schema(200)
 
         [status, %{"id" => ^activity_id}] = results["statuses"]
 
@@ -212,10 +212,12 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         })
 
       capture_log(fn ->
+        q = Object.normalize(activity).data["id"]
+
         results =
           conn
-          |> get("/api/v1/search", %{"q" => Object.normalize(activity).data["id"]})
-          |> json_response(200)
+          |> get("/api/v1/search?q=#{q}")
+          |> json_response_and_validate_schema(200)
 
         [] = results["statuses"]
       end)
@@ -228,8 +230,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         conn
         |> assign(:user, user)
         |> assign(:token, insert(:oauth_token, user: user, scopes: ["read"]))
-        |> get("/api/v1/search", %{"q" => "mike@osada.macgirvin.com", "resolve" => "true"})
-        |> json_response(200)
+        |> get("/api/v1/search?q=mike@osada.macgirvin.com&resolve=true")
+        |> json_response_and_validate_schema(200)
 
       [account] = results["accounts"]
       assert account["acct"] == "mike@osada.macgirvin.com"
@@ -238,8 +240,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     test "search doesn't fetch remote accounts if resolve is false", %{conn: conn} do
       results =
         conn
-        |> get("/api/v1/search", %{"q" => "mike@osada.macgirvin.com", "resolve" => "false"})
-        |> json_response(200)
+        |> get("/api/v1/search?q=mike@osada.macgirvin.com&resolve=false")
+        |> json_response_and_validate_schema(200)
 
       assert [] == results["accounts"]
     end
@@ -254,16 +256,16 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       result =
         conn
-        |> get("/api/v1/search", %{"q" => "2hu", "limit" => 1})
+        |> get("/api/v1/search?q=2hu&limit=1")
 
-      assert results = json_response(result, 200)
+      assert results = json_response_and_validate_schema(result, 200)
       assert [%{"id" => activity_id1}] = results["statuses"]
       assert [_] = results["accounts"]
 
       results =
         conn
-        |> get("/api/v1/search", %{"q" => "2hu", "limit" => 1, "offset" => 1})
-        |> json_response(200)
+        |> get("/api/v1/search?q=2hu&limit=1&offset=1")
+        |> json_response_and_validate_schema(200)
 
       assert [%{"id" => activity_id2}] = results["statuses"]
       assert [] = results["accounts"]
@@ -279,13 +281,13 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       assert %{"statuses" => [_activity], "accounts" => [], "hashtags" => []} =
                conn
-               |> get("/api/v1/search", %{"q" => "2hu", "type" => "statuses"})
-               |> json_response(200)
+               |> get("/api/v1/search?q=2hu&type=statuses")
+               |> json_response_and_validate_schema(200)
 
       assert %{"statuses" => [], "accounts" => [_user_two], "hashtags" => []} =
                conn
-               |> get("/api/v1/search", %{"q" => "2hu", "type" => "accounts"})
-               |> json_response(200)
+               |> get("/api/v1/search?q=2hu&type=accounts")
+               |> json_response_and_validate_schema(200)
     end
 
     test "search uses account_id to filter statuses by the author", %{conn: conn} do
@@ -297,8 +299,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v1/search", %{"q" => "2hu", "account_id" => user.id})
-        |> json_response(200)
+        |> get("/api/v1/search?q=2hu&account_id=#{user.id}")
+        |> json_response_and_validate_schema(200)
 
       assert [%{"id" => activity_id1}] = results["statuses"]
       assert activity_id1 == activity1.id
@@ -306,8 +308,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v1/search", %{"q" => "2hu", "account_id" => user_two.id})
-        |> json_response(200)
+        |> get("/api/v1/search?q=2hu&account_id=#{user_two.id}")
+        |> json_response_and_validate_schema(200)
 
       assert [%{"id" => activity_id2}] = results["statuses"]
       assert activity_id2 == activity2.id

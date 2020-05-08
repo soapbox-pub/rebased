@@ -6,19 +6,22 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  import Pleroma.Factory
   import ExUnit.CaptureLog
+  import Mock
+  import Pleroma.Factory
 
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.ConfigDB
   alias Pleroma.HTML
+  alias Pleroma.MFA
   alias Pleroma.ModerationLog
   alias Pleroma.Repo
   alias Pleroma.ReportNote
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.UserInviteToken
+  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MediaProxy
@@ -146,17 +149,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "single user", %{admin: admin, conn: conn} do
       user = insert(:user)
 
-      conn =
-        conn
-        |> put_req_header("accept", "application/json")
-        |> delete("/api/pleroma/admin/users?nickname=#{user.nickname}")
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        conn =
+          conn
+          |> put_req_header("accept", "application/json")
+          |> delete("/api/pleroma/admin/users?nickname=#{user.nickname}")
 
-      log_entry = Repo.one(ModerationLog)
+        ObanHelpers.perform_all()
 
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} deleted users: @#{user.nickname}"
+        assert User.get_by_nickname(user.nickname).deactivated
 
-      assert json_response(conn, 200) == user.nickname
+        log_entry = Repo.one(ModerationLog)
+
+        assert ModerationLog.get_log_entry_message(log_entry) ==
+                 "@#{admin.nickname} deleted users: @#{user.nickname}"
+
+        assert json_response(conn, 200) == [user.nickname]
+
+        assert called(Pleroma.Web.Federator.publish(:_))
+      end
     end
 
     test "multiple users", %{admin: admin, conn: conn} do
@@ -737,6 +749,39 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
     end
 
+    test "pagination works correctly with service users", %{conn: conn} do
+      service1 = insert(:user, ap_id: Web.base_url() <> "/relay")
+      service2 = insert(:user, ap_id: Web.base_url() <> "/internal/fetch")
+      insert_list(25, :user)
+
+      assert %{"count" => 26, "page_size" => 10, "users" => users1} =
+               conn
+               |> get("/api/pleroma/admin/users?page=1&filters=", %{page_size: "10"})
+               |> json_response(200)
+
+      assert Enum.count(users1) == 10
+      assert service1 not in [users1]
+      assert service2 not in [users1]
+
+      assert %{"count" => 26, "page_size" => 10, "users" => users2} =
+               conn
+               |> get("/api/pleroma/admin/users?page=2&filters=", %{page_size: "10"})
+               |> json_response(200)
+
+      assert Enum.count(users2) == 10
+      assert service1 not in [users2]
+      assert service2 not in [users2]
+
+      assert %{"count" => 26, "page_size" => 10, "users" => users3} =
+               conn
+               |> get("/api/pleroma/admin/users?page=3&filters=", %{page_size: "10"})
+               |> json_response(200)
+
+      assert Enum.count(users3) == 6
+      assert service1 not in [users3]
+      assert service2 not in [users3]
+    end
+
     test "renders empty array for the second page", %{conn: conn} do
       insert(:user)
 
@@ -1234,6 +1279,38 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              "@#{admin.nickname} deactivated users: @#{user.nickname}"
   end
 
+  describe "PUT disable_mfa" do
+    test "returns 200 and disable 2fa", %{conn: conn} do
+      user =
+        insert(:user,
+          multi_factor_authentication_settings: %MFA.Settings{
+            enabled: true,
+            totp: %MFA.Settings.TOTP{secret: "otp_secret", confirmed: true}
+          }
+        )
+
+      response =
+        conn
+        |> put("/api/pleroma/admin/users/disable_mfa", %{nickname: user.nickname})
+        |> json_response(200)
+
+      assert response == user.nickname
+      mfa_settings = refresh_record(user).multi_factor_authentication_settings
+
+      refute mfa_settings.enabled
+      refute mfa_settings.totp.confirmed
+    end
+
+    test "returns 404 if user not found", %{conn: conn} do
+      response =
+        conn
+        |> put("/api/pleroma/admin/users/disable_mfa", %{nickname: "nickname"})
+        |> json_response(404)
+
+      assert response == "Not found"
+    end
+  end
+
   describe "POST /api/pleroma/admin/users/invite_token" do
     test "without options", %{conn: conn} do
       conn = post(conn, "/api/pleroma/admin/users/invite_token")
@@ -1617,6 +1694,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = get(build_conn(), "/api/pleroma/admin/reports")
 
       assert json_response(conn, :forbidden) == %{"error" => "Invalid credentials."}
+    end
+  end
+
+  describe "GET /api/pleroma/admin/statuses/:id" do
+    test "not found", %{conn: conn} do
+      assert conn
+             |> get("/api/pleroma/admin/statuses/not_found")
+             |> json_response(:not_found)
+    end
+
+    test "shows activity", %{conn: conn} do
+      activity = insert(:note_activity)
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/statuses/#{activity.id}")
+        |> json_response(200)
+
+      assert response["id"] == activity.id
     end
   end
 
@@ -3526,7 +3622,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "success", %{conn: conn} do
-      base_url = Pleroma.Web.base_url()
+      base_url = Web.base_url()
       app_name = "Trusted app"
 
       response =
@@ -3547,7 +3643,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "with trusted", %{conn: conn} do
-      base_url = Pleroma.Web.base_url()
+      base_url = Web.base_url()
       app_name = "Trusted app"
 
       response =
