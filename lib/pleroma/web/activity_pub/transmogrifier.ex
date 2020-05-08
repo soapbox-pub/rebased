@@ -1114,6 +1114,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "attributedTo", attributed_to)
   end
 
+  # TODO: Revisit this
+  def prepare_attachments(%{"type" => "ChatMessage"} = object), do: object
+
   def prepare_attachments(object) do
     attachments =
       object

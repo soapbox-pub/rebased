@@ -54,6 +54,8 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert Chat.get(author.id, recipient.ap_id)
       assert Chat.get(recipient.id, author.ap_id)
+
+      assert :ok == Pleroma.Web.Federator.perform(:publish, activity)
     end
 
     test "it reject messages over the local limit" do
