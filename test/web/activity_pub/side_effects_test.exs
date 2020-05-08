@@ -72,13 +72,40 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
   end
 
+  describe "EmojiReact objects" do
+    setup do
+      poster = insert(:user)
+      user = insert(:user)
+
+      {:ok, post} = CommonAPI.post(poster, %{"status" => "hey"})
+
+      {:ok, emoji_react_data, []} = Builder.emoji_react(user, post.object, "👌")
+      {:ok, emoji_react, _meta} = ActivityPub.persist(emoji_react_data, local: true)
+
+      %{emoji_react: emoji_react, user: user, poster: poster}
+    end
+
+    test "adds the reaction to the object", %{emoji_react: emoji_react, user: user} do
+      {:ok, emoji_react, _} = SideEffects.handle(emoji_react)
+      object = Object.get_by_ap_id(emoji_react.data["object"])
+
+      assert object.data["reaction_count"] == 1
+      assert ["👌", [user.ap_id]] in object.data["reactions"]
+    end
+
+    test "creates a notification", %{emoji_react: emoji_react, poster: poster} do
+      {:ok, emoji_react, _} = SideEffects.handle(emoji_react)
+      assert Repo.get_by(Notification, user_id: poster.id, activity_id: emoji_react.id)
+    end
+  end
+
   describe "Undo objects" do
     setup do
       poster = insert(:user)
       user = insert(:user)
       {:ok, post} = CommonAPI.post(poster, %{"status" => "hey"})
       {:ok, like} = CommonAPI.favorite(user, post.id)
-      {:ok, reaction, _} = CommonAPI.react_with_emoji(post.id, user, "👍")
+      {:ok, reaction} = CommonAPI.react_with_emoji(post.id, user, "👍")
       {:ok, announce, _} = CommonAPI.repeat(post.id, user)
       {:ok, block} = ActivityPub.block(user, poster)
       User.block(user, poster)

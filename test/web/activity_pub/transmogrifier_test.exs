@@ -325,43 +325,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert object_data["cc"] == to
     end
 
-    test "it works for incoming emoji reactions" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
-
-      data =
-        File.read!("test/fixtures/emoji-reaction.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["actor"] == "http://mastodon.example.org/users/admin"
-      assert data["type"] == "EmojiReact"
-      assert data["id"] == "http://mastodon.example.org/users/admin#reactions/2"
-      assert data["object"] == activity.data["object"]
-      assert data["content"] == "👌"
-    end
-
-    test "it reject invalid emoji reactions" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
-
-      data =
-        File.read!("test/fixtures/emoji-reaction-too-long.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-
-      assert :error = Transmogrifier.handle_incoming(data)
-
-      data =
-        File.read!("test/fixtures/emoji-reaction-no-emoji.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-
-      assert :error = Transmogrifier.handle_incoming(data)
-    end
-
     test "it works for incoming announces" do
       data = File.read!("test/fixtures/mastodon-announce.json") |> Poison.decode!()
 
@@ -518,7 +481,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it strips internal reactions" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
-      {:ok, _, _} = CommonAPI.react_with_emoji(activity.id, user, "📢")
+      {:ok, _} = CommonAPI.react_with_emoji(activity.id, user, "📢")
 
       %{object: object} = Activity.get_by_id_with_object(activity.id)
       assert Map.has_key?(object.data, "reactions")
