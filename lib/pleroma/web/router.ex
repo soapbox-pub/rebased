@@ -663,6 +663,8 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/proxy/", Pleroma.Web.MediaProxy do
+    get("/preview/:sig/:url", MediaProxyController, :preview)
+    get("/preview/:sig/:url/:filename", MediaProxyController, :preview)
     get("/:sig/:url", MediaProxyController, :remote)
     get("/:sig/:url/:filename", MediaProxyController, :remote)
   end

@@ -20,6 +20,14 @@ defmodule Pleroma.Web.MediaProxy do
     end
   end
 
+  def preview_url(url) do
+    if disabled?() or whitelisted?(url) do
+      url
+    else
+      encode_preview_url(url)
+    end
+  end
+
   defp disabled?, do: !Config.get([:media_proxy, :enabled], false)
 
   defp local?(url), do: String.starts_with?(url, Pleroma.Web.base_url())
@@ -43,15 +51,27 @@ defmodule Pleroma.Web.MediaProxy do
     end)
   end
 
-  def encode_url(url) do
+  defp base64_sig64(url) do
     base64 = Base.url_encode64(url, @base64_opts)
 
     sig64 =
       base64
-      |> signed_url
+      |> signed_url()
       |> Base.url_encode64(@base64_opts)
 
+    {base64, sig64}
+  end
+
+  def encode_url(url) do
+    {base64, sig64} = base64_sig64(url)
+
     build_url(sig64, base64, filename(url))
+  end
+
+  def encode_preview_url(url) do
+    {base64, sig64} = base64_sig64(url)
+
+    build_preview_url(sig64, base64, filename(url))
   end
 
   def decode_url(sig, url) do
@@ -71,15 +91,40 @@ defmodule Pleroma.Web.MediaProxy do
     if path = URI.parse(url_or_path).path, do: Path.basename(path)
   end
 
-  def build_url(sig_base64, url_base64, filename \\ nil) do
+  defp proxy_url(path, sig_base64, url_base64, filename) do
     [
       Pleroma.Config.get([:media_proxy, :base_url], Web.base_url()),
-      "proxy",
+      path,
       sig_base64,
       url_base64,
       filename
     ]
     |> Enum.filter(& &1)
     |> Path.join()
+  end
+
+  def build_url(sig_base64, url_base64, filename \\ nil) do
+    proxy_url("proxy", sig_base64, url_base64, filename)
+  end
+
+  def build_preview_url(sig_base64, url_base64, filename \\ nil) do
+    proxy_url("proxy/preview", sig_base64, url_base64, filename)
+  end
+
+  def filename_matches(%{"filename" => _} = _, path, url) do
+    filename = filename(url)
+
+    if filename && not basename_matches?(path, filename) do
+      {:wrong_filename, filename}
+    else
+      :ok
+    end
+  end
+
+  def filename_matches(_, _, _), do: :ok
+
+  defp basename_matches?(path, filename) do
+    basename = Path.basename(path)
+    basename == filename or URI.decode(basename) == filename or URI.encode(basename) == filename
   end
 end

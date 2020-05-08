@@ -388,6 +388,11 @@ config :pleroma, :media_proxy,
   ],
   whitelist: []
 
+config :pleroma, :media_preview_proxy,
+  enabled: false,
+  limit_dimensions: "400x200",
+  max_body_length: 25 * 1_048_576
+
 config :pleroma, :chat, enabled: true
 
 config :phoenix, :format_encoders, json: Jason
