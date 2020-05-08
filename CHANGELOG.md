@@ -42,6 +42,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased (patch)]
 
+### Fixed
+- Healthcheck reporting the number of memory currently used, rather than allocated in total
+
 ## [2.0.3] - 2020-05-02
 
 ### Security
