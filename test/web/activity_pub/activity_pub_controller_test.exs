@@ -810,7 +810,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       outbox_endpoint = user.ap_id <> "/outbox"
 
       _posts =
-        for i <- 0..15 do
+        for i <- 0..25 do
           {:ok, activity} = CommonAPI.post(user, %{status: "post #{i}"})
           activity
         end
@@ -822,8 +822,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> json_response(200)
 
       result_ids = Enum.map(result["orderedItems"], fn x -> x["id"] end)
-      assert length(result["orderedItems"]) == 10
-      assert length(result_ids) == 10
+      assert length(result["orderedItems"]) == 20
+      assert length(result_ids) == 20
       assert result["next"]
       assert String.starts_with?(result["next"], outbox_endpoint)
 

@@ -63,8 +63,8 @@ defmodule Pleroma.Web.ControllerHelper do
         params =
           conn.params
           |> Map.drop(Map.keys(conn.path_params))
-          |> Map.drop(["since_id", "max_id", "min_id"])
           |> Map.merge(extra_params)
+          |> Map.drop(Pagination.page_keys() -- ["limit", "order"])
 
         min_id =
           activities
