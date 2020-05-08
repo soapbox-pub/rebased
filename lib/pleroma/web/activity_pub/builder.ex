@@ -12,7 +12,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   @spec emoji_react(User.t(), Object.t(), String.t()) :: {:ok, map(), keyword()}
   def emoji_react(actor, object, emoji) do
-    with {:ok, data, meta} <- like(actor, object) do
+    with {:ok, data, meta} <- object_action(actor, object) do
       data =
         data
         |> Map.put("content", emoji)
@@ -64,6 +64,17 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   @spec like(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def like(actor, object) do
+    with {:ok, data, meta} <- object_action(actor, object) do
+      data =
+        data
+        |> Map.put("type", "Like")
+
+      {:ok, data, meta}
+    end
+  end
+
+  @spec object_action(User.t(), Object.t()) :: {:ok, map(), keyword()}
+  defp object_action(actor, object) do
     object_actor = User.get_cached_by_ap_id(object.data["actor"])
 
     # Address the actor of the object, and our actor's follower collection if the post is public.
@@ -85,7 +96,6 @@ defmodule Pleroma.Web.ActivityPub.Builder do
      %{
        "id" => Utils.generate_activity_id(),
        "actor" => actor.ap_id,
-       "type" => "Like",
        "object" => object.data["id"],
        "to" => to,
        "cc" => cc,
