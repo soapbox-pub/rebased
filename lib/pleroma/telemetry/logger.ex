@@ -6,7 +6,8 @@ defmodule Pleroma.Telemetry.Logger do
   @events [
     [:pleroma, :connection_pool, :reclaim, :start],
     [:pleroma, :connection_pool, :reclaim, :stop],
-    [:pleroma, :connection_pool, :provision_failure]
+    [:pleroma, :connection_pool, :provision_failure],
+    [:pleroma, :connection_pool, :client_death]
   ]
   def attach do
     :telemetry.attach_many("pleroma-logger", @events, &handle_event/4, [])
@@ -57,6 +58,19 @@ defmodule Pleroma.Telemetry.Logger do
       ) do
     Logger.error(fn ->
       "Connection pool had to refuse opening a connection to #{key} due to connection limit exhaustion"
+    end)
+  end
+
+  def handle_event(
+        [:pleroma, :connection_pool, :client_death],
+        %{client_pid: client_pid, reason: reason},
+        %{key: key},
+        _
+      ) do
+    Logger.warn(fn ->
+      "Pool worker for #{key}: Client #{inspect(client_pid)} died before releasing the connection with #{
+        inspect(reason)
+      }"
     end)
   end
 end
