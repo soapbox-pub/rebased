@@ -10,32 +10,70 @@ defmodule Pleroma.CounterCache do
   import Ecto.Query
 
   schema "counter_cache" do
-    field(:name, :string)
-    field(:count, :integer)
+    field(:instance, :string)
+    field(:public, :integer)
+    field(:unlisted, :integer)
+    field(:private, :integer)
+    field(:direct, :integer)
   end
 
   def changeset(struct, params) do
     struct
-    |> cast(params, [:name, :count])
-    |> validate_required([:name])
-    |> unique_constraint(:name)
+    |> cast(params, [:instance, :public, :unlisted, :private, :direct])
+    |> validate_required([:instance])
+    |> unique_constraint(:instance)
   end
 
-  def get_as_map(names) when is_list(names) do
+  def get_by_instance(instance) do
     CounterCache
-    |> where([cc], cc.name in ^names)
-    |> Repo.all()
-    |> Enum.group_by(& &1.name, & &1.count)
-    |> Map.new(fn {k, v} -> {k, hd(v)} end)
+    |> select([c], %{
+      "public" => c.public,
+      "unlisted" => c.unlisted,
+      "private" => c.private,
+      "direct" => c.direct
+    })
+    |> where([c], c.instance == ^instance)
+    |> Repo.one()
+    |> case do
+      nil -> %{"public" => 0, "unlisted" => 0, "private" => 0, "direct" => 0}
+      val -> val
+    end
   end
 
-  def set(name, count) do
+  def get_as_map() do
+    CounterCache
+    |> select([c], %{
+      "public" => sum(c.public),
+      "unlisted" => sum(c.unlisted),
+      "private" => sum(c.private),
+      "direct" => sum(c.direct)
+    })
+    |> Repo.one()
+  end
+
+  def set(instance, values) do
+    params =
+      Enum.reduce(
+        ["public", "private", "unlisted", "direct"],
+        %{"instance" => instance},
+        fn param, acc ->
+          Map.put_new(acc, param, Map.get(values, param, 0))
+        end
+      )
+
     %CounterCache{}
-    |> changeset(%{"name" => name, "count" => count})
+    |> changeset(params)
     |> Repo.insert(
-      on_conflict: [set: [count: count]],
+      on_conflict: [
+        set: [
+          public: params["public"],
+          private: params["private"],
+          unlisted: params["unlisted"],
+          direct: params["direct"]
+        ]
+      ],
       returning: true,
-      conflict_target: :name
+      conflict_target: :instance
     )
   end
 end

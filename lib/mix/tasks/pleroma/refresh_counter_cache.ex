@@ -17,30 +17,46 @@ defmodule Mix.Tasks.Pleroma.RefreshCounterCache do
   def run([]) do
     Mix.Pleroma.start_pleroma()
 
-    ["public", "unlisted", "private", "direct"]
-    |> Enum.each(fn visibility ->
-      count = status_visibility_count_query(visibility)
-      name = "status_visibility_#{visibility}"
-      CounterCache.set(name, count)
-      Mix.Pleroma.shell_info("Set #{name} to #{count}")
+    Activity
+    |> distinct([a], true)
+    |> select([a], fragment("split_part(?, '/', 3)", a.actor))
+    |> Repo.all()
+    |> Enum.each(fn instance ->
+      counters = instance_counters(instance)
+      CounterCache.set(instance, counters)
+      Mix.Pleroma.shell_info("Setting #{instance} counters: #{inspect(counters)}")
     end)
 
     Mix.Pleroma.shell_info("Done")
   end
 
-  defp status_visibility_count_query(visibility) do
+  defp instance_counters(instance) do
+    counters = %{"public" => 0, "unlisted" => 0, "private" => 0, "direct" => 0}
+
     Activity
-    |> where(
+    |> where([a], fragment("(? ->> 'type'::text) = 'Create'", a.data))
+    |> where([a], like(a.actor, ^"%#{instance}%"))
+    |> select(
+      [a],
+      {fragment(
+         "activity_visibility(?, ?, ?)",
+         a.actor,
+         a.recipients,
+         a.data
+       ), count(a.id)}
+    )
+    |> group_by(
       [a],
       fragment(
-        "activity_visibility(?, ?, ?) = ?",
+        "activity_visibility(?, ?, ?)",
         a.actor,
         a.recipients,
-        a.data,
-        ^visibility
+        a.data
       )
     )
-    |> where([a], fragment("(? ->> 'type'::text) = 'Create'", a.data))
-    |> Repo.aggregate(:count, :id, timeout: :timer.minutes(30))
+    |> Repo.all(timeout: :timer.minutes(30))
+    |> Enum.reduce(counters, fn {visibility, count}, acc ->
+      Map.put(acc, visibility, count)
+    end)
   end
 end
