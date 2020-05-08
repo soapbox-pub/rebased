@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
   alias Pleroma.Web.ApiSpec.Schemas.Emoji
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Poll
+  alias Pleroma.Web.ApiSpec.Schemas.Tag
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
   require OpenApiSpex
@@ -106,16 +107,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
       replies_count: %Schema{type: :integer},
       sensitive: %Schema{type: :boolean},
       spoiler_text: %Schema{type: :string},
-      tags: %Schema{
-        type: :array,
-        items: %Schema{
-          type: :object,
-          properties: %{
-            name: %Schema{type: :string},
-            url: %Schema{type: :string, format: :uri}
-          }
-        }
-      },
+      tags: %Schema{type: :array, items: Tag},
       uri: %Schema{type: :string, format: :uri},
       url: %Schema{type: :string, nullable: true, format: :uri},
       visibility: VisibilityScope

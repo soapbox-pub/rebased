@@ -73,6 +73,133 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
   end
 
+  describe "EmojiReact objects" do
+    setup do
+      poster = insert(:user)
+      user = insert(:user)
+
+      {:ok, post} = CommonAPI.post(poster, %{"status" => "hey"})
+
+      {:ok, emoji_react_data, []} = Builder.emoji_react(user, post.object, "👌")
+      {:ok, emoji_react, _meta} = ActivityPub.persist(emoji_react_data, local: true)
+
+      %{emoji_react: emoji_react, user: user, poster: poster}
+    end
+
+    test "adds the reaction to the object", %{emoji_react: emoji_react, user: user} do
+      {:ok, emoji_react, _} = SideEffects.handle(emoji_react)
+      object = Object.get_by_ap_id(emoji_react.data["object"])
+
+      assert object.data["reaction_count"] == 1
+      assert ["👌", [user.ap_id]] in object.data["reactions"]
+    end
+
+    test "creates a notification", %{emoji_react: emoji_react, poster: poster} do
+      {:ok, emoji_react, _} = SideEffects.handle(emoji_react)
+      assert Repo.get_by(Notification, user_id: poster.id, activity_id: emoji_react.id)
+    end
+  end
+
+  describe "Undo objects" do
+    setup do
+      poster = insert(:user)
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(poster, %{"status" => "hey"})
+      {:ok, like} = CommonAPI.favorite(user, post.id)
+      {:ok, reaction} = CommonAPI.react_with_emoji(post.id, user, "👍")
+      {:ok, announce, _} = CommonAPI.repeat(post.id, user)
+      {:ok, block} = ActivityPub.block(user, poster)
+      User.block(user, poster)
+
+      {:ok, undo_data, _meta} = Builder.undo(user, like)
+      {:ok, like_undo, _meta} = ActivityPub.persist(undo_data, local: true)
+
+      {:ok, undo_data, _meta} = Builder.undo(user, reaction)
+      {:ok, reaction_undo, _meta} = ActivityPub.persist(undo_data, local: true)
+
+      {:ok, undo_data, _meta} = Builder.undo(user, announce)
+      {:ok, announce_undo, _meta} = ActivityPub.persist(undo_data, local: true)
+
+      {:ok, undo_data, _meta} = Builder.undo(user, block)
+      {:ok, block_undo, _meta} = ActivityPub.persist(undo_data, local: true)
+
+      %{
+        like_undo: like_undo,
+        post: post,
+        like: like,
+        reaction_undo: reaction_undo,
+        reaction: reaction,
+        announce_undo: announce_undo,
+        announce: announce,
+        block_undo: block_undo,
+        block: block,
+        poster: poster,
+        user: user
+      }
+    end
+
+    test "deletes the original block", %{block_undo: block_undo, block: block} do
+      {:ok, _block_undo, _} = SideEffects.handle(block_undo)
+      refute Activity.get_by_id(block.id)
+    end
+
+    test "unblocks the blocked user", %{block_undo: block_undo, block: block} do
+      blocker = User.get_by_ap_id(block.data["actor"])
+      blocked = User.get_by_ap_id(block.data["object"])
+
+      {:ok, _block_undo, _} = SideEffects.handle(block_undo)
+      refute User.blocks?(blocker, blocked)
+    end
+
+    test "an announce undo removes the announce from the object", %{
+      announce_undo: announce_undo,
+      post: post
+    } do
+      {:ok, _announce_undo, _} = SideEffects.handle(announce_undo)
+
+      object = Object.get_by_ap_id(post.data["object"])
+
+      assert object.data["announcement_count"] == 0
+      assert object.data["announcements"] == []
+    end
+
+    test "deletes the original announce", %{announce_undo: announce_undo, announce: announce} do
+      {:ok, _announce_undo, _} = SideEffects.handle(announce_undo)
+      refute Activity.get_by_id(announce.id)
+    end
+
+    test "a reaction undo removes the reaction from the object", %{
+      reaction_undo: reaction_undo,
+      post: post
+    } do
+      {:ok, _reaction_undo, _} = SideEffects.handle(reaction_undo)
+
+      object = Object.get_by_ap_id(post.data["object"])
+
+      assert object.data["reaction_count"] == 0
+      assert object.data["reactions"] == []
+    end
+
+    test "deletes the original reaction", %{reaction_undo: reaction_undo, reaction: reaction} do
+      {:ok, _reaction_undo, _} = SideEffects.handle(reaction_undo)
+      refute Activity.get_by_id(reaction.id)
+    end
+
+    test "a like undo removes the like from the object", %{like_undo: like_undo, post: post} do
+      {:ok, _like_undo, _} = SideEffects.handle(like_undo)
+
+      object = Object.get_by_ap_id(post.data["object"])
+
+      assert object.data["like_count"] == 0
+      assert object.data["likes"] == []
+    end
+
+    test "deletes the original like", %{like_undo: like_undo, like: like} do
+      {:ok, _like_undo, _} = SideEffects.handle(like_undo)
+      refute Activity.get_by_id(like.id)
+    end
+  end
+
   describe "like objects" do
     setup do
       poster = insert(:user)

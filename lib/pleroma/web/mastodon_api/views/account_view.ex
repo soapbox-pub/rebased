@@ -36,9 +36,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   def render("show.json", %{user: user} = opts) do
-    if User.visible_for?(user, opts[:for]),
-      do: do_render("show.json", opts),
-      else: %{}
+    if User.visible_for?(user, opts[:for]) do
+      do_render("show.json", opts)
+    else
+      %{}
+    end
   end
 
   def render("mention.json", %{user: user}) do
@@ -221,7 +223,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       fields: user.fields,
       bot: bot,
       source: %{
-        note: (user.bio || "") |> String.replace(~r(<br */?>), "\n") |> Pleroma.HTML.strip_tags(),
+        note: prepare_user_bio(user),
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
@@ -254,7 +256,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_follow_requests_count(user, opts[:for])
     |> maybe_put_allow_following_move(user, opts[:for])
     |> maybe_put_unread_conversation_count(user, opts[:for])
+    |> maybe_put_unread_notification_count(user, opts[:for])
   end
+
+  defp prepare_user_bio(%User{bio: ""}), do: ""
+
+  defp prepare_user_bio(%User{bio: bio}) when is_binary(bio) do
+    bio |> String.replace(~r(<br */?>), "\n") |> Pleroma.HTML.strip_tags()
+  end
+
+  defp prepare_user_bio(_), do: ""
 
   defp username_from_nickname(string) when is_binary(string) do
     hd(String.split(string, "@"))
@@ -350,6 +361,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_unread_conversation_count(data, _, _), do: data
+
+  defp maybe_put_unread_notification_count(data, %User{id: user_id}, %User{id: user_id} = user) do
+    Kernel.put_in(
+      data,
+      [:pleroma, :unread_notifications_count],
+      Pleroma.Notification.unread_notifications_count(user)
+    )
+  end
+
+  defp maybe_put_unread_notification_count(data, _, _), do: data
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil

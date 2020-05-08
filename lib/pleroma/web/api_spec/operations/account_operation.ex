@@ -556,11 +556,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  defp array_of_accounts do
+  def array_of_accounts do
     %Schema{
       title: "ArrayOfAccounts",
       type: :array,
-      items: Account
+      items: Account,
+      example: [Account.schema().example]
     }
   end
 

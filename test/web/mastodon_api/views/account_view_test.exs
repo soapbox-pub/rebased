@@ -469,6 +469,24 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                :unread_conversation_count
              ] == 1
     end
+
+    test "shows unread_count only to the account owner" do
+      user = insert(:user)
+      insert_list(7, :notification, user: user)
+      other_user = insert(:user)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: other_user}
+             )[:pleroma][:unread_notifications_count] == nil
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: user}
+             )[:pleroma][:unread_notifications_count] == 7
+    end
   end
 
   describe "follow requests counter" do

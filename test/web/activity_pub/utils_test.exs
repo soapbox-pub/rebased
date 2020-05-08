@@ -102,34 +102,6 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     end
   end
 
-  describe "make_unlike_data/3" do
-    test "returns data for unlike activity" do
-      user = insert(:user)
-      like_activity = insert(:like_activity, data_attrs: %{"context" => "test context"})
-
-      object = Object.normalize(like_activity.data["object"])
-
-      assert Utils.make_unlike_data(user, like_activity, nil) == %{
-               "type" => "Undo",
-               "actor" => user.ap_id,
-               "object" => like_activity.data,
-               "to" => [user.follower_address, object.data["actor"]],
-               "cc" => [Pleroma.Constants.as_public()],
-               "context" => like_activity.data["context"]
-             }
-
-      assert Utils.make_unlike_data(user, like_activity, "9mJEZK0tky1w2xD2vY") == %{
-               "type" => "Undo",
-               "actor" => user.ap_id,
-               "object" => like_activity.data,
-               "to" => [user.follower_address, object.data["actor"]],
-               "cc" => [Pleroma.Constants.as_public()],
-               "context" => like_activity.data["context"],
-               "id" => "9mJEZK0tky1w2xD2vY"
-             }
-    end
-  end
-
   describe "make_like_data" do
     setup do
       user = insert(:user)

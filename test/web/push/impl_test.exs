@@ -193,7 +193,7 @@ defmodule Pleroma.Web.Push.ImplTest do
   end
 
   describe "build_content/3" do
-    test "returns info content for direct message with enabled privacy option" do
+    test "hides details for notifications when privacy option enabled" do
       user = insert(:user, nickname: "Bob")
       user2 = insert(:user, nickname: "Rob", notification_settings: %{privacy_option: true})
 
@@ -209,12 +209,37 @@ defmodule Pleroma.Web.Push.ImplTest do
       object = Object.normalize(activity)
 
       assert Impl.build_content(notif, actor, object) == %{
-               body: "@Bob",
-               title: "New Direct Message"
+               body: "New Direct Message"
+             }
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "visibility" => "public",
+          "status" => "<Lorem ipsum dolor sit amet."
+        })
+
+      notif = insert(:notification, user: user2, activity: activity)
+
+      actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+      object = Object.normalize(activity)
+
+      assert Impl.build_content(notif, actor, object) == %{
+               body: "New Mention"
+             }
+
+      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+
+      notif = insert(:notification, user: user2, activity: activity)
+
+      actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+      object = Object.normalize(activity)
+
+      assert Impl.build_content(notif, actor, object) == %{
+               body: "New Favorite"
              }
     end
 
-    test "returns regular content for direct message with disabled privacy option" do
+    test "returns regular content for notifications with privacy option disabled" do
       user = insert(:user, nickname: "Bob")
       user2 = insert(:user, nickname: "Rob", notification_settings: %{privacy_option: false})
 
@@ -234,6 +259,36 @@ defmodule Pleroma.Web.Push.ImplTest do
                body:
                  "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini...",
                title: "New Direct Message"
+             }
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "visibility" => "public",
+          "status" =>
+            "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
+        })
+
+      notif = insert(:notification, user: user2, activity: activity)
+
+      actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+      object = Object.normalize(activity)
+
+      assert Impl.build_content(notif, actor, object) == %{
+               body:
+                 "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini...",
+               title: "New Mention"
+             }
+
+      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+
+      notif = insert(:notification, user: user2, activity: activity)
+
+      actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
+      object = Object.normalize(activity)
+
+      assert Impl.build_content(notif, actor, object) == %{
+               body: "@Bob has favorited your post",
+               title: "New Favorite"
              }
     end
   end

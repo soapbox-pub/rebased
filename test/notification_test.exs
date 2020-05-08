@@ -24,7 +24,7 @@ defmodule Pleroma.NotificationTest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "yeah"})
-      {:ok, activity, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+      {:ok, activity} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
 
       {:ok, [notification]} = Notification.create_notifications(activity)
 
@@ -47,6 +47,9 @@ defmodule Pleroma.NotificationTest do
       assert notified_ids == [other_user.id, third_user.id]
       assert notification.activity_id == activity.id
       assert other_notification.activity_id == activity.id
+
+      assert [%Pleroma.Marker{unread_count: 2}] =
+               Pleroma.Marker.get_markers(other_user, ["notifications"])
     end
 
     test "it creates a notification for subscribed users" do
@@ -466,6 +469,16 @@ defmodule Pleroma.NotificationTest do
       assert n1.seen == true
       assert n2.seen == true
       assert n3.seen == false
+
+      assert %Pleroma.Marker{} =
+               m =
+               Pleroma.Repo.get_by(
+                 Pleroma.Marker,
+                 user_id: other_user.id,
+                 timeline: "notifications"
+               )
+
+      assert m.last_read_id == to_string(n2.id)
     end
   end
 
@@ -728,7 +741,7 @@ defmodule Pleroma.NotificationTest do
 
       assert length(Notification.for_user(user)) == 1
 
-      {:ok, _, _, _} = CommonAPI.unfavorite(activity.id, other_user)
+      {:ok, _} = CommonAPI.unfavorite(activity.id, other_user)
 
       assert Enum.empty?(Notification.for_user(user))
     end
@@ -762,7 +775,7 @@ defmodule Pleroma.NotificationTest do
 
       assert length(Notification.for_user(user)) == 1
 
-      {:ok, _, _} = CommonAPI.unrepeat(activity.id, other_user)
+      {:ok, _} = CommonAPI.unrepeat(activity.id, other_user)
 
       assert Enum.empty?(Notification.for_user(user))
     end

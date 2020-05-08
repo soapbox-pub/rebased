@@ -55,6 +55,14 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def unblock(blocker, blocked) do
+    with %Activity{} = block <- Utils.fetch_latest_block(blocker, blocked),
+         {:ok, unblock_data, _} <- Builder.undo(blocker, block),
+         {:ok, unblock, _} <- Pipeline.common_pipeline(unblock_data, local: true) do
+      {:ok, unblock}
+    end
+  end
+
   def follow(follower, followed) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
 
@@ -138,9 +146,12 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unrepeat(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
-           {:find_activity, Activity.get_by_id(id)} do
-      object = Object.normalize(activity)
-      ActivityPub.unannounce(user, object)
+           {:find_activity, Activity.get_by_id(id)},
+         %Object{} = note <- Object.normalize(activity, false),
+         %Activity{} = announce <- Utils.get_existing_announce(user.ap_id, note),
+         {:ok, undo, _} <- Builder.undo(user, announce),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
+      {:ok, activity}
     else
       {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not unrepeat")}
@@ -197,9 +208,12 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unfavorite(id, user) do
     with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
-           {:find_activity, Activity.get_by_id(id)} do
-      object = Object.normalize(activity)
-      ActivityPub.unlike(user, object)
+           {:find_activity, Activity.get_by_id(id)},
+         %Object{} = note <- Object.normalize(activity, false),
+         %Activity{} = like <- Utils.get_existing_like(user.ap_id, note),
+         {:ok, undo, _} <- Builder.undo(user, like),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
+      {:ok, activity}
     else
       {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not unfavorite")}
@@ -208,8 +222,10 @@ defmodule Pleroma.Web.CommonAPI do
 
   def react_with_emoji(id, user, emoji) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         object <- Object.normalize(activity) do
-      ActivityPub.react_with_emoji(user, object, emoji)
+         object <- Object.normalize(activity),
+         {:ok, emoji_react, _} <- Builder.emoji_react(user, object, emoji),
+         {:ok, activity, _} <- Pipeline.common_pipeline(emoji_react, local: true) do
+      {:ok, activity}
     else
       _ ->
         {:error, dgettext("errors", "Could not add reaction emoji")}
@@ -217,8 +233,10 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def unreact_with_emoji(id, user, emoji) do
-    with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji) do
-      ActivityPub.unreact_with_emoji(user, reaction_activity.data["id"])
+    with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji),
+         {:ok, undo, _} <- Builder.undo(user, reaction_activity),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
+      {:ok, activity}
     else
       _ ->
         {:error, dgettext("errors", "Could not remove reaction emoji")}

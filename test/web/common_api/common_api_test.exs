@@ -408,7 +408,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
 
-      {:ok, reaction, _} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+      {:ok, reaction} = CommonAPI.react_with_emoji(activity.id, user, "👍")
 
       assert reaction.data["actor"] == user.ap_id
       assert reaction.data["content"] == "👍"
@@ -423,12 +423,13 @@ defmodule Pleroma.Web.CommonAPITest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
-      {:ok, reaction, _} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+      {:ok, reaction} = CommonAPI.react_with_emoji(activity.id, user, "👍")
 
-      {:ok, unreaction, _} = CommonAPI.unreact_with_emoji(activity.id, user, "👍")
+      {:ok, unreaction} = CommonAPI.unreact_with_emoji(activity.id, user, "👍")
 
       assert unreaction.data["type"] == "Undo"
       assert unreaction.data["object"] == reaction.data["id"]
+      assert unreaction.local
     end
 
     test "repeating a status" do
