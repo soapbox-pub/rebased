@@ -70,7 +70,49 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: JSON. Returns `{"status": "success"}` if the account was successfully disabled, `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`
 
-## `/api/pleroma/admin/`…
+## `/api/pleroma/accounts/mfa`
+#### Gets current MFA settings
+* method: `GET`
+* Authentication: required
+* OAuth scope: `read:security`
+* Response: JSON. Returns `{"enabled": "false", "totp": false }`
+
+## `/api/pleroma/accounts/mfa/setup/totp`
+#### Pre-setup the MFA/TOTP method
+* method: `GET`
+* Authentication: required
+* OAuth scope: `write:security`
+* Response: JSON. Returns `{"key": [secret_key], "provisioning_uri": "[qr code uri]"  }` when successful, otherwise returns HTTP 422 `{"error": "error_msg"}`
+
+## `/api/pleroma/accounts/mfa/confirm/totp`
+#### Confirms & enables MFA/TOTP support for user account.
+* method: `POST`
+* Authentication: required
+* OAuth scope: `write:security`
+* Params:
+    * `password`: user's password
+    * `code`: token from TOTP App
+* Response: JSON. Returns `{}` if the enable was successful, HTTP 422 `{"error": "[error message]"}` otherwise
+
+
+## `/api/pleroma/accounts/mfa/totp`
+####  Disables MFA/TOTP method for user account.
+* method: `DELETE`
+* Authentication: required
+* OAuth scope: `write:security`
+* Params:
+    * `password`: user's password
+* Response: JSON. Returns `{}` if the disable was successful, HTTP 422 `{"error": "[error message]"}` otherwise
+* Example response: `{"error": "Invalid password."}`
+
+## `/api/pleroma/accounts/mfa/backup_codes`
+####  Generstes backup codes MFA for user account.
+* method: `GET`
+* Authentication: required
+* OAuth scope: `write:security`
+* Response: JSON. Returns `{"codes": codes}`when successful, otherwise HTTP 422 `{"error": "[error message]"}`
+
+## `/api/pleroma/admin/`
 See [Admin-API](admin_api.md)
 
 ## `/api/v1/pleroma/notifications/read`

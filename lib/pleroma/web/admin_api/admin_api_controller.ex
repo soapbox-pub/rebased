@@ -10,6 +10,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.ConfigDB
+  alias Pleroma.MFA
   alias Pleroma.ModerationLog
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.ReportNote
@@ -17,6 +18,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
@@ -59,6 +62,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :right_add,
            :right_add_multiple,
            :right_delete,
+           :disable_mfa,
            :right_delete_multiple,
            :update_user_credentials
          ]
@@ -133,23 +137,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   action_fallback(:errors)
 
-  def user_delete(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
-    user = User.get_cached_by_nickname(nickname)
-    User.delete(user)
-
-    ModerationLog.insert_log(%{
-      actor: admin,
-      subject: [user],
-      action: "delete"
-    })
-
-    conn
-    |> json(nickname)
+  def user_delete(conn, %{"nickname" => nickname}) do
+    user_delete(conn, %{"nicknames" => [nickname]})
   end
 
   def user_delete(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
-    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
-    User.delete(users)
+    users =
+      nicknames
+      |> Enum.map(&User.get_cached_by_nickname/1)
+
+    users
+    |> Enum.each(fn user ->
+      {:ok, delete_data, _} = Builder.delete(admin, user.ap_id)
+      Pipeline.common_pipeline(delete_data, local: true)
+    end)
 
     ModerationLog.insert_log(%{
       actor: admin,
@@ -673,6 +674,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     })
 
     json_response(conn, :no_content, "")
+  end
+
+  @doc "Disable mfa for user's account."
+  def disable_mfa(conn, %{"nickname" => nickname}) do
+    case User.get_by_nickname(nickname) do
+      %User{} = user ->
+        MFA.disable(user)
+        json(conn, nickname)
+
+      _ ->
+        {:error, :not_found}
+    end
   end
 
   @doc "Show a given user's credentials"

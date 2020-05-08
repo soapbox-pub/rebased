@@ -25,7 +25,7 @@ defmodule Pleroma.Web.StreamerView do
     |> Jason.encode!()
   end
 
-  def render("notification.json", %User{} = user, %Notification{} = notify) do
+  def render("notification.json", %Notification{} = notify, %User{} = user) do
     %{
       event: "notification",
       payload:

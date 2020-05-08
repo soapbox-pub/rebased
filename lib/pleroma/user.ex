@@ -20,6 +20,7 @@ defmodule Pleroma.User do
   alias Pleroma.Formatter
   alias Pleroma.HTML
   alias Pleroma.Keys
+  alias Pleroma.MFA
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Registration
@@ -29,7 +30,9 @@ defmodule Pleroma.User do
   alias Pleroma.UserRelationship
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
@@ -187,6 +190,12 @@ defmodule Pleroma.User do
     field(:muted_notifications, {:array, :string}, default: [])
     # `:subscribers` is deprecated (replaced with `subscriber_users` relation)
     field(:subscribers, {:array, :string}, default: [])
+
+    embeds_one(
+      :multi_factor_authentication_settings,
+      MFA.Settings,
+      on_replace: :delete
+    )
 
     timestamps()
   end
@@ -925,6 +934,7 @@ defmodule Pleroma.User do
     end
   end
 
+  @spec get_by_nickname(String.t()) :: User.t() | nil
   def get_by_nickname(nickname) do
     Repo.get_by(User, nickname: nickname) ||
       if Regex.match?(~r(@#{Pleroma.Web.Endpoint.host()})i, nickname) do
@@ -1425,8 +1435,6 @@ defmodule Pleroma.User do
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
   def perform(:delete, %User{} = user) do
-    {:ok, _user} = ActivityPub.delete(user)
-
     # Remove all relationships
     user
     |> get_followers()
@@ -1536,37 +1544,29 @@ defmodule Pleroma.User do
     })
   end
 
-  def delete_user_activities(%User{ap_id: ap_id}) do
+  def delete_user_activities(%User{ap_id: ap_id} = user) do
     ap_id
     |> Activity.Queries.by_actor()
     |> RepoStreamer.chunk_stream(50)
-    |> Stream.each(fn activities -> Enum.each(activities, &delete_activity/1) end)
+    |> Stream.each(fn activities ->
+      Enum.each(activities, fn activity -> delete_activity(activity, user) end)
+    end)
     |> Stream.run()
   end
 
-  defp delete_activity(%{data: %{"type" => "Create"}} = activity) do
-    activity
-    |> Object.normalize()
-    |> ActivityPub.delete()
+  defp delete_activity(%{data: %{"type" => "Create", "object" => object}}, user) do
+    {:ok, delete_data, _} = Builder.delete(user, object)
+
+    Pipeline.common_pipeline(delete_data, local: user.local)
   end
 
-  defp delete_activity(%{data: %{"type" => "Like"}} = activity) do
-    object = Object.normalize(activity)
-
-    activity.actor
-    |> get_cached_by_ap_id()
-    |> ActivityPub.unlike(object)
+  defp delete_activity(%{data: %{"type" => type}} = activity, user)
+       when type in ["Like", "Announce"] do
+    {:ok, undo, _} = Builder.undo(user, activity)
+    Pipeline.common_pipeline(undo, local: user.local)
   end
 
-  defp delete_activity(%{data: %{"type" => "Announce"}} = activity) do
-    object = Object.normalize(activity)
-
-    activity.actor
-    |> get_cached_by_ap_id()
-    |> ActivityPub.unannounce(object)
-  end
-
-  defp delete_activity(_activity), do: "Doing nothing"
+  defp delete_activity(_activity, _user), do: "Doing nothing"
 
   def html_filter_policy(%User{no_rich_text: true}) do
     Pleroma.HTML.Scrubber.TwitterText

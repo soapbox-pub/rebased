@@ -735,55 +735,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  # TODO: We presently assume that any actor on the same origin domain as the object being
-  # deleted has the rights to delete that object.  A better way to validate whether or not
-  # the object should be deleted is to refetch the object URI, which should return either
-  # an error or a tombstone.  This would allow us to verify that a deletion actually took
-  # place.
   def handle_incoming(
-        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => id} = data,
+        %{"type" => "Delete"} = data,
         _options
       ) do
-    object_id = Utils.get_ap_id(object_id)
-
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         :ok <- Containment.contain_origin(actor.ap_id, object.data),
-         {:ok, activity} <-
-           ActivityPub.delete(object, local: false, activity_id: id, actor: actor.ap_id) do
+    with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
-    else
-      nil ->
-        case User.get_cached_by_ap_id(object_id) do
-          %User{ap_id: ^actor} = user ->
-            User.delete(user)
-
-          nil ->
-            :error
-        end
-
-      _e ->
-        :error
-    end
-  end
-
-  def handle_incoming(
-        %{
-          "type" => "Undo",
-          "object" => %{"type" => "Announce", "object" => object_id},
-          "actor" => _actor,
-          "id" => id
-        } = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         {:ok, activity, _} <- ActivityPub.unannounce(actor, object, id, false) do
-      {:ok, activity}
-    else
-      _e -> :error
     end
   end
 
@@ -809,75 +766,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{
           "type" => "Undo",
-          "object" => %{"type" => "EmojiReact", "id" => reaction_activity_id},
-          "actor" => _actor,
-          "id" => id
+          "object" => %{"type" => type}
         } = data,
         _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, activity, _} <-
-           ActivityPub.unreact_with_emoji(actor, reaction_activity_id,
-             activity_id: id,
-             local: false
-           ) do
+      )
+      when type in ["Like", "EmojiReact", "Announce", "Block"] do
+    with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{
-          "type" => "Undo",
-          "object" => %{"type" => "Block", "object" => blocked},
-          "actor" => blocker,
-          "id" => id
-        } = _data,
-        _options
-      ) do
-    with %User{local: true} = blocked <- User.get_cached_by_ap_id(blocked),
-         {:ok, %User{} = blocker} <- User.get_or_fetch_by_ap_id(blocker),
-         {:ok, activity} <- ActivityPub.unblock(blocker, blocked, id, false) do
-      User.unblock(blocker, blocked)
-      {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data,
-        _options
-      ) do
-    with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
-         {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
-         {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
-      User.unfollow(blocker, blocked)
-      User.block(blocker, blocked)
-      {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{
-          "type" => "Undo",
-          "object" => %{"type" => "Like", "object" => object_id},
-          "actor" => _actor,
-          "id" => id
-        } = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id),
-         {:ok, activity, _, _} <- ActivityPub.unlike(actor, object, id, false) do
-      {:ok, activity}
-    else
-      _e -> :error
     end
   end
 
@@ -894,6 +789,21 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       activity
       |> Map.put("object", data)
       |> handle_incoming(options)
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data,
+        _options
+      ) do
+    with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
+         {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
+         {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
+      User.unfollow(blocker, blocked)
+      User.block(blocker, blocked)
+      {:ok, activity}
     else
       _e -> :error
     end

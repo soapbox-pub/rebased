@@ -6,6 +6,8 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
 
+  alias Pleroma.MFA
+  alias Pleroma.MFA.TOTP
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Authorization
@@ -604,6 +606,41 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       end
     end
 
+    test "redirect to on two-factor auth page" do
+      otp_secret = TOTP.generate_secret()
+
+      user =
+        insert(:user,
+          multi_factor_authentication_settings: %MFA.Settings{
+            enabled: true,
+            totp: %MFA.Settings.TOTP{secret: otp_secret, confirmed: true}
+          }
+        )
+
+      app = insert(:oauth_app, scopes: ["read", "write", "follow"])
+
+      conn =
+        build_conn()
+        |> post("/oauth/authorize", %{
+          "authorization" => %{
+            "name" => user.nickname,
+            "password" => "test",
+            "client_id" => app.client_id,
+            "redirect_uri" => app.redirect_uris,
+            "scope" => "read write",
+            "state" => "statepassed"
+          }
+        })
+
+      result = html_response(conn, 200)
+
+      mfa_token = Repo.get_by(MFA.Token, user_id: user.id)
+      assert result =~ app.redirect_uris
+      assert result =~ "statepassed"
+      assert result =~ mfa_token.token
+      assert result =~ "Two-factor authentication"
+    end
+
     test "returns 401 for wrong credentials", %{conn: conn} do
       user = insert(:user)
       app = insert(:oauth_app)
@@ -733,6 +770,46 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       token = Repo.get_by(Token, token: token)
       assert token
       assert token.scopes == app.scopes
+    end
+
+    test "issues a mfa token for `password` grant_type, when MFA enabled" do
+      password = "testpassword"
+      otp_secret = TOTP.generate_secret()
+
+      user =
+        insert(:user,
+          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          multi_factor_authentication_settings: %MFA.Settings{
+            enabled: true,
+            totp: %MFA.Settings.TOTP{secret: otp_secret, confirmed: true}
+          }
+        )
+
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      response =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "password",
+          "username" => user.nickname,
+          "password" => password,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+        |> json_response(403)
+
+      assert match?(
+               %{
+                 "supported_challenge_types" => "totp",
+                 "mfa_token" => _,
+                 "error" => "mfa_required"
+               },
+               response
+             )
+
+      token = Repo.get_by(MFA.Token, token: response["mfa_token"])
+      assert token.user_id == user.id
+      assert token.authorization_id
     end
 
     test "issues a token for request with HTTP basic auth client credentials" do

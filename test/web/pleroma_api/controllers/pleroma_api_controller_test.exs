@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
+  use Oban.Testing, repo: Pleroma.Repo
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
@@ -41,7 +43,9 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     other_user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
-    {:ok, activity, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+    {:ok, _reaction, _object} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+
+    ObanHelpers.perform_all()
 
     result =
       conn
@@ -52,7 +56,9 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     assert %{"id" => id} = json_response(result, 200)
     assert to_string(activity.id) == id
 
-    object = Object.normalize(activity)
+    ObanHelpers.perform_all()
+
+    object = Object.get_by_ap_id(activity.data["object"])
 
     assert object.data["reaction_count"] == 0
   end

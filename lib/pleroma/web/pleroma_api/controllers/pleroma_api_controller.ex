@@ -98,7 +98,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
         "id" => activity_id,
         "emoji" => emoji
       }) do
-    with {:ok, _activity, _object} <- CommonAPI.unreact_with_emoji(activity_id, user, emoji),
+    with {:ok, _activity} <-
+           CommonAPI.unreact_with_emoji(activity_id, user, emoji),
          activity <- Activity.get_by_id(activity_id) do
       conn
       |> put_view(StatusView)

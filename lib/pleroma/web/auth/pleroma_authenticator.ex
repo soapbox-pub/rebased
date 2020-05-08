@@ -19,8 +19,8 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
          {_, true} <- {:checkpw, AuthenticationPlug.checkpw(password, user.password_hash)} do
       {:ok, user}
     else
-      error ->
-        {:error, error}
+      {:error, _reason} = error -> error
+      error -> {:error, error}
     end
   end
 

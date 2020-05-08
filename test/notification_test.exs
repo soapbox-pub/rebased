@@ -165,14 +165,18 @@ defmodule Pleroma.NotificationTest do
     @tag needs_streamer: true
     test "it creates a notification for user and send to the 'user' and the 'user:notification' stream" do
       user = insert(:user)
-      task = Task.async(fn -> assert_receive {:text, _}, 4_000 end)
-      task_user_notification = Task.async(fn -> assert_receive {:text, _}, 4_000 end)
-      Streamer.add_socket("user", %{transport_pid: task.pid, assigns: %{user: user}})
 
-      Streamer.add_socket(
-        "user:notification",
-        %{transport_pid: task_user_notification.pid, assigns: %{user: user}}
-      )
+      task =
+        Task.async(fn ->
+          Streamer.add_socket("user", user)
+          assert_receive {:render_with_user, _, _, _}, 4_000
+        end)
+
+      task_user_notification =
+        Task.async(fn ->
+          Streamer.add_socket("user:notification", user)
+          assert_receive {:render_with_user, _, _, _}, 4_000
+        end)
 
       activity = insert(:note_activity)
 
@@ -737,7 +741,7 @@ defmodule Pleroma.NotificationTest do
 
       assert length(Notification.for_user(user)) == 1
 
-      {:ok, _, _, _} = CommonAPI.unfavorite(activity.id, other_user)
+      {:ok, _} = CommonAPI.unfavorite(activity.id, other_user)
 
       assert Enum.empty?(Notification.for_user(user))
     end
@@ -771,7 +775,7 @@ defmodule Pleroma.NotificationTest do
 
       assert length(Notification.for_user(user)) == 1
 
-      {:ok, _, _} = CommonAPI.unrepeat(activity.id, other_user)
+      {:ok, _} = CommonAPI.unrepeat(activity.id, other_user)
 
       assert Enum.empty?(Notification.for_user(user))
     end
