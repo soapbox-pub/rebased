@@ -10,8 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       add_link_headers: 2,
       truthy_param?: 1,
       assign_account_by_id: 2,
-      json_response: 3,
-      skip_relationships?: 1
+      json_response: 3
     ]
 
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
@@ -247,8 +246,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> render("index.json",
         activities: activities,
         for: reading_user,
-        as: :activity,
-        skip_relationships: skip_relationships?(params)
+        as: :activity
       )
     else
       _e -> render_error(conn, :not_found, "Can't find user")

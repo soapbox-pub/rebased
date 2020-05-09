@@ -103,9 +103,4 @@ defmodule Pleroma.Web.ControllerHelper do
   def put_if_exist(map, _key, nil), do: map
 
   def put_if_exist(map, key, value), do: Map.put(map, key, value)
-
-  @doc "Whether to skip `account.pleroma.relationship` rendering for statuses/notifications"
-  def skip_relationships?(params) do
-    not truthy_param?(params["with_relationships"])
-  end
 end

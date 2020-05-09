@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [try_render: 3, add_link_headers: 2, skip_relationships?: 1]
+    only: [try_render: 3, add_link_headers: 2]
 
   require Ecto.Query
 
@@ -102,7 +102,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   `ids` query param is required
   """
-  def index(%{assigns: %{user: user}} = conn, %{"ids" => ids} = params) do
+  def index(%{assigns: %{user: user}} = conn, %{"ids" => ids} = _params) do
     limit = 100
 
     activities =
@@ -114,8 +114,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     render(conn, "index.json",
       activities: activities,
       for: user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 
@@ -370,8 +369,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     |> render("index.json",
       activities: activities,
       for: user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 
@@ -393,8 +391,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     |> render("index.json",
       activities: activities,
       for: user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 end

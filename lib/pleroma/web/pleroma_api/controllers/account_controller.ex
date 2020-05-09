@@ -6,7 +6,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2, skip_relationships?: 1]
+    only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2]
 
   alias Ecto.Changeset
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
@@ -139,8 +139,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     |> render("index.json",
       activities: activities,
       for: for_user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 

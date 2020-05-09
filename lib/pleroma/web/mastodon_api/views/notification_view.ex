@@ -15,8 +15,6 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", %{notifications: notifications, for: reading_user} = opts) do
-    opts = Map.merge(%{skip_relationships: true}, opts)
-
     activities = Enum.map(notifications, & &1.activity)
 
     parent_activities =
@@ -53,9 +51,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
             |> Enum.filter(& &1)
             |> Kernel.++(move_activities_targets)
 
-          UserRelationship.view_relationships_option(reading_user, actors,
-            source_mutes_only: opts[:skip_relationships]
-          )
+          UserRelationship.view_relationships_option(reading_user, actors, source_mutes_only: true)
       end
 
     opts =
@@ -73,8 +69,6 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
           for: reading_user
         } = opts
       ) do
-    opts = Map.merge(%{skip_relationships: true}, opts)
-
     actor = User.get_cached_by_ap_id(activity.data["actor"])
 
     parent_activity_fn = fn ->
@@ -87,15 +81,15 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
     mastodon_type = Activity.mastodon_notification_type(activity)
 
-    render_opts = %{
-      relationships: opts[:relationships],
-      skip_relationships: opts[:skip_relationships]
-    }
+    # Note: :relationships contain user mutes (needed for :muted flag in :status)
+    status_render_opts = %{relationships: opts[:relationships]}
+
+    account_render_opts = %{skip_relationships: true}
 
     with %{id: _} = account <-
            AccountView.render(
              "show.json",
-             Map.merge(render_opts, %{user: actor, for: reading_user})
+             Map.merge(account_render_opts, %{user: actor, for: reading_user})
            ) do
       response = %{
         id: to_string(notification.id),
@@ -109,21 +103,20 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
       case mastodon_type do
         "mention" ->
-          put_status(response, activity, reading_user, render_opts)
+          put_status(response, activity, reading_user, status_render_opts)
 
         "favourite" ->
-          put_status(response, parent_activity_fn.(), reading_user, render_opts)
+          put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
         "reblog" ->
-          put_status(response, parent_activity_fn.(), reading_user, render_opts)
+          put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
         "move" ->
-          # Note: :skip_relationships option being applied to _account_ rendering (here)
-          put_target(response, activity, reading_user, render_opts)
+          put_target(response, activity, reading_user, account_render_opts)
 
         "pleroma:emoji_reaction" ->
           response
-          |> put_status(parent_activity_fn.(), reading_user, render_opts)
+          |> put_status(parent_activity_fn.(), reading_user, status_render_opts)
           |> put_emoji(activity)
 
         type when type in ["follow", "follow_request"] ->

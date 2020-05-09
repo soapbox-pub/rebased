@@ -76,8 +76,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("index.json", opts) do
-    opts = Map.merge(%{skip_relationships: true}, opts)
-
     reading_user = opts[:for]
 
     # To do: check AdminAPIControllerTest on the reasons behind nil activities in the list
@@ -109,9 +107,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
             |> Enum.map(&get_user(&1.data["actor"], false))
             |> Enum.filter(& &1)
 
-          UserRelationship.view_relationships_option(reading_user, actors,
-            source_mutes_only: opts[:skip_relationships]
-          )
+          UserRelationship.view_relationships_option(reading_user, actors, source_mutes_only: true)
       end
 
     opts =
@@ -127,8 +123,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         "show.json",
         %{activity: %{data: %{"type" => "Announce", "object" => _object}} = activity} = opts
       ) do
-    opts = Map.merge(%{skip_relationships: true}, opts)
-
     user = get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
     activity_object = Object.normalize(activity)
@@ -167,8 +161,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         AccountView.render("show.json", %{
           user: user,
           for: opts[:for],
-          relationships: opts[:relationships],
-          skip_relationships: opts[:skip_relationships]
+          skip_relationships: true
         }),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -202,8 +195,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("show.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
-    opts = Map.merge(%{skip_relationships: true}, opts)
-
     object = Object.normalize(activity)
 
     user = get_user(activity.data["actor"])
@@ -337,8 +328,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         AccountView.render("show.json", %{
           user: user,
           for: opts[:for],
-          relationships: opts[:relationships],
-          skip_relationships: opts[:skip_relationships]
+          skip_relationships: true
         }),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),

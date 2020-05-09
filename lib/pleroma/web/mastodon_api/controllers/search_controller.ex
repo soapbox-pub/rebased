@@ -5,8 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.SearchController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [skip_relationships?: 1]
-
   alias Pleroma.Activity
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
@@ -71,7 +69,6 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   defp search_options(params, user) do
     [
-      skip_relationships: skip_relationships?(params),
       resolve: params[:resolve],
       following: params[:following],
       limit: params[:limit],
@@ -100,8 +97,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     StatusView.render("index.json",
       activities: statuses,
       for: options[:for_user],
-      as: :activity,
-      skip_relationships: options[:skip_relationships]
+      as: :activity
     )
   end
 
