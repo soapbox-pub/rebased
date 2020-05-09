@@ -42,7 +42,7 @@ defmodule Mix.Tasks.Pleroma.RefreshCounterCache do
 
     Activity
     |> where([a], fragment("(? ->> 'type'::text) = 'Create'", a.data))
-    |> where([a], like(a.actor, ^"%#{instance}%"))
+    |> where([a], fragment("split_part(?, '/', 3) = ?", a.actor, ^instance))
     |> select(
       [a],
       {fragment(
