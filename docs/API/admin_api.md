@@ -1096,6 +1096,10 @@ Loads json generated from `config/descriptions.exs`.
 
 ### Stats
 
+- Query Params:
+  - *optional* `instance`: **string** instance hostname (without protocol) to get stats for
+- Example: `https://mypleroma.org/api/pleroma/admin/stats?instance=lain.com`
+
 - Response:
 
 ```json

@@ -8,7 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 <details>
   <summary>API Changes</summary>
+
 - **Breaking:** Emoji API: changed methods and renamed routes.
+</details>
+
+<details>
+  <summary>Admin API Changes</summary>
+
+- Status visibility stats: now can return stats per instance.
+
+- Mix task to refresh counter cache (`mix pleroma.refresh_counter_cache`)
 </details>
 
 ### Removed
@@ -76,6 +85,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 2. Run database migrations (inside Pleroma directory):
   - OTP: `./bin/pleroma_ctl migrate`
   - From Source: `mix ecto.migrate`
+3. Reset status visibility counters (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl refresh_counter_cache`
+  - From Source: `mix pleroma.refresh_counter_cache`
 
 
 ## [2.0.2] - 2020-04-08
