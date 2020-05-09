@@ -12,8 +12,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MediaProxy
 
+  # Default behaviour for account view is to include embedded relationships
+  #   (e.g. when accounts are rendered on their own [e.g. a list of search results], not as
+  #   embedded content in notifications / statuses).
+  # This option must be explicitly set to false when rendering accounts as embedded content.
+  defp initialize_skip_relationships(opts) do
+    Map.merge(%{skip_relationships: false}, opts)
+  end
+
   def render("index.json", %{users: users} = opts) do
-    opts = Map.merge(%{skip_relationships: false}, opts)
+    opts = initialize_skip_relationships(opts)
 
     reading_user = opts[:for]
 
@@ -161,7 +169,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp do_render("show.json", %{user: user} = opts) do
-    opts = Map.merge(%{skip_relationships: false}, opts)
+    opts = initialize_skip_relationships(opts)
 
     user = User.sanitize_html(user, User.html_filter_policy(opts[:for]))
     display_name = user.name || user.nickname
