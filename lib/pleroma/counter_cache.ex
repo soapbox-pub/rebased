@@ -40,7 +40,7 @@ defmodule Pleroma.CounterCache do
     end
   end
 
-  def get_as_map() do
+  def get_sum() do
     CounterCache
     |> select([c], %{
       "public" => sum(c.public),
@@ -49,6 +49,10 @@ defmodule Pleroma.CounterCache do
       "direct" => sum(c.direct)
     })
     |> Repo.one()
+    |> Enum.map(fn {visibility, dec_count} ->
+      {visibility, Decimal.to_integer(dec_count)}
+    end)
+    |> Enum.into(%{})
   end
 
   def set(instance, values) do

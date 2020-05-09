@@ -1122,11 +1122,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def stats(conn, _) do
-    count = Stats.get_status_visibility_count()
+  def stats(conn, params) do
+    counters = Stats.get_status_visibility_count(params["instance"])
 
-    conn
-    |> json(%{"status_visibility" => count})
+    json(conn, %{"status_visibility" => counters})
   end
 
   defp errors(conn, {:error, :not_found}) do

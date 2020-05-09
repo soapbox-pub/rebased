@@ -97,14 +97,11 @@ defmodule Pleroma.Stats do
     }
   end
 
-  def get_status_visibility_count do
-    counter_cache = CounterCache.get_as_map()
-
-    %{
-      public: counter_cache["status_visibility_public"] || 0,
-      unlisted: counter_cache["status_visibility_unlisted"] || 0,
-      private: counter_cache["status_visibility_private"] || 0,
-      direct: counter_cache["status_visibility_direct"] || 0
-    }
+  def get_status_visibility_count(instance \\ nil) do
+    if is_nil(instance) do
+      CounterCache.get_sum()
+    else
+      CounterCache.get_by_instance(instance)
+    end
   end
 end

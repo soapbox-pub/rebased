@@ -43,7 +43,8 @@ defmodule Pleroma.Repo.Migrations.UpdateCounterCacheTable do
       END IF;
       IF TG_OP = 'INSERT' THEN
         visibility_new := activity_visibility(NEW.actor, NEW.recipients, NEW.data);
-        IF NEW.data->>'type' = 'Create' THEN
+        IF NEW.data->>'type' = 'Create'
+            AND visibility_new IN ('public', 'unlisted', 'private', 'direct') THEN
           EXECUTE format('INSERT INTO "counter_cache" ("instance", %1$I) VALUES ($1, 1)
                           ON CONFLICT ("instance") DO
                           UPDATE SET %1$I = "counter_cache".%1$I + 1', visibility_new)
@@ -53,7 +54,10 @@ defmodule Pleroma.Repo.Migrations.UpdateCounterCacheTable do
       ELSIF TG_OP = 'UPDATE' THEN
         visibility_new := activity_visibility(NEW.actor, NEW.recipients, NEW.data);
         visibility_old := activity_visibility(OLD.actor, OLD.recipients, OLD.data);
-        IF (NEW.data->>'type' = 'Create') and (OLD.data->>'type' = 'Create') and visibility_new != visibility_old THEN
+        IF (NEW.data->>'type' = 'Create')
+            AND (OLD.data->>'type' = 'Create')
+            AND visibility_new != visibility_old
+            AND visibility_new IN ('public', 'unlisted', 'private', 'direct') THEN
           EXECUTE format('UPDATE "counter_cache" SET
                           %1$I = greatest("counter_cache".%1$I - 1, 0),
                           %2$I = "counter_cache".%2$I + 1
