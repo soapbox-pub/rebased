@@ -40,7 +40,7 @@ defmodule Pleroma.CounterCache do
     end
   end
 
-  def get_sum() do
+  def get_sum do
     CounterCache
     |> select([c], %{
       "public" => sum(c.public),
