@@ -17,14 +17,21 @@ defmodule Mix.Tasks.Pleroma.RefreshCounterCache do
   def run([]) do
     Mix.Pleroma.start_pleroma()
 
-    Activity
-    |> distinct([a], true)
-    |> select([a], fragment("split_part(?, '/', 3)", a.actor))
-    |> Repo.all()
-    |> Enum.each(fn instance ->
+    instances =
+      Activity
+      |> distinct([a], true)
+      |> select([a], fragment("split_part(?, '/', 3)", a.actor))
+      |> Repo.all()
+
+    instances
+    |> Enum.with_index(1)
+    |> Enum.each(fn {instance, i} ->
       counters = instance_counters(instance)
       CounterCache.set(instance, counters)
-      Mix.Pleroma.shell_info("Setting #{instance} counters: #{inspect(counters)}")
+
+      Mix.Pleroma.shell_info(
+        "[#{i}/#{length(instances)}] Setting #{instance} counters: #{inspect(counters)}"
+      )
     end)
 
     Mix.Pleroma.shell_info("Done")
