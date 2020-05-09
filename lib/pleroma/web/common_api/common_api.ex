@@ -191,8 +191,10 @@ defmodule Pleroma.Web.CommonAPI do
 
   def react_with_emoji(id, user, emoji) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         object <- Object.normalize(activity) do
-      ActivityPub.react_with_emoji(user, object, emoji)
+         object <- Object.normalize(activity),
+         {:ok, emoji_react, _} <- Builder.emoji_react(user, object, emoji),
+         {:ok, activity, _} <- Pipeline.common_pipeline(emoji_react, local: true) do
+      {:ok, activity}
     else
       _ ->
         {:error, dgettext("errors", "Could not add reaction emoji")}

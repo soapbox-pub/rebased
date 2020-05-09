@@ -40,23 +40,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Filtering of push notifications on activities from blocked domains
 - Resolving Peertube accounts with Webfinger
 
-## [unreleased-patch]
+## [Unreleased (patch)]
+
+### Fixed
+- Healthcheck reporting the number of memory currently used, rather than allocated in total
+
+## [2.0.3] - 2020-05-02
+
 ### Security
 - Disallow re-registration of previously deleted users, which allowed viewing direct messages addressed to them
 - Mastodon API: Fix `POST /api/v1/follow_requests/:id/authorize` allowing to force a follow from a local user even if they didn't request to follow
+- CSP: Sandbox uploads
 
 ### Fixed
-- Logger configuration through AdminFE
+- Notifications from blocked domains
+- Potential federation issues with Mastodon versions before 3.0.0
 - HTTP Basic Authentication permissions issue
+- Follow/Block imports not being able to find the user if the nickname started with an `@`
+- Instance stats counting internal users
+- Inability to run a From Source release without git
 - ObjectAgePolicy didn't filter out old messages
-- Transmogrifier: Keep object sensitive settings for outgoing representation (AP C2S)
+- `blob:` urls not being allowed by CSP
 
 ### Added
 - NodeInfo: ObjectAgePolicy settings to the `federation` list.
+- Follow request notifications
 <details>
   <summary>API Changes</summary>
 - Admin API: `GET /api/pleroma/admin/need_reboot`.
 </details>
+
+### Upgrade notes
+
+1. Restart Pleroma
+2. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+
 
 ## [2.0.2] - 2020-04-08
 ### Added
@@ -156,6 +176,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `pleroma.thread_muted` to the Status entity
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
 - Mastodon API, streaming: Add `pleroma.direct_conversation_id` to the `conversation` stream event payload.
+- Mastodon API: Add `pleroma.unread_count` to the Marker entity
 - Admin API: Render whole status in grouped reports
 - Mastodon API: User timelines will now respect blocks, unless you are getting the user timeline of somebody you blocked (which would be empty otherwise).
 - Mastodon API: Favoriting / Repeating a post multiple times will now return the identical response every time. Before, executing that action twice would return an error ("already favorited") on the second try.

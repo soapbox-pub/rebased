@@ -5,8 +5,10 @@
 defmodule Pleroma.Notification do
   use Ecto.Schema
 
+  alias Ecto.Multi
   alias Pleroma.Activity
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Marker
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Pagination
@@ -34,9 +36,28 @@ defmodule Pleroma.Notification do
     timestamps()
   end
 
+  @spec unread_notifications_count(User.t()) :: integer()
+  def unread_notifications_count(%User{id: user_id}) do
+    from(q in __MODULE__,
+      where: q.user_id == ^user_id and q.seen == false
+    )
+    |> Repo.aggregate(:count, :id)
+  end
+
   def changeset(%Notification{} = notification, attrs) do
     notification
     |> cast(attrs, [:seen])
+  end
+
+  @spec last_read_query(User.t()) :: Ecto.Queryable.t()
+  def last_read_query(user) do
+    from(q in Pleroma.Notification,
+      where: q.user_id == ^user.id,
+      where: q.seen == true,
+      select: type(q.id, :string),
+      limit: 1,
+      order_by: [desc: :id]
+    )
   end
 
   defp for_user_query_ap_id_opts(user, opts) do
@@ -185,25 +206,23 @@ defmodule Pleroma.Notification do
     |> Repo.all()
   end
 
-  def set_read_up_to(%{id: user_id} = _user, id) do
+  def set_read_up_to(%{id: user_id} = user, id) do
     query =
       from(
         n in Notification,
         where: n.user_id == ^user_id,
         where: n.id <= ^id,
         where: n.seen == false,
-        update: [
-          set: [
-            seen: true,
-            updated_at: ^NaiveDateTime.utc_now()
-          ]
-        ],
         # Ideally we would preload object and activities here
         # but Ecto does not support preloads in update_all
         select: n.id
       )
 
-    {_, notification_ids} = Repo.update_all(query, [])
+    {:ok, %{ids: {_, notification_ids}}} =
+      Multi.new()
+      |> Multi.update_all(:ids, query, set: [seen: true, updated_at: NaiveDateTime.utc_now()])
+      |> Marker.multi_set_last_read_id(user, "notifications")
+      |> Repo.transaction()
 
     Notification
     |> where([n], n.id in ^notification_ids)
@@ -220,11 +239,18 @@ defmodule Pleroma.Notification do
     |> Repo.all()
   end
 
+  @spec read_one(User.t(), String.t()) ::
+          {:ok, Notification.t()} | {:error, Ecto.Changeset.t()} | nil
   def read_one(%User{} = user, notification_id) do
     with {:ok, %Notification{} = notification} <- get(user, notification_id) do
-      notification
-      |> changeset(%{seen: true})
-      |> Repo.update()
+      Multi.new()
+      |> Multi.update(:update, changeset(notification, %{seen: true}))
+      |> Marker.multi_set_last_read_id(user, "notifications")
+      |> Repo.transaction()
+      |> case do
+        {:ok, %{update: notification}} -> {:ok, notification}
+        {:error, :update, changeset, _} -> {:error, changeset}
+      end
     end
   end
 
@@ -316,8 +342,11 @@ defmodule Pleroma.Notification do
   # TODO move to sql, too.
   def create_notification(%Activity{} = activity, %User{} = user, do_send \\ true) do
     unless skip?(activity, user) do
-      notification = %Notification{user_id: user.id, activity: activity}
-      {:ok, notification} = Repo.insert(notification)
+      {:ok, %{notification: notification}} =
+        Multi.new()
+        |> Multi.insert(:notification, %Notification{user_id: user.id, activity: activity})
+        |> Marker.multi_set_last_read_id(user, "notifications")
+        |> Repo.transaction()
 
       if do_send do
         Streamer.stream(["user", "user:notification"], notification)
@@ -339,13 +368,7 @@ defmodule Pleroma.Notification do
 
   def get_notified_from_activity(%Activity{data: %{"type" => type}} = activity, local_only)
       when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact"] do
-    potential_receiver_ap_ids =
-      []
-      |> Utils.maybe_notify_to_recipients(activity)
-      |> Utils.maybe_notify_mentioned_recipients(activity)
-      |> Utils.maybe_notify_subscribers(activity)
-      |> Utils.maybe_notify_followers(activity)
-      |> Enum.uniq()
+    potential_receiver_ap_ids = get_potential_receiver_ap_ids(activity)
 
     potential_receivers = User.get_users_from_set(potential_receiver_ap_ids, local_only)
 
@@ -362,6 +385,27 @@ defmodule Pleroma.Notification do
   end
 
   def get_notified_from_activity(_, _local_only), do: {[], []}
+
+  # For some activities, only notify the author of the object
+  def get_potential_receiver_ap_ids(%{data: %{"type" => type, "object" => object_id}})
+      when type in ~w{Like Announce EmojiReact} do
+    case Object.get_cached_by_ap_id(object_id) do
+      %Object{data: %{"actor" => actor}} ->
+        [actor]
+
+      _ ->
+        []
+    end
+  end
+
+  def get_potential_receiver_ap_ids(activity) do
+    []
+    |> Utils.maybe_notify_to_recipients(activity)
+    |> Utils.maybe_notify_mentioned_recipients(activity)
+    |> Utils.maybe_notify_subscribers(activity)
+    |> Utils.maybe_notify_followers(activity)
+    |> Enum.uniq()
+  end
 
   @doc "Filters out AP IDs domain-blocking and not following the activity's actor"
   def exclude_domain_blocker_ap_ids(ap_ids, activity, preloaded_users \\ [])

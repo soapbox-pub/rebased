@@ -712,7 +712,7 @@ config :pleroma, :config_description, [
         key: :quarantined_instances,
         type: {:list, :string},
         description:
-          "List of ActivityPub instances where private (DMs, followers-only) activities will not be send",
+          "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent",
         suggestions: [
           "quarantined.com",
           "*.quarantined.com"

@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
     user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
-    {:ok, reaction_activity, _object} = CommonAPI.react_with_emoji(activity.id, user, "👌")
+    {:ok, reaction_activity} = CommonAPI.react_with_emoji(activity.id, user, "👌")
 
     data =
       File.read!("test/fixtures/mastodon-undo-like.json")
