@@ -8,14 +8,19 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
   alias Pleroma.Chat
   alias Pleroma.User
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.PleromaAPI.ChatMessageView
 
   def render("show.json", %{chat: %Chat{} = chat} = opts) do
     recipient = User.get_cached_by_ap_id(chat.recipient)
 
+    last_message = Chat.last_message_for_chat(chat)
+
     %{
       id: chat.id |> to_string(),
       account: AccountView.render("show.json", Map.put(opts, :user, recipient)),
-      unread: chat.unread
+      unread: chat.unread,
+      last_message:
+        last_message && ChatMessageView.render("show.json", chat: chat, object: last_message)
     }
   end
 

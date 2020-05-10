@@ -14,9 +14,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.Web.PleromaAPI.ChatMessageView
   alias Pleroma.Web.PleromaAPI.ChatView
 
-  import Pleroma.Web.ActivityPub.ObjectValidator, only: [stringify_keys: 1]
-
   import Ecto.Query
+  import Pleroma.Web.ActivityPub.ObjectValidator, only: [stringify_keys: 1]
 
   # TODO
   # - Error handling
@@ -65,24 +64,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   def messages(%{assigns: %{user: %{id: user_id} = user}} = conn, %{id: id} = params) do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id) do
       messages =
-        from(o in Object,
-          where: fragment("?->>'type' = ?", o.data, "ChatMessage"),
-          where:
-            fragment(
-              """
-              (?->>'actor' = ? and ?->'to' = ?) 
-              OR (?->>'actor' = ? and ?->'to' = ?) 
-              """,
-              o.data,
-              ^user.ap_id,
-              o.data,
-              ^[chat.recipient],
-              o.data,
-              ^chat.recipient,
-              o.data,
-              ^[user.ap_id]
-            )
-        )
+        chat
+        |> Chat.messages_for_chat_query()
         |> Pagination.fetch_paginated(params |> stringify_keys())
 
       conn
