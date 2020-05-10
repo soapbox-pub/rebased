@@ -12,6 +12,8 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Notification
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.NotificationView
@@ -610,6 +612,28 @@ defmodule Pleroma.NotificationTest do
 
       {enabled_receivers, _disabled_receivers} =
         Notification.get_notified_from_activity(activity_two)
+
+      assert other_user not in enabled_receivers
+    end
+
+    test "it only notifies the post's author in likes" do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+
+      {:ok, activity_one} =
+        CommonAPI.post(user, %{
+          "status" => "hey @#{other_user.nickname}!"
+        })
+
+      {:ok, like_data, _} = Builder.like(third_user, activity_one.object)
+
+      {:ok, like, _} =
+        like_data
+        |> Map.put("to", [other_user.ap_id | like_data["to"]])
+        |> ActivityPub.persist(local: true)
+
+      {enabled_receivers, _disabled_receivers} = Notification.get_notified_from_activity(like)
 
       assert other_user not in enabled_receivers
     end
