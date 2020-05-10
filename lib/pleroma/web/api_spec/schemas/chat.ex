@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ApiSpec.Schemas.Chat do
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Schemas.ChatMessage
 
   require OpenApiSpex
 
@@ -12,9 +13,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Chat do
     description: "Response schema for a Chat",
     type: :object,
     properties: %{
-      id: %Schema{type: :string, nullable: false},
-      account: %Schema{type: :object, nullable: false},
-      unread: %Schema{type: :integer, nullable: false}
+      id: %Schema{type: :string},
+      account: %Schema{type: :object},
+      unread: %Schema{type: :integer},
+      last_message: %Schema{type: ChatMessage, nullable: true}
     },
     example: %{
       "account" => %{
@@ -64,7 +66,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Chat do
         "url" => "https://dontbulling.me/users/lain"
       },
       "id" => "1",
-      "unread" => 2
+      "unread" => 2,
+      "last_message" => ChatMessage.schema().example()
     }
   })
 end
