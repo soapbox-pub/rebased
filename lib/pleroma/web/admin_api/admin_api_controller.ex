@@ -22,6 +22,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.AdminAPI.ConfigView
   alias Pleroma.Web.AdminAPI.ModerationLogView
@@ -31,7 +32,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MastodonAPI.AppView
-  alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.Router
 
@@ -280,7 +281,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       })
 
     conn
-    |> put_view(Pleroma.Web.AdminAPI.StatusView)
+    |> put_view(AdminAPI.StatusView)
     |> render("index.json", %{activities: activities, as: :activity})
   end
 
@@ -299,7 +300,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         })
 
       conn
-      |> put_view(StatusView)
+      |> put_view(MastodonAPI.StatusView)
       |> render("index.json", %{activities: activities, as: :activity})
     else
       _ -> {:error, :not_found}
@@ -829,14 +830,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       })
 
     conn
-    |> put_view(Pleroma.Web.AdminAPI.StatusView)
+    |> put_view(AdminAPI.StatusView)
     |> render("index.json", %{activities: activities, as: :activity})
   end
 
   def status_show(conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id(id) do
       conn
-      |> put_view(StatusView)
+      |> put_view(MastodonAPI.StatusView)
       |> render("show.json", %{activity: activity})
     else
       _ -> errors(conn, {:error, :not_found})
@@ -856,7 +857,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       })
 
       conn
-      |> put_view(StatusView)
+      |> put_view(MastodonAPI.StatusView)
       |> render("show.json", %{activity: activity})
     end
   end

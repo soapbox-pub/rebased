@@ -84,12 +84,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
     # Note: :relationships contain user mutes (needed for :muted flag in :status)
     status_render_opts = %{relationships: opts[:relationships]}
 
-    account_render_opts = %{skip_relationships: true}
-
     with %{id: _} = account <-
            AccountView.render(
              "show.json",
-             Map.merge(account_render_opts, %{user: actor, for: reading_user})
+             %{user: actor, for: reading_user}
            ) do
       response = %{
         id: to_string(notification.id),
@@ -112,7 +110,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
           put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
         "move" ->
-          put_target(response, activity, reading_user, account_render_opts)
+          put_target(response, activity, reading_user, %{})
 
         "pleroma:emoji_reaction" ->
           response

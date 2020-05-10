@@ -73,8 +73,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
                 AccountView.render("index.json", %{
                   users: users,
                   for: user,
-                  as: :user,
-                  skip_relationships: true
+                  as: :user
                 }),
               me: !!(user && user.ap_id in user_ap_ids)
             }

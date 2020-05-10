@@ -160,8 +160,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       account:
         AccountView.render("show.json", %{
           user: user,
-          for: opts[:for],
-          skip_relationships: true
+          for: opts[:for]
         }),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -327,8 +326,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       account:
         AccountView.render("show.json", %{
           user: user,
-          for: opts[:for],
-          skip_relationships: true
+          for: opts[:for]
         }),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),

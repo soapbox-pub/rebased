@@ -86,8 +86,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     AccountView.render("index.json",
       users: accounts,
       for: options[:for_user],
-      as: :user,
-      skip_relationships: true
+      as: :user
     )
   end
 

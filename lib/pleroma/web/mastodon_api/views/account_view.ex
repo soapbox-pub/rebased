@@ -12,33 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MediaProxy
 
-  # Default behaviour for account view is to include embedded relationships
-  #   (e.g. when accounts are rendered on their own [e.g. a list of search results], not as
-  #   embedded content in notifications / statuses).
-  # This option must be explicitly set to false when rendering accounts as embedded content.
-  defp initialize_skip_relationships(opts) do
-    Map.merge(%{skip_relationships: false}, opts)
-  end
-
   def render("index.json", %{users: users} = opts) do
-    opts = initialize_skip_relationships(opts)
-
-    reading_user = opts[:for]
-
-    relationships_opt =
-      cond do
-        Map.has_key?(opts, :relationships) ->
-          opts[:relationships]
-
-        is_nil(reading_user) || opts[:skip_relationships] ->
-          UserRelationship.view_relationships_option(nil, [])
-
-        true ->
-          UserRelationship.view_relationships_option(reading_user, users)
-      end
-
-    opts = Map.put(opts, :relationships, relationships_opt)
-
     users
     |> render_many(AccountView, "show.json", opts)
     |> Enum.filter(&Enum.any?/1)
@@ -169,8 +143,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp do_render("show.json", %{user: user} = opts) do
-    opts = initialize_skip_relationships(opts)
-
     user = User.sanitize_html(user, User.html_filter_policy(opts[:for]))
     display_name = user.name || user.nickname
 
@@ -202,17 +174,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           "visible_in_picker" => false
         }
       end)
-
-    relationship =
-      if opts[:skip_relationships] do
-        %{}
-      else
-        render("relationship.json", %{
-          user: opts[:for],
-          target: user,
-          relationships: opts[:relationships]
-        })
-      end
 
     %{
       id: to_string(user.id),
@@ -252,7 +213,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         hide_followers: user.hide_followers,
         hide_follows: user.hide_follows,
         hide_favorites: user.hide_favorites,
-        relationship: relationship,
+        relationship: %{},
         skip_thread_containment: user.skip_thread_containment,
         background_image: image_url(user.background) |> MediaProxy.url()
       }

@@ -45,8 +45,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       account:
         AccountView.render("show.json", %{
           user: user,
-          for: mentioned_user,
-          skip_relationships: true
+          for: mentioned_user
         }),
       status: StatusView.render("show.json", %{activity: activity, for: mentioned_user}),
       created_at: Utils.to_masto_date(notification.inserted_at)
@@ -67,8 +66,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       id: to_string(notification.id),
       pleroma: %{is_seen: false},
       type: "favourite",
-      account:
-        AccountView.render("show.json", %{user: another_user, for: user, skip_relationships: true}),
+      account: AccountView.render("show.json", %{user: another_user, for: user}),
       status: StatusView.render("show.json", %{activity: create_activity, for: user}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
@@ -88,8 +86,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       id: to_string(notification.id),
       pleroma: %{is_seen: false},
       type: "reblog",
-      account:
-        AccountView.render("show.json", %{user: another_user, for: user, skip_relationships: true}),
+      account: AccountView.render("show.json", %{user: another_user, for: user}),
       status: StatusView.render("show.json", %{activity: reblog_activity, for: user}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
@@ -107,8 +104,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       id: to_string(notification.id),
       pleroma: %{is_seen: false},
       type: "follow",
-      account:
-        AccountView.render("show.json", %{user: follower, for: followed, skip_relationships: true}),
+      account: AccountView.render("show.json", %{user: follower, for: followed}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
@@ -151,10 +147,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       id: to_string(notification.id),
       pleroma: %{is_seen: false},
       type: "move",
-      account:
-        AccountView.render("show.json", %{user: old_user, for: follower, skip_relationships: true}),
-      target:
-        AccountView.render("show.json", %{user: new_user, for: follower, skip_relationships: true}),
+      account: AccountView.render("show.json", %{user: old_user, for: follower}),
+      target: AccountView.render("show.json", %{user: new_user, for: follower}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
@@ -179,8 +173,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       pleroma: %{is_seen: false},
       type: "pleroma:emoji_reaction",
       emoji: "☕",
-      account:
-        AccountView.render("show.json", %{user: other_user, for: user, skip_relationships: true}),
+      account: AccountView.render("show.json", %{user: other_user, for: user}),
       status: StatusView.render("show.json", %{activity: activity, for: user}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
