@@ -9,8 +9,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatViewTest do
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
-  alias Pleroma.Web.PleromaAPI.ChatView
   alias Pleroma.Web.PleromaAPI.ChatMessageView
+  alias Pleroma.Web.PleromaAPI.ChatView
 
   import Pleroma.Factory
 
