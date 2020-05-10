@@ -31,8 +31,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.MastodonAPI.AppView
   alias Pleroma.Web.MastodonAPI
+  alias Pleroma.Web.MastodonAPI.AppView
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.Router
 
