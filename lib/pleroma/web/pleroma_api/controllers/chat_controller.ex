@@ -27,7 +27,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:statuses"]} when action in [:messages, :index]
+    %{scopes: ["read:statuses"]} when action in [:messages, :index, :show]
   )
 
   plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
@@ -95,6 +95,14 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   def create(%{assigns: %{user: user}} = conn, params) do
     with %User{ap_id: recipient} <- User.get_by_id(params[:id]),
          {:ok, %Chat{} = chat} <- Chat.get_or_create(user.id, recipient) do
+      conn
+      |> put_view(ChatView)
+      |> render("show.json", chat: chat)
+    end
+  end
+
+  def show(%{assigns: %{user: user}} = conn, params) do
+    with %Chat{} = chat <- Repo.get_by(Chat, user_id: user.id, id: params[:id]) do
       conn
       |> put_view(ChatView)
       |> render("show.json", chat: chat)

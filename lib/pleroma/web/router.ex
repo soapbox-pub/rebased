@@ -307,6 +307,7 @@ defmodule Pleroma.Web.Router do
 
       post("/chats/by-account-id/:id", ChatController, :create)
       get("/chats", ChatController, :index)
+      get("/chats/:id", ChatController, :show)
       get("/chats/:id/messages", ChatController, :messages)
       post("/chats/:id/messages", ChatController, :post_chat_message)
       post("/chats/:id/read", ChatController, :mark_as_read)

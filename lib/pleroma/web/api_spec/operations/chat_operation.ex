@@ -38,6 +38,37 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     }
   end
 
+  def show_operation do
+    %Operation{
+      tags: ["chat"],
+      summary: "Create a chat",
+      operationId: "ChatController.show",
+      parameters: [
+        Operation.parameter(
+          :id,
+          :path,
+          :string,
+          "The id of the chat",
+          required: true,
+          example: "1234"
+        )
+      ],
+      responses: %{
+        200 =>
+          Operation.response(
+            "The existing chat",
+            "application/json",
+            Chat
+          )
+      },
+      security: [
+        %{
+          "oAuth" => ["read"]
+        }
+      ]
+    }
+  end
+
   def create_operation do
     %Operation{
       tags: ["chat"],

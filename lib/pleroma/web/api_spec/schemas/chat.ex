@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Chat do
       id: %Schema{type: :string},
       account: %Schema{type: :object},
       unread: %Schema{type: :integer},
-      last_message: %Schema{type: ChatMessage, nullable: true}
+      last_message: ChatMessage
     },
     example: %{
       "account" => %{

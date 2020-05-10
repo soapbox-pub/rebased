@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
   OpenApiSpex.schema(%{
     title: "ChatMessage",
     description: "Response schema for a ChatMessage",
+    nullable: true,
     type: :object,
     properties: %{
       id: %Schema{type: :string},
