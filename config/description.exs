@@ -28,7 +28,8 @@ config :pleroma, :config_description, [
       %{
         key: :filters,
         type: {:list, :module},
-        description: "List of filter modules for uploads",
+        description:
+          "List of filter modules for uploads. Module names are shortened (removed leading `Pleroma.Upload.Filter.` part), but on adding custom MRF module you need to use full name.",
         suggestions:
           Generator.list_modules_in_dir(
             "lib/pleroma/upload/filter",
@@ -681,7 +682,8 @@ config :pleroma, :config_description, [
       %{
         key: :federation_publisher_modules,
         type: {:list, :module},
-        description: "List of modules for federation publishing",
+        description:
+          "List of modules for federation publishing. Module names are shortened (removed leading `Pleroma.Web.` part), but on adding custom MRF module you need to use full name.",
         suggestions: [
           Pleroma.Web.ActivityPub.Publisher
         ]
@@ -694,7 +696,8 @@ config :pleroma, :config_description, [
       %{
         key: :rewrite_policy,
         type: [:module, {:list, :module}],
-        description: "A list of MRF policies enabled",
+        description:
+          "A list of enabled MRF policies. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom MRF module you need to use full name.",
         suggestions:
           Generator.list_modules_in_dir(
             "lib/pleroma/web/activity_pub/mrf",
@@ -2031,7 +2034,8 @@ config :pleroma, :config_description, [
       %{
         key: :parsers,
         type: {:list, :module},
-        description: "List of Rich Media parsers.",
+        description:
+          "List of Rich Media parsers. Module names are shortened (removed leading `Pleroma.Web.RichMedia.Parsers.` part), but on adding custom MRF module you need to use full name.",
         suggestions: [
           Pleroma.Web.RichMedia.Parsers.MetaTagsParser,
           Pleroma.Web.RichMedia.Parsers.OEmbed,
@@ -2043,7 +2047,8 @@ config :pleroma, :config_description, [
         key: :ttl_setters,
         label: "TTL setters",
         type: {:list, :module},
-        description: "List of rich media TTL setters.",
+        description:
+          "List of rich media TTL setters. Module names are shortened (removed leading `Pleroma.Web.RichMedia.Parser.` part), but on adding custom MRF module you need to use full name.",
         suggestions: [
           Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl
         ]
@@ -2717,6 +2722,8 @@ config :pleroma, :config_description, [
       %{
         key: :scrub_policy,
         type: {:list, :module},
+        description:
+          "Module names are shortened (removed leading `Pleroma.HTML.` part), but on adding custom MRF module you need to use full name.",
         suggestions: [Pleroma.HTML.Transform.MediaProxy, Pleroma.HTML.Scrubber.Default]
       }
     ]
