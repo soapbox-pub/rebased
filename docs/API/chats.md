@@ -43,10 +43,15 @@ you can call:
 
 `POST /api/v1/pleroma/chats/by-account-id/{account_id}`
 
-The account id is the normal FlakeId of the usre
-
+The account id is the normal FlakeId of the user
 ```
 POST /api/v1/pleroma/chats/by-account-id/someflakeid
+```
+
+If you already have the id of a chat, you can also use
+
+```
+GET /api/v1/pleroma/chats/:id
 ```
 
 There will only ever be ONE Chat for you and a given recipient, so this call
