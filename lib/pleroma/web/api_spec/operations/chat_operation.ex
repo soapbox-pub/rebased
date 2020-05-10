@@ -241,7 +241,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       },
       required: [:content],
       example: %{
-        "content" => "Hey wanna buy feet pics?"
+        "content" => "Hey wanna buy feet pics?",
+        "media_id" => "134234"
       }
     }
   end
