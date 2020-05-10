@@ -3,6 +3,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.4] - 2020-05-10
+
+### Security
+- AP C2S: Fix a potential DoS by creating nonsensical objects that break timelines
+
+### Fixed
+- Peertube user lookups not working
+- `InsertSkeletonsForDeletedUsers` migration failing on some instances
+- Healthcheck reporting the number of memory currently used, rather than allocated in total
+- LDAP not being usable in OTP releases
+- Default apache configuration having tls chain issues
+
+### Upgrade notes
+
+#### Apache only
+
+1. Remove the following line from your config:
+```
+    SSLCertificateFile      /etc/letsencrypt/live/${servername}/cert.pem
+```
+
+#### Everyone
+
+1. Restart Pleroma
+
 ## [2.0.3] - 2020-05-02
 
 ### Security

@@ -370,7 +370,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> json(err)
   end
 
-  def handle_user_activity(user, %{"type" => "Create"} = params) do
+  defp handle_user_activity(
+         %User{} = user,
+         %{"type" => "Create", "object" => %{"type" => "Note"}} = params
+       ) do
     object =
       params["object"]
       |> Map.merge(Map.take(params, ["to", "cc"]))
@@ -386,7 +389,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     })
   end
 
-  def handle_user_activity(user, %{"type" => "Delete"} = params) do
+  defp handle_user_activity(user, %{"type" => "Delete"} = params) do
     with %Object{} = object <- Object.normalize(params["object"]),
          true <- user.is_moderator || user.ap_id == object.data["actor"],
          {:ok, delete} <- ActivityPub.delete(object) do
@@ -396,7 +399,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def handle_user_activity(user, %{"type" => "Like"} = params) do
+  defp handle_user_activity(user, %{"type" => "Like"} = params) do
     with %Object{} = object <- Object.normalize(params["object"]),
          {:ok, activity, _object} <- ActivityPub.like(user, object) do
       {:ok, activity}
@@ -405,7 +408,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def handle_user_activity(_, _) do
+  defp handle_user_activity(_, _) do
     {:error, dgettext("errors", "Unhandled activity type")}
   end
 
