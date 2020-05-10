@@ -62,7 +62,8 @@ Returned data:
     ...
   },
   "id" : "1",
-  "unread" : 2
+  "unread" : 2,
+  "last_message" : {...} // The last message in that chat
 }
 ```
 
@@ -105,7 +106,8 @@ Returned data:
         ...
       },
       "id" : "1",
-      "unread" : 2
+      "unread" : 2,
+      "last_message" : {...} // The last message in that chat
    }
 ]
 ```
