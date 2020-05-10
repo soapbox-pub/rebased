@@ -30,7 +30,7 @@ defmodule Pleroma.Repo.Migrations.InsertSkeletonsForDeletedUsers do
           Repo,
           "select distinct unnest(nonexistent_locals.recipients) from activities, lateral (select array_agg(recipient) as recipients from unnest(activities.recipients) as recipient where recipient similar to '#{
             instance_uri
-          }/users/[A-Za-z0-9]*' and not(recipient in (select ap_id from users where local = true))) nonexistent_locals;",
+          }/users/[A-Za-z0-9]*' and not(recipient in (select ap_id from users))) nonexistent_locals;",
           [],
           timeout: :infinity
         )
