@@ -160,6 +160,7 @@ Posting a chat message for given Chat id works like this:
 
 Parameters:
 - content: The text content of the message
+- media_id: The id of an upload that will be attached to the message.
 
 Currently, no formatting beyond basic escaping and emoji is implemented, as well as no
 attachments. This will most probably change.
