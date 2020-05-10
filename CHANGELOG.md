@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [2.0.4] - 2020-05-10
 
+### Security
+- AP C2S: Fix a potential DoS by creating nonsensical objects that break timelines
+
 ### Fixed
 - Peertube user lookups not working
 - `InsertSkeletonsForDeletedUsers` migration failing on some instances
