@@ -85,38 +85,62 @@ defmodule Pleroma.Web.MediaProxyTest do
       assert MediaProxy.decode_url(sig, base64) == {:error, :invalid_signature}
     end
 
-    test "`filename_matches/_` preserves the encoded or decoded path" do
-      assert MediaProxy.filename_matches(
-               %{"filename" => "/Hello world.jpg"},
-               "/Hello world.jpg",
-               "http://pleroma.social/Hello world.jpg"
+    def test_verify_request_path_and_url(request_path, url, expected_result) do
+      assert MediaProxy.verify_request_path_and_url(request_path, url) == expected_result
+
+      assert MediaProxy.verify_request_path_and_url(
+               %Plug.Conn{
+                 params: %{"filename" => Path.basename(request_path)},
+                 request_path: request_path
+               },
+               url
+             ) == expected_result
+    end
+
+    test "if first arg of `verify_request_path_and_url/2` is a Plug.Conn without \"filename\" " <>
+           "parameter, `verify_request_path_and_url/2` returns :ok " do
+      assert MediaProxy.verify_request_path_and_url(
+               %Plug.Conn{params: %{}, request_path: "/some/path"},
+               "https://instance.com/file.jpg"
              ) == :ok
 
-      assert MediaProxy.filename_matches(
-               %{"filename" => "/Hello%20world.jpg"},
-               "/Hello%20world.jpg",
-               "http://pleroma.social/Hello%20world.jpg"
+      assert MediaProxy.verify_request_path_and_url(
+               %Plug.Conn{params: %{}, request_path: "/path/to/file.jpg"},
+               "https://instance.com/file.jpg"
              ) == :ok
+    end
 
-      assert MediaProxy.filename_matches(
-               %{"filename" => "/my%2Flong%2Furl%2F2019%2F07%2FS.jpg"},
-               "/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
-               "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg"
-             ) == :ok
+    test "`verify_request_path_and_url/2` preserves the encoded or decoded path" do
+      test_verify_request_path_and_url(
+        "/Hello world.jpg",
+        "http://pleroma.social/Hello world.jpg",
+        :ok
+      )
 
-      assert MediaProxy.filename_matches(
-               %{"filename" => "/my%2Flong%2Furl%2F2019%2F07%2FS.jp"},
-               "/my%2Flong%2Furl%2F2019%2F07%2FS.jp",
-               "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg"
-             ) == {:wrong_filename, "my%2Flong%2Furl%2F2019%2F07%2FS.jpg"}
+      test_verify_request_path_and_url(
+        "/Hello%20world.jpg",
+        "http://pleroma.social/Hello%20world.jpg",
+        :ok
+      )
+
+      test_verify_request_path_and_url(
+        "/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
+        "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
+        :ok
+      )
+
+      test_verify_request_path_and_url(
+        "/my%2Flong%2Furl%2F2019%2F07%2FS",
+        "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
+        {:wrong_filename, "my%2Flong%2Furl%2F2019%2F07%2FS.jpg"}
+      )
     end
 
     test "encoded url are tried to match for proxy as `conn.request_path` encodes the url" do
       # conn.request_path will return encoded url
       request_path = "/ANALYSE-DAI-_-LE-STABLECOIN-100-D%C3%89CENTRALIS%C3%89-BQ.jpg"
 
-      assert MediaProxy.filename_matches(
-               true,
+      assert MediaProxy.verify_request_path_and_url(
                request_path,
                "https://mydomain.com/uploads/2019/07/ANALYSE-DAI-_-LE-STABLECOIN-100-DÉCENTRALISÉ-BQ.jpg"
              ) == :ok

@@ -10,14 +10,12 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   alias Pleroma.ReverseProxy
   alias Pleroma.Web.MediaProxy
 
-  @default_proxy_opts [max_body_length: 25 * 1_048_576, http: [follow_redirect: true]]
-
-  def remote(conn, %{"sig" => sig64, "url" => url64} = params) do
-    with config <- Config.get([:media_proxy], []),
-         {_, true} <- {:enabled, Keyword.get(config, :enabled, false)},
+  def remote(conn, %{"sig" => sig64, "url" => url64}) do
+    with {_, true} <- {:enabled, MediaProxy.enabled?()},
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),
-         :ok <- MediaProxy.filename_matches(params, conn.request_path, url) do
-      ReverseProxy.call(conn, url, Keyword.get(config, :proxy_opts, @default_proxy_opts))
+         :ok <- MediaProxy.verify_request_path_and_url(conn, url) do
+      proxy_opts = Config.get([:media_proxy, :proxy_opts], [])
+      ReverseProxy.call(conn, url, proxy_opts)
     else
       {:enabled, false} ->
         send_resp(conn, 404, Plug.Conn.Status.reason_phrase(404))
@@ -30,10 +28,10 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
-  def preview(conn, %{"sig" => sig64, "url" => url64} = params) do
-    with {_, true} <- {:enabled, Config.get([:media_preview_proxy, :enabled], false)},
+  def preview(conn, %{"sig" => sig64, "url" => url64}) do
+    with {_, true} <- {:enabled, MediaProxy.preview_enabled?()},
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),
-         :ok <- MediaProxy.filename_matches(params, conn.request_path, url) do
+         :ok <- MediaProxy.verify_request_path_and_url(conn, url) do
       handle_preview(conn, url)
     else
       {:enabled, false} ->
@@ -48,21 +46,27 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   end
 
   defp handle_preview(conn, url) do
-    with {:ok, %{status: status} = head_response} when status in 200..299 <- Tesla.head(url),
-         {_, true} <- {:acceptable_content_length, acceptable_body_length?(head_response)} do
+    with {:ok, %{status: status} = head_response} when status in 200..299 <-
+           Tesla.head(url, opts: [adapter: [timeout: preview_head_request_timeout()]]) do
       content_type = Tesla.get_header(head_response, "content-type")
       handle_preview(content_type, conn, url)
     else
       {_, %{status: status}} ->
         send_resp(conn, :failed_dependency, "Can't fetch HTTP headers (HTTP #{status}).")
 
-      {:acceptable_content_length, false} ->
-        send_resp(conn, :unprocessable_entity, "Source file size exceeds limit.")
+      {:error, :recv_response_timeout} ->
+        send_resp(conn, :failed_dependency, "HEAD request timeout.")
+
+      _ ->
+        send_resp(conn, :failed_dependency, "Can't fetch HTTP headers.")
     end
   end
 
-  defp handle_preview("image/" <> _, %{params: params} = conn, url) do
-    with {:ok, %{status: status, body: body}} when status in 200..299 <- Tesla.get(url),
+  defp handle_preview("image/" <> _ = content_type, %{params: params} = conn, url) do
+    with {:ok, %{status: status, body: body}} when status in 200..299 <-
+           url
+           |> MediaProxy.url()
+           |> Tesla.get(opts: [adapter: [timeout: preview_timeout()]]),
          {:ok, path} <- MogrifyHelper.store_as_temporary_file(url, body),
          resize_dimensions <-
            Map.get(
@@ -70,11 +74,18 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
              "limit_dimensions",
              Config.get([:media_preview_proxy, :limit_dimensions])
            ),
-         %Mogrify.Image{} <- MogrifyHelper.in_place_resize_to_limit(path, resize_dimensions) do
-      send_file(conn, 200, path)
+         %Mogrify.Image{} <- MogrifyHelper.in_place_resize_to_limit(path, resize_dimensions),
+         {:ok, image_binary} <- File.read(path),
+         _ <- File.rm(path) do
+      conn
+      |> put_resp_header("content-type", content_type)
+      |> send_resp(200, image_binary)
     else
       {_, %{status: _}} ->
         send_resp(conn, :failed_dependency, "Can't fetch the image.")
+
+      {:error, :recv_response_timeout} ->
+        send_resp(conn, :failed_dependency, "Downstream timeout.")
 
       _ ->
         send_resp(conn, :failed_dependency, "Can't handle image preview.")
@@ -85,13 +96,14 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     send_resp(conn, :unprocessable_entity, "Unsupported content type: #{content_type}.")
   end
 
-  defp acceptable_body_length?(head_response) do
-    max_body_length = Config.get([:media_preview_proxy, :max_body_length], nil)
-    content_length = Tesla.get_header(head_response, "content-length")
-    content_length = with {int, _} <- Integer.parse(content_length), do: int
+  defp preview_head_request_timeout do
+    Config.get([:media_preview_proxy, :proxy_opts, :head_request_max_read_duration]) ||
+      preview_timeout()
+  end
 
-    content_length == :error or
-      max_body_length in [nil, :infinity] or
-      content_length <= max_body_length
+  defp preview_timeout do
+    Config.get([:media_preview_proxy, :proxy_opts, :max_read_duration]) ||
+      Config.get([:media_proxy, :proxy_opts, :max_read_duration]) ||
+      ReverseProxy.max_read_duration_default()
   end
 end

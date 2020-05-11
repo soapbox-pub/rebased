@@ -13,26 +13,32 @@ defmodule Pleroma.Web.MediaProxy do
   def url("/" <> _ = url), do: url
 
   def url(url) do
-    if disabled?() or local?(url) or whitelisted?(url) do
+    if not enabled?() or local?(url) or whitelisted?(url) do
       url
     else
       encode_url(url)
     end
   end
 
+  # Note: routing all URLs to preview handler (even local and whitelisted).
+  #   Preview handler will call url/1 on decoded URLs, and applicable ones will detour media proxy.
   def preview_url(url) do
-    if disabled?() or whitelisted?(url) do
-      url
-    else
+    if preview_enabled?() do
       encode_preview_url(url)
+    else
+      url
     end
   end
 
-  defp disabled?, do: !Config.get([:media_proxy, :enabled], false)
+  def enabled?, do: Config.get([:media_proxy, :enabled], false)
 
-  defp local?(url), do: String.starts_with?(url, Pleroma.Web.base_url())
+  # Note: media proxy must be enabled for media preview proxy in order to load all
+  #   non-local non-whitelisted URLs through it and be sure that body size constraint is preserved.
+  def preview_enabled?, do: enabled?() and Config.get([:media_preview_proxy, :enabled], false)
 
-  defp whitelisted?(url) do
+  def local?(url), do: String.starts_with?(url, Pleroma.Web.base_url())
+
+  def whitelisted?(url) do
     %{host: domain} = URI.parse(url)
 
     mediaproxy_whitelist = Config.get([:media_proxy, :whitelist])
@@ -111,17 +117,24 @@ defmodule Pleroma.Web.MediaProxy do
     proxy_url("proxy/preview", sig_base64, url_base64, filename)
   end
 
-  def filename_matches(%{"filename" => _} = _, path, url) do
+  def verify_request_path_and_url(
+        %Plug.Conn{params: %{"filename" => _}, request_path: request_path},
+        url
+      ) do
+    verify_request_path_and_url(request_path, url)
+  end
+
+  def verify_request_path_and_url(request_path, url) when is_binary(request_path) do
     filename = filename(url)
 
-    if filename && not basename_matches?(path, filename) do
+    if filename && not basename_matches?(request_path, filename) do
       {:wrong_filename, filename}
     else
       :ok
     end
   end
 
-  def filename_matches(_, _, _), do: :ok
+  def verify_request_path_and_url(_, _), do: :ok
 
   defp basename_matches?(path, filename) do
     basename = Path.basename(path)

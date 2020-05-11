@@ -381,6 +381,8 @@ config :pleroma, :media_proxy,
   proxy_opts: [
     redirect_on_failure: false,
     max_body_length: 25 * 1_048_576,
+    # Note: max_read_duration defaults to Pleroma.ReverseProxy.max_read_duration_default/1
+    max_read_duration: 30_000,
     http: [
       follow_redirect: true,
       pool: :media
@@ -388,10 +390,14 @@ config :pleroma, :media_proxy,
   ],
   whitelist: []
 
+# Note: media preview proxy depends on media proxy to be enabled
 config :pleroma, :media_preview_proxy,
   enabled: false,
   limit_dimensions: "400x200",
-  max_body_length: 25 * 1_048_576
+  proxy_opts: [
+    head_request_max_read_duration: 5_000,
+    max_read_duration: 10_000
+  ]
 
 config :pleroma, :chat, enabled: true
 

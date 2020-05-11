@@ -16,6 +16,8 @@ defmodule Pleroma.ReverseProxy do
   @failed_request_ttl :timer.seconds(60)
   @methods ~w(GET HEAD)
 
+  def max_read_duration_default, do: @max_read_duration
+
   @moduledoc """
   A reverse proxy.
 
@@ -369,6 +371,8 @@ defmodule Pleroma.ReverseProxy do
   end
 
   defp body_size_constraint(_, _), do: :ok
+
+  defp check_read_duration(nil = _duration, max), do: check_read_duration(@max_read_duration, max)
 
   defp check_read_duration(duration, max)
        when is_integer(duration) and is_integer(max) and max > 0 do
