@@ -34,8 +34,8 @@ defmodule Pleroma.Repo.Migrations.UpdateMarkers do
 
     markers_attrs
     |> Enum.chunk_every(1000)
-    |> Enum.each(fn marker_attrs ->
-      Repo.insert_all("markers", markers_attrs,
+    |> Enum.each(fn markers_attrs_chunked ->
+      Repo.insert_all("markers", markers_attrs_chunked,
         on_conflict: {:replace, [:last_read_id]},
         conflict_target: [:user_id, :timeline]
       )
