@@ -6,8 +6,25 @@ defmodule Pleroma.ChatTest do
   use Pleroma.DataCase, async: true
 
   alias Pleroma.Chat
+  alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  describe "messages" do
+    test "it returns the last message in a chat" do
+      user = insert(:user)
+      recipient = insert(:user)
+
+      {:ok, _message_1} = CommonAPI.post_chat_message(user, recipient, "hey")
+      {:ok, _message_2} = CommonAPI.post_chat_message(recipient, user, "ho")
+
+      {:ok, chat} = Chat.get_or_create(user.id, recipient.ap_id)
+
+      message = Chat.last_message_for_chat(chat)
+
+      assert message.data["content"] == "ho"
+    end
+  end
 
   describe "creation and getting" do
     test "it only works if the recipient is a valid user (for now)" do

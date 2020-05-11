@@ -29,6 +29,7 @@ defmodule Pleroma.Chat do
   def last_message_for_chat(chat) do
     messages_for_chat_query(chat)
     |> order_by(desc: :id)
+    |> limit(1)
     |> Repo.one()
   end
 
