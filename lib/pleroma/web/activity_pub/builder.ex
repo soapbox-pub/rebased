@@ -99,6 +99,16 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     end
   end
 
+  @spec tombstone(String.t(), String.t()) :: {:ok, map(), keyword()}
+  def tombstone(actor, id) do
+    {:ok,
+     %{
+       "id" => id,
+       "actor" => actor,
+       "type" => "Tombstone"
+     }, []}
+  end
+
   @spec like(User.t(), Object.t()) :: {:ok, map(), keyword()}
   def like(actor, object) do
     with {:ok, data, meta} <- object_action(actor, object) do

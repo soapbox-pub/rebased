@@ -28,15 +28,56 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
       {:ok, op} = CommonAPI.post(other_user, %{"status" => "big oof"})
       {:ok, post} = CommonAPI.post(user, %{"status" => "hey", "in_reply_to_id" => op})
+      {:ok, favorite} = CommonAPI.favorite(user, post.id)
       object = Object.normalize(post)
       {:ok, delete_data, _meta} = Builder.delete(user, object.data["id"])
       {:ok, delete_user_data, _meta} = Builder.delete(user, user.ap_id)
       {:ok, delete, _meta} = ActivityPub.persist(delete_data, local: true)
       {:ok, delete_user, _meta} = ActivityPub.persist(delete_user_data, local: true)
-      %{user: user, delete: delete, post: post, object: object, delete_user: delete_user, op: op}
+
+      %{
+        user: user,
+        delete: delete,
+        post: post,
+        object: object,
+        delete_user: delete_user,
+        op: op,
+        favorite: favorite
+      }
     end
 
     test "it handles object deletions", %{
+      delete: delete,
+      post: post,
+      object: object,
+      user: user,
+      op: op,
+      favorite: favorite
+    } do
+      with_mock Pleroma.Web.ActivityPub.ActivityPub, [:passthrough],
+        stream_out: fn _ -> nil end,
+        stream_out_participations: fn _, _ -> nil end do
+        {:ok, delete, _} = SideEffects.handle(delete)
+        user = User.get_cached_by_ap_id(object.data["actor"])
+
+        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out(delete))
+        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out_participations(object, user))
+      end
+
+      object = Object.get_by_id(object.id)
+      assert object.data["type"] == "Tombstone"
+      refute Activity.get_by_id(post.id)
+      refute Activity.get_by_id(favorite.id)
+
+      user = User.get_by_id(user.id)
+      assert user.note_count == 0
+
+      object = Object.normalize(op.data["object"], false)
+
+      assert object.data["repliesCount"] == 0
+    end
+
+    test "it handles object deletions when the object itself has been pruned", %{
       delete: delete,
       post: post,
       object: object,

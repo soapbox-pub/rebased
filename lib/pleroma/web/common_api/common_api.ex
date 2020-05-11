@@ -114,16 +114,35 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def delete(activity_id, user) do
-    with {_, %Activity{data: %{"object" => _}} = activity} <-
-           {:find_activity, Activity.get_by_id_with_object(activity_id)},
-         %Object{} = object <- Object.normalize(activity),
+    with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
+           {:find_activity, Activity.get_by_id(activity_id)},
+         {_, %Object{} = object, _} <-
+           {:find_object, Object.normalize(activity, false), activity},
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
       {:ok, delete}
     else
-      {:find_activity, _} -> {:error, :not_found}
-      _ -> {:error, dgettext("errors", "Could not delete")}
+      {:find_activity, _} ->
+        {:error, :not_found}
+
+      {:find_object, nil, %Activity{data: %{"actor" => actor, "object" => object}}} ->
+        # We have the create activity, but not the object, it was probably pruned.
+        # Insert a tombstone and try again
+        with {:ok, tombstone_data, _} <- Builder.tombstone(actor, object),
+             {:ok, _tombstone} <- Object.create(tombstone_data) do
+          delete(activity_id, user)
+        else
+          _ ->
+            Logger.error(
+              "Could not insert tombstone for missing object on deletion. Object is #{object}."
+            )
+
+            {:error, dgettext("errors", "Could not delete")}
+        end
+
+      _ ->
+        {:error, dgettext("errors", "Could not delete")}
     end
   end
 

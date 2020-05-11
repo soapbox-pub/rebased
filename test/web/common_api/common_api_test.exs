@@ -76,6 +76,24 @@ defmodule Pleroma.Web.CommonAPITest do
   end
 
   describe "deletion" do
+    test "it works with pruned objects" do
+      user = insert(:user)
+
+      {:ok, post} = CommonAPI.post(user, %{"status" => "namu amida butsu"})
+
+      Object.normalize(post, false)
+      |> Object.prune()
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        assert {:ok, delete} = CommonAPI.delete(post.id, user)
+        assert delete.local
+        assert called(Pleroma.Web.Federator.publish(delete))
+      end
+
+      refute Activity.get_by_id(post.id)
+    end
+
     test "it allows users to delete their posts" do
       user = insert(:user)
 
