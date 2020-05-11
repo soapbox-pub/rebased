@@ -14,7 +14,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -720,6 +722,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
+    else
+      {:error, {:validate_object, _}} = e ->
+        # Check if we have a create activity for this
+        with {:ok, object_id} <- Types.ObjectID.cast(data["object"]),
+             %Activity{data: %{"actor" => actor}} <-
+               Activity.create_by_object_ap_id(object_id) |> Repo.one(),
+             # We have one, insert a tombstone and retry
+             {:ok, tombstone_data, _} <- Builder.tombstone(actor, object_id),
+             {:ok, _tombstone} <- Object.create(tombstone_data) do
+          handle_incoming(data)
+        else
+          _ -> e
+        end
     end
   end
 

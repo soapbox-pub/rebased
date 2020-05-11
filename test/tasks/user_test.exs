@@ -3,9 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.UserTest do
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
 
@@ -101,6 +104,28 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
         assert called(Pleroma.Web.Federator.publish(:_))
       end
+    end
+
+    test "a remote user's create activity is deleted when the object has been pruned" do
+      user = insert(:user)
+
+      {:ok, post} = CommonAPI.post(user, %{"status" => "uguu"})
+      object = Object.normalize(post)
+      Object.prune(object)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        Mix.Tasks.Pleroma.User.run(["rm", user.nickname])
+        ObanHelpers.perform_all()
+
+        assert_received {:mix_shell, :info, [message]}
+        assert message =~ " deleted"
+        assert %{deactivated: true} = User.get_by_nickname(user.nickname)
+
+        assert called(Pleroma.Web.Federator.publish(:_))
+      end
+
+      refute Activity.get_by_id(post.id)
     end
 
     test "no user to delete" do

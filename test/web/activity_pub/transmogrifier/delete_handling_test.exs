@@ -44,6 +44,34 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.DeleteHandlingTest do
     assert object.data["type"] == "Tombstone"
   end
 
+  test "it works for incoming when the object has been pruned" do
+    activity = insert(:note_activity)
+
+    {:ok, object} =
+      Object.normalize(activity.data["object"])
+      |> Repo.delete()
+
+    Cachex.del(:object_cache, "object:#{object.data["id"]}")
+
+    deleting_user = insert(:user)
+
+    data =
+      File.read!("test/fixtures/mastodon-delete.json")
+      |> Poison.decode!()
+      |> Map.put("actor", deleting_user.ap_id)
+      |> put_in(["object", "id"], activity.data["object"])
+
+    {:ok, %Activity{actor: actor, local: false, data: %{"id" => id}}} =
+      Transmogrifier.handle_incoming(data)
+
+    assert id == data["id"]
+
+    # We delete the Create activity because we base our timelines on it.
+    # This should be changed after we unify objects and activities
+    refute Activity.get_by_id(activity.id)
+    assert actor == deleting_user.ap_id
+  end
+
   test "it fails for incoming deletes with spoofed origin" do
     activity = insert(:note_activity)
     %{ap_id: ap_id} = insert(:user, ap_id: "https://gensokyo.2hu/users/raymoo")
