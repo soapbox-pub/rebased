@@ -3,23 +3,19 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTP.RequestBuilderTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   use Pleroma.Tests.Helpers
-  alias Pleroma.Config
   alias Pleroma.HTTP.Request
   alias Pleroma.HTTP.RequestBuilder
 
   describe "headers/2" do
-    setup do: clear_config([:http, :send_user_agent])
-    setup do: clear_config([:http, :user_agent])
-
     test "don't send pleroma user agent" do
       assert RequestBuilder.headers(%Request{}, []) == %Request{headers: []}
     end
 
     test "send pleroma user agent" do
-      Config.put([:http, :send_user_agent], true)
-      Config.put([:http, :user_agent], :default)
+      clear_config([:http, :send_user_agent], true)
+      clear_config([:http, :user_agent], :default)
 
       assert RequestBuilder.headers(%Request{}, []) == %Request{
                headers: [{"user-agent", Pleroma.Application.user_agent()}]
@@ -27,8 +23,8 @@ defmodule Pleroma.HTTP.RequestBuilderTest do
     end
 
     test "send custom user agent" do
-      Config.put([:http, :send_user_agent], true)
-      Config.put([:http, :user_agent], "totally-not-pleroma")
+      clear_config([:http, :send_user_agent], true)
+      clear_config([:http, :user_agent], "totally-not-pleroma")
 
       assert RequestBuilder.headers(%Request{}, []) == %Request{
                headers: [{"user-agent", "totally-not-pleroma"}]
