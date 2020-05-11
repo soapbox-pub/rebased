@@ -64,6 +64,35 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       assert object.data["repliesCount"] == 0
     end
 
+    test "it handles object deletions when the object itself has been pruned", %{
+      delete: delete,
+      post: post,
+      object: object,
+      user: user,
+      op: op
+    } do
+      with_mock Pleroma.Web.ActivityPub.ActivityPub, [:passthrough],
+        stream_out: fn _ -> nil end,
+        stream_out_participations: fn _, _ -> nil end do
+        {:ok, delete, _} = SideEffects.handle(delete)
+        user = User.get_cached_by_ap_id(object.data["actor"])
+
+        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out(delete))
+        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out_participations(object, user))
+      end
+
+      object = Object.get_by_id(object.id)
+      assert object.data["type"] == "Tombstone"
+      refute Activity.get_by_id(post.id)
+
+      user = User.get_by_id(user.id)
+      assert user.note_count == 0
+
+      object = Object.normalize(op.data["object"], false)
+
+      assert object.data["repliesCount"] == 0
+    end
+
     test "it handles user deletions", %{delete_user: delete, user: user} do
       {:ok, _delete, _} = SideEffects.handle(delete)
       ObanHelpers.perform_all()
