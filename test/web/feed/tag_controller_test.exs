@@ -82,6 +82,10 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   end
 
   test "gets a feed (RSS)", %{conn: conn} do
+    %{microsecond: {micro, _}} = DateTime.utc_now()
+    micro = (micro / 1000) |> floor()
+    Process.sleep(950 - micro)
+
     Pleroma.Config.put(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}
