@@ -33,7 +33,7 @@ defmodule Pleroma.Repo.Migrations.UpdateMarkers do
       end)
 
     markers_attrs
-    |> Enum.chunk(1000)
+    |> Enum.chunk_every(1000)
     |> Enum.each(fn marker_attrs ->
       Repo.insert_all("markers", markers_attrs,
         on_conflict: {:replace, [:last_read_id]},
