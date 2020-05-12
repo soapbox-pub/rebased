@@ -17,10 +17,80 @@ defmodule Pleroma.Web.StreamerTest do
 
   @moduletag needs_streamer: true, capture_log: true
 
-  @streamer_timeout 150
+  @streamer_timeout 300
   @streamer_start_wait 10
 
   clear_config([:instance, :skip_thread_containment])
+
+  describe "get_topic without an user" do
+    test "allows public" do
+      assert {:ok, "public"} = Streamer.get_topic("public", nil)
+      assert {:ok, "public:local"} = Streamer.get_topic("public:local", nil)
+      assert {:ok, "public:media"} = Streamer.get_topic("public:media", nil)
+      assert {:ok, "public:local:media"} = Streamer.get_topic("public:local:media", nil)
+    end
+
+    test "allows hashtag streams" do
+      assert {:ok, "hashtag:cofe"} = Streamer.get_topic("hashtag", nil, %{"tag" => "cofe"})
+    end
+
+    test "disallows user streams" do
+      assert {:error, _} = Streamer.get_topic("user", nil)
+      assert {:error, _} = Streamer.get_topic("user:notification", nil)
+      assert {:error, _} = Streamer.get_topic("direct", nil)
+    end
+
+    test "disallows list streams" do
+      assert {:error, _} = Streamer.get_topic("list", nil, %{"list" => 42})
+    end
+  end
+
+  describe "get_topic with an user" do
+    setup do
+      user = insert(:user)
+      {:ok, %{user: user}}
+    end
+
+    test "allows public streams", %{user: user} do
+      assert {:ok, "public"} = Streamer.get_topic("public", user)
+      assert {:ok, "public:local"} = Streamer.get_topic("public:local", user)
+      assert {:ok, "public:media"} = Streamer.get_topic("public:media", user)
+      assert {:ok, "public:local:media"} = Streamer.get_topic("public:local:media", user)
+    end
+
+    test "allows user streams", %{user: user} do
+      expected_user_topic = "user:#{user.id}"
+      expected_notif_topic = "user:notification:#{user.id}"
+      expected_direct_topic = "direct:#{user.id}"
+      assert {:ok, ^expected_user_topic} = Streamer.get_topic("user", user)
+      assert {:ok, ^expected_notif_topic} = Streamer.get_topic("user:notification", user)
+      assert {:ok, ^expected_direct_topic} = Streamer.get_topic("direct", user)
+    end
+
+    test "allows hashtag streams", %{user: user} do
+      assert {:ok, "hashtag:cofe"} = Streamer.get_topic("hashtag", user, %{"tag" => "cofe"})
+    end
+
+    test "disallows registering to an user stream", %{user: user} do
+      another_user = insert(:user)
+      assert {:error, _} = Streamer.get_topic("user:#{another_user.id}", user)
+      assert {:error, _} = Streamer.get_topic("user:notification:#{another_user.id}", user)
+      assert {:error, _} = Streamer.get_topic("direct:#{another_user.id}", user)
+    end
+
+    test "allows list stream that are owned by the user", %{user: user} do
+      {:ok, list} = List.create("Test", user)
+      assert {:error, _} = Streamer.get_topic("list:#{list.id}", user)
+      assert {:ok, _} = Streamer.get_topic("list", user, %{"list" => list.id})
+    end
+
+    test "disallows list stream that are not owned by the user", %{user: user} do
+      another_user = insert(:user)
+      {:ok, list} = List.create("Test", another_user)
+      assert {:error, _} = Streamer.get_topic("list:#{list.id}", user)
+      assert {:error, _} = Streamer.get_topic("list", user, %{"list" => list.id})
+    end
+  end
 
   describe "user streams" do
     setup do
@@ -35,7 +105,7 @@ defmodule Pleroma.Web.StreamerTest do
           assert_receive {:text, _}, @streamer_timeout
         end)
 
-      Streamer.add_socket(
+      Streamer.get_topic_and_add_socket(
         "user",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
@@ -50,7 +120,7 @@ defmodule Pleroma.Web.StreamerTest do
           assert_receive {:text, _}, @streamer_timeout
         end)
 
-      Streamer.add_socket(
+      Streamer.get_topic_and_add_socket(
         "user:notification",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
@@ -70,7 +140,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
-      Streamer.add_socket(
+      Streamer.get_topic_and_add_socket(
         "user:notification",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
@@ -90,7 +160,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
-      Streamer.add_socket(
+      Streamer.get_topic_and_add_socket(
         "user:notification",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
@@ -110,7 +180,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
-      Streamer.add_socket(
+      Streamer.get_topic_and_add_socket(
         "user:notification",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
@@ -127,7 +197,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       Process.sleep(@streamer_start_wait)
 
-      Streamer.add_socket(
+      Streamer.get_topic_and_add_socket(
         "user:notification",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
@@ -415,14 +485,10 @@ defmodule Pleroma.Web.StreamerTest do
         assert_receive {:text, _}, 1_000
       end)
 
-    fake_socket = %StreamerSocket{
-      transport_pid: task.pid,
-      user: user_a
-    }
-
-    Streamer.add_socket(
-      "list:#{list.id}",
-      fake_socket
+    Streamer.get_topic_and_add_socket(
+      "list",
+      %{transport_pid: task.pid, assigns: %{user: user_a}},
+      %{"list" => list.id}
     )
 
     Worker.handle_call({:stream, "list", activity}, self(), %{})
@@ -497,7 +563,7 @@ defmodule Pleroma.Web.StreamerTest do
 
     task = Task.async(fn -> refute_receive {:text, _}, @streamer_timeout end)
 
-    Streamer.add_socket(
+    Streamer.get_topic_and_add_socket(
       "user",
       %{transport_pid: task.pid, assigns: %{user: user2}}
     )
@@ -527,7 +593,7 @@ defmodule Pleroma.Web.StreamerTest do
           assert last_status["pleroma"]["direct_conversation_id"] == participation.id
         end)
 
-      Streamer.add_socket(
+      Streamer.get_topic_and_add_socket(
         "direct",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
@@ -561,7 +627,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       Process.sleep(@streamer_start_wait)
 
-      Streamer.add_socket(
+      Streamer.get_topic_and_add_socket(
         "direct",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
@@ -604,7 +670,7 @@ defmodule Pleroma.Web.StreamerTest do
 
       Process.sleep(@streamer_start_wait)
 
-      Streamer.add_socket(
+      Streamer.get_topic_and_add_socket(
         "direct",
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
