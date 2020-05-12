@@ -51,7 +51,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
             |> Enum.filter(& &1)
             |> Kernel.++(move_activities_targets)
 
-          UserRelationship.view_relationships_option(reading_user, actors, source_mutes_only: true)
+          UserRelationship.view_relationships_option(reading_user, actors, subset: :source_mutes)
       end
 
     opts =

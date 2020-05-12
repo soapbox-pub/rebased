@@ -10,6 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       add_link_headers: 2,
       truthy_param?: 1,
       assign_account_by_id: 2,
+      embed_relationships?: 1,
       json_response: 3
     ]
 
@@ -269,7 +270,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
     conn
     |> add_link_headers(followers)
-    |> render("index.json", for: for_user, users: followers, as: :user)
+    # https://git.pleroma.social/pleroma/pleroma-fe/-/issues/838#note_59223
+    |> render("index.json",
+      for: for_user,
+      users: followers,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
   end
 
   @doc "GET /api/v1/accounts/:id/following"
@@ -288,7 +295,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
     conn
     |> add_link_headers(followers)
-    |> render("index.json", for: for_user, users: followers, as: :user)
+    # https://git.pleroma.social/pleroma/pleroma-fe/-/issues/838#note_59223
+    |> render("index.json",
+      for: for_user,
+      users: followers,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
   end
 
   @doc "GET /api/v1/accounts/:id/lists"

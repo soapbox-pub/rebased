@@ -107,7 +107,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
             |> Enum.map(&get_user(&1.data["actor"], false))
             |> Enum.filter(& &1)
 
-          UserRelationship.view_relationships_option(reading_user, actors, source_mutes_only: true)
+          UserRelationship.view_relationships_option(reading_user, actors, subset: :source_mutes)
       end
 
     opts =

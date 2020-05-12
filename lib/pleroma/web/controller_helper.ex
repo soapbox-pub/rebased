@@ -103,4 +103,9 @@ defmodule Pleroma.Web.ControllerHelper do
   def put_if_exist(map, _key, nil), do: map
 
   def put_if_exist(map, key, value), do: Map.put(map, key, value)
+
+  def embed_relationships?(params) do
+    # To do: change to `truthy_param?(params["embed_relationships"])` once PleromaFE supports it
+    not explicitly_falsy_param?(params["embed_relationships"])
+  end
 end

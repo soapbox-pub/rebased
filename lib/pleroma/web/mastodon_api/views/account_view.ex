@@ -13,6 +13,22 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.Web.MediaProxy
 
   def render("index.json", %{users: users} = opts) do
+    reading_user = opts[:for]
+
+    relationships_opt =
+      cond do
+        Map.has_key?(opts, :relationships) ->
+          opts[:relationships]
+
+        is_nil(reading_user) || !opts[:embed_relationships] ->
+          UserRelationship.view_relationships_option(nil, [])
+
+        true ->
+          UserRelationship.view_relationships_option(reading_user, users)
+      end
+
+    opts = Map.put(opts, :relationships, relationships_opt)
+
     users
     |> render_many(AccountView, "show.json", opts)
     |> Enum.filter(&Enum.any?/1)
@@ -175,6 +191,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         }
       end)
 
+    relationship =
+      if opts[:embed_relationships] do
+        render("relationship.json", %{
+          user: opts[:for],
+          target: user,
+          relationships: opts[:relationships]
+        })
+      else
+        %{}
+      end
+
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -213,7 +240,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         hide_followers: user.hide_followers,
         hide_follows: user.hide_follows,
         hide_favorites: user.hide_favorites,
-        relationship: %{},
+        relationship: relationship,
         skip_thread_containment: user.skip_thread_containment,
         background_image: image_url(user.background) |> MediaProxy.url()
       }
