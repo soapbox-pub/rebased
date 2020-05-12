@@ -18,8 +18,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   import Ecto.Query
   import Pleroma.Web.ActivityPub.ObjectValidator, only: [stringify_keys: 1]
 
-  # TODO
-  # - Error handling
+  action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   plug(
     OAuthScopesPlug,
@@ -53,6 +52,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       conn
       |> put_view(ChatMessageView)
       |> render("show.json", for: user, object: message, chat: chat)
+    else
+      _e -> {:error, :could_not_delete}
     end
   end
 

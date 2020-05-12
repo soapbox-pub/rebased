@@ -88,6 +88,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       {:ok, message} =
         CommonAPI.post_chat_message(user, recipient, "Hello darkness my old friend")
 
+      {:ok, other_message} = CommonAPI.post_chat_message(recipient, user, "nico nico ni")
+
       object = Object.normalize(message, false)
 
       chat = Chat.get(user.id, recipient.ap_id)
@@ -99,6 +101,16 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert result["id"] == to_string(object.id)
+
+      object = Object.normalize(other_message, false)
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> delete("/api/v1/pleroma/chats/#{chat.id}/messages/#{object.id}")
+        |> json_response(400)
+
+      assert result == %{"error" => "could_not_delete"}
     end
   end
 
