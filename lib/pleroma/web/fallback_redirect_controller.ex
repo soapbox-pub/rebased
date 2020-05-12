@@ -4,11 +4,10 @@
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
-
   require Logger
-
   alias Pleroma.User
   alias Pleroma.Web.Metadata
+  alias Pleroma.Web.Preload
 
   def api_not_implemented(conn, _params) do
     conn
@@ -16,16 +15,7 @@ defmodule Fallback.RedirectController do
     |> json(%{error: "Not implemented"})
   end
 
-  def redirector(conn, _params, code \\ 200)
-
-  # redirect to admin section
-  # /pleroma/admin -> /pleroma/admin/
-  #
-  def redirector(conn, %{"path" => ["pleroma", "admin"]} = _, _code) do
-    redirect(conn, to: "/pleroma/admin/")
-  end
-
-  def redirector(conn, _params, code) do
+  def redirector(conn, _params, code \\ 200) do
     conn
     |> put_resp_content_type("text/html")
     |> send_file(code, index_file_path())
@@ -43,28 +33,34 @@ defmodule Fallback.RedirectController do
   def redirector_with_meta(conn, params) do
     {:ok, index_content} = File.read(index_file_path())
 
-    tags =
-      try do
-        Metadata.build_tags(params)
-      rescue
-        e ->
-          Logger.error(
-            "Metadata rendering for #{conn.request_path} failed.\n" <>
-              Exception.format(:error, e, __STACKTRACE__)
-          )
+    tags = build_tags(conn, params)
+    preloads = preload_data(conn, params)
 
-          ""
-      end
-
-    response = String.replace(index_content, "<!--server-generated-meta-->", tags)
+    response =
+      index_content
+      |> String.replace("<!--server-generated-meta-->", tags)
+      |> String.replace("<!--server-generated-initial-data-->", preloads)
 
     conn
     |> put_resp_content_type("text/html")
     |> send_resp(200, response)
   end
 
-  def index_file_path do
-    Pleroma.Plugs.InstanceStatic.file_path("index.html")
+  def redirector_with_preload(conn, %{"path" => ["pleroma", "admin"]}) do
+    redirect(conn, to: "/pleroma/admin/")
+  end
+
+  def redirector_with_preload(conn, params) do
+    {:ok, index_content} = File.read(index_file_path())
+    preloads = preload_data(conn, params)
+
+    response =
+      index_content
+      |> String.replace("<!--server-generated-initial-data-->", preloads)
+
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_resp(200, response)
   end
 
   def registration_page(conn, params) do
@@ -75,5 +71,37 @@ defmodule Fallback.RedirectController do
     conn
     |> put_status(204)
     |> text("")
+  end
+
+  defp index_file_path do
+    Pleroma.Plugs.InstanceStatic.file_path("index.html")
+  end
+
+  defp build_tags(conn, params) do
+    try do
+      Metadata.build_tags(params)
+    rescue
+      e ->
+        Logger.error(
+          "Metadata rendering for #{conn.request_path} failed.\n" <>
+            Exception.format(:error, e, __STACKTRACE__)
+        )
+
+        ""
+    end
+  end
+
+  defp preload_data(conn, params) do
+    try do
+      Preload.build_tags(conn, params)
+    rescue
+      e ->
+        Logger.error(
+          "Preloading for #{conn.request_path} failed.\n" <>
+            Exception.format(:error, e, __STACKTRACE__)
+        )
+
+        ""
+    end
   end
 end
