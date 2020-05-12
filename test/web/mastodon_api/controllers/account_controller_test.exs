@@ -222,6 +222,33 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   describe "user timelines" do
     setup do: oauth_access(["read:statuses"])
 
+    test "works with announces that are just addressed to public", %{conn: conn} do
+      user = insert(:user, ap_id: "https://honktest/u/test", local: false)
+      other_user = insert(:user)
+
+      {:ok, post} = CommonAPI.post(other_user, %{"status" => "bonkeronk"})
+
+      {:ok, announce, _} =
+        %{
+          "@context" => "https://www.w3.org/ns/activitystreams",
+          "actor" => "https://honktest/u/test",
+          "id" => "https://honktest/u/test/bonk/1793M7B9MQ48847vdx",
+          "object" => post.data["object"],
+          "published" => "2019-06-25T19:33:58Z",
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "type" => "Announce"
+        }
+        |> ActivityPub.persist(local: false)
+
+      assert resp =
+               conn
+               |> get("/api/v1/accounts/#{user.id}/statuses")
+               |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => id}] = resp
+      assert id == announce.id
+    end
+
     test "respects blocks", %{user: user_one, conn: conn} do
       user_two = insert(:user)
       user_three = insert(:user)

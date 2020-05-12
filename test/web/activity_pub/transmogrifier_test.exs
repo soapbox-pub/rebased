@@ -260,6 +260,24 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "<p>henlo from my Psion netBook</p><p>message sent from my Psion netBook</p>"
     end
 
+    test "it works for incoming honk announces" do
+      _user = insert(:user, ap_id: "https://honktest/u/test", local: false)
+      other_user = insert(:user)
+      {:ok, post} = CommonAPI.post(other_user, %{"status" => "bonkeronk"})
+
+      announce = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "actor" => "https://honktest/u/test",
+        "id" => "https://honktest/u/test/bonk/1793M7B9MQ48847vdx",
+        "object" => post.data["object"],
+        "published" => "2019-06-25T19:33:58Z",
+        "to" => "https://www.w3.org/ns/activitystreams#Public",
+        "type" => "Announce"
+      }
+
+      {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(announce)
+    end
+
     test "it works for incoming announces with actor being inlined (kroeg)" do
       data = File.read!("test/fixtures/kroeg-announce-with-inline-actor.json") |> Poison.decode!()
 
