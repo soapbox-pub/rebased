@@ -4,8 +4,8 @@
 defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Object
   alias Pleroma.Chat
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
