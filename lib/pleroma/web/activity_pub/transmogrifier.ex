@@ -544,6 +544,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
+      User.update_follower_count(followed)
+      User.update_following_count(follower)
+
       ActivityPub.accept(%{
         to: follow_activity.data["to"],
         type: "Accept",
@@ -553,7 +556,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         activity_id: id
       })
     else
-      _e -> :error
+      _e ->
+        :error
     end
   end
 
