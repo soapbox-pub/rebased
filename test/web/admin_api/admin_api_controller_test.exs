@@ -1747,7 +1747,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "change visibility flag", %{conn: conn, id: id, admin: admin} do
       response =
         conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{"visibility" => "public"})
+        |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "public"})
         |> json_response(:ok)
 
       assert response["visibility"] == "public"
@@ -1759,21 +1759,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       response =
         conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{"visibility" => "private"})
+        |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "private"})
         |> json_response(:ok)
 
       assert response["visibility"] == "private"
 
       response =
         conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{"visibility" => "unlisted"})
+        |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "unlisted"})
         |> json_response(:ok)
 
       assert response["visibility"] == "unlisted"
     end
 
     test "returns 400 when visibility is unknown", %{conn: conn, id: id} do
-      conn = put(conn, "/api/pleroma/admin/statuses/#{id}", %{"visibility" => "test"})
+      conn = put(conn, "/api/pleroma/admin/statuses/#{id}", %{visibility: "test"})
 
       assert json_response(conn, :bad_request) == "Unsupported visibility"
     end
@@ -2977,13 +2977,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user = insert(:user)
       User.block(admin, blocked)
 
-      {:ok, _} =
-        CommonAPI.post(user, %{"status" => "@#{admin.nickname}", "visibility" => "direct"})
+      {:ok, _} = CommonAPI.post(user, %{status: "@#{admin.nickname}", visibility: "direct"})
 
-      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "unlisted"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
-      {:ok, _} = CommonAPI.post(blocked, %{"status" => ".", "visibility" => "public"})
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "private"})
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
+      {:ok, _} = CommonAPI.post(blocked, %{status: ".", visibility: "public"})
 
       response =
         conn
@@ -3011,11 +3010,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "returns private and direct statuses with godmode on", %{conn: conn, admin: admin} do
       user = insert(:user)
 
-      {:ok, _} =
-        CommonAPI.post(user, %{"status" => "@#{admin.nickname}", "visibility" => "direct"})
+      {:ok, _} = CommonAPI.post(user, %{status: "@#{admin.nickname}", visibility: "direct"})
 
-      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "private"})
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
       conn = get(conn, "/api/pleroma/admin/statuses?godmode=true")
       assert json_response(conn, 200) |> length() == 3
     end
@@ -3049,11 +3047,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "doesn't return private statuses by default", %{conn: conn, user: user} do
-      {:ok, _private_status} =
-        CommonAPI.post(user, %{"status" => "private", "visibility" => "private"})
+      {:ok, _private_status} = CommonAPI.post(user, %{status: "private", visibility: "private"})
 
-      {:ok, _public_status} =
-        CommonAPI.post(user, %{"status" => "public", "visibility" => "public"})
+      {:ok, _public_status} = CommonAPI.post(user, %{status: "public", visibility: "public"})
 
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
 
@@ -3061,11 +3057,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "returns private statuses with godmode on", %{conn: conn, user: user} do
-      {:ok, _private_status} =
-        CommonAPI.post(user, %{"status" => "private", "visibility" => "private"})
+      {:ok, _private_status} = CommonAPI.post(user, %{status: "private", visibility: "private"})
 
-      {:ok, _public_status} =
-        CommonAPI.post(user, %{"status" => "public", "visibility" => "public"})
+      {:ok, _public_status} = CommonAPI.post(user, %{status: "public", visibility: "public"})
 
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?godmode=true")
 
@@ -3074,7 +3068,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "excludes reblogs by default", %{conn: conn, user: user} do
       other_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "."})
+      {:ok, activity} = CommonAPI.post(user, %{status: "."})
       {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, other_user)
 
       conn_res = get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses")
@@ -3599,9 +3593,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "status visibility count", %{conn: conn} do
       admin = insert(:user, is_admin: true)
       user = insert(:user)
-      CommonAPI.post(user, %{"visibility" => "public", "status" => "hey"})
-      CommonAPI.post(user, %{"visibility" => "unlisted", "status" => "hey"})
-      CommonAPI.post(user, %{"visibility" => "unlisted", "status" => "hey"})
+      CommonAPI.post(user, %{visibility: "public", status: "hey"})
+      CommonAPI.post(user, %{visibility: "unlisted", status: "hey"})
+      CommonAPI.post(user, %{visibility: "unlisted", status: "hey"})
 
       response =
         conn

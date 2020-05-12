@@ -109,7 +109,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     test "a remote user's create activity is deleted when the object has been pruned" do
       user = insert(:user)
 
-      {:ok, post} = CommonAPI.post(user, %{"status" => "uguu"})
+      {:ok, post} = CommonAPI.post(user, %{status: "uguu"})
       object = Object.normalize(post)
       Object.prune(object)
 

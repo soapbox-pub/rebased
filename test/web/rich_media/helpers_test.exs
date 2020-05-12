@@ -26,8 +26,8 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "[test](example.com/ogp)",
-        "content_type" => "text/markdown"
+        status: "[test](example.com/ogp)",
+        content_type: "text/markdown"
       })
 
     Config.put([:rich_media, :enabled], true)
@@ -40,8 +40,8 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "[test](example.com[]/ogp)",
-        "content_type" => "text/markdown"
+        status: "[test](example.com[]/ogp)",
+        content_type: "text/markdown"
       })
 
     Config.put([:rich_media, :enabled], true)
@@ -54,8 +54,8 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "[test](https://example.com/ogp)",
-        "content_type" => "text/markdown"
+        status: "[test](https://example.com/ogp)",
+        content_type: "text/markdown"
       })
 
     Config.put([:rich_media, :enabled], true)
@@ -69,8 +69,8 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "http://example.com/ogp",
-        "sensitive" => true
+        status: "http://example.com/ogp",
+        sensitive: true
       })
 
     %Object{} = object = Object.normalize(activity)
@@ -87,7 +87,7 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "http://example.com/ogp #nsfw"
+        status: "http://example.com/ogp #nsfw"
       })
 
     %Object{} = object = Object.normalize(activity)
@@ -103,12 +103,12 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
     user = insert(:user)
 
     {:ok, activity} =
-      CommonAPI.post(user, %{"status" => "http://127.0.0.1:4000/notice/9kCP7VNyPJXFOXDrgO"})
+      CommonAPI.post(user, %{status: "http://127.0.0.1:4000/notice/9kCP7VNyPJXFOXDrgO"})
 
-    {:ok, activity2} = CommonAPI.post(user, %{"status" => "https://10.111.10.1/notice/9kCP7V"})
-    {:ok, activity3} = CommonAPI.post(user, %{"status" => "https://172.16.32.40/notice/9kCP7V"})
-    {:ok, activity4} = CommonAPI.post(user, %{"status" => "https://192.168.10.40/notice/9kCP7V"})
-    {:ok, activity5} = CommonAPI.post(user, %{"status" => "https://pleroma.local/notice/9kCP7V"})
+    {:ok, activity2} = CommonAPI.post(user, %{status: "https://10.111.10.1/notice/9kCP7V"})
+    {:ok, activity3} = CommonAPI.post(user, %{status: "https://172.16.32.40/notice/9kCP7V"})
+    {:ok, activity4} = CommonAPI.post(user, %{status: "https://192.168.10.40/notice/9kCP7V"})
+    {:ok, activity5} = CommonAPI.post(user, %{status: "https://pleroma.local/notice/9kCP7V"})
 
     Config.put([:rich_media, :enabled], true)
 

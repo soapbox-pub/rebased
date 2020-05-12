@@ -19,60 +19,127 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
     description: "Response schema for a status",
     type: :object,
     properties: %{
-      account: Account,
+      account: %Schema{allOf: [Account], description: "The account that authored this status"},
       application: %Schema{
+        description: "The application used to post this status",
         type: :object,
         properties: %{
           name: %Schema{type: :string},
           website: %Schema{type: :string, nullable: true, format: :uri}
         }
       },
-      bookmarked: %Schema{type: :boolean},
+      bookmarked: %Schema{type: :boolean, description: "Have you bookmarked this status?"},
       card: %Schema{
         type: :object,
         nullable: true,
+        description: "Preview card for links included within status content",
+        required: [:url, :title, :description, :type],
         properties: %{
-          type: %Schema{type: :string, enum: ["link", "photo", "video", "rich"]},
-          provider_name: %Schema{type: :string, nullable: true},
-          provider_url: %Schema{type: :string, format: :uri},
-          url: %Schema{type: :string, format: :uri},
-          image: %Schema{type: :string, nullable: true, format: :uri},
-          title: %Schema{type: :string},
-          description: %Schema{type: :string}
+          type: %Schema{
+            type: :string,
+            enum: ["link", "photo", "video", "rich"],
+            description: "The type of the preview card"
+          },
+          provider_name: %Schema{
+            type: :string,
+            nullable: true,
+            description: "The provider of the original resource"
+          },
+          provider_url: %Schema{
+            type: :string,
+            format: :uri,
+            description: "A link to the provider of the original resource"
+          },
+          url: %Schema{type: :string, format: :uri, description: "Location of linked resource"},
+          image: %Schema{
+            type: :string,
+            nullable: true,
+            format: :uri,
+            description: "Preview thumbnail"
+          },
+          title: %Schema{type: :string, description: "Title of linked resource"},
+          description: %Schema{type: :string, description: "Description of preview"}
         }
       },
-      content: %Schema{type: :string, format: :html},
-      created_at: %Schema{type: :string, format: "date-time"},
-      emojis: %Schema{type: :array, items: Emoji},
-      favourited: %Schema{type: :boolean},
-      favourites_count: %Schema{type: :integer},
+      content: %Schema{type: :string, format: :html, description: "HTML-encoded status content"},
+      created_at: %Schema{
+        type: :string,
+        format: "date-time",
+        description: "The date when this status was created"
+      },
+      emojis: %Schema{
+        type: :array,
+        items: Emoji,
+        description: "Custom emoji to be used when rendering status content"
+      },
+      favourited: %Schema{type: :boolean, description: "Have you favourited this status?"},
+      favourites_count: %Schema{
+        type: :integer,
+        description: "How many favourites this status has received"
+      },
       id: FlakeID,
-      in_reply_to_account_id: %Schema{type: :string, nullable: true},
-      in_reply_to_id: %Schema{type: :string, nullable: true},
-      language: %Schema{type: :string, nullable: true},
+      in_reply_to_account_id: %Schema{
+        allOf: [FlakeID],
+        nullable: true,
+        description: "ID of the account being replied to"
+      },
+      in_reply_to_id: %Schema{
+        allOf: [FlakeID],
+        nullable: true,
+        description: "ID of the status being replied"
+      },
+      language: %Schema{
+        type: :string,
+        nullable: true,
+        description: "Primary language of this status"
+      },
       media_attachments: %Schema{
         type: :array,
-        items: Attachment
+        items: Attachment,
+        description: "Media that is attached to this status"
       },
       mentions: %Schema{
         type: :array,
+        description: "Mentions of users within the status content",
         items: %Schema{
           type: :object,
           properties: %{
-            id: %Schema{type: :string},
-            acct: %Schema{type: :string},
-            username: %Schema{type: :string},
-            url: %Schema{type: :string, format: :uri}
+            id: %Schema{allOf: [FlakeID], description: "The account id of the mentioned user"},
+            acct: %Schema{
+              type: :string,
+              description:
+                "The webfinger acct: URI of the mentioned user. Equivalent to `username` for local users, or `username@domain` for remote users."
+            },
+            username: %Schema{type: :string, description: "The username of the mentioned user"},
+            url: %Schema{
+              type: :string,
+              format: :uri,
+              description: "The location of the mentioned user's profile"
+            }
           }
         }
       },
-      muted: %Schema{type: :boolean},
-      pinned: %Schema{type: :boolean},
+      muted: %Schema{
+        type: :boolean,
+        description: "Have you muted notifications for this status's conversation?"
+      },
+      pinned: %Schema{
+        type: :boolean,
+        description: "Have you pinned this status? Only appears if the status is pinnable."
+      },
       pleroma: %Schema{
         type: :object,
         properties: %{
-          content: %Schema{type: :object, additionalProperties: %Schema{type: :string}},
-          conversation_id: %Schema{type: :integer},
+          content: %Schema{
+            type: :object,
+            additionalProperties: %Schema{type: :string},
+            description:
+              "A map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`"
+          },
+          conversation_id: %Schema{
+            type: :integer,
+            description: "The ID of the AP context the status is associated with (if any)"
+          },
           direct_conversation_id: %Schema{
             type: :integer,
             nullable: true,
@@ -81,6 +148,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
           },
           emoji_reactions: %Schema{
             type: :array,
+            description:
+              "A list with emoji / reaction maps. Contains no information about the reacting users, for that use the /statuses/:id/reactions endpoint.",
             items: %Schema{
               type: :object,
               properties: %{
@@ -90,27 +159,74 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
               }
             }
           },
-          expires_at: %Schema{type: :string, format: "date-time", nullable: true},
-          in_reply_to_account_acct: %Schema{type: :string, nullable: true},
-          local: %Schema{type: :boolean},
-          spoiler_text: %Schema{type: :object, additionalProperties: %Schema{type: :string}},
-          thread_muted: %Schema{type: :boolean}
+          expires_at: %Schema{
+            type: :string,
+            format: "date-time",
+            nullable: true,
+            description:
+              "A datetime (ISO 8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire"
+          },
+          in_reply_to_account_acct: %Schema{
+            type: :string,
+            nullable: true,
+            description: "The `acct` property of User entity for replied user (if any)"
+          },
+          local: %Schema{
+            type: :boolean,
+            description: "`true` if the post was made on the local instance"
+          },
+          spoiler_text: %Schema{
+            type: :object,
+            additionalProperties: %Schema{type: :string},
+            description:
+              "A map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`."
+          },
+          thread_muted: %Schema{
+            type: :boolean,
+            description: "`true` if the thread the post belongs to is muted"
+          }
         }
       },
-      poll: %Schema{type: Poll, nullable: true},
+      poll: %Schema{allOf: [Poll], nullable: true, description: "The poll attached to the status"},
       reblog: %Schema{
         allOf: [%OpenApiSpex.Reference{"$ref": "#/components/schemas/Status"}],
-        nullable: true
+        nullable: true,
+        description: "The status being reblogged"
       },
-      reblogged: %Schema{type: :boolean},
-      reblogs_count: %Schema{type: :integer},
-      replies_count: %Schema{type: :integer},
-      sensitive: %Schema{type: :boolean},
-      spoiler_text: %Schema{type: :string},
+      reblogged: %Schema{type: :boolean, description: "Have you boosted this status?"},
+      reblogs_count: %Schema{
+        type: :integer,
+        description: "How many boosts this status has received"
+      },
+      replies_count: %Schema{
+        type: :integer,
+        description: "How many replies this status has received"
+      },
+      sensitive: %Schema{
+        type: :boolean,
+        description: "Is this status marked as sensitive content?"
+      },
+      spoiler_text: %Schema{
+        type: :string,
+        description:
+          "Subject or summary line, below which status content is collapsed until expanded"
+      },
       tags: %Schema{type: :array, items: Tag},
-      uri: %Schema{type: :string, format: :uri},
-      url: %Schema{type: :string, nullable: true, format: :uri},
-      visibility: VisibilityScope
+      uri: %Schema{
+        type: :string,
+        format: :uri,
+        description: "URI of the status used for federation"
+      },
+      url: %Schema{
+        type: :string,
+        nullable: true,
+        format: :uri,
+        description: "A link to the status's HTML representation"
+      },
+      visibility: %Schema{
+        allOf: [VisibilityScope],
+        description: "Visibility of this status"
+      }
     },
     example: %{
       "account" => %{

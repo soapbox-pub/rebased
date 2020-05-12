@@ -990,7 +990,7 @@ defmodule Pleroma.UserTest do
       actor = insert(:user)
       user = insert(:user, local: true)
 
-      {:ok, activity} = CommonAPI.post(actor, %{"status" => "hello"})
+      {:ok, activity} = CommonAPI.post(actor, %{status: "hello"})
       {:ok, announce, _} = CommonAPI.repeat(activity.id, user)
 
       recipients = User.get_recipients_from_activity(announce)
@@ -1007,7 +1007,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, activity} =
         CommonAPI.post(actor, %{
-          "status" => "hey @#{addressed.nickname} @#{addressed_remote.nickname}"
+          status: "hey @#{addressed.nickname} @#{addressed_remote.nickname}"
         })
 
       assert Enum.map([actor, addressed], & &1.ap_id) --
@@ -1029,7 +1029,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, activity} =
         CommonAPI.post(actor, %{
-          "status" => "hey @#{addressed.nickname}"
+          status: "hey @#{addressed.nickname}"
         })
 
       assert Enum.map([actor, addressed], & &1.ap_id) --
@@ -1090,7 +1090,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, user2} = User.follow(user2, user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{user2.nickname}"})
 
       activity = Repo.preload(activity, :bookmark)
 
@@ -1126,7 +1126,7 @@ defmodule Pleroma.UserTest do
     setup do: clear_config([:instance, :federating])
 
     test ".delete_user_activities deletes all create activities", %{user: user} do
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "2hu"})
 
       User.delete_user_activities(user)
 
@@ -1411,7 +1411,7 @@ defmodule Pleroma.UserTest do
 
         {:ok, _} =
           CommonAPI.post(user, %{
-            "status" => "hey @#{to.nickname}"
+            status: "hey @#{to.nickname}"
           })
       end)
 
@@ -1443,12 +1443,12 @@ defmodule Pleroma.UserTest do
       Enum.each(recipients, fn to ->
         {:ok, _} =
           CommonAPI.post(sender, %{
-            "status" => "hey @#{to.nickname}"
+            status: "hey @#{to.nickname}"
           })
 
         {:ok, _} =
           CommonAPI.post(sender, %{
-            "status" => "hey again @#{to.nickname}"
+            status: "hey again @#{to.nickname}"
           })
       end)
 
