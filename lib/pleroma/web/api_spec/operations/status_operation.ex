@@ -222,7 +222,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       summary: "Mute conversation",
       security: [%{"oAuth" => ["write:mutes"]}],
       description:
-        "Do not receive notifications for the thread that this status is part of. Must be a thread in which you are a participant.",
+        "Do not receive notifications for the thread that this status is part of.",
       operationId: "StatusController.mute_conversation",
       parameters: [id_param()],
       responses: %{
