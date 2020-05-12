@@ -192,6 +192,14 @@ Returned data:
 }
 ```
 
+### Deleting a chat message
+
+Deleting a chat message for given Chat id works like this:
+
+`DELETE /api/v1/pleroma/chats/{chat_id}/messages/{message_id}`
+
+Returned data is the deleted message.
+
 ### Notifications
 
 There's a new `pleroma:chat_mention` notification, which has this form:
