@@ -118,7 +118,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user", [{"Sec-WebSocket-Protocol", token.token}])
 
       assert capture_log(fn ->
-               assert {:error, {401, "Forbidden"}} =
+               assert {:error, {401, _}} =
                         start_socket("?stream=user", [{"Sec-WebSocket-Protocol", "I am a friend"}])
 
                Process.sleep(30)
