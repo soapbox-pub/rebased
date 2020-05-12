@@ -16,6 +16,11 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
     :crypt.crypt(password, password_hash) == password_hash
   end
 
+  def checkpw(password, "$2" <> _ = password_hash) do
+    # Handle bcrypt passwords for Mastodon migration
+    Bcrypt.verify_pass(password, password_hash)
+  end
+
   def checkpw(password, "$pbkdf2" <> _ = password_hash) do
     Pbkdf2.verify_pass(password, password_hash)
   end

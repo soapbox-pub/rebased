@@ -79,6 +79,13 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
       assert AuthenticationPlug.checkpw("password", hash)
     end
 
+    test "check bcrypt hash" do
+      hash = "$2a$10$uyhC/R/zoE1ndwwCtMusK.TLVzkQ/Ugsbqp3uXI.CTTz0gBw.24jS"
+
+      assert AuthenticationPlug.checkpw("password", hash)
+      refute AuthenticationPlug.checkpw("password1", hash)
+    end
+
     test "it returns false when hash invalid" do
       hash =
         "psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
