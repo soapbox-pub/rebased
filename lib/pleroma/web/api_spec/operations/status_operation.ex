@@ -221,8 +221,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       tags: ["Statuses"],
       summary: "Mute conversation",
       security: [%{"oAuth" => ["write:mutes"]}],
-      description:
-        "Do not receive notifications for the thread that this status is part of.",
+      description: "Do not receive notifications for the thread that this status is part of.",
       operationId: "StatusController.mute_conversation",
       parameters: [id_param()],
       responses: %{
@@ -378,8 +377,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
         media_ids: %Schema{
           type: :array,
           items: %Schema{type: :string},
-          description:
-            "Array of Attachment ids to be attached as media."
+          description: "Array of Attachment ids to be attached as media."
         },
         poll: %Schema{
           type: :object,
@@ -388,8 +386,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
             options: %Schema{
               type: :array,
               items: %Schema{type: :string},
-              description:
-                "Array of possible answers. Must be provided with `poll[expires_in]`."
+              description: "Array of possible answers. Must be provided with `poll[expires_in]`."
             },
             expires_in: %Schema{
               type: :integer,
