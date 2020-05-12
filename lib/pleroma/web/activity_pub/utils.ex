@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.Changeset
   alias Ecto.UUID
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -169,8 +170,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Enqueues an activity for federation if it's local
   """
   @spec maybe_federate(any()) :: :ok
-  def maybe_federate(%Activity{local: true} = activity) do
-    if Pleroma.Config.get!([:instance, :federating]) do
+  def maybe_federate(%Activity{local: true, data: %{"type" => type}} = activity) do
+    outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
+
+    with true <- Config.get!([:instance, :federating]),
+         true <- type != "Block" || outgoing_blocks do
       Pleroma.Web.Federator.publish(activity)
     end
 
