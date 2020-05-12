@@ -1061,14 +1061,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
 
     test "creates a block activity" do
+      clear_config([:instance, :federating], true)
       blocker = insert(:user)
       blocked = insert(:user)
 
-      {:ok, activity} = ActivityPub.block(blocker, blocked)
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        {:ok, activity} = ActivityPub.block(blocker, blocked)
 
-      assert activity.data["type"] == "Block"
-      assert activity.data["actor"] == blocker.ap_id
-      assert activity.data["object"] == blocked.ap_id
+        assert activity.data["type"] == "Block"
+        assert activity.data["actor"] == blocker.ap_id
+        assert activity.data["object"] == blocked.ap_id
+
+        assert called(Pleroma.Web.Federator.publish(activity))
+      end
+    end
+
+    test "works with outgoing blocks disabled, but doesn't federate" do
+      clear_config([:instance, :federating], true)
+      clear_config([:activitypub, :outgoing_blocks], false)
+      blocker = insert(:user)
+      blocked = insert(:user)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        {:ok, activity} = ActivityPub.block(blocker, blocked)
+
+        assert activity.data["type"] == "Block"
+        assert activity.data["actor"] == blocker.ap_id
+        assert activity.data["object"] == blocked.ap_id
+
+        refute called(Pleroma.Web.Federator.publish(:_))
+      end
     end
   end
 
