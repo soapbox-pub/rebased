@@ -4,6 +4,7 @@
 defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
+  alias Pleroma.Object
   alias Pleroma.Chat
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
@@ -75,6 +76,29 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       assert result["content"] == "Hallo!!"
       assert result["chat_id"] == chat.id |> to_string()
+    end
+  end
+
+  describe "DELETE /api/v1/pleroma/chats/:id/messages/:message_id" do
+    setup do: oauth_access(["write:statuses"])
+
+    test "it deletes a message for the author of the message", %{conn: conn, user: user} do
+      recipient = insert(:user)
+
+      {:ok, message} =
+        CommonAPI.post_chat_message(user, recipient, "Hello darkness my old friend")
+
+      object = Object.normalize(message, false)
+
+      chat = Chat.get(user.id, recipient.ap_id)
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> delete("/api/v1/pleroma/chats/#{chat.id}/messages/#{object.id}")
+        |> json_response_and_validate_schema(200)
+
+      assert result["id"] == to_string(object.id)
     end
   end
 

@@ -4,6 +4,7 @@
 defmodule Pleroma.Web.PleromaAPI.ChatController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Activity
   alias Pleroma.Chat
   alias Pleroma.Object
   alias Pleroma.Pagination
@@ -22,7 +23,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:statuses"]} when action in [:post_chat_message, :create, :mark_as_read]
+    %{scopes: ["write:statuses"]}
+    when action in [:post_chat_message, :create, :mark_as_read, :delete_message]
   )
 
   plug(
@@ -33,6 +35,26 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ChatOperation
+
+  def delete_message(%{assigns: %{user: %{ap_id: actor} = user}} = conn, %{
+        message_id: id
+      }) do
+    with %Object{
+           data: %{
+             "actor" => ^actor,
+             "id" => object,
+             "to" => [recipient],
+             "type" => "ChatMessage"
+           }
+         } = message <- Object.get_by_id(id),
+         %Chat{} = chat <- Chat.get(user.id, recipient),
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(object),
+         {:ok, _delete} <- CommonAPI.delete(activity.id, user) do
+      conn
+      |> put_view(ChatMessageView)
+      |> render("show.json", for: user, object: message, chat: chat)
+    end
+  end
 
   def post_chat_message(
         %{body_params: %{content: content} = params, assigns: %{user: %{id: user_id} = user}} =

@@ -166,6 +166,31 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     }
   end
 
+  def delete_message_operation do
+    %Operation{
+      tags: ["chat"],
+      summary: "delete_message",
+      operationId: "ChatController.delete_message",
+      parameters: [
+        Operation.parameter(:id, :path, :string, "The ID of the Chat"),
+        Operation.parameter(:message_id, :path, :string, "The ID of the message")
+      ],
+      responses: %{
+        200 =>
+          Operation.response(
+            "The deleted ChatMessage",
+            "application/json",
+            ChatMessage
+          )
+      },
+      security: [
+        %{
+          "oAuth" => ["write"]
+        }
+      ]
+    }
+  end
+
   def chats_response do
     %Schema{
       title: "ChatsResponse",
