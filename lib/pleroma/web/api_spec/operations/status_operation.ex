@@ -96,7 +96,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       tags: ["Statuses"],
       summary: "Boost",
       security: [%{"oAuth" => ["write:statuses"]}],
-      description: "Reshare a status",
+      description: "Share a status",
       operationId: "StatusController.reblog",
       parameters: [id_param()],
       requestBody:
