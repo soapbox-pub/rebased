@@ -389,7 +389,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
               type: :array,
               items: %Schema{type: :string},
               description:
-                "Array of possible answers. If provided, `media_ids` cannot be used, and `poll[expires_in]` must be provided."
+                "Array of possible answers. Must be provided with `poll[expires_in]`."
             },
             expires_in: %Schema{
               type: :integer,
