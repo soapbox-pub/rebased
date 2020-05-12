@@ -170,13 +170,13 @@ defmodule Pleroma.NotificationTest do
 
       task =
         Task.async(fn ->
-          Streamer.add_socket("user", user)
+          Streamer.get_topic_and_add_socket("user", user)
           assert_receive {:render_with_user, _, _, _}, 4_000
         end)
 
       task_user_notification =
         Task.async(fn ->
-          Streamer.add_socket("user:notification", user)
+          Streamer.get_topic_and_add_socket("user:notification", user)
           assert_receive {:render_with_user, _, _, _}, 4_000
         end)
 
