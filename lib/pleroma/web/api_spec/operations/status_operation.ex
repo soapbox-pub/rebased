@@ -379,7 +379,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           type: :array,
           items: %Schema{type: :string},
           description:
-            "Array of Attachment ids to be attached as media. If provided, `status` becomes optional, and `poll` cannot be used."
+            "Array of Attachment ids to be attached as media."
         },
         poll: %Schema{
           type: :object,
