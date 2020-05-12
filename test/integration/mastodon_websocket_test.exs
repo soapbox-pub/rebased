@@ -32,7 +32,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
   test "refuses invalid requests" do
     capture_log(fn ->
-      assert {:error, {400, _}} = start_socket()
+      assert {:error, {404, _}} = start_socket()
       assert {:error, {404, _}} = start_socket("?stream=ncjdk")
       Process.sleep(30)
     end)
@@ -40,8 +40,8 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
   test "requires authentication and a valid token for protected streams" do
     capture_log(fn ->
-      assert {:error, {403, _}} = start_socket("?stream=user&access_token=aaaaaaaaaaaa")
-      assert {:error, {403, _}} = start_socket("?stream=user")
+      assert {:error, {401, _}} = start_socket("?stream=user&access_token=aaaaaaaaaaaa")
+      assert {:error, {401, _}} = start_socket("?stream=user")
       Process.sleep(30)
     end)
   end
@@ -100,7 +100,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user&access_token=#{token.token}")
 
       assert capture_log(fn ->
-               assert {:error, {403, "Forbidden"}} = start_socket("?stream=user")
+               assert {:error, {401, _}} = start_socket("?stream=user")
                Process.sleep(30)
              end) =~ ":badarg"
     end
@@ -109,7 +109,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
 
       assert capture_log(fn ->
-               assert {:error, {403, "Forbidden"}} = start_socket("?stream=user:notification")
+               assert {:error, {401, _}} = start_socket("?stream=user:notification")
                Process.sleep(30)
              end) =~ ":badarg"
     end
@@ -118,7 +118,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user", [{"Sec-WebSocket-Protocol", token.token}])
 
       assert capture_log(fn ->
-               assert {:error, {403, "Forbidden"}} =
+               assert {:error, {401, _}} =
                         start_socket("?stream=user", [{"Sec-WebSocket-Protocol", "I am a friend"}])
 
                Process.sleep(30)
