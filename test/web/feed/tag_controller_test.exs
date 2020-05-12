@@ -82,10 +82,6 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
   end
 
   test "gets a feed (RSS)", %{conn: conn} do
-    %{microsecond: {micro, _}} = DateTime.utc_now()
-    micro = (micro / 1000) |> floor()
-    Process.sleep(950 - micro)
-
     Pleroma.Config.put(
       [:feed, :post_title],
       %{max_length: 25, omission: "..."}
@@ -142,8 +138,8 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
            ]
 
     assert xpath(xml, ~x"//channel/item/pubDate/text()"sl) == [
-             FeedView.pub_date(activity1.data["published"]),
-             FeedView.pub_date(activity2.data["published"])
+             FeedView.pub_date(activity2.data["published"]),
+             FeedView.pub_date(activity1.data["published"])
            ]
 
     assert xpath(xml, ~x"//channel/item/enclosure/@url"sl) == [
