@@ -262,7 +262,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp prepare_user_bio(%User{bio: ""}), do: ""
 
   defp prepare_user_bio(%User{bio: bio}) when is_binary(bio) do
-    bio |> String.replace(~r(<br */?>), "\n") |> Pleroma.HTML.strip_tags()
+    bio
+    |> String.replace(~r(<br */?>), "\n")
+    |> Pleroma.HTML.strip_tags()
+    |> HtmlEntities.decode()
   end
 
   defp prepare_user_bio(_), do: ""
