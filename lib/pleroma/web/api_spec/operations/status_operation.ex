@@ -30,7 +30,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           :ids,
           :query,
           %Schema{type: :array, items: FlakeID},
-          "Array of account IDs"
+          "Array of status IDs"
         )
       ],
       operationId: "StatusController.index",
