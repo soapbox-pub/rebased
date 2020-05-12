@@ -24,29 +24,30 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
       tags: ["Search"],
       summary: "Search for matching accounts by username or display name",
       operationId: "SearchController.account_search",
-      parameters: [
-        Operation.parameter(:q, :query, %Schema{type: :string}, "What to search for",
-          required: true
-        ),
-        Operation.parameter(
-          :limit,
-          :query,
-          %Schema{type: :integer, default: 40},
-          "Maximum number of results"
-        ),
-        Operation.parameter(
-          :resolve,
-          :query,
-          %Schema{allOf: [BooleanLike], default: false},
-          "Attempt WebFinger lookup. Use this when `q` is an exact address."
-        ),
-        Operation.parameter(
-          :following,
-          :query,
-          %Schema{allOf: [BooleanLike], default: false},
-          "Only include accounts that the user is following"
-        )
-      ],
+      parameters:
+        [
+          Operation.parameter(:q, :query, %Schema{type: :string}, "What to search for",
+            required: true
+          ),
+          Operation.parameter(
+            :limit,
+            :query,
+            %Schema{type: :integer, default: 40},
+            "Maximum number of results"
+          ),
+          Operation.parameter(
+            :resolve,
+            :query,
+            %Schema{allOf: [BooleanLike], default: false},
+            "Attempt WebFinger lookup. Use this when `q` is an exact address."
+          ),
+          Operation.parameter(
+            :following,
+            :query,
+            %Schema{allOf: [BooleanLike], default: false},
+            "Only include accounts that the user is following"
+          )
+        ] ++ [embed_relationships_param()],
       responses: %{
         200 =>
           Operation.response(
@@ -65,40 +66,42 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
       security: [%{"oAuth" => ["read:search"]}],
       operationId: "SearchController.search",
       deprecated: true,
-      parameters: [
-        Operation.parameter(
-          :account_id,
-          :query,
-          FlakeID,
-          "If provided, statuses returned will be authored only by this account"
-        ),
-        Operation.parameter(
-          :type,
-          :query,
-          %Schema{type: :string, enum: ["accounts", "hashtags", "statuses"]},
-          "Search type"
-        ),
-        Operation.parameter(:q, :query, %Schema{type: :string}, "The search query", required: true),
-        Operation.parameter(
-          :resolve,
-          :query,
-          %Schema{allOf: [BooleanLike], default: false},
-          "Attempt WebFinger lookup"
-        ),
-        Operation.parameter(
-          :following,
-          :query,
-          %Schema{allOf: [BooleanLike], default: false},
-          "Only include accounts that the user is following"
-        ),
-        Operation.parameter(
-          :offset,
-          :query,
-          %Schema{type: :integer},
-          "Offset"
-        )
-        | pagination_params()
-      ],
+      parameters:
+        [
+          Operation.parameter(
+            :account_id,
+            :query,
+            FlakeID,
+            "If provided, statuses returned will be authored only by this account"
+          ),
+          Operation.parameter(
+            :type,
+            :query,
+            %Schema{type: :string, enum: ["accounts", "hashtags", "statuses"]},
+            "Search type"
+          ),
+          Operation.parameter(:q, :query, %Schema{type: :string}, "The search query",
+            required: true
+          ),
+          Operation.parameter(
+            :resolve,
+            :query,
+            %Schema{allOf: [BooleanLike], default: false},
+            "Attempt WebFinger lookup"
+          ),
+          Operation.parameter(
+            :following,
+            :query,
+            %Schema{allOf: [BooleanLike], default: false},
+            "Only include accounts that the user is following"
+          ),
+          Operation.parameter(
+            :offset,
+            :query,
+            %Schema{type: :integer},
+            "Offset"
+          )
+        ] ++ pagination_params() ++ [embed_relationships_param()],
       responses: %{
         200 => Operation.response("Results", "application/json", results())
       }

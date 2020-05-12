@@ -47,6 +47,15 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
     ]
   end
 
+  def embed_relationships_param do
+    Operation.parameter(
+      :embed_relationships,
+      :query,
+      :boolean,
+      "Embed relationships into accounts (Pleroma extension)"
+    )
+  end
+
   def empty_object_response do
     Operation.response("Empty object", "application/json", %Schema{type: :object, example: %{}})
   end
