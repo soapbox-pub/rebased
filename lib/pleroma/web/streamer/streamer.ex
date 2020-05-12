@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Streamer do
+  alias Pleroma.User
   alias Pleroma.Web.Streamer.State
   alias Pleroma.Web.Streamer.Worker
-  alias Pleroma.User
 
   @timeout 60_000
   @mix_env Mix.env()
