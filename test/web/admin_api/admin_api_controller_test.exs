@@ -2943,6 +2943,30 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                ]
              }
     end
+
+    test "doesn't set keys not in the whitelist", %{conn: conn} do
+      clear_config(:database_config_whitelist, [
+        {:pleroma, :key1},
+        {:pleroma, :key2},
+        {:pleroma, Pleroma.Captcha.NotReal}
+      ])
+
+      post(conn, "/api/pleroma/admin/config", %{
+        configs: [
+          %{group: ":pleroma", key: ":key1", value: "value1"},
+          %{group: ":pleroma", key: ":key2", value: "value2"},
+          %{group: ":pleroma", key: ":key3", value: "value3"},
+          %{group: ":pleroma", key: "Pleroma.Web.Endpoint.NotReal", value: "value4"},
+          %{group: ":pleroma", key: "Pleroma.Captcha.NotReal", value: "value5"}
+        ]
+      })
+
+      assert Application.get_env(:pleroma, :key1) == "value1"
+      assert Application.get_env(:pleroma, :key2) == "value2"
+      assert Application.get_env(:pleroma, :key3) == nil
+      assert Application.get_env(:pleroma, Pleroma.Web.Endpoint.NotReal) == nil
+      assert Application.get_env(:pleroma, Pleroma.Captcha.NotReal) == "value5"
+    end
   end
 
   describe "GET /api/pleroma/admin/restart" do

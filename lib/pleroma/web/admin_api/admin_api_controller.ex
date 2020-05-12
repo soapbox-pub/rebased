@@ -949,7 +949,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def config_update(conn, %{"configs" => configs}) do
     with :ok <- configurable_from_database(conn) do
       {_errors, results} =
-        Enum.map(configs, fn
+        Enum.filter(configs, &whitelisted_config?/1)
+        |> Enum.map(fn
           %{"group" => group, "key" => key, "delete" => true} = params ->
             ConfigDB.delete(%{group: group, key: key, subkeys: params["subkeys"]})
 
@@ -1008,6 +1009,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         conn,
         {:error, "To use this endpoint you need to enable configuration from database."}
       )
+    end
+  end
+
+  defp whitelisted_config?(%{"group" => group, "key" => key}) do
+    if whitelisted_configs = Config.get(:database_config_whitelist) do
+      Enum.any?(whitelisted_configs, fn {whitelisted_group, whitelisted_key} ->
+        group == inspect(whitelisted_group) && key == inspect(whitelisted_key)
+      end)
+    else
+      true
     end
   end
 
