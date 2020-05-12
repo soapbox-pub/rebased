@@ -750,7 +750,19 @@ defmodule Pleroma.User do
     {:error, "Not subscribed!"}
   end
 
+  @spec unfollow(User.t(), User.t()) :: {:ok, User.t(), Activity.t()} | {:error, String.t()}
   def unfollow(%User{} = follower, %User{} = followed) do
+    case do_unfollow(follower, followed) do
+      {:ok, follower, followed} ->
+        {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
+
+      error ->
+        error
+    end
+  end
+
+  @spec do_unfollow(User.t(), User.t()) :: {:ok, User.t(), User.t()} | {:error, String.t()}
+  defp do_unfollow(%User{} = follower, %User{} = followed) do
     case get_follow_state(follower, followed) do
       state when state in [:follow_pending, :follow_accept] ->
         FollowingRelationship.unfollow(follower, followed)
@@ -761,7 +773,7 @@ defmodule Pleroma.User do
           |> update_following_count()
           |> set_cache()
 
-        {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
+        {:ok, follower, followed}
 
       nil ->
         {:error, "Not subscribed!"}
@@ -1401,15 +1413,13 @@ defmodule Pleroma.User do
       user
       |> get_followers()
       |> Enum.filter(& &1.local)
-      |> Enum.each(fn follower ->
-        follower |> update_following_count() |> set_cache()
-      end)
+      |> Enum.each(&set_cache(update_following_count(&1)))
 
       # Only update local user counts, remote will be update during the next pull.
       user
       |> get_friends()
       |> Enum.filter(& &1.local)
-      |> Enum.each(&update_follower_count/1)
+      |> Enum.each(&do_unfollow(user, &1))
 
       {:ok, user}
     end
