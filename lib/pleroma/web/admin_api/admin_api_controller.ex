@@ -37,7 +37,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   require Logger
 
-  @descriptions_json Pleroma.Docs.JSON.compile()
+  @descriptions Pleroma.Docs.JSON.compile()
   @users_page_size 50
 
   plug(
@@ -892,9 +892,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def config_descriptions(conn, _params) do
+    descriptions_json =
+      @descriptions
+      |> Enum.filter(&whitelisted_config?/1)
+      |> Jason.encode!()
+
     conn
     |> Plug.Conn.put_resp_content_type("application/json")
-    |> Plug.Conn.send_resp(200, @descriptions_json)
+    |> Plug.Conn.send_resp(200, descriptions_json)
   end
 
   def config_show(conn, %{"only_db" => true}) do
@@ -1012,7 +1017,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  defp whitelisted_config?(%{"group" => group, "key" => key}) do
+  defp whitelisted_config?(group, key) do
     if whitelisted_configs = Config.get(:database_config_whitelist) do
       Enum.any?(whitelisted_configs, fn {whitelisted_group, whitelisted_key} ->
         group == inspect(whitelisted_group) && key == inspect(whitelisted_key)
@@ -1020,6 +1025,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     else
       true
     end
+  end
+
+  defp whitelisted_config?(%{"group" => group, "key" => key}) do
+    whitelisted_config?(group, key)
+  end
+
+  defp whitelisted_config?(%{:group => group} = config) do
+    whitelisted_config?(group, config[:key])
   end
 
   def reload_emoji(conn, _params) do

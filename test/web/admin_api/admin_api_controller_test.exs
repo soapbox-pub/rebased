@@ -3604,19 +3604,50 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  test "GET /api/pleroma/admin/config/descriptions", %{conn: conn} do
-    admin = insert(:user, is_admin: true)
+  describe "GET /api/pleroma/admin/config/descriptions" do
+    test "structure", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
 
-    conn =
-      assign(conn, :user, admin)
-      |> get("/api/pleroma/admin/config/descriptions")
+      conn =
+        assign(conn, :user, admin)
+        |> get("/api/pleroma/admin/config/descriptions")
 
-    assert [child | _others] = json_response(conn, 200)
+      assert [child | _others] = json_response(conn, 200)
 
-    assert child["children"]
-    assert child["key"]
-    assert String.starts_with?(child["group"], ":")
-    assert child["description"]
+      assert child["children"]
+      assert child["key"]
+      assert String.starts_with?(child["group"], ":")
+      assert child["description"]
+    end
+
+    test "filters by database configuration whitelist", %{conn: conn} do
+      clear_config(:database_config_whitelist, [
+        {:pleroma, :instance},
+        {:pleroma, :activitypub},
+        {:pleroma, Pleroma.Upload}
+      ])
+
+      admin = insert(:user, is_admin: true)
+
+      conn =
+        assign(conn, :user, admin)
+        |> get("/api/pleroma/admin/config/descriptions")
+
+      children = json_response(conn, 200)
+
+      assert length(children) == 3
+
+      assert Enum.all?(children, fn c -> c["group"] == ":pleroma" end)
+
+      instance = Enum.find(children, fn c -> c["key"] == ":instance" end)
+      assert instance["children"]
+
+      activitypub = Enum.find(children, fn c -> c["key"] == ":activitypub" end)
+      assert activitypub["children"]
+
+      web_endpoint = Enum.find(children, fn c -> c["key"] == "Pleroma.Upload" end)
+      assert web_endpoint["children"]
+    end
   end
 
   describe "/api/pleroma/admin/stats" do
