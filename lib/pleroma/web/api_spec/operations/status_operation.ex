@@ -394,7 +394,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
             expires_in: %Schema{
               type: :integer,
               description:
-                "Duration the poll should be open, in seconds. If provided, `media_ids` cannot be used, and `poll[options]` must be provided."
+                "Duration the poll should be open, in seconds. Must be provided with `poll[options]`"
             },
             multiple: %Schema{type: :boolean, description: "Allow multiple choices?"},
             hide_totals: %Schema{
