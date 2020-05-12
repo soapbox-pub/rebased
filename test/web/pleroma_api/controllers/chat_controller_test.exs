@@ -6,6 +6,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
   alias Pleroma.Chat
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
@@ -208,6 +209,28 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
   describe "GET /api/v1/pleroma/chats" do
     setup do: oauth_access(["read:statuses"])
+
+    test "it does not return chats with users you blocked", %{conn: conn, user: user} do
+      recipient = insert(:user)
+
+      {:ok, _} = Chat.get_or_create(user.id, recipient.ap_id)
+
+      result =
+        conn
+        |> get("/api/v1/pleroma/chats")
+        |> json_response_and_validate_schema(200)
+
+      assert length(result) == 1
+
+      User.block(user, recipient)
+
+      result =
+        conn
+        |> get("/api/v1/pleroma/chats")
+        |> json_response_and_validate_schema(200)
+
+      assert length(result) == 0
+    end
 
     test "it paginates", %{conn: conn, user: user} do
       Enum.each(1..30, fn _ ->
