@@ -7,7 +7,6 @@ defmodule Pleroma.MFA do
   The MFA context.
   """
 
-  alias Comeonin.Pbkdf2
   alias Pleroma.User
 
   alias Pleroma.MFA.BackupCodes
@@ -72,7 +71,7 @@ defmodule Pleroma.MFA do
   @spec generate_backup_codes(User.t()) :: {:ok, list(binary)} | {:error, String.t()}
   def generate_backup_codes(%User{} = user) do
     with codes <- BackupCodes.generate(),
-         hashed_codes <- Enum.map(codes, &Pbkdf2.hashpwsalt/1),
+         hashed_codes <- Enum.map(codes, &Pbkdf2.hash_pwd_salt/1),
          changeset <- Changeset.cast_backup_codes(user, hashed_codes),
          {:ok, _} <- User.update_and_set_cache(changeset) do
       {:ok, codes}

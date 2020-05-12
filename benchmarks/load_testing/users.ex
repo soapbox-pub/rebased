@@ -55,7 +55,7 @@ defmodule Pleroma.LoadTesting.Users do
       name: "Test テスト User #{i}",
       email: "user#{i}@example.com",
       nickname: "nick#{i}",
-      password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
+      password_hash: Pbkdf2.hash_pwd_salt("test"),
       bio: "Tester Number #{i}",
       local: !remote
     }
