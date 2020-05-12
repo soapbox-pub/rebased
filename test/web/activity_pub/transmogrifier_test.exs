@@ -833,6 +833,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
+
+      follower = User.get_by_id(follower.id)
+      assert follower.following_count == 1
+
+      followed = User.get_by_id(followed.id)
+      assert followed.follower_count == 1
     end
 
     test "it fails for incoming accepts which cannot be correlated" do
