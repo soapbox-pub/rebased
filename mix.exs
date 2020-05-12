@@ -36,7 +36,7 @@ defmodule Pleroma.Mixfile do
       releases: [
         pleroma: [
           include_executables_for: [:unix],
-          applications: [ex_syslogger: :load, syslog: :load],
+          applications: [ex_syslogger: :load, syslog: :load, eldap: :transient],
           steps: [:assemble, &copy_files/1, &copy_nginx_config/1]
         ]
       ]
@@ -69,8 +69,7 @@ defmodule Pleroma.Mixfile do
         :comeonin,
         :quack,
         :fast_sanitize,
-        :ssl,
-        :eldap
+        :ssl
       ],
       included_applications: [:ex_syslogger]
     ]
