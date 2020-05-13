@@ -1230,7 +1230,7 @@ config :pleroma, :config_description, [
             key: :showInstanceSpecificPanel,
             label: "Show instance specific panel",
             type: :boolean,
-            description: "Whenether to show the instance's specific panel"
+            description: "Whether to show the instance's custom panel"
           },
           %{
             key: :subjectLineBehavior,
@@ -1245,7 +1245,7 @@ config :pleroma, :config_description, [
           %{
             key: :theme,
             type: :string,
-            description: "Which theme to use, they are defined in styles.json",
+            description: "Which theme to use. Available themes are defined in styles.json",
             suggestions: ["pleroma-dark"]
           }
         ]
