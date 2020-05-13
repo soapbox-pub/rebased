@@ -104,8 +104,16 @@ defmodule Pleroma.Web.ControllerHelper do
 
   def put_if_exist(map, key, value), do: Map.put(map, key, value)
 
-  def with_relationships?(params) do
-    # To do: change to `truthy_param?(params["with_relationships"])` once PleromaFE supports it
-    not explicitly_falsy_param?(params["with_relationships"])
+  @doc """
+  Returns true if request specifies to include embedded relationships in account objects.
+  May only be used in selected account-related endpoints; has no effect for status- or
+    notification-related endpoints.
+  """
+  # Intended for PleromaFE: https://git.pleroma.social/pleroma/pleroma-fe/-/issues/838
+  def embed_relationships?(params) do
+    # To do once OpenAPI transition mess is over: just `truthy_param?(params[:with_relationships])`
+    params
+    |> Map.get(:with_relationships, params["with_relationships"])
+    |> truthy_param?()
   end
 end

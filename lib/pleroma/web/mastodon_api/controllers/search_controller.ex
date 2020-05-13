@@ -33,12 +33,10 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
     conn
     |> put_view(AccountView)
-    # https://git.pleroma.social/pleroma/pleroma-fe/-/issues/838#note_59223
     |> render("index.json",
       users: accounts,
       for: user,
-      as: :user,
-      embed_relationships: ControllerHelper.with_relationships?(params)
+      as: :user
     )
   end
 
@@ -82,7 +80,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
       offset: params[:offset],
       type: params[:type],
       author: get_author(params),
-      embed_relationships: ControllerHelper.with_relationships?(params),
+      embed_relationships: ControllerHelper.embed_relationships?(params),
       for_user: user
     ]
     |> Enum.filter(&elem(&1, 1))
@@ -95,7 +93,6 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
       users: accounts,
       for: options[:for_user],
       as: :user,
-      # https://git.pleroma.social/pleroma/pleroma-fe/-/issues/838#note_59223
       embed_relationships: options[:embed_relationships]
     )
   end

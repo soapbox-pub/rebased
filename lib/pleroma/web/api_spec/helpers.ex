@@ -49,7 +49,12 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
   end
 
   def with_relationships_param do
-    Operation.parameter(:with_relationships, :query, BooleanLike, "Include relationships")
+    Operation.parameter(
+      :with_relationships,
+      :query,
+      BooleanLike,
+      "Embed relationships into accounts."
+    )
   end
 
   def empty_object_response do
