@@ -1161,13 +1161,6 @@ config :pleroma, :config_description, [
             description: "Disables PleromaFE Chat component"
           },
           %{
-            key: :formattingOptionsEnabled,
-            label: "Formatting options enabled",
-            type: :boolean,
-            description:
-              "Enable setting a formatting different than plain-text (ie. HTML, Markdown) when posting, relates to `:instance`, `allowed_post_formats`"
-          },
-          %{
             key: :hidePostStats,
             label: "Hide post stats",
             type: :boolean,
