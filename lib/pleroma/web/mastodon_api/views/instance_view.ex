@@ -68,7 +68,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Config.get([:instance, :safe_dm_mentions]) do
         "safe_dm_mentions"
       end,
-      "pleroma_emoji_reactions"
+      "pleroma_emoji_reactions",
+      "pleroma_chat_messages"
     ]
     |> Enum.filter(& &1)
   end
