@@ -1204,6 +1204,13 @@ config :pleroma, :config_description, [
                 "If you want a colorful logo you must disable logoMask."
           },
           %{
+            key: :minimalScopesMode,
+            label: "Minimal scopes mode",
+            type: :boolean,
+            description: "Limit scope selection to Direct, User default, and Scope of post replying to. " <>
+                "Also prevents replying to a DM with a public post from PleromaFE."
+          },
+          %{
             key: :redirectRootNoLogin,
             label: "Redirect root no login",
             type: :string,
@@ -1224,12 +1231,6 @@ config :pleroma, :config_description, [
             label: "Scope copy",
             type: :boolean,
             description: "Copy the scope (private/unlisted/public) in replies to posts by default"
-          },
-          %{
-            key: :scopeOptionsEnabled,
-            label: "Scope options enabled",
-            type: :boolean,
-            description: "Enable setting a notice visibility and subject/CW when posting"
           },
           %{
             key: :showInstanceSpecificPanel,
