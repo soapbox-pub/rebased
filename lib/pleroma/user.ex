@@ -501,7 +501,15 @@ defmodule Pleroma.User do
 
     params = Map.put(params, :last_refreshed_at, NaiveDateTime.utc_now())
 
-    params = if remote?, do: truncate_fields_param(params), else: params
+    params =
+      if remote? do
+        params
+        |> truncate_fields_param()
+        |> truncate_if_exists(:name, name_limit)
+        |> truncate_if_exists(:bio, bio_limit)
+      else
+        params
+      end
 
     struct
     |> cast(

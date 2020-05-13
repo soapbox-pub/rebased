@@ -3,6 +3,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.5] - 2020-05-13
+
+### Security
+- Fix possible private status leaks in Mastodon Streaming API
+
+### Fixed
+- Crashes when trying to block a user if block federation is disabled
+- Not being able to start the instance without `erlang-eldap` installed
+- Users with bios over the limit getting rejected
+- Follower counters not being updated on incoming follow accepts
+
+### Upgrade notes
+
+1. Restart Pleroma
+
 ## [2.0.4] - 2020-05-10
 
 ### Security

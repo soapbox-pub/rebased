@@ -570,7 +570,10 @@ defmodule Pleroma.UserTest do
       assert fetched_user == "not found nonexistant"
     end
 
+    clear_config([:instance, :user_bio_length])
+
     test "updates an existing user, if stale" do
+      Pleroma.Config.put([:instance, :user_bio_length], 1)
       a_week_ago = NaiveDateTime.add(NaiveDateTime.utc_now(), -604_800)
 
       orig_user =

@@ -1351,15 +1351,44 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert Repo.aggregate(Object, :count, :id) == 0
     end
 
+    clear_config([:instance, :federating])
+
     test "creates a block activity" do
+      Config.put([:instance, :federating], true)
       blocker = insert(:user)
       blocked = insert(:user)
 
-      {:ok, activity} = ActivityPub.block(blocker, blocked)
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        {:ok, activity} = ActivityPub.block(blocker, blocked)
 
-      assert activity.data["type"] == "Block"
-      assert activity.data["actor"] == blocker.ap_id
-      assert activity.data["object"] == blocked.ap_id
+        assert activity.data["type"] == "Block"
+        assert activity.data["actor"] == blocker.ap_id
+        assert activity.data["object"] == blocked.ap_id
+
+        assert called(Pleroma.Web.Federator.publish(activity))
+      end
+    end
+
+    clear_config([:instance, :federating])
+    clear_config([:activitypub, :outgoing_blocks])
+
+    test "works with outgoing blocks disabled, but doesn't federate" do
+      Config.put([:instance, :federating], true)
+      Config.put([:activitypub, :outgoing_blocks], false)
+      blocker = insert(:user)
+      blocked = insert(:user)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        {:ok, activity} = ActivityPub.block(blocker, blocked)
+
+        assert activity.data["type"] == "Block"
+        assert activity.data["actor"] == blocker.ap_id
+        assert activity.data["object"] == blocked.ap_id
+
+        refute called(Pleroma.Web.Federator.publish(:_))
+      end
     end
 
     test "reverts unblock activity on error" do

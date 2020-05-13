@@ -604,7 +604,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp do_block(blocker, blocked, activity_id, local) do
-    outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
     unfollow_blocked = Config.get([:activitypub, :unfollow_blocked])
 
     if unfollow_blocked do
@@ -612,8 +611,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       if follow_activity, do: unfollow(blocker, blocked, nil, local)
     end
 
-    with true <- outgoing_blocks,
-         block_data <- make_block_data(blocker, blocked, activity_id),
+    with block_data <- make_block_data(blocker, blocked, activity_id),
          {:ok, activity} <- insert(block_data, local),
          :ok <- maybe_federate(activity) do
       {:ok, activity}

@@ -164,12 +164,13 @@ defmodule Pleroma.NotificationTest do
       user = insert(:user)
       task = Task.async(fn -> assert_receive {:text, _}, 4_000 end)
       task_user_notification = Task.async(fn -> assert_receive {:text, _}, 4_000 end)
-      Streamer.add_socket("user", %{transport_pid: task.pid, assigns: %{user: user}})
 
-      Streamer.add_socket(
-        "user:notification",
-        %{transport_pid: task_user_notification.pid, assigns: %{user: user}}
-      )
+      Streamer.get_topic_and_add_socket("user", %{transport_pid: task.pid, assigns: %{user: user}})
+
+      Streamer.get_topic_and_add_socket("user:notification", %{
+        transport_pid: task_user_notification.pid,
+        assigns: %{user: user}
+      })
 
       activity = insert(:note_activity)
 

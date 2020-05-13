@@ -36,30 +36,28 @@ defmodule Pleroma.Web.Streamer.State do
   end
 
   def handle_call({:add, topic, socket}, _from, %{sockets: sockets} = state) do
-    internal_topic = internal_topic(topic, socket)
     stream_socket = StreamerSocket.from_socket(socket)
 
     sockets_for_topic =
       sockets
-      |> Map.get(internal_topic, [])
+      |> Map.get(topic, [])
       |> List.insert_at(0, stream_socket)
       |> Enum.uniq()
 
-    state = put_in(state, [:sockets, internal_topic], sockets_for_topic)
+    state = put_in(state, [:sockets, topic], sockets_for_topic)
     Logger.debug("Got new conn for #{topic}")
     {:reply, state, state}
   end
 
   def handle_call({:remove, topic, socket}, _from, %{sockets: sockets} = state) do
-    internal_topic = internal_topic(topic, socket)
     stream_socket = StreamerSocket.from_socket(socket)
 
     sockets_for_topic =
       sockets
-      |> Map.get(internal_topic, [])
+      |> Map.get(topic, [])
       |> List.delete(stream_socket)
 
-    state = Kernel.put_in(state, [:sockets, internal_topic], sockets_for_topic)
+    state = Kernel.put_in(state, [:sockets, topic], sockets_for_topic)
     {:reply, state, state}
   end
 
@@ -69,14 +67,5 @@ defmodule Pleroma.Web.Streamer.State do
 
   defp do_remove_socket(_env, topic, socket) do
     GenServer.call(__MODULE__, {:remove, topic, socket})
-  end
-
-  defp internal_topic(topic, socket)
-       when topic in ~w[user user:notification direct] do
-    "#{topic}:#{socket.assigns[:user].id}"
-  end
-
-  defp internal_topic(topic, _) do
-    topic
   end
 end

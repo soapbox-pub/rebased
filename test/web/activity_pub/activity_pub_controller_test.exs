@@ -310,7 +310,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/inbox" do
+    clear_config([:instance, :user_bio_length])
+
     test "it inserts an incoming activity into the database", %{conn: conn} do
+      Pleroma.Config.put([:instance, :user_bio_length], 1)
+
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
       conn =

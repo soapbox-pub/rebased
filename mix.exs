@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("2.0.4"),
+      version: version("2.0.5"),
       elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -36,7 +36,7 @@ defmodule Pleroma.Mixfile do
       releases: [
         pleroma: [
           include_executables_for: [:unix],
-          applications: [ex_syslogger: :load, syslog: :load],
+          applications: [ex_syslogger: :load, syslog: :load, eldap: :transient],
           steps: [:assemble, &copy_files/1, &copy_nginx_config/1]
         ]
       ]
@@ -69,8 +69,7 @@ defmodule Pleroma.Mixfile do
         :comeonin,
         :quack,
         :fast_sanitize,
-        :ssl,
-        :eldap
+        :ssl
       ],
       included_applications: [:ex_syslogger]
     ]
