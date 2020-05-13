@@ -1155,6 +1155,12 @@ config :pleroma, :config_description, [
               "When a message has a subject (aka Content Warning), collapse it by default"
           },
           %{
+            key: :disableChat,
+            label: "PleromaFE Chat",
+            type: :boolean,
+            description: "Disables PleromaFE Chat component"
+          },
+          %{
             key: :formattingOptionsEnabled,
             label: "Formatting options enabled",
             type: :boolean,
