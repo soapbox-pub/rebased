@@ -138,8 +138,8 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
            ]
 
     assert xpath(xml, ~x"//channel/item/pubDate/text()"sl) == [
-             FeedView.pub_date(activity1.data["published"]),
-             FeedView.pub_date(activity2.data["published"])
+             FeedView.pub_date(activity2.data["published"]),
+             FeedView.pub_date(activity1.data["published"])
            ]
 
     assert xpath(xml, ~x"//channel/item/enclosure/@url"sl) == [

@@ -2862,26 +2862,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
               group: ":pleroma",
               key: ":http",
               value: [
-                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]},
-                %{"tuple" => [":send_user_agent", false]}
+                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]}
               ]
             }
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
                    "key" => ":http",
-                   "value" => [
-                     %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]},
-                     %{"tuple" => [":send_user_agent", false]}
-                   ],
-                   "db" => [":proxy_url", ":send_user_agent"]
+                   "value" => value,
+                   "db" => db
                  }
                ]
-             }
+             } = json_response(conn, 200)
+
+      assert %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]} in value
+      assert ":proxy_url" in db
     end
 
     test "proxy tuple domain", %{conn: conn} do
@@ -2892,26 +2891,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
               group: ":pleroma",
               key: ":http",
               value: [
-                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]},
-                %{"tuple" => [":send_user_agent", false]}
+                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]}
               ]
             }
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
                    "key" => ":http",
-                   "value" => [
-                     %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]},
-                     %{"tuple" => [":send_user_agent", false]}
-                   ],
-                   "db" => [":proxy_url", ":send_user_agent"]
+                   "value" => value,
+                   "db" => db
                  }
                ]
-             }
+             } = json_response(conn, 200)
+
+      assert %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]} in value
+      assert ":proxy_url" in db
     end
 
     test "proxy tuple ip", %{conn: conn} do
@@ -2922,26 +2920,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
               group: ":pleroma",
               key: ":http",
               value: [
-                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]},
-                %{"tuple" => [":send_user_agent", false]}
+                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]}
               ]
             }
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
                    "key" => ":http",
-                   "value" => [
-                     %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]},
-                     %{"tuple" => [":send_user_agent", false]}
-                   ],
-                   "db" => [":proxy_url", ":send_user_agent"]
+                   "value" => value,
+                   "db" => db
                  }
                ]
-             }
+             } = json_response(conn, 200)
+
+      assert %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]} in value
+      assert ":proxy_url" in db
     end
   end
 

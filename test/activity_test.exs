@@ -11,6 +11,11 @@ defmodule Pleroma.ActivityTest do
   alias Pleroma.ThreadMute
   import Pleroma.Factory
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   test "returns an activity by it's AP id" do
     activity = insert(:note_activity)
     found_activity = Activity.get_by_ap_id(activity.data["id"])
@@ -107,8 +112,6 @@ defmodule Pleroma.ActivityTest do
 
   describe "search" do
     setup do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
       user = insert(:user)
 
       params = %{

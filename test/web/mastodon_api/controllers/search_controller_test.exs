@@ -13,7 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
   import Tesla.Mock
   import Mock
 
-  setup do
+  setup_all do
     mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
