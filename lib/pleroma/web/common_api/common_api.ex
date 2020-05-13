@@ -83,33 +83,51 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def delete(activity_id, user) do
-    with {_, %Activity{data: %{"object" => _}} = activity} <-
-           {:find_activity, Activity.get_by_id_with_object(activity_id)},
-         %Object{} = object <- Object.normalize(activity),
+    with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
+           {:find_activity, Activity.get_by_id(activity_id)},
+         {_, %Object{} = object, _} <-
+           {:find_object, Object.normalize(activity, false), activity},
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
          {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
       {:ok, delete}
     else
-      {:find_activity, _} -> {:error, :not_found}
-      _ -> {:error, dgettext("errors", "Could not delete")}
+      {:find_activity, _} ->
+        {:error, :not_found}
+
+      {:find_object, nil, %Activity{data: %{"actor" => actor, "object" => object}}} ->
+        # We have the create activity, but not the object, it was probably pruned.
+        # Insert a tombstone and try again
+        with {:ok, tombstone_data, _} <- Builder.tombstone(actor, object),
+             {:ok, _tombstone} <- Object.create(tombstone_data) do
+          delete(activity_id, user)
+        else
+          _ ->
+            Logger.error(
+              "Could not insert tombstone for missing object on deletion. Object is #{object}."
+            )
+
+            {:error, dgettext("errors", "Could not delete")}
+        end
+
+      _ ->
+        {:error, dgettext("errors", "Could not delete")}
     end
   end
 
   def repeat(id, user, params \\ %{}) do
-    with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
-           {:find_activity, Activity.get_by_id(id)},
-         object <- Object.normalize(activity),
-         announce_activity <- Utils.get_existing_announce(user.ap_id, object),
-         public <- public_announce?(object, params) do
+    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id) do
+      object = Object.normalize(activity)
+      announce_activity = Utils.get_existing_announce(user.ap_id, object)
+      public = public_announce?(object, params)
+
       if announce_activity do
         {:ok, announce_activity, object}
       else
         ActivityPub.announce(user, object, nil, true, public)
       end
     else
-      {:find_activity, _} -> {:error, :not_found}
-      _ -> {:error, dgettext("errors", "Could not repeat")}
+      _ -> {:error, :not_found}
     end
   end
 
@@ -267,7 +285,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def public_announce?(_, %{"visibility" => visibility})
+  def public_announce?(_, %{visibility: visibility})
       when visibility in ~w{public unlisted private direct},
       do: visibility in ~w(public unlisted)
 
@@ -277,11 +295,11 @@ defmodule Pleroma.Web.CommonAPI do
 
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
 
-  def get_visibility(%{"visibility" => visibility}, in_reply_to, _)
+  def get_visibility(%{visibility: visibility}, in_reply_to, _)
       when visibility in ~w{public unlisted private direct},
       do: {visibility, get_replied_to_visibility(in_reply_to)}
 
-  def get_visibility(%{"visibility" => "list:" <> list_id}, in_reply_to, _) do
+  def get_visibility(%{visibility: "list:" <> list_id}, in_reply_to, _) do
     visibility = {:list, String.to_integer(list_id)}
     {visibility, get_replied_to_visibility(in_reply_to)}
   end
@@ -339,7 +357,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def post(user, %{"status" => _} = data) do
+  def post(user, %{status: _} = data) do
     with {:ok, draft} <- Pleroma.Web.CommonAPI.ActivityDraft.create(user, data) do
       draft.changes
       |> ActivityPub.create(draft.preview?)
@@ -448,11 +466,11 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp toggle_sensitive(activity, %{"sensitive" => sensitive}) when sensitive in ~w(true false) do
-    toggle_sensitive(activity, %{"sensitive" => String.to_existing_atom(sensitive)})
+  defp toggle_sensitive(activity, %{sensitive: sensitive}) when sensitive in ~w(true false) do
+    toggle_sensitive(activity, %{sensitive: String.to_existing_atom(sensitive)})
   end
 
-  defp toggle_sensitive(%Activity{object: object} = activity, %{"sensitive" => sensitive})
+  defp toggle_sensitive(%Activity{object: object} = activity, %{sensitive: sensitive})
        when is_boolean(sensitive) do
     new_data = Map.put(object.data, "sensitive", sensitive)
 
@@ -466,7 +484,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp toggle_sensitive(activity, _), do: {:ok, activity}
 
-  defp set_visibility(activity, %{"visibility" => visibility}) do
+  defp set_visibility(activity, %{visibility: visibility}) do
     Utils.update_activity_visibility(activity, visibility)
   end
 

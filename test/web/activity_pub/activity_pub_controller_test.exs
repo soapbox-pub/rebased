@@ -341,7 +341,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "cached purged after activity deletion", %{conn: conn} do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "cofe"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "cofe"})
 
       uuid = String.split(activity.data["id"], "/") |> List.last()
 

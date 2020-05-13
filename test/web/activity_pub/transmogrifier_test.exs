@@ -212,8 +212,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "suya...",
-          "poll" => %{"options" => ["suya", "suya.", "suya.."], "expires_in" => 10}
+          status: "suya...",
+          poll: %{options: ["suya", "suya.", "suya.."], expires_in: 10}
         })
 
       object = Object.normalize(activity)
@@ -258,6 +258,24 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert object.data["content"] ==
                "<p>henlo from my Psion netBook</p><p>message sent from my Psion netBook</p>"
+    end
+
+    test "it works for incoming honk announces" do
+      _user = insert(:user, ap_id: "https://honktest/u/test", local: false)
+      other_user = insert(:user)
+      {:ok, post} = CommonAPI.post(other_user, %{status: "bonkeronk"})
+
+      announce = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "actor" => "https://honktest/u/test",
+        "id" => "https://honktest/u/test/bonk/1793M7B9MQ48847vdx",
+        "object" => post.data["object"],
+        "published" => "2019-06-25T19:33:58Z",
+        "to" => "https://www.w3.org/ns/activitystreams#Public",
+        "type" => "Announce"
+      }
+
+      {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(announce)
     end
 
     test "it works for incoming announces with actor being inlined (kroeg)" do
@@ -344,7 +362,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it works for incoming announces with an existing activity" do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
 
       data =
         File.read!("test/fixtures/mastodon-announce.json")
@@ -394,7 +412,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it does not clobber the addressing on announce activities" do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
 
       data =
         File.read!("test/fixtures/mastodon-announce.json")
@@ -480,7 +498,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it strips internal reactions" do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "#cofe"})
       {:ok, _} = CommonAPI.react_with_emoji(activity.id, user, "📢")
 
       %{object: object} = Activity.get_by_id_with_object(activity.id)
@@ -815,6 +833,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
+
+      follower = User.get_by_id(follower.id)
+      assert follower.following_count == 1
+
+      followed = User.get_by_id(followed.id)
+      assert followed.follower_count == 1
     end
 
     test "it fails for incoming accepts which cannot be correlated" do
@@ -972,7 +996,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "test post"})
       object = Object.normalize(activity)
 
       note_obj = %{
@@ -1116,13 +1140,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     setup do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "post1"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "post1"})
 
       {:ok, reply1} =
-        CommonAPI.post(user, %{"status" => "reply1", "in_reply_to_status_id" => activity.id})
+        CommonAPI.post(user, %{status: "reply1", in_reply_to_status_id: activity.id})
 
       {:ok, reply2} =
-        CommonAPI.post(user, %{"status" => "reply2", "in_reply_to_status_id" => activity.id})
+        CommonAPI.post(user, %{status: "reply2", in_reply_to_status_id: activity.id})
 
       replies_uris = Enum.map([reply1, reply2], fn a -> a.object.data["id"] end)
 
@@ -1162,7 +1186,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it inlines private announced objects" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey", "visibility" => "private"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey", visibility: "private"})
 
       {:ok, announce_activity, _} = CommonAPI.repeat(activity.id, user)
 
@@ -1177,7 +1201,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       other_user = insert(:user)
 
       {:ok, activity} =
-        CommonAPI.post(user, %{"status" => "hey, @#{other_user.nickname}, how are ya? #2hu"})
+        CommonAPI.post(user, %{status: "hey, @#{other_user.nickname}, how are ya? #2hu"})
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
       object = modified["object"]
@@ -1201,7 +1225,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it adds the sensitive property" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "#nsfw hey"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "#nsfw hey"})
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["object"]["sensitive"]
@@ -1210,7 +1234,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it adds the json-ld context and the conversation property" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["@context"] ==
@@ -1222,7 +1246,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it sets the 'attributedTo' property to the actor of the object if it doesn't have one" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["object"]["actor"] == modified["object"]["attributedTo"]
@@ -1231,7 +1255,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it strips internal hashtag data" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu"})
 
       expected_tag = %{
         "href" => Pleroma.Web.Endpoint.url() <> "/tags/2hu",
@@ -1247,7 +1271,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it strips internal fields" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu :firefox:"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "#2hu :firefox:"})
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
@@ -1279,14 +1303,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu :moominmamma:"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "2hu :moominmamma:"})
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["directMessage"] == false
 
-      {:ok, activity} =
-        CommonAPI.post(user, %{"status" => "@#{other_user.nickname} :moominmamma:"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "@#{other_user.nickname} :moominmamma:"})
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
@@ -1294,8 +1317,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "@#{other_user.nickname} :moominmamma:",
-          "visibility" => "direct"
+          status: "@#{other_user.nickname} :moominmamma:",
+          visibility: "direct"
         })
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
@@ -1307,8 +1330,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user = insert(:user)
       {:ok, list} = Pleroma.List.create("foo", user)
 
-      {:ok, activity} =
-        CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "foobar", visibility: "list:#{list.id}"})
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
@@ -1343,8 +1365,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user_two = insert(:user)
       Pleroma.FollowingRelationship.follow(user_two, user, :follow_accept)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
-      {:ok, unrelated_activity} = CommonAPI.post(user_two, %{"status" => "test"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
+      {:ok, unrelated_activity} = CommonAPI.post(user_two, %{status: "test"})
       assert "http://localhost:4001/users/rye@niu.moe/followers" in activity.recipients
 
       user = User.get_cached_by_id(user.id)
@@ -1510,8 +1532,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     {:ok, poll_activity} =
       CommonAPI.post(user, %{
-        "status" => "suya...",
-        "poll" => %{"options" => ["suya", "suya.", "suya.."], "expires_in" => 10}
+        status: "suya...",
+        poll: %{options: ["suya", "suya.", "suya.."], expires_in: 10}
       })
 
     poll_object = Object.normalize(poll_activity)
@@ -1854,28 +1876,27 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "sets `replies` collection with a limited number of self-replies" do
       [user, another_user] = insert_list(2, :user)
 
-      {:ok, %{id: id1} = activity} = CommonAPI.post(user, %{"status" => "1"})
+      {:ok, %{id: id1} = activity} = CommonAPI.post(user, %{status: "1"})
 
       {:ok, %{id: id2} = self_reply1} =
-        CommonAPI.post(user, %{"status" => "self-reply 1", "in_reply_to_status_id" => id1})
+        CommonAPI.post(user, %{status: "self-reply 1", in_reply_to_status_id: id1})
 
       {:ok, self_reply2} =
-        CommonAPI.post(user, %{"status" => "self-reply 2", "in_reply_to_status_id" => id1})
+        CommonAPI.post(user, %{status: "self-reply 2", in_reply_to_status_id: id1})
 
       # Assuming to _not_ be present in `replies` due to :note_replies_output_limit is set to 2
-      {:ok, _} =
-        CommonAPI.post(user, %{"status" => "self-reply 3", "in_reply_to_status_id" => id1})
+      {:ok, _} = CommonAPI.post(user, %{status: "self-reply 3", in_reply_to_status_id: id1})
 
       {:ok, _} =
         CommonAPI.post(user, %{
-          "status" => "self-reply to self-reply",
-          "in_reply_to_status_id" => id2
+          status: "self-reply to self-reply",
+          in_reply_to_status_id: id2
         })
 
       {:ok, _} =
         CommonAPI.post(another_user, %{
-          "status" => "another user's reply",
-          "in_reply_to_status_id" => id1
+          status: "another user's reply",
+          in_reply_to_status_id: id1
         })
 
       object = Object.normalize(activity)

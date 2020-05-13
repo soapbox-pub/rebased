@@ -1,11 +1,11 @@
 @font-face {
 	font-family: "Icons";
-	src: url("./font/fontello.1588419330867.eot");
-	src: url("./font/fontello.1588419330867.eot") format("embedded-opentype"),
-		url("./font/fontello.1588419330867.woff2") format("woff2"),
-		url("./font/fontello.1588419330867.woff") format("woff"),
-		url("./font/fontello.1588419330867.ttf") format("truetype"),
-		url("./font/fontello.1588419330867.svg") format("svg");
+	src: url("./font/fontello.1588947937982.eot");
+	src: url("./font/fontello.1588947937982.eot") format("embedded-opentype"),
+		url("./font/fontello.1588947937982.woff2") format("woff2"),
+		url("./font/fontello.1588947937982.woff") format("woff"),
+		url("./font/fontello.1588947937982.ttf") format("truetype"),
+		url("./font/fontello.1588947937982.svg") format("svg");
 	font-weight: normal;
 	font-style: normal;
 }
@@ -136,6 +136,8 @@
 .icon-arrow-curved::before { content: "\e822"; }
 
 .icon-link::before { content: "\e823"; }
+
+.icon-share::before { content: "\f1e0"; }
 
 .icon-user::before { content: "\e824"; }
 

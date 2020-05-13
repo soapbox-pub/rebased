@@ -20,7 +20,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "#cofe"})
 
     result =
       conn
@@ -42,7 +42,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "#cofe"})
     {:ok, _reaction_activity} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
 
     ObanHelpers.perform_all()
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     other_user = insert(:user)
     doomed_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "#cofe"})
 
     result =
       conn
@@ -106,7 +106,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "#cofe"})
 
     result =
       conn
@@ -133,7 +133,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     %{user: other_user, conn: conn} = oauth_access(["read:statuses"])
 
     {:ok, _activity} =
-      CommonAPI.post(user, %{"status" => "Hi @#{other_user.nickname}!", "visibility" => "direct"})
+      CommonAPI.post(user, %{status: "Hi @#{other_user.nickname}!", visibility: "direct"})
 
     [participation] = Participation.for_user(other_user)
 
@@ -151,18 +151,18 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     third_user = insert(:user)
 
     {:ok, _activity} =
-      CommonAPI.post(user, %{"status" => "Hi @#{third_user.nickname}!", "visibility" => "direct"})
+      CommonAPI.post(user, %{status: "Hi @#{third_user.nickname}!", visibility: "direct"})
 
     {:ok, activity} =
-      CommonAPI.post(user, %{"status" => "Hi @#{other_user.nickname}!", "visibility" => "direct"})
+      CommonAPI.post(user, %{status: "Hi @#{other_user.nickname}!", visibility: "direct"})
 
     [participation] = Participation.for_user(other_user)
 
     {:ok, activity_two} =
       CommonAPI.post(other_user, %{
-        "status" => "Hi!",
-        "in_reply_to_status_id" => activity.id,
-        "in_reply_to_conversation_id" => participation.id
+        status: "Hi!",
+        in_reply_to_status_id: activity.id,
+        in_reply_to_conversation_id: participation.id
       })
 
     result =
@@ -178,9 +178,9 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     {:ok, %{id: id_three}} =
       CommonAPI.post(other_user, %{
-        "status" => "Bye!",
-        "in_reply_to_status_id" => activity.id,
-        "in_reply_to_conversation_id" => participation.id
+        status: "Bye!",
+        in_reply_to_status_id: activity.id,
+        in_reply_to_conversation_id: participation.id
       })
 
     assert [%{"id" => ^id_two}, %{"id" => ^id_three}] =
@@ -198,7 +198,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     %{user: user, conn: conn} = oauth_access(["write:conversations"])
     other_user = insert(:user)
 
-    {:ok, _activity} = CommonAPI.post(user, %{"status" => "Hi", "visibility" => "direct"})
+    {:ok, _activity} = CommonAPI.post(user, %{status: "Hi", visibility: "direct"})
 
     [participation] = Participation.for_user(user)
 
@@ -229,10 +229,10 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     %{user: other_user, conn: conn} = oauth_access(["write:conversations"])
 
     {:ok, _activity} =
-      CommonAPI.post(user, %{"status" => "Hi @#{other_user.nickname}", "visibility" => "direct"})
+      CommonAPI.post(user, %{status: "Hi @#{other_user.nickname}", visibility: "direct"})
 
     {:ok, _activity} =
-      CommonAPI.post(user, %{"status" => "Hi @#{other_user.nickname}", "visibility" => "direct"})
+      CommonAPI.post(user, %{status: "Hi @#{other_user.nickname}", visibility: "direct"})
 
     [participation2, participation1] = Participation.for_user(other_user)
     assert Participation.get(participation2.id).read == false
@@ -255,8 +255,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     test "it marks a single notification as read", %{user: user1, conn: conn} do
       user2 = insert(:user)
-      {:ok, activity1} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
-      {:ok, activity2} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
+      {:ok, activity1} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
+      {:ok, activity2} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
       {:ok, [notification1]} = Notification.create_notifications(activity1)
       {:ok, [notification2]} = Notification.create_notifications(activity2)
 
@@ -272,9 +272,9 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     test "it marks multiple notifications as read", %{user: user1, conn: conn} do
       user2 = insert(:user)
-      {:ok, _activity1} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
-      {:ok, _activity2} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
-      {:ok, _activity3} = CommonAPI.post(user2, %{"status" => "HIE @#{user1.nickname}"})
+      {:ok, _activity1} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
+      {:ok, _activity2} = CommonAPI.post(user2, %{status: "hi @#{user1.nickname}"})
+      {:ok, _activity3} = CommonAPI.post(user2, %{status: "HIE @#{user1.nickname}"})
 
       [notification3, notification2, notification1] = Notification.for_user(user1, %{limit: 3})
 

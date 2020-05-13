@@ -30,6 +30,8 @@ defmodule Pleroma.Workers.ScheduledActivityWorker do
   end
 
   defp post_activity(%ScheduledActivity{user_id: user_id, params: params} = scheduled_activity) do
+    params = Map.new(params, fn {key, value} -> {String.to_existing_atom(key), value} end)
+
     with {:delete, {:ok, _}} <- {:delete, ScheduledActivity.delete(scheduled_activity)},
          {:user, %User{} = user} <- {:user, User.get_cached_by_id(user_id)},
          {:post, {:ok, _}} <- {:post, CommonAPI.post(user, params)} do

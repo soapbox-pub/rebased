@@ -11,6 +11,11 @@ defmodule Pleroma.ActivityTest do
   alias Pleroma.ThreadMute
   import Pleroma.Factory
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   test "returns an activity by it's AP id" do
     activity = insert(:note_activity)
     found_activity = Activity.get_by_ap_id(activity.data["id"])
@@ -107,8 +112,6 @@ defmodule Pleroma.ActivityTest do
 
   describe "search" do
     setup do
-      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
       user = insert(:user)
 
       params = %{
@@ -125,8 +128,8 @@ defmodule Pleroma.ActivityTest do
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
 
-      {:ok, local_activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "find me!"})
-      {:ok, japanese_activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "更新情報"})
+      {:ok, local_activity} = Pleroma.Web.CommonAPI.post(user, %{status: "find me!"})
+      {:ok, japanese_activity} = Pleroma.Web.CommonAPI.post(user, %{status: "更新情報"})
       {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
       {:ok, remote_activity} = ObanHelpers.perform(job)
 
@@ -225,8 +228,8 @@ defmodule Pleroma.ActivityTest do
   test "all_by_actor_and_id/2" do
     user = insert(:user)
 
-    {:ok, %{id: id1}} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofe"})
-    {:ok, %{id: id2}} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofefe"})
+    {:ok, %{id: id1}} = Pleroma.Web.CommonAPI.post(user, %{status: "cofe"})
+    {:ok, %{id: id2}} = Pleroma.Web.CommonAPI.post(user, %{status: "cofefe"})
 
     assert [] == Activity.all_by_actor_and_id(user, [])
 

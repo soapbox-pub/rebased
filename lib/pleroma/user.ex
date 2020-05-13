@@ -9,7 +9,6 @@ defmodule Pleroma.User do
   import Ecto.Query
   import Ecto, only: [assoc: 2]
 
-  alias Comeonin.Pbkdf2
   alias Ecto.Multi
   alias Pleroma.Activity
   alias Pleroma.Config
@@ -1554,10 +1553,23 @@ defmodule Pleroma.User do
     |> Stream.run()
   end
 
-  defp delete_activity(%{data: %{"type" => "Create", "object" => object}}, user) do
-    {:ok, delete_data, _} = Builder.delete(user, object)
+  defp delete_activity(%{data: %{"type" => "Create", "object" => object}} = activity, user) do
+    with {_, %Object{}} <- {:find_object, Object.get_by_ap_id(object)},
+         {:ok, delete_data, _} <- Builder.delete(user, object) do
+      Pipeline.common_pipeline(delete_data, local: user.local)
+    else
+      {:find_object, nil} ->
+        # We have the create activity, but not the object, it was probably pruned.
+        # Insert a tombstone and try again
+        with {:ok, tombstone_data, _} <- Builder.tombstone(user.ap_id, object),
+             {:ok, _tombstone} <- Object.create(tombstone_data) do
+          delete_activity(activity, user)
+        end
 
-    Pipeline.common_pipeline(delete_data, local: user.local)
+      e ->
+        Logger.error("Could not delete #{object} created by #{activity.data["ap_id"]}")
+        Logger.error("Error: #{inspect(e)}")
+    end
   end
 
   defp delete_activity(%{data: %{"type" => type}} = activity, user)
@@ -1913,7 +1925,7 @@ defmodule Pleroma.User do
   defp put_password_hash(
          %Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset
        ) do
-    change(changeset, password_hash: Pbkdf2.hashpwsalt(password))
+    change(changeset, password_hash: Pbkdf2.hash_pwd_salt(password))
   end
 
   defp put_password_hash(changeset), do: changeset

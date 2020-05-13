@@ -23,26 +23,26 @@ defmodule Pleroma.StatsTest do
       user = insert(:user)
       other_user = insert(:user, %{ap_id: "https://#{instance2}/@actor"})
 
-      CommonAPI.post(user, %{"visibility" => "public", "status" => "hey"})
+      CommonAPI.post(user, %{visibility: "public", status: "hey"})
 
       Enum.each(0..1, fn _ ->
         CommonAPI.post(user, %{
-          "visibility" => "unlisted",
-          "status" => "hey"
+          visibility: "unlisted",
+          status: "hey"
         })
       end)
 
       Enum.each(0..2, fn _ ->
         CommonAPI.post(user, %{
-          "visibility" => "direct",
-          "status" => "hey @#{other_user.nickname}"
+          visibility: "direct",
+          status: "hey @#{other_user.nickname}"
         })
       end)
 
       Enum.each(0..3, fn _ ->
         CommonAPI.post(user, %{
-          "visibility" => "private",
-          "status" => "hey"
+          visibility: "private",
+          status: "hey"
         })
       end)
 
@@ -52,7 +52,7 @@ defmodule Pleroma.StatsTest do
 
     test "on status delete" do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"visibility" => "public", "status" => "hey"})
+      {:ok, activity} = CommonAPI.post(user, %{visibility: "public", status: "hey"})
       assert %{"public" => 1} = Pleroma.Stats.get_status_visibility_count()
       CommonAPI.delete(activity.id, user)
       assert %{"public" => 0} = Pleroma.Stats.get_status_visibility_count()
@@ -60,16 +60,16 @@ defmodule Pleroma.StatsTest do
 
     test "on status visibility update" do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"visibility" => "public", "status" => "hey"})
+      {:ok, activity} = CommonAPI.post(user, %{visibility: "public", status: "hey"})
       assert %{"public" => 1, "private" => 0} = Pleroma.Stats.get_status_visibility_count()
-      {:ok, _} = CommonAPI.update_activity_scope(activity.id, %{"visibility" => "private"})
+      {:ok, _} = CommonAPI.update_activity_scope(activity.id, %{visibility: "private"})
       assert %{"public" => 0, "private" => 1} = Pleroma.Stats.get_status_visibility_count()
     end
 
     test "doesn't count unrelated activities" do
       user = insert(:user)
       other_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"visibility" => "public", "status" => "hey"})
+      {:ok, activity} = CommonAPI.post(user, %{visibility: "public", status: "hey"})
       _ = CommonAPI.follow(user, other_user)
       CommonAPI.favorite(other_user, activity.id)
       CommonAPI.repeat(activity.id, other_user)
@@ -86,26 +86,26 @@ defmodule Pleroma.StatsTest do
       user1 = insert(:user)
       user2 = insert(:user, %{ap_id: "https://#{instance2}/@actor"})
 
-      CommonAPI.post(user1, %{"visibility" => "public", "status" => "hey"})
+      CommonAPI.post(user1, %{visibility: "public", status: "hey"})
 
       Enum.each(1..5, fn _ ->
         CommonAPI.post(user1, %{
-          "visibility" => "unlisted",
-          "status" => "hey"
+          visibility: "unlisted",
+          status: "hey"
         })
       end)
 
       Enum.each(1..10, fn _ ->
         CommonAPI.post(user1, %{
-          "visibility" => "direct",
-          "status" => "hey @#{user2.nickname}"
+          visibility: "direct",
+          status: "hey @#{user2.nickname}"
         })
       end)
 
       Enum.each(1..20, fn _ ->
         CommonAPI.post(user2, %{
-          "visibility" => "private",
-          "status" => "hey"
+          visibility: "private",
+          status: "hey"
         })
       end)
 
