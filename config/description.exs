@@ -1264,6 +1264,12 @@ config :pleroma, :config_description, [
             description: "Copy the scope (private/unlisted/public) in replies to posts by default"
           },
           %{
+            key: :showFeaturesPanel,
+            label: "Show instance features panel",
+            type: :boolean,
+            description: "Enables panel displaying functionality of the instance."
+          },
+          %{
             key: :showInstanceSpecificPanel,
             label: "Show instance specific panel",
             type: :boolean,
