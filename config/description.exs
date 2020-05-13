@@ -1161,6 +1161,12 @@ config :pleroma, :config_description, [
             description: "Disables PleromaFE Chat component"
           },
           %{
+            key: :greentext,
+            label: "Greentext",
+            type: :boolean,
+            description: "Enables green text on lines prefixed with the > character."
+          },
+          %{
             key: :hidePostStats,
             label: "Hide post stats",
             type: :boolean,
