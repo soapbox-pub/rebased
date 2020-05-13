@@ -103,8 +103,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       responses: %{
         200 => Operation.response("Account", "application/json", Account),
         401 => Operation.response("Error", "application/json", ApiError),
-        404 => Operation.response("Error", "application/json", ApiError),
-        410 => Operation.response("Error", "application/json", ApiError)
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end
@@ -145,8 +144,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       responses: %{
         200 => Operation.response("Statuses", "application/json", array_of_statuses()),
         401 => Operation.response("Error", "application/json", ApiError),
-        404 => Operation.response("Error", "application/json", ApiError),
-        410 => Operation.response("Error", "application/json", ApiError)
+        404 => Operation.response("Error", "application/json", ApiError)
       }
     }
   end

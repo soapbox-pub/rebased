@@ -256,9 +256,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   defp user_visibility_error(conn, error) do
     case error do
-      :deactivated ->
-        render_error(conn, :gone, "")
-
       :restrict_unauthenticated ->
         render_error(conn, :unauthorized, "This API requires an authenticated user")
 
