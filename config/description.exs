@@ -1238,11 +1238,6 @@ config :pleroma, :config_description, [
             description: "Whenether to show the instance's specific panel"
           },
           %{
-            key: :stickers,
-            type: :boolean,
-            description: "Enables stickers."
-          },
-          %{
             key: :subjectLineBehavior,
             label: "Subject line behavior",
             type: :string,
