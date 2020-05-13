@@ -1185,6 +1185,12 @@ config :pleroma, :config_description, [
             description: "Hide notices statistics (repeats, favorites, ...)"
           },
           %{
+            key: :hideSitename,
+            label: "Hide Sitename",
+            type: :boolean,
+            description: "Hides instance name from PleromaFE banner."
+          },
+          %{
             key: :hideUserStats,
             label: "Hide user stats",
             type: :boolean,
