@@ -1228,6 +1228,13 @@ config :pleroma, :config_description, [
                 "Also prevents replying to a DM with a public post from PleromaFE."
           },
           %{
+            key: :nsfwCensorImage,
+            label: "NSFW Censor Image",
+            type: :string,
+            description: "URL of the image to use for hiding NSFW media attachments in the timeline.",
+            suggestions: ["/static/img/nsfw.png"]
+          },
+          %{
             key: :redirectRootNoLogin,
             label: "Redirect root no login",
             type: :string,
