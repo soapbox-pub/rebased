@@ -1224,14 +1224,16 @@ config :pleroma, :config_description, [
             key: :minimalScopesMode,
             label: "Minimal scopes mode",
             type: :boolean,
-            description: "Limit scope selection to Direct, User default, and Scope of post replying to. " <>
+            description:
+              "Limit scope selection to Direct, User default, and Scope of post replying to. " <>
                 "Also prevents replying to a DM with a public post from PleromaFE."
           },
           %{
             key: :nsfwCensorImage,
             label: "NSFW Censor Image",
             type: :string,
-            description: "URL of the image to use for hiding NSFW media attachments in the timeline.",
+            description:
+              "URL of the image to use for hiding NSFW media attachments in the timeline.",
             suggestions: ["/static/img/nsfw.png"]
           },
           %{
@@ -1239,7 +1241,7 @@ config :pleroma, :config_description, [
             label: "Post Content Type",
             type: {:dropdown, :atom},
             description: "Default post formatting option.",
-            suggestions: [text/plain, text/html, text/markdown, text/bbcode]
+            suggestions: ["text/plain", "text/html", "text/markdown", "text/bbcode"]
           },
           %{
             key: :redirectRootNoLogin,
