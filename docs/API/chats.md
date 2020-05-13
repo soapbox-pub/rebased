@@ -166,11 +166,10 @@ Posting a chat message for given Chat id works like this:
 `POST /api/v1/pleroma/chats/{id}/messages`
 
 Parameters:
-- content: The text content of the message
+- content: The text content of the message. Optional if media is attached.
 - media_id: The id of an upload that will be attached to the message.
 
-Currently, no formatting beyond basic escaping and emoji is implemented, as well as no
-attachments. This will most probably change.
+Currently, no formatting beyond basic escaping and emoji is implemented.
 
 Returned data:
 

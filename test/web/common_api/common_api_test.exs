@@ -27,6 +27,29 @@ defmodule Pleroma.Web.CommonAPITest do
   describe "posting chat messages" do
     setup do: clear_config([:instance, :chat_limit])
 
+    test "it posts a chat message without content but with an attachment" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: author.ap_id)
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          nil,
+          media_id: upload.id
+        )
+
+      assert activity
+    end
+
     test "it posts a chat message" do
       author = insert(:user)
       recipient = insert(:user)

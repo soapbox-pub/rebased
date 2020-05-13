@@ -103,6 +103,38 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       assert object["attachment"]
     end
 
+    test "validates for a basic object with an attachment but without content", %{
+      valid_chat_message: valid_chat_message,
+      user: user
+    } do
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
+
+      valid_chat_message =
+        valid_chat_message
+        |> Map.put("attachment", attachment.data)
+        |> Map.delete("content")
+
+      assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
+
+      assert object["attachment"]
+    end
+
+    test "does not validate if the message has no content", %{
+      valid_chat_message: valid_chat_message
+    } do
+      contentless =
+        valid_chat_message
+        |> Map.delete("content")
+
+      refute match?({:ok, _object, _meta}, ObjectValidator.validate(contentless, []))
+    end
+
     test "does not validate if the message is longer than the remote_limit", %{
       valid_chat_message: valid_chat_message
     } do

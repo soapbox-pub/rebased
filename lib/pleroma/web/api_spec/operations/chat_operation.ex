@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.ChatOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.Chat
   alias Pleroma.Web.ApiSpec.Schemas.ChatMessage
 
@@ -149,14 +150,15 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       parameters: [
         Operation.parameter(:id, :path, :string, "The ID of the Chat")
       ],
-      requestBody: request_body("Parameters", chat_message_create(), required: true),
+      requestBody: request_body("Parameters", chat_message_create()),
       responses: %{
         200 =>
           Operation.response(
             "The newly created ChatMessage",
             "application/json",
             ChatMessage
-          )
+          ),
+        400 => Operation.response("Bad Request", "application/json", ApiError)
       },
       security: [
         %{
@@ -292,10 +294,12 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       description: "POST body for creating an chat message",
       type: :object,
       properties: %{
-        content: %Schema{type: :string, description: "The content of your message"},
+        content: %Schema{
+          type: :string,
+          description: "The content of your message. Optional if media_id is present"
+        },
         media_id: %Schema{type: :string, description: "The id of an upload"}
       },
-      required: [:content],
       example: %{
         "content" => "Hey wanna buy feet pics?",
         "media_id" => "134234"

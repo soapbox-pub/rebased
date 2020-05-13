@@ -53,6 +53,20 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       assert result["chat_id"] == chat.id |> to_string()
     end
 
+    test "it fails if there is no content", %{conn: conn, user: user} do
+      other_user = insert(:user)
+
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+
+      result =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/chats/#{chat.id}/messages")
+        |> json_response_and_validate_schema(400)
+
+      assert result
+    end
+
     test "it works with an attachment", %{conn: conn, user: user} do
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -70,13 +84,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         conn
         |> put_req_header("content-type", "application/json")
         |> post("/api/v1/pleroma/chats/#{chat.id}/messages", %{
-          "content" => "Hallo!!",
           "media_id" => to_string(upload.id)
         })
         |> json_response_and_validate_schema(200)
 
-      assert result["content"] == "Hallo!!"
-      assert result["chat_id"] == chat.id |> to_string()
+      assert result["attachment"]
     end
   end
 

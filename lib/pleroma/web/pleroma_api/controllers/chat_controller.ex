@@ -58,8 +58,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   end
 
   def post_chat_message(
-        %{body_params: %{content: content} = params, assigns: %{user: %{id: user_id} = user}} =
-          conn,
+        %{body_params: params, assigns: %{user: %{id: user_id} = user}} = conn,
         %{
           id: id
         }
@@ -67,7 +66,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id),
          %User{} = recipient <- User.get_cached_by_ap_id(chat.recipient),
          {:ok, activity} <-
-           CommonAPI.post_chat_message(user, recipient, content, media_id: params[:media_id]),
+           CommonAPI.post_chat_message(user, recipient, params[:content],
+             media_id: params[:media_id]
+           ),
          message <- Object.normalize(activity) do
       conn
       |> put_view(ChatMessageView)

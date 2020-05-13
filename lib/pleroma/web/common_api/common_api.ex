@@ -26,14 +26,14 @@ defmodule Pleroma.Web.CommonAPI do
   require Logger
 
   def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
-    with :ok <- validate_chat_content_length(content),
-         maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
+    with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
+         :ok <- validate_chat_content_length(content, !!maybe_attachment),
          {_, {:ok, chat_message_data, _meta}} <-
            {:build_object,
             Builder.chat_message(
               user,
               recipient.ap_id,
-              content |> Formatter.html_escape("text/plain"),
+              content |> format_chat_content,
               attachment: maybe_attachment
             )},
          {_, {:ok, create_activity_data, _meta}} <-
@@ -47,7 +47,16 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp validate_chat_content_length(content) do
+  defp format_chat_content(nil), do: nil
+
+  defp format_chat_content(content) do
+    content |> Formatter.html_escape("text/plain")
+  end
+
+  defp validate_chat_content_length(_, true), do: :ok
+  defp validate_chat_content_length(nil, false), do: {:error, :no_content}
+
+  defp validate_chat_content_length(content, _) do
     if String.length(content) <= Pleroma.Config.get([:instance, :chat_limit]) do
       :ok
     else
