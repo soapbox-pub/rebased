@@ -1167,6 +1167,18 @@ config :pleroma, :config_description, [
             description: "Enables green text on lines prefixed with the > character."
           },
           %{
+            key: :hideFilteredStatuses,
+            label: "Hide Filtered Statuses",
+            type: :boolean,
+            description: "Hides filtered statuses from timelines."
+          },
+          %{
+            key: :hideMutedPosts,
+            label: "Hide Muted Posts",
+            type: :boolean,
+            description: "Hides muted statuses from timelines."
+          },
+          %{
             key: :hidePostStats,
             label: "Hide post stats",
             type: :boolean,
