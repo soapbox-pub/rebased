@@ -13,8 +13,8 @@ defmodule Pleroma.Web.Push.ImplTest do
 
   import Pleroma.Factory
 
-  setup_all do
-    Tesla.Mock.mock_global(fn
+  setup do
+    Tesla.Mock.mock(fn
       %{method: :post, url: "https://example.com/example/1234"} ->
         %Tesla.Env{status: 200}
 
