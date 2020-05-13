@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [add_link_headers: 2, add_link_headers: 3, truthy_param?: 1]
+    only: [add_link_headers: 2, add_link_headers: 3]
 
   alias Pleroma.Pagination
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
