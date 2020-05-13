@@ -14,7 +14,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.LikeHandlingTest do
   test "it works for incoming likes" do
     user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "hello"})
 
     data =
       File.read!("test/fixtures/mastodon-like.json")
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.LikeHandlingTest do
   test "it works for incoming misskey likes, turning them into EmojiReacts" do
     user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "hello"})
 
     data =
       File.read!("test/fixtures/misskey-like.json")
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.LikeHandlingTest do
   test "it works for incoming misskey likes that contain unicode emojis, turning them into EmojiReacts" do
     user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "hello"})
 
     data =
       File.read!("test/fixtures/misskey-like.json")

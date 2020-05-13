@@ -222,13 +222,40 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   describe "user timelines" do
     setup do: oauth_access(["read:statuses"])
 
+    test "works with announces that are just addressed to public", %{conn: conn} do
+      user = insert(:user, ap_id: "https://honktest/u/test", local: false)
+      other_user = insert(:user)
+
+      {:ok, post} = CommonAPI.post(other_user, %{status: "bonkeronk"})
+
+      {:ok, announce, _} =
+        %{
+          "@context" => "https://www.w3.org/ns/activitystreams",
+          "actor" => "https://honktest/u/test",
+          "id" => "https://honktest/u/test/bonk/1793M7B9MQ48847vdx",
+          "object" => post.data["object"],
+          "published" => "2019-06-25T19:33:58Z",
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "type" => "Announce"
+        }
+        |> ActivityPub.persist(local: false)
+
+      assert resp =
+               conn
+               |> get("/api/v1/accounts/#{user.id}/statuses")
+               |> json_response_and_validate_schema(200)
+
+      assert [%{"id" => id}] = resp
+      assert id == announce.id
+    end
+
     test "respects blocks", %{user: user_one, conn: conn} do
       user_two = insert(:user)
       user_three = insert(:user)
 
       User.block(user_one, user_two)
 
-      {:ok, activity} = CommonAPI.post(user_two, %{"status" => "User one sux0rz"})
+      {:ok, activity} = CommonAPI.post(user_two, %{status: "User one sux0rz"})
       {:ok, repeat, _} = CommonAPI.repeat(activity.id, user_three)
 
       assert resp =
@@ -271,16 +298,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       {:ok, _user_three} = User.follow(user_three, user_one)
 
-      {:ok, activity} = CommonAPI.post(user_one, %{"status" => "HI!!!"})
+      {:ok, activity} = CommonAPI.post(user_one, %{status: "HI!!!"})
 
       {:ok, direct_activity} =
         CommonAPI.post(user_one, %{
-          "status" => "Hi, @#{user_two.nickname}.",
-          "visibility" => "direct"
+          status: "Hi, @#{user_two.nickname}.",
+          visibility: "direct"
         })
 
       {:ok, private_activity} =
-        CommonAPI.post(user_one, %{"status" => "private", "visibility" => "private"})
+        CommonAPI.post(user_one, %{status: "private", visibility: "private"})
 
       # TODO!!!
       resp =
@@ -335,8 +362,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       {:ok, %{id: media_id}} = ActivityPub.upload(file, actor: user.ap_id)
 
-      {:ok, %{id: image_post_id}} =
-        CommonAPI.post(user, %{"status" => "cofe", "media_ids" => [media_id]})
+      {:ok, %{id: image_post_id}} = CommonAPI.post(user, %{status: "cofe", media_ids: [media_id]})
 
       conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?only_media=true")
 
@@ -348,7 +374,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "gets a user's statuses without reblogs", %{user: user, conn: conn} do
-      {:ok, %{id: post_id}} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      {:ok, %{id: post_id}} = CommonAPI.post(user, %{status: "HI!!!"})
       {:ok, _, _} = CommonAPI.repeat(post_id, user)
 
       conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?exclude_reblogs=true")
@@ -359,8 +385,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "filters user's statuses by a hashtag", %{user: user, conn: conn} do
-      {:ok, %{id: post_id}} = CommonAPI.post(user, %{"status" => "#hashtag"})
-      {:ok, _post} = CommonAPI.post(user, %{"status" => "hashtag"})
+      {:ok, %{id: post_id}} = CommonAPI.post(user, %{status: "#hashtag"})
+      {:ok, _post} = CommonAPI.post(user, %{status: "hashtag"})
 
       conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?tagged=hashtag")
       assert [%{"id" => ^post_id}] = json_response_and_validate_schema(conn, 200)
@@ -371,9 +397,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       conn: conn
     } do
       {:ok, %{id: public_activity_id}} =
-        CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+        CommonAPI.post(user, %{status: ".", visibility: "public"})
 
-      {:ok, _direct_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+      {:ok, _direct_activity} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
 
       conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?exclude_visibilities[]=direct")
       assert [%{"id" => ^public_activity_id}] = json_response_and_validate_schema(conn, 200)
@@ -651,7 +677,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       assert %{"showing_reblogs" => false} = json_response_and_validate_schema(ret_conn, 200)
 
-      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hey"})
+      {:ok, activity} = CommonAPI.post(other_user, %{status: "hey"})
       {:ok, %{id: reblog_id}, _} = CommonAPI.repeat(activity.id, followed)
 
       assert [] ==
@@ -750,7 +776,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   describe "pinned statuses" do
     setup do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "HI!!!"})
       %{conn: conn} = oauth_access(["read:statuses"], user: user)
 
       [conn: conn, user: user, activity: activity]

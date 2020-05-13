@@ -311,7 +311,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt("testpassword"))
+      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt("testpassword"))
       registration = insert(:registration, user: nil)
       redirect_uri = OAuthController.default_redirect_uri(app)
 
@@ -342,7 +342,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            app: app,
            conn: conn
          } do
-      user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt("testpassword"))
+      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt("testpassword"))
       registration = insert(:registration, user: nil)
       unlisted_redirect_uri = "http://cross-site-request.com"
 
@@ -750,7 +750,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
     test "issues a token for `password` grant_type with valid credentials, with full permissions by default" do
       password = "testpassword"
-      user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
+      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
 
       app = insert(:oauth_app, scopes: ["read", "write"])
 
@@ -778,7 +778,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          password_hash: Pbkdf2.hash_pwd_salt(password),
           multi_factor_authentication_settings: %MFA.Settings{
             enabled: true,
             totp: %MFA.Settings.TOTP{secret: otp_secret, confirmed: true}
@@ -887,7 +887,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       password = "testpassword"
 
       {:ok, user} =
-        insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
+        insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
         |> User.confirmation_changeset(need_confirmation: true)
         |> User.update_and_set_cache()
 
@@ -915,7 +915,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          password_hash: Pbkdf2.hash_pwd_salt(password),
           deactivated: true
         )
 
@@ -943,7 +943,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          password_hash: Pbkdf2.hash_pwd_salt(password),
           password_reset_pending: true
         )
 
@@ -972,7 +972,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       user =
         insert(:user,
-          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          password_hash: Pbkdf2.hash_pwd_salt(password),
           confirmation_pending: true
         )
 

@@ -19,26 +19,12 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   # Hibernate every X messages
   @hibernate_every 100
 
-  @streams [
-    "public",
-    "public:local",
-    "public:media",
-    "public:local:media",
-    "user",
-    "user:notification",
-    "direct",
-    "list",
-    "hashtag"
-  ]
-  @anonymous_streams ["public", "public:local", "hashtag"]
-
   def init(%{qs: qs} = req, state) do
-    with params <- :cow_qs.parse_qs(qs),
+    with params <- Enum.into(:cow_qs.parse_qs(qs), %{}),
          sec_websocket <- :cowboy_req.header("sec-websocket-protocol", req, nil),
-         access_token <- List.keyfind(params, "access_token", 0),
-         {_, stream} <- List.keyfind(params, "stream", 0),
-         {:ok, user} <- allow_request(stream, [access_token, sec_websocket]),
-         topic when is_binary(topic) <- expand_topic(stream, params) do
+         access_token <- Map.get(params, "access_token"),
+         {:ok, user} <- authenticate_request(access_token, sec_websocket),
+         {:ok, topic} <- Streamer.get_topic(Map.get(params, "stream"), user, params) do
       req =
         if sec_websocket do
           :cowboy_req.set_resp_header("sec-websocket-protocol", sec_websocket, req)
@@ -49,14 +35,14 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
       {:cowboy_websocket, req, %{user: user, topic: topic, count: 0, timer: nil},
        %{idle_timeout: @timeout}}
     else
-      {:error, code} ->
-        Logger.debug("#{__MODULE__} denied connection: #{inspect(code)} - #{inspect(req)}")
-        {:ok, req} = :cowboy_req.reply(code, req)
+      {:error, :bad_topic} ->
+        Logger.debug("#{__MODULE__} bad topic #{inspect(req)}")
+        {:ok, req} = :cowboy_req.reply(404, req)
         {:ok, req, state}
 
-      error ->
-        Logger.debug("#{__MODULE__} denied connection: #{inspect(error)} - #{inspect(req)}")
-        {:ok, req} = :cowboy_req.reply(400, req)
+      {:error, :unauthorized} ->
+        Logger.debug("#{__MODULE__} authentication error: #{inspect(req)}")
+        {:ok, req} = :cowboy_req.reply(401, req)
         {:ok, req, state}
     end
   end
@@ -124,49 +110,22 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   end
 
   # Public streams without authentication.
-  defp allow_request(stream, [nil, nil]) when stream in @anonymous_streams do
+  defp authenticate_request(nil, nil) do
     {:ok, nil}
   end
 
   # Authenticated streams.
-  defp allow_request(stream, [access_token, sec_websocket]) when stream in @streams do
-    token =
-      with {"access_token", token} <- access_token do
-        token
-      else
-        _ -> sec_websocket
-      end
+  defp authenticate_request(access_token, sec_websocket) do
+    token = access_token || sec_websocket
 
     with true <- is_bitstring(token),
          %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
          user = %User{} <- User.get_cached_by_id(user_id) do
       {:ok, user}
     else
-      _ -> {:error, 403}
+      _ -> {:error, :unauthorized}
     end
   end
-
-  # Not authenticated.
-  defp allow_request(stream, _) when stream in @streams, do: {:error, 403}
-
-  # No matching stream.
-  defp allow_request(_, _), do: {:error, 404}
-
-  defp expand_topic("hashtag", params) do
-    case List.keyfind(params, "tag", 0) do
-      {_, tag} -> "hashtag:#{tag}"
-      _ -> nil
-    end
-  end
-
-  defp expand_topic("list", params) do
-    case List.keyfind(params, "list", 0) do
-      {_, list} -> "list:#{list}"
-      _ -> nil
-    end
-  end
-
-  defp expand_topic(topic, _), do: topic
 
   defp timer do
     Process.send_after(self(), :tick, @tick)

@@ -22,11 +22,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   require Logger
   require Pleroma.Constants
 
-  def attachments_from_ids(%{"media_ids" => ids, "descriptions" => desc} = _) do
+  def attachments_from_ids(%{media_ids: ids, descriptions: desc}) do
     attachments_from_ids_descs(ids, desc)
   end
 
-  def attachments_from_ids(%{"media_ids" => ids} = _) do
+  def attachments_from_ids(%{media_ids: ids}) do
     attachments_from_ids_no_descs(ids)
   end
 
@@ -37,11 +37,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def attachments_from_ids_no_descs(ids) do
     Enum.map(ids, fn media_id ->
       case Repo.get(Object, media_id) do
-        %Object{data: data} = _ -> data
+        %Object{data: data} -> data
         _ -> nil
       end
     end)
-    |> Enum.filter(& &1)
+    |> Enum.reject(&is_nil/1)
   end
 
   def attachments_from_ids_descs([], _), do: []
@@ -51,14 +51,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     Enum.map(ids, fn media_id ->
       case Repo.get(Object, media_id) do
-        %Object{data: data} = _ ->
+        %Object{data: data} ->
           Map.put(data, "name", descs[media_id])
 
         _ ->
           nil
       end
     end)
-    |> Enum.filter(& &1)
+    |> Enum.reject(&is_nil/1)
   end
 
   @spec get_to_and_cc(
@@ -140,7 +140,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> make_poll_data()
   end
 
-  def make_poll_data(%{"poll" => %{"options" => options, "expires_in" => expires_in}} = data)
+  def make_poll_data(%{poll: %{options: options, expires_in: expires_in}} = data)
       when is_list(options) do
     limits = Pleroma.Config.get([:instance, :poll_limits])
 
@@ -163,7 +163,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         |> DateTime.add(expires_in)
         |> DateTime.to_iso8601()
 
-      key = if truthy_param?(data["poll"]["multiple"]), do: "anyOf", else: "oneOf"
+      key = if truthy_param?(data.poll[:multiple]), do: "anyOf", else: "oneOf"
       poll = %{"type" => "Question", key => option_notes, "closed" => end_time}
 
       {:ok, {poll, emoji}}
@@ -213,7 +213,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       |> Map.get("attachment_links", Config.get([:instance, :attachment_links]))
       |> truthy_param?()
 
-    content_type = get_content_type(data["content_type"])
+    content_type = get_content_type(data[:content_type])
 
     options =
       if visibility == "direct" && Config.get([:instance, :safe_dm_mentions]) do

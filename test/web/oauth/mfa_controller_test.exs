@@ -20,7 +20,7 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
       insert(:user,
         multi_factor_authentication_settings: %MFA.Settings{
           enabled: true,
-          backup_codes: [Comeonin.Pbkdf2.hashpwsalt("test-code")],
+          backup_codes: [Pbkdf2.hash_pwd_salt("test-code")],
           totp: %MFA.Settings.TOTP{secret: otp_secret, confirmed: true}
         }
       )
@@ -247,7 +247,7 @@ defmodule Pleroma.Web.OAuth.MFAControllerTest do
 
       hashed_codes =
         backup_codes
-        |> Enum.map(&Comeonin.Pbkdf2.hashpwsalt(&1))
+        |> Enum.map(&Pbkdf2.hash_pwd_salt(&1))
 
       user =
         insert(:user,

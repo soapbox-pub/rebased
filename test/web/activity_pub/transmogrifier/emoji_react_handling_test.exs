@@ -15,7 +15,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.EmojiReactHandlingTest do
   test "it works for incoming emoji reactions" do
     user = insert(:user)
     other_user = insert(:user, local: false)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "hello"})
 
     data =
       File.read!("test/fixtures/emoji-reaction.json")
@@ -40,7 +40,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.EmojiReactHandlingTest do
   test "it reject invalid emoji reactions" do
     user = insert(:user)
     other_user = insert(:user, local: false)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "hello"})
 
     data =
       File.read!("test/fixtures/emoji-reaction-too-long.json")

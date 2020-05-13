@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
   test "it works for incoming emoji reaction undos" do
     user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "hello"})
     {:ok, reaction_activity} = CommonAPI.react_with_emoji(activity.id, user, "👌")
 
     data =
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
   test "it returns an error for incoming unlikes wihout a like activity" do
     user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "leave a like pls"})
 
     data =
       File.read!("test/fixtures/mastodon-undo-like.json")
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
   test "it works for incoming unlikes with an existing like activity" do
     user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "leave a like pls"})
 
     like_data =
       File.read!("test/fixtures/mastodon-like.json")
@@ -77,7 +77,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
   test "it works for incoming unlikes with an existing like activity and a compact object" do
     user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "leave a like pls"})
 
     like_data =
       File.read!("test/fixtures/mastodon-like.json")
@@ -104,7 +104,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
 
   test "it works for incoming unannounces with an existing notice" do
     user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
 
     announce_data =
       File.read!("test/fixtures/mastodon-announce.json")

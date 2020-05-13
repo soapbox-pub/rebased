@@ -94,7 +94,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   test "Represent the user account for the account owner" do
     user = insert(:user)
 
-    notification_settings = %Pleroma.User.NotificationSetting{}
+    notification_settings = %{
+      followers: true,
+      follows: true,
+      non_followers: true,
+      non_follows: true,
+      privacy_option: false
+    }
+
     privacy = user.default_scope
 
     assert %{
@@ -455,8 +462,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
       {:ok, _activity} =
         CommonAPI.post(other_user, %{
-          "status" => "Hey @#{user.nickname}.",
-          "visibility" => "direct"
+          status: "Hey @#{user.nickname}.",
+          visibility: "direct"
         })
 
       user = User.get_cached_by_ap_id(user.ap_id)

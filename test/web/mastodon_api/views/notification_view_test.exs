@@ -60,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   test "Mention notification" do
     user = insert(:user)
     mentioned_user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{mentioned_user.nickname}"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{mentioned_user.nickname}"})
     {:ok, [notification]} = Notification.create_notifications(activity)
     user = User.get_cached_by_id(user.id)
 
@@ -79,7 +79,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   test "Favourite notification" do
     user = insert(:user)
     another_user = insert(:user)
-    {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
+    {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
     {:ok, favorite_activity} = CommonAPI.favorite(another_user, create_activity.id)
     {:ok, [notification]} = Notification.create_notifications(favorite_activity)
     create_activity = Activity.get_by_id(create_activity.id)
@@ -99,7 +99,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   test "Reblog notification" do
     user = insert(:user)
     another_user = insert(:user)
-    {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
+    {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
     {:ok, reblog_activity, _object} = CommonAPI.repeat(create_activity.id, another_user)
     {:ok, [notification]} = Notification.create_notifications(reblog_activity)
     reblog_activity = Activity.get_by_id(create_activity.id)
@@ -181,7 +181,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "#cofe"})
     {:ok, _activity} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
 
     activity = Repo.get(Activity, activity.id)
