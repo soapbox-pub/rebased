@@ -1235,6 +1235,13 @@ config :pleroma, :config_description, [
             suggestions: ["/static/img/nsfw.png"]
           },
           %{
+            key: :postContentType,
+            label: "Post Content Type",
+            type: {:dropdown, :atom},
+            description: "Default post formatting option.",
+            suggestions: [text/plain, text/html, text/markdown, text/bbcode]
+          },
+          %{
             key: :redirectRootNoLogin,
             label: "Redirect root no login",
             type: :string,
