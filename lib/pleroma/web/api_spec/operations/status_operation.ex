@@ -360,7 +360,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
     }
   end
 
-  defp array_of_statuses do
+  def array_of_statuses do
     %Schema{type: :array, items: Status, example: [Status.schema().example]}
   end
 

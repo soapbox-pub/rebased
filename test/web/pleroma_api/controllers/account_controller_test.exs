@@ -31,8 +31,28 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
     test "resend account confirmation email", %{conn: conn, user: user} do
       conn
+      |> put_req_header("content-type", "application/json")
       |> post("/api/v1/pleroma/accounts/confirmation_resend?email=#{user.email}")
-      |> json_response(:no_content)
+      |> json_response_and_validate_schema(:no_content)
+
+      ObanHelpers.perform_all()
+
+      email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
+      notify_email = Config.get([:instance, :notify_email])
+      instance_name = Config.get([:instance, :name])
+
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {user.name, user.email},
+        html_body: email.html_body
+      )
+    end
+
+    test "resend account confirmation email (with nickname)", %{conn: conn, user: user} do
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/pleroma/accounts/confirmation_resend?nickname=#{user.nickname}")
+      |> json_response_and_validate_schema(:no_content)
 
       ObanHelpers.perform_all()
 
@@ -54,7 +74,10 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
     test "user avatar can be set", %{user: user, conn: conn} do
       avatar_image = File.read!("test/fixtures/avatar_data_uri")
 
-      conn = patch(conn, "/api/v1/pleroma/accounts/update_avatar", %{img: avatar_image})
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> patch("/api/v1/pleroma/accounts/update_avatar", %{img: avatar_image})
 
       user = refresh_record(user)
 
@@ -70,17 +93,20 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
                ]
              } = user.avatar
 
-      assert %{"url" => _} = json_response(conn, 200)
+      assert %{"url" => _} = json_response_and_validate_schema(conn, 200)
     end
 
     test "user avatar can be reset", %{user: user, conn: conn} do
-      conn = patch(conn, "/api/v1/pleroma/accounts/update_avatar", %{img: ""})
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> patch("/api/v1/pleroma/accounts/update_avatar", %{img: ""})
 
       user = User.get_cached_by_id(user.id)
 
       assert user.avatar == nil
 
-      assert %{"url" => nil} = json_response(conn, 200)
+      assert %{"url" => nil} = json_response_and_validate_schema(conn, 200)
     end
   end
 
@@ -88,21 +114,27 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
     setup do: oauth_access(["write:accounts"])
 
     test "can set profile banner", %{user: user, conn: conn} do
-      conn = patch(conn, "/api/v1/pleroma/accounts/update_banner", %{"banner" => @image})
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => @image})
 
       user = refresh_record(user)
       assert user.banner["type"] == "Image"
 
-      assert %{"url" => _} = json_response(conn, 200)
+      assert %{"url" => _} = json_response_and_validate_schema(conn, 200)
     end
 
     test "can reset profile banner", %{user: user, conn: conn} do
-      conn = patch(conn, "/api/v1/pleroma/accounts/update_banner", %{"banner" => ""})
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => ""})
 
       user = refresh_record(user)
       assert user.banner == %{}
 
-      assert %{"url" => nil} = json_response(conn, 200)
+      assert %{"url" => nil} = json_response_and_validate_schema(conn, 200)
     end
   end
 
@@ -110,19 +142,26 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
     setup do: oauth_access(["write:accounts"])
 
     test "background image can be set", %{user: user, conn: conn} do
-      conn = patch(conn, "/api/v1/pleroma/accounts/update_background", %{"img" => @image})
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => @image})
 
       user = refresh_record(user)
       assert user.background["type"] == "Image"
-      assert %{"url" => _} = json_response(conn, 200)
+      # assert %{"url" => _} = json_response(conn, 200)
+      assert %{"url" => _} = json_response_and_validate_schema(conn, 200)
     end
 
     test "background image can be reset", %{user: user, conn: conn} do
-      conn = patch(conn, "/api/v1/pleroma/accounts/update_background", %{"img" => ""})
+      conn =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => ""})
 
       user = refresh_record(user)
       assert user.background == %{}
-      assert %{"url" => nil} = json_response(conn, 200)
+      assert %{"url" => nil} = json_response_and_validate_schema(conn, 200)
     end
   end
 
@@ -143,7 +182,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       response =
         conn
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       [like] = response
 
@@ -160,7 +199,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       response =
         build_conn()
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert length(response) == 1
     end
@@ -183,7 +222,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
           |> assign(:user, u)
           |> assign(:token, insert(:oauth_token, user: u, scopes: ["read:favourites"]))
           |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-          |> json_response(:ok)
+          |> json_response_and_validate_schema(:ok)
 
         assert length(response) == 1
       end
@@ -191,7 +230,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       response =
         build_conn()
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert length(response) == 0
     end
@@ -213,7 +252,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       response =
         conn
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert Enum.empty?(response)
     end
@@ -233,11 +272,12 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       response =
         conn
-        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites", %{
-          since_id: third_activity.id,
-          max_id: seventh_activity.id
-        })
-        |> json_response(:ok)
+        |> get(
+          "/api/v1/pleroma/accounts/#{user.id}/favourites?since_id=#{third_activity.id}&max_id=#{
+            seventh_activity.id
+          }"
+        )
+        |> json_response_and_validate_schema(:ok)
 
       assert length(response) == 3
       refute third_activity in response
@@ -256,8 +296,8 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       response =
         conn
-        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites", %{limit: "3"})
-        |> json_response(:ok)
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites?limit=3")
+        |> json_response_and_validate_schema(:ok)
 
       assert length(response) == 3
     end
@@ -269,7 +309,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       response =
         conn
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert Enum.empty?(response)
     end
@@ -277,7 +317,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
     test "returns 404 error when specified user is not exist", %{conn: conn} do
       conn = get(conn, "/api/v1/pleroma/accounts/test/favourites")
 
-      assert json_response(conn, 404) == %{"error" => "Record not found"}
+      assert json_response_and_validate_schema(conn, 404) == %{"error" => "Record not found"}
     end
 
     test "returns 403 error when user has hidden own favorites", %{conn: conn} do
@@ -287,7 +327,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       conn = get(conn, "/api/v1/pleroma/accounts/#{user.id}/favourites")
 
-      assert json_response(conn, 403) == %{"error" => "Can't get favorites"}
+      assert json_response_and_validate_schema(conn, 403) == %{"error" => "Can't get favorites"}
     end
 
     test "hides favorites for new users by default", %{conn: conn} do
@@ -298,7 +338,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       assert user.hide_favorites
       conn = get(conn, "/api/v1/pleroma/accounts/#{user.id}/favourites")
 
-      assert json_response(conn, 403) == %{"error" => "Can't get favorites"}
+      assert json_response_and_validate_schema(conn, 403) == %{"error" => "Can't get favorites"}
     end
   end
 
@@ -312,11 +352,12 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
         |> assign(:user, user)
         |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/subscribe")
 
-      assert %{"id" => _id, "subscribing" => true} = json_response(ret_conn, 200)
+      assert %{"id" => _id, "subscribing" => true} =
+               json_response_and_validate_schema(ret_conn, 200)
 
       conn = post(conn, "/api/v1/pleroma/accounts/#{subscription_target.id}/unsubscribe")
 
-      assert %{"id" => _id, "subscribing" => false} = json_response(conn, 200)
+      assert %{"id" => _id, "subscribing" => false} = json_response_and_validate_schema(conn, 200)
     end
   end
 
@@ -326,7 +367,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       conn = post(conn, "/api/v1/pleroma/accounts/target_id/subscribe")
 
-      assert %{"error" => "Record not found"} = json_response(conn, 404)
+      assert %{"error" => "Record not found"} = json_response_and_validate_schema(conn, 404)
     end
   end
 
@@ -336,7 +377,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       conn = post(conn, "/api/v1/pleroma/accounts/target_id/unsubscribe")
 
-      assert %{"error" => "Record not found"} = json_response(conn, 404)
+      assert %{"error" => "Record not found"} = json_response_and_validate_schema(conn, 404)
     end
   end
 end
