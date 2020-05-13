@@ -16,8 +16,8 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
     test "returns poll entity for object id", %{user: user, conn: conn} do
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "Pleroma does",
-          "poll" => %{"options" => ["what Mastodon't", "n't what Mastodoes"], "expires_in" => 20}
+          status: "Pleroma does",
+          poll: %{options: ["what Mastodon't", "n't what Mastodoes"], expires_in: 20}
         })
 
       object = Object.normalize(activity)
@@ -34,9 +34,9 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
 
       {:ok, activity} =
         CommonAPI.post(other_user, %{
-          "status" => "Pleroma does",
-          "poll" => %{"options" => ["what Mastodon't", "n't what Mastodoes"], "expires_in" => 20},
-          "visibility" => "private"
+          status: "Pleroma does",
+          poll: %{options: ["what Mastodon't", "n't what Mastodoes"], expires_in: 20},
+          visibility: "private"
         })
 
       object = Object.normalize(activity)
@@ -55,11 +55,11 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
 
       {:ok, activity} =
         CommonAPI.post(other_user, %{
-          "status" => "A very delicious sandwich",
-          "poll" => %{
-            "options" => ["Lettuce", "Grilled Bacon", "Tomato"],
-            "expires_in" => 20,
-            "multiple" => true
+          status: "A very delicious sandwich",
+          poll: %{
+            options: ["Lettuce", "Grilled Bacon", "Tomato"],
+            expires_in: 20,
+            multiple: true
           }
         })
 
@@ -81,8 +81,8 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
     test "author can't vote", %{user: user, conn: conn} do
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "Am I cute?",
-          "poll" => %{"options" => ["Yes", "No"], "expires_in" => 20}
+          status: "Am I cute?",
+          poll: %{options: ["Yes", "No"], expires_in: 20}
         })
 
       object = Object.normalize(activity)
@@ -102,8 +102,8 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
 
       {:ok, activity} =
         CommonAPI.post(other_user, %{
-          "status" => "The glass is",
-          "poll" => %{"options" => ["half empty", "half full"], "expires_in" => 20}
+          status: "The glass is",
+          poll: %{options: ["half empty", "half full"], expires_in: 20}
         })
 
       object = Object.normalize(activity)
@@ -125,8 +125,8 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
 
       {:ok, activity} =
         CommonAPI.post(other_user, %{
-          "status" => "Am I cute?",
-          "poll" => %{"options" => ["Yes", "No"], "expires_in" => 20}
+          status: "Am I cute?",
+          poll: %{options: ["Yes", "No"], expires_in: 20}
         })
 
       object = Object.normalize(activity)
@@ -153,9 +153,9 @@ defmodule Pleroma.Web.MastodonAPI.PollControllerTest do
 
       {:ok, activity} =
         CommonAPI.post(other_user, %{
-          "status" => "Am I cute?",
-          "poll" => %{"options" => ["Yes", "No"], "expires_in" => 20},
-          "visibility" => "private"
+          status: "Am I cute?",
+          poll: %{options: ["Yes", "No"], expires_in: 20},
+          visibility: "private"
         })
 
       object = Object.normalize(activity)

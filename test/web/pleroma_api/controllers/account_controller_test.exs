@@ -171,8 +171,8 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
     } do
       {:ok, direct} =
         CommonAPI.post(current_user, %{
-          "status" => "Hi @#{user.nickname}!",
-          "visibility" => "direct"
+          status: "Hi @#{user.nickname}!",
+          visibility: "direct"
         })
 
       CommonAPI.favorite(user, direct.id)
@@ -204,8 +204,8 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
 
       {:ok, direct} =
         CommonAPI.post(user_two, %{
-          "status" => "Hi @#{user.nickname}!",
-          "visibility" => "direct"
+          status: "Hi @#{user.nickname}!",
+          visibility: "direct"
         })
 
       CommonAPI.favorite(user, direct.id)

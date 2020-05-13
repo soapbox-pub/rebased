@@ -25,8 +25,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, op} = CommonAPI.post(other_user, %{"status" => "big oof"})
-      {:ok, post} = CommonAPI.post(user, %{"status" => "hey", "in_reply_to_id" => op})
+      {:ok, op} = CommonAPI.post(other_user, %{status: "big oof"})
+      {:ok, post} = CommonAPI.post(user, %{status: "hey", in_reply_to_id: op})
       {:ok, favorite} = CommonAPI.favorite(user, post.id)
       object = Object.normalize(post)
       {:ok, delete_data, _meta} = Builder.delete(user, object.data["id"])
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       poster = insert(:user)
       user = insert(:user)
 
-      {:ok, post} = CommonAPI.post(poster, %{"status" => "hey"})
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey"})
 
       {:ok, emoji_react_data, []} = Builder.emoji_react(user, post.object, "👌")
       {:ok, emoji_react, _meta} = ActivityPub.persist(emoji_react_data, local: true)
@@ -144,7 +144,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     setup do
       poster = insert(:user)
       user = insert(:user)
-      {:ok, post} = CommonAPI.post(poster, %{"status" => "hey"})
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey"})
       {:ok, like} = CommonAPI.favorite(user, post.id)
       {:ok, reaction} = CommonAPI.react_with_emoji(post.id, user, "👍")
       {:ok, announce, _} = CommonAPI.repeat(post.id, user)
@@ -244,7 +244,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     setup do
       poster = insert(:user)
       user = insert(:user)
-      {:ok, post} = CommonAPI.post(poster, %{"status" => "hey"})
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey"})
 
       {:ok, like_data, _meta} = Builder.like(user, post.object)
       {:ok, like, _meta} = ActivityPub.persist(like_data, local: true)

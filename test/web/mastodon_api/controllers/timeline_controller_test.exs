@@ -28,7 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       other_user = insert(:user)
 
-      {:ok, _} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, _} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
 
       response =
         conn
@@ -47,8 +47,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       following = insert(:user, nickname: "followed")
       third_user = insert(:user, nickname: "repeated")
 
-      {:ok, _activity} = CommonAPI.post(following, %{"status" => "post"})
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "repeated post"})
+      {:ok, _activity} = CommonAPI.post(following, %{status: "post"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "repeated post"})
       {:ok, _, _} = CommonAPI.repeat(activity.id, following)
 
       ret_conn = get(conn, uri)
@@ -108,14 +108,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     end
 
     test "the home timeline when the direct messages are excluded", %{user: user, conn: conn} do
-      {:ok, public_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
-      {:ok, direct_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+      {:ok, public_activity} = CommonAPI.post(user, %{status: ".", visibility: "public"})
+      {:ok, direct_activity} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
 
-      {:ok, unlisted_activity} =
-        CommonAPI.post(user, %{"status" => ".", "visibility" => "unlisted"})
+      {:ok, unlisted_activity} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
 
-      {:ok, private_activity} =
-        CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      {:ok, private_activity} = CommonAPI.post(user, %{status: ".", visibility: "private"})
 
       conn = get(conn, "/api/v1/timelines/home?exclude_visibilities[]=direct")
 
@@ -132,7 +130,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     test "the public timeline", %{conn: conn} do
       following = insert(:user)
 
-      {:ok, _activity} = CommonAPI.post(following, %{"status" => "test"})
+      {:ok, _activity} = CommonAPI.post(following, %{status: "test"})
 
       _activity = insert(:note_activity, local: false)
 
@@ -152,10 +150,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     test "the public timeline includes only public statuses for an authenticated user" do
       %{user: user, conn: conn} = oauth_access(["read:statuses"])
 
-      {:ok, _activity} = CommonAPI.post(user, %{"status" => "test"})
-      {:ok, _activity} = CommonAPI.post(user, %{"status" => "test", "visibility" => "private"})
-      {:ok, _activity} = CommonAPI.post(user, %{"status" => "test", "visibility" => "unlisted"})
-      {:ok, _activity} = CommonAPI.post(user, %{"status" => "test", "visibility" => "direct"})
+      {:ok, _activity} = CommonAPI.post(user, %{status: "test"})
+      {:ok, _activity} = CommonAPI.post(user, %{status: "test", visibility: "private"})
+      {:ok, _activity} = CommonAPI.post(user, %{status: "test", visibility: "unlisted"})
+      {:ok, _activity} = CommonAPI.post(user, %{status: "test", visibility: "direct"})
 
       res_conn = get(conn, "/api/v1/timelines/public")
       assert length(json_response_and_validate_schema(res_conn, 200)) == 1
@@ -263,14 +261,14 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       {:ok, direct} =
         CommonAPI.post(user_one, %{
-          "status" => "Hi @#{user_two.nickname}!",
-          "visibility" => "direct"
+          status: "Hi @#{user_two.nickname}!",
+          visibility: "direct"
         })
 
       {:ok, _follower_only} =
         CommonAPI.post(user_one, %{
-          "status" => "Hi @#{user_two.nickname}!",
-          "visibility" => "private"
+          status: "Hi @#{user_two.nickname}!",
+          visibility: "private"
         })
 
       conn_user_two =
@@ -306,8 +304,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       Enum.each(1..20, fn _ ->
         {:ok, _} =
           CommonAPI.post(user_one, %{
-            "status" => "Hi @#{user_two.nickname}!",
-            "visibility" => "direct"
+            status: "Hi @#{user_two.nickname}!",
+            visibility: "direct"
           })
       end)
 
@@ -333,14 +331,14 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       {:ok, _blocked_direct} =
         CommonAPI.post(blocked, %{
-          "status" => "Hi @#{blocker.nickname}!",
-          "visibility" => "direct"
+          status: "Hi @#{blocker.nickname}!",
+          visibility: "direct"
         })
 
       {:ok, direct} =
         CommonAPI.post(other_user, %{
-          "status" => "Hi @#{blocker.nickname}!",
-          "visibility" => "direct"
+          status: "Hi @#{blocker.nickname}!",
+          visibility: "direct"
         })
 
       res_conn = get(conn, "api/v1/timelines/direct")
@@ -355,8 +353,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
     test "list timeline", %{user: user, conn: conn} do
       other_user = insert(:user)
-      {:ok, _activity_one} = CommonAPI.post(user, %{"status" => "Marisa is cute."})
-      {:ok, activity_two} = CommonAPI.post(other_user, %{"status" => "Marisa is cute."})
+      {:ok, _activity_one} = CommonAPI.post(user, %{status: "Marisa is cute."})
+      {:ok, activity_two} = CommonAPI.post(other_user, %{status: "Marisa is cute."})
       {:ok, list} = Pleroma.List.create("name", user)
       {:ok, list} = Pleroma.List.follow(list, other_user)
 
@@ -372,12 +370,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       conn: conn
     } do
       other_user = insert(:user)
-      {:ok, activity_one} = CommonAPI.post(other_user, %{"status" => "Marisa is cute."})
+      {:ok, activity_one} = CommonAPI.post(other_user, %{status: "Marisa is cute."})
 
       {:ok, _activity_two} =
         CommonAPI.post(other_user, %{
-          "status" => "Marisa is cute.",
-          "visibility" => "private"
+          status: "Marisa is cute.",
+          visibility: "private"
         })
 
       {:ok, list} = Pleroma.List.create("name", user)
@@ -398,7 +396,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     test "hashtag timeline", %{conn: conn} do
       following = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(following, %{"status" => "test #2hu"})
+      {:ok, activity} = CommonAPI.post(following, %{status: "test #2hu"})
 
       nconn = get(conn, "/api/v1/timelines/tag/2hu")
 
@@ -417,9 +415,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
     test "multi-hashtag timeline", %{conn: conn} do
       user = insert(:user)
 
-      {:ok, activity_test} = CommonAPI.post(user, %{"status" => "#test"})
-      {:ok, activity_test1} = CommonAPI.post(user, %{"status" => "#test #test1"})
-      {:ok, activity_none} = CommonAPI.post(user, %{"status" => "#test #none"})
+      {:ok, activity_test} = CommonAPI.post(user, %{status: "#test"})
+      {:ok, activity_test1} = CommonAPI.post(user, %{status: "#test #test1"})
+      {:ok, activity_none} = CommonAPI.post(user, %{status: "#test #none"})
 
       any_test = get(conn, "/api/v1/timelines/tag/test?any[]=test1")
 

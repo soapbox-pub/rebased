@@ -21,8 +21,8 @@ defmodule Pleroma.BBS.HandlerTest do
 
     {:ok, user} = User.follow(user, followed)
 
-    {:ok, _first} = CommonAPI.post(user, %{"status" => "hey"})
-    {:ok, _second} = CommonAPI.post(followed, %{"status" => "hello"})
+    {:ok, _first} = CommonAPI.post(user, %{status: "hey"})
+    {:ok, _second} = CommonAPI.post(followed, %{status: "hello"})
 
     output =
       capture_io(fn ->
@@ -62,7 +62,7 @@ defmodule Pleroma.BBS.HandlerTest do
     user = insert(:user)
     another_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(another_user, %{"status" => "this is a test post"})
+    {:ok, activity} = CommonAPI.post(another_user, %{status: "this is a test post"})
     activity_object = Object.normalize(activity)
 
     output =

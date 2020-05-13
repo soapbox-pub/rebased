@@ -21,7 +21,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     )
 
     user = insert(:user)
-    {:ok, activity1} = CommonAPI.post(user, %{"status" => "yeah #PleromaArt"})
+    {:ok, activity1} = CommonAPI.post(user, %{status: "yeah #PleromaArt"})
 
     object = Object.normalize(activity1)
 
@@ -43,9 +43,9 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     |> Ecto.Changeset.change(data: object_data)
     |> Pleroma.Repo.update()
 
-    {:ok, activity2} = CommonAPI.post(user, %{"status" => "42 This is :moominmamma #PleromaArt"})
+    {:ok, activity2} = CommonAPI.post(user, %{status: "42 This is :moominmamma #PleromaArt"})
 
-    {:ok, _activity3} = CommonAPI.post(user, %{"status" => "This is :moominmamma"})
+    {:ok, _activity3} = CommonAPI.post(user, %{status: "This is :moominmamma"})
 
     response =
       conn
@@ -88,7 +88,7 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     )
 
     user = insert(:user)
-    {:ok, activity1} = CommonAPI.post(user, %{"status" => "yeah #PleromaArt"})
+    {:ok, activity1} = CommonAPI.post(user, %{status: "yeah #PleromaArt"})
 
     object = Object.normalize(activity1)
 
@@ -110,9 +110,9 @@ defmodule Pleroma.Web.Feed.TagControllerTest do
     |> Ecto.Changeset.change(data: object_data)
     |> Pleroma.Repo.update()
 
-    {:ok, activity2} = CommonAPI.post(user, %{"status" => "42 This is :moominmamma #PleromaArt"})
+    {:ok, activity2} = CommonAPI.post(user, %{status: "42 This is :moominmamma #PleromaArt"})
 
-    {:ok, _activity3} = CommonAPI.post(user, %{"status" => "This is :moominmamma"})
+    {:ok, _activity3} = CommonAPI.post(user, %{status: "This is :moominmamma"})
 
     response =
       conn

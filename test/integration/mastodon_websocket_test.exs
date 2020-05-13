@@ -55,7 +55,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
   test "receives well formatted events" do
     user = insert(:user)
     {:ok, _} = start_socket("?stream=public")
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "nice echo chamber"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "nice echo chamber"})
 
     assert_receive {:text, raw_json}, 1_000
     assert {:ok, json} = Jason.decode(raw_json)

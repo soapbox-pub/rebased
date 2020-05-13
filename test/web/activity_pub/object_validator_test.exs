@@ -13,7 +13,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   describe "EmojiReacts" do
     setup do
       user = insert(:user)
-      {:ok, post_activity} = CommonAPI.post(user, %{"status" => "uguu"})
+      {:ok, post_activity} = CommonAPI.post(user, %{status: "uguu"})
 
       object = Pleroma.Object.get_by_ap_id(post_activity.data["object"])
 
@@ -53,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   describe "Undos" do
     setup do
       user = insert(:user)
-      {:ok, post_activity} = CommonAPI.post(user, %{"status" => "uguu"})
+      {:ok, post_activity} = CommonAPI.post(user, %{status: "uguu"})
       {:ok, like} = CommonAPI.favorite(user, post_activity.id)
       {:ok, valid_like_undo, []} = Builder.undo(user, like)
 
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   describe "deletes" do
     setup do
       user = insert(:user)
-      {:ok, post_activity} = CommonAPI.post(user, %{"status" => "cancel me daddy"})
+      {:ok, post_activity} = CommonAPI.post(user, %{status: "cancel me daddy"})
 
       {:ok, valid_post_delete, _} = Builder.delete(user, post_activity.data["object"])
       {:ok, valid_user_delete, _} = Builder.delete(user, user.ap_id)
@@ -185,7 +185,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   describe "likes" do
     setup do
       user = insert(:user)
-      {:ok, post_activity} = CommonAPI.post(user, %{"status" => "uguu"})
+      {:ok, post_activity} = CommonAPI.post(user, %{status: "uguu"})
 
       valid_like = %{
         "to" => [user.ap_id],

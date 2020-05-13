@@ -12,26 +12,26 @@ defmodule Mix.Tasks.Pleroma.RefreshCounterCacheTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    CommonAPI.post(user, %{"visibility" => "public", "status" => "hey"})
+    CommonAPI.post(user, %{visibility: "public", status: "hey"})
 
     Enum.each(0..1, fn _ ->
       CommonAPI.post(user, %{
-        "visibility" => "unlisted",
-        "status" => "hey"
+        visibility: "unlisted",
+        status: "hey"
       })
     end)
 
     Enum.each(0..2, fn _ ->
       CommonAPI.post(user, %{
-        "visibility" => "direct",
-        "status" => "hey @#{other_user.nickname}"
+        visibility: "direct",
+        status: "hey @#{other_user.nickname}"
       })
     end)
 
     Enum.each(0..3, fn _ ->
       CommonAPI.post(user, %{
-        "visibility" => "private",
-        "status" => "hey"
+        visibility: "private",
+        status: "hey"
       })
     end)
 

@@ -45,7 +45,7 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
   test "includes reported statuses" do
     user = insert(:user)
     other_user = insert(:user)
-    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "toot"})
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "toot"})
 
     {:ok, report_activity} =
       CommonAPI.report(user, %{account_id: other_user.id, status_ids: [activity.id]})

@@ -125,8 +125,8 @@ defmodule Pleroma.ActivityTest do
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
 
-      {:ok, local_activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "find me!"})
-      {:ok, japanese_activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "更新情報"})
+      {:ok, local_activity} = Pleroma.Web.CommonAPI.post(user, %{status: "find me!"})
+      {:ok, japanese_activity} = Pleroma.Web.CommonAPI.post(user, %{status: "更新情報"})
       {:ok, job} = Pleroma.Web.Federator.incoming_ap_doc(params)
       {:ok, remote_activity} = ObanHelpers.perform(job)
 
@@ -225,8 +225,8 @@ defmodule Pleroma.ActivityTest do
   test "all_by_actor_and_id/2" do
     user = insert(:user)
 
-    {:ok, %{id: id1}} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofe"})
-    {:ok, %{id: id2}} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofefe"})
+    {:ok, %{id: id1}} = Pleroma.Web.CommonAPI.post(user, %{status: "cofe"})
+    {:ok, %{id: id2}} = Pleroma.Web.CommonAPI.post(user, %{status: "cofefe"})
 
     assert [] == Activity.all_by_actor_and_id(user, [])
 

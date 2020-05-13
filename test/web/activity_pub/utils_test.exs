@@ -120,7 +120,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" =>
+          status:
             "hey @#{other_user.nickname}, @#{third_user.nickname} how about beering together this weekend?"
         })
 
@@ -139,8 +139,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "@#{other_user.nickname} @#{third_user.nickname} bought a new swimsuit!",
-          "visibility" => "private"
+          status: "@#{other_user.nickname} @#{third_user.nickname} bought a new swimsuit!",
+          visibility: "private"
         })
 
       %{"to" => to, "cc" => cc} = Utils.make_like_data(other_user, activity, nil)
@@ -168,11 +168,11 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "How do I pronounce LaTeX?",
-          "poll" => %{
-            "options" => ["laytekh", "lahtekh", "latex"],
-            "expires_in" => 20,
-            "multiple" => true
+          status: "How do I pronounce LaTeX?",
+          poll: %{
+            options: ["laytekh", "lahtekh", "latex"],
+            expires_in: 20,
+            multiple: true
           }
         })
 
@@ -187,10 +187,10 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "Are we living in a society?",
-          "poll" => %{
-            "options" => ["yes", "no"],
-            "expires_in" => 20
+          status: "Are we living in a society?",
+          poll: %{
+            options: ["yes", "no"],
+            expires_in: 20
           }
         })
 
@@ -469,7 +469,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     test "returns map with Flag object" do
       reporter = insert(:user)
       target_account = insert(:user)
-      {:ok, activity} = CommonAPI.post(target_account, %{"status" => "foobar"})
+      {:ok, activity} = CommonAPI.post(target_account, %{status: "foobar"})
       context = Utils.generate_context_id()
       content = "foobar"
 

@@ -50,7 +50,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     insert(:user, %{local: false, nickname: "u@peer1.com"})
     insert(:user, %{local: false, nickname: "u@peer2.com"})
 
-    {:ok, _} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofe"})
+    {:ok, _} = Pleroma.Web.CommonAPI.post(user, %{status: "cofe"})
 
     Pleroma.Stats.force_update()
 
