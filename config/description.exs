@@ -1155,12 +1155,6 @@ config :pleroma, :config_description, [
               "When a message has a subject (aka Content Warning), collapse it by default"
           },
           %{
-            key: :enableEmojiPicker,
-            label: "Emoji picker",
-            type: :boolean,
-            description: "Enables emoji picker."
-          },
-          %{
             key: :formattingOptionsEnabled,
             label: "Formatting options enabled",
             type: :boolean,
