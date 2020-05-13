@@ -38,7 +38,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
       users: accounts,
       for: user,
       as: :user,
-      embed_relationships: ControllerHelper.embed_relationships?(params)
+      embed_relationships: ControllerHelper.with_relationships?(params)
     )
   end
 
@@ -82,7 +82,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
       offset: params[:offset],
       type: params[:type],
       author: get_author(params),
-      embed_relationships: ControllerHelper.embed_relationships?(params),
+      embed_relationships: ControllerHelper.with_relationships?(params),
       for_user: user
     ]
     |> Enum.filter(&elem(&1, 1))

@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.Helpers do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
 
   def request_body(description, schema_ref, opts \\ []) do
     media_types = ["application/json", "multipart/form-data", "application/x-www-form-urlencoded"]
@@ -47,13 +48,8 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
     ]
   end
 
-  def embed_relationships_param do
-    Operation.parameter(
-      :embed_relationships,
-      :query,
-      :boolean,
-      "Embed relationships into accounts (Pleroma extension)"
-    )
+  def with_relationships_param do
+    Operation.parameter(:with_relationships, :query, BooleanLike, "Include relationships")
   end
 
   def empty_object_response do

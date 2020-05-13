@@ -10,7 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       add_link_headers: 2,
       truthy_param?: 1,
       assign_account_by_id: 2,
-      embed_relationships?: 1,
+      with_relationships?: 1,
       json_response: 3
     ]
 
@@ -275,7 +275,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       for: for_user,
       users: followers,
       as: :user,
-      embed_relationships: embed_relationships?(params)
+      embed_relationships: with_relationships?(params)
     )
   end
 
@@ -300,7 +300,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       for: for_user,
       users: followers,
       as: :user,
-      embed_relationships: embed_relationships?(params)
+      embed_relationships: with_relationships?(params)
     )
   end
 

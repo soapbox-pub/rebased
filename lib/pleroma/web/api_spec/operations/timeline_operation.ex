@@ -153,10 +153,6 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
     }
   end
 
-  defp with_relationships_param do
-    Operation.parameter(:with_relationships, :query, BooleanLike, "Include relationships")
-  end
-
   defp local_param do
     Operation.parameter(
       :local,
