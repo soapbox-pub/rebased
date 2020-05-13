@@ -1269,7 +1269,8 @@ config :pleroma, :config_description, [
             key: :showFeaturesPanel,
             label: "Show instance features panel",
             type: :boolean,
-            description: "Enables panel displaying functionality of the instance on the About page."
+            description:
+              "Enables panel displaying functionality of the instance on the About page."
           },
           %{
             key: :showInstanceSpecificPanel,
