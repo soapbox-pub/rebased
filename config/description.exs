@@ -1135,10 +1135,50 @@ config :pleroma, :config_description, [
         ],
         children: [
           %{
-            key: :theme,
+            key: :alwaysShowSubjectInput,
+            label: "Always show subject input",
+            type: :boolean,
+            description: "When disabled, auto-hide the subject field if it's empty"
+          },
+          %{
+            key: :background,
             type: :string,
-            description: "Which theme to use, they are defined in styles.json",
-            suggestions: ["pleroma-dark"]
+            description:
+              "URL of the background, unless viewing a user profile with a background that is set",
+            suggestions: ["/images/city.jpg"]
+          },
+          %{
+            key: :collapseMessageWithSubject,
+            label: "Collapse message with subject",
+            type: :boolean,
+            description:
+              "When a message has a subject (aka Content Warning), collapse it by default"
+          },
+          %{
+            key: :enableEmojiPicker,
+            label: "Emoji picker",
+            type: :boolean,
+            description: "Enables emoji picker."
+          },
+          %{
+            key: :formattingOptionsEnabled,
+            label: "Formatting options enabled",
+            type: :boolean,
+            description:
+              "Enable setting a formatting different than plain-text (ie. HTML, Markdown) when posting, relates to `:instance`, `allowed_post_formats`"
+          },
+          %{
+            key: :hidePostStats,
+            label: "Hide post stats",
+            type: :boolean,
+            description: "Hide notices statistics (repeats, favorites, ...)"
+          },
+          %{
+            key: :hideUserStats,
+            label: "Hide user stats",
+            type: :boolean,
+            description:
+              "Hide profile statistics (posts, posts per day, followers, followings, ...)"
           },
           %{
             key: :logo,
@@ -1147,11 +1187,21 @@ config :pleroma, :config_description, [
             suggestions: ["/static/logo.png"]
           },
           %{
-            key: :background,
+            key: :logoMargin,
+            label: "Logo margin",
             type: :string,
             description:
-              "URL of the background, unless viewing a user profile with a background that is set",
-            suggestions: ["/images/city.jpg"]
+              "Allows you to adjust vertical margins between logo boundary and navbar borders. " <>
+                "The idea is that to have logo's image without any extra margins and instead adjust them to your need in layout.",
+            suggestions: [".1em"]
+          },
+          %{
+            key: :logoMask,
+            label: "Logo mask",
+            type: :boolean,
+            description:
+              "By default it assumes logo used will be monochrome with alpha channel to be compatible with both light and dark themes. " <>
+                "If you want a colorful logo you must disable logoMask."
           },
           %{
             key: :redirectRootNoLogin,
@@ -1170,10 +1220,10 @@ config :pleroma, :config_description, [
             suggestions: ["/main/friends"]
           },
           %{
-            key: :showInstanceSpecificPanel,
-            label: "Show instance specific panel",
+            key: :scopeCopy,
+            label: "Scope copy",
             type: :boolean,
-            description: "Whenether to show the instance's specific panel"
+            description: "Copy the scope (private/unlisted/public) in replies to posts by default"
           },
           %{
             key: :scopeOptionsEnabled,
@@ -1182,37 +1232,15 @@ config :pleroma, :config_description, [
             description: "Enable setting a notice visibility and subject/CW when posting"
           },
           %{
-            key: :formattingOptionsEnabled,
-            label: "Formatting options enabled",
+            key: :showInstanceSpecificPanel,
+            label: "Show instance specific panel",
             type: :boolean,
-            description:
-              "Enable setting a formatting different than plain-text (ie. HTML, Markdown) when posting, relates to `:instance`, `allowed_post_formats`"
+            description: "Whenether to show the instance's specific panel"
           },
           %{
-            key: :collapseMessageWithSubject,
-            label: "Collapse message with subject",
+            key: :stickers,
             type: :boolean,
-            description:
-              "When a message has a subject (aka Content Warning), collapse it by default"
-          },
-          %{
-            key: :hidePostStats,
-            label: "Hide post stats",
-            type: :boolean,
-            description: "Hide notices statistics (repeats, favorites, ...)"
-          },
-          %{
-            key: :hideUserStats,
-            label: "Hide user stats",
-            type: :boolean,
-            description:
-              "Hide profile statistics (posts, posts per day, followers, followings, ...)"
-          },
-          %{
-            key: :scopeCopy,
-            label: "Scope copy",
-            type: :boolean,
-            description: "Copy the scope (private/unlisted/public) in replies to posts by default"
+            description: "Enables stickers."
           },
           %{
             key: :subjectLineBehavior,
@@ -1225,38 +1253,10 @@ config :pleroma, :config_description, [
             suggestions: ["email", "masto", "noop"]
           },
           %{
-            key: :alwaysShowSubjectInput,
-            label: "Always show subject input",
-            type: :boolean,
-            description: "When disabled, auto-hide the subject field if it's empty"
-          },
-          %{
-            key: :logoMask,
-            label: "Logo mask",
-            type: :boolean,
-            description:
-              "By default it assumes logo used will be monochrome with alpha channel to be compatible with both light and dark themes. " <>
-                "If you want a colorful logo you must disable logoMask."
-          },
-          %{
-            key: :logoMargin,
-            label: "Logo margin",
+            key: :theme,
             type: :string,
-            description:
-              "Allows you to adjust vertical margins between logo boundary and navbar borders. " <>
-                "The idea is that to have logo's image without any extra margins and instead adjust them to your need in layout.",
-            suggestions: [".1em"]
-          },
-          %{
-            key: :stickers,
-            type: :boolean,
-            description: "Enables stickers."
-          },
-          %{
-            key: :enableEmojiPicker,
-            label: "Emoji picker",
-            type: :boolean,
-            description: "Enables emoji picker."
+            description: "Which theme to use, they are defined in styles.json",
+            suggestions: ["pleroma-dark"]
           }
         ]
       },
