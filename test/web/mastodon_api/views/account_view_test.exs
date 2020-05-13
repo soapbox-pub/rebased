@@ -31,7 +31,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         nickname: "shp@shitposter.club",
         name: ":karjalanpiirakka: shp",
         bio:
-          "<script src=\"invalid-html\"></script><span>valid html</span>. a<br>b<br/>c<br >d<br />f",
+          "<script src=\"invalid-html\"></script><span>valid html</span>. a<br>b<br/>c<br >d<br />f '&<>\"",
         inserted_at: ~N[2017-08-15 15:47:06.597036],
         emoji: %{"karjalanpiirakka" => "/file.png"}
       })
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       followers_count: 3,
       following_count: 0,
       statuses_count: 5,
-      note: "<span>valid html</span>. a<br/>b<br/>c<br/>d<br/>f",
+      note: "<span>valid html</span>. a<br/>b<br/>c<br/>d<br/>f &#39;&amp;&lt;&gt;&quot;",
       url: user.ap_id,
       avatar: "http://localhost:4001/images/avi.png",
       avatar_static: "http://localhost:4001/images/avi.png",
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       fields: [],
       bot: false,
       source: %{
-        note: "valid html. a\nb\nc\nd\nf",
+        note: "valid html. a\nb\nc\nd\nf '&<>\"",
         sensitive: false,
         pleroma: %{
           actor_type: "Person",
@@ -93,7 +93,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   test "Represent the user account for the account owner" do
     user = insert(:user)
 
-    notification_settings = %Pleroma.User.NotificationSetting{}
+    notification_settings = %{
+      followers: true,
+      follows: true,
+      non_followers: true,
+      non_follows: true,
+      privacy_option: false
+    }
+
     privacy = user.default_scope
 
     assert %{
@@ -376,8 +383,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
       {:ok, _activity} =
         CommonAPI.post(other_user, %{
-          "status" => "Hey @#{user.nickname}.",
-          "visibility" => "direct"
+          status: "Hey @#{user.nickname}.",
+          visibility: "direct"
         })
 
       user = User.get_cached_by_ap_id(user.ap_id)

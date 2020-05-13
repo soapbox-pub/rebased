@@ -16,7 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationViewTest do
     other_user = insert(:user)
 
     {:ok, activity} =
-      CommonAPI.post(user, %{"status" => "hey @#{other_user.nickname}", "visibility" => "direct"})
+      CommonAPI.post(user, %{status: "hey @#{other_user.nickname}", visibility: "direct"})
 
     [participation] = Participation.for_user_with_last_activity_id(user)
 

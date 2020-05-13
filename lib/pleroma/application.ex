@@ -56,7 +56,7 @@ defmodule Pleroma.Application do
         if (major == 22 and minor < 2) or major < 22 do
           raise "
             !!!OTP VERSION WARNING!!!
-            You are using gun adapter with OTP version #{version}, which doesn't support correct handling of unordered certificates chains.
+            You are using gun adapter with OTP version #{version}, which doesn't support correct handling of unordered certificates chains. Please update your Erlang/OTP to at least 22.2.
             "
         end
       else

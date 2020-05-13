@@ -25,7 +25,7 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
       Enum.each(0..10, fn i ->
         {:ok, _activity} =
           CommonAPI.post(user1, %{
-            "status" => "hey ##{i} @#{user2.nickname}!"
+            status: "hey ##{i} @#{user2.nickname}!"
           })
       end)
 

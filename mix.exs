@@ -36,7 +36,7 @@ defmodule Pleroma.Mixfile do
       releases: [
         pleroma: [
           include_executables_for: [:unix],
-          applications: [ex_syslogger: :load, syslog: :load],
+          applications: [ex_syslogger: :load, syslog: :load, eldap: :transient],
           steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1]
         ]
       ]
@@ -78,8 +78,7 @@ defmodule Pleroma.Mixfile do
         :comeonin,
         :quack,
         :fast_sanitize,
-        :ssl,
-        :eldap
+        :ssl
       ],
       included_applications: [:ex_syslogger]
     ]
@@ -127,8 +126,7 @@ defmodule Pleroma.Mixfile do
       {:postgrex, ">= 0.13.5"},
       {:oban, "~> 1.2"},
       {:gettext, "~> 0.15"},
-      {:comeonin, "~> 4.1.1"},
-      {:pbkdf2_elixir, "~> 0.12.3"},
+      {:pbkdf2_elixir, "~> 1.0"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.1"},
       {:html_entities, "~> 0.5", override: true},
@@ -200,7 +198,7 @@ defmodule Pleroma.Mixfile do
       {:restarter, path: "./restarter"},
       {:open_api_spex,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
-       ref: "b862ebd78de0df95875cf46feb6e9607130dc2a8"}
+       ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"}
     ] ++ oauth_deps()
   end
 

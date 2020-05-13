@@ -260,7 +260,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp prepare_user_bio(%User{bio: ""}), do: ""
 
   defp prepare_user_bio(%User{bio: bio}) when is_binary(bio) do
-    bio |> String.replace(~r(<br */?>), "\n") |> Pleroma.HTML.strip_tags()
+    bio
+    |> String.replace(~r(<br */?>), "\n")
+    |> Pleroma.HTML.strip_tags()
+    |> HtmlEntities.decode()
   end
 
   defp prepare_user_bio(_), do: ""
@@ -333,7 +336,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp maybe_put_role(data, _, _), do: data
 
   defp maybe_put_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
-    Kernel.put_in(data, [:pleroma, :notification_settings], user.notification_settings)
+    Kernel.put_in(
+      data,
+      [:pleroma, :notification_settings],
+      Map.from_struct(user.notification_settings)
+    )
   end
 
   defp maybe_put_notification_settings(data, _, _), do: data

@@ -845,15 +845,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def status_update(%{assigns: %{user: admin}} = conn, %{"id" => id} = params) do
+    params =
+      params
+      |> Map.take(["sensitive", "visibility"])
+      |> Map.new(fn {key, value} -> {String.to_existing_atom(key), value} end)
+
     with {:ok, activity} <- CommonAPI.update_activity_scope(id, params) do
-      {:ok, sensitive} = Ecto.Type.cast(:boolean, params["sensitive"])
+      {:ok, sensitive} = Ecto.Type.cast(:boolean, params[:sensitive])
 
       ModerationLog.insert_log(%{
         action: "status_update",
         actor: admin,
         subject: activity,
         sensitive: sensitive,
-        visibility: params["visibility"]
+        visibility: params[:visibility]
       })
 
       conn

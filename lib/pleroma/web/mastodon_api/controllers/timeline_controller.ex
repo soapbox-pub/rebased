@@ -15,6 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(:skip_plug, EnsurePublicOrAuthenticatedPlug when action in [:public, :hashtag])
 
   # TODO: Replace with a macro when there is a Phoenix release with the following commit in it:
@@ -37,10 +38,13 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
   plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
 
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.TimelineOperation
+
   # GET /api/v1/timelines/home
   def home(%{assigns: %{user: user}} = conn, params) do
     params =
       params
+      |> Map.new(fn {key, value} -> {to_string(key), value} end)
       |> Map.put("type", ["Create", "Announce"])
       |> Map.put("blocking_user", user)
       |> Map.put("muting_user", user)
@@ -67,6 +71,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   def direct(%{assigns: %{user: user}} = conn, params) do
     params =
       params
+      |> Map.new(fn {key, value} -> {to_string(key), value} end)
       |> Map.put("type", "Create")
       |> Map.put("blocking_user", user)
       |> Map.put("user", user)
@@ -88,7 +93,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
   # GET /api/v1/timelines/public
   def public(%{assigns: %{user: user}} = conn, params) do
-    local_only = truthy_param?(params["local"])
+    params = Map.new(params, fn {key, value} -> {to_string(key), value} end)
+
+    local_only = params["local"]
 
     cfg_key =
       if local_only do
@@ -154,8 +161,8 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
   # GET /api/v1/timelines/tag/:tag
   def hashtag(%{assigns: %{user: user}} = conn, params) do
-    local_only = truthy_param?(params["local"])
-
+    params = Map.new(params, fn {key, value} -> {to_string(key), value} end)
+    local_only = params["local"]
     activities = hashtag_fetching(params, user, local_only)
 
     conn
@@ -168,10 +175,11 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   end
 
   # GET /api/v1/timelines/list/:list_id
-  def list(%{assigns: %{user: user}} = conn, %{"list_id" => id} = params) do
+  def list(%{assigns: %{user: user}} = conn, %{list_id: id} = params) do
     with %Pleroma.List{title: _title, following: following} <- Pleroma.List.get(id, user) do
       params =
         params
+        |> Map.new(fn {key, value} -> {to_string(key), value} end)
         |> Map.put("type", "Create")
         |> Map.put("blocking_user", user)
         |> Map.put("user", user)
