@@ -19,12 +19,12 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.MediaOperation
 
   @doc "POST /api/v1/media"
-  def create(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
+  def create(%{assigns: %{user: user}, body_params: %{file: file} = data} = conn, _) do
     with {:ok, object} <-
            ActivityPub.upload(
              file,
              actor: User.ap_id(user),
-             description: Map.get(data, "description")
+             description: Map.get(data, :description)
            ) do
       attachment_data = Map.put(object.data, "id", object.id)
 
@@ -35,12 +35,12 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   def create(_conn, _data), do: {:error, :bad_request}
 
   @doc "POST /api/v2/media"
-  def create2(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
+  def create2(%{assigns: %{user: user}, body_params: %{file: file} = data} = conn, _) do
     with {:ok, object} <-
            ActivityPub.upload(
              file,
              actor: User.ap_id(user),
-             description: Map.get(data, "description")
+             description: Map.get(data, :description)
            ) do
       attachment_data = Map.put(object.data, "id", object.id)
 
@@ -53,7 +53,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   def create2(_conn, _data), do: {:error, :bad_request}
 
   @doc "PUT /api/v1/media/:id"
-  def update(%{assigns: %{user: user}} = conn, %{"id" => id, "description" => description})
+  def update(%{assigns: %{user: user}, body_params: %{description: description}} = conn, %{
+        id: id
+      })
       when is_binary(description) do
     with %Object{} = object <- Object.get_by_id(id),
          true <- Object.authorize_mutation(object, user),
@@ -67,7 +69,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   def update(_conn, _data), do: {:error, :bad_request}
 
   @doc "GET /api/v1/media/:id"
-  def show(conn, %{"id" => id}) do
+  def show(conn, %{id: id}) do
     with %Object{data: data, id: object_id} <- Object.get_by_id(id) do
       attachment_data = Map.put(data, "id", object_id)
 

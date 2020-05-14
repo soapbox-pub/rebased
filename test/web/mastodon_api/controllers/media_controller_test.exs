@@ -30,8 +30,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
 
       media =
         conn
+        |> put_req_header("content-type", "multipart/form-data")
         |> post("/api/v1/media", %{"file" => image, "description" => desc})
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert media["type"] == "image"
       assert media["description"] == desc
@@ -46,15 +47,16 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
 
       response =
         conn
+        |> put_req_header("content-type", "multipart/form-data")
         |> post("/api/v2/media", %{"file" => image, "description" => desc})
-        |> json_response(202)
+        |> json_response_and_validate_schema(202)
 
       assert media_id = response["id"]
 
       media =
         conn
         |> get("/api/v1/media/#{media_id}")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert media["type"] == "image"
       assert media["description"] == desc
@@ -85,8 +87,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     test "/api/v1/media/:id good request", %{conn: conn, object: object} do
       media =
         conn
+        |> put_req_header("content-type", "multipart/form-data")
         |> put("/api/v1/media/#{object.id}", %{"description" => "test-media"})
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert media["description"] == "test-media"
       assert refresh_record(object).data["name"] == "test-media"
@@ -95,8 +98,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     test "/api/v1/media/:id bad request", %{conn: conn, object: object} do
       media =
         conn
+        |> put_req_header("content-type", "multipart/form-data")
         |> put("/api/v1/media/#{object.id}", %{})
-        |> json_response(400)
+        |> json_response_and_validate_schema(400)
 
       assert media == %{"error" => "bad_request"}
     end
@@ -124,7 +128,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       media =
         conn
         |> get("/api/v1/media/#{object.id}")
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert media["description"] == "test-media"
       assert media["type"] == "image"

@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
+  alias Pleroma.Web.ApiSpec.Schemas.Attachment
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
@@ -22,24 +23,24 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
       security: [%{"oAuth" => ["write:media"]}],
       requestBody: Helpers.request_body("Parameters", create_request()),
       responses: %{
-        200 =>
-          Operation.response("Media", "application/json", Pleroma.Web.ApiSpec.Schemas.Attachment),
+        200 => Operation.response("Media", "application/json", Attachment),
         401 => Operation.response("Media", "application/json", ApiError),
         422 => Operation.response("Media", "application/json", ApiError)
       }
     }
   end
 
-  defp create_request() do
+  defp create_request do
     %Schema{
       title: "MediaCreateRequest",
       description: "POST body for creating an attachment",
       type: :object,
+      required: [:file],
       properties: %{
         file: %Schema{
-          type: :binary,
-          description: "The file to be attached, using multipart form data.",
-          required: true
+          type: :string,
+          format: :binary,
+          description: "The file to be attached, using multipart form data."
         },
         description: %Schema{
           type: :string,
@@ -60,29 +61,26 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
       description: "Creates an attachment to be used with a new status.",
       operationId: "MediaController.update",
       security: [%{"oAuth" => ["write:media"]}],
+      parameters: [id_param()],
       requestBody: Helpers.request_body("Parameters", update_request()),
       responses: %{
-        200 =>
-          Operation.response("Media", "application/json", Pleroma.Web.ApiSpec.Schemas.Attachment),
+        200 => Operation.response("Media", "application/json", Attachment),
+        400 => Operation.response("Media", "application/json", ApiError),
         401 => Operation.response("Media", "application/json", ApiError),
         422 => Operation.response("Media", "application/json", ApiError)
       }
     }
   end
 
-  defp update_request() do
+  defp update_request do
     %Schema{
-      title: "MediaCreateRequest",
-      description: "POST body for creating an attachment",
+      title: "MediaUpdateRequest",
+      description: "POST body for updating an attachment",
       type: :object,
       properties: %{
-        id: %Schema{
-          type: :string,
-          description: "The id of the Attachment entity to be updated",
-          required: true
-        },
         file: %Schema{
-          type: :binary,
+          type: :string,
+          format: :binary,
           description: "The file to be attached, using multipart form data."
         },
         description: %Schema{
@@ -102,10 +100,10 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
       tags: ["media"],
       summary: "Show Uploaded media attachment",
       operationId: "MediaController.show",
+      parameters: [id_param()],
       security: [%{"oAuth" => ["read:media"]}],
       responses: %{
-        200 =>
-          Operation.response("Media", "application/json", Pleroma.Web.ApiSpec.Schemas.Attachment),
+        200 => Operation.response("Media", "application/json", Attachment),
         401 => Operation.response("Media", "application/json", ApiError),
         422 => Operation.response("Media", "application/json", ApiError)
       }
@@ -121,11 +119,14 @@ defmodule Pleroma.Web.ApiSpec.MediaOperation do
       security: [%{"oAuth" => ["write:media"]}],
       requestBody: Helpers.request_body("Parameters", create_request()),
       responses: %{
-        202 =>
-          Operation.response("Media", "application/json", Pleroma.Web.ApiSpec.Schemas.Attachment),
+        202 => Operation.response("Media", "application/json", Attachment),
         422 => Operation.response("Media", "application/json", ApiError),
         500 => Operation.response("Media", "application/json", ApiError)
       }
     }
+  end
+
+  defp id_param do
+    Operation.parameter(:id, :path, :string, "The ID of the Attachment entity")
   end
 end
