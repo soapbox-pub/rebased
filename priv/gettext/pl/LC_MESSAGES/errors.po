@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-05-13 16:37+0000\n"
-"PO-Revision-Date: 2020-05-13 18:57+0000\n"
+"PO-Revision-Date: 2020-05-14 14:37+0000\n"
 "Last-Translator: Michał Sidor <pleromeme@meekchopp.es>\n"
 "Language-Team: Polish <https://translate.pleroma.social/projects/pleroma/"
 "pleroma/pl/>\n"
@@ -26,23 +26,23 @@ msgstr ""
 ## effect: edit them in PO (`.po`) files instead.
 ## From Ecto.Changeset.cast/4
 msgid "can't be blank"
-msgstr ""
+msgstr "nie może być pusty"
 
 ## From Ecto.Changeset.unique_constraint/3
 msgid "has already been taken"
-msgstr ""
+msgstr "jest już zajęty"
 
 ## From Ecto.Changeset.put_change/3
 msgid "is invalid"
-msgstr ""
+msgstr "jest nieprawidłowy"
 
 ## From Ecto.Changeset.validate_format/3
 msgid "has invalid format"
-msgstr ""
+msgstr "ma niepoprawny format"
 
 ## From Ecto.Changeset.validate_subset/3
 msgid "has an invalid entry"
-msgstr ""
+msgstr "ma niepoprawny wpis"
 
 ## From Ecto.Changeset.validate_exclusion/3
 msgid "is reserved"
@@ -302,7 +302,7 @@ msgstr "Nie znaleziono rekordu"
 #: lib/pleroma/web/ostatus/ostatus_controller.ex:149
 #, elixir-format
 msgid "Something went wrong"
-msgstr ""
+msgstr "Coś się zepsuło"
 
 #: lib/pleroma/web/common_api/activity_draft.ex:107
 #, elixir-format
