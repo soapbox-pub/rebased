@@ -41,7 +41,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
         } = conn,
         _
       ) do
-    if Pbkdf2.verify_pass(password, password_hash) do
+    if checkpw(password, password_hash) do
       conn
       |> assign(:user, auth_user)
       |> OAuthScopesPlug.skip_plug()
