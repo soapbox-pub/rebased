@@ -1,7 +1,7 @@
 # Storing Remote Media
 
 Pleroma does not store remote/federated media by default. The best way to achieve this is to change Nginx to keep its reverse proxy cache
-forever and to activate the `MediaProxyWarmingPolicy` MRF policy in Pleroma which will automatically fetch all media through the proxy
+for a year and to activate the `MediaProxyWarmingPolicy` MRF policy in Pleroma which will automatically fetch all media through the proxy
 as soon as the post is received by your instance.
 
 ## Nginx
