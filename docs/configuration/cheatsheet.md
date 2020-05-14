@@ -913,7 +913,10 @@ Boolean, enables/disables in-database configuration. Read [Transfering the confi
 
 ## :database_config_whitelist
 
-List of valid configuration sections which are allowed to be configured from the database.
+List of valid configuration sections which are allowed to be configured from the
+database. Settings stored in the database before the whitelist is configured are
+still applied, so it is suggested to only use the whitelist on instances that
+have not migrated the config to the database.
 
 Example:
 ```elixir
