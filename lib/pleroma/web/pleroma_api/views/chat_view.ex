@@ -7,6 +7,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
 
   alias Pleroma.Chat
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.PleromaAPI.ChatMessageView
 
@@ -20,7 +21,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
       account: AccountView.render("show.json", Map.put(opts, :user, recipient)),
       unread: chat.unread,
       last_message:
-        last_message && ChatMessageView.render("show.json", chat: chat, object: last_message)
+        last_message && ChatMessageView.render("show.json", chat: chat, object: last_message),
+      updated_at: Utils.to_masto_date(chat.updated_at)
     }
   end
 

@@ -8,6 +8,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatViewTest do
   alias Pleroma.Chat
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.PleromaAPI.ChatMessageView
   alias Pleroma.Web.PleromaAPI.ChatView
@@ -26,7 +27,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatViewTest do
              id: "#{chat.id}",
              account: AccountView.render("show.json", user: recipient),
              unread: 0,
-             last_message: nil
+             last_message: nil,
+             updated_at: Utils.to_masto_date(chat.updated_at)
            }
 
     {:ok, chat_message_creation} = CommonAPI.post_chat_message(user, recipient, "hello")
