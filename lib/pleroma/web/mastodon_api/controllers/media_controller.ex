@@ -53,10 +53,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   def create2(_conn, _data), do: {:error, :bad_request}
 
   @doc "PUT /api/v1/media/:id"
-  def update(%{assigns: %{user: user}, body_params: %{description: description}} = conn, %{
-        id: id
-      })
-      when is_binary(description) do
+  def update(%{assigns: %{user: user}, body_params: %{description: description}} = conn, %{id: id}) do
     with %Object{} = object <- Object.get_by_id(id),
          true <- Object.authorize_mutation(object, user),
          {:ok, %Object{data: data}} <- Object.update_data(object, %{"name" => description}) do
@@ -66,7 +63,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
     end
   end
 
-  def update(_conn, _data), do: {:error, :bad_request}
+  def update(conn, data), do: show(conn, data)
 
   @doc "GET /api/v1/media/:id"
   def show(conn, %{id: id}) do

@@ -94,16 +94,6 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert media["description"] == "test-media"
       assert refresh_record(object).data["name"] == "test-media"
     end
-
-    test "/api/v1/media/:id bad request", %{conn: conn, object: object} do
-      media =
-        conn
-        |> put_req_header("content-type", "multipart/form-data")
-        |> put("/api/v1/media/#{object.id}", %{})
-        |> json_response_and_validate_schema(400)
-
-      assert media == %{"error" => "bad_request"}
-    end
   end
 
   describe "Get media by id" do
