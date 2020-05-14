@@ -62,24 +62,64 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
+  defp thumbnail_max_dimensions(params) do
+    config = Config.get([:media_preview_proxy], [])
+
+    thumbnail_max_width =
+      if w = params["thumbnail_max_width"] do
+        String.to_integer(w)
+      else
+        Keyword.fetch!(config, :thumbnail_max_width)
+      end
+
+    thumbnail_max_height =
+      if h = params["thumbnail_max_height"] do
+        String.to_integer(h)
+      else
+        Keyword.fetch!(config, :thumbnail_max_height)
+      end
+
+    {thumbnail_max_width, thumbnail_max_height}
+  end
+
+  defp thumbnail_binary(url, body, params) do
+    {thumbnail_max_width, thumbnail_max_height} = thumbnail_max_dimensions(params)
+
+    with true <- Config.get([:media_preview_proxy, :enable_eimp]),
+         {:ok, [type: image_type, width: source_width, height: source_height]} <-
+           :eimp.identify(body),
+         scale_factor <-
+           Enum.max([source_width / thumbnail_max_width, source_height / thumbnail_max_height]),
+         {:ok, thumbnail_binary} =
+           :eimp.convert(body, image_type, [
+             {:scale, {round(source_width / scale_factor), round(source_height / scale_factor)}}
+           ]) do
+      {:ok, thumbnail_binary}
+    else
+      _ ->
+        mogrify_dimensions = "#{thumbnail_max_width}x#{thumbnail_max_height}"
+
+        with {:ok, path} <- MogrifyHelper.store_as_temporary_file(url, body),
+             %Mogrify.Image{} <-
+               MogrifyHelper.in_place_resize_to_limit(path, mogrify_dimensions),
+             {:ok, thumbnail_binary} <- File.read(path),
+             _ <- File.rm(path) do
+          {:ok, thumbnail_binary}
+        else
+          _ -> :error
+        end
+    end
+  end
+
   defp handle_preview("image/" <> _ = content_type, %{params: params} = conn, url) do
-    with {:ok, %{status: status, body: body}} when status in 200..299 <-
+    with {:ok, %{status: status, body: image_contents}} when status in 200..299 <-
            url
            |> MediaProxy.url()
            |> Tesla.get(opts: [adapter: [timeout: preview_timeout()]]),
-         {:ok, path} <- MogrifyHelper.store_as_temporary_file(url, body),
-         resize_dimensions <-
-           Map.get(
-             params,
-             "limit_dimensions",
-             Config.get([:media_preview_proxy, :limit_dimensions])
-           ),
-         %Mogrify.Image{} <- MogrifyHelper.in_place_resize_to_limit(path, resize_dimensions),
-         {:ok, image_binary} <- File.read(path),
-         _ <- File.rm(path) do
+         {:ok, thumbnail_binary} <- thumbnail_binary(url, image_contents, params) do
       conn
       |> put_resp_header("content-type", content_type)
-      |> send_resp(200, image_binary)
+      |> send_resp(200, thumbnail_binary)
     else
       {_, %{status: _}} ->
         send_resp(conn, :failed_dependency, "Can't fetch the image.")

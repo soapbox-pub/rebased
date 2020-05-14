@@ -139,7 +139,7 @@ defmodule Pleroma.Mixfile do
        github: "ninenines/gun", ref: "e1a69b36b180a574c0ac314ced9613fdd52312cc", override: true},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
-      {:eimp, ">= 0.0.0"},
+      {:eimp, "~> 1.0.14"},
       {:ex_aws, "~> 2.1"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.6.6"},
