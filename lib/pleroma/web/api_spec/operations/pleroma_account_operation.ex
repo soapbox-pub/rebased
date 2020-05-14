@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
   def confirmation_resend_operation do
     %Operation{
       tags: ["Accounts"],
-      summary: "Resend confirmation email. Expects `email` or `nic`",
+      summary: "Resend confirmation email. Expects `email` or `nickname`",
       operationId: "PleromaAPI.AccountController.confirmation_resend",
       parameters: [
         Operation.parameter(:email, :query, :string, "Email of that needs to be verified",
