@@ -1747,7 +1747,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "change visibility flag", %{conn: conn, id: id, admin: admin} do
       response =
         conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{"visibility" => "public"})
+        |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "public"})
         |> json_response(:ok)
 
       assert response["visibility"] == "public"
@@ -1759,21 +1759,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       response =
         conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{"visibility" => "private"})
+        |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "private"})
         |> json_response(:ok)
 
       assert response["visibility"] == "private"
 
       response =
         conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{"visibility" => "unlisted"})
+        |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "unlisted"})
         |> json_response(:ok)
 
       assert response["visibility"] == "unlisted"
     end
 
     test "returns 400 when visibility is unknown", %{conn: conn, id: id} do
-      conn = put(conn, "/api/pleroma/admin/statuses/#{id}", %{"visibility" => "test"})
+      conn = put(conn, "/api/pleroma/admin/statuses/#{id}", %{visibility: "test"})
 
       assert json_response(conn, :bad_request) == "Unsupported visibility"
     end
@@ -2862,26 +2862,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
               group: ":pleroma",
               key: ":http",
               value: [
-                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]},
-                %{"tuple" => [":send_user_agent", false]}
+                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]}
               ]
             }
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
                    "key" => ":http",
-                   "value" => [
-                     %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]},
-                     %{"tuple" => [":send_user_agent", false]}
-                   ],
-                   "db" => [":proxy_url", ":send_user_agent"]
+                   "value" => value,
+                   "db" => db
                  }
                ]
-             }
+             } = json_response(conn, 200)
+
+      assert %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]} in value
+      assert ":proxy_url" in db
     end
 
     test "proxy tuple domain", %{conn: conn} do
@@ -2892,26 +2891,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
               group: ":pleroma",
               key: ":http",
               value: [
-                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]},
-                %{"tuple" => [":send_user_agent", false]}
+                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]}
               ]
             }
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
                    "key" => ":http",
-                   "value" => [
-                     %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]},
-                     %{"tuple" => [":send_user_agent", false]}
-                   ],
-                   "db" => [":proxy_url", ":send_user_agent"]
+                   "value" => value,
+                   "db" => db
                  }
                ]
-             }
+             } = json_response(conn, 200)
+
+      assert %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]} in value
+      assert ":proxy_url" in db
     end
 
     test "proxy tuple ip", %{conn: conn} do
@@ -2922,26 +2920,52 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
               group: ":pleroma",
               key: ":http",
               value: [
-                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]},
-                %{"tuple" => [":send_user_agent", false]}
+                %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]}
               ]
             }
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
                    "key" => ":http",
-                   "value" => [
-                     %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]},
-                     %{"tuple" => [":send_user_agent", false]}
-                   ],
-                   "db" => [":proxy_url", ":send_user_agent"]
+                   "value" => value,
+                   "db" => db
                  }
                ]
-             }
+             } = json_response(conn, 200)
+
+      assert %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]} in value
+      assert ":proxy_url" in db
+    end
+
+    test "doesn't set keys not in the whitelist", %{conn: conn} do
+      clear_config(:database_config_whitelist, [
+        {:pleroma, :key1},
+        {:pleroma, :key2},
+        {:pleroma, Pleroma.Captcha.NotReal},
+        {:not_real}
+      ])
+
+      post(conn, "/api/pleroma/admin/config", %{
+        configs: [
+          %{group: ":pleroma", key: ":key1", value: "value1"},
+          %{group: ":pleroma", key: ":key2", value: "value2"},
+          %{group: ":pleroma", key: ":key3", value: "value3"},
+          %{group: ":pleroma", key: "Pleroma.Web.Endpoint.NotReal", value: "value4"},
+          %{group: ":pleroma", key: "Pleroma.Captcha.NotReal", value: "value5"},
+          %{group: ":not_real", key: ":anything", value: "value6"}
+        ]
+      })
+
+      assert Application.get_env(:pleroma, :key1) == "value1"
+      assert Application.get_env(:pleroma, :key2) == "value2"
+      assert Application.get_env(:pleroma, :key3) == nil
+      assert Application.get_env(:pleroma, Pleroma.Web.Endpoint.NotReal) == nil
+      assert Application.get_env(:pleroma, Pleroma.Captcha.NotReal) == "value5"
+      assert Application.get_env(:not_real, :anything) == "value6"
     end
   end
 
@@ -2977,13 +3001,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user = insert(:user)
       User.block(admin, blocked)
 
-      {:ok, _} =
-        CommonAPI.post(user, %{"status" => "@#{admin.nickname}", "visibility" => "direct"})
+      {:ok, _} = CommonAPI.post(user, %{status: "@#{admin.nickname}", visibility: "direct"})
 
-      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "unlisted"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
-      {:ok, _} = CommonAPI.post(blocked, %{"status" => ".", "visibility" => "public"})
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "private"})
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
+      {:ok, _} = CommonAPI.post(blocked, %{status: ".", visibility: "public"})
 
       response =
         conn
@@ -3011,11 +3034,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "returns private and direct statuses with godmode on", %{conn: conn, admin: admin} do
       user = insert(:user)
 
-      {:ok, _} =
-        CommonAPI.post(user, %{"status" => "@#{admin.nickname}", "visibility" => "direct"})
+      {:ok, _} = CommonAPI.post(user, %{status: "@#{admin.nickname}", visibility: "direct"})
 
-      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "private"})
+      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
       conn = get(conn, "/api/pleroma/admin/statuses?godmode=true")
       assert json_response(conn, 200) |> length() == 3
     end
@@ -3049,11 +3071,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "doesn't return private statuses by default", %{conn: conn, user: user} do
-      {:ok, _private_status} =
-        CommonAPI.post(user, %{"status" => "private", "visibility" => "private"})
+      {:ok, _private_status} = CommonAPI.post(user, %{status: "private", visibility: "private"})
 
-      {:ok, _public_status} =
-        CommonAPI.post(user, %{"status" => "public", "visibility" => "public"})
+      {:ok, _public_status} = CommonAPI.post(user, %{status: "public", visibility: "public"})
 
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
 
@@ -3061,11 +3081,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "returns private statuses with godmode on", %{conn: conn, user: user} do
-      {:ok, _private_status} =
-        CommonAPI.post(user, %{"status" => "private", "visibility" => "private"})
+      {:ok, _private_status} = CommonAPI.post(user, %{status: "private", visibility: "private"})
 
-      {:ok, _public_status} =
-        CommonAPI.post(user, %{"status" => "public", "visibility" => "public"})
+      {:ok, _public_status} = CommonAPI.post(user, %{status: "public", visibility: "public"})
 
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?godmode=true")
 
@@ -3074,7 +3092,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "excludes reblogs by default", %{conn: conn, user: user} do
       other_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "."})
+      {:ok, activity} = CommonAPI.post(user, %{status: "."})
       {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, other_user)
 
       conn_res = get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses")
@@ -3580,28 +3598,63 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  test "GET /api/pleroma/admin/config/descriptions", %{conn: conn} do
-    admin = insert(:user, is_admin: true)
+  describe "GET /api/pleroma/admin/config/descriptions" do
+    test "structure", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
 
-    conn =
-      assign(conn, :user, admin)
-      |> get("/api/pleroma/admin/config/descriptions")
+      conn =
+        assign(conn, :user, admin)
+        |> get("/api/pleroma/admin/config/descriptions")
 
-    assert [child | _others] = json_response(conn, 200)
+      assert [child | _others] = json_response(conn, 200)
 
-    assert child["children"]
-    assert child["key"]
-    assert String.starts_with?(child["group"], ":")
-    assert child["description"]
+      assert child["children"]
+      assert child["key"]
+      assert String.starts_with?(child["group"], ":")
+      assert child["description"]
+    end
+
+    test "filters by database configuration whitelist", %{conn: conn} do
+      clear_config(:database_config_whitelist, [
+        {:pleroma, :instance},
+        {:pleroma, :activitypub},
+        {:pleroma, Pleroma.Upload},
+        {:esshd}
+      ])
+
+      admin = insert(:user, is_admin: true)
+
+      conn =
+        assign(conn, :user, admin)
+        |> get("/api/pleroma/admin/config/descriptions")
+
+      children = json_response(conn, 200)
+
+      assert length(children) == 4
+
+      assert Enum.count(children, fn c -> c["group"] == ":pleroma" end) == 3
+
+      instance = Enum.find(children, fn c -> c["key"] == ":instance" end)
+      assert instance["children"]
+
+      activitypub = Enum.find(children, fn c -> c["key"] == ":activitypub" end)
+      assert activitypub["children"]
+
+      web_endpoint = Enum.find(children, fn c -> c["key"] == "Pleroma.Upload" end)
+      assert web_endpoint["children"]
+
+      esshd = Enum.find(children, fn c -> c["group"] == ":esshd" end)
+      assert esshd["children"]
+    end
   end
 
   describe "/api/pleroma/admin/stats" do
     test "status visibility count", %{conn: conn} do
       admin = insert(:user, is_admin: true)
       user = insert(:user)
-      CommonAPI.post(user, %{"visibility" => "public", "status" => "hey"})
-      CommonAPI.post(user, %{"visibility" => "unlisted", "status" => "hey"})
-      CommonAPI.post(user, %{"visibility" => "unlisted", "status" => "hey"})
+      CommonAPI.post(user, %{visibility: "public", status: "hey"})
+      CommonAPI.post(user, %{visibility: "unlisted", status: "hey"})
+      CommonAPI.post(user, %{visibility: "unlisted", status: "hey"})
 
       response =
         conn

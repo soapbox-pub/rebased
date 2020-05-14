@@ -29,7 +29,7 @@ defmodule Pleroma.Web.FederatorTest do
   describe "Publish an activity" do
     setup do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "HI"})
 
       relay_mock = {
         Pleroma.Web.ActivityPub.Relay,
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.FederatorTest do
       Instances.set_consistently_unreachable(URI.parse(inbox2).host)
 
       {:ok, _activity} =
-        CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
+        CommonAPI.post(user, %{status: "HI @nick1@domain.com, @nick2@domain2.com!"})
 
       expected_dt = NaiveDateTime.to_iso8601(dt)
 

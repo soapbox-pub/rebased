@@ -228,7 +228,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "public", nil)
@@ -261,7 +261,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "unlisted", nil)
@@ -292,7 +292,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "private", nil)
@@ -322,7 +322,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "direct", nil)
@@ -463,8 +463,8 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       desc = Jason.encode!(%{object.id => "test-desc"})
 
       assert Utils.attachments_from_ids(%{
-               "media_ids" => ["#{object.id}"],
-               "descriptions" => desc
+               media_ids: ["#{object.id}"],
+               descriptions: desc
              }) == [
                Map.merge(object.data, %{"name" => "test-desc"})
              ]
@@ -472,7 +472,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
     test "returns attachments without descs" do
       object = insert(:note)
-      assert Utils.attachments_from_ids(%{"media_ids" => ["#{object.id}"]}) == [object.data]
+      assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}) == [object.data]
     end
 
     test "returns [] when not pass media_ids" do

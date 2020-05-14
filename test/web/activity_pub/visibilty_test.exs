@@ -21,21 +21,21 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     Pleroma.List.follow(list, unrelated)
 
     {:ok, public} =
-      CommonAPI.post(user, %{"status" => "@#{mentioned.nickname}", "visibility" => "public"})
+      CommonAPI.post(user, %{status: "@#{mentioned.nickname}", visibility: "public"})
 
     {:ok, private} =
-      CommonAPI.post(user, %{"status" => "@#{mentioned.nickname}", "visibility" => "private"})
+      CommonAPI.post(user, %{status: "@#{mentioned.nickname}", visibility: "private"})
 
     {:ok, direct} =
-      CommonAPI.post(user, %{"status" => "@#{mentioned.nickname}", "visibility" => "direct"})
+      CommonAPI.post(user, %{status: "@#{mentioned.nickname}", visibility: "direct"})
 
     {:ok, unlisted} =
-      CommonAPI.post(user, %{"status" => "@#{mentioned.nickname}", "visibility" => "unlisted"})
+      CommonAPI.post(user, %{status: "@#{mentioned.nickname}", visibility: "unlisted"})
 
     {:ok, list} =
       CommonAPI.post(user, %{
-        "status" => "@#{mentioned.nickname}",
-        "visibility" => "list:#{list.id}"
+        status: "@#{mentioned.nickname}",
+        visibility: "list:#{list.id}"
       })
 
     %{

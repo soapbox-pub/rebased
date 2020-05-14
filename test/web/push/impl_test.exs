@@ -13,8 +13,8 @@ defmodule Pleroma.Web.Push.ImplTest do
 
   import Pleroma.Factory
 
-  setup_all do
-    Tesla.Mock.mock_global(fn
+  setup do
+    Tesla.Mock.mock(fn
       %{method: :post, url: "https://example.com/example/1234"} ->
         %Tesla.Env{status: 200}
 
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       data: %{alerts: %{"follow" => true, "mention" => false}}
     )
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "<Lorem ipsum dolor sit amet."})
+    {:ok, activity} = CommonAPI.post(user, %{status: "<Lorem ipsum dolor sit amet."})
 
     notif =
       insert(:notification,
@@ -111,7 +111,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" =>
+        status:
           "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
@@ -147,7 +147,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" =>
+        status:
           "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
@@ -166,7 +166,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" =>
+        status:
           "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
@@ -184,8 +184,8 @@ defmodule Pleroma.Web.Push.ImplTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "visibility" => "direct",
-        "status" => "This is just between you and me, pal"
+        visibility: "direct",
+        status: "This is just between you and me, pal"
       })
 
     assert Impl.format_title(%{activity: activity}) ==
@@ -199,8 +199,8 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "visibility" => "direct",
-          "status" => "<Lorem ipsum dolor sit amet."
+          visibility: "direct",
+          status: "<Lorem ipsum dolor sit amet."
         })
 
       notif = insert(:notification, user: user2, activity: activity)
@@ -214,8 +214,8 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "visibility" => "public",
-          "status" => "<Lorem ipsum dolor sit amet."
+          visibility: "public",
+          status: "<Lorem ipsum dolor sit amet."
         })
 
       notif = insert(:notification, user: user2, activity: activity)
@@ -245,8 +245,8 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "visibility" => "direct",
-          "status" =>
+          visibility: "direct",
+          status:
             "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
         })
 
@@ -263,8 +263,8 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "visibility" => "public",
-          "status" =>
+          visibility: "public",
+          status:
             "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
         })
 

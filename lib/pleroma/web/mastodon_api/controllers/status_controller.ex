@@ -24,6 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(:skip_plug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action in [:index, :show])
 
   @unauthenticated_access %{fallback: :proceed_unauthenticated, scopes: []}
@@ -97,12 +98,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.StatusOperation
+
   @doc """
   GET `/api/v1/statuses?ids[]=1&ids[]=2`
 
   `ids` query param is required
   """
-  def index(%{assigns: %{user: user}} = conn, %{"ids" => ids} = params) do
+  def index(%{assigns: %{user: user}} = conn, %{ids: ids} = params) do
     limit = 100
 
     activities =
@@ -125,21 +128,29 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   Creates a scheduled status when `scheduled_at` param is present and it's far enough
   """
   def create(
-        %{assigns: %{user: user}} = conn,
-        %{"status" => _, "scheduled_at" => scheduled_at} = params
+        %{
+          assigns: %{user: user},
+          body_params: %{status: _, scheduled_at: scheduled_at} = params
+        } = conn,
+        _
       )
       when not is_nil(scheduled_at) do
-    params = Map.put(params, "in_reply_to_status_id", params["in_reply_to_id"])
+    params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
+
+    attrs = %{
+      params: Map.new(params, fn {key, value} -> {to_string(key), value} end),
+      scheduled_at: scheduled_at
+    }
 
     with {:far_enough, true} <- {:far_enough, ScheduledActivity.far_enough?(scheduled_at)},
-         attrs <- %{"params" => params, "scheduled_at" => scheduled_at},
          {:ok, scheduled_activity} <- ScheduledActivity.create(user, attrs) do
       conn
       |> put_view(ScheduledActivityView)
       |> render("show.json", scheduled_activity: scheduled_activity)
     else
       {:far_enough, _} ->
-        create(conn, Map.drop(params, ["scheduled_at"]))
+        params = Map.drop(params, [:scheduled_at])
+        create(%Plug.Conn{conn | body_params: params}, %{})
 
       error ->
         error
@@ -151,8 +162,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   Creates a regular status
   """
-  def create(%{assigns: %{user: user}} = conn, %{"status" => _} = params) do
-    params = Map.put(params, "in_reply_to_status_id", params["in_reply_to_id"])
+  def create(%{assigns: %{user: user}, body_params: %{status: _} = params} = conn, _) do
+    params = Map.put(params, :in_reply_to_status_id, params[:in_reply_to_id])
 
     with {:ok, activity} <- CommonAPI.post(user, params) do
       try_render(conn, "show.json",
@@ -169,12 +180,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     end
   end
 
-  def create(%{assigns: %{user: _user}} = conn, %{"media_ids" => _} = params) do
-    create(conn, Map.put(params, "status", ""))
+  def create(%{assigns: %{user: _user}, body_params: %{media_ids: _} = params} = conn, _) do
+    params = Map.put(params, :status, "")
+    create(%Plug.Conn{conn | body_params: params}, %{})
   end
 
   @doc "GET /api/v1/statuses/:id"
-  def show(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def show(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          true <- Visibility.visible_for_user?(activity, user) do
       try_render(conn, "show.json",
@@ -188,7 +200,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "DELETE /api/v1/statuses/:id"
-  def delete(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def delete(%{assigns: %{user: user}} = conn, %{id: id}) do
     with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
       json(conn, %{})
     else
@@ -198,7 +210,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/reblog"
-  def reblog(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id} = params) do
+  def reblog(%{assigns: %{user: user}, body_params: params} = conn, %{id: ap_id_or_id}) do
     with {:ok, announce, _activity} <- CommonAPI.repeat(ap_id_or_id, user, params),
          %Activity{} = announce <- Activity.normalize(announce.data) do
       try_render(conn, "show.json", %{activity: announce, for: user, as: :activity})
@@ -206,7 +218,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/unreblog"
-  def unreblog(%{assigns: %{user: user}} = conn, %{"id" => activity_id}) do
+  def unreblog(%{assigns: %{user: user}} = conn, %{id: activity_id}) do
     with {:ok, _unannounce} <- CommonAPI.unrepeat(activity_id, user),
          %Activity{} = activity <- Activity.get_by_id(activity_id) do
       try_render(conn, "show.json", %{activity: activity, for: user, as: :activity})
@@ -214,7 +226,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/favourite"
-  def favourite(%{assigns: %{user: user}} = conn, %{"id" => activity_id}) do
+  def favourite(%{assigns: %{user: user}} = conn, %{id: activity_id}) do
     with {:ok, _fav} <- CommonAPI.favorite(user, activity_id),
          %Activity{} = activity <- Activity.get_by_id(activity_id) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
@@ -222,7 +234,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/unfavourite"
-  def unfavourite(%{assigns: %{user: user}} = conn, %{"id" => activity_id}) do
+  def unfavourite(%{assigns: %{user: user}} = conn, %{id: activity_id}) do
     with {:ok, _unfav} <- CommonAPI.unfavorite(activity_id, user),
          %Activity{} = activity <- Activity.get_by_id(activity_id) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
@@ -230,21 +242,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/pin"
-  def pin(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
+  def pin(%{assigns: %{user: user}} = conn, %{id: ap_id_or_id}) do
     with {:ok, activity} <- CommonAPI.pin(ap_id_or_id, user) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
   end
 
   @doc "POST /api/v1/statuses/:id/unpin"
-  def unpin(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
+  def unpin(%{assigns: %{user: user}} = conn, %{id: ap_id_or_id}) do
     with {:ok, activity} <- CommonAPI.unpin(ap_id_or_id, user) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
     end
   end
 
   @doc "POST /api/v1/statuses/:id/bookmark"
-  def bookmark(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def bookmark(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
@@ -254,7 +266,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/unbookmark"
-  def unbookmark(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def unbookmark(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
@@ -264,7 +276,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/mute"
-  def mute_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def mute_conversation(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.add_mute(user, activity) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
@@ -272,7 +284,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "POST /api/v1/statuses/:id/unmute"
-  def unmute_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def unmute_conversation(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.remove_mute(user, activity) do
       try_render(conn, "show.json", activity: activity, for: user, as: :activity)
@@ -281,7 +293,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc "GET /api/v1/statuses/:id/card"
   @deprecated "https://github.com/tootsuite/mastodon/pull/11213"
-  def card(%{assigns: %{user: user}} = conn, %{"id" => status_id}) do
+  def card(%{assigns: %{user: user}} = conn, %{id: status_id}) do
     with %Activity{} = activity <- Activity.get_by_id(status_id),
          true <- Visibility.visible_for_user?(activity, user) do
       data = Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
@@ -292,7 +304,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "GET /api/v1/statuses/:id/favourited_by"
-  def favourited_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def favourited_by(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
          %Object{data: %{"likes" => likes}} <- Object.normalize(activity) do
@@ -312,7 +324,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "GET /api/v1/statuses/:id/reblogged_by"
-  def reblogged_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def reblogged_by(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          {:visible, true} <- {:visible, Visibility.visible_for_user?(activity, user)},
          %Object{data: %{"announcements" => announces, "id" => ap_id}} <-
@@ -344,7 +356,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   end
 
   @doc "GET /api/v1/statuses/:id/context"
-  def context(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def context(%{assigns: %{user: user}} = conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id(id) do
       activities =
         ActivityPub.fetch_activities_for_context(activity.data["context"], %{
@@ -359,11 +371,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc "GET /api/v1/favourites"
   def favourites(%{assigns: %{user: %User{} = user}} = conn, params) do
-    activities =
-      ActivityPub.fetch_favourites(
-        user,
-        Map.take(params, Pleroma.Pagination.page_keys())
-      )
+    params =
+      params
+      |> Map.new(fn {key, value} -> {to_string(key), value} end)
+      |> Map.take(Pleroma.Pagination.page_keys())
+
+    activities = ActivityPub.fetch_favourites(user, params)
 
     conn
     |> add_link_headers(activities)

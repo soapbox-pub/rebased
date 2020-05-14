@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityViewTest do
 
   test "A scheduled activity with a media attachment" do
     user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "hi"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "hi"})
 
     scheduled_at =
       NaiveDateTime.utc_now()
@@ -47,7 +47,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityViewTest do
     expected = %{
       id: to_string(scheduled_activity.id),
       media_attachments:
-        %{"media_ids" => [upload.id]}
+        %{media_ids: [upload.id]}
         |> Utils.attachments_from_ids()
         |> Enum.map(&StatusView.render("attachment.json", %{attachment: &1})),
       params: %{

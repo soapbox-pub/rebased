@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.ReportControllerTest do
   setup do
     target_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(target_user, %{"status" => "foobar"})
+    {:ok, activity} = CommonAPI.post(target_user, %{status: "foobar"})
 
     [target_user: target_user, activity: activity]
   end

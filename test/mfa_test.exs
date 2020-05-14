@@ -6,7 +6,6 @@ defmodule Pleroma.MFATest do
   use Pleroma.DataCase
 
   import Pleroma.Factory
-  alias Comeonin.Pbkdf2
   alias Pleroma.MFA
 
   describe "mfa_settings" do
@@ -31,8 +30,8 @@ defmodule Pleroma.MFATest do
       {:ok, [code1, code2]} = MFA.generate_backup_codes(user)
       updated_user = refresh_record(user)
       [hash1, hash2] = updated_user.multi_factor_authentication_settings.backup_codes
-      assert Pbkdf2.checkpw(code1, hash1)
-      assert Pbkdf2.checkpw(code2, hash2)
+      assert Pbkdf2.verify_pass(code1, hash1)
+      assert Pbkdf2.verify_pass(code2, hash2)
     end
   end
 

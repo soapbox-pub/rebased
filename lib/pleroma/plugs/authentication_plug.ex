@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Plugs.AuthenticationPlug do
-  alias Comeonin.Pbkdf2
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
 
@@ -17,8 +16,13 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
     :crypt.crypt(password, password_hash) == password_hash
   end
 
+  def checkpw(password, "$2" <> _ = password_hash) do
+    # Handle bcrypt passwords for Mastodon migration
+    Bcrypt.verify_pass(password, password_hash)
+  end
+
   def checkpw(password, "$pbkdf2" <> _ = password_hash) do
-    Pbkdf2.checkpw(password, password_hash)
+    Pbkdf2.verify_pass(password, password_hash)
   end
 
   def checkpw(_password, _password_hash) do
@@ -37,7 +41,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
         } = conn,
         _
       ) do
-    if Pbkdf2.checkpw(password, password_hash) do
+    if checkpw(password, password_hash) do
       conn
       |> assign(:user, auth_user)
       |> OAuthScopesPlug.skip_plug()
@@ -47,7 +51,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   end
 
   def call(%{assigns: %{auth_credentials: %{password: _}}} = conn, _) do
-    Pbkdf2.dummy_checkpw()
+    Pbkdf2.no_user_verify()
     conn
   end
 

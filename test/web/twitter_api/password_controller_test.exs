@@ -54,7 +54,7 @@ defmodule Pleroma.Web.TwitterAPI.PasswordControllerTest do
       assert response =~ "<h2>Password changed!</h2>"
 
       user = refresh_record(user)
-      assert Comeonin.Pbkdf2.checkpw("test", user.password_hash)
+      assert Pbkdf2.verify_pass("test", user.password_hash)
       assert Enum.empty?(Token.get_user_tokens(user))
     end
 

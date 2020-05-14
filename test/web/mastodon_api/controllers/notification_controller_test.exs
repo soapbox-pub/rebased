@@ -18,7 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
     {:ok, [_notification]} = Notification.create_notifications(activity)
 
     response =
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
 
     {:ok, [_notification]} = Notification.create_notifications(activity)
 
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
 
     {:ok, [notification]} = Notification.create_notifications(activity)
 
@@ -79,7 +79,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["write:notifications"])
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
 
     {:ok, [notification]} = Notification.create_notifications(activity)
 
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["write:notifications"])
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
 
     {:ok, [notification]} = Notification.create_notifications(activity)
 
@@ -112,7 +112,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["write:notifications", "read:notifications"])
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
 
     {:ok, [_notification]} = Notification.create_notifications(activity)
 
@@ -130,10 +130,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
 
-    {:ok, activity1} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-    {:ok, activity2} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-    {:ok, activity3} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-    {:ok, activity4} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+    {:ok, activity1} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
+    {:ok, activity2} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
+    {:ok, activity3} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
+    {:ok, activity4} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
 
     notification1_id = get_notification_id_by_activity(activity1)
     notification2_id = get_notification_id_by_activity(activity2)
@@ -173,16 +173,16 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       other_user = insert(:user)
 
       {:ok, public_activity} =
-        CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "public"})
+        CommonAPI.post(other_user, %{status: "@#{user.nickname}", visibility: "public"})
 
       {:ok, direct_activity} =
-        CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "direct"})
+        CommonAPI.post(other_user, %{status: "@#{user.nickname}", visibility: "direct"})
 
       {:ok, unlisted_activity} =
-        CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "unlisted"})
+        CommonAPI.post(other_user, %{status: "@#{user.nickname}", visibility: "unlisted"})
 
       {:ok, private_activity} =
-        CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "private"})
+        CommonAPI.post(other_user, %{status: "@#{user.nickname}", visibility: "private"})
 
       query = params_to_query(%{exclude_visibilities: ["public", "unlisted", "private"]})
       conn_res = get(conn, "/api/v1/notifications?" <> query)
@@ -213,17 +213,15 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       user = insert(:user)
       %{user: other_user, conn: conn} = oauth_access(["read:notifications"])
 
-      {:ok, public_activity} =
-        CommonAPI.post(other_user, %{"status" => ".", "visibility" => "public"})
+      {:ok, public_activity} = CommonAPI.post(other_user, %{status: ".", visibility: "public"})
 
       {:ok, direct_activity} =
-        CommonAPI.post(other_user, %{"status" => "@#{user.nickname}", "visibility" => "direct"})
+        CommonAPI.post(other_user, %{status: "@#{user.nickname}", visibility: "direct"})
 
       {:ok, unlisted_activity} =
-        CommonAPI.post(other_user, %{"status" => ".", "visibility" => "unlisted"})
+        CommonAPI.post(other_user, %{status: ".", visibility: "unlisted"})
 
-      {:ok, private_activity} =
-        CommonAPI.post(other_user, %{"status" => ".", "visibility" => "private"})
+      {:ok, private_activity} = CommonAPI.post(other_user, %{status: ".", visibility: "private"})
 
       {:ok, _} = CommonAPI.favorite(user, public_activity.id)
       {:ok, _} = CommonAPI.favorite(user, direct_activity.id)
@@ -279,11 +277,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       user = insert(:user)
       %{user: other_user, conn: conn} = oauth_access(["read:notifications"])
 
-      {:ok, public_activity} =
-        CommonAPI.post(other_user, %{"status" => ".", "visibility" => "public"})
+      {:ok, public_activity} = CommonAPI.post(other_user, %{status: ".", visibility: "public"})
 
       {:ok, unlisted_activity} =
-        CommonAPI.post(other_user, %{"status" => ".", "visibility" => "unlisted"})
+        CommonAPI.post(other_user, %{status: ".", visibility: "unlisted"})
 
       {:ok, _, _} = CommonAPI.repeat(public_activity.id, user)
       {:ok, _, _} = CommonAPI.repeat(unlisted_activity.id, user)
@@ -303,8 +300,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
 
-    {:ok, mention_activity} = CommonAPI.post(other_user, %{"status" => "hey @#{user.nickname}"})
-    {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
+    {:ok, mention_activity} = CommonAPI.post(other_user, %{status: "hey @#{user.nickname}"})
+    {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
     {:ok, favorite_activity} = CommonAPI.favorite(other_user, create_activity.id)
     {:ok, reblog_activity, _} = CommonAPI.repeat(create_activity.id, other_user)
     {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
@@ -341,8 +338,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
 
-    {:ok, mention_activity} = CommonAPI.post(other_user, %{"status" => "hey @#{user.nickname}"})
-    {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
+    {:ok, mention_activity} = CommonAPI.post(other_user, %{status: "hey @#{user.nickname}"})
+    {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
     {:ok, favorite_activity} = CommonAPI.favorite(other_user, create_activity.id)
     {:ok, reblog_activity, _} = CommonAPI.repeat(create_activity.id, other_user)
     {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
@@ -388,10 +385,10 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     %{user: user, conn: conn} = oauth_access(["read:notifications", "write:notifications"])
     other_user = insert(:user)
 
-    {:ok, activity1} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-    {:ok, activity2} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
-    {:ok, activity3} = CommonAPI.post(user, %{"status" => "hi @#{other_user.nickname}"})
-    {:ok, activity4} = CommonAPI.post(user, %{"status" => "hi @#{other_user.nickname}"})
+    {:ok, activity1} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
+    {:ok, activity2} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
+    {:ok, activity3} = CommonAPI.post(user, %{status: "hi @#{other_user.nickname}"})
+    {:ok, activity4} = CommonAPI.post(user, %{status: "hi @#{other_user.nickname}"})
 
     notification1_id = get_notification_id_by_activity(activity1)
     notification2_id = get_notification_id_by_activity(activity2)
@@ -435,7 +432,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     user2 = insert(:user)
 
     {:ok, _, _, _} = CommonAPI.follow(user, user2)
-    {:ok, _} = CommonAPI.post(user2, %{"status" => "hey @#{user.nickname}"})
+    {:ok, _} = CommonAPI.post(user2, %{status: "hey @#{user.nickname}"})
 
     ret_conn = get(conn, "/api/v1/notifications")
 
@@ -453,7 +450,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     user2 = insert(:user)
 
     {:ok, _, _, _} = CommonAPI.follow(user, user2)
-    {:ok, _} = CommonAPI.post(user2, %{"status" => "hey @#{user.nickname}"})
+    {:ok, _} = CommonAPI.post(user2, %{status: "hey @#{user.nickname}"})
 
     ret_conn = get(conn, "/api/v1/notifications")
 
@@ -471,7 +468,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     user2 = insert(:user)
 
     {:ok, _, _, _} = CommonAPI.follow(user, user2)
-    {:ok, _} = CommonAPI.post(user2, %{"status" => "hey @#{user.nickname}"})
+    {:ok, _} = CommonAPI.post(user2, %{status: "hey @#{user.nickname}"})
 
     ret_conn = get(conn, "/api/v1/notifications")
 
@@ -518,14 +515,14 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
       {:ok, activity1} =
         CommonAPI.post(other_user, %{
-          "status" => "hi @#{user.nickname}",
-          "visibility" => "public"
+          status: "hi @#{user.nickname}",
+          visibility: "public"
         })
 
       {:ok, activity2} =
         CommonAPI.post(other_user, %{
-          "status" => "hi @#{user.nickname}",
-          "visibility" => "public"
+          status: "hi @#{user.nickname}",
+          visibility: "public"
         })
 
       notification1 = Repo.get_by(Notification, activity_id: activity1.id)
@@ -550,8 +547,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       %{id: account_id} = other_user1 = insert(:user)
       other_user2 = insert(:user)
 
-      {:ok, _activity} = CommonAPI.post(other_user1, %{"status" => "hi @#{user.nickname}"})
-      {:ok, _activity} = CommonAPI.post(other_user2, %{"status" => "bye @#{user.nickname}"})
+      {:ok, _activity} = CommonAPI.post(other_user1, %{status: "hi @#{user.nickname}"})
+      {:ok, _activity} = CommonAPI.post(other_user2, %{status: "bye @#{user.nickname}"})
 
       assert [%{"account" => %{"id" => ^account_id}}] =
                conn

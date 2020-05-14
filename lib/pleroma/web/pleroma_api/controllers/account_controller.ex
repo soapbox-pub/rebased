@@ -19,6 +19,13 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   require Pleroma.Constants
 
   plug(
+    OpenApiSpex.Plug.PutApiSpec,
+    [module: Pleroma.Web.ApiSpec] when action == :confirmation_resend
+  )
+
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+
+  plug(
     :skip_plug,
     [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :confirmation_resend
   )
@@ -49,9 +56,11 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])
   plug(:put_view, Pleroma.Web.MastodonAPI.AccountView)
 
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaAccountOperation
+
   @doc "POST /api/v1/pleroma/accounts/confirmation_resend"
   def confirmation_resend(conn, params) do
-    nickname_or_email = params["email"] || params["nickname"]
+    nickname_or_email = params[:email] || params[:nickname]
 
     with %User{} = user <- User.get_by_nickname_or_email(nickname_or_email),
          {:ok, _} <- User.try_send_confirmation_email(user) do
@@ -60,7 +69,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   end
 
   @doc "PATCH /api/v1/pleroma/accounts/update_avatar"
-  def update_avatar(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
+  def update_avatar(%{assigns: %{user: user}, body_params: %{img: ""}} = conn, _) do
     {:ok, _user} =
       user
       |> Changeset.change(%{avatar: nil})
@@ -69,7 +78,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     json(conn, %{url: nil})
   end
 
-  def update_avatar(%{assigns: %{user: user}} = conn, params) do
+  def update_avatar(%{assigns: %{user: user}, body_params: params} = conn, _params) do
     {:ok, %{data: data}} = ActivityPub.upload(params, type: :avatar)
     {:ok, _user} = user |> Changeset.change(%{avatar: data}) |> User.update_and_set_cache()
     %{"url" => [%{"href" => href} | _]} = data
@@ -78,14 +87,14 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   end
 
   @doc "PATCH /api/v1/pleroma/accounts/update_banner"
-  def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
+  def update_banner(%{assigns: %{user: user}, body_params: %{banner: ""}} = conn, _) do
     with {:ok, _user} <- User.update_banner(user, %{}) do
       json(conn, %{url: nil})
     end
   end
 
-  def update_banner(%{assigns: %{user: user}} = conn, params) do
-    with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
+  def update_banner(%{assigns: %{user: user}, body_params: params} = conn, _) do
+    with {:ok, object} <- ActivityPub.upload(%{img: params[:banner]}, type: :banner),
          {:ok, _user} <- User.update_banner(user, object.data) do
       %{"url" => [%{"href" => href} | _]} = object.data
 
@@ -94,13 +103,13 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   end
 
   @doc "PATCH /api/v1/pleroma/accounts/update_background"
-  def update_background(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
+  def update_background(%{assigns: %{user: user}, body_params: %{img: ""}} = conn, _) do
     with {:ok, _user} <- User.update_background(user, %{}) do
       json(conn, %{url: nil})
     end
   end
 
-  def update_background(%{assigns: %{user: user}} = conn, params) do
+  def update_background(%{assigns: %{user: user}, body_params: params} = conn, _) do
     with {:ok, object} <- ActivityPub.upload(params, type: :background),
          {:ok, _user} <- User.update_background(user, object.data) do
       %{"url" => [%{"href" => href} | _]} = object.data
@@ -117,6 +126,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   def favourites(%{assigns: %{user: for_user, account: user}} = conn, params) do
     params =
       params
+      |> Map.new(fn {key, value} -> {to_string(key), value} end)
       |> Map.put("type", "Create")
       |> Map.put("favorited_by", user.ap_id)
       |> Map.put("blocking_user", for_user)
