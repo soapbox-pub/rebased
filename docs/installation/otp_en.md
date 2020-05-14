@@ -27,15 +27,16 @@ Other than things bundled in the OTP release Pleroma depends on:
 * PostgreSQL (also utilizes extensions in postgresql-contrib)
 * nginx (could be swapped with another reverse proxy but this guide covers only it)
 * certbot (for Let's Encrypt certificates, could be swapped with another ACME client, but this guide covers only it)
+* libmagic/file
 
 ```sh tab="Alpine"
 echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
 apk update
-apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot
+apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot libmagic
 ```
 
 ```sh tab="Debian/Ubuntu"
-apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot
+apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot libmagic
 ```
 
 ## Setup

@@ -678,6 +678,8 @@ config :pleroma, :hackney_pools,
     timeout: 300_000
   ]
 
+config :pleroma, :gen_magic_pool, size: 2
+
 config :pleroma, :restrict_unauthenticated,
   timelines: %{local: false, federated: false},
   profiles: %{local: false, remote: false},

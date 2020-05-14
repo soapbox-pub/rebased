@@ -3325,5 +3325,19 @@ config :pleroma, :config_description, [
         suggestions: [false]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: :gen_magic_pool,
+    type: :group,
+    description: "GenMagic/libmagic configuration",
+    children: [
+      %{
+        key: :size,
+        type: :integer,
+        description: "Number of gen_magic workers to start.",
+        suggestions: [2]
+      }
+    ]
   }
 ]

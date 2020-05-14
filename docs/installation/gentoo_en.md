@@ -28,6 +28,7 @@ Gentoo quite pointedly does not come with a cron daemon installed, and as such i
 * `dev-db/postgresql`
 * `dev-lang/elixir`
 * `dev-vcs/git`
+* `sys-apps/file`
 
 #### Optional ebuilds used in this guide
 

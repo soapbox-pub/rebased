@@ -80,6 +80,7 @@ defmodule Pleroma.Application do
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
+          Pleroma.MIME,
           {Oban, Config.get(Oban)}
         ] ++
         task_children(@env) ++

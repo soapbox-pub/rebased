@@ -13,6 +13,7 @@ It assumes that you have administrative rights, either as root or a user with [s
 * `erlang-parsetools`
 * `erlang-xmerl`
 * `git`
+* `file-dev`
 * Development Tools
 
 #### Optional packages used in this guide

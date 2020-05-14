@@ -9,6 +9,7 @@ This guide will assume that you have administrative rights, either as root or a 
 * `elixir`
 * `git`
 * `base-devel`
+* `file`
 
 #### Optional packages used in this guide
 

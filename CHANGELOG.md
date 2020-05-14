@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - MFR policy to set global expiration for all local Create activities
 - OGP rich media parser merged with TwitterCard
+- **Breaking** Requires `libmagic` (or `file`) to guess file types.
 <details>
   <summary>API Changes</summary>
 - **Breaking:** Emoji API: changed methods and renamed routes.
