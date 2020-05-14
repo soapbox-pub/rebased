@@ -919,7 +919,8 @@ Example:
 ```elixir
 config :pleroma, :database_config_whitelist, [
   {:pleroma, :instance},
-  {:pleroma, Pleroma.Web.Metadata}
+  {:pleroma, Pleroma.Web.Metadata},
+  {:auto_linker}
 ]
 ```
 

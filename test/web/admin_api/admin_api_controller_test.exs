@@ -2948,7 +2948,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       clear_config(:database_config_whitelist, [
         {:pleroma, :key1},
         {:pleroma, :key2},
-        {:pleroma, Pleroma.Captcha.NotReal}
+        {:pleroma, Pleroma.Captcha.NotReal},
+        {:not_real}
       ])
 
       post(conn, "/api/pleroma/admin/config", %{
@@ -2957,7 +2958,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           %{group: ":pleroma", key: ":key2", value: "value2"},
           %{group: ":pleroma", key: ":key3", value: "value3"},
           %{group: ":pleroma", key: "Pleroma.Web.Endpoint.NotReal", value: "value4"},
-          %{group: ":pleroma", key: "Pleroma.Captcha.NotReal", value: "value5"}
+          %{group: ":pleroma", key: "Pleroma.Captcha.NotReal", value: "value5"},
+          %{group: ":not_real", key: ":anything", value: "value6"}
         ]
       })
 
@@ -2966,6 +2968,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert Application.get_env(:pleroma, :key3) == nil
       assert Application.get_env(:pleroma, Pleroma.Web.Endpoint.NotReal) == nil
       assert Application.get_env(:pleroma, Pleroma.Captcha.NotReal) == "value5"
+      assert Application.get_env(:not_real, :anything) == "value6"
     end
   end
 
@@ -3624,7 +3627,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       clear_config(:database_config_whitelist, [
         {:pleroma, :instance},
         {:pleroma, :activitypub},
-        {:pleroma, Pleroma.Upload}
+        {:pleroma, Pleroma.Upload},
+        {:esshd}
       ])
 
       admin = insert(:user, is_admin: true)
@@ -3635,9 +3639,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       children = json_response(conn, 200)
 
-      assert length(children) == 3
+      assert length(children) == 4
 
-      assert Enum.all?(children, fn c -> c["group"] == ":pleroma" end)
+      assert Enum.count(children, fn c -> c["group"] == ":pleroma" end) == 3
 
       instance = Enum.find(children, fn c -> c["key"] == ":instance" end)
       assert instance["children"]
@@ -3647,6 +3651,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       web_endpoint = Enum.find(children, fn c -> c["key"] == "Pleroma.Upload" end)
       assert web_endpoint["children"]
+
+      esshd = Enum.find(children, fn c -> c["group"] == ":esshd" end)
+      assert esshd["children"]
     end
   end
 

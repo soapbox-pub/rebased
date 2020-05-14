@@ -1015,8 +1015,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   defp whitelisted_config?(group, key) do
     if whitelisted_configs = Config.get(:database_config_whitelist) do
-      Enum.any?(whitelisted_configs, fn {whitelisted_group, whitelisted_key} ->
-        group == inspect(whitelisted_group) && key == inspect(whitelisted_key)
+      Enum.any?(whitelisted_configs, fn
+        {whitelisted_group} ->
+          group == inspect(whitelisted_group)
+
+        {whitelisted_group, whitelisted_key} ->
+          group == inspect(whitelisted_group) && key == inspect(whitelisted_key)
       end)
     else
       true
