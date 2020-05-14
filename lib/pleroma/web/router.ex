@@ -231,7 +231,8 @@ defmodule Pleroma.Web.Router do
 
     # Pack info / downloading
     scope "/packs" do
-      get("/", EmojiAPIController, :list)
+      pipe_through(:api)
+      get("/", EmojiAPIController, :index)
       get("/:name", EmojiAPIController, :show)
       get("/:name/archive", EmojiAPIController, :archive)
     end

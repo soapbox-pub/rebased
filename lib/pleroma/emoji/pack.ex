@@ -443,10 +443,10 @@ defmodule Pleroma.Emoji.Pack do
     pack = load_pack(name)
 
     fb_sha_changed? =
-      not is_nil(data["fallback-src"]) and data["fallback-src"] != pack.pack["fallback-src"]
+      not is_nil(data[:"fallback-src"]) and data[:"fallback-src"] != pack.pack[:"fallback-src"]
 
     with {_, true} <- {:update?, fb_sha_changed?},
-         {:ok, %{body: zip}} <- Tesla.get(data["fallback-src"]),
+         {:ok, %{body: zip}} <- Tesla.get(data[:"fallback-src"]),
          {:ok, f_list} <- :zip.unzip(zip, [:memory]),
          {_, true} <- {:has_all_files?, has_all_files?(pack.files, f_list)} do
       fallback_sha = :crypto.hash(:sha256, zip) |> Base.encode16()

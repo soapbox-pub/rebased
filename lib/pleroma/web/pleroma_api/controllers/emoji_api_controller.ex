@@ -3,6 +3,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
 
   alias Pleroma.Emoji.Pack
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+
   plug(
     Pleroma.Plugs.OAuthScopesPlug,
     %{scopes: ["write"], admin: true}
@@ -19,13 +21,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
          ]
   )
 
-  plug(
-    :skip_plug,
-    [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug]
-    when action in [:archive, :show, :list]
-  )
+  @skip_plugs [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug]
+  plug(:skip_plug, @skip_plugs when action in [:archive, :show, :list])
 
-  def remote(conn, %{"url" => url}) do
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEmojiOperation
+
+  def remote(conn, %{url: url}) do
     with {:ok, packs} <- Pack.list_remote(url) do
       json(conn, packs)
     else
@@ -36,12 +37,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def list(conn, _params) do
+  def index(conn, _params) do
     emoji_path =
-      Path.join(
-        Pleroma.Config.get!([:instance, :static_dir]),
-        "emoji"
-      )
+      [:instance, :static_dir]
+      |> Pleroma.Config.get!()
+      |> Path.join("emoji")
 
     with {:ok, packs} <- Pack.list_local() do
       json(conn, packs)
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def show(conn, %{"name" => name}) do
+  def show(conn, %{name: name}) do
     name = String.trim(name)
 
     with {:ok, pack} <- Pack.show(name) do
@@ -78,7 +78,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def archive(conn, %{"name" => name}) do
+  def archive(conn, %{name: name}) do
     with {:ok, archive} <- Pack.get_archive(name) do
       send_download(conn, {:binary, archive}, filename: "#{name}.zip")
     else
@@ -97,8 +97,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def download(conn, %{"url" => url, "name" => name} = params) do
-    with :ok <- Pack.download(name, url, params["as"]) do
+  def download(%{body_params: %{url: url, name: name} = params} = conn, _) do
+    with :ok <- Pack.download(name, url, params[:as]) do
       json(conn, "ok")
     else
       {:shareable, _} ->
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def create(conn, %{"name" => name}) do
+  def create(conn, %{name: name}) do
     name = String.trim(name)
 
     with :ok <- Pack.create(name) do
@@ -143,7 +143,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def delete(conn, %{"name" => name}) do
+  def delete(conn, %{name: name}) do
     name = String.trim(name)
 
     with {:ok, deleted} when deleted != [] <- Pack.delete(name) do
@@ -166,7 +166,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def update(conn, %{"name" => name, "metadata" => metadata}) do
+  def update(%{body_params: %{metadata: metadata}} = conn, %{name: name}) do
     with {:ok, pack} <- Pack.update_metadata(name, metadata) do
       json(conn, pack.pack)
     else
@@ -184,11 +184,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def add_file(conn, %{"name" => name} = params) do
-    filename = params["filename"] || get_filename(params["file"])
-    shortcode = params["shortcode"] || Path.basename(filename, Path.extname(filename))
+  def add_file(%{body_params: params} = conn, %{name: name}) do
+    filename = params[:filename] || get_filename(params[:file])
+    shortcode = params[:shortcode] || Path.basename(filename, Path.extname(filename))
 
-    with {:ok, pack} <- Pack.add_file(name, shortcode, filename, params["file"]) do
+    with {:ok, pack} <- Pack.add_file(name, shortcode, filename, params[:file]) do
       json(conn, pack.files)
     else
       {:exists, _} ->
@@ -215,10 +215,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def update_file(conn, %{"name" => name, "shortcode" => shortcode} = params) do
-    new_shortcode = params["new_shortcode"]
-    new_filename = params["new_filename"]
-    force = params["force"] == true
+  def update_file(%{body_params: %{shortcode: shortcode} = params} = conn, %{name: name}) do
+    new_shortcode = params[:new_shortcode]
+    new_filename = params[:new_filename]
+    force = params[:force]
 
     with {:ok, pack} <- Pack.update_file(name, shortcode, new_shortcode, new_filename, force) do
       json(conn, pack.files)
@@ -255,7 +255,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def delete_file(conn, %{"name" => name, "shortcode" => shortcode}) do
+  def delete_file(conn, %{name: name, shortcode: shortcode}) do
     with {:ok, pack} <- Pack.delete_file(name, shortcode) do
       json(conn, pack.files)
     else

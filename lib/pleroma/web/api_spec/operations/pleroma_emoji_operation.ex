@@ -1,0 +1,390 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
+defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
+  alias OpenApiSpex.Operation
+  alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Schemas.ApiError
+
+  import Pleroma.Web.ApiSpec.Helpers
+
+  def open_api_operation(action) do
+    operation = String.to_existing_atom("#{action}_operation")
+    apply(__MODULE__, operation, [])
+  end
+
+  def remote_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Make request to another instance for emoji packs list",
+      security: [%{"oAuth" => ["write"]}],
+      parameters: [url_param()],
+      operationId: "PleromaAPI.EmojiAPIController.remote",
+      responses: %{
+        200 => emoji_packs_response(),
+        500 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def index_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Lists local custom emoji packs",
+      operationId: "PleromaAPI.EmojiAPIController.index",
+      responses: %{
+        200 => emoji_packs_response()
+      }
+    }
+  end
+
+  def show_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Show emoji pack",
+      operationId: "PleromaAPI.EmojiAPIController.show",
+      parameters: [name_param()],
+      responses: %{
+        200 => Operation.response("Emoji Pack", "application/json", emoji_pack()),
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def archive_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Requests a local pack archive from the instance",
+      operationId: "PleromaAPI.EmojiAPIController.archive",
+      parameters: [name_param()],
+      responses: %{
+        200 =>
+          Operation.response("Archive file", "application/octet-stream", %Schema{
+            type: :string,
+            format: :binary
+          }),
+        403 => Operation.response("Forbidden", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def download_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Download pack from another instance",
+      operationId: "PleromaAPI.EmojiAPIController.download",
+      security: [%{"oAuth" => ["write"]}],
+      requestBody: request_body("Parameters", download_request(), required: true),
+      responses: %{
+        200 => ok_response(),
+        500 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp download_request do
+    %Schema{
+      type: :object,
+      required: [:url, :name],
+      properties: %{
+        url: %Schema{
+          type: :string,
+          format: :uri,
+          description: "URL of the instance to download from"
+        },
+        name: %Schema{type: :string, format: :uri, description: "Pack Name"},
+        as: %Schema{type: :string, format: :uri, description: "Save as"}
+      }
+    }
+  end
+
+  def create_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Create an empty pack",
+      operationId: "PleromaAPI.EmojiAPIController.create",
+      security: [%{"oAuth" => ["write"]}],
+      parameters: [name_param()],
+      responses: %{
+        200 => ok_response(),
+        400 => Operation.response("Not Found", "application/json", ApiError),
+        409 => Operation.response("Conflict", "application/json", ApiError),
+        500 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def delete_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Delete a custom emoji pack",
+      operationId: "PleromaAPI.EmojiAPIController.delete",
+      security: [%{"oAuth" => ["write"]}],
+      parameters: [name_param()],
+      responses: %{
+        200 => ok_response(),
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def update_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Updates (replaces) pack metadata",
+      operationId: "PleromaAPI.EmojiAPIController.update",
+      security: [%{"oAuth" => ["write"]}],
+      requestBody: request_body("Parameters", update_request(), required: true),
+      parameters: [name_param()],
+      responses: %{
+        200 => Operation.response("Metadata", "application/json", metadata()),
+        400 => Operation.response("Bad Request", "application/json", ApiError)
+      }
+    }
+  end
+
+  def add_file_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Add new file to the pack",
+      operationId: "PleromaAPI.EmojiAPIController.add_file",
+      security: [%{"oAuth" => ["write"]}],
+      requestBody: request_body("Parameters", add_file_request(), required: true),
+      parameters: [name_param()],
+      responses: %{
+        200 => Operation.response("Files Object", "application/json", files_object()),
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        409 => Operation.response("Conflict", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp add_file_request do
+    %Schema{
+      type: :object,
+      required: [:file],
+      properties: %{
+        file: %Schema{
+          description:
+            "File needs to be uploaded with the multipart request or link to remote file",
+          anyOf: [
+            %Schema{type: :string, format: :binary},
+            %Schema{type: :string, format: :uri}
+          ]
+        },
+        shortcode: %Schema{
+          type: :string,
+          description:
+            "Shortcode for new emoji, must be uniq for all emoji. If not sended, shortcode will be taken from original filename."
+        },
+        filename: %Schema{
+          type: :string,
+          description:
+            "New emoji file name. If not specified will be taken from original filename."
+        }
+      }
+    }
+  end
+
+  def update_file_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Add new file to the pack",
+      operationId: "PleromaAPI.EmojiAPIController.update_file",
+      security: [%{"oAuth" => ["write"]}],
+      requestBody: request_body("Parameters", update_file_request(), required: true),
+      parameters: [name_param()],
+      responses: %{
+        200 => Operation.response("Files Object", "application/json", files_object()),
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        409 => Operation.response("Conflict", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp update_file_request do
+    %Schema{
+      type: :object,
+      required: [:shortcode, :new_shortcode, :new_filename],
+      properties: %{
+        shortcode: %Schema{
+          type: :string,
+          description: "Emoji file shortcode"
+        },
+        new_shortcode: %Schema{
+          type: :string,
+          description: "New emoji file shortcode"
+        },
+        new_filename: %Schema{
+          type: :string,
+          description: "New filename for emoji file"
+        },
+        force: %Schema{
+          type: :boolean,
+          description: "With true value to overwrite existing emoji with new shortcode",
+          default: false
+        }
+      }
+    }
+  end
+
+  def delete_file_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Delete emoji file from pack",
+      operationId: "PleromaAPI.EmojiAPIController.delete_file",
+      security: [%{"oAuth" => ["write"]}],
+      parameters: [
+        name_param(),
+        Operation.parameter(:shortcode, :query, :string, "File shortcode",
+          example: "cofe",
+          required: true
+        )
+      ],
+      responses: %{
+        200 => Operation.response("Files Object", "application/json", files_object()),
+        400 => Operation.response("Bad Request", "application/json", ApiError)
+      }
+    }
+  end
+
+  def import_from_filesystem_operation do
+    %Operation{
+      tags: ["Emoji Packs"],
+      summary: "Imports packs from filesystem",
+      operationId: "PleromaAPI.EmojiAPIController.import",
+      security: [%{"oAuth" => ["write"]}],
+      responses: %{
+        200 =>
+          Operation.response("Array of imported pack names", "application/json", %Schema{
+            type: :array,
+            items: %Schema{type: :string}
+          })
+      }
+    }
+  end
+
+  defp name_param do
+    Operation.parameter(:name, :path, :string, "Pack Name", example: "cofe", required: true)
+  end
+
+  defp url_param do
+    Operation.parameter(
+      :url,
+      :query,
+      %Schema{type: :string, format: :uri},
+      "URL of the instance",
+      required: true
+    )
+  end
+
+  defp ok_response do
+    Operation.response("Ok", "application/json", %Schema{type: :string, example: "ok"})
+  end
+
+  defp emoji_packs_response do
+    Operation.response(
+      "Object with pack names as keys and pack contents as values",
+      "application/json",
+      %Schema{
+        type: :object,
+        additionalProperties: emoji_pack(),
+        example: %{
+          "emojos" => emoji_pack().example
+        }
+      }
+    )
+  end
+
+  defp emoji_pack do
+    %Schema{
+      title: "EmojiPack",
+      type: :object,
+      properties: %{
+        files: files_object(),
+        pack: %Schema{
+          type: :object,
+          properties: %{
+            license: %Schema{type: :string},
+            homepage: %Schema{type: :string, format: :uri},
+            description: %Schema{type: :string},
+            "can-download": %Schema{type: :boolean},
+            "share-files": %Schema{type: :boolean},
+            "download-sha256": %Schema{type: :string}
+          }
+        }
+      },
+      example: %{
+        "files" => %{"emacs" => "emacs.png", "guix" => "guix.png"},
+        "pack" => %{
+          "license" => "Test license",
+          "homepage" => "https://pleroma.social",
+          "description" => "Test description",
+          "can-download" => true,
+          "share-files" => true,
+          "download-sha256" => "57482F30674FD3DE821FF48C81C00DA4D4AF1F300209253684ABA7075E5FC238"
+        }
+      }
+    }
+  end
+
+  defp files_object do
+    %Schema{
+      type: :object,
+      additionalProperties: %Schema{type: :string},
+      description: "Object with emoji names as keys and filenames as values"
+    }
+  end
+
+  defp update_request do
+    %Schema{
+      type: :object,
+      properties: %{
+        metadata: %Schema{
+          type: :object,
+          description: "Metadata to replace the old one",
+          properties: %{
+            license: %Schema{type: :string},
+            homepage: %Schema{type: :string, format: :uri},
+            description: %Schema{type: :string},
+            "fallback-src": %Schema{
+              type: :string,
+              format: :uri,
+              description: "Fallback url to download pack from"
+            },
+            "fallback-src-sha256": %Schema{
+              type: :string,
+              description: "SHA256 encoded for fallback pack archive"
+            },
+            "share-files": %Schema{type: :boolean, description: "Is pack allowed for sharing?"}
+          }
+        }
+      }
+    }
+  end
+
+  defp metadata do
+    %Schema{
+      type: :object,
+      properties: %{
+        license: %Schema{type: :string},
+        homepage: %Schema{type: :string, format: :uri},
+        description: %Schema{type: :string},
+        "fallback-src": %Schema{
+          type: :string,
+          format: :uri,
+          description: "Fallback url to download pack from"
+        },
+        "fallback-src-sha256": %Schema{
+          type: :string,
+          description: "SHA256 encoded for fallback pack archive"
+        },
+        "share-files": %Schema{type: :boolean, description: "Is pack allowed for sharing?"}
+      }
+    }
+  end
+end
