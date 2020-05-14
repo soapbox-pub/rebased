@@ -119,7 +119,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
   def unsubscribe_operation do
     %Operation{
       tags: ["Accounts"],
-      summary: "Unsubscribe to stop receiving notifications from user statuses¶",
+      summary: "Unsubscribe to stop receiving notifications from user statuses",
       operationId: "PleromaAPI.AccountController.unsubscribe",
       parameters: [id_param()],
       security: [%{"oAuth" => ["follow", "write:follows"]}],
