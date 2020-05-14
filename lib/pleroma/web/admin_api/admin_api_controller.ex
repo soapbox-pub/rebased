@@ -892,14 +892,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def config_descriptions(conn, _params) do
-    descriptions_json =
-      @descriptions
-      |> Enum.filter(&whitelisted_config?/1)
-      |> Jason.encode!()
+    descriptions = Enum.filter(@descriptions, &whitelisted_config?/1)
 
-    conn
-    |> Plug.Conn.put_resp_content_type("application/json")
-    |> Plug.Conn.send_resp(200, descriptions_json)
+    json(conn, descriptions)
   end
 
   def config_show(conn, %{"only_db" => true}) do
@@ -954,7 +949,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def config_update(conn, %{"configs" => configs}) do
     with :ok <- configurable_from_database(conn) do
       {_errors, results} =
-        Enum.filter(configs, &whitelisted_config?/1)
+        configs
+        |> Enum.filter(&whitelisted_config?/1)
         |> Enum.map(fn
           %{"group" => group, "key" => key, "delete" => true} = params ->
             ConfigDB.delete(%{group: group, key: key, subkeys: params["subkeys"]})
