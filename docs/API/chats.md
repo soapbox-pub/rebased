@@ -68,7 +68,8 @@ Returned data:
   },
   "id" : "1",
   "unread" : 2,
-  "last_message" : {...} // The last message in that chat
+  "last_message" : {...}, // The last message in that chat
+  "updated_at": "2020-04-21T15:11:46.000Z"
 }
 ```
 
@@ -88,7 +89,8 @@ Returned data:
     ...
   },
   "id" : "1",
-  "unread" : 0
+  "unread" : 0,
+  "updated_at": "2020-04-21T15:11:46.000Z"
 }
 ```
 
@@ -112,7 +114,8 @@ Returned data:
       },
       "id" : "1",
       "unread" : 2,
-      "last_message" : {...} // The last message in that chat
+      "last_message" : {...}, // The last message in that chat
+      "updated_at": "2020-04-21T15:11:46.000Z"
    }
 ]
 ```
