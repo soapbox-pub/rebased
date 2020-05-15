@@ -17,7 +17,8 @@ defmodule Pleroma.Constants do
       "announcement_count",
       "emoji",
       "context_id",
-      "deleted_activity_id"
+      "deleted_activity_id",
+      "pleroma_internal"
     ]
   )
 

@@ -127,6 +127,7 @@ defmodule Pleroma.Mixfile do
       {:oban, "~> 1.2"},
       {:gettext, "~> 0.15"},
       {:pbkdf2_elixir, "~> 1.0"},
+      {:bcrypt_elixir, "~> 2.0"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.1"},
       {:html_entities, "~> 0.5", override: true},

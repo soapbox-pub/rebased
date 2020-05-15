@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Auth.TOTPAuthenticator do
   alias Pleroma.MFA
   alias Pleroma.MFA.TOTP
+  alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.User
 
   @doc "Verify code or check backup code."
@@ -30,7 +31,7 @@ defmodule Pleroma.Web.Auth.TOTPAuthenticator do
         code
       )
       when is_list(codes) and is_binary(code) do
-    hash_code = Enum.find(codes, fn hash -> Pbkdf2.verify_pass(code, hash) end)
+    hash_code = Enum.find(codes, fn hash -> AuthenticationPlug.checkpw(code, hash) end)
 
     if hash_code do
       MFA.invalidate_backup_code(user, hash_code)

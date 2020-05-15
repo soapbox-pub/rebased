@@ -951,7 +951,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     test "works with base64 encoded images" do
       file = %{
-        "img" => data_uri()
+        img: data_uri()
       }
 
       {:ok, %Object{}} = ActivityPub.upload(file)

@@ -105,7 +105,11 @@ defmodule Pleroma.Web.ApiSpec.AppOperation do
           description: "Space separated list of scopes",
           default: "read"
         },
-        website: %Schema{type: :string, description: "A URL to the homepage of your app"}
+        website: %Schema{
+          type: :string,
+          nullable: true,
+          description: "A URL to the homepage of your app"
+        }
       },
       required: [:client_name, :redirect_uris],
       example: %{
