@@ -143,6 +143,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
       type: :object,
       properties: %{
         img: %Schema{
+          nullable: true,
           type: :string,
           format: :binary,
           description: "Image encoded using `multipart/form-data` or an empty string to clear"
@@ -158,6 +159,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
       properties: %{
         banner: %Schema{
           type: :string,
+          nullable: true,
           format: :binary,
           description: "Image encoded using `multipart/form-data` or an empty string to clear"
         }

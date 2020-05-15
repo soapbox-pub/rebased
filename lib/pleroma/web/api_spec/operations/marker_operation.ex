@@ -110,14 +110,16 @@ defmodule Pleroma.Web.ApiSpec.MarkerOperation do
       properties: %{
         notifications: %Schema{
           type: :object,
+          nullable: true,
           properties: %{
-            last_read_id: %Schema{type: :string}
+            last_read_id: %Schema{nullable: true, type: :string}
           }
         },
         home: %Schema{
           type: :object,
+          nullable: true,
           properties: %{
-            last_read_id: %Schema{type: :string}
+            last_read_id: %Schema{nullable: true, type: :string}
           }
         }
       },
