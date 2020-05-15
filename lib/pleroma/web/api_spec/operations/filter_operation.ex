@@ -199,12 +199,14 @@ defmodule Pleroma.Web.ApiSpec.FilterOperation do
             "Array of enumerable strings `home`, `notifications`, `public`, `thread`. At least one context must be specified."
         },
         irreversible: %Schema{
-          type: :bolean,
+          type: :boolean,
+          nullable: true,
           description:
             "Should the server irreversibly drop matching entities from home and notifications?"
         },
         whole_word: %Schema{
-          type: :bolean,
+          type: :boolean,
+          nullable: true,
           description: "Consider word boundaries?",
           default: true
         }
