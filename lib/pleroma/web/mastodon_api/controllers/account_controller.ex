@@ -221,7 +221,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   @doc "GET /api/v1/accounts/:id"
   def show(%{assigns: %{user: for_user}} = conn, %{id: nickname_or_id}) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id, for: for_user),
-         true <- User.visible_for(user, for_user) do
+         :visible <- User.visible_for(user, for_user) do
       render(conn, "show.json", user: user, for: for_user)
     else
       error -> user_visibility_error(conn, error)
@@ -231,7 +231,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   @doc "GET /api/v1/accounts/:id/statuses"
   def statuses(%{assigns: %{user: reading_user}} = conn, params) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(params.id, for: reading_user),
-         true <- User.visible_for(user, reading_user) do
+         :visible <- User.visible_for(user, reading_user) do
       params =
         params
         |> Map.delete(:tagged)

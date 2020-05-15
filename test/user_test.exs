@@ -1293,7 +1293,7 @@ defmodule Pleroma.UserTest do
     test "returns true when the account is itself" do
       user = insert(:user, local: true)
 
-      assert User.visible_for(user, user)
+      assert User.visible_for(user, user) == :visible
     end
 
     test "returns false when the account is unauthenticated and auth is required" do
@@ -1302,14 +1302,14 @@ defmodule Pleroma.UserTest do
       user = insert(:user, local: true, confirmation_pending: true)
       other_user = insert(:user, local: true)
 
-      refute User.visible_for(user, other_user) == true
+      refute User.visible_for(user, other_user) == :visible
     end
 
     test "returns true when the account is unauthenticated and auth is not required" do
       user = insert(:user, local: true, confirmation_pending: true)
       other_user = insert(:user, local: true)
 
-      assert User.visible_for(user, other_user)
+      assert User.visible_for(user, other_user) == :visible
     end
 
     test "returns true when the account is unauthenticated and being viewed by a privileged account (auth required)" do
@@ -1318,7 +1318,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user, local: true, confirmation_pending: true)
       other_user = insert(:user, local: true, is_admin: true)
 
-      assert User.visible_for(user, other_user)
+      assert User.visible_for(user, other_user) == :visible
     end
   end
 

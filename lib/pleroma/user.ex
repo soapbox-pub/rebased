@@ -272,7 +272,7 @@ defmodule Pleroma.User do
   def account_status(%User{}), do: :active
 
   @spec visible_for(User.t(), User.t() | nil) ::
-          boolean()
+          :visible
           | :invisible
           | :restricted_unauthenticated
           | :deactivated
@@ -281,7 +281,7 @@ defmodule Pleroma.User do
 
   def visible_for(%User{invisible: true}, _), do: :invisible
 
-  def visible_for(%User{id: user_id}, %User{id: user_id}), do: true
+  def visible_for(%User{id: user_id}, %User{id: user_id}), do: :visible
 
   def visible_for(%User{} = user, nil) do
     if restrict_unauthenticated?(user) do
@@ -292,10 +292,14 @@ defmodule Pleroma.User do
   end
 
   def visible_for(%User{} = user, for_user) do
-    superuser?(for_user) || visible_account_status(user)
+    if superuser?(for_user) do
+      :visible
+    else
+      visible_account_status(user)
+    end
   end
 
-  def visible_for(_, _), do: false
+  def visible_for(_, _), do: :invisible
 
   defp restrict_unauthenticated?(%User{local: local}) do
     config_key = if local, do: :local, else: :remote
@@ -305,7 +309,12 @@ defmodule Pleroma.User do
 
   defp visible_account_status(user) do
     status = account_status(user)
-    status in [:active, :password_reset_pending] || status
+
+    if status in [:active, :password_reset_pending] do
+      :visible
+    else
+      status
+    end
   end
 
   @spec superuser?(User.t()) :: boolean()
