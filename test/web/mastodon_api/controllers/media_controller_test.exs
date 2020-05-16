@@ -11,7 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
 
   setup do: oauth_access(["write:media"])
 
-  describe "media upload" do
+  describe "Upload media" do
     setup do
       image = %Plug.Upload{
         content_type: "image/jpg",
@@ -25,13 +25,14 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     setup do: clear_config([:media_proxy])
     setup do: clear_config([Pleroma.Upload])
 
-    test "returns uploaded image", %{conn: conn, image: image} do
+    test "/api/v1/media", %{conn: conn, image: image} do
       desc = "Description of the image"
 
       media =
         conn
+        |> put_req_header("content-type", "multipart/form-data")
         |> post("/api/v1/media", %{"file" => image, "description" => desc})
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert media["type"] == "image"
       assert media["description"] == desc
@@ -40,9 +41,32 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       object = Object.get_by_id(media["id"])
       assert object.data["actor"] == User.ap_id(conn.assigns[:user])
     end
+
+    test "/api/v2/media", %{conn: conn, image: image} do
+      desc = "Description of the image"
+
+      response =
+        conn
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/api/v2/media", %{"file" => image, "description" => desc})
+        |> json_response_and_validate_schema(202)
+
+      assert media_id = response["id"]
+
+      media =
+        conn
+        |> get("/api/v1/media/#{media_id}")
+        |> json_response_and_validate_schema(200)
+
+      assert media["type"] == "image"
+      assert media["description"] == desc
+      assert media["id"]
+      object = Object.get_by_id(media["id"])
+      assert object.data["actor"] == User.ap_id(conn.assigns[:user])
+    end
   end
 
-  describe "PUT /api/v1/media/:id" do
+  describe "Update media description" do
     setup %{user: actor} do
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -60,23 +84,45 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       [object: object]
     end
 
-    test "updates name of media", %{conn: conn, object: object} do
+    test "/api/v1/media/:id good request", %{conn: conn, object: object} do
       media =
         conn
+        |> put_req_header("content-type", "multipart/form-data")
         |> put("/api/v1/media/#{object.id}", %{"description" => "test-media"})
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert media["description"] == "test-media"
       assert refresh_record(object).data["name"] == "test-media"
     end
+  end
 
-    test "returns error when request is bad", %{conn: conn, object: object} do
+  describe "Get media by id" do
+    setup %{user: actor} do
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, %Object{} = object} =
+        ActivityPub.upload(
+          file,
+          actor: User.ap_id(actor),
+          description: "test-media"
+        )
+
+      [object: object]
+    end
+
+    test "/api/v1/media/:id", %{conn: conn, object: object} do
       media =
         conn
-        |> put("/api/v1/media/#{object.id}", %{})
-        |> json_response(400)
+        |> get("/api/v1/media/#{object.id}")
+        |> json_response_and_validate_schema(:ok)
 
-      assert media == %{"error" => "bad_request"}
+      assert media["description"] == "test-media"
+      assert media["type"] == "image"
+      assert media["id"]
     end
   end
 end

@@ -13,7 +13,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Attachment do
     type: :object,
     requried: [:id, :url, :preview_url],
     properties: %{
-      id: %Schema{type: :string},
+      id: %Schema{type: :string, description: "The ID of the attachment in the database."},
       url: %Schema{
         type: :string,
         format: :uri,
