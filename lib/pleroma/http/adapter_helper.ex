@@ -24,7 +24,6 @@ defmodule Pleroma.HTTP.AdapterHelper do
           | {Connection.proxy_type(), Connection.host(), pos_integer()}
 
   @callback options(keyword(), URI.t()) :: keyword()
-  @callback after_request(keyword()) :: :ok
   @callback get_conn(URI.t(), keyword()) :: {:ok, term()} | {:error, term()}
 
   @spec format_proxy(String.t() | tuple() | nil) :: proxy() | nil
@@ -66,9 +65,6 @@ defmodule Pleroma.HTTP.AdapterHelper do
 
     Keyword.merge(opts, timeout: timeout)
   end
-
-  @spec after_request(keyword()) :: :ok
-  def after_request(opts), do: adapter_helper().after_request(opts)
 
   def get_conn(uri, opts), do: adapter_helper().get_conn(uri, opts)
   defp adapter, do: Application.get_env(:tesla, :adapter)

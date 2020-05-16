@@ -69,14 +69,11 @@ defmodule Pleroma.HTTP do
         request = build_request(method, headers, options, url, body, params)
 
         adapter = Application.get_env(:tesla, :adapter)
-        client = Tesla.client([Tesla.Middleware.FollowRedirects], adapter)
+        client = Tesla.client([Pleroma.HTTP.Middleware.FollowRedirects], adapter)
 
-        response = request(client, request)
+        request(client, request)
 
-        AdapterHelper.after_request(adapter_opts)
-
-        response
-
+      # Connection release is handled in a custom FollowRedirects middleware
       err ->
         err
     end

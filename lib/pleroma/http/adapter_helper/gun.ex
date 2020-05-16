@@ -34,15 +34,6 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     |> Keyword.merge(incoming_opts)
   end
 
-  @spec after_request(keyword()) :: :ok
-  def after_request(opts) do
-    if opts[:conn] && opts[:body_as] != :chunks do
-      ConnectionPool.release_conn(opts[:conn])
-    end
-
-    :ok
-  end
-
   defp add_scheme_opts(opts, %{scheme: "http"}), do: opts
 
   defp add_scheme_opts(opts, %{scheme: "https"}) do
