@@ -4,23 +4,127 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [unreleased]
+
 ### Changed
-- **Breaking:** BBCode and Markdown formatters will no longer return any `\n` and only use `<br/>` for newlines
+<details>
+  <summary>API Changes</summary>
+- **Breaking:** Emoji API: changed methods and renamed routes.
+</details>
 
 ### Removed
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
+- Instance: Extend `/api/v1/instance` with Pleroma-specific information.
 - NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
+- NodeInfo: `pleroma_emoji_reactions` to the `features` list.
 - Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
+- Configuration: Add `:database_config_whitelist` setting to whitelist settings which can be configured from AdminFE.
+- New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
+- Mix task to create trusted OAuth App.
+- Notifications: Added `follow_request` notification type.
+- Added `:reject_deletes` group to SimplePolicy
 <details>
   <summary>API Changes</summary>
+- Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
+- Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
+- Mastodon API: Add support for filtering replies in public and home timelines
+- Admin API: endpoints for create/update/delete OAuth Apps.
+- Admin API: endpoint for status view.
 </details>
+
+### Fixed
+- Support pagination in conversations API
+- **Breaking**: SimplePolicy `:reject` and `:accept` allow deletions again
+- Fix follower/blocks import when nicknames starts with @
+- Filtering of push notifications on activities from blocked domains
+- Resolving Peertube accounts with Webfinger
+
+## [Unreleased (patch)]
+
+### Fixed
+- Healthcheck reporting the number of memory currently used, rather than allocated in total
+- `InsertSkeletonsForDeletedUsers` failing on some instances 
+
+## [2.0.3] - 2020-05-02
+
+### Security
+- Disallow re-registration of previously deleted users, which allowed viewing direct messages addressed to them
+- Mastodon API: Fix `POST /api/v1/follow_requests/:id/authorize` allowing to force a follow from a local user even if they didn't request to follow
+- CSP: Sandbox uploads
+
+### Fixed
+- Notifications from blocked domains
+- Potential federation issues with Mastodon versions before 3.0.0
+- HTTP Basic Authentication permissions issue
+- Follow/Block imports not being able to find the user if the nickname started with an `@`
+- Instance stats counting internal users
+- Inability to run a From Source release without git
+- ObjectAgePolicy didn't filter out old messages
+- `blob:` urls not being allowed by CSP
+
+### Added
+- NodeInfo: ObjectAgePolicy settings to the `federation` list.
+- Follow request notifications
+<details>
+  <summary>API Changes</summary>
+- Admin API: `GET /api/pleroma/admin/need_reboot`.
+</details>
+
+### Upgrade notes
+
+1. Restart Pleroma
+2. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+
+
+## [2.0.2] - 2020-04-08
+### Added
+- Support for Funkwhale's `Audio` activity
+- Admin API: `PATCH /api/pleroma/admin/users/:nickname/update_credentials`
+
+### Fixed
+- Blocked/muted users still generating push notifications
+- Input textbox for bio ignoring newlines
+- OTP: Inability to use PostgreSQL databases with SSL
+- `user delete_activities` breaking when trying to delete already deleted posts
+- Incorrect URL for Funkwhale channels
+
+### Upgrade notes
+1. Restart Pleroma
+
+## [2.0.1] - 2020-03-15
+### Security
+- Static-FE: Fix remote posts not being sanitized
+
+### Fixed
+- 500 errors when no `Accept` header is present if Static-FE is enabled
+- Instance panel not being updated immediately due to wrong `Cache-Control` headers
+- Statuses posted with BBCode/Markdown having unncessary newlines in Pleroma-FE
+- OTP: Fix some settings not being migrated to in-database config properly
+- No `Cache-Control` headers on attachment/media proxy requests
+- Character limit enforcement being off by 1
+- Mastodon Streaming API: hashtag timelines not working
+
+### Changed
+- BBCode and Markdown formatters will no longer return any `\n` and only use `<br/>` for newlines
+- Mastodon API: Allow registration without email if email verification is not enabled
+
+### Upgrade notes
+#### Nginx only
+1. Remove `proxy_ignore_headers Cache-Control;` and `proxy_hide_header  Cache-Control;` from your config.
+
+#### Everyone
+1. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+2. Restart Pleroma
 
 ## [2.0.0] - 2019-03-08
 ### Security
-- Mastodon API: Fix being able to request enourmous amount of statuses in timelines leading to DoS. Now limited to 40 per request.
+- Mastodon API: Fix being able to request enormous amount of statuses in timelines leading to DoS. Now limited to 40 per request.
 
 ### Removed
 - **Breaking**: Removed 1.0+ deprecated configurations `Pleroma.Upload, :strip_exif` and `:instance, :dedupe_media`
@@ -64,7 +168,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Admin API: Return link alongside with token on password reset
 - **Breaking:** Admin API: `PUT /api/pleroma/admin/reports/:id` is now `PATCH /api/pleroma/admin/reports`, see admin_api.md for details
 - **Breaking:** `/api/pleroma/admin/users/invite_token` now uses `POST`, changed accepted params and returns full invite in json instead of only token string.
-- **Breaking** replying to reports is now "report notes", enpoint changed from `POST /api/pleroma/admin/reports/:id/respond` to `POST /api/pleroma/admin/reports/:id/notes`
+- **Breaking** replying to reports is now "report notes", endpoint changed from `POST /api/pleroma/admin/reports/:id/respond` to `POST /api/pleroma/admin/reports/:id/notes`
 - Mastodon API: stopped sanitizing display names, field names and subject fields since they are supposed to be treated as plaintext
 - Admin API: Return `total` when querying for reports
 - Mastodon API: Return `pleroma.direct_conversation_id` when creating a direct message (`POST /api/v1/statuses`)
@@ -74,10 +178,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `pleroma.thread_muted` to the Status entity
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
 - Mastodon API, streaming: Add `pleroma.direct_conversation_id` to the `conversation` stream event payload.
+- Mastodon API: Add `pleroma.unread_count` to the Marker entity
 - Admin API: Render whole status in grouped reports
 - Mastodon API: User timelines will now respect blocks, unless you are getting the user timeline of somebody you blocked (which would be empty otherwise).
 - Mastodon API: Favoriting / Repeating a post multiple times will now return the identical response every time. Before, executing that action twice would return an error ("already favorited") on the second try.
 - Mastodon API: Limit timeline requests to 3 per timeline per 500ms per user/ip by default.
+- Admin API: `PATCH /api/pleroma/admin/users/:nickname/credentials` and `GET /api/pleroma/admin/users/:nickname/credentials`
 </details>
 
 ### Added

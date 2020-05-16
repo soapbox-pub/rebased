@@ -11,7 +11,7 @@ defmodule Pleroma.BookmarkTest do
   describe "create/2" do
     test "with valid params" do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "Some cool information"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "Some cool information"})
       {:ok, bookmark} = Bookmark.create(user.id, activity.id)
       assert bookmark.user_id == user.id
       assert bookmark.activity_id == activity.id
@@ -32,7 +32,7 @@ defmodule Pleroma.BookmarkTest do
     test "with valid params" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "Some cool information"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "Some cool information"})
       {:ok, _bookmark} = Bookmark.create(user.id, activity.id)
 
       {:ok, _deleted_bookmark} = Bookmark.destroy(user.id, activity.id)
@@ -45,7 +45,7 @@ defmodule Pleroma.BookmarkTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" =>
+          status:
             "Scientists Discover The Secret Behind Tenshi Eating A Corndog Being So Cute – Science Daily"
         })
 

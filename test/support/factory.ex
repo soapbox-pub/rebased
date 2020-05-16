@@ -29,10 +29,12 @@ defmodule Pleroma.Factory do
       name: sequence(:name, &"Test テスト User #{&1}"),
       email: sequence(:email, &"user#{&1}@example.com"),
       nickname: sequence(:nickname, &"nick#{&1}"),
-      password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
+      password_hash: Pbkdf2.hash_pwd_salt("test"),
       bio: sequence(:bio, &"Tester Number #{&1}"),
       last_digest_emailed_at: NaiveDateTime.utc_now(),
-      notification_settings: %Pleroma.User.NotificationSetting{}
+      last_refreshed_at: NaiveDateTime.utc_now(),
+      notification_settings: %Pleroma.User.NotificationSetting{},
+      multi_factor_authentication_settings: %Pleroma.MFA.Settings{}
     }
 
     %{
@@ -294,7 +296,7 @@ defmodule Pleroma.Factory do
 
   def oauth_app_factory do
     %Pleroma.Web.OAuth.App{
-      client_name: "Some client",
+      client_name: sequence(:client_name, &"Some client #{&1}"),
       redirect_uris: "https://example.com/callback",
       scopes: ["read", "write", "follow", "push", "admin"],
       website: "https://example.com",
@@ -419,6 +421,15 @@ defmodule Pleroma.Factory do
       timeline: "notifications",
       lock_version: 0,
       last_read_id: "1"
+    }
+  end
+
+  def mfa_token_factory do
+    %Pleroma.MFA.Token{
+      token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false),
+      authorization: build(:oauth_authorization),
+      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10),
+      user: build(:user)
     }
   end
 end

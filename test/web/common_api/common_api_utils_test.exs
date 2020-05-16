@@ -7,7 +7,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.Endpoint
   use Pleroma.DataCase
 
   import ExUnit.CaptureLog
@@ -40,28 +39,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {:ok, user} = UserBuilder.insert()
       assert Utils.confirm_current_password(user, "test") == {:ok, user}
     end
-  end
-
-  test "parses emoji from name and bio" do
-    {:ok, user} = UserBuilder.insert(%{name: ":blank:", bio: ":firefox:"})
-
-    expected = [
-      %{
-        "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/emoji/Firefox.gif"},
-        "name" => ":firefox:"
-      },
-      %{
-        "type" => "Emoji",
-        "icon" => %{
-          "type" => "Image",
-          "url" => "#{Endpoint.url()}/emoji/blank.png"
-        },
-        "name" => ":blank:"
-      }
-    ]
-
-    assert expected == Utils.emoji_from_profile(user)
   end
 
   describe "format_input/3" do
@@ -159,11 +136,11 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
       assert output ==
-               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a data-user="#{
+               ~s(<p><strong>hello world</strong></p><p><em>another <span class="h-card"><a class="u-url mention" data-user="#{
                  user.id
-               }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a data-user="#{
+               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> and <span class="h-card"><a class="u-url mention" data-user="#{
                  user.id
-               }" class="u-url mention" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
+               }" href="http://foo.com/user__test" rel="ugc">@<span>user__test</span></a></span> <a href="http://google.com" rel="ugc">google.com</a> paragraph</em></p>)
     end
   end
 
@@ -251,7 +228,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "public", nil)
@@ -284,7 +261,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "unlisted", nil)
@@ -315,7 +292,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "private", nil)
@@ -345,7 +322,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "direct", nil)
@@ -355,26 +332,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       assert mentioned_user.ap_id in to
       assert third_user.ap_id in to
-    end
-  end
-
-  describe "get_by_id_or_ap_id/1" do
-    test "get activity by id" do
-      activity = insert(:note_activity)
-      %Pleroma.Activity{} = note = Utils.get_by_id_or_ap_id(activity.id)
-      assert note.id == activity.id
-    end
-
-    test "get activity by ap_id" do
-      activity = insert(:note_activity)
-      %Pleroma.Activity{} = note = Utils.get_by_id_or_ap_id(activity.data["object"])
-      assert note.id == activity.id
-    end
-
-    test "get activity by object when type isn't `Create` " do
-      activity = insert(:like_activity)
-      %Pleroma.Activity{} = like = Utils.get_by_id_or_ap_id(activity.id)
-      assert like.data["object"] == activity.data["object"]
     end
   end
 
@@ -472,6 +429,13 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       activity = insert(:note_activity, user: user, note: object)
       Pleroma.Repo.delete(object)
 
+      obj_url = activity.data["object"]
+
+      Tesla.Mock.mock(fn
+        %{method: :get, url: ^obj_url} ->
+          %Tesla.Env{status: 404, body: ""}
+      end)
+
       assert Utils.maybe_notify_mentioned_recipients(["test-test"], activity) == [
                "test-test"
              ]
@@ -499,8 +463,8 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       desc = Jason.encode!(%{object.id => "test-desc"})
 
       assert Utils.attachments_from_ids(%{
-               "media_ids" => ["#{object.id}"],
-               "descriptions" => desc
+               media_ids: ["#{object.id}"],
+               descriptions: desc
              }) == [
                Map.merge(object.data, %{"name" => "test-desc"})
              ]
@@ -508,7 +472,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
     test "returns attachments without descs" do
       object = insert(:note)
-      assert Utils.attachments_from_ids(%{"media_ids" => ["#{object.id}"]}) == [object.data]
+      assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}) == [object.data]
     end
 
     test "returns [] when not pass media_ids" do

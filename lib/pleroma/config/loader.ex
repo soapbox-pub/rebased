@@ -47,7 +47,7 @@ defmodule Pleroma.Config.Loader do
   @spec filter_group(atom(), keyword()) :: keyword()
   def filter_group(group, configs) do
     Enum.reject(configs[group], fn {key, _v} ->
-      key in @reject_keys or (group == :phoenix and key == :serve_endpoints)
+      key in @reject_keys or (group == :phoenix and key == :serve_endpoints) or group == :postgrex
     end)
   end
 end

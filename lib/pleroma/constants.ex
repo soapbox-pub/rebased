@@ -17,7 +17,13 @@ defmodule Pleroma.Constants do
       "announcement_count",
       "emoji",
       "context_id",
-      "deleted_activity_id"
+      "deleted_activity_id",
+      "pleroma_internal"
     ]
+  )
+
+  const(static_only_files,
+    do:
+      ~w(index.html robots.txt static static-fe finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc)
   )
 end

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
@@ -20,26 +20,38 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     :ok
   end
 
+  defp get_old_message do
+    File.read!("test/fixtures/mastodon-post-activity.json")
+    |> Poison.decode!()
+  end
+
+  defp get_new_message do
+    old_message = get_old_message()
+
+    new_object =
+      old_message
+      |> Map.get("object")
+      |> Map.put("published", DateTime.utc_now() |> DateTime.to_iso8601())
+
+    old_message
+    |> Map.put("object", new_object)
+  end
+
   describe "with reject action" do
     test "it rejects an old post" do
       Config.put([:mrf_object_age, :actions], [:reject])
 
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+      data = get_old_message()
 
-      {:reject, _} = ObjectAgePolicy.filter(data)
+      assert match?({:reject, _}, ObjectAgePolicy.filter(data))
     end
 
     test "it allows a new post" do
       Config.put([:mrf_object_age, :actions], [:reject])
 
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
-        |> Map.put("published", DateTime.utc_now() |> DateTime.to_iso8601())
+      data = get_new_message()
 
-      {:ok, _} = ObjectAgePolicy.filter(data)
+      assert match?({:ok, _}, ObjectAgePolicy.filter(data))
     end
   end
 
@@ -47,9 +59,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     test "it delists an old post" do
       Config.put([:mrf_object_age, :actions], [:delist])
 
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+      data = get_old_message()
 
       {:ok, _u} = User.get_or_fetch_by_ap_id(data["actor"])
 
@@ -61,14 +71,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     test "it allows a new post" do
       Config.put([:mrf_object_age, :actions], [:delist])
 
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
-        |> Map.put("published", DateTime.utc_now() |> DateTime.to_iso8601())
+      data = get_new_message()
 
       {:ok, _user} = User.get_or_fetch_by_ap_id(data["actor"])
 
-      {:ok, ^data} = ObjectAgePolicy.filter(data)
+      assert match?({:ok, ^data}, ObjectAgePolicy.filter(data))
     end
   end
 
@@ -76,9 +83,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     test "it strips followers collections from an old post" do
       Config.put([:mrf_object_age, :actions], [:strip_followers])
 
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
+      data = get_old_message()
 
       {:ok, user} = User.get_or_fetch_by_ap_id(data["actor"])
 
@@ -91,14 +96,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicyTest do
     test "it allows a new post" do
       Config.put([:mrf_object_age, :actions], [:strip_followers])
 
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
-        |> Map.put("published", DateTime.utc_now() |> DateTime.to_iso8601())
+      data = get_new_message()
 
       {:ok, _u} = User.get_or_fetch_by_ap_id(data["actor"])
 
-      {:ok, ^data} = ObjectAgePolicy.filter(data)
+      assert match?({:ok, ^data}, ObjectAgePolicy.filter(data))
     end
   end
 end

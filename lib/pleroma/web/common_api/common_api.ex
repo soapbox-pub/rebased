@@ -7,11 +7,14 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.ThreadMute
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
@@ -19,6 +22,26 @@ defmodule Pleroma.Web.CommonAPI do
   import Pleroma.Web.CommonAPI.Utils
 
   require Pleroma.Constants
+  require Logger
+
+  def unblock(blocker, blocked) do
+    with {_, %Activity{} = block} <- {:fetch_block, Utils.fetch_latest_block(blocker, blocked)},
+         {:ok, unblock_data, _} <- Builder.undo(blocker, block),
+         {:ok, unblock, _} <- Pipeline.common_pipeline(unblock_data, local: true) do
+      {:ok, unblock}
+    else
+      {:fetch_block, nil} ->
+        if User.blocks?(blocker, blocked) do
+          User.unblock(blocker, blocked)
+          {:ok, :no_activity}
+        else
+          {:error, :not_blocking}
+        end
+
+      e ->
+        e
+    end
+  end
 
   def follow(follower, followed) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
@@ -39,10 +62,10 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def accept_follow_request(follower, followed) do
-    with {:ok, follower} <- User.follow(follower, followed),
-         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+    with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follower} <- User.follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "accept"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept),
          {:ok, _activity} <-
            ActivityPub.accept(%{
              to: [follower.ap_id],
@@ -57,7 +80,8 @@ defmodule Pleroma.Web.CommonAPI do
   def reject_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, "reject"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_reject),
+         {:ok, _notifications} <- Notification.dismiss(follow_activity),
          {:ok, _activity} <-
            ActivityPub.reject(%{
              to: [follower.ap_id],
@@ -70,64 +94,124 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def delete(activity_id, user) do
-    with {_, %Activity{data: %{"object" => _}} = activity} <-
-           {:find_activity, Activity.get_by_id_with_object(activity_id)},
-         %Object{} = object <- Object.normalize(activity),
+    with {_, %Activity{data: %{"object" => _, "type" => "Create"}} = activity} <-
+           {:find_activity, Activity.get_by_id(activity_id)},
+         {_, %Object{} = object, _} <-
+           {:find_object, Object.normalize(activity, false), activity},
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
-         {:ok, _} <- unpin(activity_id, user),
-         {:ok, delete} <- ActivityPub.delete(object) do
+         {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
+         {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
       {:ok, delete}
     else
-      {:find_activity, _} -> {:error, :not_found}
-      _ -> {:error, dgettext("errors", "Could not delete")}
+      {:find_activity, _} ->
+        {:error, :not_found}
+
+      {:find_object, nil, %Activity{data: %{"actor" => actor, "object" => object}}} ->
+        # We have the create activity, but not the object, it was probably pruned.
+        # Insert a tombstone and try again
+        with {:ok, tombstone_data, _} <- Builder.tombstone(actor, object),
+             {:ok, _tombstone} <- Object.create(tombstone_data) do
+          delete(activity_id, user)
+        else
+          _ ->
+            Logger.error(
+              "Could not insert tombstone for missing object on deletion. Object is #{object}."
+            )
+
+            {:error, dgettext("errors", "Could not delete")}
+        end
+
+      _ ->
+        {:error, dgettext("errors", "Could not delete")}
     end
   end
 
-  def repeat(id_or_ap_id, user, params \\ %{}) do
-    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)},
-         object <- Object.normalize(activity),
-         announce_activity <- Utils.get_existing_announce(user.ap_id, object),
-         public <- public_announce?(object, params) do
+  def repeat(id, user, params \\ %{}) do
+    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id) do
+      object = Object.normalize(activity)
+      announce_activity = Utils.get_existing_announce(user.ap_id, object)
+      public = public_announce?(object, params)
+
       if announce_activity do
         {:ok, announce_activity, object}
       else
         ActivityPub.announce(user, object, nil, true, public)
       end
     else
-      {:find_activity, _} -> {:error, :not_found}
-      _ -> {:error, dgettext("errors", "Could not repeat")}
+      _ -> {:error, :not_found}
     end
   end
 
-  def unrepeat(id_or_ap_id, user) do
-    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)} do
-      object = Object.normalize(activity)
-      ActivityPub.unannounce(user, object)
+  def unrepeat(id, user) do
+    with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
+           {:find_activity, Activity.get_by_id(id)},
+         %Object{} = note <- Object.normalize(activity, false),
+         %Activity{} = announce <- Utils.get_existing_announce(user.ap_id, note),
+         {:ok, undo, _} <- Builder.undo(user, announce),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
+      {:ok, activity}
     else
       {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not unrepeat")}
     end
   end
 
-  def favorite(id_or_ap_id, user) do
-    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)},
-         object <- Object.normalize(activity),
-         like_activity <- Utils.get_existing_like(user.ap_id, object) do
-      if like_activity do
-        {:ok, like_activity, object}
-      else
-        ActivityPub.like(user, object)
-      end
-    else
-      {:find_activity, _} -> {:error, :not_found}
-      _ -> {:error, dgettext("errors", "Could not favorite")}
+  @spec favorite(User.t(), binary()) :: {:ok, Activity.t() | :already_liked} | {:error, any()}
+  def favorite(%User{} = user, id) do
+    case favorite_helper(user, id) do
+      {:ok, _} = res ->
+        res
+
+      {:error, :not_found} = res ->
+        res
+
+      {:error, e} ->
+        Logger.error("Could not favorite #{id}. Error: #{inspect(e, pretty: true)}")
+        {:error, dgettext("errors", "Could not favorite")}
     end
   end
 
-  def unfavorite(id_or_ap_id, user) do
-    with {_, %Activity{} = activity} <- {:find_activity, get_by_id_or_ap_id(id_or_ap_id)} do
-      object = Object.normalize(activity)
-      ActivityPub.unlike(user, object)
+  def favorite_helper(user, id) do
+    with {_, %Activity{object: object}} <- {:find_object, Activity.get_by_id_with_object(id)},
+         {_, {:ok, like_object, meta}} <- {:build_object, Builder.like(user, object)},
+         {_, {:ok, %Activity{} = activity, _meta}} <-
+           {:common_pipeline,
+            Pipeline.common_pipeline(like_object, Keyword.put(meta, :local, true))} do
+      {:ok, activity}
+    else
+      {:find_object, _} ->
+        {:error, :not_found}
+
+      {:common_pipeline,
+       {
+         :error,
+         {
+           :validate_object,
+           {
+             :error,
+             changeset
+           }
+         }
+       }} = e ->
+        if {:object, {"already liked by this actor", []}} in changeset.errors do
+          {:ok, :already_liked}
+        else
+          {:error, e}
+        end
+
+      e ->
+        {:error, e}
+    end
+  end
+
+  def unfavorite(id, user) do
+    with {_, %Activity{data: %{"type" => "Create"}} = activity} <-
+           {:find_activity, Activity.get_by_id(id)},
+         %Object{} = note <- Object.normalize(activity, false),
+         %Activity{} = like <- Utils.get_existing_like(user.ap_id, note),
+         {:ok, undo, _} <- Builder.undo(user, like),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
+      {:ok, activity}
     else
       {:find_activity, _} -> {:error, :not_found}
       _ -> {:error, dgettext("errors", "Could not unfavorite")}
@@ -136,8 +220,10 @@ defmodule Pleroma.Web.CommonAPI do
 
   def react_with_emoji(id, user, emoji) do
     with %Activity{} = activity <- Activity.get_by_id(id),
-         object <- Object.normalize(activity) do
-      ActivityPub.react_with_emoji(user, object, emoji)
+         object <- Object.normalize(activity),
+         {:ok, emoji_react, _} <- Builder.emoji_react(user, object, emoji),
+         {:ok, activity, _} <- Pipeline.common_pipeline(emoji_react, local: true) do
+      {:ok, activity}
     else
       _ ->
         {:error, dgettext("errors", "Could not add reaction emoji")}
@@ -145,8 +231,10 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def unreact_with_emoji(id, user, emoji) do
-    with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji) do
-      ActivityPub.unreact_with_emoji(user, reaction_activity.data["id"])
+    with %Activity{} = reaction_activity <- Utils.get_latest_reaction(id, user, emoji),
+         {:ok, undo, _} <- Builder.undo(user, reaction_activity),
+         {:ok, activity, _} <- Pipeline.common_pipeline(undo, local: true) do
+      {:ok, activity}
     else
       _ ->
         {:error, dgettext("errors", "Could not remove reaction emoji")}
@@ -208,7 +296,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def public_announce?(_, %{"visibility" => visibility})
+  def public_announce?(_, %{visibility: visibility})
       when visibility in ~w{public unlisted private direct},
       do: visibility in ~w(public unlisted)
 
@@ -218,11 +306,11 @@ defmodule Pleroma.Web.CommonAPI do
 
   def get_visibility(_, _, %Participation{}), do: {"direct", "direct"}
 
-  def get_visibility(%{"visibility" => visibility}, in_reply_to, _)
+  def get_visibility(%{visibility: visibility}, in_reply_to, _)
       when visibility in ~w{public unlisted private direct},
       do: {visibility, get_replied_to_visibility(in_reply_to)}
 
-  def get_visibility(%{"visibility" => "list:" <> list_id}, in_reply_to, _) do
+  def get_visibility(%{visibility: "list:" <> list_id}, in_reply_to, _) do
     visibility = {:list, String.to_integer(list_id)}
     {visibility, get_replied_to_visibility(in_reply_to)}
   end
@@ -280,7 +368,7 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def post(user, %{"status" => _} = data) do
+  def post(user, %{status: _} = data) do
     with {:ok, draft} <- Pleroma.Web.CommonAPI.ActivityDraft.create(user, data) do
       draft.changes
       |> ActivityPub.create(draft.preview?)
@@ -296,32 +384,12 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp maybe_create_activity_expiration(result, _), do: result
 
-  # Updates the emojis for a user based on their profile
-  def update(user) do
-    emoji = emoji_from_profile(user)
-    source_data = Map.put(user.source_data, "tag", emoji)
-
-    user =
-      case User.update_source_data(user, source_data) do
-        {:ok, user} -> user
-        _ -> user
-      end
-
-    ActivityPub.update(%{
-      local: true,
-      to: [Pleroma.Constants.as_public(), user.follower_address],
-      cc: [],
-      actor: user.ap_id,
-      object: Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
-    })
-  end
-
-  def pin(id_or_ap_id, %{ap_id: user_ap_id} = user) do
+  def pin(id, %{ap_id: user_ap_id} = user) do
     with %Activity{
            actor: ^user_ap_id,
            data: %{"type" => "Create"},
            object: %Object{data: %{"type" => object_type}}
-         } = activity <- get_by_id_or_ap_id(id_or_ap_id),
+         } = activity <- Activity.get_by_id_with_object(id),
          true <- object_type in ["Note", "Article", "Question"],
          true <- Visibility.is_public?(activity),
          {:ok, _user} <- User.add_pinnned_activity(user, activity) do
@@ -332,8 +400,8 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def unpin(id_or_ap_id, user) do
-    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
+  def unpin(id, user) do
+    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
          {:ok, _user} <- User.remove_pinnned_activity(user, activity) do
       {:ok, activity}
     else
@@ -358,12 +426,12 @@ defmodule Pleroma.Web.CommonAPI do
   def thread_muted?(%{id: nil} = _user, _activity), do: false
 
   def thread_muted?(user, activity) do
-    ThreadMute.check_muted(user.id, activity.data["context"]) != []
+    ThreadMute.exists?(user.id, activity.data["context"])
   end
 
-  def report(user, %{"account_id" => account_id} = data) do
-    with {:ok, account} <- get_reported_account(account_id),
-         {:ok, {content_html, _, _}} <- make_report_content_html(data["comment"]),
+  def report(user, data) do
+    with {:ok, account} <- get_reported_account(data.account_id),
+         {:ok, {content_html, _, _}} <- make_report_content_html(data[:comment]),
          {:ok, statuses} <- get_report_statuses(account, data) do
       ActivityPub.flag(%{
         context: Utils.generate_context_id(),
@@ -371,12 +439,10 @@ defmodule Pleroma.Web.CommonAPI do
         account: account,
         statuses: statuses,
         content: content_html,
-        forward: data["forward"] || false
+        forward: Map.get(data, :forward, false)
       })
     end
   end
-
-  def report(_user, _params), do: {:error, dgettext("errors", "Valid `account_id` required")}
 
   defp get_reported_account(account_id) do
     case User.get_cached_by_id(account_id) do
@@ -411,11 +477,11 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp toggle_sensitive(activity, %{"sensitive" => sensitive}) when sensitive in ~w(true false) do
-    toggle_sensitive(activity, %{"sensitive" => String.to_existing_atom(sensitive)})
+  defp toggle_sensitive(activity, %{sensitive: sensitive}) when sensitive in ~w(true false) do
+    toggle_sensitive(activity, %{sensitive: String.to_existing_atom(sensitive)})
   end
 
-  defp toggle_sensitive(%Activity{object: object} = activity, %{"sensitive" => sensitive})
+  defp toggle_sensitive(%Activity{object: object} = activity, %{sensitive: sensitive})
        when is_boolean(sensitive) do
     new_data = Map.put(object.data, "sensitive", sensitive)
 
@@ -429,7 +495,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   defp toggle_sensitive(activity, _), do: {:ok, activity}
 
-  defp set_visibility(activity, %{"visibility" => visibility}) do
+  defp set_visibility(activity, %{visibility: visibility}) do
     Utils.update_activity_visibility(activity, visibility)
   end
 

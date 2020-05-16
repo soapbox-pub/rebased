@@ -9,8 +9,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   alias Pleroma.Stats
   alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.Federator.Publisher
+  alias Pleroma.Web.MastodonAPI.InstanceView
 
   def schemas(conn, _params) do
     response = %{
@@ -34,50 +34,12 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   def raw_nodeinfo do
     stats = Stats.get_stats()
 
-    quarantined = Config.get([:instance, :quarantined_instances], [])
-
     staff_accounts =
       User.all_superusers()
       |> Enum.map(fn u -> u.ap_id end)
 
-    federation_response =
-      if Config.get([:instance, :mrf_transparency]) do
-        {:ok, data} = MRF.describe()
-
-        data
-        |> Map.merge(%{quarantined_instances: quarantined})
-      else
-        %{}
-      end
-      |> Map.put(:enabled, Config.get([:instance, :federating]))
-
-    features =
-      [
-        "pleroma_api",
-        "mastodon_api",
-        "mastodon_api_streaming",
-        "polls",
-        "pleroma_explicit_addressing",
-        "shareable_emoji_packs",
-        "multifetch",
-        "pleroma:api/v1/notifications:include_types_filter",
-        if Config.get([:media_proxy, :enabled]) do
-          "media_proxy"
-        end,
-        if Config.get([:gopher, :enabled]) do
-          "gopher"
-        end,
-        if Config.get([:chat, :enabled]) do
-          "chat"
-        end,
-        if Config.get([:instance, :allow_relay]) do
-          "relay"
-        end,
-        if Config.get([:instance, :safe_dm_mentions]) do
-          "safe_dm_mentions"
-        end
-      ]
-      |> Enum.filter(& &1)
+    features = InstanceView.features()
+    federation = InstanceView.federation()
 
     %{
       version: "2.0",
@@ -105,8 +67,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           enabled: false
         },
         staffAccounts: staff_accounts,
-        federation: federation_response,
-        characterLimit: Config.get([:instance, :limit]),
+        federation: federation,
         pollLimits: Config.get([:instance, :poll_limits]),
         postFormats: Config.get([:instance, :allowed_post_formats]),
         uploadLimits: %{

@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
@@ -17,7 +17,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
             reject: [],
             accept: [],
             avatar_removal: [],
-            banner_removal: []
+            banner_removal: [],
+            reject_deletes: []
           )
 
   describe "when :media_removal" do
@@ -382,6 +383,66 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
     end
   end
 
+  describe "when :reject_deletes is empty" do
+    setup do: Config.put([:mrf_simple, :reject_deletes], [])
+
+    test "it accepts deletions even from rejected servers" do
+      Config.put([:mrf_simple, :reject], ["remote.instance"])
+
+      deletion_message = build_remote_deletion_message()
+
+      assert SimplePolicy.filter(deletion_message) == {:ok, deletion_message}
+    end
+
+    test "it accepts deletions even from non-whitelisted servers" do
+      Config.put([:mrf_simple, :accept], ["non.matching.remote"])
+
+      deletion_message = build_remote_deletion_message()
+
+      assert SimplePolicy.filter(deletion_message) == {:ok, deletion_message}
+    end
+  end
+
+  describe "when :reject_deletes is not empty but it doesn't have a matching host" do
+    setup do: Config.put([:mrf_simple, :reject_deletes], ["non.matching.remote"])
+
+    test "it accepts deletions even from rejected servers" do
+      Config.put([:mrf_simple, :reject], ["remote.instance"])
+
+      deletion_message = build_remote_deletion_message()
+
+      assert SimplePolicy.filter(deletion_message) == {:ok, deletion_message}
+    end
+
+    test "it accepts deletions even from non-whitelisted servers" do
+      Config.put([:mrf_simple, :accept], ["non.matching.remote"])
+
+      deletion_message = build_remote_deletion_message()
+
+      assert SimplePolicy.filter(deletion_message) == {:ok, deletion_message}
+    end
+  end
+
+  describe "when :reject_deletes has a matching host" do
+    setup do: Config.put([:mrf_simple, :reject_deletes], ["remote.instance"])
+
+    test "it rejects the deletion" do
+      deletion_message = build_remote_deletion_message()
+
+      assert SimplePolicy.filter(deletion_message) == {:reject, nil}
+    end
+  end
+
+  describe "when :reject_deletes match with wildcard domain" do
+    setup do: Config.put([:mrf_simple, :reject_deletes], ["*.remote.instance"])
+
+    test "it rejects the deletion" do
+      deletion_message = build_remote_deletion_message()
+
+      assert SimplePolicy.filter(deletion_message) == {:reject, nil}
+    end
+  end
+
   defp build_local_message do
     %{
       "actor" => "#{Pleroma.Web.base_url()}/users/alice",
@@ -406,6 +467,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
         "type" => "Image"
       },
       "type" => "Person"
+    }
+  end
+
+  defp build_remote_deletion_message do
+    %{
+      "type" => "Delete",
+      "actor" => "https://remote.instance/users/bob"
     }
   end
 end

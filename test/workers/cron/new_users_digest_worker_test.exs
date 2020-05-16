@@ -15,7 +15,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
     admin = insert(:user, %{is_admin: true})
     user = insert(:user, %{inserted_at: yesterday})
     user2 = insert(:user, %{inserted_at: yesterday})
-    CommonAPI.post(user, %{"status" => "cofe"})
+    CommonAPI.post(user, %{status: "cofe"})
 
     NewUsersDigestWorker.perform(nil, nil)
     ObanHelpers.perform_all()
@@ -36,7 +36,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
     insert(:user, %{inserted_at: yesterday})
     user = insert(:user, %{inserted_at: yesterday})
 
-    CommonAPI.post(user, %{"status" => "cofe"})
+    CommonAPI.post(user, %{status: "cofe"})
 
     NewUsersDigestWorker.perform(nil, nil)
     ObanHelpers.perform_all()

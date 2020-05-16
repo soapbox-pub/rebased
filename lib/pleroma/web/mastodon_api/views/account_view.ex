@@ -5,21 +5,42 @@
 defmodule Pleroma.Web.MastodonAPI.AccountView do
   use Pleroma.Web, :view
 
+  alias Pleroma.FollowingRelationship
   alias Pleroma.User
+  alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MediaProxy
 
   def render("index.json", %{users: users} = opts) do
+    reading_user = opts[:for]
+
+    # Note: :skip_relationships option is currently intentionally not supported for accounts
+    relationships_opt =
+      cond do
+        Map.has_key?(opts, :relationships) ->
+          opts[:relationships]
+
+        is_nil(reading_user) ->
+          UserRelationship.view_relationships_option(nil, [])
+
+        true ->
+          UserRelationship.view_relationships_option(reading_user, users)
+      end
+
+    opts = Map.put(opts, :relationships, relationships_opt)
+
     users
     |> render_many(AccountView, "show.json", opts)
     |> Enum.filter(&Enum.any?/1)
   end
 
   def render("show.json", %{user: user} = opts) do
-    if User.visible_for?(user, opts[:for]),
-      do: do_render("show.json", opts),
-      else: %{}
+    if User.visible_for?(user, opts[:for]) do
+      do_render("show.json", opts)
+    else
+      %{}
+    end
   end
 
   def render("mention.json", %{user: user}) do
@@ -27,7 +48,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       id: to_string(user.id),
       acct: user.nickname,
       username: username_from_nickname(user.nickname),
-      url: User.profile_url(user)
+      url: user.uri || user.ap_id
     }
   end
 
@@ -35,27 +56,107 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     %{}
   end
 
-  def render("relationship.json", %{user: %User{} = user, target: %User{} = target}) do
-    follow_state = User.get_follow_state(user, target)
+  def render(
+        "relationship.json",
+        %{user: %User{} = reading_user, target: %User{} = target} = opts
+      ) do
+    user_relationships = get_in(opts, [:relationships, :user_relationships])
+    following_relationships = get_in(opts, [:relationships, :following_relationships])
 
+    follow_state =
+      if following_relationships do
+        user_to_target_following_relation =
+          FollowingRelationship.find(following_relationships, reading_user, target)
+
+        User.get_follow_state(reading_user, target, user_to_target_following_relation)
+      else
+        User.get_follow_state(reading_user, target)
+      end
+
+    followed_by =
+      if following_relationships do
+        case FollowingRelationship.find(following_relationships, target, reading_user) do
+          %{state: :follow_accept} -> true
+          _ -> false
+        end
+      else
+        User.following?(target, reading_user)
+      end
+
+    # NOTE: adjust UserRelationship.view_relationships_option/2 on new relation-related flags
     %{
       id: to_string(target.id),
-      following: follow_state == "accept",
-      followed_by: User.following?(target, user),
-      blocking: User.blocks_user?(user, target),
-      blocked_by: User.blocks_user?(target, user),
-      muting: User.mutes?(user, target),
-      muting_notifications: User.muted_notifications?(user, target),
-      subscribing: User.subscribed_to?(user, target),
-      requested: follow_state == "pending",
-      domain_blocking: User.blocks_domain?(user, target),
-      showing_reblogs: User.showing_reblogs?(user, target),
+      following: follow_state == :follow_accept,
+      followed_by: followed_by,
+      blocking:
+        UserRelationship.exists?(
+          user_relationships,
+          :block,
+          reading_user,
+          target,
+          &User.blocks_user?(&1, &2)
+        ),
+      blocked_by:
+        UserRelationship.exists?(
+          user_relationships,
+          :block,
+          target,
+          reading_user,
+          &User.blocks_user?(&1, &2)
+        ),
+      muting:
+        UserRelationship.exists?(
+          user_relationships,
+          :mute,
+          reading_user,
+          target,
+          &User.mutes?(&1, &2)
+        ),
+      muting_notifications:
+        UserRelationship.exists?(
+          user_relationships,
+          :notification_mute,
+          reading_user,
+          target,
+          &User.muted_notifications?(&1, &2)
+        ),
+      subscribing:
+        UserRelationship.exists?(
+          user_relationships,
+          :inverse_subscription,
+          target,
+          reading_user,
+          &User.subscribed_to?(&2, &1)
+        ),
+      requested: follow_state == :follow_pending,
+      domain_blocking: User.blocks_domain?(reading_user, target),
+      showing_reblogs:
+        not UserRelationship.exists?(
+          user_relationships,
+          :reblog_mute,
+          reading_user,
+          target,
+          &User.muting_reblogs?(&1, &2)
+        ),
       endorsed: false
     }
   end
 
-  def render("relationships.json", %{user: user, targets: targets}) do
-    render_many(targets, AccountView, "relationship.json", user: user, as: :target)
+  def render("relationships.json", %{user: user, targets: targets} = opts) do
+    relationships_opt =
+      cond do
+        Map.has_key?(opts, :relationships) ->
+          opts[:relationships]
+
+        is_nil(user) ->
+          UserRelationship.view_relationships_option(nil, [])
+
+        true ->
+          UserRelationship.view_relationships_option(user, targets)
+      end
+
+    render_opts = %{as: :target, user: user, relationships: relationships_opt}
+    render_many(targets, AccountView, "relationship.json", render_opts)
   end
 
   defp do_render("show.json", %{user: user} = opts) do
@@ -82,18 +183,25 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     bot = user.actor_type in ["Application", "Service"]
 
     emojis =
-      (user.source_data["tag"] || [])
-      |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
-      |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
+      Enum.map(user.emoji, fn {shortcode, url} ->
         %{
-          "shortcode" => String.trim(name, ":"),
-          "url" => MediaProxy.url(url),
-          "static_url" => MediaProxy.url(url),
+          "shortcode" => shortcode,
+          "url" => url,
+          "static_url" => url,
           "visible_in_picker" => false
         }
       end)
 
-    relationship = render("relationship.json", %{user: opts[:for], target: user})
+    relationship =
+      if opts[:skip_relationships] do
+        %{}
+      else
+        render("relationship.json", %{
+          user: opts[:for],
+          target: user,
+          relationships: opts[:relationships]
+        })
+      end
 
     %{
       id: to_string(user.id),
@@ -106,7 +214,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       following_count: following_count,
       statuses_count: user.note_count,
       note: user.bio || "",
-      url: User.profile_url(user),
+      url: user.uri || user.ap_id,
       avatar: image,
       avatar_static: image,
       header: header,
@@ -115,7 +223,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       fields: user.fields,
       bot: bot,
       source: %{
-        note: (user.bio || "") |> String.replace(~r(<br */?>), "\n") |> Pleroma.HTML.strip_tags(),
+        note: prepare_user_bio(user),
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
@@ -147,7 +255,19 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_follow_requests_count(user, opts[:for])
     |> maybe_put_allow_following_move(user, opts[:for])
     |> maybe_put_unread_conversation_count(user, opts[:for])
+    |> maybe_put_unread_notification_count(user, opts[:for])
   end
+
+  defp prepare_user_bio(%User{bio: ""}), do: ""
+
+  defp prepare_user_bio(%User{bio: bio}) when is_binary(bio) do
+    bio
+    |> String.replace(~r(<br */?>), "\n")
+    |> Pleroma.HTML.strip_tags()
+    |> HtmlEntities.decode()
+  end
+
+  defp prepare_user_bio(_), do: ""
 
   defp username_from_nickname(string) when is_binary(string) do
     hd(String.split(string, "@"))
@@ -217,7 +337,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp maybe_put_role(data, _, _), do: data
 
   defp maybe_put_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
-    Kernel.put_in(data, [:pleroma, :notification_settings], user.notification_settings)
+    Kernel.put_in(
+      data,
+      [:pleroma, :notification_settings],
+      Map.from_struct(user.notification_settings)
+    )
   end
 
   defp maybe_put_notification_settings(data, _, _), do: data
@@ -243,6 +367,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_unread_conversation_count(data, _, _), do: data
+
+  defp maybe_put_unread_notification_count(data, %User{id: user_id}, %User{id: user_id} = user) do
+    Kernel.put_in(
+      data,
+      [:pleroma, :unread_notifications_count],
+      Pleroma.Notification.unread_notifications_count(user)
+    )
+  end
+
+  defp maybe_put_unread_notification_count(data, _, _), do: data
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil

@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.Changeset
   alias Ecto.UUID
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -169,8 +170,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Enqueues an activity for federation if it's local
   """
   @spec maybe_federate(any()) :: :ok
-  def maybe_federate(%Activity{local: true} = activity) do
-    if Pleroma.Config.get!([:instance, :federating]) do
+  def maybe_federate(%Activity{local: true, data: %{"type" => type}} = activity) do
+    outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
+
+    with true <- Config.get!([:instance, :federating]),
+         true <- type != "Block" || outgoing_blocks do
       Pleroma.Web.Federator.publish(activity)
     end
 
@@ -512,7 +516,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   #### Announce-related helpers
 
   @doc """
-  Retruns an existing announce activity if the notice has already been announced
+  Returns an existing announce activity if the notice has already been announced
   """
   @spec get_existing_announce(String.t(), map()) :: Activity.t() | nil
   def get_existing_announce(actor, %{data: %{"id" => ap_id}}) do
@@ -558,45 +562,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "to" => [user.follower_address, object.data["actor"]],
       "cc" => [Pleroma.Constants.as_public()],
       "context" => object.data["context"]
-    }
-    |> maybe_put("id", activity_id)
-  end
-
-  @doc """
-  Make unannounce activity data for the given actor and object
-  """
-  def make_unannounce_data(
-        %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context, "object" => object}} = activity,
-        activity_id
-      ) do
-    object = Object.normalize(object)
-
-    %{
-      "type" => "Undo",
-      "actor" => ap_id,
-      "object" => activity.data,
-      "to" => [user.follower_address, object.data["actor"]],
-      "cc" => [Pleroma.Constants.as_public()],
-      "context" => context
-    }
-    |> maybe_put("id", activity_id)
-  end
-
-  def make_unlike_data(
-        %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context, "object" => object}} = activity,
-        activity_id
-      ) do
-    object = Object.normalize(object)
-
-    %{
-      "type" => "Undo",
-      "actor" => ap_id,
-      "object" => activity.data,
-      "to" => [user.follower_address, object.data["actor"]],
-      "cc" => [Pleroma.Constants.as_public()],
-      "context" => context
     }
     |> maybe_put("id", activity_id)
   end
@@ -684,16 +649,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => blocker.ap_id,
       "to" => [blocked.ap_id],
       "object" => blocked.ap_id
-    }
-    |> maybe_put("id", activity_id)
-  end
-
-  def make_unblock_data(blocker, blocked, block_activity, activity_id) do
-    %{
-      "type" => "Undo",
-      "actor" => blocker.ap_id,
-      "to" => [blocked.ap_id],
-      "object" => block_activity.data
     }
     |> maybe_put("id", activity_id)
   end
@@ -793,102 +748,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       |> Map.put("offset", (page - 1) * page_size)
 
     ActivityPub.fetch_activities([], params, :offset)
-  end
-
-  def parse_report_group(activity) do
-    reports = get_reports_by_status_id(activity["id"])
-    max_date = Enum.max_by(reports, &NaiveDateTime.from_iso8601!(&1.data["published"]))
-    actors = Enum.map(reports, & &1.user_actor)
-    [%{data: %{"object" => [account_id | _]}} | _] = reports
-
-    account =
-      AccountView.render("show.json", %{
-        user: User.get_by_ap_id(account_id)
-      })
-
-    status = get_status_data(activity)
-
-    %{
-      date: max_date.data["published"],
-      account: account,
-      status: status,
-      actors: Enum.uniq(actors),
-      reports: reports
-    }
-  end
-
-  defp get_status_data(status) do
-    case status["deleted"] do
-      true ->
-        %{
-          "id" => status["id"],
-          "deleted" => true
-        }
-
-      _ ->
-        Activity.get_by_ap_id(status["id"])
-    end
-  end
-
-  def get_reports_by_status_id(ap_id) do
-    from(a in Activity,
-      where: fragment("(?)->>'type' = 'Flag'", a.data),
-      where: fragment("(?)->'object' @> ?", a.data, ^[%{id: ap_id}]),
-      or_where: fragment("(?)->'object' @> ?", a.data, ^[ap_id])
-    )
-    |> Activity.with_preloaded_user_actor()
-    |> Repo.all()
-  end
-
-  @spec get_reports_grouped_by_status([String.t()]) :: %{
-          required(:groups) => [
-            %{
-              required(:date) => String.t(),
-              required(:account) => %{},
-              required(:status) => %{},
-              required(:actors) => [%User{}],
-              required(:reports) => [%Activity{}]
-            }
-          ]
-        }
-  def get_reports_grouped_by_status(activity_ids) do
-    parsed_groups =
-      activity_ids
-      |> Enum.map(fn id ->
-        id
-        |> build_flag_object()
-        |> parse_report_group()
-      end)
-
-    %{
-      groups: parsed_groups
-    }
-  end
-
-  @spec get_reported_activities() :: [
-          %{
-            required(:activity) => String.t(),
-            required(:date) => String.t()
-          }
-        ]
-  def get_reported_activities do
-    reported_activities_query =
-      from(a in Activity,
-        where: fragment("(?)->>'type' = 'Flag'", a.data),
-        select: %{
-          activity: fragment("jsonb_array_elements((? #- '{object,0}')->'object')", a.data)
-        },
-        group_by: fragment("activity")
-      )
-
-    from(a in subquery(reported_activities_query),
-      distinct: true,
-      select: %{
-        id: fragment("COALESCE(?->>'id'::text, ? #>> '{}')", a.activity, a.activity)
-      }
-    )
-    |> Repo.all()
-    |> Enum.map(& &1.id)
   end
 
   def update_report_state(%Activity{} = activity, state)

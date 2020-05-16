@@ -5,15 +5,22 @@
 defmodule Pleroma.Plugs.OAuthScopesPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
 
   import Mock
   import Pleroma.Factory
 
-  setup_with_mocks([{EnsurePublicOrAuthenticatedPlug, [], [call: fn conn, _ -> conn end]}]) do
-    :ok
+  test "is not performed if marked as skipped", %{conn: conn} do
+    with_mock OAuthScopesPlug, [:passthrough], perform: &passthrough([&1, &2]) do
+      conn =
+        conn
+        |> OAuthScopesPlug.skip_plug()
+        |> OAuthScopesPlug.call(%{scopes: ["random_scope"]})
+
+      refute called(OAuthScopesPlug.perform(:_, :_))
+      refute conn.halted
+    end
   end
 
   test "if `token.scopes` fulfills specified 'any of' conditions, " <>
@@ -48,7 +55,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
 
   describe "with `fallback: :proceed_unauthenticated` option, " do
     test "if `token.scopes` doesn't fulfill specified conditions, " <>
-           "clears :user and :token assigns and calls EnsurePublicOrAuthenticatedPlug",
+           "clears :user and :token assigns",
          %{conn: conn} do
       user = insert(:user)
       token1 = insert(:oauth_token, scopes: ["read", "write"], user: user)
@@ -67,35 +74,6 @@ defmodule Pleroma.Plugs.OAuthScopesPlugTest do
         refute ret_conn.halted
         refute ret_conn.assigns[:user]
         refute ret_conn.assigns[:token]
-
-        assert called(EnsurePublicOrAuthenticatedPlug.call(ret_conn, :_))
-      end
-    end
-
-    test "with :skip_instance_privacy_check option, " <>
-           "if `token.scopes` doesn't fulfill specified conditions, " <>
-           "clears :user and :token assigns and does NOT call EnsurePublicOrAuthenticatedPlug",
-         %{conn: conn} do
-      user = insert(:user)
-      token1 = insert(:oauth_token, scopes: ["read:statuses", "write"], user: user)
-
-      for token <- [token1, nil], op <- [:|, :&] do
-        ret_conn =
-          conn
-          |> assign(:user, user)
-          |> assign(:token, token)
-          |> OAuthScopesPlug.call(%{
-            scopes: ["read"],
-            op: op,
-            fallback: :proceed_unauthenticated,
-            skip_instance_privacy_check: true
-          })
-
-        refute ret_conn.halted
-        refute ret_conn.assigns[:user]
-        refute ret_conn.assigns[:token]
-
-        refute called(EnsurePublicOrAuthenticatedPlug.call(ret_conn, :_))
       end
     end
   end

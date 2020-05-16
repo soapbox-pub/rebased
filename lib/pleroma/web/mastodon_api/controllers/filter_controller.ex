@@ -10,6 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
 
   @oauth_read_actions [:show, :index]
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["read:filters"]} when action in @oauth_read_actions)
 
   plug(
@@ -17,62 +18,60 @@ defmodule Pleroma.Web.MastodonAPI.FilterController do
     %{scopes: ["write:filters"]} when action not in @oauth_read_actions
   )
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.FilterOperation
 
   @doc "GET /api/v1/filters"
   def index(%{assigns: %{user: user}} = conn, _) do
     filters = Filter.get_filters(user)
 
-    render(conn, "filters.json", filters: filters)
+    render(conn, "index.json", filters: filters)
   end
 
   @doc "POST /api/v1/filters"
-  def create(
-        %{assigns: %{user: user}} = conn,
-        %{"phrase" => phrase, "context" => context} = params
-      ) do
+  def create(%{assigns: %{user: user}, body_params: params} = conn, _) do
     query = %Filter{
       user_id: user.id,
-      phrase: phrase,
-      context: context,
-      hide: Map.get(params, "irreversible", false),
-      whole_word: Map.get(params, "boolean", true)
-      # expires_at
+      phrase: params.phrase,
+      context: params.context,
+      hide: params.irreversible,
+      whole_word: params.whole_word
+      # TODO: support `expires_in` parameter (as in Mastodon API)
     }
 
     {:ok, response} = Filter.create(query)
 
-    render(conn, "filter.json", filter: response)
+    render(conn, "show.json", filter: response)
   end
 
   @doc "GET /api/v1/filters/:id"
-  def show(%{assigns: %{user: user}} = conn, %{"id" => filter_id}) do
+  def show(%{assigns: %{user: user}} = conn, %{id: filter_id}) do
     filter = Filter.get(filter_id, user)
 
-    render(conn, "filter.json", filter: filter)
+    render(conn, "show.json", filter: filter)
   end
 
   @doc "PUT /api/v1/filters/:id"
   def update(
-        %{assigns: %{user: user}} = conn,
-        %{"phrase" => phrase, "context" => context, "id" => filter_id} = params
+        %{assigns: %{user: user}, body_params: params} = conn,
+        %{id: filter_id}
       ) do
-    query = %Filter{
-      user_id: user.id,
-      filter_id: filter_id,
-      phrase: phrase,
-      context: context,
-      hide: Map.get(params, "irreversible", nil),
-      whole_word: Map.get(params, "boolean", true)
-      # expires_at
-    }
+    params =
+      params
+      |> Map.delete(:irreversible)
+      |> Map.put(:hide, params[:irreversible])
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+      |> Map.new()
 
-    {:ok, response} = Filter.update(query)
-    render(conn, "filter.json", filter: response)
+    # TODO: support `expires_in` parameter (as in Mastodon API)
+
+    with %Filter{} = filter <- Filter.get(filter_id, user),
+         {:ok, %Filter{} = filter} <- Filter.update(filter, params) do
+      render(conn, "show.json", filter: filter)
+    end
   end
 
   @doc "DELETE /api/v1/filters/:id"
-  def delete(%{assigns: %{user: user}} = conn, %{"id" => filter_id}) do
+  def delete(%{assigns: %{user: user}} = conn, %{id: filter_id}) do
     query = %Filter{
       user_id: user.id,
       filter_id: filter_id

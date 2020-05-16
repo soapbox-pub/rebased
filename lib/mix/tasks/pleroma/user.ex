@@ -8,6 +8,8 @@ defmodule Mix.Tasks.Pleroma.User do
   alias Ecto.Changeset
   alias Pleroma.User
   alias Pleroma.UserInviteToken
+  alias Pleroma.Web.ActivityPub.Builder
+  alias Pleroma.Web.ActivityPub.Pipeline
 
   @shortdoc "Manages Pleroma users"
   @moduledoc File.read!("docs/administration/CLI_tasks/user.md")
@@ -96,8 +98,9 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["rm", nickname]) do
     start_pleroma()
 
-    with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      User.perform(:delete, user)
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname),
+         {:ok, delete_data, _} <- Builder.delete(user, user.ap_id),
+         {:ok, _delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
       shell_info("User #{nickname} deleted.")
     else
       _ -> shell_error("No local user #{nickname}")

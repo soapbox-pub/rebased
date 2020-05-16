@@ -4,40 +4,121 @@
 
 defmodule Pleroma.HTTP.Connection do
   @moduledoc """
-  Connection for http-requests.
+  Configure Tesla.Client with default and customized adapter options.
   """
 
-  @hackney_options [
-    connect_timeout: 10_000,
-    recv_timeout: 20_000,
-    follow_redirect: true,
-    force_redirect: true,
-    pool: :federation
-  ]
-  @adapter Application.get_env(:tesla, :adapter)
+  alias Pleroma.Config
+  alias Pleroma.HTTP.AdapterHelper
+
+  require Logger
+
+  @defaults [pool: :federation]
+
+  @type ip_address :: ipv4_address() | ipv6_address()
+  @type ipv4_address :: {0..255, 0..255, 0..255, 0..255}
+  @type ipv6_address ::
+          {0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535}
+  @type proxy_type() :: :socks4 | :socks5
+  @type host() :: charlist() | ip_address()
 
   @doc """
-  Configure a client connection
-
-  # Returns
-
-  Tesla.Env.client
+  Merge default connection & adapter options with received ones.
   """
-  @spec new(Keyword.t()) :: Tesla.Env.client()
-  def new(opts \\ []) do
-    Tesla.client([], {@adapter, hackney_options(opts)})
+
+  @spec options(URI.t(), keyword()) :: keyword()
+  def options(%URI{} = uri, opts \\ []) do
+    @defaults
+    |> pool_timeout()
+    |> Keyword.merge(opts)
+    |> adapter_helper().options(uri)
   end
 
-  # fetch Hackney options
-  #
-  def hackney_options(opts) do
-    options = Keyword.get(opts, :adapter, [])
-    adapter_options = Pleroma.Config.get([:http, :adapter], [])
-    proxy_url = Pleroma.Config.get([:http, :proxy_url], nil)
+  defp pool_timeout(opts) do
+    {config_key, default} =
+      if adapter() == Tesla.Adapter.Gun do
+        {:pools, Config.get([:pools, :default, :timeout])}
+      else
+        {:hackney_pools, 10_000}
+      end
 
-    @hackney_options
-    |> Keyword.merge(adapter_options)
-    |> Keyword.merge(options)
-    |> Keyword.merge(proxy: proxy_url)
+    timeout = Config.get([config_key, opts[:pool], :timeout], default)
+
+    Keyword.merge(opts, timeout: timeout)
+  end
+
+  @spec after_request(keyword()) :: :ok
+  def after_request(opts), do: adapter_helper().after_request(opts)
+
+  defp adapter, do: Application.get_env(:tesla, :adapter)
+
+  defp adapter_helper do
+    case adapter() do
+      Tesla.Adapter.Gun -> AdapterHelper.Gun
+      Tesla.Adapter.Hackney -> AdapterHelper.Hackney
+      _ -> AdapterHelper
+    end
+  end
+
+  @spec parse_proxy(String.t() | tuple() | nil) ::
+          {:ok, host(), pos_integer()}
+          | {:ok, proxy_type(), host(), pos_integer()}
+          | {:error, atom()}
+          | nil
+
+  def parse_proxy(nil), do: nil
+
+  def parse_proxy(proxy) when is_binary(proxy) do
+    with [host, port] <- String.split(proxy, ":"),
+         {port, ""} <- Integer.parse(port) do
+      {:ok, parse_host(host), port}
+    else
+      {_, _} ->
+        Logger.warn("Parsing port failed #{inspect(proxy)}")
+        {:error, :invalid_proxy_port}
+
+      :error ->
+        Logger.warn("Parsing port failed #{inspect(proxy)}")
+        {:error, :invalid_proxy_port}
+
+      _ ->
+        Logger.warn("Parsing proxy failed #{inspect(proxy)}")
+        {:error, :invalid_proxy}
+    end
+  end
+
+  def parse_proxy(proxy) when is_tuple(proxy) do
+    with {type, host, port} <- proxy do
+      {:ok, type, parse_host(host), port}
+    else
+      _ ->
+        Logger.warn("Parsing proxy failed #{inspect(proxy)}")
+        {:error, :invalid_proxy}
+    end
+  end
+
+  @spec parse_host(String.t() | atom() | charlist()) :: charlist() | ip_address()
+  def parse_host(host) when is_list(host), do: host
+  def parse_host(host) when is_atom(host), do: to_charlist(host)
+
+  def parse_host(host) when is_binary(host) do
+    host = to_charlist(host)
+
+    case :inet.parse_address(host) do
+      {:error, :einval} -> host
+      {:ok, ip} -> ip
+    end
+  end
+
+  @spec format_host(String.t()) :: charlist()
+  def format_host(host) do
+    host_charlist = to_charlist(host)
+
+    case :inet.parse_address(host_charlist) do
+      {:error, :einval} ->
+        :idna.encode(host_charlist)
+
+      {:ok, _ip} ->
+        host_charlist
+    end
   end
 end

@@ -16,11 +16,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.Federator
 
+  import ExUnit.CaptureLog
+  import Mock
   import Pleroma.Factory
   import Tesla.Mock
-  import Mock
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -32,7 +32,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "streaming out participations" do
     test "it streams them out" do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+      {:ok, activity} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
 
       {:ok, conversation} = Pleroma.Conversation.create_or_bump_for(activity)
 
@@ -56,8 +56,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         stream: fn _, _ -> nil end do
         {:ok, activity} =
           CommonAPI.post(user_one, %{
-            "status" => "@#{user_two.nickname}",
-            "visibility" => "direct"
+            status: "@#{user_two.nickname}",
+            visibility: "direct"
           })
 
         conversation =
@@ -74,15 +74,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "it restricts by the appropriate visibility" do
       user = insert(:user)
 
-      {:ok, public_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+      {:ok, public_activity} = CommonAPI.post(user, %{status: ".", visibility: "public"})
 
-      {:ok, direct_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+      {:ok, direct_activity} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
 
-      {:ok, unlisted_activity} =
-        CommonAPI.post(user, %{"status" => ".", "visibility" => "unlisted"})
+      {:ok, unlisted_activity} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
 
-      {:ok, private_activity} =
-        CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      {:ok, private_activity} = CommonAPI.post(user, %{status: ".", visibility: "private"})
 
       activities =
         ActivityPub.fetch_activities([], %{:visibility => "direct", "actor_id" => user.ap_id})
@@ -118,15 +116,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "it excludes by the appropriate visibility" do
       user = insert(:user)
 
-      {:ok, public_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+      {:ok, public_activity} = CommonAPI.post(user, %{status: ".", visibility: "public"})
 
-      {:ok, direct_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+      {:ok, direct_activity} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
 
-      {:ok, unlisted_activity} =
-        CommonAPI.post(user, %{"status" => ".", "visibility" => "unlisted"})
+      {:ok, unlisted_activity} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
 
-      {:ok, private_activity} =
-        CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      {:ok, private_activity} = CommonAPI.post(user, %{status: ".", visibility: "private"})
 
       activities =
         ActivityPub.fetch_activities([], %{
@@ -180,7 +176,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
       assert user.ap_id == user_id
       assert user.nickname == "admin@mastodon.example.org"
-      assert user.source_data
       assert user.ap_enabled
       assert user.follower_address == "http://mastodon.example.org/users/admin/followers"
     end
@@ -194,9 +189,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "it fetches the appropriate tag-restricted posts" do
       user = insert(:user)
 
-      {:ok, status_one} = CommonAPI.post(user, %{"status" => ". #test"})
-      {:ok, status_two} = CommonAPI.post(user, %{"status" => ". #essais"})
-      {:ok, status_three} = CommonAPI.post(user, %{"status" => ". #test #reject"})
+      {:ok, status_one} = CommonAPI.post(user, %{status: ". #test"})
+      {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
+      {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
 
       fetch_one = ActivityPub.fetch_activities([], %{"type" => "Create", "tag" => "test"})
 
@@ -433,26 +428,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, _} =
         CommonAPI.post(User.get_cached_by_id(user.id), %{
-          "status" => "1",
-          "visibility" => "public"
+          status: "1",
+          visibility: "public"
         })
 
       {:ok, _} =
         CommonAPI.post(User.get_cached_by_id(user.id), %{
-          "status" => "2",
-          "visibility" => "unlisted"
+          status: "2",
+          visibility: "unlisted"
         })
 
       {:ok, _} =
         CommonAPI.post(User.get_cached_by_id(user.id), %{
-          "status" => "2",
-          "visibility" => "private"
+          status: "2",
+          visibility: "private"
         })
 
       {:ok, _} =
         CommonAPI.post(User.get_cached_by_id(user.id), %{
-          "status" => "3",
-          "visibility" => "direct"
+          status: "3",
+          visibility: "direct"
         })
 
       user = User.get_cached_by_id(user.id)
@@ -463,27 +458,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user)
       user2 = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "1", "visibility" => "public"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "1", visibility: "public"})
       ap_id = activity.data["id"]
-      reply_data = %{"status" => "1", "in_reply_to_status_id" => activity.id}
+      reply_data = %{status: "1", in_reply_to_status_id: activity.id}
 
       # public
-      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "public"))
+      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "public"))
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 1
 
       # unlisted
-      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "unlisted"))
+      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "unlisted"))
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
 
       # private
-      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "private"))
+      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "private"))
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
 
       # direct
-      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "direct"))
+      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, :visibility, "direct"))
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
       assert object.data["repliesCount"] == 2
     end
@@ -570,13 +565,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, _user_relationship} = User.block(blocker, blockee)
 
-    {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey!"})
+    {:ok, activity_one} = CommonAPI.post(friend, %{status: "hey!"})
 
-    {:ok, activity_two} = CommonAPI.post(friend, %{"status" => "hey! @#{blockee.nickname}"})
+    {:ok, activity_two} = CommonAPI.post(friend, %{status: "hey! @#{blockee.nickname}"})
 
-    {:ok, activity_three} = CommonAPI.post(blockee, %{"status" => "hey! @#{friend.nickname}"})
+    {:ok, activity_three} = CommonAPI.post(blockee, %{status: "hey! @#{friend.nickname}"})
 
-    {:ok, activity_four} = CommonAPI.post(blockee, %{"status" => "hey! @#{blocker.nickname}"})
+    {:ok, activity_four} = CommonAPI.post(blockee, %{status: "hey! @#{blocker.nickname}"})
 
     activities = ActivityPub.fetch_activities([], %{"blocking_user" => blocker})
 
@@ -593,9 +588,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, _user_relationship} = User.block(blocker, blockee)
 
-    {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey!"})
+    {:ok, activity_one} = CommonAPI.post(friend, %{status: "hey!"})
 
-    {:ok, activity_two} = CommonAPI.post(blockee, %{"status" => "hey! @#{friend.nickname}"})
+    {:ok, activity_two} = CommonAPI.post(blockee, %{status: "hey! @#{friend.nickname}"})
 
     {:ok, activity_three, _} = CommonAPI.repeat(activity_two.id, friend)
 
@@ -775,10 +770,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "doesn't retrieve unlisted activities" do
       user = insert(:user)
 
-      {:ok, _unlisted_activity} =
-        CommonAPI.post(user, %{"status" => "yeah", "visibility" => "unlisted"})
+      {:ok, _unlisted_activity} = CommonAPI.post(user, %{status: "yeah", visibility: "unlisted"})
 
-      {:ok, listed_activity} = CommonAPI.post(user, %{"status" => "yeah"})
+      {:ok, listed_activity} = CommonAPI.post(user, %{status: "yeah"})
 
       [activity] = ActivityPub.fetch_public_activities()
 
@@ -874,250 +868,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "react to an object" do
-    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
-      Config.put([:instance, :federating], true)
-      user = insert(:user)
-      reactor = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
-      assert object = Object.normalize(activity)
-
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
-
-      assert called(Federator.publish(reaction_activity))
-    end
-
-    test "adds an emoji reaction activity to the db" do
-      user = insert(:user)
-      reactor = insert(:user)
-      third_user = insert(:user)
-      fourth_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
-      assert object = Object.normalize(activity)
-
-      {:ok, reaction_activity, object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
-
-      assert reaction_activity
-
-      assert reaction_activity.data["actor"] == reactor.ap_id
-      assert reaction_activity.data["type"] == "EmojiReact"
-      assert reaction_activity.data["content"] == "🔥"
-      assert reaction_activity.data["object"] == object.data["id"]
-      assert reaction_activity.data["to"] == [User.ap_followers(reactor), activity.data["actor"]]
-      assert reaction_activity.data["context"] == object.data["context"]
-      assert object.data["reaction_count"] == 1
-      assert object.data["reactions"] == [["🔥", [reactor.ap_id]]]
-
-      {:ok, _reaction_activity, object} = ActivityPub.react_with_emoji(third_user, object, "☕")
-
-      assert object.data["reaction_count"] == 2
-      assert object.data["reactions"] == [["🔥", [reactor.ap_id]], ["☕", [third_user.ap_id]]]
-
-      {:ok, _reaction_activity, object} = ActivityPub.react_with_emoji(fourth_user, object, "🔥")
-
-      assert object.data["reaction_count"] == 3
-
-      assert object.data["reactions"] == [
-               ["🔥", [fourth_user.ap_id, reactor.ap_id]],
-               ["☕", [third_user.ap_id]]
-             ]
-    end
-
-    test "reverts emoji reaction on error" do
-      [user, reactor] = insert_list(2, :user)
-
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "Status"})
-      object = Object.normalize(activity)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.react_with_emoji(reactor, object, "😀")
-      end
-
-      object = Object.get_by_ap_id(object.data["id"])
-      refute object.data["reaction_count"]
-      refute object.data["reactions"]
-    end
-  end
-
-  describe "unreacting to an object" do
-    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
-      Config.put([:instance, :federating], true)
-      user = insert(:user)
-      reactor = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
-      assert object = Object.normalize(activity)
-
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
-
-      assert called(Federator.publish(reaction_activity))
-
-      {:ok, unreaction_activity, _object} =
-        ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
-
-      assert called(Federator.publish(unreaction_activity))
-    end
-
-    test "adds an undo activity to the db" do
-      user = insert(:user)
-      reactor = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
-      assert object = Object.normalize(activity)
-
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
-
-      {:ok, unreaction_activity, _object} =
-        ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
-
-      assert unreaction_activity.actor == reactor.ap_id
-      assert unreaction_activity.data["object"] == reaction_activity.data["id"]
-
-      object = Object.get_by_ap_id(object.data["id"])
-      assert object.data["reaction_count"] == 0
-      assert object.data["reactions"] == []
-    end
-
-    test "reverts emoji unreact on error" do
-      [user, reactor] = insert_list(2, :user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "Status"})
-      object = Object.normalize(activity)
-
-      {:ok, reaction_activity, _object} = ActivityPub.react_with_emoji(reactor, object, "😀")
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} =
-                 ActivityPub.unreact_with_emoji(reactor, reaction_activity.data["id"])
-      end
-
-      object = Object.get_by_ap_id(object.data["id"])
-
-      assert object.data["reaction_count"] == 1
-      assert object.data["reactions"] == [["😀", [reactor.ap_id]]]
-    end
-  end
-
-  describe "like an object" do
-    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
-      Config.put([:instance, :federating], true)
-      note_activity = insert(:note_activity)
-      assert object_activity = Object.normalize(note_activity)
-
-      user = insert(:user)
-
-      {:ok, like_activity, _object} = ActivityPub.like(user, object_activity)
-      assert called(Federator.publish(like_activity))
-    end
-
-    test "returns exist activity if object already liked" do
-      note_activity = insert(:note_activity)
-      assert object_activity = Object.normalize(note_activity)
-
-      user = insert(:user)
-
-      {:ok, like_activity, _object} = ActivityPub.like(user, object_activity)
-
-      {:ok, like_activity_exist, _object} = ActivityPub.like(user, object_activity)
-      assert like_activity == like_activity_exist
-    end
-
-    test "reverts like activity on error" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.like(user, object)
-      end
-
-      assert Repo.aggregate(Activity, :count, :id) == 1
-      assert Repo.get(Object, object.id) == object
-    end
-
-    test "adds a like activity to the db" do
-      note_activity = insert(:note_activity)
-      assert object = Object.normalize(note_activity)
-
-      user = insert(:user)
-      user_two = insert(:user)
-
-      {:ok, like_activity, object} = ActivityPub.like(user, object)
-
-      assert like_activity.data["actor"] == user.ap_id
-      assert like_activity.data["type"] == "Like"
-      assert like_activity.data["object"] == object.data["id"]
-      assert like_activity.data["to"] == [User.ap_followers(user), note_activity.data["actor"]]
-      assert like_activity.data["context"] == object.data["context"]
-      assert object.data["like_count"] == 1
-      assert object.data["likes"] == [user.ap_id]
-
-      # Just return the original activity if the user already liked it.
-      {:ok, same_like_activity, object} = ActivityPub.like(user, object)
-
-      assert like_activity == same_like_activity
-      assert object.data["likes"] == [user.ap_id]
-      assert object.data["like_count"] == 1
-
-      {:ok, _like_activity, object} = ActivityPub.like(user_two, object)
-      assert object.data["like_count"] == 2
-    end
-  end
-
-  describe "unliking" do
-    test_with_mock "sends an activity to federation", Federator, [:passthrough], [] do
-      Config.put([:instance, :federating], true)
-
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      {:ok, object} = ActivityPub.unlike(user, object)
-      refute called(Federator.publish())
-
-      {:ok, _like_activity, object} = ActivityPub.like(user, object)
-      assert object.data["like_count"] == 1
-
-      {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
-      assert object.data["like_count"] == 0
-
-      assert called(Federator.publish(unlike_activity))
-    end
-
-    test "reverts unliking on error" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      {:ok, like_activity, object} = ActivityPub.like(user, object)
-      assert object.data["like_count"] == 1
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.unlike(user, object)
-      end
-
-      assert Object.get_by_ap_id(object.data["id"]) == object
-      assert object.data["like_count"] == 1
-      assert Activity.get_by_id(like_activity.id)
-    end
-
-    test "unliking a previously liked object" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      # Unliking something that hasn't been liked does nothing
-      {:ok, object} = ActivityPub.unlike(user, object)
-      assert object.data["like_count"] == 0
-
-      {:ok, like_activity, object} = ActivityPub.like(user, object)
-      assert object.data["like_count"] == 1
-
-      {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
-      assert object.data["like_count"] == 0
-
-      assert Activity.get_by_id(like_activity.id) == nil
-      assert note_activity.actor in unlike_activity.recipients
-    end
-  end
-
   describe "announcing an object" do
     test "adds an announce activity to the db" do
       note_activity = insert(:note_activity)
@@ -1157,7 +907,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "announcing a private object" do
     test "adds an announce activity to the db if the audience is not widened" do
       user = insert(:user)
-      {:ok, note_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      {:ok, note_activity} = CommonAPI.post(user, %{status: ".", visibility: "private"})
       object = Object.normalize(note_activity)
 
       {:ok, announce_activity, object} = ActivityPub.announce(user, object, nil, true, false)
@@ -1171,7 +921,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     test "does not add an announce activity to the db if the audience is widened" do
       user = insert(:user)
-      {:ok, note_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      {:ok, note_activity} = CommonAPI.post(user, %{status: ".", visibility: "private"})
       object = Object.normalize(note_activity)
 
       assert {:error, _} = ActivityPub.announce(user, object, nil, true, true)
@@ -1180,56 +930,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "does not add an announce activity to the db if the announcer is not the author" do
       user = insert(:user)
       announcer = insert(:user)
-      {:ok, note_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+      {:ok, note_activity} = CommonAPI.post(user, %{status: ".", visibility: "private"})
       object = Object.normalize(note_activity)
 
       assert {:error, _} = ActivityPub.announce(announcer, object, nil, true, false)
-    end
-  end
-
-  describe "unannouncing an object" do
-    test "unannouncing a previously announced object" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      # Unannouncing an object that is not announced does nothing
-      {:ok, object} = ActivityPub.unannounce(user, object)
-      refute object.data["announcement_count"]
-
-      {:ok, announce_activity, object} = ActivityPub.announce(user, object)
-      assert object.data["announcement_count"] == 1
-
-      {:ok, unannounce_activity, object} = ActivityPub.unannounce(user, object)
-      assert object.data["announcement_count"] == 0
-
-      assert unannounce_activity.data["to"] == [
-               User.ap_followers(user),
-               object.data["actor"]
-             ]
-
-      assert unannounce_activity.data["type"] == "Undo"
-      assert unannounce_activity.data["object"] == announce_activity.data
-      assert unannounce_activity.data["actor"] == user.ap_id
-      assert unannounce_activity.data["context"] == announce_activity.data["context"]
-
-      assert Activity.get_by_id(announce_activity.id) == nil
-    end
-
-    test "reverts unannouncing on error" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      {:ok, _announce_activity, object} = ActivityPub.announce(user, object)
-      assert object.data["announcement_count"] == 1
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.unannounce(user, object)
-      end
-
-      object = Object.get_by_ap_id(object.data["id"])
-      assert object.data["announcement_count"] == 1
     end
   end
 
@@ -1247,7 +951,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     test "works with base64 encoded images" do
       file = %{
-        "img" => data_uri()
+        img: data_uri()
       }
 
       {:ok, %Object{}} = ActivityPub.upload(file)
@@ -1339,7 +1043,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "blocking / unblocking" do
+  describe "blocking" do
     test "reverts block activity on error" do
       [blocker, blocked] = insert_list(2, :user)
 
@@ -1352,177 +1056,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
 
     test "creates a block activity" do
+      clear_config([:instance, :federating], true)
       blocker = insert(:user)
       blocked = insert(:user)
 
-      {:ok, activity} = ActivityPub.block(blocker, blocked)
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        {:ok, activity} = ActivityPub.block(blocker, blocked)
 
-      assert activity.data["type"] == "Block"
-      assert activity.data["actor"] == blocker.ap_id
-      assert activity.data["object"] == blocked.ap_id
-    end
+        assert activity.data["type"] == "Block"
+        assert activity.data["actor"] == blocker.ap_id
+        assert activity.data["object"] == blocked.ap_id
 
-    test "reverts unblock activity on error" do
-      [blocker, blocked] = insert_list(2, :user)
-      {:ok, block_activity} = ActivityPub.block(blocker, blocked)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.unblock(blocker, blocked)
+        assert called(Pleroma.Web.Federator.publish(activity))
       end
-
-      assert block_activity.data["type"] == "Block"
-      assert block_activity.data["actor"] == blocker.ap_id
-
-      assert Repo.aggregate(Activity, :count, :id) == 1
-      assert Repo.aggregate(Object, :count, :id) == 1
     end
 
-    test "creates an undo activity for the last block" do
+    test "works with outgoing blocks disabled, but doesn't federate" do
+      clear_config([:instance, :federating], true)
+      clear_config([:activitypub, :outgoing_blocks], false)
       blocker = insert(:user)
       blocked = insert(:user)
 
-      {:ok, block_activity} = ActivityPub.block(blocker, blocked)
-      {:ok, activity} = ActivityPub.unblock(blocker, blocked)
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        {:ok, activity} = ActivityPub.block(blocker, blocked)
 
-      assert activity.data["type"] == "Undo"
-      assert activity.data["actor"] == blocker.ap_id
+        assert activity.data["type"] == "Block"
+        assert activity.data["actor"] == blocker.ap_id
+        assert activity.data["object"] == blocked.ap_id
 
-      embedded_object = activity.data["object"]
-      assert is_map(embedded_object)
-      assert embedded_object["type"] == "Block"
-      assert embedded_object["object"] == blocked.ap_id
-      assert embedded_object["id"] == block_activity.data["id"]
-    end
-  end
-
-  describe "deletion" do
-    setup do: clear_config([:instance, :rewrite_policy])
-
-    test "it reverts deletion on error" do
-      note = insert(:note_activity)
-      object = Object.normalize(note)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.delete(object)
+        refute called(Pleroma.Web.Federator.publish(:_))
       end
-
-      assert Repo.aggregate(Activity, :count, :id) == 1
-      assert Repo.get(Object, object.id) == object
-      assert Activity.get_by_id(note.id) == note
-    end
-
-    test "it creates a delete activity and deletes the original object" do
-      note = insert(:note_activity)
-      object = Object.normalize(note)
-      {:ok, delete} = ActivityPub.delete(object)
-
-      assert delete.data["type"] == "Delete"
-      assert delete.data["actor"] == note.data["actor"]
-      assert delete.data["object"] == object.data["id"]
-
-      assert Activity.get_by_id(delete.id) != nil
-
-      assert Repo.get(Object, object.id).data["type"] == "Tombstone"
-    end
-
-    test "decrements user note count only for public activities" do
-      user = insert(:user, note_count: 10)
-
-      {:ok, a1} =
-        CommonAPI.post(User.get_cached_by_id(user.id), %{
-          "status" => "yeah",
-          "visibility" => "public"
-        })
-
-      {:ok, a2} =
-        CommonAPI.post(User.get_cached_by_id(user.id), %{
-          "status" => "yeah",
-          "visibility" => "unlisted"
-        })
-
-      {:ok, a3} =
-        CommonAPI.post(User.get_cached_by_id(user.id), %{
-          "status" => "yeah",
-          "visibility" => "private"
-        })
-
-      {:ok, a4} =
-        CommonAPI.post(User.get_cached_by_id(user.id), %{
-          "status" => "yeah",
-          "visibility" => "direct"
-        })
-
-      {:ok, _} = Object.normalize(a1) |> ActivityPub.delete()
-      {:ok, _} = Object.normalize(a2) |> ActivityPub.delete()
-      {:ok, _} = Object.normalize(a3) |> ActivityPub.delete()
-      {:ok, _} = Object.normalize(a4) |> ActivityPub.delete()
-
-      user = User.get_cached_by_id(user.id)
-      assert user.note_count == 10
-    end
-
-    test "it creates a delete activity and checks that it is also sent to users mentioned by the deleted object" do
-      user = insert(:user)
-      note = insert(:note_activity)
-      object = Object.normalize(note)
-
-      {:ok, object} =
-        object
-        |> Object.change(%{
-          data: %{
-            "actor" => object.data["actor"],
-            "id" => object.data["id"],
-            "to" => [user.ap_id],
-            "type" => "Note"
-          }
-        })
-        |> Object.update_and_set_cache()
-
-      {:ok, delete} = ActivityPub.delete(object)
-
-      assert user.ap_id in delete.data["to"]
-    end
-
-    test "decreases reply count" do
-      user = insert(:user)
-      user2 = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "1", "visibility" => "public"})
-      reply_data = %{"status" => "1", "in_reply_to_status_id" => activity.id}
-      ap_id = activity.data["id"]
-
-      {:ok, public_reply} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "public"))
-      {:ok, unlisted_reply} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "unlisted"))
-      {:ok, private_reply} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "private"))
-      {:ok, direct_reply} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "direct"))
-
-      _ = CommonAPI.delete(direct_reply.id, user2)
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert object.data["repliesCount"] == 2
-
-      _ = CommonAPI.delete(private_reply.id, user2)
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert object.data["repliesCount"] == 2
-
-      _ = CommonAPI.delete(public_reply.id, user2)
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert object.data["repliesCount"] == 1
-
-      _ = CommonAPI.delete(unlisted_reply.id, user2)
-      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert object.data["repliesCount"] == 0
-    end
-
-    test "it passes delete activity through MRF before deleting the object" do
-      Pleroma.Config.put([:instance, :rewrite_policy], Pleroma.Web.ActivityPub.MRF.DropPolicy)
-
-      note = insert(:note_activity)
-      object = Object.normalize(note)
-
-      {:error, {:reject, _}} = ActivityPub.delete(object)
-
-      assert Activity.get_by_id(note.id)
-      assert Repo.get(Object, object.id).data["type"] == object.data["type"]
     end
   end
 
@@ -1541,23 +1106,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, user3} = User.follow(user3, user2)
       assert User.following?(user3, user2)
 
-      {:ok, public_activity} = CommonAPI.post(user3, %{"status" => "hi 1"})
+      {:ok, public_activity} = CommonAPI.post(user3, %{status: "hi 1"})
 
-      {:ok, private_activity_1} =
-        CommonAPI.post(user3, %{"status" => "hi 2", "visibility" => "private"})
+      {:ok, private_activity_1} = CommonAPI.post(user3, %{status: "hi 2", visibility: "private"})
 
       {:ok, private_activity_2} =
         CommonAPI.post(user2, %{
-          "status" => "hi 3",
-          "visibility" => "private",
-          "in_reply_to_status_id" => private_activity_1.id
+          status: "hi 3",
+          visibility: "private",
+          in_reply_to_status_id: private_activity_1.id
         })
 
       {:ok, private_activity_3} =
         CommonAPI.post(user3, %{
-          "status" => "hi 4",
-          "visibility" => "private",
-          "in_reply_to_status_id" => private_activity_2.id
+          status: "hi 4",
+          visibility: "private",
+          in_reply_to_status_id: private_activity_2.id
         })
 
       activities =
@@ -1607,9 +1171,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     Config.put([:instance, :max_pinned_statuses], 3)
     user = insert(:user)
 
-    {:ok, activity_one} = CommonAPI.post(user, %{"status" => "HI!!!"})
-    {:ok, activity_two} = CommonAPI.post(user, %{"status" => "HI!!!"})
-    {:ok, activity_three} = CommonAPI.post(user, %{"status" => "HI!!!"})
+    {:ok, activity_one} = CommonAPI.post(user, %{status: "HI!!!"})
+    {:ok, activity_two} = CommonAPI.post(user, %{status: "HI!!!"})
+    {:ok, activity_three} = CommonAPI.post(user, %{status: "HI!!!"})
 
     CommonAPI.pin(activity_one.id, user)
     user = refresh_record(user)
@@ -1630,7 +1194,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       reporter = insert(:user)
       target_account = insert(:user)
       content = "foobar"
-      {:ok, activity} = CommonAPI.post(target_account, %{"status" => content})
+      {:ok, activity} = CommonAPI.post(target_account, %{status: content})
       context = Utils.generate_context_id()
 
       reporter_ap_id = reporter.ap_id
@@ -1726,8 +1290,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, list} = Pleroma.List.create("foo", user)
     {:ok, list} = Pleroma.List.follow(list, member)
 
-    {:ok, activity} =
-      CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "foobar", visibility: "list:#{list.id}"})
 
     activity = Repo.preload(activity, :bookmark)
     activity = %Activity{activity | thread_muted?: !!activity.thread_muted?}
@@ -1745,8 +1308,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "thought I looked cute might delete later :3",
-          "visibility" => "private"
+          status: "thought I looked cute might delete later :3",
+          visibility: "private"
         })
 
       [result] = ActivityPub.fetch_activities_bounded([user.follower_address], [])
@@ -1755,12 +1318,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     test "fetches only public posts for other users" do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe", "visibility" => "public"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "#cofe", visibility: "public"})
 
       {:ok, _private_activity} =
         CommonAPI.post(user, %{
-          "status" => "why is tenshi eating a corndog so cute?",
-          "visibility" => "private"
+          status: "why is tenshi eating a corndog so cute?",
+          visibility: "private"
         })
 
       [result] = ActivityPub.fetch_activities_bounded([], [user.follower_address])
@@ -1888,20 +1451,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       other_user = insert(:user)
       user1 = insert(:user)
       user2 = insert(:user)
-      {:ok, a1} = CommonAPI.post(user1, %{"status" => "bla"})
-      {:ok, _a2} = CommonAPI.post(user2, %{"status" => "traps are happy"})
-      {:ok, a3} = CommonAPI.post(user2, %{"status" => "Trees Are "})
-      {:ok, a4} = CommonAPI.post(user2, %{"status" => "Agent Smith "})
-      {:ok, a5} = CommonAPI.post(user1, %{"status" => "Red or Blue "})
+      {:ok, a1} = CommonAPI.post(user1, %{status: "bla"})
+      {:ok, _a2} = CommonAPI.post(user2, %{status: "traps are happy"})
+      {:ok, a3} = CommonAPI.post(user2, %{status: "Trees Are "})
+      {:ok, a4} = CommonAPI.post(user2, %{status: "Agent Smith "})
+      {:ok, a5} = CommonAPI.post(user1, %{status: "Red or Blue "})
 
-      {:ok, _, _} = CommonAPI.favorite(a4.id, user)
-      {:ok, _, _} = CommonAPI.favorite(a3.id, other_user)
-      {:ok, _, _} = CommonAPI.favorite(a3.id, user)
-      {:ok, _, _} = CommonAPI.favorite(a5.id, other_user)
-      {:ok, _, _} = CommonAPI.favorite(a5.id, user)
-      {:ok, _, _} = CommonAPI.favorite(a4.id, other_user)
-      {:ok, _, _} = CommonAPI.favorite(a1.id, user)
-      {:ok, _, _} = CommonAPI.favorite(a1.id, other_user)
+      {:ok, _} = CommonAPI.favorite(user, a4.id)
+      {:ok, _} = CommonAPI.favorite(other_user, a3.id)
+      {:ok, _} = CommonAPI.favorite(user, a3.id)
+      {:ok, _} = CommonAPI.favorite(other_user, a5.id)
+      {:ok, _} = CommonAPI.favorite(user, a5.id)
+      {:ok, _} = CommonAPI.favorite(other_user, a4.id)
+      {:ok, _} = CommonAPI.favorite(user, a1.id)
+      {:ok, _} = CommonAPI.favorite(other_user, a1.id)
       result = ActivityPub.fetch_favourites(user)
 
       assert Enum.map(result, & &1.id) == [a1.id, a5.id, a3.id, a4.id]
@@ -1966,6 +1529,545 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert {:error, "Target account must have the origin in `alsoKnownAs`"} =
                ActivityPub.move(old_user, new_user)
+    end
+  end
+
+  test "doesn't retrieve replies activities with exclude_replies" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "yeah"})
+
+    {:ok, _reply} = CommonAPI.post(user, %{status: "yeah", in_reply_to_status_id: activity.id})
+
+    [result] = ActivityPub.fetch_public_activities(%{"exclude_replies" => "true"})
+
+    assert result.id == activity.id
+
+    assert length(ActivityPub.fetch_public_activities()) == 2
+  end
+
+  describe "replies filtering with public messages" do
+    setup :public_messages
+
+    test "public timeline", %{users: %{u1: user}} do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("reply_filtering_user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 16
+    end
+
+    test "public timeline with reply_visibility `following`", %{
+      users: %{u1: user},
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4,
+      activities: activities
+    } do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 14
+
+      visible_ids =
+        Map.values(u1) ++ Map.values(u2) ++ Map.values(u4) ++ Map.values(activities) ++ [u3[:r1]]
+
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+
+    test "public timeline with reply_visibility `self`", %{
+      users: %{u1: user},
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4,
+      activities: activities
+    } do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 10
+      visible_ids = Map.values(u1) ++ [u2[:r1], u3[:r1], u4[:r1]] ++ Map.values(activities)
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+
+    test "home timeline", %{
+      users: %{u1: user},
+      activities: activities,
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4
+    } do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> Map.put("reply_filtering_user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 13
+
+      visible_ids =
+        Map.values(u1) ++
+          Map.values(u3) ++
+          [
+            activities[:a1],
+            activities[:a2],
+            activities[:a4],
+            u2[:r1],
+            u2[:r3],
+            u4[:r1],
+            u4[:r2]
+          ]
+
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+
+    test "home timeline with reply_visibility `following`", %{
+      users: %{u1: user},
+      activities: activities,
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4
+    } do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 11
+
+      visible_ids =
+        Map.values(u1) ++
+          [
+            activities[:a1],
+            activities[:a2],
+            activities[:a4],
+            u2[:r1],
+            u2[:r3],
+            u3[:r1],
+            u4[:r1],
+            u4[:r2]
+          ]
+
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+
+    test "home timeline with reply_visibility `self`", %{
+      users: %{u1: user},
+      activities: activities,
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4
+    } do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 9
+
+      visible_ids =
+        Map.values(u1) ++
+          [
+            activities[:a1],
+            activities[:a2],
+            activities[:a4],
+            u2[:r1],
+            u3[:r1],
+            u4[:r1]
+          ]
+
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+  end
+
+  describe "replies filtering with private messages" do
+    setup :private_messages
+
+    test "public timeline", %{users: %{u1: user}} do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert activities_ids == []
+    end
+
+    test "public timeline with default reply_visibility `following`", %{users: %{u1: user}} do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
+        |> Map.put("user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert activities_ids == []
+    end
+
+    test "public timeline with default reply_visibility `self`", %{users: %{u1: user}} do
+      activities_ids =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("local_only", false)
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
+        |> Map.put("user", user)
+        |> ActivityPub.fetch_public_activities()
+        |> Enum.map(& &1.id)
+
+      assert activities_ids == []
+    end
+
+    test "home timeline", %{users: %{u1: user}} do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 12
+    end
+
+    test "home timeline with default reply_visibility `following`", %{users: %{u1: user}} do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> Map.put("reply_visibility", "following")
+        |> Map.put("reply_filtering_user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 12
+    end
+
+    test "home timeline with default reply_visibility `self`", %{
+      users: %{u1: user},
+      activities: activities,
+      u1: u1,
+      u2: u2,
+      u3: u3,
+      u4: u4
+    } do
+      params =
+        %{}
+        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
+        |> Map.put("user", user)
+        |> Map.put("reply_visibility", "self")
+        |> Map.put("reply_filtering_user", user)
+
+      activities_ids =
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
+        |> Enum.map(& &1.id)
+
+      assert length(activities_ids) == 10
+
+      visible_ids =
+        Map.values(u1) ++ Map.values(u4) ++ [u2[:r1], u3[:r1]] ++ Map.values(activities)
+
+      assert Enum.all?(visible_ids, &(&1 in activities_ids))
+    end
+  end
+
+  defp public_messages(_) do
+    [u1, u2, u3, u4] = insert_list(4, :user)
+    {:ok, u1} = User.follow(u1, u2)
+    {:ok, u2} = User.follow(u2, u1)
+    {:ok, u1} = User.follow(u1, u4)
+    {:ok, u4} = User.follow(u4, u1)
+
+    {:ok, u2} = User.follow(u2, u3)
+    {:ok, u3} = User.follow(u3, u2)
+
+    {:ok, a1} = CommonAPI.post(u1, %{status: "Status"})
+
+    {:ok, r1_1} =
+      CommonAPI.post(u2, %{
+        status: "@#{u1.nickname} reply from u2 to u1",
+        in_reply_to_status_id: a1.id
+      })
+
+    {:ok, r1_2} =
+      CommonAPI.post(u3, %{
+        status: "@#{u1.nickname} reply from u3 to u1",
+        in_reply_to_status_id: a1.id
+      })
+
+    {:ok, r1_3} =
+      CommonAPI.post(u4, %{
+        status: "@#{u1.nickname} reply from u4 to u1",
+        in_reply_to_status_id: a1.id
+      })
+
+    {:ok, a2} = CommonAPI.post(u2, %{status: "Status"})
+
+    {:ok, r2_1} =
+      CommonAPI.post(u1, %{
+        status: "@#{u2.nickname} reply from u1 to u2",
+        in_reply_to_status_id: a2.id
+      })
+
+    {:ok, r2_2} =
+      CommonAPI.post(u3, %{
+        status: "@#{u2.nickname} reply from u3 to u2",
+        in_reply_to_status_id: a2.id
+      })
+
+    {:ok, r2_3} =
+      CommonAPI.post(u4, %{
+        status: "@#{u2.nickname} reply from u4 to u2",
+        in_reply_to_status_id: a2.id
+      })
+
+    {:ok, a3} = CommonAPI.post(u3, %{status: "Status"})
+
+    {:ok, r3_1} =
+      CommonAPI.post(u1, %{
+        status: "@#{u3.nickname} reply from u1 to u3",
+        in_reply_to_status_id: a3.id
+      })
+
+    {:ok, r3_2} =
+      CommonAPI.post(u2, %{
+        status: "@#{u3.nickname} reply from u2 to u3",
+        in_reply_to_status_id: a3.id
+      })
+
+    {:ok, r3_3} =
+      CommonAPI.post(u4, %{
+        status: "@#{u3.nickname} reply from u4 to u3",
+        in_reply_to_status_id: a3.id
+      })
+
+    {:ok, a4} = CommonAPI.post(u4, %{status: "Status"})
+
+    {:ok, r4_1} =
+      CommonAPI.post(u1, %{
+        status: "@#{u4.nickname} reply from u1 to u4",
+        in_reply_to_status_id: a4.id
+      })
+
+    {:ok, r4_2} =
+      CommonAPI.post(u2, %{
+        status: "@#{u4.nickname} reply from u2 to u4",
+        in_reply_to_status_id: a4.id
+      })
+
+    {:ok, r4_3} =
+      CommonAPI.post(u3, %{
+        status: "@#{u4.nickname} reply from u3 to u4",
+        in_reply_to_status_id: a4.id
+      })
+
+    {:ok,
+     users: %{u1: u1, u2: u2, u3: u3, u4: u4},
+     activities: %{a1: a1.id, a2: a2.id, a3: a3.id, a4: a4.id},
+     u1: %{r1: r1_1.id, r2: r1_2.id, r3: r1_3.id},
+     u2: %{r1: r2_1.id, r2: r2_2.id, r3: r2_3.id},
+     u3: %{r1: r3_1.id, r2: r3_2.id, r3: r3_3.id},
+     u4: %{r1: r4_1.id, r2: r4_2.id, r3: r4_3.id}}
+  end
+
+  defp private_messages(_) do
+    [u1, u2, u3, u4] = insert_list(4, :user)
+    {:ok, u1} = User.follow(u1, u2)
+    {:ok, u2} = User.follow(u2, u1)
+    {:ok, u1} = User.follow(u1, u3)
+    {:ok, u3} = User.follow(u3, u1)
+    {:ok, u1} = User.follow(u1, u4)
+    {:ok, u4} = User.follow(u4, u1)
+
+    {:ok, u2} = User.follow(u2, u3)
+    {:ok, u3} = User.follow(u3, u2)
+
+    {:ok, a1} = CommonAPI.post(u1, %{status: "Status", visibility: "private"})
+
+    {:ok, r1_1} =
+      CommonAPI.post(u2, %{
+        status: "@#{u1.nickname} reply from u2 to u1",
+        in_reply_to_status_id: a1.id,
+        visibility: "private"
+      })
+
+    {:ok, r1_2} =
+      CommonAPI.post(u3, %{
+        status: "@#{u1.nickname} reply from u3 to u1",
+        in_reply_to_status_id: a1.id,
+        visibility: "private"
+      })
+
+    {:ok, r1_3} =
+      CommonAPI.post(u4, %{
+        status: "@#{u1.nickname} reply from u4 to u1",
+        in_reply_to_status_id: a1.id,
+        visibility: "private"
+      })
+
+    {:ok, a2} = CommonAPI.post(u2, %{status: "Status", visibility: "private"})
+
+    {:ok, r2_1} =
+      CommonAPI.post(u1, %{
+        status: "@#{u2.nickname} reply from u1 to u2",
+        in_reply_to_status_id: a2.id,
+        visibility: "private"
+      })
+
+    {:ok, r2_2} =
+      CommonAPI.post(u3, %{
+        status: "@#{u2.nickname} reply from u3 to u2",
+        in_reply_to_status_id: a2.id,
+        visibility: "private"
+      })
+
+    {:ok, a3} = CommonAPI.post(u3, %{status: "Status", visibility: "private"})
+
+    {:ok, r3_1} =
+      CommonAPI.post(u1, %{
+        status: "@#{u3.nickname} reply from u1 to u3",
+        in_reply_to_status_id: a3.id,
+        visibility: "private"
+      })
+
+    {:ok, r3_2} =
+      CommonAPI.post(u2, %{
+        status: "@#{u3.nickname} reply from u2 to u3",
+        in_reply_to_status_id: a3.id,
+        visibility: "private"
+      })
+
+    {:ok, a4} = CommonAPI.post(u4, %{status: "Status", visibility: "private"})
+
+    {:ok, r4_1} =
+      CommonAPI.post(u1, %{
+        status: "@#{u4.nickname} reply from u1 to u4",
+        in_reply_to_status_id: a4.id,
+        visibility: "private"
+      })
+
+    {:ok,
+     users: %{u1: u1, u2: u2, u3: u3, u4: u4},
+     activities: %{a1: a1.id, a2: a2.id, a3: a3.id, a4: a4.id},
+     u1: %{r1: r1_1.id, r2: r1_2.id, r3: r1_3.id},
+     u2: %{r1: r2_1.id, r2: r2_2.id},
+     u3: %{r1: r3_1.id, r2: r3_2.id},
+     u4: %{r1: r4_1.id}}
+  end
+
+  describe "maybe_update_follow_information/1" do
+    setup do
+      clear_config([:instance, :external_user_synchronization], true)
+
+      user = %{
+        local: false,
+        ap_id: "https://gensokyo.2hu/users/raymoo",
+        following_address: "https://gensokyo.2hu/users/following",
+        follower_address: "https://gensokyo.2hu/users/followers",
+        type: "Person"
+      }
+
+      %{user: user}
+    end
+
+    test "logs an error when it can't fetch the info", %{user: user} do
+      assert capture_log(fn ->
+               ActivityPub.maybe_update_follow_information(user)
+             end) =~ "Follower/Following counter update for #{user.ap_id} failed"
+    end
+
+    test "just returns the input if the user type is Application", %{
+      user: user
+    } do
+      user =
+        user
+        |> Map.put(:type, "Application")
+
+      refute capture_log(fn ->
+               assert ^user = ActivityPub.maybe_update_follow_information(user)
+             end) =~ "Follower/Following counter update for #{user.ap_id} failed"
+    end
+
+    test "it just returns the input if the user has no following/follower addresses", %{
+      user: user
+    } do
+      user =
+        user
+        |> Map.put(:following_address, nil)
+        |> Map.put(:follower_address, nil)
+
+      refute capture_log(fn ->
+               assert ^user = ActivityPub.maybe_update_follow_information(user)
+             end) =~ "Follower/Following counter update for #{user.ap_id} failed"
     end
   end
 end

@@ -15,7 +15,6 @@ defmodule Pleroma.UserTest do
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  import Mock
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
@@ -86,7 +85,7 @@ defmodule Pleroma.UserTest do
       {:ok, user: insert(:user)}
     end
 
-    test "outgoing_relations_ap_ids/1", %{user: user} do
+    test "outgoing_relationships_ap_ids/1", %{user: user} do
       rel_types = [:block, :mute, :notification_mute, :reblog_mute, :inverse_subscription]
 
       ap_ids_by_rel =
@@ -124,10 +123,10 @@ defmodule Pleroma.UserTest do
       assert ap_ids_by_rel[:inverse_subscription] ==
                Enum.sort(Enum.map(User.subscriber_users(user), & &1.ap_id))
 
-      outgoing_relations_ap_ids = User.outgoing_relations_ap_ids(user, rel_types)
+      outgoing_relationships_ap_ids = User.outgoing_relationships_ap_ids(user, rel_types)
 
       assert ap_ids_by_rel ==
-               Enum.into(outgoing_relations_ap_ids, %{}, fn {k, v} -> {k, Enum.sort(v)} end)
+               Enum.into(outgoing_relationships_ap_ids, %{}, fn {k, v} -> {k, Enum.sort(v)} end)
     end
   end
 
@@ -194,7 +193,8 @@ defmodule Pleroma.UserTest do
     CommonAPI.follow(pending_follower, locked)
     CommonAPI.follow(pending_follower, locked)
     CommonAPI.follow(accepted_follower, locked)
-    Pleroma.FollowingRelationship.update(accepted_follower, locked, "accept")
+
+    Pleroma.FollowingRelationship.update(accepted_follower, locked, :follow_accept)
 
     assert [^pending_follower] = User.get_follow_requests(locked)
   end
@@ -319,7 +319,7 @@ defmodule Pleroma.UserTest do
           following_address: "http://localhost:4001/users/fuser2/following"
         })
 
-      {:ok, user} = User.follow(user, followed, "accept")
+      {:ok, user} = User.follow(user, followed, :follow_accept)
 
       {:ok, user, _activity} = User.unfollow(user, followed)
 
@@ -332,7 +332,7 @@ defmodule Pleroma.UserTest do
       followed = insert(:user)
       user = insert(:user)
 
-      {:ok, user} = User.follow(user, followed, "accept")
+      {:ok, user} = User.follow(user, followed, :follow_accept)
 
       assert User.following(user) == [user.follower_address, followed.follower_address]
 
@@ -353,7 +353,7 @@ defmodule Pleroma.UserTest do
   test "test if a user is following another user" do
     followed = insert(:user)
     user = insert(:user)
-    User.follow(user, followed, "accept")
+    User.follow(user, followed, :follow_accept)
 
     assert User.following?(user, followed)
     refute User.following?(followed, user)
@@ -581,7 +581,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
 
-      assert user.source_data["endpoints"]
+      assert user.inbox
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
     end
@@ -609,7 +609,7 @@ defmodule Pleroma.UserTest do
              ) <> "/followers"
   end
 
-  describe "remote user creation changeset" do
+  describe "remote user changeset" do
     @valid_remote %{
       bio: "hello",
       name: "Someone",
@@ -621,28 +621,28 @@ defmodule Pleroma.UserTest do
     setup do: clear_config([:instance, :user_name_length])
 
     test "it confirms validity" do
-      cs = User.remote_user_creation(@valid_remote)
+      cs = User.remote_user_changeset(@valid_remote)
       assert cs.valid?
     end
 
     test "it sets the follower_adress" do
-      cs = User.remote_user_creation(@valid_remote)
+      cs = User.remote_user_changeset(@valid_remote)
       # remote users get a fake local follower address
       assert cs.changes.follower_address ==
                User.ap_followers(%User{nickname: @valid_remote[:nickname]})
     end
 
     test "it enforces the fqn format for nicknames" do
-      cs = User.remote_user_creation(%{@valid_remote | nickname: "bla"})
+      cs = User.remote_user_changeset(%{@valid_remote | nickname: "bla"})
       assert Ecto.Changeset.get_field(cs, :local) == false
       assert cs.changes.avatar
       refute cs.valid?
     end
 
     test "it has required fields" do
-      [:name, :ap_id]
+      [:ap_id]
       |> Enum.each(fn field ->
-        cs = User.remote_user_creation(Map.delete(@valid_remote, field))
+        cs = User.remote_user_changeset(Map.delete(@valid_remote, field))
         refute cs.valid?
       end)
     end
@@ -755,8 +755,8 @@ defmodule Pleroma.UserTest do
       ]
 
       {:ok, job} = User.follow_import(user1, identifiers)
-      result = ObanHelpers.perform(job)
 
+      assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
       assert result == [user2, user3]
     end
@@ -978,14 +978,26 @@ defmodule Pleroma.UserTest do
       ]
 
       {:ok, job} = User.blocks_import(user1, identifiers)
-      result = ObanHelpers.perform(job)
 
+      assert {:ok, result} = ObanHelpers.perform(job)
       assert is_list(result)
       assert result == [user2, user3]
     end
   end
 
   describe "get_recipients_from_activity" do
+    test "works for announces" do
+      actor = insert(:user)
+      user = insert(:user, local: true)
+
+      {:ok, activity} = CommonAPI.post(actor, %{status: "hello"})
+      {:ok, announce, _} = CommonAPI.repeat(activity.id, user)
+
+      recipients = User.get_recipients_from_activity(announce)
+
+      assert user in recipients
+    end
+
     test "get recipients" do
       actor = insert(:user)
       user = insert(:user, local: true)
@@ -995,7 +1007,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, activity} =
         CommonAPI.post(actor, %{
-          "status" => "hey @#{addressed.nickname} @#{addressed_remote.nickname}"
+          status: "hey @#{addressed.nickname} @#{addressed_remote.nickname}"
         })
 
       assert Enum.map([actor, addressed], & &1.ap_id) --
@@ -1017,7 +1029,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, activity} =
         CommonAPI.post(actor, %{
-          "status" => "hey @#{addressed.nickname}"
+          status: "hey @#{addressed.nickname}"
         })
 
       assert Enum.map([actor, addressed], & &1.ap_id) --
@@ -1078,7 +1090,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, user2} = User.follow(user2, user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{user2.nickname}"})
 
       activity = Repo.preload(activity, :bookmark)
 
@@ -1114,24 +1126,15 @@ defmodule Pleroma.UserTest do
     setup do: clear_config([:instance, :federating])
 
     test ".delete_user_activities deletes all create activities", %{user: user} do
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "2hu"})
 
       User.delete_user_activities(user)
 
-      # TODO: Remove favorites, repeats, delete activities.
+      # TODO: Test removal favorites, repeats, delete activities.
       refute Activity.get_by_id(activity.id)
     end
 
-    test "it deletes deactivated user" do
-      {:ok, user} = insert(:user, deactivated: true) |> User.set_cache()
-
-      {:ok, job} = User.delete(user)
-      {:ok, _user} = ObanHelpers.perform(job)
-
-      refute User.get_by_id(user.id)
-    end
-
-    test "it deletes a user, all follow relationships and all activities", %{user: user} do
+    test "it deactivates a user, all follow relationships and all activities", %{user: user} do
       follower = insert(:user)
       {:ok, follower} = User.follow(follower, user)
 
@@ -1141,8 +1144,8 @@ defmodule Pleroma.UserTest do
       object_two = insert(:note, user: follower)
       activity_two = insert(:note_activity, user: follower, note: object_two)
 
-      {:ok, like, _} = CommonAPI.favorite(activity_two.id, user)
-      {:ok, like_two, _} = CommonAPI.favorite(activity.id, follower)
+      {:ok, like} = CommonAPI.favorite(user, activity_two.id)
+      {:ok, like_two} = CommonAPI.favorite(follower, activity.id)
       {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
 
       {:ok, job} = User.delete(user)
@@ -1151,8 +1154,7 @@ defmodule Pleroma.UserTest do
       follower = User.get_cached_by_id(follower.id)
 
       refute User.following?(follower, user)
-      refute User.get_by_id(user.id)
-      assert {:ok, nil} == Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
+      assert %{deactivated: true} = User.get_by_id(user.id)
 
       user_activities =
         user.ap_id
@@ -1167,87 +1169,10 @@ defmodule Pleroma.UserTest do
       refute Activity.get_by_id(like_two.id)
       refute Activity.get_by_id(repeat.id)
     end
-
-    test_with_mock "it sends out User Delete activity",
-                   %{user: user},
-                   Pleroma.Web.ActivityPub.Publisher,
-                   [:passthrough],
-                   [] do
-      Pleroma.Config.put([:instance, :federating], true)
-
-      {:ok, follower} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
-      {:ok, _} = User.follow(follower, user)
-
-      {:ok, job} = User.delete(user)
-      {:ok, _user} = ObanHelpers.perform(job)
-
-      assert ObanHelpers.member?(
-               %{
-                 "op" => "publish_one",
-                 "params" => %{
-                   "inbox" => "http://mastodon.example.org/inbox",
-                   "id" => "pleroma:fakeid"
-                 }
-               },
-               all_enqueued(worker: Pleroma.Workers.PublisherWorker)
-             )
-    end
   end
 
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
-  end
-
-  describe "insert or update a user from given data" do
-    test "with normal data" do
-      user = insert(:user, %{nickname: "nick@name.de"})
-      data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
-
-    test "with overly long fields" do
-      current_max_length = Pleroma.Config.get([:instance, :account_field_value_length], 255)
-      user = insert(:user, nickname: "nickname@supergood.domain")
-
-      data = %{
-        ap_id: user.ap_id,
-        name: user.name,
-        nickname: user.nickname,
-        fields: [
-          %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
-        ]
-      }
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
-
-    test "with an overly long bio" do
-      current_max_length = Pleroma.Config.get([:instance, :user_bio_length], 5000)
-      user = insert(:user, nickname: "nickname@supergood.domain")
-
-      data = %{
-        ap_id: user.ap_id,
-        name: user.name,
-        nickname: user.nickname,
-        bio: String.duplicate("h", current_max_length + 1)
-      }
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
-
-    test "with an overly long display name" do
-      current_max_length = Pleroma.Config.get([:instance, :user_name_length], 100)
-      user = insert(:user, nickname: "nickname@supergood.domain")
-
-      data = %{
-        ap_id: user.ap_id,
-        name: String.duplicate("h", current_max_length + 1),
-        nickname: user.nickname
-      }
-
-      assert {:ok, %User{}} = User.insert_or_update_user(data)
-    end
   end
 
   describe "per-user rich-text filtering" do
@@ -1404,7 +1329,7 @@ defmodule Pleroma.UserTest do
       bio = "A.k.a. @nick@domain.com"
 
       expected_text =
-        ~s(A.k.a. <span class="h-card"><a data-user="#{remote_user.id}" class="u-url mention" href="#{
+        ~s(A.k.a. <span class="h-card"><a class="u-url mention" data-user="#{remote_user.id}" href="#{
           remote_user.ap_id
         }" rel="ugc">@<span>nick@domain.com</span></a></span>)
 
@@ -1486,7 +1411,7 @@ defmodule Pleroma.UserTest do
 
         {:ok, _} =
           CommonAPI.post(user, %{
-            "status" => "hey @#{to.nickname}"
+            status: "hey @#{to.nickname}"
           })
       end)
 
@@ -1518,12 +1443,12 @@ defmodule Pleroma.UserTest do
       Enum.each(recipients, fn to ->
         {:ok, _} =
           CommonAPI.post(sender, %{
-            "status" => "hey @#{to.nickname}"
+            status: "hey @#{to.nickname}"
           })
 
         {:ok, _} =
           CommonAPI.post(sender, %{
-            "status" => "hey again @#{to.nickname}"
+            status: "hey again @#{to.nickname}"
           })
       end)
 

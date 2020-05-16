@@ -1,0 +1,521 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
+defmodule Pleroma.Web.ApiSpec.StatusOperation do
+  alias OpenApiSpex.Operation
+  alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.AccountOperation
+  alias Pleroma.Web.ApiSpec.Schemas.ApiError
+  alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
+  alias Pleroma.Web.ApiSpec.Schemas.ScheduledStatus
+  alias Pleroma.Web.ApiSpec.Schemas.Status
+  alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
+
+  import Pleroma.Web.ApiSpec.Helpers
+
+  def open_api_operation(action) do
+    operation = String.to_existing_atom("#{action}_operation")
+    apply(__MODULE__, operation, [])
+  end
+
+  def index_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Get multiple statuses by IDs",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [
+        Operation.parameter(
+          :ids,
+          :query,
+          %Schema{type: :array, items: FlakeID},
+          "Array of status IDs"
+        )
+      ],
+      operationId: "StatusController.index",
+      responses: %{
+        200 => Operation.response("Array of Status", "application/json", array_of_statuses())
+      }
+    }
+  end
+
+  def create_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Publish new status",
+      security: [%{"oAuth" => ["write:statuses"]}],
+      description: "Post a new status",
+      operationId: "StatusController.create",
+      requestBody: request_body("Parameters", create_request(), required: true),
+      responses: %{
+        200 =>
+          Operation.response(
+            "Status. When `scheduled_at` is present, ScheduledStatus is returned instead",
+            "application/json",
+            %Schema{oneOf: [Status, ScheduledStatus]}
+          ),
+        422 => Operation.response("Bad Request", "application/json", ApiError)
+      }
+    }
+  end
+
+  def show_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "View specific status",
+      description: "View information about a status",
+      operationId: "StatusController.show",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response(),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def delete_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Delete status",
+      security: [%{"oAuth" => ["write:statuses"]}],
+      description: "Delete one of your own statuses",
+      operationId: "StatusController.delete",
+      parameters: [id_param()],
+      responses: %{
+        200 => empty_object_response(),
+        403 => Operation.response("Forbidden", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def reblog_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Boost",
+      security: [%{"oAuth" => ["write:statuses"]}],
+      description: "Share a status",
+      operationId: "StatusController.reblog",
+      parameters: [id_param()],
+      requestBody:
+        request_body("Parameters", %Schema{
+          type: :object,
+          properties: %{
+            visibility: %Schema{allOf: [VisibilityScope], default: "public"}
+          }
+        }),
+      responses: %{
+        200 => status_response(),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def unreblog_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Undo boost",
+      security: [%{"oAuth" => ["write:statuses"]}],
+      description: "Undo a reshare of a status",
+      operationId: "StatusController.unreblog",
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response(),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def favourite_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Favourite",
+      security: [%{"oAuth" => ["write:favourites"]}],
+      description: "Add a status to your favourites list",
+      operationId: "StatusController.favourite",
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response(),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def unfavourite_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Undo favourite",
+      security: [%{"oAuth" => ["write:favourites"]}],
+      description: "Remove a status from your favourites list",
+      operationId: "StatusController.unfavourite",
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response(),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def pin_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Pin to profile",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      description: "Feature one of your own public statuses at the top of your profile",
+      operationId: "StatusController.pin",
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response(),
+        400 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def unpin_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Unpin to profile",
+      security: [%{"oAuth" => ["write:accounts"]}],
+      description: "Unfeature a status from the top of your profile",
+      operationId: "StatusController.unpin",
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response(),
+        400 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def bookmark_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Bookmark",
+      security: [%{"oAuth" => ["write:bookmarks"]}],
+      description: "Privately bookmark a status",
+      operationId: "StatusController.bookmark",
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response()
+      }
+    }
+  end
+
+  def unbookmark_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Undo bookmark",
+      security: [%{"oAuth" => ["write:bookmarks"]}],
+      description: "Remove a status from your private bookmarks",
+      operationId: "StatusController.unbookmark",
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response()
+      }
+    }
+  end
+
+  def mute_conversation_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Mute conversation",
+      security: [%{"oAuth" => ["write:mutes"]}],
+      description: "Do not receive notifications for the thread that this status is part of.",
+      operationId: "StatusController.mute_conversation",
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response(),
+        400 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def unmute_conversation_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Unmute conversation",
+      security: [%{"oAuth" => ["write:mutes"]}],
+      description:
+        "Start receiving notifications again for the thread that this status is part of",
+      operationId: "StatusController.unmute_conversation",
+      parameters: [id_param()],
+      responses: %{
+        200 => status_response(),
+        400 => Operation.response("Error", "application/json", ApiError)
+      }
+    }
+  end
+
+  def card_operation do
+    %Operation{
+      tags: ["Statuses"],
+      deprecated: true,
+      summary: "Preview card",
+      description: "Deprecated in favor of card property inlined on Status entity",
+      operationId: "StatusController.card",
+      parameters: [id_param()],
+      security: [%{"oAuth" => ["read:statuses"]}],
+      responses: %{
+        200 =>
+          Operation.response("Card", "application/json", %Schema{
+            type: :object,
+            nullable: true,
+            properties: %{
+              type: %Schema{type: :string, enum: ["link", "photo", "video", "rich"]},
+              provider_name: %Schema{type: :string, nullable: true},
+              provider_url: %Schema{type: :string, format: :uri},
+              url: %Schema{type: :string, format: :uri},
+              image: %Schema{type: :string, nullable: true, format: :uri},
+              title: %Schema{type: :string},
+              description: %Schema{type: :string}
+            }
+          })
+      }
+    }
+  end
+
+  def favourited_by_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Favourited by",
+      description: "View who favourited a given status",
+      operationId: "StatusController.favourited_by",
+      security: [%{"oAuth" => ["read:accounts"]}],
+      parameters: [id_param()],
+      responses: %{
+        200 =>
+          Operation.response(
+            "Array of Accounts",
+            "application/json",
+            AccountOperation.array_of_accounts()
+          ),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def reblogged_by_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Boosted by",
+      description: "View who boosted a given status",
+      operationId: "StatusController.reblogged_by",
+      security: [%{"oAuth" => ["read:accounts"]}],
+      parameters: [id_param()],
+      responses: %{
+        200 =>
+          Operation.response(
+            "Array of Accounts",
+            "application/json",
+            AccountOperation.array_of_accounts()
+          ),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def context_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Parent and child statuses",
+      description: "View statuses above and below this status in the thread",
+      operationId: "StatusController.context",
+      security: [%{"oAuth" => ["read:statuses"]}],
+      parameters: [id_param()],
+      responses: %{
+        200 => Operation.response("Context", "application/json", context())
+      }
+    }
+  end
+
+  def favourites_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Favourited statuses",
+      description: "Statuses the user has favourited",
+      operationId: "StatusController.favourites",
+      parameters: pagination_params(),
+      security: [%{"oAuth" => ["read:favourites"]}],
+      responses: %{
+        200 => Operation.response("Array of Statuses", "application/json", array_of_statuses())
+      }
+    }
+  end
+
+  def bookmarks_operation do
+    %Operation{
+      tags: ["Statuses"],
+      summary: "Bookmarked statuses",
+      description: "Statuses the user has bookmarked",
+      operationId: "StatusController.bookmarks",
+      parameters: [
+        Operation.parameter(:with_relationships, :query, BooleanLike, "Include relationships")
+        | pagination_params()
+      ],
+      security: [%{"oAuth" => ["read:bookmarks"]}],
+      responses: %{
+        200 => Operation.response("Array of Statuses", "application/json", array_of_statuses())
+      }
+    }
+  end
+
+  def array_of_statuses do
+    %Schema{type: :array, items: Status, example: [Status.schema().example]}
+  end
+
+  defp create_request do
+    %Schema{
+      title: "StatusCreateRequest",
+      type: :object,
+      properties: %{
+        status: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "Text content of the status. If `media_ids` is provided, this becomes optional. Attaching a `poll` is optional while `status` is provided."
+        },
+        media_ids: %Schema{
+          nullable: true,
+          type: :array,
+          items: %Schema{type: :string},
+          description: "Array of Attachment ids to be attached as media."
+        },
+        poll: %Schema{
+          nullable: true,
+          type: :object,
+          required: [:options],
+          properties: %{
+            options: %Schema{
+              type: :array,
+              items: %Schema{type: :string},
+              description: "Array of possible answers. Must be provided with `poll[expires_in]`."
+            },
+            expires_in: %Schema{
+              type: :integer,
+              nullable: true,
+              description:
+                "Duration the poll should be open, in seconds. Must be provided with `poll[options]`"
+            },
+            multiple: %Schema{
+              type: :boolean,
+              nullable: true,
+              description: "Allow multiple choices?"
+            },
+            hide_totals: %Schema{
+              type: :boolean,
+              nullable: true,
+              description: "Hide vote counts until the poll ends?"
+            }
+          }
+        },
+        in_reply_to_id: %Schema{
+          nullable: true,
+          allOf: [FlakeID],
+          description: "ID of the status being replied to, if status is a reply"
+        },
+        sensitive: %Schema{
+          type: :boolean,
+          nullable: true,
+          description: "Mark status and attached media as sensitive?"
+        },
+        spoiler_text: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "Text to be shown as a warning or subject before the actual content. Statuses are generally collapsed behind this field."
+        },
+        scheduled_at: %Schema{
+          type: :string,
+          format: :"date-time",
+          nullable: true,
+          description:
+            "ISO 8601 Datetime at which to schedule a status. Providing this paramter will cause ScheduledStatus to be returned instead of Status. Must be at least 5 minutes in the future."
+        },
+        language: %Schema{
+          type: :string,
+          nullable: true,
+          description: "ISO 639 language code for this status."
+        },
+        # Pleroma-specific properties:
+        preview: %Schema{
+          type: :boolean,
+          nullable: true,
+          description:
+            "If set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example"
+        },
+        content_type: %Schema{
+          type: :string,
+          nullable: true,
+          description:
+            "The MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint."
+        },
+        to: %Schema{
+          type: :array,
+          nullable: true,
+          items: %Schema{type: :string},
+          description:
+            "A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply"
+        },
+        visibility: %Schema{
+          nullable: true,
+          anyOf: [
+            VisibilityScope,
+            %Schema{type: :string, description: "`list:LIST_ID`", example: "LIST:123"}
+          ],
+          description:
+            "Visibility of the posted status. Besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`"
+        },
+        expires_in: %Schema{
+          nullable: true,
+          type: :integer,
+          description:
+            "The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour."
+        },
+        in_reply_to_conversation_id: %Schema{
+          nullable: true,
+          type: :string,
+          description:
+            "Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`."
+        }
+      },
+      example: %{
+        "status" => "What time is it?",
+        "sensitive" => "false",
+        "poll" => %{
+          "options" => ["Cofe", "Adventure"],
+          "expires_in" => 420
+        }
+      }
+    }
+  end
+
+  defp id_param do
+    Operation.parameter(:id, :path, FlakeID, "Status ID",
+      example: "9umDrYheeY451cQnEe",
+      required: true
+    )
+  end
+
+  defp status_response do
+    Operation.response("Status", "application/json", Status)
+  end
+
+  defp context do
+    %Schema{
+      title: "StatusContext",
+      description:
+        "Represents the tree around a given status. Used for reconstructing threads of statuses.",
+      type: :object,
+      required: [:ancestors, :descendants],
+      properties: %{
+        ancestors: array_of_statuses(),
+        descendants: array_of_statuses()
+      },
+      example: %{
+        "ancestors" => [Status.schema().example],
+        "descendants" => [Status.schema().example]
+      }
+    }
+  end
+end

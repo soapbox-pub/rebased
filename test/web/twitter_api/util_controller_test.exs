@@ -95,6 +95,30 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         end
       end
     end
+
+    test "it imports follows with different nickname variations", %{conn: conn} do
+      [user2, user3, user4, user5, user6] = insert_list(5, :user)
+
+      identifiers =
+        [
+          user2.ap_id,
+          user3.nickname,
+          "  ",
+          "@" <> user4.nickname,
+          user5.nickname <> "@localhost",
+          "@" <> user6.nickname <> "@localhost"
+        ]
+        |> Enum.join("\n")
+
+      response =
+        conn
+        |> post("/api/pleroma/follow_import", %{"list" => identifiers})
+        |> json_response(:ok)
+
+      assert response == "job started"
+      assert [{:ok, job_result}] = ObanHelpers.perform_all()
+      assert job_result == [user2, user3, user4, user5, user6]
+    end
   end
 
   describe "POST /api/pleroma/blocks_import" do
@@ -135,6 +159,29 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
                  all_enqueued(worker: Pleroma.Workers.BackgroundWorker)
                )
       end
+    end
+
+    test "it imports blocks with different nickname variations", %{conn: conn} do
+      [user2, user3, user4, user5, user6] = insert_list(5, :user)
+
+      identifiers =
+        [
+          user2.ap_id,
+          user3.nickname,
+          "@" <> user4.nickname,
+          user5.nickname <> "@localhost",
+          "@" <> user6.nickname <> "@localhost"
+        ]
+        |> Enum.join(" ")
+
+      response =
+        conn
+        |> post("/api/pleroma/blocks_import", %{"list" => identifiers})
+        |> json_response(:ok)
+
+      assert response == "job started"
+      assert [{:ok, job_result}] = ObanHelpers.perform_all()
+      assert job_result == [user2, user3, user4, user5, user6]
     end
   end
 
@@ -520,7 +567,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert json_response(conn, 200) == %{"status" => "success"}
       fetched_user = User.get_cached_by_id(user.id)
-      assert Comeonin.Pbkdf2.checkpw("newpass", fetched_user.password_hash) == true
+      assert Pbkdf2.verify_pass("newpass", fetched_user.password_hash) == true
     end
   end
 

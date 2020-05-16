@@ -4,7 +4,7 @@ A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma
 
 ## Flake IDs
 
-Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are sortable strings
+Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are lexically sortable strings
 
 ## Attachment cap
 
@@ -14,6 +14,7 @@ Some apps operate under the assumption that no more than 4 attachments can be re
 
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
 Adding the parameter `exclude_visibilities` to the timeline queries will exclude the statuses with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`), e.g., `exclude_visibilities[]=direct&exclude_visibilities[]=private`.
+Adding the parameter `reply_visibility` to the public and home timelines queries will filter replies. Possible values: without parameter (default) shows all replies, `following` - replies directed to you or users you follow, `self` - replies directed to you.
 
 ## Statuses
 
@@ -60,6 +61,7 @@ Has these additional fields under the `pleroma` object:
 - `deactivated`: boolean, true when the user is deactivated
 - `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
+- `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
 
 ### Source
 
@@ -119,6 +121,18 @@ Accepts additional parameters:
 - `exclude_visibilities`: will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`). Usage example: `GET /api/v1/notifications?exclude_visibilities[]=direct&exclude_visibilities[]=private`.
 - `include_types`: will include the notifications for activities with the given types. The parameter accepts an array of types (`mention`, `follow`, `reblog`, `favourite`, `move`, `pleroma:emoji_reaction`). Usage example: `GET /api/v1/notifications?include_types[]=mention&include_types[]=reblog`.
 
+## DELETE `/api/v1/notifications/destroy_multiple`
+
+An endpoint to delete multiple statuses by IDs.
+
+Required parameters:
+
+- `ids`: array of activity ids
+
+Usage example: `DELETE /api/v1/notifications/destroy_multiple/?ids[]=1&ids[]=2`.
+
+Returns on success: 200 OK `{}`
+
 ## POST `/api/v1/statuses`
 
 Additional parameters can be added to the JSON body/Form data:
@@ -164,6 +178,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `actor_type` - the type of this account.
 
 ### Pleroma Settings Store
+
 Pleroma has mechanism that allows frontends to save blobs of json for each user on the backend. This can be used to save frontend-specific settings for a user that the backend does not need to know about.
 
 The parameter should have a form of `{frontend_name: {...}}`, with `frontend_name` identifying your type of client, e.g. `pleroma_fe`. It will overwrite everything under this property, but will not overwrite other frontend's settings.
@@ -172,17 +187,41 @@ This information is returned in the `verify_credentials` endpoint.
 
 ## Authentication
 
-*Pleroma supports refreshing tokens.
+*Pleroma supports refreshing tokens.*
 
 `POST /oauth/token`
-Post here request with grant_type=refresh_token to obtain new access token. Returns an access token.
+
+Post here request with `grant_type=refresh_token` to obtain new access token. Returns an access token.
 
 ## Account Registration
+
 `POST /api/v1/accounts`
 
 Has theses additional parameters (which are the same as in Pleroma-API):
-    * `fullname`: optional
-    * `bio`: optional
-    * `captcha_solution`: optional, contains provider-specific captcha solution,
-    * `captcha_token`: optional, contains provider-specific captcha token
-    * `token`: invite token required when the registerations aren't public.
+
+- `fullname`: optional
+- `bio`: optional
+- `captcha_solution`: optional, contains provider-specific captcha solution,
+- `captcha_token`: optional, contains provider-specific captcha token
+- `captcha_answer_data`: optional, contains provider-specific captcha data
+- `token`: invite token required when the registrations aren't public.
+
+## Instance
+
+`GET /api/v1/instance` has additional fields
+
+- `max_toot_chars`: The maximum characters per post
+- `poll_limits`: The limits of polls
+- `upload_limit`: The maximum upload file size
+- `avatar_upload_limit`: The same for avatars
+- `background_upload_limit`: The same for backgrounds
+- `banner_upload_limit`: The same for banners
+- `pleroma.metadata.features`: A list of supported features
+- `pleroma.metadata.federation`: The federation restrictions of this instance
+- `vapid_public_key`: The public key needed for push messages
+
+## Markers
+
+Has these additional fields under the `pleroma` object:
+
+- `unread_count`: contains number unread notifications

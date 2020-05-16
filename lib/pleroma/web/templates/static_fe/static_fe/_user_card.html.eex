@@ -1,10 +1,10 @@
 <div class="p-author h-card">
-  <a class="u-url" rel="author noopener" href="<%= User.profile_url(@user) %>">
+  <a class="u-url" rel="author noopener" href="<%= (@user.uri || @user.ap_id) %>">
     <div class="avatar">
-      <img src="<%= User.avatar_url(@user) |> MediaProxy.url %>" width="48" height="48" alt="">
+      <img class="u-photo" src="<%= User.avatar_url(@user) |> MediaProxy.url %>" width="48" height="48" alt="">
     </div>
     <span class="display-name">
-      <bdi><%= raw (@user.name |> Formatter.emojify(emoji_for_user(@user))) %></bdi>
+      <bdi class="p-name"><%= raw Formatter.emojify(@user.name, @user.emoji) %></bdi>
       <span class="nickname"><%= @user.nickname %></span>
     </span>
   </a>

@@ -9,19 +9,16 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
   alias Pleroma.User
   alias Pleroma.Web.MastodonAPI.AccountView
 
+  @oauth_read_actions [:index, :show, :list_accounts]
+
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(:list_by_id_and_user when action not in [:index, :create])
-
-  plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action in [:index, :show, :list_accounts])
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:lists"]}
-    when action in [:create, :update, :delete, :add_to_list, :remove_from_list]
-  )
-
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  plug(OAuthScopesPlug, %{scopes: ["read:lists"]} when action in @oauth_read_actions)
+  plug(OAuthScopesPlug, %{scopes: ["write:lists"]} when action not in @oauth_read_actions)
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
+
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ListOperation
 
   # GET /api/v1/lists
   def index(%{assigns: %{user: user}} = conn, opts) do
@@ -30,7 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
   end
 
   # POST /api/v1/lists
-  def create(%{assigns: %{user: user}} = conn, %{"title" => title}) do
+  def create(%{assigns: %{user: user}, body_params: %{title: title}} = conn, _) do
     with {:ok, %Pleroma.List{} = list} <- Pleroma.List.create(title, user) do
       render(conn, "show.json", list: list)
     end
@@ -42,7 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
   end
 
   # PUT /api/v1/lists/:id
-  def update(%{assigns: %{list: list}} = conn, %{"title" => title}) do
+  def update(%{assigns: %{list: list}, body_params: %{title: title}} = conn, _) do
     with {:ok, list} <- Pleroma.List.rename(list, title) do
       render(conn, "show.json", list: list)
     end
@@ -65,7 +62,7 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
   end
 
   # POST /api/v1/lists/:id/accounts
-  def add_to_list(%{assigns: %{list: list}} = conn, %{"account_ids" => account_ids}) do
+  def add_to_list(%{assigns: %{list: list}, body_params: %{account_ids: account_ids}} = conn, _) do
     Enum.each(account_ids, fn account_id ->
       with %User{} = followed <- User.get_cached_by_id(account_id) do
         Pleroma.List.follow(list, followed)
@@ -76,7 +73,10 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
   end
 
   # DELETE /api/v1/lists/:id/accounts
-  def remove_from_list(%{assigns: %{list: list}} = conn, %{"account_ids" => account_ids}) do
+  def remove_from_list(
+        %{assigns: %{list: list}, body_params: %{account_ids: account_ids}} = conn,
+        _
+      ) do
     Enum.each(account_ids, fn account_id ->
       with %User{} = followed <- User.get_cached_by_id(account_id) do
         Pleroma.List.unfollow(list, followed)
@@ -86,7 +86,7 @@ defmodule Pleroma.Web.MastodonAPI.ListController do
     json(conn, %{})
   end
 
-  defp list_by_id_and_user(%{assigns: %{user: user}, params: %{"id" => id}} = conn, _) do
+  defp list_by_id_and_user(%{assigns: %{user: user}, params: %{id: id}} = conn, _) do
     case Pleroma.List.get(id, user) do
       %Pleroma.List{} = list -> assign(conn, :list, list)
       nil -> conn |> render_error(:not_found, "List not found") |> halt()

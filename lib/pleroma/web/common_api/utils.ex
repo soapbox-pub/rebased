@@ -10,7 +10,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
-  alias Pleroma.Emoji
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.Plugs.AuthenticationPlug
@@ -18,35 +17,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
-  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
   require Logger
   require Pleroma.Constants
 
-  # This is a hack for twidere.
-  def get_by_id_or_ap_id(id) do
-    activity =
-      with true <- FlakeId.flake_id?(id),
-           %Activity{} = activity <- Activity.get_by_id_with_object(id) do
-        activity
-      else
-        _ -> Activity.get_create_by_object_ap_id_with_object(id)
-      end
-
-    activity &&
-      if activity.data["type"] == "Create" do
-        activity
-      else
-        Activity.get_create_by_object_ap_id_with_object(activity.data["object"])
-      end
-  end
-
-  def attachments_from_ids(%{"media_ids" => ids, "descriptions" => desc} = _) do
+  def attachments_from_ids(%{media_ids: ids, descriptions: desc}) do
     attachments_from_ids_descs(ids, desc)
   end
 
-  def attachments_from_ids(%{"media_ids" => ids} = _) do
+  def attachments_from_ids(%{media_ids: ids}) do
     attachments_from_ids_no_descs(ids)
   end
 
@@ -57,11 +37,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def attachments_from_ids_no_descs(ids) do
     Enum.map(ids, fn media_id ->
       case Repo.get(Object, media_id) do
-        %Object{data: data} = _ -> data
+        %Object{data: data} -> data
         _ -> nil
       end
     end)
-    |> Enum.filter(& &1)
+    |> Enum.reject(&is_nil/1)
   end
 
   def attachments_from_ids_descs([], _), do: []
@@ -71,14 +51,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     Enum.map(ids, fn media_id ->
       case Repo.get(Object, media_id) do
-        %Object{data: data} = _ ->
+        %Object{data: data} ->
           Map.put(data, "name", descs[media_id])
 
         _ ->
           nil
       end
     end)
-    |> Enum.filter(& &1)
+    |> Enum.reject(&is_nil/1)
   end
 
   @spec get_to_and_cc(
@@ -160,7 +140,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> make_poll_data()
   end
 
-  def make_poll_data(%{"poll" => %{"options" => options, "expires_in" => expires_in}} = data)
+  def make_poll_data(%{poll: %{options: options, expires_in: expires_in}} = data)
       when is_list(options) do
     limits = Pleroma.Config.get([:instance, :poll_limits])
 
@@ -175,7 +155,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
             "replies" => %{"type" => "Collection", "totalItems" => 0}
           }
 
-          {note, Map.merge(emoji, Emoji.Formatter.get_emoji_map(option))}
+          {note, Map.merge(emoji, Pleroma.Emoji.Formatter.get_emoji_map(option))}
         end)
 
       end_time =
@@ -183,7 +163,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         |> DateTime.add(expires_in)
         |> DateTime.to_iso8601()
 
-      key = if truthy_param?(data["poll"]["multiple"]), do: "anyOf", else: "oneOf"
+      key = if truthy_param?(data.poll[:multiple]), do: "anyOf", else: "oneOf"
       poll = %{"type" => "Question", key => option_notes, "closed" => end_time}
 
       {:ok, {poll, emoji}}
@@ -233,7 +213,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       |> Map.get("attachment_links", Config.get([:instance, :attachment_links]))
       |> truthy_param?()
 
-    content_type = get_content_type(data["content_type"])
+    content_type = get_content_type(data[:content_type])
 
     options =
       if visibility == "direct" && Config.get([:instance, :safe_dm_mentions]) do
@@ -422,6 +402,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
+  @spec confirm_current_password(User.t(), String.t()) :: {:ok, User.t()} | {:error, String.t()}
   def confirm_current_password(user, password) do
     with %User{local: true} = db_user <- User.get_cached_by_id(user.id),
          true <- AuthenticationPlug.checkpw(password, db_user.password_hash) do
@@ -429,19 +410,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     else
       _ -> {:error, dgettext("errors", "Invalid password.")}
     end
-  end
-
-  def emoji_from_profile(%User{bio: bio, name: name}) do
-    [bio, name]
-    |> Enum.map(&Emoji.Formatter.get_emoji/1)
-    |> Enum.concat()
-    |> Enum.map(fn {shortcode, %Emoji{file: path}} ->
-      %{
-        "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{path}"},
-        "name" => ":#{shortcode}:"
-      }
-    end)
   end
 
   def maybe_notify_to_recipients(
@@ -537,7 +505,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def get_report_statuses(%User{ap_id: actor}, %{"status_ids" => status_ids}) do
+  def get_report_statuses(%User{ap_id: actor}, %{status_ids: status_ids})
+      when is_list(status_ids) do
     {:ok, Activity.all_by_actor_and_id(actor, status_ids)}
   end
 

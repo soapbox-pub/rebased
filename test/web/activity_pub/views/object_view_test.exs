@@ -44,7 +44,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
       activity = insert(:note_activity, user: user)
 
       {:ok, self_reply1} =
-        CommonAPI.post(user, %{"status" => "self-reply 1", "in_reply_to_status_id" => activity.id})
+        CommonAPI.post(user, %{status: "self-reply 1", in_reply_to_status_id: activity.id})
 
       replies_uris = [self_reply1.object.data["id"]]
       result = ObjectView.render("object.json", %{object: refresh_record(activity)})
@@ -59,7 +59,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
     object = Object.normalize(note)
     user = insert(:user)
 
-    {:ok, like_activity, _} = CommonAPI.favorite(note.id, user)
+    {:ok, like_activity} = CommonAPI.favorite(user, note.id)
 
     result = ObjectView.render("object.json", %{object: like_activity})
 

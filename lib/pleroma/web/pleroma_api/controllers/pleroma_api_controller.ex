@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
+  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2, skip_relationships?: 1]
 
   alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
@@ -28,18 +28,26 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   plug(
     OAuthScopesPlug,
+    %{scopes: ["read:statuses"], fallback: :proceed_unauthenticated}
+    when action == :emoji_reactions_by
+  )
+
+  plug(
+    OAuthScopesPlug,
     %{scopes: ["write:statuses"]}
     when action in [:react_with_emoji, :unreact_with_emoji]
   )
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:conversations"]} when action == :update_conversation
+    %{scopes: ["write:conversations"]}
+    when action in [:update_conversation, :mark_conversations_as_read]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["write:notifications"]} when action == :read_notification)
-
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  plug(
+    OAuthScopesPlug,
+    %{scopes: ["write:notifications"]} when action == :mark_notifications_as_read
+  )
 
   def emoji_reactions_by(%{assigns: %{user: user}} = conn, %{"id" => activity_id} = params) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
@@ -53,7 +61,10 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
           else
             users =
               Enum.map(user_ap_ids, &User.get_cached_by_ap_id/1)
-              |> Enum.filter(& &1)
+              |> Enum.filter(fn
+                %{deactivated: false} -> true
+                _ -> false
+              end)
 
             %{
               name: emoji,
@@ -75,7 +86,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   end
 
   def react_with_emoji(%{assigns: %{user: user}} = conn, %{"id" => activity_id, "emoji" => emoji}) do
-    with {:ok, _activity, _object} <- CommonAPI.react_with_emoji(activity_id, user, emoji),
+    with {:ok, _activity} <- CommonAPI.react_with_emoji(activity_id, user, emoji),
          activity <- Activity.get_by_id(activity_id) do
       conn
       |> put_view(StatusView)
@@ -87,7 +98,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
         "id" => activity_id,
         "emoji" => emoji
       }) do
-    with {:ok, _activity, _object} <- CommonAPI.unreact_with_emoji(activity_id, user, emoji),
+    with {:ok, _activity} <-
+           CommonAPI.unreact_with_emoji(activity_id, user, emoji),
          activity <- Activity.get_by_id(activity_id) do
       conn
       |> put_view(StatusView)
@@ -110,12 +122,11 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   end
 
   def conversation_statuses(
-        %{assigns: %{user: user}} = conn,
+        %{assigns: %{user: %{id: user_id} = user}} = conn,
         %{"id" => participation_id} = params
       ) do
-    with %Participation{} = participation <-
-           Participation.get(participation_id, preload: [:conversation]),
-         true <- user.id == participation.user_id do
+    with %Participation{user_id: ^user_id} = participation <-
+           Participation.get(participation_id, preload: [:conversation]) do
       params =
         params
         |> Map.put("blocking_user", user)
@@ -124,13 +135,19 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
       activities =
         participation.conversation.ap_id
-        |> ActivityPub.fetch_activities_for_context(params)
+        |> ActivityPub.fetch_activities_for_context_query(params)
+        |> Pleroma.Pagination.fetch_paginated(Map.put(params, "total", false))
         |> Enum.reverse()
 
       conn
       |> add_link_headers(activities)
       |> put_view(StatusView)
-      |> render("index.json", %{activities: activities, for: user, as: :activity})
+      |> render("index.json",
+        activities: activities,
+        for: user,
+        as: :activity,
+        skip_relationships: skip_relationships?(params)
+      )
     else
       _error ->
         conn
@@ -162,7 +179,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def read_conversations(%{assigns: %{user: user}} = conn, _params) do
+  def mark_conversations_as_read(%{assigns: %{user: user}} = conn, _params) do
     with {:ok, _, participations} <- Participation.mark_all_as_read(user) do
       conn
       |> add_link_headers(participations)
@@ -171,7 +188,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def read_notification(%{assigns: %{user: user}} = conn, %{"id" => notification_id}) do
+  def mark_notifications_as_read(%{assigns: %{user: user}} = conn, %{"id" => notification_id}) do
     with {:ok, notification} <- Notification.read_one(user, notification_id) do
       conn
       |> put_view(NotificationView)
@@ -184,13 +201,17 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def read_notification(%{assigns: %{user: user}} = conn, %{"max_id" => max_id}) do
+  def mark_notifications_as_read(%{assigns: %{user: user}} = conn, %{"max_id" => max_id} = params) do
     with notifications <- Notification.set_read_up_to(user, max_id) do
       notifications = Enum.take(notifications, 80)
 
       conn
       |> put_view(NotificationView)
-      |> render("index.json", %{notifications: notifications, for: user})
+      |> render("index.json",
+        notifications: notifications,
+        for: user,
+        skip_relationships: skip_relationships?(params)
+      )
     end
   end
 end

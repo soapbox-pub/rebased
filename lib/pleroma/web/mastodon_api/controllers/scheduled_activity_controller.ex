@@ -11,19 +11,21 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityController do
   alias Pleroma.ScheduledActivity
   alias Pleroma.Web.MastodonAPI.MastodonAPI
 
-  plug(:assign_scheduled_activity when action != :index)
-
   @oauth_read_actions [:show, :index]
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action in @oauth_read_actions)
   plug(OAuthScopesPlug, %{scopes: ["write:statuses"]} when action not in @oauth_read_actions)
-
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  plug(:assign_scheduled_activity when action != :index)
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ScheduledActivityOperation
+
   @doc "GET /api/v1/scheduled_statuses"
   def index(%{assigns: %{user: user}} = conn, params) do
+    params = Map.new(params, fn {key, value} -> {to_string(key), value} end)
+
     with scheduled_activities <- MastodonAPI.get_scheduled_activities(user, params) do
       conn
       |> add_link_headers(scheduled_activities)
@@ -37,7 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityController do
   end
 
   @doc "PUT /api/v1/scheduled_statuses/:id"
-  def update(%{assigns: %{scheduled_activity: scheduled_activity}} = conn, params) do
+  def update(%{assigns: %{scheduled_activity: scheduled_activity}, body_params: params} = conn, _) do
     with {:ok, scheduled_activity} <- ScheduledActivity.update(scheduled_activity, params) do
       render(conn, "show.json", scheduled_activity: scheduled_activity)
     end
@@ -50,7 +52,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityController do
     end
   end
 
-  defp assign_scheduled_activity(%{assigns: %{user: user}, params: %{"id" => id}} = conn, _) do
+  defp assign_scheduled_activity(%{assigns: %{user: user}, params: %{id: id}} = conn, _) do
     case ScheduledActivity.get(user, id) do
       %ScheduledActivity{} = activity -> assign(conn, :scheduled_activity, activity)
       nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()

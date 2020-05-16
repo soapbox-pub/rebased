@@ -58,16 +58,16 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp put_params(draft, params) do
-    params = Map.put_new(params, "in_reply_to_status_id", params["in_reply_to_id"])
+    params = Map.put_new(params, :in_reply_to_status_id, params[:in_reply_to_id])
     %__MODULE__{draft | params: params}
   end
 
-  defp status(%{params: %{"status" => status}} = draft) do
+  defp status(%{params: %{status: status}} = draft) do
     %__MODULE__{draft | status: String.trim(status)}
   end
 
   defp summary(%{params: params} = draft) do
-    %__MODULE__{draft | summary: Map.get(params, "spoiler_text", "")}
+    %__MODULE__{draft | summary: Map.get(params, :spoiler_text, "")}
   end
 
   defp full_payload(%{status: status, summary: summary} = draft) do
@@ -84,16 +84,20 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     %__MODULE__{draft | attachments: attachments}
   end
 
-  defp in_reply_to(draft) do
-    case Map.get(draft.params, "in_reply_to_status_id") do
-      "" -> draft
-      nil -> draft
-      id -> %__MODULE__{draft | in_reply_to: Activity.get_by_id(id)}
-    end
+  defp in_reply_to(%{params: %{in_reply_to_status_id: ""}} = draft), do: draft
+
+  defp in_reply_to(%{params: %{in_reply_to_status_id: id}} = draft) when is_binary(id) do
+    %__MODULE__{draft | in_reply_to: Activity.get_by_id(id)}
   end
 
+  defp in_reply_to(%{params: %{in_reply_to_status_id: %Activity{} = in_reply_to}} = draft) do
+    %__MODULE__{draft | in_reply_to: in_reply_to}
+  end
+
+  defp in_reply_to(draft), do: draft
+
   defp in_reply_to_conversation(draft) do
-    in_reply_to_conversation = Participation.get(draft.params["in_reply_to_conversation_id"])
+    in_reply_to_conversation = Participation.get(draft.params[:in_reply_to_conversation_id])
     %__MODULE__{draft | in_reply_to_conversation: in_reply_to_conversation}
   end
 
@@ -108,7 +112,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp expires_at(draft) do
-    case CommonAPI.check_expiry_date(draft.params["expires_in"]) do
+    case CommonAPI.check_expiry_date(draft.params[:expires_in]) do
       {:ok, expires_at} -> %__MODULE__{draft | expires_at: expires_at}
       {:error, message} -> add_error(draft, message)
     end
@@ -140,7 +144,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
     addressed_users =
       draft.mentions
       |> Enum.map(fn {_, mentioned_user} -> mentioned_user.ap_id end)
-      |> Utils.get_addressed_users(draft.params["to"])
+      |> Utils.get_addressed_users(draft.params[:to])
 
     {to, cc} =
       Utils.get_to_and_cc(
@@ -160,7 +164,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp sensitive(draft) do
-    sensitive = draft.params["sensitive"] || Enum.member?(draft.tags, {"#nsfw", "nsfw"})
+    sensitive = draft.params[:sensitive] || Enum.member?(draft.tags, {"#nsfw", "nsfw"})
     %__MODULE__{draft | sensitive: sensitive}
   end
 
@@ -187,7 +191,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
   end
 
   defp preview?(draft) do
-    preview? = Pleroma.Web.ControllerHelper.truthy_param?(draft.params["preview"]) || false
+    preview? = Pleroma.Web.ControllerHelper.truthy_param?(draft.params[:preview])
     %__MODULE__{draft | preview?: preview?}
   end
 

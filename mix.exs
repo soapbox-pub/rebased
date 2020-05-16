@@ -36,11 +36,20 @@ defmodule Pleroma.Mixfile do
       releases: [
         pleroma: [
           include_executables_for: [:unix],
-          applications: [ex_syslogger: :load, syslog: :load],
-          steps: [:assemble, &copy_files/1, &copy_nginx_config/1]
+          applications: [ex_syslogger: :load, syslog: :load, eldap: :transient],
+          steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1]
         ]
       ]
     ]
+  end
+
+  def put_otp_version(%{path: target_path} = release) do
+    File.write!(
+      Path.join([target_path, "OTP_VERSION"]),
+      Pleroma.OTPVersion.version()
+    )
+
+    release
   end
 
   def copy_files(%{path: target_path} = release) do
@@ -63,7 +72,14 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :ssl],
+      extra_applications: [
+        :logger,
+        :runtime_tools,
+        :comeonin,
+        :quack,
+        :fast_sanitize,
+        :ssl
+      ],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -108,10 +124,10 @@ defmodule Pleroma.Mixfile do
       {:ecto_enum, "~> 1.4"},
       {:ecto_sql, "~> 3.3.2"},
       {:postgrex, ">= 0.13.5"},
-      {:oban, "~> 0.12.1"},
+      {:oban, "~> 1.2"},
       {:gettext, "~> 0.15"},
-      {:comeonin, "~> 4.1.1"},
-      {:pbkdf2_elixir, "~> 0.12.3"},
+      {:pbkdf2_elixir, "~> 1.0"},
+      {:bcrypt_elixir, "~> 2.0"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.1"},
       {:html_entities, "~> 0.5", override: true},
@@ -119,7 +135,15 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.2"},
       {:poison, "~> 3.0", override: true},
-      {:tesla, "~> 1.3", override: true},
+      # {:tesla, "~> 1.3", override: true},
+      {:tesla,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/tesla.git",
+       ref: "61b7503cef33f00834f78ddfafe0d5d9dec2270b",
+       override: true},
+      {:castore, "~> 0.1"},
+      {:cowlib, "~> 2.8", override: true},
+      {:gun,
+       github: "ninenines/gun", ref: "e1a69b36b180a574c0ac314ced9613fdd52312cc", override: true},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
       {:ex_aws, "~> 2.1"},
@@ -159,6 +183,7 @@ defmodule Pleroma.Mixfile do
       {:quack, "~> 0.1.1"},
       {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
+      {:pot, "~> 0.10.2"},
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
@@ -166,12 +191,15 @@ defmodule Pleroma.Mixfile do
       {:flake_id, "~> 0.1.0"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
-       ref: "825dc00aaba5a1b7c4202a532b696b595dd3bcb3"},
+       ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
       {:captcha,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:mox, "~> 0.5", only: :test},
-      {:restarter, path: "./restarter"}
+      {:restarter, path: "./restarter"},
+      {:open_api_spex,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
+       ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"}
     ] ++ oauth_deps()
   end
 
@@ -203,19 +231,26 @@ defmodule Pleroma.Mixfile do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
     # Pre-release version, denoted from patch version with a hyphen
+    {tag, tag_err} =
+      System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true)
+
+    {describe, describe_err} = System.cmd("git", ["describe", "--tags", "--abbrev=8"])
+    {commit_hash, commit_hash_err} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+
     git_pre_release =
-      with {tag, 0} <-
-             System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true),
-           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]) do
-        describe
-        |> String.trim()
-        |> String.replace(String.trim(tag), "")
-        |> String.trim_leading("-")
-        |> String.trim()
-      else
-        _ ->
-          {commit_hash, 0} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+      cond do
+        tag_err == 0 and describe_err == 0 ->
+          describe
+          |> String.trim()
+          |> String.replace(String.trim(tag), "")
+          |> String.trim_leading("-")
+          |> String.trim()
+
+        commit_hash_err == 0 ->
           "0-g" <> String.trim(commit_hash)
+
+        true ->
+          ""
       end
 
     # Branch name as pre-release version component, denoted with a dot
@@ -233,6 +268,8 @@ defmodule Pleroma.Mixfile do
           |> String.replace(identifier_filter, "-")
 
         branch_name
+      else
+        _ -> "stable"
       end
 
     build_name =

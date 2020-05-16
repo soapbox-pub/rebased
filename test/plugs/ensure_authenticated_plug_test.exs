@@ -20,34 +20,61 @@ defmodule Pleroma.Plugs.EnsureAuthenticatedPlugTest do
       conn = assign(conn, :user, %User{})
       ret_conn = EnsureAuthenticatedPlug.call(conn, %{})
 
-      assert ret_conn == conn
+      refute ret_conn.halted
     end
+  end
+
+  test "it halts if user is assigned and MFA enabled", %{conn: conn} do
+    conn =
+      conn
+      |> assign(:user, %User{multi_factor_authentication_settings: %{enabled: true}})
+      |> assign(:auth_credentials, %{password: "xd-42"})
+      |> EnsureAuthenticatedPlug.call(%{})
+
+    assert conn.status == 403
+    assert conn.halted == true
+
+    assert conn.resp_body ==
+             "{\"error\":\"Two-factor authentication enabled, you must use a access token.\"}"
+  end
+
+  test "it continues if user is assigned and MFA disabled", %{conn: conn} do
+    conn =
+      conn
+      |> assign(:user, %User{multi_factor_authentication_settings: %{enabled: false}})
+      |> assign(:auth_credentials, %{password: "xd-42"})
+      |> EnsureAuthenticatedPlug.call(%{})
+
+    refute conn.status == 403
+    refute conn.halted
   end
 
   describe "with :if_func / :unless_func options" do
     setup do
       %{
-        true_fn: fn -> true end,
-        false_fn: fn -> false end
+        true_fn: fn _conn -> true end,
+        false_fn: fn _conn -> false end
       }
     end
 
     test "it continues if a user is assigned", %{conn: conn, true_fn: true_fn, false_fn: false_fn} do
       conn = assign(conn, :user, %User{})
-      assert EnsureAuthenticatedPlug.call(conn, if_func: true_fn) == conn
-      assert EnsureAuthenticatedPlug.call(conn, if_func: false_fn) == conn
-      assert EnsureAuthenticatedPlug.call(conn, unless_func: true_fn) == conn
-      assert EnsureAuthenticatedPlug.call(conn, unless_func: false_fn) == conn
+      refute EnsureAuthenticatedPlug.call(conn, if_func: true_fn).halted
+      refute EnsureAuthenticatedPlug.call(conn, if_func: false_fn).halted
+      refute EnsureAuthenticatedPlug.call(conn, unless_func: true_fn).halted
+      refute EnsureAuthenticatedPlug.call(conn, unless_func: false_fn).halted
     end
 
     test "it continues if a user is NOT assigned but :if_func evaluates to `false`",
          %{conn: conn, false_fn: false_fn} do
-      assert EnsureAuthenticatedPlug.call(conn, if_func: false_fn) == conn
+      ret_conn = EnsureAuthenticatedPlug.call(conn, if_func: false_fn)
+      refute ret_conn.halted
     end
 
     test "it continues if a user is NOT assigned but :unless_func evaluates to `true`",
          %{conn: conn, true_fn: true_fn} do
-      assert EnsureAuthenticatedPlug.call(conn, unless_func: true_fn) == conn
+      ret_conn = EnsureAuthenticatedPlug.call(conn, unless_func: true_fn)
+      refute ret_conn.halted
     end
 
     test "it halts if a user is NOT assigned and :if_func evaluates to `true`",

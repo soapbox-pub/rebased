@@ -5,26 +5,31 @@
 defmodule Pleroma.Web.MastodonAPI.SearchController do
   use Pleroma.Web, :controller
 
+  import Pleroma.Web.ControllerHelper, only: [skip_relationships?: 1]
+
   alias Pleroma.Activity
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
 
   require Logger
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+
   # Note: Mastodon doesn't allow unauthenticated access (requires read:accounts / read:search)
   plug(OAuthScopesPlug, %{scopes: ["read:search"], fallback: :proceed_unauthenticated})
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  # Note: on private instances auth is required (EnsurePublicOrAuthenticatedPlug is not skipped)
 
   plug(RateLimiter, [name: :search] when action in [:search, :search2, :account_search])
 
-  def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.SearchOperation
+
+  def account_search(%{assigns: %{user: user}} = conn, %{q: query} = params) do
     accounts = User.search(query, search_options(params, user))
 
     conn
@@ -35,7 +40,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   def search2(conn, params), do: do_search(:v2, conn, params)
   def search(conn, params), do: do_search(:v1, conn, params)
 
-  defp do_search(version, %{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+  defp do_search(version, %{assigns: %{user: user}} = conn, %{q: query} = params) do
     options = search_options(params, user)
     timeout = Keyword.get(Repo.config(), :timeout, 15_000)
     default_values = %{"statuses" => [], "accounts" => [], "hashtags" => []}
@@ -43,7 +48,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     result =
       default_values
       |> Enum.map(fn {resource, default_value} ->
-        if params["type"] in [nil, resource] do
+        if params[:type] in [nil, resource] do
           {resource, fn -> resource_search(version, resource, query, options) end}
         else
           {resource, fn -> default_value end}
@@ -66,11 +71,12 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   defp search_options(params, user) do
     [
-      resolve: params["resolve"] == "true",
-      following: params["following"] == "true",
-      limit: ControllerHelper.fetch_integer_param(params, "limit"),
-      offset: ControllerHelper.fetch_integer_param(params, "offset"),
-      type: params["type"],
+      skip_relationships: skip_relationships?(params),
+      resolve: params[:resolve],
+      following: params[:following],
+      limit: params[:limit],
+      offset: params[:offset],
+      type: params[:type],
       author: get_author(params),
       for_user: user
     ]
@@ -79,12 +85,24 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   defp resource_search(_, "accounts", query, options) do
     accounts = with_fallback(fn -> User.search(query, options) end)
-    AccountView.render("index.json", users: accounts, for: options[:for_user], as: :user)
+
+    AccountView.render("index.json",
+      users: accounts,
+      for: options[:for_user],
+      as: :user,
+      skip_relationships: false
+    )
   end
 
   defp resource_search(_, "statuses", query, options) do
     statuses = with_fallback(fn -> Activity.search(options[:for_user], query, options) end)
-    StatusView.render("index.json", activities: statuses, for: options[:for_user], as: :activity)
+
+    StatusView.render("index.json",
+      activities: statuses,
+      for: options[:for_user],
+      as: :activity,
+      skip_relationships: options[:skip_relationships]
+    )
   end
 
   defp resource_search(:v2, "hashtags", query, _options) do
@@ -121,7 +139,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     end
   end
 
-  defp get_author(%{"account_id" => account_id}) when is_binary(account_id),
+  defp get_author(%{account_id: account_id}) when is_binary(account_id),
     do: User.get_cached_by_id(account_id)
 
   defp get_author(_params), do: nil

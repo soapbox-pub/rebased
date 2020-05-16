@@ -392,9 +392,23 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `email`
   - `name`, optional
 
+- Response:
+  - On success: `204`, empty response
+  - On failure:
+    - 400 Bad Request, JSON:
+
+    ```json
+      [
+        {
+          "error": "Appropriate error message here"
+        }
+      ]
+    ```
+
 ## `GET /api/pleroma/admin/users/:nickname/password_reset`
 
 ### Get a password reset token for a given nickname
+
 
 - Params: none
 - Response:
@@ -413,6 +427,91 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - `nicknames`
 - Response: none (code `204`)
+
+## PUT `/api/pleroma/admin/users/disable_mfa`
+
+### Disable mfa for user's account.
+
+- Params:
+  - `nickname`
+- Response: User’s nickname
+
+## `GET /api/pleroma/admin/users/:nickname/credentials`
+
+### Get the user's email, password, display and settings-related fields
+
+- Params:
+  - `nickname`
+
+- Response:
+
+```json
+{
+  "actor_type": "Person",
+  "allow_following_move": true,
+  "avatar": "https://pleroma.social/media/7e8e7508fd545ef580549b6881d80ec0ff2c81ed9ad37b9bdbbdf0e0d030159d.jpg",
+  "background": "https://pleroma.social/media/4de34c0bd10970d02cbdef8972bef0ebbf55f43cadc449554d4396156162fe9a.jpg",
+  "banner": "https://pleroma.social/media/8d92ba2bd244b613520abf557dd448adcd30f5587022813ee9dd068945986946.jpg",
+  "bio": "bio",
+  "default_scope": "public",
+  "discoverable": false,
+  "email": "user@example.com",
+  "fields": [
+    {
+      "name": "example",
+      "value": "<a href=\"https://example.com\" rel=\"ugc\">https://example.com</a>"
+    }
+  ],
+  "hide_favorites": false,
+  "hide_followers": false,
+  "hide_followers_count": false,
+  "hide_follows": false,
+  "hide_follows_count": false,
+  "id": "9oouHaEEUR54hls968",
+  "locked": true,
+  "name": "user",
+  "no_rich_text": true,
+  "pleroma_settings_store": {},
+  "raw_fields": [
+    {
+      "id": 1,
+      "name": "example",
+      "value": "https://example.com"
+    },
+  ],
+  "show_role": true,
+  "skip_thread_containment": false
+}
+```
+
+## `PATCH /api/pleroma/admin/users/:nickname/credentials`
+
+### Change the user's email, password, display and settings-related fields
+
+- Params:
+  - `email`
+  - `password`
+  - `name`
+  - `bio`
+  - `avatar`
+  - `locked`
+  - `no_rich_text`
+  - `default_scope`
+  - `banner`
+  - `hide_follows`
+  - `hide_followers`
+  - `hide_followers_count`
+  - `hide_follows_count`
+  - `hide_favorites`
+  - `allow_following_move`
+  - `background`
+  - `show_role`
+  - `skip_thread_containment`
+  - `fields`
+  - `discoverable`
+  - `actor_type`
+
+- Response: none (code `200`)
 
 ## `GET /api/pleroma/admin/reports`
 
@@ -665,6 +764,17 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
   - On success: `204`, empty response
 
+## `GET /api/pleroma/admin/statuses/:id`
+
+### Show status by id
+
+- Params:
+  - `id`: required, status id
+- Response:
+  - On failure:
+    - 404 Not Found `"Not Found"`
+  - On success: JSON, Mastodon Status entity
+
 ## `PUT /api/pleroma/admin/statuses/:id`
 
 ### Change the scope of an individual reported status
@@ -696,6 +806,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ### Restarts pleroma application
 
+**Only works when configuration from database is enabled.**
+
 - Params: none
 - Response:
   - On failure:
@@ -705,11 +817,24 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 {}
 ```
 
+## `GET /api/pleroma/admin/need_reboot`
+
+### Returns the flag whether the pleroma should be restarted
+
+- Params: none
+- Response:
+  - `need_reboot` - boolean
+```json
+{
+  "need_reboot": false
+}
+```
+
 ## `GET /api/pleroma/admin/config`
 
 ### Get list of merged default settings with saved in database.
 
-*If `need_reboot` flag exists in response, instance must be restarted, so reboot time settings can take effect.*
+*If `need_reboot` is `true`, instance must be restarted, so reboot time settings can take effect.*
 
 **Only works when configuration from database is enabled.**
 
@@ -731,13 +856,12 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   "need_reboot": true
 }
 ```
- need_reboot - *optional*, if were changed reboot time settings.
 
 ## `POST /api/pleroma/admin/config`
 
 ### Update config settings
 
-*If `need_reboot` flag exists in response, instance must be restarted, so reboot time settings can take effect.*
+*If `need_reboot` is `true`, instance must be restarted, so reboot time settings can take effect.*
 
 **Only works when configuration from database is enabled.**
 
@@ -764,6 +888,8 @@ Some modifications are necessary to save the config settings correctly:
 Most of the settings will be applied in `runtime`, this means that you don't need to restart the instance. But some settings are applied in `compile time` and require a reboot of the instance, such as:
 - all settings inside these keys:
   - `:hackney_pools`
+  - `:connections_pool`
+  - `:pools`
   - `:chat`
 - partially settings inside these keys:
   - `:seconds_valid` in `Pleroma.Captcha`
@@ -879,7 +1005,6 @@ config :quack,
   "need_reboot": true
 }
 ```
-need_reboot - *optional*, if were changed reboot time settings.
 
 ## ` GET /api/pleroma/admin/config/descriptions`
 
@@ -983,3 +1108,104 @@ Loads json generated from `config/descriptions.exs`.
   }
 }
 ```
+
+## `GET /api/pleroma/admin/oauth_app`
+
+### List OAuth app
+
+- Params:
+  - *optional* `name`
+  - *optional* `client_id`
+  - *optional* `page`
+  - *optional* `page_size`
+  - *optional* `trusted`
+
+- Response:
+
+```json
+{
+  "apps": [
+    {
+      "id": 1,
+      "name": "App name",
+      "client_id": "yHoDSiWYp5mPV6AfsaVOWjdOyt5PhWRiafi6MRd1lSk",
+      "client_secret": "nLmis486Vqrv2o65eM9mLQx_m_4gH-Q6PcDpGIMl6FY",
+      "redirect_uri": "https://example.com/oauth-callback",
+      "website": "https://example.com",
+      "trusted": true
+    }
+  ],
+  "count": 17,
+  "page_size": 50
+}
+```
+
+
+## `POST /api/pleroma/admin/oauth_app`
+
+### Create OAuth App
+
+- Params:
+  - `name`
+  - `redirect_uris`
+  - `scopes`
+  - *optional* `website`
+  - *optional* `trusted`
+
+- Response:
+
+```json
+{
+  "id": 1,
+  "name": "App name",
+  "client_id": "yHoDSiWYp5mPV6AfsaVOWjdOyt5PhWRiafi6MRd1lSk",
+  "client_secret": "nLmis486Vqrv2o65eM9mLQx_m_4gH-Q6PcDpGIMl6FY",
+  "redirect_uri": "https://example.com/oauth-callback",
+  "website": "https://example.com",
+  "trusted": true
+}
+```
+
+- On failure:
+```json
+{
+  "redirect_uris": "can't be blank",
+  "name": "can't be blank"
+}
+```
+
+## `PATCH /api/pleroma/admin/oauth_app/:id`
+
+### Update OAuth App
+
+- Params:
+  -  *optional* `name`
+  -  *optional* `redirect_uris`
+  -  *optional* `scopes`
+  -  *optional* `website`
+  -  *optional* `trusted`
+
+- Response:
+
+```json
+{
+  "id": 1,
+  "name": "App name",
+  "client_id": "yHoDSiWYp5mPV6AfsaVOWjdOyt5PhWRiafi6MRd1lSk",
+  "client_secret": "nLmis486Vqrv2o65eM9mLQx_m_4gH-Q6PcDpGIMl6FY",
+  "redirect_uri": "https://example.com/oauth-callback",
+  "website": "https://example.com",
+  "trusted": true
+}
+```
+
+## `DELETE /api/pleroma/admin/oauth_app/:id`
+
+### Delete OAuth App
+
+- Params: None
+
+- Response:
+  - On success: `204`, empty response
+  - On failure:
+    - 400 Bad Request `"Invalid parameters"` when `status` is missing

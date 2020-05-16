@@ -22,21 +22,21 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     {:ok, direct} =
       CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}, @#{user_three.nickname}!",
-        "visibility" => "direct"
+        status: "Hi @#{user_two.nickname}, @#{user_three.nickname}!",
+        visibility: "direct"
       })
 
     assert User.get_cached_by_id(user_two.id).unread_conversation_count == 1
 
     {:ok, _follower_only} =
       CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}!",
-        "visibility" => "private"
+        status: "Hi @#{user_two.nickname}!",
+        visibility: "private"
       })
 
     res_conn = get(conn, "/api/v1/conversations")
 
-    assert response = json_response(res_conn, 200)
+    assert response = json_response_and_validate_schema(res_conn, 200)
 
     assert [
              %{
@@ -63,46 +63,46 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     {:ok, direct1} =
       CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}!",
-        "visibility" => "direct"
+        status: "Hi @#{user_two.nickname}!",
+        visibility: "direct"
       })
 
     {:ok, _direct2} =
       CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_three.nickname}!",
-        "visibility" => "direct"
+        status: "Hi @#{user_three.nickname}!",
+        visibility: "direct"
       })
 
     {:ok, direct3} =
       CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}, @#{user_three.nickname}!",
-        "visibility" => "direct"
+        status: "Hi @#{user_two.nickname}, @#{user_three.nickname}!",
+        visibility: "direct"
       })
 
     {:ok, _direct4} =
       CommonAPI.post(user_two, %{
-        "status" => "Hi @#{user_three.nickname}!",
-        "visibility" => "direct"
+        status: "Hi @#{user_three.nickname}!",
+        visibility: "direct"
       })
 
     {:ok, direct5} =
       CommonAPI.post(user_two, %{
-        "status" => "Hi @#{user_one.nickname}!",
-        "visibility" => "direct"
+        status: "Hi @#{user_one.nickname}!",
+        visibility: "direct"
       })
 
-    [conversation1, conversation2] =
-      conn
-      |> get("/api/v1/conversations", %{"recipients" => [user_two.id]})
-      |> json_response(200)
+    assert [conversation1, conversation2] =
+             conn
+             |> get("/api/v1/conversations?recipients[]=#{user_two.id}")
+             |> json_response_and_validate_schema(200)
 
     assert conversation1["last_status"]["id"] == direct5.id
     assert conversation2["last_status"]["id"] == direct1.id
 
     [conversation1] =
       conn
-      |> get("/api/v1/conversations", %{"recipients" => [user_two.id, user_three.id]})
-      |> json_response(200)
+      |> get("/api/v1/conversations?recipients[]=#{user_two.id}&recipients[]=#{user_three.id}")
+      |> json_response_and_validate_schema(200)
 
     assert conversation1["last_status"]["id"] == direct3.id
   end
@@ -112,21 +112,21 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     {:ok, direct} =
       CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}",
-        "visibility" => "direct"
+        status: "Hi @#{user_two.nickname}",
+        visibility: "direct"
       })
 
     {:ok, direct_reply} =
       CommonAPI.post(user_two, %{
-        "status" => "reply",
-        "visibility" => "direct",
-        "in_reply_to_status_id" => direct.id
+        status: "reply",
+        visibility: "direct",
+        in_reply_to_status_id: direct.id
       })
 
     [%{"last_status" => res_last_status}] =
       conn
       |> get("/api/v1/conversations")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert res_last_status["id"] == direct_reply.id
   end
@@ -136,8 +136,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     {:ok, direct} =
       CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}",
-        "visibility" => "direct"
+        status: "Hi @#{user_two.nickname}",
+        visibility: "direct"
       })
 
     assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
@@ -154,12 +154,12 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     [%{"id" => direct_conversation_id, "unread" => true}] =
       user_two_conn
       |> get("/api/v1/conversations")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     %{"unread" => false} =
       user_two_conn
       |> post("/api/v1/conversations/#{direct_conversation_id}/read")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert User.get_cached_by_id(user_one.id).unread_conversation_count == 0
     assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
@@ -167,15 +167,15 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     # The conversation is marked as unread on reply
     {:ok, _} =
       CommonAPI.post(user_two, %{
-        "status" => "reply",
-        "visibility" => "direct",
-        "in_reply_to_status_id" => direct.id
+        status: "reply",
+        visibility: "direct",
+        in_reply_to_status_id: direct.id
       })
 
     [%{"unread" => true}] =
       conn
       |> get("/api/v1/conversations")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert User.get_cached_by_id(user_one.id).unread_conversation_count == 1
     assert User.get_cached_by_id(user_two.id).unread_conversation_count == 0
@@ -183,9 +183,9 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
     # A reply doesn't increment the user's unread_conversation_count if the conversation is unread
     {:ok, _} =
       CommonAPI.post(user_two, %{
-        "status" => "reply",
-        "visibility" => "direct",
-        "in_reply_to_status_id" => direct.id
+        status: "reply",
+        visibility: "direct",
+        in_reply_to_status_id: direct.id
       })
 
     assert User.get_cached_by_id(user_one.id).unread_conversation_count == 1
@@ -197,8 +197,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationControllerTest do
 
     {:ok, direct} =
       CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}!",
-        "visibility" => "direct"
+        status: "Hi @#{user_two.nickname}!",
+        visibility: "direct"
       })
 
     res_conn = get(conn, "/api/v1/statuses/#{direct.id}/context")

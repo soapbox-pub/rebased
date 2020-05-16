@@ -7,8 +7,8 @@
       <input type="hidden" name="profile" value="">
       <button type="submit" class="collapse">Remote follow</button>
     </form>
-    <%= raw Formatter.emojify(@user.name, emoji_for_user(@user)) %> |
-    <%= link "@#{@user.nickname}@#{Endpoint.host()}", to: User.profile_url(@user) %>
+    <%= raw Formatter.emojify(@user.name, @user.emoji) %> |
+    <%= link "@#{@user.nickname}@#{Endpoint.host()}", to: (@user.uri || @user.ap_id) %>
   </h3>
   <p><%= raw @user.bio %></p>
 </header>

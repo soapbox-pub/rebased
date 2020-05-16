@@ -16,10 +16,25 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   alias Pleroma.Web.MastodonAPI.StatusView
   import Pleroma.Factory
 
+  defp test_notifications_rendering(notifications, user, expected_result) do
+    result = NotificationView.render("index.json", %{notifications: notifications, for: user})
+
+    assert expected_result == result
+
+    result =
+      NotificationView.render("index.json", %{
+        notifications: notifications,
+        for: user,
+        relationships: nil
+      })
+
+    assert expected_result == result
+  end
+
   test "Mention notification" do
     user = insert(:user)
     mentioned_user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{mentioned_user.nickname}"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{mentioned_user.nickname}"})
     {:ok, [notification]} = Notification.create_notifications(activity)
     user = User.get_cached_by_id(user.id)
 
@@ -32,17 +47,14 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    result =
-      NotificationView.render("index.json", %{notifications: [notification], for: mentioned_user})
-
-    assert [expected] == result
+    test_notifications_rendering([notification], mentioned_user, [expected])
   end
 
   test "Favourite notification" do
     user = insert(:user)
     another_user = insert(:user)
-    {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
-    {:ok, favorite_activity, _object} = CommonAPI.favorite(create_activity.id, another_user)
+    {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
+    {:ok, favorite_activity} = CommonAPI.favorite(another_user, create_activity.id)
     {:ok, [notification]} = Notification.create_notifications(favorite_activity)
     create_activity = Activity.get_by_id(create_activity.id)
 
@@ -55,15 +67,13 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    result = NotificationView.render("index.json", %{notifications: [notification], for: user})
-
-    assert [expected] == result
+    test_notifications_rendering([notification], user, [expected])
   end
 
   test "Reblog notification" do
     user = insert(:user)
     another_user = insert(:user)
-    {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
+    {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
     {:ok, reblog_activity, _object} = CommonAPI.repeat(create_activity.id, another_user)
     {:ok, [notification]} = Notification.create_notifications(reblog_activity)
     reblog_activity = Activity.get_by_id(create_activity.id)
@@ -77,9 +87,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    result = NotificationView.render("index.json", %{notifications: [notification], for: user})
-
-    assert [expected] == result
+    test_notifications_rendering([notification], user, [expected])
   end
 
   test "Follow notification" do
@@ -96,22 +104,31 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    result =
-      NotificationView.render("index.json", %{notifications: [notification], for: followed})
-
-    assert [expected] == result
+    test_notifications_rendering([notification], followed, [expected])
 
     User.perform(:delete, follower)
     notification = Notification |> Repo.one() |> Repo.preload(:activity)
 
-    assert [] ==
-             NotificationView.render("index.json", %{notifications: [notification], for: followed})
+    test_notifications_rendering([notification], followed, [])
   end
 
+  @tag capture_log: true
   test "Move notification" do
     old_user = insert(:user)
     new_user = insert(:user, also_known_as: [old_user.ap_id])
     follower = insert(:user)
+
+    old_user_url = old_user.ap_id
+
+    body =
+      File.read!("test/fixtures/users_mock/localhost.json")
+      |> String.replace("{{nickname}}", old_user.nickname)
+      |> Jason.encode!()
+
+    Tesla.Mock.mock(fn
+      %{method: :get, url: ^old_user_url} ->
+        %Tesla.Env{status: 200, body: body}
+    end)
 
     User.follow(follower, old_user)
     Pleroma.Web.ActivityPub.ActivityPub.move(old_user, new_user)
@@ -131,16 +148,15 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    assert [expected] ==
-             NotificationView.render("index.json", %{notifications: [notification], for: follower})
+    test_notifications_rendering([notification], follower, [expected])
   end
 
   test "EmojiReact notification" do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe"})
-    {:ok, _activity, _} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+    {:ok, activity} = CommonAPI.post(user, %{status: "#cofe"})
+    {:ok, _activity} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
 
     activity = Repo.get(Activity, activity.id)
 
@@ -158,7 +174,6 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 
-    assert expected ==
-             NotificationView.render("show.json", %{notification: notification, for: user})
+    test_notifications_rendering([notification], user, [expected])
   end
 end

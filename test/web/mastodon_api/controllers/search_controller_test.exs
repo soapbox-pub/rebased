@@ -13,7 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
   import Tesla.Mock
   import Mock
 
-  setup do
+  setup_all do
     mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
@@ -27,8 +27,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         capture_log(fn ->
           results =
             conn
-            |> get("/api/v2/search", %{"q" => "2hu"})
-            |> json_response(200)
+            |> get("/api/v2/search?q=2hu")
+            |> json_response_and_validate_schema(200)
 
           assert results["accounts"] == []
           assert results["statuses"] == []
@@ -42,20 +42,20 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       user_two = insert(:user, %{nickname: "shp@shitposter.club"})
       user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "This is about 2hu private 天子"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "This is about 2hu private 天子"})
 
       {:ok, _activity} =
         CommonAPI.post(user, %{
-          "status" => "This is about 2hu, but private",
-          "visibility" => "private"
+          status: "This is about 2hu, but private",
+          visibility: "private"
         })
 
-      {:ok, _} = CommonAPI.post(user_two, %{"status" => "This isn't"})
+      {:ok, _} = CommonAPI.post(user_two, %{status: "This isn't"})
 
       results =
         conn
-        |> get("/api/v2/search", %{"q" => "2hu #private"})
-        |> json_response(200)
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "2hu #private"})}")
+        |> json_response_and_validate_schema(200)
 
       [account | _] = results["accounts"]
       assert account["id"] == to_string(user_three.id)
@@ -68,8 +68,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       assert status["id"] == to_string(activity.id)
 
       results =
-        get(conn, "/api/v2/search", %{"q" => "天子"})
-        |> json_response(200)
+        get(conn, "/api/v2/search?q=天子")
+        |> json_response_and_validate_schema(200)
 
       [status] = results["statuses"]
       assert status["id"] == to_string(activity.id)
@@ -80,17 +80,17 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       user_smith = insert(:user, %{nickname: "Agent", name: "I love 2hu"})
       user_neo = insert(:user, %{nickname: "Agent Neo", name: "Agent"})
 
-      {:ok, act1} = CommonAPI.post(user, %{"status" => "This is about 2hu private 天子"})
-      {:ok, act2} = CommonAPI.post(user_smith, %{"status" => "Agent Smith"})
-      {:ok, act3} = CommonAPI.post(user_neo, %{"status" => "Agent Smith"})
+      {:ok, act1} = CommonAPI.post(user, %{status: "This is about 2hu private 天子"})
+      {:ok, act2} = CommonAPI.post(user_smith, %{status: "Agent Smith"})
+      {:ok, act3} = CommonAPI.post(user_neo, %{status: "Agent Smith"})
       Pleroma.User.block(user, user_smith)
 
       results =
         conn
         |> assign(:user, user)
         |> assign(:token, insert(:oauth_token, user: user, scopes: ["read"]))
-        |> get("/api/v2/search", %{"q" => "Agent"})
-        |> json_response(200)
+        |> get("/api/v2/search?q=Agent")
+        |> json_response_and_validate_schema(200)
 
       status_ids = Enum.map(results["statuses"], fn g -> g["id"] end)
 
@@ -107,8 +107,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v1/accounts/search", %{"q" => "shp"})
-        |> json_response(200)
+        |> get("/api/v1/accounts/search?q=shp")
+        |> json_response_and_validate_schema(200)
 
       result_ids = for result <- results, do: result["acct"]
 
@@ -117,8 +117,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v1/accounts/search", %{"q" => "2hu"})
-        |> json_response(200)
+        |> get("/api/v1/accounts/search?q=2hu")
+        |> json_response_and_validate_schema(200)
 
       result_ids = for result <- results, do: result["acct"]
 
@@ -130,8 +130,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v1/accounts/search", %{"q" => "shp@shitposter.club xxx "})
-        |> json_response(200)
+        |> get("/api/v1/accounts/search?q=shp@shitposter.club xxx")
+        |> json_response_and_validate_schema(200)
 
       assert length(results) == 1
     end
@@ -146,8 +146,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         capture_log(fn ->
           results =
             conn
-            |> get("/api/v1/search", %{"q" => "2hu"})
-            |> json_response(200)
+            |> get("/api/v1/search?q=2hu")
+            |> json_response_and_validate_schema(200)
 
           assert results["accounts"] == []
           assert results["statuses"] == []
@@ -161,20 +161,20 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       user_two = insert(:user, %{nickname: "shp@shitposter.club"})
       user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "This is about 2hu"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "This is about 2hu"})
 
       {:ok, _activity} =
         CommonAPI.post(user, %{
-          "status" => "This is about 2hu, but private",
-          "visibility" => "private"
+          status: "This is about 2hu, but private",
+          visibility: "private"
         })
 
-      {:ok, _} = CommonAPI.post(user_two, %{"status" => "This isn't"})
+      {:ok, _} = CommonAPI.post(user_two, %{status: "This isn't"})
 
       results =
         conn
-        |> get("/api/v1/search", %{"q" => "2hu"})
-        |> json_response(200)
+        |> get("/api/v1/search?q=2hu")
+        |> json_response_and_validate_schema(200)
 
       [account | _] = results["accounts"]
       assert account["id"] == to_string(user_three.id)
@@ -189,13 +189,13 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       capture_log(fn ->
         {:ok, %{id: activity_id}} =
           CommonAPI.post(insert(:user), %{
-            "status" => "check out https://shitposter.club/notice/2827873"
+            status: "check out https://shitposter.club/notice/2827873"
           })
 
         results =
           conn
-          |> get("/api/v1/search", %{"q" => "https://shitposter.club/notice/2827873"})
-          |> json_response(200)
+          |> get("/api/v1/search?q=https://shitposter.club/notice/2827873")
+          |> json_response_and_validate_schema(200)
 
         [status, %{"id" => ^activity_id}] = results["statuses"]
 
@@ -207,15 +207,17 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     test "search doesn't show statuses that it shouldn't", %{conn: conn} do
       {:ok, activity} =
         CommonAPI.post(insert(:user), %{
-          "status" => "This is about 2hu, but private",
-          "visibility" => "private"
+          status: "This is about 2hu, but private",
+          visibility: "private"
         })
 
       capture_log(fn ->
+        q = Object.normalize(activity).data["id"]
+
         results =
           conn
-          |> get("/api/v1/search", %{"q" => Object.normalize(activity).data["id"]})
-          |> json_response(200)
+          |> get("/api/v1/search?q=#{q}")
+          |> json_response_and_validate_schema(200)
 
         [] = results["statuses"]
       end)
@@ -228,8 +230,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         conn
         |> assign(:user, user)
         |> assign(:token, insert(:oauth_token, user: user, scopes: ["read"]))
-        |> get("/api/v1/search", %{"q" => "mike@osada.macgirvin.com", "resolve" => "true"})
-        |> json_response(200)
+        |> get("/api/v1/search?q=mike@osada.macgirvin.com&resolve=true")
+        |> json_response_and_validate_schema(200)
 
       [account] = results["accounts"]
       assert account["acct"] == "mike@osada.macgirvin.com"
@@ -238,8 +240,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     test "search doesn't fetch remote accounts if resolve is false", %{conn: conn} do
       results =
         conn
-        |> get("/api/v1/search", %{"q" => "mike@osada.macgirvin.com", "resolve" => "false"})
-        |> json_response(200)
+        |> get("/api/v1/search?q=mike@osada.macgirvin.com&resolve=false")
+        |> json_response_and_validate_schema(200)
 
       assert [] == results["accounts"]
     end
@@ -249,21 +251,21 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       _user_two = insert(:user, %{nickname: "shp@shitposter.club"})
       _user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
 
-      {:ok, _activity1} = CommonAPI.post(user, %{"status" => "This is about 2hu"})
-      {:ok, _activity2} = CommonAPI.post(user, %{"status" => "This is also about 2hu"})
+      {:ok, _activity1} = CommonAPI.post(user, %{status: "This is about 2hu"})
+      {:ok, _activity2} = CommonAPI.post(user, %{status: "This is also about 2hu"})
 
       result =
         conn
-        |> get("/api/v1/search", %{"q" => "2hu", "limit" => 1})
+        |> get("/api/v1/search?q=2hu&limit=1")
 
-      assert results = json_response(result, 200)
+      assert results = json_response_and_validate_schema(result, 200)
       assert [%{"id" => activity_id1}] = results["statuses"]
       assert [_] = results["accounts"]
 
       results =
         conn
-        |> get("/api/v1/search", %{"q" => "2hu", "limit" => 1, "offset" => 1})
-        |> json_response(200)
+        |> get("/api/v1/search?q=2hu&limit=1&offset=1")
+        |> json_response_and_validate_schema(200)
 
       assert [%{"id" => activity_id2}] = results["statuses"]
       assert [] = results["accounts"]
@@ -275,30 +277,30 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       user = insert(:user)
       _user_two = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
 
-      {:ok, _activity} = CommonAPI.post(user, %{"status" => "This is about 2hu"})
+      {:ok, _activity} = CommonAPI.post(user, %{status: "This is about 2hu"})
 
       assert %{"statuses" => [_activity], "accounts" => [], "hashtags" => []} =
                conn
-               |> get("/api/v1/search", %{"q" => "2hu", "type" => "statuses"})
-               |> json_response(200)
+               |> get("/api/v1/search?q=2hu&type=statuses")
+               |> json_response_and_validate_schema(200)
 
       assert %{"statuses" => [], "accounts" => [_user_two], "hashtags" => []} =
                conn
-               |> get("/api/v1/search", %{"q" => "2hu", "type" => "accounts"})
-               |> json_response(200)
+               |> get("/api/v1/search?q=2hu&type=accounts")
+               |> json_response_and_validate_schema(200)
     end
 
     test "search uses account_id to filter statuses by the author", %{conn: conn} do
       user = insert(:user, %{nickname: "shp@shitposter.club"})
       user_two = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
 
-      {:ok, activity1} = CommonAPI.post(user, %{"status" => "This is about 2hu"})
-      {:ok, activity2} = CommonAPI.post(user_two, %{"status" => "This is also about 2hu"})
+      {:ok, activity1} = CommonAPI.post(user, %{status: "This is about 2hu"})
+      {:ok, activity2} = CommonAPI.post(user_two, %{status: "This is also about 2hu"})
 
       results =
         conn
-        |> get("/api/v1/search", %{"q" => "2hu", "account_id" => user.id})
-        |> json_response(200)
+        |> get("/api/v1/search?q=2hu&account_id=#{user.id}")
+        |> json_response_and_validate_schema(200)
 
       assert [%{"id" => activity_id1}] = results["statuses"]
       assert activity_id1 == activity1.id
@@ -306,8 +308,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       results =
         conn
-        |> get("/api/v1/search", %{"q" => "2hu", "account_id" => user_two.id})
-        |> json_response(200)
+        |> get("/api/v1/search?q=2hu&account_id=#{user_two.id}")
+        |> json_response_and_validate_schema(200)
 
       assert [%{"id" => activity_id2}] = results["statuses"]
       assert activity_id2 == activity2.id
