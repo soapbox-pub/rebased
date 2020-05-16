@@ -23,6 +23,18 @@ defmodule Pleroma.Web.CommonAPITest do
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
 
+  describe "unblocking" do
+    test "it works even without an existing block activity" do
+      blocked = insert(:user)
+      blocker = insert(:user)
+      User.block(blocker, blocked)
+
+      assert User.blocks?(blocker, blocked)
+      assert {:ok, :no_activity} == CommonAPI.unblock(blocker, blocked)
+      refute User.blocks?(blocker, blocked)
+    end
+  end
+
   describe "deletion" do
     test "it works with pruned objects" do
       user = insert(:user)
