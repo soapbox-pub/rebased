@@ -31,6 +31,16 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   end
 
   def maybe_update_password(%User{password_hash: "$2" <> _} = user, password) do
+    do_update_password(user, password)
+  end
+
+  def maybe_update_password(%User{password_hash: "$6" <> _} = user, password) do
+    do_update_password(user, password)
+  end
+
+  def maybe_update_password(user, _), do: {:ok, user}
+
+  defp do_update_password(user, password) do
     user
     |> User.password_update_changeset(%{
       "password" => password,
@@ -38,8 +48,6 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
     })
     |> Pleroma.Repo.update()
   end
-
-  def maybe_update_password(user, _), do: {:ok, user}
 
   def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
 

@@ -68,6 +68,26 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
     assert "$pbkdf2" <> _ = user.password_hash
   end
 
+  test "with a crypt hash, it updates to a pkbdf2 hash", %{conn: conn} do
+    user =
+      insert(:user,
+        password_hash:
+          "$6$9psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
+      )
+
+    conn =
+      conn
+      |> assign(:auth_user, user)
+      |> assign(:auth_credentials, %{password: "password"})
+      |> AuthenticationPlug.call(%{})
+
+    assert conn.assigns.user.id == conn.assigns.auth_user.id
+    assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
+
+    user = User.get_by_id(user.id)
+    assert "$pbkdf2" <> _ = user.password_hash
+  end
+
   describe "checkpw/2" do
     test "check pbkdf2 hash" do
       hash =
