@@ -11,6 +11,7 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
   alias Pleroma.User
 
   import ExUnit.CaptureLog
+  import Pleroma.Factory
 
   setup %{conn: conn} do
     user = %User{
@@ -50,16 +51,21 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
     assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
   end
 
-  test "with a wrong password in the credentials, it does nothing", %{conn: conn} do
+  test "with a bcrypt hash, it updates to a pkbdf2 hash", %{conn: conn} do
+    user = insert(:user, password_hash: Bcrypt.hash_pwd_salt("123"))
+    assert "$2" <> _ = user.password_hash
+
     conn =
       conn
-      |> assign(:auth_credentials, %{password: "wrong"})
-
-    ret_conn =
-      conn
+      |> assign(:auth_user, user)
+      |> assign(:auth_credentials, %{password: "123"})
       |> AuthenticationPlug.call(%{})
 
-    assert conn == ret_conn
+    assert conn.assigns.user.id == conn.assigns.auth_user.id
+    assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
+
+    user = User.get_by_id(user.id)
+    assert "$pbkdf2" <> _ = user.password_hash
   end
 
   describe "checkpw/2" do
