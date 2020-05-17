@@ -117,7 +117,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       [[actor, recipient], [recipient, actor]]
       |> Enum.each(fn [user, other_user] ->
         if user.local do
-          Chat.bump_or_create(user.id, other_user.ap_id)
+          if user.ap_id == actor.ap_id do
+            Chat.get_or_create(user.id, other_user.ap_id)
+          else
+            Chat.bump_or_create(user.id, other_user.ap_id)
+          end
         end
       end)
 
