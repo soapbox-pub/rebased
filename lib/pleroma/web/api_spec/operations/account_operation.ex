@@ -155,8 +155,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       security: [%{"oAuth" => ["read:accounts"]}],
       description:
         "Accounts which follow the given account, if network is not hidden by the account owner.",
-      parameters:
-        [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}] ++ pagination_params(),
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        with_relationships_param() | pagination_params()
+      ],
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
       }
@@ -171,8 +173,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       security: [%{"oAuth" => ["read:accounts"]}],
       description:
         "Accounts which the given account is following, if network is not hidden by the account owner.",
-      parameters:
-        [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}] ++ pagination_params(),
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        with_relationships_param() | pagination_params()
+      ],
       responses: %{200 => Operation.response("Accounts", "application/json", array_of_accounts())}
     }
   end

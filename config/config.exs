@@ -251,8 +251,6 @@ config :pleroma, :instance,
     ]
   ]
 
-config :pleroma, :extensions, output_relationships_in_statuses_by_default: true
-
 config :pleroma, :feed,
   post_title: %{
     max_length: 100,

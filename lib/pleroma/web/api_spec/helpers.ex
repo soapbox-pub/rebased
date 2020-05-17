@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ApiSpec.Helpers do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
+  alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
 
   def request_body(description, schema_ref, opts \\ []) do
     media_types = ["application/json", "multipart/form-data", "application/x-www-form-urlencoded"]
@@ -45,6 +46,15 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
         "Maximum number of items to return. Will be ignored if it's more than 40"
       )
     ]
+  end
+
+  def with_relationships_param do
+    Operation.parameter(
+      :with_relationships,
+      :query,
+      BooleanLike,
+      "Embed relationships into accounts."
+    )
   end
 
   def empty_object_response do

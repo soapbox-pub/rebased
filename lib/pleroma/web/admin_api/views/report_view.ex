@@ -7,9 +7,12 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
 
   alias Pleroma.HTML
   alias Pleroma.User
+  alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.StatusView
+
+  defdelegate merge_account_views(user), to: AdminAPI.AccountView
 
   def render("index.json", %{reports: reports}) do
     %{
@@ -41,8 +44,7 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
       statuses:
         StatusView.render("index.json", %{
           activities: statuses,
-          as: :activity,
-          skip_relationships: false
+          as: :activity
         }),
       state: report.data["state"],
       notes: render(__MODULE__, "index_notes.json", %{notes: report.report_notes})
@@ -70,11 +72,4 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
       created_at: Utils.to_masto_date(inserted_at)
     }
   end
-
-  defp merge_account_views(%User{} = user) do
-    Pleroma.Web.MastodonAPI.AccountView.render("show.json", %{user: user})
-    |> Map.merge(Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user}))
-  end
-
-  defp merge_account_views(_), do: %{}
 end
