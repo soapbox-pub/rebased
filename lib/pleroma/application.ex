@@ -244,7 +244,8 @@ defmodule Pleroma.Application do
   end
 
   defp http_children(Tesla.Adapter.Gun, _) do
-    Pleroma.Gun.ConnectionPool.children()
+    Pleroma.Gun.ConnectionPool.children() ++
+      [{Task, &Pleroma.HTTP.AdapterHelper.Gun.limiter_setup/0}]
   end
 
   defp http_children(_, _), do: []

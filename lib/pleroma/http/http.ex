@@ -71,7 +71,13 @@ defmodule Pleroma.HTTP do
         adapter = Application.get_env(:tesla, :adapter)
         client = Tesla.client([Pleroma.HTTP.Middleware.FollowRedirects], adapter)
 
-        request(client, request)
+        maybe_limit(
+          fn ->
+            request(client, request)
+          end,
+          adapter,
+          adapter_opts
+        )
 
       # Connection release is handled in a custom FollowRedirects middleware
       err ->
@@ -91,5 +97,14 @@ defmodule Pleroma.HTTP do
     |> Builder.add_param(:body, :body, body)
     |> Builder.add_param(:query, :query, params)
     |> Builder.convert_to_keyword()
+  end
+
+  @prefix Pleroma.Gun.ConnectionPool
+  defp maybe_limit(fun, Tesla.Adapter.Gun, opts) do
+    ConcurrentLimiter.limit(:"#{@prefix}.#{opts[:pool] || :default}", fun)
+  end
+
+  defp maybe_limit(fun, _, _) do
+    fun.()
   end
 end

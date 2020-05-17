@@ -648,7 +648,8 @@ config :pleroma, Pleroma.Repo,
 
 config :pleroma, :connections_pool,
   reclaim_multiplier: 0.1,
-  checkin_timeout: 250,
+  connection_acquisition_wait: 250,
+  connection_acquisition_retries: 5,
   max_connections: 250,
   max_idle_time: 30_000,
   retry: 1,
@@ -658,23 +659,19 @@ config :pleroma, :connections_pool,
 config :pleroma, :pools,
   federation: [
     size: 50,
-    max_overflow: 10,
-    timeout: 150_000
+    max_waiting: 10
   ],
   media: [
     size: 50,
-    max_overflow: 10,
-    timeout: 150_000
+    max_waiting: 10
   ],
   upload: [
     size: 25,
-    max_overflow: 5,
-    timeout: 300_000
+    max_waiting: 5
   ],
   default: [
     size: 10,
-    max_overflow: 2,
-    timeout: 10_000
+    max_waiting: 2
   ]
 
 config :pleroma, :hackney_pools,
