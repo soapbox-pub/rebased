@@ -14,7 +14,8 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
 
-  plug(OAuthScopesPlug, %{scopes: ["write:media"]})
+  plug(OAuthScopesPlug, %{scopes: ["read:media"]} when action == :show)
+  plug(OAuthScopesPlug, %{scopes: ["write:media"]} when action != :show)
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.MediaOperation
 
@@ -65,6 +66,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
 
   def update(conn, data), do: show(conn, data)
 
+  # TODO: clarify: is the access to non-owned objects granted intentionally?
   @doc "GET /api/v1/media/:id"
   def show(conn, %{id: id}) do
     with %Object{data: data, id: object_id} <- Object.get_by_id(id) do
@@ -74,5 +76,5 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
     end
   end
 
-  def get_media(_conn, _data), do: {:error, :bad_request}
+  def show(_conn, _data), do: {:error, :bad_request}
 end

@@ -9,9 +9,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
-  setup do: oauth_access(["write:media"])
-
   describe "Upload media" do
+    setup do: oauth_access(["write:media"])
+
     setup do
       image = %Plug.Upload{
         content_type: "image/jpg",
@@ -42,7 +42,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert object.data["actor"] == User.ap_id(conn.assigns[:user])
     end
 
-    test "/api/v2/media", %{conn: conn, image: image} do
+    test "/api/v2/media", %{conn: conn, user: user, image: image} do
       desc = "Description of the image"
 
       response =
@@ -53,6 +53,8 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
 
       assert media_id = response["id"]
 
+      %{conn: conn} = oauth_access(["read:media"], user: user)
+
       media =
         conn
         |> get("/api/v1/media/#{media_id}")
@@ -62,11 +64,15 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert media["description"] == desc
       assert media["id"]
       object = Object.get_by_id(media["id"])
+
+      # TODO: clarify: if this EP allows access to non-owned objects, the following may be false:
       assert object.data["actor"] == User.ap_id(conn.assigns[:user])
     end
   end
 
   describe "Update media description" do
+    setup do: oauth_access(["write:media"])
+
     setup %{user: actor} do
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -97,6 +103,8 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
   end
 
   describe "Get media by id" do
+    setup do: oauth_access(["read:media"])
+
     setup %{user: actor} do
       file = %Plug.Upload{
         content_type: "image/jpg",
