@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.AccountOperation
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
-  alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.ScheduledStatus
   alias Pleroma.Web.ApiSpec.Schemas.Status
@@ -349,10 +348,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       summary: "Bookmarked statuses",
       description: "Statuses the user has bookmarked",
       operationId: "StatusController.bookmarks",
-      parameters: [
-        Operation.parameter(:with_relationships, :query, BooleanLike, "Include relationships")
-        | pagination_params()
-      ],
+      parameters: pagination_params(),
       security: [%{"oAuth" => ["read:bookmarks"]}],
       responses: %{
         200 => Operation.response("Array of Statuses", "application/json", array_of_statuses())

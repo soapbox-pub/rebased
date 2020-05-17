@@ -680,15 +680,6 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :federation_publisher_modules,
-        type: {:list, :module},
-        description:
-          "List of modules for federation publishing. Module names are shortened (removed leading `Pleroma.Web.` part), but on adding custom module you need to use full name.",
-        suggestions: [
-          Pleroma.Web.ActivityPub.Publisher
-        ]
-      },
-      %{
         key: :allow_relay,
         type: :boolean,
         description: "Enable Pleroma's Relay, which makes it possible to follow a whole instance"
@@ -1105,32 +1096,97 @@ config :pleroma, :config_description, [
         description: "Settings for Pleroma FE",
         suggestions: [
           %{
-            theme: "pleroma-dark",
-            logo: "/static/logo.png",
-            background: "/images/city.jpg",
-            redirectRootNoLogin: "/main/all",
-            redirectRootLogin: "/main/friends",
-            showInstanceSpecificPanel: true,
-            scopeOptionsEnabled: false,
-            formattingOptionsEnabled: false,
-            collapseMessageWithSubject: false,
-            hidePostStats: false,
-            hideUserStats: false,
-            scopeCopy: true,
-            subjectLineBehavior: "email",
             alwaysShowSubjectInput: true,
-            logoMask: false,
+            background: "/static/aurora_borealis.jpg",
+            collapseMessageWithSubject: false,
+            disableChat: false,
+            greentext: false,
+            hideFilteredStatuses: false,
+            hideMutedPosts: false,
+            hidePostStats: false,
+            hideSitename: false,
+            hideUserStats: false,
+            loginMethod: "password",
+            logo: "/static/logo.png",
             logoMargin: ".1em",
-            stickers: false,
-            enableEmojiPicker: false
+            logoMask: true,
+            minimalScopesMode: false,
+            noAttachmentLinks: false,
+            nsfwCensorImage: "",
+            postContentType: "text/plain",
+            redirectRootLogin: "/main/friends",
+            redirectRootNoLogin: "/main/all",
+            scopeCopy: true,
+            showFeaturesPanel: true,
+            showInstanceSpecificPanel: false,
+            subjectLineBehavior: "email",
+            theme: "pleroma-dark",
+            webPushNotifications: false
           }
         ],
         children: [
           %{
-            key: :theme,
+            key: :alwaysShowSubjectInput,
+            label: "Always show subject input",
+            type: :boolean,
+            description: "When disabled, auto-hide the subject field if it's empty"
+          },
+          %{
+            key: :background,
             type: :string,
-            description: "Which theme to use, they are defined in styles.json",
-            suggestions: ["pleroma-dark"]
+            description:
+              "URL of the background, unless viewing a user profile with a background that is set",
+            suggestions: ["/images/city.jpg"]
+          },
+          %{
+            key: :collapseMessageWithSubject,
+            label: "Collapse message with subject",
+            type: :boolean,
+            description:
+              "When a message has a subject (aka Content Warning), collapse it by default"
+          },
+          %{
+            key: :disableChat,
+            label: "PleromaFE Chat",
+            type: :boolean,
+            description: "Disables PleromaFE Chat component"
+          },
+          %{
+            key: :greentext,
+            label: "Greentext",
+            type: :boolean,
+            description: "Enables green text on lines prefixed with the > character."
+          },
+          %{
+            key: :hideFilteredStatuses,
+            label: "Hide Filtered Statuses",
+            type: :boolean,
+            description: "Hides filtered statuses from timelines."
+          },
+          %{
+            key: :hideMutedPosts,
+            label: "Hide Muted Posts",
+            type: :boolean,
+            description: "Hides muted statuses from timelines."
+          },
+          %{
+            key: :hidePostStats,
+            label: "Hide post stats",
+            type: :boolean,
+            description: "Hide notices statistics (repeats, favorites, ...)"
+          },
+          %{
+            key: :hideSitename,
+            label: "Hide Sitename",
+            type: :boolean,
+            description: "Hides instance name from PleromaFE banner."
+          },
+          %{
+            key: :hideUserStats,
+            label: "Hide user stats",
+            type: :boolean,
+            description:
+              "Hide profile statistics (posts, posts per day, followers, followings, ...)"
           },
           %{
             key: :logo,
@@ -1139,11 +1195,44 @@ config :pleroma, :config_description, [
             suggestions: ["/static/logo.png"]
           },
           %{
-            key: :background,
+            key: :logoMargin,
+            label: "Logo margin",
             type: :string,
             description:
-              "URL of the background, unless viewing a user profile with a background that is set",
-            suggestions: ["/images/city.jpg"]
+              "Allows you to adjust vertical margins between logo boundary and navbar borders. " <>
+                "The idea is that to have logo's image without any extra margins and instead adjust them to your need in layout.",
+            suggestions: [".1em"]
+          },
+          %{
+            key: :logoMask,
+            label: "Logo mask",
+            type: :boolean,
+            description:
+              "By default it assumes logo used will be monochrome with alpha channel to be compatible with both light and dark themes. " <>
+                "If you want a colorful logo you must disable logoMask."
+          },
+          %{
+            key: :minimalScopesMode,
+            label: "Minimal scopes mode",
+            type: :boolean,
+            description:
+              "Limit scope selection to Direct, User default, and Scope of post replying to. " <>
+                "Also prevents replying to a DM with a public post from PleromaFE."
+          },
+          %{
+            key: :nsfwCensorImage,
+            label: "NSFW Censor Image",
+            type: :string,
+            description:
+              "URL of the image to use for hiding NSFW media attachments in the timeline.",
+            suggestions: ["/static/img/nsfw.png"]
+          },
+          %{
+            key: :postContentType,
+            label: "Post Content Type",
+            type: {:dropdown, :atom},
+            description: "Default post formatting option.",
+            suggestions: ["text/plain", "text/html", "text/markdown", "text/bbcode"]
           },
           %{
             key: :redirectRootNoLogin,
@@ -1162,49 +1251,23 @@ config :pleroma, :config_description, [
             suggestions: ["/main/friends"]
           },
           %{
-            key: :showInstanceSpecificPanel,
-            label: "Show instance specific panel",
-            type: :boolean,
-            description: "Whenether to show the instance's specific panel"
-          },
-          %{
-            key: :scopeOptionsEnabled,
-            label: "Scope options enabled",
-            type: :boolean,
-            description: "Enable setting a notice visibility and subject/CW when posting"
-          },
-          %{
-            key: :formattingOptionsEnabled,
-            label: "Formatting options enabled",
-            type: :boolean,
-            description:
-              "Enable setting a formatting different than plain-text (ie. HTML, Markdown) when posting, relates to `:instance`, `allowed_post_formats`"
-          },
-          %{
-            key: :collapseMessageWithSubject,
-            label: "Collapse message with subject",
-            type: :boolean,
-            description:
-              "When a message has a subject (aka Content Warning), collapse it by default"
-          },
-          %{
-            key: :hidePostStats,
-            label: "Hide post stats",
-            type: :boolean,
-            description: "Hide notices statistics (repeats, favorites, ...)"
-          },
-          %{
-            key: :hideUserStats,
-            label: "Hide user stats",
-            type: :boolean,
-            description:
-              "Hide profile statistics (posts, posts per day, followers, followings, ...)"
-          },
-          %{
             key: :scopeCopy,
             label: "Scope copy",
             type: :boolean,
             description: "Copy the scope (private/unlisted/public) in replies to posts by default"
+          },
+          %{
+            key: :showFeaturesPanel,
+            label: "Show instance features panel",
+            type: :boolean,
+            description:
+              "Enables panel displaying functionality of the instance on the About page."
+          },
+          %{
+            key: :showInstanceSpecificPanel,
+            label: "Show instance specific panel",
+            type: :boolean,
+            description: "Whether to show the instance's custom panel"
           },
           %{
             key: :subjectLineBehavior,
@@ -1217,38 +1280,10 @@ config :pleroma, :config_description, [
             suggestions: ["email", "masto", "noop"]
           },
           %{
-            key: :alwaysShowSubjectInput,
-            label: "Always show subject input",
-            type: :boolean,
-            description: "When disabled, auto-hide the subject field if it's empty"
-          },
-          %{
-            key: :logoMask,
-            label: "Logo mask",
-            type: :boolean,
-            description:
-              "By default it assumes logo used will be monochrome with alpha channel to be compatible with both light and dark themes. " <>
-                "If you want a colorful logo you must disable logoMask."
-          },
-          %{
-            key: :logoMargin,
-            label: "Logo margin",
+            key: :theme,
             type: :string,
-            description:
-              "Allows you to adjust vertical margins between logo boundary and navbar borders. " <>
-                "The idea is that to have logo's image without any extra margins and instead adjust them to your need in layout.",
-            suggestions: [".1em"]
-          },
-          %{
-            key: :stickers,
-            type: :boolean,
-            description: "Enables stickers."
-          },
-          %{
-            key: :enableEmojiPicker,
-            label: "Emoji picker",
-            type: :boolean,
-            description: "Enables emoji picker."
+            description: "Which theme to use. Available themes are defined in styles.json",
+            suggestions: ["pleroma-dark"]
           }
         ]
       },
@@ -1858,12 +1893,6 @@ config :pleroma, :config_description, [
       (see https://github.com/sorentwo/oban/issues/52).
     """,
     children: [
-      %{
-        key: :repo,
-        type: :module,
-        description: "Application's Ecto repo",
-        suggestions: [Pleroma.Repo]
-      },
       %{
         key: :verbose,
         type: {:dropdown, :atom},
@@ -2635,18 +2664,6 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean
-      }
-    ]
-  },
-  %{
-    group: :http_signatures,
-    type: :group,
-    description: "HTTP Signatures settings",
-    children: [
-      %{
-        key: :adapter,
-        type: :module,
-        suggestions: [Pleroma.Signature]
       }
     ]
   },

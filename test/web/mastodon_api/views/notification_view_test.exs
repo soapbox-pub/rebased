@@ -68,7 +68,11 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
       id: to_string(notification.id),
       pleroma: %{is_seen: false},
       type: "mention",
-      account: AccountView.render("show.json", %{user: user, for: mentioned_user}),
+      account:
+        AccountView.render("show.json", %{
+          user: user,
+          for: mentioned_user
+        }),
       status: StatusView.render("show.json", %{activity: activity, for: mentioned_user}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }

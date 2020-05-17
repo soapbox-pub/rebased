@@ -27,8 +27,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         local_param(),
         with_muted_param(),
         exclude_visibilities_param(),
-        reply_visibility_param(),
-        with_relationships_param() | pagination_params()
+        reply_visibility_param() | pagination_params()
       ],
       operationId: "TimelineController.home",
       responses: %{
@@ -63,8 +62,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         only_media_param(),
         with_muted_param(),
         exclude_visibilities_param(),
-        reply_visibility_param(),
-        with_relationships_param() | pagination_params()
+        reply_visibility_param() | pagination_params()
       ],
       operationId: "TimelineController.public",
       responses: %{
@@ -109,8 +107,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         local_param(),
         only_media_param(),
         with_muted_param(),
-        exclude_visibilities_param(),
-        with_relationships_param() | pagination_params()
+        exclude_visibilities_param() | pagination_params()
       ],
       operationId: "TimelineController.hashtag",
       responses: %{
@@ -134,8 +131,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
           required: true
         ),
         with_muted_param(),
-        exclude_visibilities_param(),
-        with_relationships_param() | pagination_params()
+        exclude_visibilities_param() | pagination_params()
       ],
       operationId: "TimelineController.list",
       responses: %{
@@ -151,10 +147,6 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       items: Status,
       example: [Status.schema().example]
     }
-  end
-
-  defp with_relationships_param do
-    Operation.parameter(:with_relationships, :query, BooleanLike, "Include relationships")
   end
 
   defp local_param do

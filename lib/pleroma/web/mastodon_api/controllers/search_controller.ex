@@ -5,14 +5,13 @@
 defmodule Pleroma.Web.MastodonAPI.SearchController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [skip_relationships?: 1]
-
   alias Pleroma.Activity
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
+  alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
 
@@ -34,7 +33,11 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
     conn
     |> put_view(AccountView)
-    |> render("index.json", users: accounts, for: user, as: :user)
+    |> render("index.json",
+      users: accounts,
+      for: user,
+      as: :user
+    )
   end
 
   def search2(conn, params), do: do_search(:v2, conn, params)
@@ -71,13 +74,13 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   defp search_options(params, user) do
     [
-      skip_relationships: skip_relationships?(params),
       resolve: params[:resolve],
       following: params[:following],
       limit: params[:limit],
       offset: params[:offset],
       type: params[:type],
       author: get_author(params),
+      embed_relationships: ControllerHelper.embed_relationships?(params),
       for_user: user
     ]
     |> Enum.filter(&elem(&1, 1))
@@ -90,7 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
       users: accounts,
       for: options[:for_user],
       as: :user,
-      skip_relationships: false
+      embed_relationships: options[:embed_relationships]
     )
   end
 
@@ -100,8 +103,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     StatusView.render("index.json",
       activities: statuses,
       for: options[:for_user],
-      as: :activity,
-      skip_relationships: options[:skip_relationships]
+      as: :activity
     )
   end
 

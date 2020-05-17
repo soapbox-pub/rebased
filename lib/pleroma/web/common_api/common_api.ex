@@ -65,10 +65,21 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def unblock(blocker, blocked) do
-    with %Activity{} = block <- Utils.fetch_latest_block(blocker, blocked),
+    with {_, %Activity{} = block} <- {:fetch_block, Utils.fetch_latest_block(blocker, blocked)},
          {:ok, unblock_data, _} <- Builder.undo(blocker, block),
          {:ok, unblock, _} <- Pipeline.common_pipeline(unblock_data, local: true) do
       {:ok, unblock}
+    else
+      {:fetch_block, nil} ->
+        if User.blocks?(blocker, blocked) do
+          User.unblock(blocker, blocked)
+          {:ok, :no_activity}
+        else
+          {:error, :not_blocking}
+        end
+
+      e ->
+        e
     end
   end
 

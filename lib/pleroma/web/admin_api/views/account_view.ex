@@ -6,7 +6,9 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
   use Pleroma.Web, :view
 
   alias Pleroma.User
+  alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.MediaProxy
 
   def render("index.json", %{users: users, count: count, page_size: page_size}) do
@@ -118,6 +120,13 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       }
     }
   end
+
+  def merge_account_views(%User{} = user) do
+    MastodonAPI.AccountView.render("show.json", %{user: user})
+    |> Map.merge(AdminAPI.AccountView.render("show.json", %{user: user}))
+  end
+
+  def merge_account_views(_), do: %{}
 
   defp parse_error([]), do: ""
 

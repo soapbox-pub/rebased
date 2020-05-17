@@ -1176,7 +1176,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   end
 
   test "bookmarks" do
-    bookmarks_uri = "/api/v1/bookmarks?with_relationships=true"
+    bookmarks_uri = "/api/v1/bookmarks"
 
     %{conn: conn} = oauth_access(["write:bookmarks", "read:bookmarks"])
     author = insert(:user)
