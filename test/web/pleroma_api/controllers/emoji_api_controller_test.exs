@@ -234,10 +234,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
           method: :get,
           url: "https://example.com/api/pleroma/emoji/packs/pack_bad_sha"
         } ->
-          %Tesla.Env{
-            status: 200,
-            body: Pleroma.Emoji.Pack.load_pack("pack_bad_sha") |> Jason.encode!()
-          }
+          {:ok, pack} = Pleroma.Emoji.Pack.load_pack("pack_bad_sha")
+          %Tesla.Env{status: 200, body: Jason.encode!(pack)}
 
         %{
           method: :get,
@@ -273,10 +271,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIControllerTest do
           method: :get,
           url: "https://example.com/api/pleroma/emoji/packs/test_pack"
         } ->
-          %Tesla.Env{
-            status: 200,
-            body: Pleroma.Emoji.Pack.load_pack("test_pack") |> Jason.encode!()
-          }
+          {:ok, pack} = Pleroma.Emoji.Pack.load_pack("test_pack")
+          %Tesla.Env{status: 200, body: Jason.encode!(pack)}
       end)
 
       assert admin_conn

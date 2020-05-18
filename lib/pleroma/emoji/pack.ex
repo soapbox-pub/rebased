@@ -16,162 +16,78 @@ defmodule Pleroma.Emoji.Pack do
 
   alias Pleroma.Emoji
 
-  @spec emoji_path() :: Path.t()
-  def emoji_path do
-    static = Pleroma.Config.get!([:instance, :static_dir])
-    Path.join(static, "emoji")
-  end
-
   @spec create(String.t()) :: :ok | {:error, File.posix()} | {:error, :empty_values}
-  def create(name) when byte_size(name) > 0 do
-    dir = Path.join(emoji_path(), name)
-
-    with :ok <- File.mkdir(dir) do
-      %__MODULE__{
-        pack_file: Path.join(dir, "pack.json")
-      }
+  def create(name) do
+    with :ok <- validate_not_empty([name]),
+         dir <- Path.join(emoji_path(), name),
+         :ok <- File.mkdir(dir) do
+      %__MODULE__{pack_file: Path.join(dir, "pack.json")}
       |> save_pack()
     end
   end
 
-  def create(_), do: {:error, :empty_values}
-
-  @spec show(String.t()) :: {:ok, t()} | {:loaded, nil} | {:error, :empty_values}
-  def show(name) when byte_size(name) > 0 do
-    with {_, %__MODULE__{} = pack} <- {:loaded, load_pack(name)},
-         {_, pack} <- validate_pack(pack) do
-      {:ok, pack}
+  @spec show(String.t()) :: {:ok, t()} | {:error, atom()}
+  def show(name) do
+    with :ok <- validate_not_empty([name]),
+         {:ok, pack} <- load_pack(name) do
+      {:ok, validate_pack(pack)}
     end
   end
-
-  def show(_), do: {:error, :empty_values}
 
   @spec delete(String.t()) ::
           {:ok, [binary()]} | {:error, File.posix(), binary()} | {:error, :empty_values}
-  def delete(name) when byte_size(name) > 0 do
-    emoji_path()
-    |> Path.join(name)
-    |> File.rm_rf()
-  end
-
-  def delete(_), do: {:error, :empty_values}
-
-  @spec add_file(String.t(), String.t(), Path.t(), Plug.Upload.t() | String.t()) ::
-          {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
-  def add_file(name, shortcode, filename, file)
-      when byte_size(name) > 0 and byte_size(shortcode) > 0 and byte_size(filename) > 0 do
-    with {_, nil} <- {:exists, Emoji.get(shortcode)},
-         {_, %__MODULE__{} = pack} <- {:loaded, load_pack(name)} do
-      file_path = Path.join(pack.path, filename)
-
-      create_subdirs(file_path)
-
-      case file do
-        %Plug.Upload{path: upload_path} ->
-          # Copy the uploaded file from the temporary directory
-          File.copy!(upload_path, file_path)
-
-        url when is_binary(url) ->
-          # Download and write the file
-          file_contents = Tesla.get!(url).body
-          File.write!(file_path, file_contents)
-      end
-
-      files = Map.put(pack.files, shortcode, filename)
-
-      updated_pack = %{pack | files: files}
-
-      case save_pack(updated_pack) do
-        :ok ->
-          Emoji.reload()
-          {:ok, updated_pack}
-
-        e ->
-          e
-      end
+  def delete(name) do
+    with :ok <- validate_not_empty([name]) do
+      emoji_path()
+      |> Path.join(name)
+      |> File.rm_rf()
     end
   end
 
-  def add_file(_, _, _, _), do: {:error, :empty_values}
-
-  defp create_subdirs(file_path) do
-    if String.contains?(file_path, "/") do
-      file_path
-      |> Path.dirname()
-      |> File.mkdir_p!()
+  @spec add_file(String.t(), String.t(), Path.t(), Plug.Upload.t() | String.t()) ::
+          {:ok, t()} | {:error, File.posix() | atom()}
+  def add_file(name, shortcode, filename, file) do
+    with :ok <- validate_not_empty([name, shortcode, filename]),
+         :ok <- validate_emoji_not_exists(shortcode),
+         {:ok, pack} <- load_pack(name),
+         :ok <- save_file(file, pack, filename),
+         {:ok, updated_pack} <- pack |> put_emoji(shortcode, filename) |> save_pack() do
+      Emoji.reload()
+      {:ok, updated_pack}
     end
   end
 
   @spec delete_file(String.t(), String.t()) ::
-          {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
-  def delete_file(name, shortcode) when byte_size(name) > 0 and byte_size(shortcode) > 0 do
-    with {_, %__MODULE__{} = pack} <- {:loaded, load_pack(name)},
-         {_, {filename, files}} when not is_nil(filename) <-
-           {:exists, Map.pop(pack.files, shortcode)},
-         emoji <- Path.join(pack.path, filename),
-         {_, true} <- {:exists, File.exists?(emoji)} do
-      emoji_dir = Path.dirname(emoji)
-
-      File.rm!(emoji)
-
-      if String.contains?(filename, "/") and File.ls!(emoji_dir) == [] do
-        File.rmdir!(emoji_dir)
-      end
-
-      updated_pack = %{pack | files: files}
-
-      case save_pack(updated_pack) do
-        :ok ->
-          Emoji.reload()
-          {:ok, updated_pack}
-
-        e ->
-          e
-      end
+          {:ok, t()} | {:error, File.posix() | atom()}
+  def delete_file(name, shortcode) do
+    with :ok <- validate_not_empty([name, shortcode]),
+         {:ok, pack} <- load_pack(name),
+         :ok <- remove_file(pack, shortcode),
+         {:ok, updated_pack} <- pack |> delete_emoji(shortcode) |> save_pack() do
+      Emoji.reload()
+      {:ok, updated_pack}
     end
   end
-
-  def delete_file(_, _), do: {:error, :empty_values}
 
   @spec update_file(String.t(), String.t(), String.t(), String.t(), boolean()) ::
-          {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
-  def update_file(name, shortcode, new_shortcode, new_filename, force)
-      when byte_size(name) > 0 and byte_size(shortcode) > 0 and byte_size(new_shortcode) > 0 and
-             byte_size(new_filename) > 0 do
-    with {_, %__MODULE__{} = pack} <- {:loaded, load_pack(name)},
-         {_, {filename, files}} when not is_nil(filename) <-
-           {:exists, Map.pop(pack.files, shortcode)},
-         {_, true} <- {:not_used, force or is_nil(Emoji.get(new_shortcode))} do
-      old_path = Path.join(pack.path, filename)
-      old_dir = Path.dirname(old_path)
-      new_path = Path.join(pack.path, new_filename)
-
-      create_subdirs(new_path)
-
-      :ok = File.rename(old_path, new_path)
-
-      if String.contains?(filename, "/") and File.ls!(old_dir) == [] do
-        File.rmdir!(old_dir)
-      end
-
-      files = Map.put(files, new_shortcode, new_filename)
-
-      updated_pack = %{pack | files: files}
-
-      case save_pack(updated_pack) do
-        :ok ->
-          Emoji.reload()
-          {:ok, updated_pack}
-
-        e ->
-          e
-      end
+          {:ok, t()} | {:error, File.posix() | atom()}
+  def update_file(name, shortcode, new_shortcode, new_filename, force) do
+    with :ok <- validate_not_empty([name, shortcode, new_shortcode, new_filename]),
+         {:ok, pack} <- load_pack(name),
+         {:ok, filename} <- get_filename(pack, shortcode),
+         :ok <- validate_emoji_not_exists(new_shortcode, force),
+         :ok <- rename_file(pack, filename, new_filename),
+         {:ok, updated_pack} <-
+           pack
+           |> delete_emoji(shortcode)
+           |> put_emoji(new_shortcode, new_filename)
+           |> save_pack() do
+      Emoji.reload()
+      {:ok, updated_pack}
     end
   end
 
-  def update_file(_, _, _, _, _), do: {:error, :empty_values}
-
-  @spec import_from_filesystem() :: {:ok, [String.t()]} | {:error, atom()}
+  @spec import_from_filesystem() :: {:ok, [String.t()]} | {:error, File.posix() | atom()}
   def import_from_filesystem do
     emoji_path = emoji_path()
 
@@ -184,12 +100,123 @@ defmodule Pleroma.Emoji.Pack do
           File.dir?(path) and File.exists?(Path.join(path, "pack.json"))
         end)
         |> Enum.map(&write_pack_contents/1)
-        |> Enum.filter(& &1)
+        |> Enum.reject(&is_nil/1)
 
       {:ok, names}
     else
       {:ok, %{access: _}} -> {:error, :no_read_write}
       e -> e
+    end
+  end
+
+  @spec list_remote(String.t()) :: {:ok, map()} | {:error, atom()}
+  def list_remote(url) do
+    uri = url |> String.trim() |> URI.parse()
+
+    with :ok <- validate_shareable_packs_available(uri) do
+      uri
+      |> URI.merge("/api/pleroma/emoji/packs")
+      |> http_get()
+    end
+  end
+
+  @spec list_local() :: {:ok, map()}
+  def list_local do
+    with {:ok, results} <- list_packs_dir() do
+      packs =
+        results
+        |> Enum.map(fn name ->
+          case load_pack(name) do
+            {:ok, pack} -> pack
+            _ -> nil
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+        |> Map.new(fn pack -> {pack.name, validate_pack(pack)} end)
+
+      {:ok, packs}
+    end
+  end
+
+  @spec get_archive(String.t()) :: {:ok, binary()} | {:error, atom()}
+  def get_archive(name) do
+    with {:ok, pack} <- load_pack(name),
+         :ok <- validate_downloadable(pack) do
+      {:ok, fetch_archive(pack)}
+    end
+  end
+
+  @spec download(String.t(), String.t(), String.t()) :: :ok | {:error, atom()}
+  def download(name, url, as) do
+    uri = url |> String.trim() |> URI.parse()
+
+    with :ok <- validate_shareable_packs_available(uri),
+         {:ok, remote_pack} <- uri |> URI.merge("/api/pleroma/emoji/packs/#{name}") |> http_get(),
+         {:ok, %{sha: sha, url: url} = pack_info} <- fetch_pack_info(remote_pack, uri, name),
+         {:ok, archive} <- download_archive(url, sha),
+         pack <- copy_as(remote_pack, as || name),
+         {:ok, _} = unzip(archive, pack_info, remote_pack, pack) do
+      # Fallback can't contain a pack.json file, since that would cause the fallback-src-sha256
+      # in it to depend on itself
+      if pack_info[:fallback] do
+        save_pack(pack)
+      else
+        {:ok, pack}
+      end
+    end
+  end
+
+  @spec save_metadata(map(), t()) :: {:ok, t()} | {:error, File.posix()}
+  def save_metadata(metadata, %__MODULE__{} = pack) do
+    pack
+    |> Map.put(:pack, metadata)
+    |> save_pack()
+  end
+
+  @spec update_metadata(String.t(), map()) :: {:ok, t()} | {:error, File.posix()}
+  def update_metadata(name, data) do
+    with {:ok, pack} <- load_pack(name) do
+      if fallback_sha_changed?(pack, data) do
+        update_sha_and_save_metadata(pack, data)
+      else
+        save_metadata(data, pack)
+      end
+    end
+  end
+
+  @spec load_pack(String.t()) :: {:ok, t()} | {:error, :not_found}
+  def load_pack(name) do
+    pack_file = Path.join([emoji_path(), name, "pack.json"])
+
+    if File.exists?(pack_file) do
+      pack =
+        pack_file
+        |> File.read!()
+        |> from_json()
+        |> Map.put(:pack_file, pack_file)
+        |> Map.put(:path, Path.dirname(pack_file))
+        |> Map.put(:name, name)
+
+      {:ok, pack}
+    else
+      {:error, :not_found}
+    end
+  end
+
+  @spec emoji_path() :: Path.t()
+  defp emoji_path do
+    [:instance, :static_dir]
+    |> Pleroma.Config.get!()
+    |> Path.join("emoji")
+  end
+
+  defp validate_emoji_not_exists(shortcode, force \\ false)
+  defp validate_emoji_not_exists(_shortcode, true), do: :ok
+
+  defp validate_emoji_not_exists(shortcode, _) do
+    case Emoji.get(shortcode) do
+      nil -> :ok
+      _ -> {:error, :already_exists}
     end
   end
 
@@ -201,7 +228,7 @@ defmodule Pleroma.Emoji.Pack do
     }
 
     case save_pack(pack) do
-      :ok -> Path.basename(path)
+      {:ok, _pack} -> Path.basename(path)
       _ -> nil
     end
   end
@@ -216,7 +243,8 @@ defmodule Pleroma.Emoji.Pack do
       # FIXME: Copy-pasted from Pleroma.Emoji/load_from_file_stream/2
 
       # Create a map of shortcodes to filenames from emoji.txt
-      File.read!(txt_path)
+      txt_path
+      |> File.read!()
       |> String.split("\n")
       |> Enum.map(&String.trim/1)
       |> Enum.map(fn line ->
@@ -226,21 +254,18 @@ defmodule Pleroma.Emoji.Pack do
           [name, file | _] ->
             file_dir_name = Path.dirname(file)
 
-            file =
-              if String.ends_with?(path, file_dir_name) do
-                Path.basename(file)
-              else
-                file
-              end
-
-            {name, file}
+            if String.ends_with?(path, file_dir_name) do
+              {name, Path.basename(file)}
+            else
+              {name, file}
+            end
 
           _ ->
             nil
         end
       end)
-      |> Enum.filter(& &1)
-      |> Enum.into(%{})
+      |> Enum.reject(&is_nil/1)
+      |> Map.new()
     else
       # If there's no emoji.txt, assume all files
       # that are of certain extensions from the config are emojis and import them all
@@ -249,60 +274,20 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec list_remote(String.t()) :: {:ok, map()}
-  def list_remote(url) do
-    uri =
-      url
-      |> String.trim()
-      |> URI.parse()
-
-    with {_, true} <- {:shareable, shareable_packs_available?(uri)} do
-      packs =
-        uri
-        |> URI.merge("/api/pleroma/emoji/packs")
-        |> to_string()
-        |> Tesla.get!()
-        |> Map.get(:body)
-        |> Jason.decode!()
-
-      {:ok, packs}
-    end
-  end
-
-  @spec list_local() :: {:ok, map()}
-  def list_local do
-    emoji_path = emoji_path()
-
-    # Create the directory first if it does not exist. This is probably the first request made
-    # with the API so it should be sufficient
-    with {:create_dir, :ok} <- {:create_dir, File.mkdir_p(emoji_path)},
-         {:ls, {:ok, results}} <- {:ls, File.ls(emoji_path)} do
-      packs =
-        results
-        |> Enum.map(&load_pack/1)
-        |> Enum.filter(& &1)
-        |> Enum.map(&validate_pack/1)
-        |> Map.new()
-
-      {:ok, packs}
-    end
-  end
-
   defp validate_pack(pack) do
-    if downloadable?(pack) do
-      archive = fetch_archive(pack)
-      archive_sha = :crypto.hash(:sha256, archive) |> Base.encode16()
+    info =
+      if downloadable?(pack) do
+        archive = fetch_archive(pack)
+        archive_sha = :crypto.hash(:sha256, archive) |> Base.encode16()
 
-      info =
         pack.pack
         |> Map.put("can-download", true)
         |> Map.put("download-sha256", archive_sha)
+      else
+        Map.put(pack.pack, "can-download", false)
+      end
 
-      {pack.name, Map.put(pack, :pack, info)}
-    else
-      info = Map.put(pack.pack, "can-download", false)
-      {pack.name, Map.put(pack, :pack, info)}
-    end
+    Map.put(pack, :pack, info)
   end
 
   defp downloadable?(pack) do
@@ -313,26 +298,6 @@ defmodule Pleroma.Emoji.Pack do
       Enum.all?(pack.files, fn {_, file} ->
         File.exists?(Path.join(pack.path, file))
       end)
-  end
-
-  @spec get_archive(String.t()) :: {:ok, binary()}
-  def get_archive(name) do
-    with {_, %__MODULE__{} = pack} <- {:exists?, load_pack(name)},
-         {_, true} <- {:can_download?, downloadable?(pack)} do
-      {:ok, fetch_archive(pack)}
-    end
-  end
-
-  defp fetch_archive(pack) do
-    hash = :crypto.hash(:md5, File.read!(pack.pack_file))
-
-    case Cachex.get!(:emoji_packs_cache, pack.name) do
-      %{hash: ^hash, pack_data: archive} ->
-        archive
-
-      _ ->
-        create_archive_and_cache(pack, hash)
-    end
   end
 
   defp create_archive_and_cache(pack, hash) do
@@ -356,128 +321,10 @@ defmodule Pleroma.Emoji.Pack do
     result
   end
 
-  @spec download(String.t(), String.t(), String.t()) :: :ok
-  def download(name, url, as) do
-    uri =
-      url
-      |> String.trim()
-      |> URI.parse()
-
-    with {_, true} <- {:shareable, shareable_packs_available?(uri)} do
-      remote_pack =
-        uri
-        |> URI.merge("/api/pleroma/emoji/packs/#{name}")
-        |> to_string()
-        |> Tesla.get!()
-        |> Map.get(:body)
-        |> Jason.decode!()
-
-      result =
-        case remote_pack["pack"] do
-          %{"share-files" => true, "can-download" => true, "download-sha256" => sha} ->
-            {:ok,
-             %{
-               sha: sha,
-               url: URI.merge(uri, "/api/pleroma/emoji/packs/#{name}/archive") |> to_string()
-             }}
-
-          %{"fallback-src" => src, "fallback-src-sha256" => sha} when is_binary(src) ->
-            {:ok,
-             %{
-               sha: sha,
-               url: src,
-               fallback: true
-             }}
-
-          _ ->
-            {:error,
-             "The pack was not set as shared and there is no fallback src to download from"}
-        end
-
-      with {:ok, %{sha: sha, url: url} = pinfo} <- result,
-           %{body: archive} <- Tesla.get!(url),
-           {_, true} <- {:checksum, Base.decode16!(sha) == :crypto.hash(:sha256, archive)} do
-        local_name = as || name
-
-        path = Path.join(emoji_path(), local_name)
-
-        pack = %__MODULE__{
-          name: local_name,
-          path: path,
-          files: remote_pack["files"],
-          pack_file: Path.join(path, "pack.json")
-        }
-
-        File.mkdir_p!(pack.path)
-
-        files = Enum.map(remote_pack["files"], fn {_, path} -> to_charlist(path) end)
-        # Fallback cannot contain a pack.json file
-        files = if pinfo[:fallback], do: files, else: ['pack.json' | files]
-
-        {:ok, _} = :zip.unzip(archive, cwd: to_charlist(pack.path), file_list: files)
-
-        # Fallback can't contain a pack.json file, since that would cause the fallback-src-sha256
-        # in it to depend on itself
-        if pinfo[:fallback] do
-          save_pack(pack)
-        end
-
-        :ok
-      end
-    end
-  end
-
-  defp save_pack(pack), do: File.write(pack.pack_file, Jason.encode!(pack, pretty: true))
-
-  @spec save_metadata(map(), t()) :: {:ok, t()} | {:error, File.posix()}
-  def save_metadata(metadata, %__MODULE__{} = pack) do
-    pack = Map.put(pack, :pack, metadata)
-
-    with :ok <- save_pack(pack) do
+  defp save_pack(pack) do
+    with {:ok, json} <- Jason.encode(pack, pretty: true),
+         :ok <- File.write(pack.pack_file, json) do
       {:ok, pack}
-    end
-  end
-
-  @spec update_metadata(String.t(), map()) :: {:ok, t()} | {:error, File.posix()}
-  def update_metadata(name, data) do
-    pack = load_pack(name)
-
-    fb_sha_changed? =
-      not is_nil(data[:"fallback-src"]) and data[:"fallback-src"] != pack.pack[:"fallback-src"]
-
-    with {_, true} <- {:update?, fb_sha_changed?},
-         {:ok, %{body: zip}} <- Tesla.get(data[:"fallback-src"]),
-         {:ok, f_list} <- :zip.unzip(zip, [:memory]),
-         {_, true} <- {:has_all_files?, has_all_files?(pack.files, f_list)} do
-      fallback_sha = :crypto.hash(:sha256, zip) |> Base.encode16()
-
-      data
-      |> Map.put("fallback-src-sha256", fallback_sha)
-      |> save_metadata(pack)
-    else
-      {:update?, _} -> save_metadata(data, pack)
-      e -> e
-    end
-  end
-
-  # Check if all files from the pack.json are in the archive
-  defp has_all_files?(files, f_list) do
-    Enum.all?(files, fn {_, from_manifest} ->
-      List.keyfind(f_list, to_charlist(from_manifest), 0)
-    end)
-  end
-
-  @spec load_pack(String.t()) :: t() | nil
-  def load_pack(name) do
-    pack_file = Path.join([emoji_path(), name, "pack.json"])
-
-    if File.exists?(pack_file) do
-      pack_file
-      |> File.read!()
-      |> from_json()
-      |> Map.put(:pack_file, pack_file)
-      |> Map.put(:path, Path.dirname(pack_file))
-      |> Map.put(:name, name)
     end
   end
 
@@ -487,21 +334,208 @@ defmodule Pleroma.Emoji.Pack do
     struct(__MODULE__, %{files: map["files"], pack: map["pack"]})
   end
 
-  defp shareable_packs_available?(uri) do
-    uri
-    |> URI.merge("/.well-known/nodeinfo")
-    |> to_string()
-    |> Tesla.get!()
-    |> Map.get(:body)
-    |> Jason.decode!()
-    |> Map.get("links")
-    |> List.last()
-    |> Map.get("href")
-    # Get the actual nodeinfo address and fetch it
-    |> Tesla.get!()
-    |> Map.get(:body)
-    |> Jason.decode!()
-    |> get_in(["metadata", "features"])
-    |> Enum.member?("shareable_emoji_packs")
+  defp validate_shareable_packs_available(uri) do
+    with {:ok, %{"links" => links}} <- uri |> URI.merge("/.well-known/nodeinfo") |> http_get(),
+         # Get the actual nodeinfo address and fetch it
+         {:ok, %{"metadata" => %{"features" => features}}} <-
+           links |> List.last() |> Map.get("href") |> http_get() do
+      if Enum.member?(features, "shareable_emoji_packs") do
+        :ok
+      else
+        {:error, :not_shareable}
+      end
+    end
+  end
+
+  defp validate_not_empty(list) do
+    if Enum.all?(list, fn i -> is_binary(i) and i != "" end) do
+      :ok
+    else
+      {:error, :empty_values}
+    end
+  end
+
+  defp save_file(file, pack, filename) do
+    file_path = Path.join(pack.path, filename)
+    create_subdirs(file_path)
+
+    case file do
+      %Plug.Upload{path: upload_path} ->
+        # Copy the uploaded file from the temporary directory
+        with {:ok, _} <- File.copy(upload_path, file_path), do: :ok
+
+      url when is_binary(url) ->
+        # Download and write the file
+        file_contents = Tesla.get!(url).body
+        File.write(file_path, file_contents)
+    end
+  end
+
+  defp put_emoji(pack, shortcode, filename) do
+    files = Map.put(pack.files, shortcode, filename)
+    %{pack | files: files}
+  end
+
+  defp delete_emoji(pack, shortcode) do
+    files = Map.delete(pack.files, shortcode)
+    %{pack | files: files}
+  end
+
+  defp rename_file(pack, filename, new_filename) do
+    old_path = Path.join(pack.path, filename)
+    new_path = Path.join(pack.path, new_filename)
+    create_subdirs(new_path)
+
+    with :ok <- File.rename(old_path, new_path) do
+      remove_dir_if_empty(old_path, filename)
+    end
+  end
+
+  defp create_subdirs(file_path) do
+    if String.contains?(file_path, "/") do
+      file_path
+      |> Path.dirname()
+      |> File.mkdir_p!()
+    end
+  end
+
+  defp remove_file(pack, shortcode) do
+    with {:ok, filename} <- get_filename(pack, shortcode),
+         emoji <- Path.join(pack.path, filename),
+         :ok <- File.rm(emoji) do
+      remove_dir_if_empty(emoji, filename)
+    end
+  end
+
+  defp remove_dir_if_empty(emoji, filename) do
+    dir = Path.dirname(emoji)
+
+    if String.contains?(filename, "/") and File.ls!(dir) == [] do
+      File.rmdir!(dir)
+    else
+      :ok
+    end
+  end
+
+  defp get_filename(pack, shortcode) do
+    with %{^shortcode => filename} when is_binary(filename) <- pack.files,
+         true <- pack.path |> Path.join(filename) |> File.exists?() do
+      {:ok, filename}
+    else
+      _ -> {:error, :doesnt_exist}
+    end
+  end
+
+  defp http_get(%URI{} = url), do: url |> to_string() |> http_get()
+
+  defp http_get(url) do
+    with {:ok, %{body: body}} <- url |> Pleroma.HTTP.get() do
+      Jason.decode(body)
+    end
+  end
+
+  defp list_packs_dir do
+    emoji_path = emoji_path()
+    # Create the directory first if it does not exist. This is probably the first request made
+    # with the API so it should be sufficient
+    with {:create_dir, :ok} <- {:create_dir, File.mkdir_p(emoji_path)},
+         {:ls, {:ok, results}} <- {:ls, File.ls(emoji_path)} do
+      {:ok, results}
+    else
+      {:create_dir, {:error, e}} -> {:error, :create_dir, e}
+      {:ls, {:error, e}} -> {:error, :ls, e}
+    end
+  end
+
+  defp validate_downloadable(pack) do
+    if downloadable?(pack), do: :ok, else: {:error, :cant_download}
+  end
+
+  defp copy_as(remote_pack, local_name) do
+    path = Path.join(emoji_path(), local_name)
+
+    %__MODULE__{
+      name: local_name,
+      path: path,
+      files: remote_pack["files"],
+      pack_file: Path.join(path, "pack.json")
+    }
+  end
+
+  defp unzip(archive, pack_info, remote_pack, local_pack) do
+    with :ok <- File.mkdir_p!(local_pack.path) do
+      files = Enum.map(remote_pack["files"], fn {_, path} -> to_charlist(path) end)
+      # Fallback cannot contain a pack.json file
+      files = if pack_info[:fallback], do: files, else: ['pack.json' | files]
+
+      :zip.unzip(archive, cwd: to_charlist(local_pack.path), file_list: files)
+    end
+  end
+
+  defp fetch_pack_info(remote_pack, uri, name) do
+    case remote_pack["pack"] do
+      %{"share-files" => true, "can-download" => true, "download-sha256" => sha} ->
+        {:ok,
+         %{
+           sha: sha,
+           url: URI.merge(uri, "/api/pleroma/emoji/packs/#{name}/archive") |> to_string()
+         }}
+
+      %{"fallback-src" => src, "fallback-src-sha256" => sha} when is_binary(src) ->
+        {:ok,
+         %{
+           sha: sha,
+           url: src,
+           fallback: true
+         }}
+
+      _ ->
+        {:error, "The pack was not set as shared and there is no fallback src to download from"}
+    end
+  end
+
+  defp download_archive(url, sha) do
+    with {:ok, %{body: archive}} <- Tesla.get(url) do
+      if Base.decode16!(sha) == :crypto.hash(:sha256, archive) do
+        {:ok, archive}
+      else
+        {:error, :imvalid_checksum}
+      end
+    end
+  end
+
+  defp fetch_archive(pack) do
+    hash = :crypto.hash(:md5, File.read!(pack.pack_file))
+
+    case Cachex.get!(:emoji_packs_cache, pack.name) do
+      %{hash: ^hash, pack_data: archive} -> archive
+      _ -> create_archive_and_cache(pack, hash)
+    end
+  end
+
+  defp fallback_sha_changed?(pack, data) do
+    is_binary(data[:"fallback-src"]) and data[:"fallback-src"] != pack.pack["fallback-src"]
+  end
+
+  defp update_sha_and_save_metadata(pack, data) do
+    with {:ok, %{body: zip}} <- Tesla.get(data[:"fallback-src"]),
+         :ok <- validate_has_all_files(pack, zip) do
+      fallback_sha = :sha256 |> :crypto.hash(zip) |> Base.encode16()
+
+      data
+      |> Map.put("fallback-src-sha256", fallback_sha)
+      |> save_metadata(pack)
+    end
+  end
+
+  defp validate_has_all_files(pack, zip) do
+    with {:ok, f_list} <- :zip.unzip(zip, [:memory]) do
+      # Check if all files from the pack.json are in the archive
+      pack.files
+      |> Enum.all?(fn {_, from_manifest} ->
+        List.keyfind(f_list, to_charlist(from_manifest), 0)
+      end)
+      |> if(do: :ok, else: {:error, :incomplete})
+    end
   end
 end
