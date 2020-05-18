@@ -28,6 +28,63 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   setup do: clear_config([:instance, :max_remote_account_fields])
 
   describe "handle_incoming" do
+    test "it works for incoming notices with tag not being an array (kroeg)" do
+      data = File.read!("test/fixtures/kroeg-array-less-emoji.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      object = Object.normalize(data["object"])
+
+      assert object.data["emoji"] == %{
+               "icon_e_smile" => "https://puckipedia.com/forum/images/smilies/icon_e_smile.png"
+             }
+
+      data = File.read!("test/fixtures/kroeg-array-less-hashtag.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      object = Object.normalize(data["object"])
+
+      assert "test" in object.data["tag"]
+    end
+
+    test "it works for incoming notices with url not being a string (prismo)" do
+      data = File.read!("test/fixtures/prismo-url-map.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      object = Object.normalize(data["object"])
+
+      assert object.data["url"] == "https://prismo.news/posts/83"
+    end
+
+    test "it cleans up incoming notices which are not really DMs" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      to = [user.ap_id, other_user.ap_id]
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("to", to)
+        |> Map.put("cc", [])
+
+      object =
+        data["object"]
+        |> Map.put("to", to)
+        |> Map.put("cc", [])
+
+      data = Map.put(data, "object", object)
+
+      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
+
+      assert data["to"] == []
+      assert data["cc"] == to
+
+      object_data = Object.normalize(activity).data
+
+      assert object_data["to"] == []
+      assert object_data["cc"] == to
+    end
+
     test "it ignores an incoming notice if we already have it" do
       activity = insert(:note_activity)
 
@@ -258,172 +315,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert object.data["content"] ==
                "<p>henlo from my Psion netBook</p><p>message sent from my Psion netBook</p>"
-    end
-
-    test "it works for incoming honk announces" do
-      _user = insert(:user, ap_id: "https://honktest/u/test", local: false)
-      other_user = insert(:user)
-      {:ok, post} = CommonAPI.post(other_user, %{status: "bonkeronk"})
-
-      announce = %{
-        "@context" => "https://www.w3.org/ns/activitystreams",
-        "actor" => "https://honktest/u/test",
-        "id" => "https://honktest/u/test/bonk/1793M7B9MQ48847vdx",
-        "object" => post.data["object"],
-        "published" => "2019-06-25T19:33:58Z",
-        "to" => "https://www.w3.org/ns/activitystreams#Public",
-        "type" => "Announce"
-      }
-
-      {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(announce)
-    end
-
-    test "it works for incoming announces with actor being inlined (kroeg)" do
-      data = File.read!("test/fixtures/kroeg-announce-with-inline-actor.json") |> Poison.decode!()
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["actor"] == "https://puckipedia.com/"
-    end
-
-    test "it works for incoming notices with tag not being an array (kroeg)" do
-      data = File.read!("test/fixtures/kroeg-array-less-emoji.json") |> Poison.decode!()
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      object = Object.normalize(data["object"])
-
-      assert object.data["emoji"] == %{
-               "icon_e_smile" => "https://puckipedia.com/forum/images/smilies/icon_e_smile.png"
-             }
-
-      data = File.read!("test/fixtures/kroeg-array-less-hashtag.json") |> Poison.decode!()
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      object = Object.normalize(data["object"])
-
-      assert "test" in object.data["tag"]
-    end
-
-    test "it works for incoming notices with url not being a string (prismo)" do
-      data = File.read!("test/fixtures/prismo-url-map.json") |> Poison.decode!()
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      object = Object.normalize(data["object"])
-
-      assert object.data["url"] == "https://prismo.news/posts/83"
-    end
-
-    test "it cleans up incoming notices which are not really DMs" do
-      user = insert(:user)
-      other_user = insert(:user)
-
-      to = [user.ap_id, other_user.ap_id]
-
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
-        |> Map.put("to", to)
-        |> Map.put("cc", [])
-
-      object =
-        data["object"]
-        |> Map.put("to", to)
-        |> Map.put("cc", [])
-
-      data = Map.put(data, "object", object)
-
-      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
-
-      assert data["to"] == []
-      assert data["cc"] == to
-
-      object_data = Object.normalize(activity).data
-
-      assert object_data["to"] == []
-      assert object_data["cc"] == to
-    end
-
-    test "it works for incoming announces" do
-      data = File.read!("test/fixtures/mastodon-announce.json") |> Poison.decode!()
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["actor"] == "http://mastodon.example.org/users/admin"
-      assert data["type"] == "Announce"
-
-      assert data["id"] ==
-               "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
-
-      assert data["object"] ==
-               "http://mastodon.example.org/users/admin/statuses/99541947525187367"
-
-      assert Activity.get_create_by_object_ap_id(data["object"])
-    end
-
-    test "it works for incoming announces with an existing activity" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
-
-      data =
-        File.read!("test/fixtures/mastodon-announce.json")
-        |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["actor"] == "http://mastodon.example.org/users/admin"
-      assert data["type"] == "Announce"
-
-      assert data["id"] ==
-               "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
-
-      assert data["object"] == activity.data["object"]
-
-      assert Activity.get_create_by_object_ap_id(data["object"]).id == activity.id
-    end
-
-    test "it works for incoming announces with an inlined activity" do
-      data =
-        File.read!("test/fixtures/mastodon-announce-private.json")
-        |> Poison.decode!()
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["actor"] == "http://mastodon.example.org/users/admin"
-      assert data["type"] == "Announce"
-
-      assert data["id"] ==
-               "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
-
-      object = Object.normalize(data["object"])
-
-      assert object.data["id"] == "http://mastodon.example.org/@admin/99541947525187368"
-      assert object.data["content"] == "this is a private toot"
-    end
-
-    @tag capture_log: true
-    test "it rejects incoming announces with an inlined activity from another origin" do
-      data =
-        File.read!("test/fixtures/bogus-mastodon-announce.json")
-        |> Poison.decode!()
-
-      assert :error = Transmogrifier.handle_incoming(data)
-    end
-
-    test "it does not clobber the addressing on announce activities" do
-      user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
-
-      data =
-        File.read!("test/fixtures/mastodon-announce.json")
-        |> Poison.decode!()
-        |> Map.put("object", Object.normalize(activity).data["id"])
-        |> Map.put("to", ["http://mastodon.example.org/users/admin/followers"])
-        |> Map.put("cc", [])
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["to"] == ["http://mastodon.example.org/users/admin/followers"]
     end
 
     test "it ensures that as:Public activities make it to their followers collection" do

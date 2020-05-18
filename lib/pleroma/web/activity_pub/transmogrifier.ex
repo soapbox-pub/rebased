@@ -677,13 +677,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         _options
       ) do
     with actor <- Containment.get_actor(data),
-         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_embedded_obj_helper(object_id, actor),
+         {_, {:ok, %User{} = actor}} <- {:fetch_user, User.get_or_fetch_by_ap_id(actor)},
+         {_, {:ok, object}} <- {:get_embedded, get_embedded_obj_helper(object_id, actor)},
          public <- Visibility.is_public?(data),
-         {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false, public) do
+         {_, {:ok, activity, _object}} <-
+           {:announce, ActivityPub.announce(actor, object, id, false, public)} do
       {:ok, activity}
     else
-      _e -> :error
+      e -> {:error, e}
     end
   end
 
