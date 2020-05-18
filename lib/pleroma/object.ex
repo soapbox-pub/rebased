@@ -138,12 +138,17 @@ defmodule Pleroma.Object do
 
   def normalize(_, _, _), do: nil
 
-  # Owned objects can only be mutated by their owner
-  def authorize_mutation(%Object{data: %{"actor" => actor}}, %User{ap_id: ap_id}),
-    do: actor == ap_id
+  # Owned objects can only be accessed by their owner
+  def authorize_access(%Object{data: %{"actor" => actor}}, %User{ap_id: ap_id}) do
+    if actor == ap_id do
+      :ok
+    else
+      {:error, :forbidden}
+    end
+  end
 
-  # Legacy objects can be mutated by anybody
-  def authorize_mutation(%Object{}, %User{}), do: true
+  # Legacy objects can be accessed by anybody
+  def authorize_access(%Object{}, %User{}), do: :ok
 
   @spec get_cached_by_ap_id(String.t()) :: Object.t() | nil
   def get_cached_by_ap_id(ap_id) do
