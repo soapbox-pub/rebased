@@ -1,4 +1,4 @@
-defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
+defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Emoji.Pack
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
   @skip_plugs [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug]
   plug(:skip_plug, @skip_plugs when action in [:archive, :show, :list])
 
-  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEmojiOperation
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEmojiPackOperation
 
   def remote(conn, %{url: url}) do
     with {:ok, packs} <- Pack.list_remote(url) do

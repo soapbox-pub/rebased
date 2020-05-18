@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
+defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
       summary: "Make request to another instance for emoji packs list",
       security: [%{"oAuth" => ["write"]}],
       parameters: [url_param()],
-      operationId: "PleromaAPI.EmojiAPIController.remote",
+      operationId: "PleromaAPI.EmojiPackController.remote",
       responses: %{
         200 => emoji_packs_response(),
         500 => Operation.response("Error", "application/json", ApiError)
@@ -32,7 +32,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Lists local custom emoji packs",
-      operationId: "PleromaAPI.EmojiAPIController.index",
+      operationId: "PleromaAPI.EmojiPackController.index",
       responses: %{
         200 => emoji_packs_response()
       }
@@ -43,7 +43,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Show emoji pack",
-      operationId: "PleromaAPI.EmojiAPIController.show",
+      operationId: "PleromaAPI.EmojiPackController.show",
       parameters: [name_param()],
       responses: %{
         200 => Operation.response("Emoji Pack", "application/json", emoji_pack()),
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Requests a local pack archive from the instance",
-      operationId: "PleromaAPI.EmojiAPIController.archive",
+      operationId: "PleromaAPI.EmojiPackController.archive",
       parameters: [name_param()],
       responses: %{
         200 =>
@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Download pack from another instance",
-      operationId: "PleromaAPI.EmojiAPIController.download",
+      operationId: "PleromaAPI.EmojiPackController.download",
       security: [%{"oAuth" => ["write"]}],
       requestBody: request_body("Parameters", download_request(), required: true),
       responses: %{
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Create an empty pack",
-      operationId: "PleromaAPI.EmojiAPIController.create",
+      operationId: "PleromaAPI.EmojiPackController.create",
       security: [%{"oAuth" => ["write"]}],
       parameters: [name_param()],
       responses: %{
@@ -121,7 +121,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Delete a custom emoji pack",
-      operationId: "PleromaAPI.EmojiAPIController.delete",
+      operationId: "PleromaAPI.EmojiPackController.delete",
       security: [%{"oAuth" => ["write"]}],
       parameters: [name_param()],
       responses: %{
@@ -136,7 +136,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Updates (replaces) pack metadata",
-      operationId: "PleromaAPI.EmojiAPIController.update",
+      operationId: "PleromaAPI.EmojiPackController.update",
       security: [%{"oAuth" => ["write"]}],
       requestBody: request_body("Parameters", update_request(), required: true),
       parameters: [name_param()],
@@ -151,7 +151,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Add new file to the pack",
-      operationId: "PleromaAPI.EmojiAPIController.add_file",
+      operationId: "PleromaAPI.EmojiPackController.add_file",
       security: [%{"oAuth" => ["write"]}],
       requestBody: request_body("Parameters", add_file_request(), required: true),
       parameters: [name_param()],
@@ -194,7 +194,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Add new file to the pack",
-      operationId: "PleromaAPI.EmojiAPIController.update_file",
+      operationId: "PleromaAPI.EmojiPackController.update_file",
       security: [%{"oAuth" => ["write"]}],
       requestBody: request_body("Parameters", update_file_request(), required: true),
       parameters: [name_param()],
@@ -236,7 +236,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Delete emoji file from pack",
-      operationId: "PleromaAPI.EmojiAPIController.delete_file",
+      operationId: "PleromaAPI.EmojiPackController.delete_file",
       security: [%{"oAuth" => ["write"]}],
       parameters: [
         name_param(),
@@ -256,7 +256,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiOperation do
     %Operation{
       tags: ["Emoji Packs"],
       summary: "Imports packs from filesystem",
-      operationId: "PleromaAPI.EmojiAPIController.import",
+      operationId: "PleromaAPI.EmojiPackController.import",
       security: [%{"oAuth" => ["write"]}],
       responses: %{
         200 =>
