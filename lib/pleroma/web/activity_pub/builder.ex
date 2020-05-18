@@ -83,6 +83,20 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     end
   end
 
+  def announce(actor, object) do
+    to = [actor.follower_address, object.data["actor"]]
+
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "actor" => actor.ap_id,
+       "object" => object.data["id"],
+       "to" => to,
+       "context" => object.data["context"],
+       "type" => "Announce"
+     }, []}
+  end
+
   @spec object_action(User.t(), Object.t()) :: {:ok, map(), keyword()}
   defp object_action(actor, object) do
     object_actor = User.get_cached_by_ap_id(object.data["actor"])

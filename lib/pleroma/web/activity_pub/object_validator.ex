@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
@@ -52,6 +53,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     with {:ok, object} <-
            object
            |> EmojiReactValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object |> Map.from_struct())
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => "Announce"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> AnnounceValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
       object = stringify_keys(object |> Map.from_struct())
       {:ok, object, meta}

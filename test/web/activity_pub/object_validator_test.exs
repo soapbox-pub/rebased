@@ -280,4 +280,54 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       assert {:object, valid_like["object"]} in validated.changes
     end
   end
+
+  describe "announces" do
+    setup do
+      user = insert(:user)
+      announcer = insert(:user)
+      {:ok, post_activity} = CommonAPI.post(user, %{status: "uguu"})
+
+      object = Object.normalize(post_activity, false)
+      {:ok, valid_announce, []} = Builder.announce(announcer, object)
+
+      %{
+        valid_announce: valid_announce,
+        user: user,
+        post_activity: post_activity,
+        announcer: announcer
+      }
+    end
+
+    test "returns ok for a valid announce", %{valid_announce: valid_announce} do
+      assert {:ok, _object, _meta} = ObjectValidator.validate(valid_announce, [])
+    end
+
+    test "returns an error if the object can't be found", %{valid_announce: valid_announce} do
+      without_object =
+        valid_announce
+        |> Map.delete("object")
+
+      {:error, cng} = ObjectValidator.validate(without_object, [])
+
+      assert {:object, {"can't be blank", [validation: :required]}} in cng.errors
+
+      nonexisting_object =
+        valid_announce
+        |> Map.put("object", "https://gensokyo.2hu/objects/99999999")
+
+      {:error, cng} = ObjectValidator.validate(nonexisting_object, [])
+
+      assert {:object, {"can't find object", []}} in cng.errors
+    end
+
+    test "returns an error if we don't have the actor", %{valid_announce: valid_announce} do
+      nonexisting_actor =
+        valid_announce
+        |> Map.put("actor", "https://gensokyo.2hu/users/raymoo")
+
+      {:error, cng} = ObjectValidator.validate(nonexisting_actor, [])
+
+      assert {:actor, {"can't find user", []}} in cng.errors
+    end
+  end
 end
