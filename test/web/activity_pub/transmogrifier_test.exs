@@ -1329,7 +1329,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       }
 
       assert capture_log(fn ->
-               :error = Transmogrifier.handle_incoming(data)
+               {:error, _} = Transmogrifier.handle_incoming(data)
              end) =~ "Object containment failed"
     end
 
@@ -1344,7 +1344,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       }
 
       assert capture_log(fn ->
-               :error = Transmogrifier.handle_incoming(data)
+               {:error, _} = Transmogrifier.handle_incoming(data)
              end) =~ "Object containment failed"
     end
 
@@ -1359,7 +1359,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       }
 
       assert capture_log(fn ->
-               :error = Transmogrifier.handle_incoming(data)
+               {:error, _} = Transmogrifier.handle_incoming(data)
              end) =~ "Object containment failed"
     end
   end
