@@ -128,7 +128,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> json_response_and_validate_schema(404)
     end
 
-    test "returns 401 for deactivated user", %{conn: conn} do
+    test "returns 404 for deactivated user", %{conn: conn} do
       user = insert(:user, deactivated: true)
 
       assert %{"error" => "Can't find user"} =
