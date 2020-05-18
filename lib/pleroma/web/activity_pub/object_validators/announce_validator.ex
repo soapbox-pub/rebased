@@ -6,9 +6,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
   use Ecto.Schema
 
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
+  alias Pleroma.Web.ActivityPub.Utils
 
-  import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
   import Ecto.Changeset
+  import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
 
   @primary_key false
 
@@ -49,5 +50,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
     |> validate_required([:id, :type, :object, :actor, :context, :to, :cc])
     |> validate_actor_presence()
     |> validate_object_presence()
+    |> validate_existing_announce()
+  end
+
+  def validate_existing_announce(cng) do
+    actor = get_field(cng, :actor)
+    object = get_field(cng, :object)
+
+    if actor && object && Utils.get_existing_announce(actor, %{data: %{"id" => object}}) do
+      cng
+      |> add_error(:actor, "already announced this object")
+      |> add_error(:object, "already announced by this actor")
+    else
+      cng
+    end
   end
 end

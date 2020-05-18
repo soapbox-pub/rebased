@@ -329,5 +329,18 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
 
       assert {:actor, {"can't find user", []}} in cng.errors
     end
+
+    test "returns an error if the actor already announced the object", %{
+      valid_announce: valid_announce,
+      announcer: announcer,
+      post_activity: post_activity
+    } do
+      _announce = CommonAPI.repeat(post_activity.id, announcer)
+
+      {:error, cng} = ObjectValidator.validate(valid_announce, [])
+
+      assert {:actor, {"already announced this object", []}} in cng.errors
+      assert {:object, {"already announced by this actor", []}} in cng.errors
+    end
   end
 end
