@@ -262,6 +262,12 @@ Urls of attachments pass to script as arguments.
 
 * `script_path`: path to external script.
 
+Example:
+```elixir
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
+  script_path: "./installation/nginx-cache-purge.example"
+```
+
 #### Pleroma.Web.MediaProxy.Invalidation.Http
 
 This strategy allow perform custom http request to purge cache.
@@ -269,6 +275,14 @@ This strategy allow perform custom http request to purge cache.
 * `method`: http method. default is `purge`
 * `headers`: http headers. default is empty
 * `options`: request options. default is empty
+
+Example:
+```elixir
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
+  method: :purge,
+  headers: [],
+  options: []
+```
 
 ## Link previews
 
