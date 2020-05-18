@@ -13,6 +13,43 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   describe "handle_incoming" do
+    test "handles this" do
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "actor" => "https://honk.tedunangst.com/u/tedu",
+        "id" => "https://honk.tedunangst.com/u/tedu/honk/x6gt8X8PcyGkQcXxzg1T",
+        "object" => %{
+          "attachment" => [
+            %{
+              "mediaType" => "image/jpeg",
+              "name" => "298p3RG7j27tfsZ9RQ.jpg",
+              "summary" => "298p3RG7j27tfsZ9RQ.jpg",
+              "type" => "Document",
+              "url" => "https://honk.tedunangst.com/d/298p3RG7j27tfsZ9RQ.jpg"
+            }
+          ],
+          "attributedTo" => "https://honk.tedunangst.com/u/tedu",
+          "content" => "",
+          "id" => "https://honk.tedunangst.com/u/tedu/chonk/26L4wl5yCbn4dr4y1b",
+          "published" => "2020-05-18T01:13:03Z",
+          "to" => [
+            "https://dontbulling.me/users/lain"
+          ],
+          "type" => "ChatMessage"
+        },
+        "published" => "2020-05-18T01:13:03Z",
+        "to" => [
+          "https://dontbulling.me/users/lain"
+        ],
+        "type" => "Create"
+      }
+
+      _user = insert(:user, ap_id: data["actor"])
+      _user = insert(:user, ap_id: hd(data["to"]))
+
+      assert {:ok, _activity} = Transmogrifier.handle_incoming(data)
+    end
+
     test "it rejects messages that don't contain content" do
       data =
         File.read!("test/fixtures/create-chat-message.json")

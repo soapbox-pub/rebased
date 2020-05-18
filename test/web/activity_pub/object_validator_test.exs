@@ -15,8 +15,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   describe "attachments" do
     test "works with honkerific attachments" do
       attachment = %{
-        "mediaType" => "image/jpeg",
-        "name" => "298p3RG7j27tfsZ9RQ.jpg",
+        "mediaType" => "",
+        "name" => "",
         "summary" => "298p3RG7j27tfsZ9RQ.jpg",
         "type" => "Document",
         "url" => "https://honk.tedunangst.com/d/298p3RG7j27tfsZ9RQ.jpg"
