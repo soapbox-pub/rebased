@@ -249,6 +249,26 @@ This section describe PWA manifest instance-specific values. Currently this opti
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
 * `proxy_opts`: All options defined in `Pleroma.ReverseProxy` documentation, defaults to `[max_body_length: (25*1_048_576)]`.
 * `whitelist`: List of domains to bypass the mediaproxy
+* `invalidation`: options for remove media from cache after delete object:
+    * `enabled`: Enables purge cache
+    * `provider`: Which one of  the [purge cache strategy](#purge-cache-strategy) to use.
+
+### Purge cache strategy
+
+#### Pleroma.Web.MediaProxy.Invalidation.Script
+
+This strategy allow perform external bash script to purge cache.
+Urls of attachments pass to script as arguments.
+
+* `script_path`: path to external script.
+
+#### Pleroma.Web.MediaProxy.Invalidation.Http
+
+This strategy allow perform custom http request to purge cache.
+
+* `method`: http method. default is `purge`
+* `headers`: http headers. default is empty
+* `options`: request options. default is empty
 
 ## Link previews
 

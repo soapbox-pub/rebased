@@ -380,10 +380,7 @@ config :pleroma, :media_proxy,
   enabled: false,
   invalidation: [
     enabled: false,
-    provider: Pleroma.Web.MediaProxy.Invalidation.Script,
-    options: %{
-      script_path: "./installation/nginx-cache-purge.example"
-    }
+    provider: Pleroma.Web.MediaProxy.Invalidation.Script
   ],
   proxy_opts: [
     redirect_on_failure: false,
