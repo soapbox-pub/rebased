@@ -20,6 +20,10 @@ defmodule Pleroma.Web.MastodonAPI.FallbackController do
     render_error(conn, :not_found, "Record not found")
   end
 
+  def call(conn, {:error, :forbidden}) do
+    render_error(conn, :forbidden, "Access denied")
+  end
+
   def call(conn, {:error, error_message}) do
     conn
     |> put_status(:bad_request)
