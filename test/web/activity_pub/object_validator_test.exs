@@ -13,6 +13,20 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
   import Pleroma.Factory
 
   describe "attachments" do
+    test "works with honkerific attachments" do
+      attachment = %{
+        "mediaType" => "image/jpeg",
+        "name" => "298p3RG7j27tfsZ9RQ.jpg",
+        "summary" => "298p3RG7j27tfsZ9RQ.jpg",
+        "type" => "Document",
+        "url" => "https://honk.tedunangst.com/d/298p3RG7j27tfsZ9RQ.jpg"
+      }
+
+      assert {:ok, attachment} =
+               AttachmentValidator.cast_and_validate(attachment)
+               |> Ecto.Changeset.apply_action(:insert)
+    end
+
     test "it turns mastodon attachments into our attachments" do
       attachment = %{
         "url" =>
@@ -97,6 +111,27 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       valid_chat_message =
         valid_chat_message
         |> Map.put("attachment", attachment.data)
+
+      assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
+
+      assert object["attachment"]
+    end
+
+    test "validates for a basic object with an attachment in an array", %{
+      valid_chat_message: valid_chat_message,
+      user: user
+    } do
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
+
+      valid_chat_message =
+        valid_chat_message
+        |> Map.put("attachment", [attachment.data])
 
       assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
 

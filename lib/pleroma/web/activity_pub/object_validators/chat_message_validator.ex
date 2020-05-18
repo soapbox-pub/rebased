@@ -47,8 +47,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   def fix(data) do
     data
     |> fix_emoji()
+    |> fix_attachment()
     |> Map.put_new("actor", data["attributedTo"])
   end
+
+  # Throws everything but the first one away
+  def fix_attachment(%{"attachment" => [attachment | _]} = data) do
+    data
+    |> Map.put("attachment", attachment)
+  end
+
+  def fix_attachment(data), do: data
 
   def changeset(struct, data) do
     data = fix(data)
