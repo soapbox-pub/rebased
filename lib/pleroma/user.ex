@@ -1488,6 +1488,7 @@ defmodule Pleroma.User do
     end)
 
     delete_user_activities(user)
+    delete_notifications_from_user_activities(user)
 
     delete_outgoing_pending_follow_requests(user)
 
@@ -1574,6 +1575,13 @@ defmodule Pleroma.User do
       "follower_id" => follower.id,
       "followed_identifiers" => followed_identifiers
     })
+  end
+
+  def delete_notifications_from_user_activities(%User{ap_id: ap_id}) do
+    Notification
+    |> join(:inner, [n], activity in assoc(n, :activity))
+    |> where([n, a], fragment("? = ?", a.actor, ^ap_id))
+    |> Repo.delete_all()
   end
 
   def delete_user_activities(%User{ap_id: ap_id} = user) do

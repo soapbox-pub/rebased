@@ -166,8 +166,16 @@ defmodule Pleroma.Notification do
       query
       |> join(:left, [n, a], mutated_activity in Pleroma.Activity,
         on:
-          fragment("?->>'context'", a.data) ==
-            fragment("?->>'context'", mutated_activity.data) and
+          fragment(
+            "COALESCE((?->'object')->>'id', ?->>'object')",
+            a.data,
+            a.data
+          ) ==
+            fragment(
+              "COALESCE((?->'object')->>'id', ?->>'object')",
+              mutated_activity.data,
+              mutated_activity.data
+            ) and
             fragment("(?->>'type' = 'Like' or ?->>'type' = 'Announce')", a.data, a.data) and
             fragment("?->>'type'", mutated_activity.data) == "Create",
         as: :mutated_activity
@@ -541,6 +549,7 @@ defmodule Pleroma.Notification do
   def skip?(%Activity{} = activity, %User{} = user) do
     [
       :self,
+      :invisible,
       :followers,
       :follows,
       :non_followers,
@@ -555,6 +564,12 @@ defmodule Pleroma.Notification do
   @spec skip?(atom(), Activity.t(), User.t()) :: boolean()
   def skip?(:self, %Activity{} = activity, %User{} = user) do
     activity.data["actor"] == user.ap_id
+  end
+
+  def skip?(:invisible, %Activity{} = activity, _) do
+    actor = activity.data["actor"]
+    user = User.get_cached_by_ap_id(actor)
+    User.invisible?(user)
   end
 
   def skip?(

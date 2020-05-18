@@ -306,6 +306,14 @@ defmodule Pleroma.NotificationTest do
 
       assert {:ok, []} == Notification.create_notifications(status)
     end
+
+    test "it disables notifications from people who are invisible" do
+      author = insert(:user, invisible: true)
+      user = insert(:user)
+
+      {:ok, status} = CommonAPI.post(author, %{status: "hey @#{user.nickname}"})
+      refute Notification.create_notification(status, user)
+    end
   end
 
   describe "follow / follow_request notifications" do
