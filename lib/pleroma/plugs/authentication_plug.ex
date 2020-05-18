@@ -16,6 +16,11 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
     :crypt.crypt(password, password_hash) == password_hash
   end
 
+  def checkpw(password, "$2" <> _ = password_hash) do
+    # Handle bcrypt passwords for Mastodon migration
+    Bcrypt.verify_pass(password, password_hash)
+  end
+
   def checkpw(password, "$pbkdf2" <> _ = password_hash) do
     Pbkdf2.verify_pass(password, password_hash)
   end
@@ -23,6 +28,25 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   def checkpw(_password, _password_hash) do
     Logger.error("Password hash not recognized")
     false
+  end
+
+  def maybe_update_password(%User{password_hash: "$2" <> _} = user, password) do
+    do_update_password(user, password)
+  end
+
+  def maybe_update_password(%User{password_hash: "$6" <> _} = user, password) do
+    do_update_password(user, password)
+  end
+
+  def maybe_update_password(user, _), do: {:ok, user}
+
+  defp do_update_password(user, password) do
+    user
+    |> User.password_update_changeset(%{
+      "password" => password,
+      "password_confirmation" => password
+    })
+    |> Pleroma.Repo.update()
   end
 
   def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
@@ -36,7 +60,9 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
         } = conn,
         _
       ) do
-    if Pbkdf2.verify_pass(password, password_hash) do
+    if checkpw(password, password_hash) do
+      {:ok, auth_user} = maybe_update_password(auth_user, password)
+
       conn
       |> assign(:user, auth_user)
       |> OAuthScopesPlug.skip_plug()

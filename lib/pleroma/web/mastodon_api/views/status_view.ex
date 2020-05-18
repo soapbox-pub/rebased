@@ -107,9 +107,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
             |> Enum.map(&get_user(&1.data["actor"], false))
             |> Enum.filter(& &1)
 
-          UserRelationship.view_relationships_option(reading_user, actors,
-            source_mutes_only: opts[:skip_relationships]
-          )
+          UserRelationship.view_relationships_option(reading_user, actors, subset: :source_mutes)
       end
 
     opts =
@@ -162,9 +160,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       account:
         AccountView.render("show.json", %{
           user: user,
-          for: opts[:for],
-          relationships: opts[:relationships],
-          skip_relationships: opts[:skip_relationships]
+          for: opts[:for]
         }),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -330,9 +326,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       account:
         AccountView.render("show.json", %{
           user: user,
-          for: opts[:for],
-          relationships: opts[:relationships],
-          skip_relationships: opts[:skip_relationships]
+          for: opts[:for]
         }),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),

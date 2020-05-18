@@ -134,7 +134,7 @@ defmodule Pleroma.Upload do
     end
   end
 
-  defp prepare_upload(%{"img" => "data:image/" <> image_data}, opts) do
+  defp prepare_upload(%{img: "data:image/" <> image_data}, opts) do
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
     data = Base.decode64!(parsed["data"], ignore: :whitespace)
     hash = String.downcase(Base.encode16(:crypto.hash(:sha256, data)))

@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.AccountOperation
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
-  alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.ScheduledStatus
   alias Pleroma.Web.ApiSpec.Schemas.Status
@@ -349,10 +348,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       summary: "Bookmarked statuses",
       description: "Statuses the user has bookmarked",
       operationId: "StatusController.bookmarks",
-      parameters: [
-        Operation.parameter(:with_relationships, :query, BooleanLike, "Include relationships")
-        | pagination_params()
-      ],
+      parameters: pagination_params(),
       security: [%{"oAuth" => ["read:bookmarks"]}],
       responses: %{
         200 => Operation.response("Array of Statuses", "application/json", array_of_statuses())
@@ -360,7 +356,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
     }
   end
 
-  defp array_of_statuses do
+  def array_of_statuses do
     %Schema{type: :array, items: Status, example: [Status.schema().example]}
   end
 
@@ -371,15 +367,18 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       properties: %{
         status: %Schema{
           type: :string,
+          nullable: true,
           description:
             "Text content of the status. If `media_ids` is provided, this becomes optional. Attaching a `poll` is optional while `status` is provided."
         },
         media_ids: %Schema{
+          nullable: true,
           type: :array,
           items: %Schema{type: :string},
           description: "Array of Attachment ids to be attached as media."
         },
         poll: %Schema{
+          nullable: true,
           type: :object,
           required: [:options],
           properties: %{
@@ -390,26 +389,35 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
             },
             expires_in: %Schema{
               type: :integer,
+              nullable: true,
               description:
                 "Duration the poll should be open, in seconds. Must be provided with `poll[options]`"
             },
-            multiple: %Schema{type: :boolean, description: "Allow multiple choices?"},
+            multiple: %Schema{
+              type: :boolean,
+              nullable: true,
+              description: "Allow multiple choices?"
+            },
             hide_totals: %Schema{
               type: :boolean,
+              nullable: true,
               description: "Hide vote counts until the poll ends?"
             }
           }
         },
         in_reply_to_id: %Schema{
+          nullable: true,
           allOf: [FlakeID],
           description: "ID of the status being replied to, if status is a reply"
         },
         sensitive: %Schema{
           type: :boolean,
+          nullable: true,
           description: "Mark status and attached media as sensitive?"
         },
         spoiler_text: %Schema{
           type: :string,
+          nullable: true,
           description:
             "Text to be shown as a warning or subject before the actual content. Statuses are generally collapsed behind this field."
         },
@@ -420,25 +428,33 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           description:
             "ISO 8601 Datetime at which to schedule a status. Providing this paramter will cause ScheduledStatus to be returned instead of Status. Must be at least 5 minutes in the future."
         },
-        language: %Schema{type: :string, description: "ISO 639 language code for this status."},
+        language: %Schema{
+          type: :string,
+          nullable: true,
+          description: "ISO 639 language code for this status."
+        },
         # Pleroma-specific properties:
         preview: %Schema{
           type: :boolean,
+          nullable: true,
           description:
             "If set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example"
         },
         content_type: %Schema{
           type: :string,
+          nullable: true,
           description:
             "The MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint."
         },
         to: %Schema{
           type: :array,
+          nullable: true,
           items: %Schema{type: :string},
           description:
             "A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply"
         },
         visibility: %Schema{
+          nullable: true,
           anyOf: [
             VisibilityScope,
             %Schema{type: :string, description: "`list:LIST_ID`", example: "LIST:123"}
@@ -447,11 +463,13 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
             "Visibility of the posted status. Besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`"
         },
         expires_in: %Schema{
+          nullable: true,
           type: :integer,
           description:
             "The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour."
         },
         in_reply_to_conversation_id: %Schema{
+          nullable: true,
           type: :string,
           description:
             "Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`."

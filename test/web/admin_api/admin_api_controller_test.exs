@@ -2509,6 +2509,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                 %{"tuple" => [":seconds_valid", 60]},
                 %{"tuple" => [":path", ""]},
                 %{"tuple" => [":key1", nil]},
+                %{"tuple" => [":partial_chain", "&:hackney_connect.partial_chain/1"]},
                 %{"tuple" => [":regex1", "~r/https:\/\/example.com/"]},
                 %{"tuple" => [":regex2", "~r/https:\/\/example.com/u"]},
                 %{"tuple" => [":regex3", "~r/https:\/\/example.com/i"]},
@@ -2532,6 +2533,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                      %{"tuple" => [":seconds_valid", 60]},
                      %{"tuple" => [":path", ""]},
                      %{"tuple" => [":key1", nil]},
+                     %{"tuple" => [":partial_chain", "&:hackney_connect.partial_chain/1"]},
                      %{"tuple" => [":regex1", "~r/https:\\/\\/example.com/"]},
                      %{"tuple" => [":regex2", "~r/https:\\/\\/example.com/u"]},
                      %{"tuple" => [":regex3", "~r/https:\\/\\/example.com/i"]},
@@ -2544,6 +2546,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                      ":seconds_valid",
                      ":path",
                      ":key1",
+                     ":partial_chain",
                      ":regex1",
                      ":regex2",
                      ":regex3",
@@ -2939,6 +2942,33 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]} in value
       assert ":proxy_url" in db
+    end
+
+    test "doesn't set keys not in the whitelist", %{conn: conn} do
+      clear_config(:database_config_whitelist, [
+        {:pleroma, :key1},
+        {:pleroma, :key2},
+        {:pleroma, Pleroma.Captcha.NotReal},
+        {:not_real}
+      ])
+
+      post(conn, "/api/pleroma/admin/config", %{
+        configs: [
+          %{group: ":pleroma", key: ":key1", value: "value1"},
+          %{group: ":pleroma", key: ":key2", value: "value2"},
+          %{group: ":pleroma", key: ":key3", value: "value3"},
+          %{group: ":pleroma", key: "Pleroma.Web.Endpoint.NotReal", value: "value4"},
+          %{group: ":pleroma", key: "Pleroma.Captcha.NotReal", value: "value5"},
+          %{group: ":not_real", key: ":anything", value: "value6"}
+        ]
+      })
+
+      assert Application.get_env(:pleroma, :key1) == "value1"
+      assert Application.get_env(:pleroma, :key2) == "value2"
+      assert Application.get_env(:pleroma, :key3) == nil
+      assert Application.get_env(:pleroma, Pleroma.Web.Endpoint.NotReal) == nil
+      assert Application.get_env(:pleroma, Pleroma.Captcha.NotReal) == "value5"
+      assert Application.get_env(:not_real, :anything) == "value6"
     end
   end
 
@@ -3571,19 +3601,54 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  test "GET /api/pleroma/admin/config/descriptions", %{conn: conn} do
-    admin = insert(:user, is_admin: true)
+  describe "GET /api/pleroma/admin/config/descriptions" do
+    test "structure", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
 
-    conn =
-      assign(conn, :user, admin)
-      |> get("/api/pleroma/admin/config/descriptions")
+      conn =
+        assign(conn, :user, admin)
+        |> get("/api/pleroma/admin/config/descriptions")
 
-    assert [child | _others] = json_response(conn, 200)
+      assert [child | _others] = json_response(conn, 200)
 
-    assert child["children"]
-    assert child["key"]
-    assert String.starts_with?(child["group"], ":")
-    assert child["description"]
+      assert child["children"]
+      assert child["key"]
+      assert String.starts_with?(child["group"], ":")
+      assert child["description"]
+    end
+
+    test "filters by database configuration whitelist", %{conn: conn} do
+      clear_config(:database_config_whitelist, [
+        {:pleroma, :instance},
+        {:pleroma, :activitypub},
+        {:pleroma, Pleroma.Upload},
+        {:esshd}
+      ])
+
+      admin = insert(:user, is_admin: true)
+
+      conn =
+        assign(conn, :user, admin)
+        |> get("/api/pleroma/admin/config/descriptions")
+
+      children = json_response(conn, 200)
+
+      assert length(children) == 4
+
+      assert Enum.count(children, fn c -> c["group"] == ":pleroma" end) == 3
+
+      instance = Enum.find(children, fn c -> c["key"] == ":instance" end)
+      assert instance["children"]
+
+      activitypub = Enum.find(children, fn c -> c["key"] == ":activitypub" end)
+      assert activitypub["children"]
+
+      web_endpoint = Enum.find(children, fn c -> c["key"] == "Pleroma.Upload" end)
+      assert web_endpoint["children"]
+
+      esshd = Enum.find(children, fn c -> c["group"] == ":esshd" end)
+      assert esshd["children"]
+    end
   end
 
   describe "/api/pleroma/admin/stats" do

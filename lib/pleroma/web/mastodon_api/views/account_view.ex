@@ -15,13 +15,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   def render("index.json", %{users: users} = opts) do
     reading_user = opts[:for]
 
-    # Note: :skip_relationships option is currently intentionally not supported for accounts
     relationships_opt =
       cond do
         Map.has_key?(opts, :relationships) ->
           opts[:relationships]
 
-        is_nil(reading_user) ->
+        is_nil(reading_user) || !opts[:embed_relationships] ->
           UserRelationship.view_relationships_option(nil, [])
 
         true ->
@@ -193,14 +192,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       end)
 
     relationship =
-      if opts[:skip_relationships] do
-        %{}
-      else
+      if opts[:embed_relationships] do
         render("relationship.json", %{
           user: opts[:for],
           target: user,
           relationships: opts[:relationships]
         })
+      else
+        %{}
       end
 
     %{

@@ -911,6 +911,21 @@ config :auto_linker,
 
 Boolean, enables/disables in-database configuration. Read [Transfering the config to/from the database](../administration/CLI_tasks/config.md) for more information.
 
+## :database_config_whitelist
+
+List of valid configuration sections which are allowed to be configured from the
+database. Settings stored in the database before the whitelist is configured are
+still applied, so it is suggested to only use the whitelist on instances that
+have not migrated the config to the database.
+
+Example:
+```elixir
+config :pleroma, :database_config_whitelist, [
+  {:pleroma, :instance},
+  {:pleroma, Pleroma.Web.Metadata},
+  {:auto_linker}
+]
+```
 
 ### Multi-factor authentication -  :two_factor_authentication
 * `totp` - a list containing TOTP configuration
