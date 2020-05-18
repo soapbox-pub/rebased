@@ -25,22 +25,17 @@ defmodule Pleroma.Repo.Migrations.UpdateCounterCacheTable do
     RETURNS TRIGGER AS
     $$
       DECLARE
-        token_id smallint;
         hostname character varying(255);
         visibility_new character varying(64);
         visibility_old character varying(64);
         actor character varying(255);
       BEGIN
-      SELECT "tokid" INTO "token_id" FROM ts_token_type('default') WHERE "alias" = 'host';
       IF TG_OP = 'DELETE' THEN
         actor := OLD.actor;
       ELSE
         actor := NEW.actor;
       END IF;
-      SELECT "token" INTO "hostname" FROM ts_parse('default', actor) WHERE "tokid" = token_id;
-      IF hostname IS NULL THEN
-        hostname := split_part(actor, '/', 3);
-      END IF;
+      hostname := split_part(actor, '/', 3);
       IF TG_OP = 'INSERT' THEN
         visibility_new := activity_visibility(NEW.actor, NEW.recipients, NEW.data);
         IF NEW.data->>'type' = 'Create'
