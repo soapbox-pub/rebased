@@ -619,24 +619,6 @@ config :pleroma, :workers,
 * `enabled: false` corresponds to `config :pleroma, :workers, retries: [federator_outgoing: 1]`
 * deprecated options: `max_jobs`, `initial_timeout`
 
-### Pleroma.Scheduler
-
-Configuration for [Quantum](https://github.com/quantum-elixir/quantum-core) jobs scheduler.
-
-See [Quantum readme](https://github.com/quantum-elixir/quantum-core#usage) for the list of supported options.
-
-Example:
-
-```elixir
-config :pleroma, Pleroma.Scheduler,
-  global: true,
-  overlap: true,
-  timezone: :utc,
-  jobs: [{"0 */6 * * * *", {Pleroma.Web.Websub, :refresh_subscriptions, []}}]
-```
-
-The above example defines a single job which invokes `Pleroma.Web.Websub.refresh_subscriptions()` every 6 hours ("0 */6 * * * *", [crontab format](https://en.wikipedia.org/wiki/Cron)).
-
 ## :web_push_encryption, :vapid_details
 
 Web Push Notifications configuration. You can use the mix task `mix web_push.gen.keypair` to generate it.
