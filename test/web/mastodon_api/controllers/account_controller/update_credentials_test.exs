@@ -112,6 +112,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user_data["source"]["privacy"] == "unlisted"
     end
 
+    test "updates the user's privacy", %{conn: conn} do
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{source: %{privacy: "unlisted"}})
+
+      assert user_data = json_response_and_validate_schema(conn, 200)
+      assert user_data["source"]["privacy"] == "unlisted"
+    end
+
     test "updates the user's hide_followers status", %{conn: conn} do
       conn = patch(conn, "/api/v1/accounts/update_credentials", %{hide_followers: "true"})
 

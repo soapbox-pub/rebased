@@ -177,6 +177,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       )
       |> add_if_present(params, :pleroma_settings_store, :pleroma_settings_store)
       |> add_if_present(params, :default_scope, :default_scope)
+      |> add_if_present(params["source"], "privacy", :default_scope)
       |> add_if_present(params, :actor_type, :actor_type)
 
     changeset = User.update_changeset(user, user_params)
@@ -189,7 +190,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   defp add_if_present(map, params, params_field, map_field, value_function \\ &{:ok, &1}) do
-    with true <- Map.has_key?(params, params_field),
+    with true <- is_map(params),
+         true <- Map.has_key?(params, params_field),
          {:ok, new_value} <- value_function.(Map.get(params, params_field)) do
       Map.put(map, map_field, new_value)
     else
