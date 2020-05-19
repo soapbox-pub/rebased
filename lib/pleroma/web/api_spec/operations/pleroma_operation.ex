@@ -5,105 +5,17 @@
 defmodule Pleroma.Web.ApiSpec.PleromaOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Schemas.Account
-  alias Pleroma.Web.ApiSpec.Schemas.ApiError
-  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
-  alias Pleroma.Web.ApiSpec.Schemas.Status
-  alias Pleroma.Web.ApiSpec.Schemas.Conversation
-  alias Pleroma.Web.ApiSpec.StatusOperation
   alias Pleroma.Web.ApiSpec.NotificationOperation
+  alias Pleroma.Web.ApiSpec.Schemas.ApiError
+  alias Pleroma.Web.ApiSpec.Schemas.Conversation
+  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
+  alias Pleroma.Web.ApiSpec.StatusOperation
 
   import Pleroma.Web.ApiSpec.Helpers
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
     apply(__MODULE__, operation, [])
-  end
-
-  def emoji_reactions_by_operation do
-    %Operation{
-      tags: ["Emoji Reactions"],
-      summary:
-        "Get an object of emoji to account mappings with accounts that reacted to the post",
-      parameters: [
-        Operation.parameter(:id, :path, FlakeID, "Status ID", required: true),
-        Operation.parameter(:emoji, :path, :string, "Filter by a single unicode emoji",
-          required: false
-        )
-      ],
-      security: [%{"oAuth" => ["read:statuses"]}],
-      operationId: "PleromaController.emoji_reactions_by",
-      responses: %{
-        200 => array_of_reactions_response()
-      }
-    }
-  end
-
-  def react_with_emoji_operation do
-    %Operation{
-      tags: ["Emoji Reactions"],
-      summary: "React to a post with a unicode emoji",
-      parameters: [
-        Operation.parameter(:id, :path, FlakeID, "Status ID", required: true),
-        Operation.parameter(:emoji, :path, :string, "A single character unicode emoji",
-          required: true
-        )
-      ],
-      security: [%{"oAuth" => ["write:statuses"]}],
-      operationId: "PleromaController.react_with_emoji",
-      responses: %{
-        200 => Operation.response("Status", "application/json", Status)
-      }
-    }
-  end
-
-  def unreact_with_emoji_operation do
-    %Operation{
-      tags: ["Emoji Reactions"],
-      summary: "Remove a reaction to a post with a unicode emoji",
-      parameters: [
-        Operation.parameter(:id, :path, FlakeID, "Status ID", required: true),
-        Operation.parameter(:emoji, :path, :string, "A single character unicode emoji",
-          required: true
-        )
-      ],
-      security: [%{"oAuth" => ["write:statuses"]}],
-      operationId: "PleromaController.unreact_with_emoji",
-      responses: %{
-        200 => Operation.response("Status", "application/json", Status)
-      }
-    }
-  end
-
-  defp array_of_reactions_response do
-    Operation.response("Array of Emoji Reactions", "application/json", %Schema{
-      type: :array,
-      items: emoji_reaction(),
-      example: [emoji_reaction().example]
-    })
-  end
-
-  defp emoji_reaction do
-    %Schema{
-      title: "EmojiReaction",
-      type: :object,
-      properties: %{
-        name: %Schema{type: :string, description: "Emoji"},
-        count: %Schema{type: :integer, description: "Count of reactions with this emoji"},
-        me: %Schema{type: :boolean, description: "Did I react with this emoji?"},
-        accounts: %Schema{
-          type: :array,
-          items: Account,
-          description: "Array of accounts reacted with this emoji"
-        }
-      },
-      example: %{
-        "name" => "😱",
-        "count" => 1,
-        "me" => false,
-        "accounts" => [Account.schema().example]
-      }
-    }
   end
 
   def conversation_operation do

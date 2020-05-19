@@ -7,15 +7,10 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
-  alias Pleroma.Activity
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
-  alias Pleroma.Object
   alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
@@ -30,18 +25,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:statuses"], fallback: :proceed_unauthenticated}
-    when action == :emoji_reactions_by
-  )
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:statuses"]}
-    when action in [:react_with_emoji, :unreact_with_emoji]
-  )
-
-  plug(
-    OAuthScopesPlug,
     %{scopes: ["write:conversations"]}
     when action in [:update_conversation, :mark_conversations_as_read]
   )
@@ -52,66 +35,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   )
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaOperation
-
-  def emoji_reactions_by(%{assigns: %{user: user}} = conn, %{id: activity_id} = params) do
-    with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
-         %Object{data: %{"reactions" => emoji_reactions}} when is_list(emoji_reactions) <-
-           Object.normalize(activity) do
-      reactions =
-        emoji_reactions
-        |> Enum.map(fn [emoji, user_ap_ids] ->
-          if params[:emoji] && params[:emoji] != emoji do
-            nil
-          else
-            users =
-              Enum.map(user_ap_ids, &User.get_cached_by_ap_id/1)
-              |> Enum.filter(fn
-                %{deactivated: false} -> true
-                _ -> false
-              end)
-
-            %{
-              name: emoji,
-              count: length(users),
-              accounts:
-                AccountView.render("index.json", %{
-                  users: users,
-                  for: user,
-                  as: :user
-                }),
-              me: !!(user && user.ap_id in user_ap_ids)
-            }
-          end
-        end)
-        |> Enum.reject(&is_nil/1)
-
-      conn
-      |> json(reactions)
-    else
-      _e ->
-        conn
-        |> json([])
-    end
-  end
-
-  def react_with_emoji(%{assigns: %{user: user}} = conn, %{id: activity_id, emoji: emoji}) do
-    with {:ok, _activity} <- CommonAPI.react_with_emoji(activity_id, user, emoji),
-         activity <- Activity.get_by_id(activity_id) do
-      conn
-      |> put_view(StatusView)
-      |> render("show.json", %{activity: activity, for: user, as: :activity})
-    end
-  end
-
-  def unreact_with_emoji(%{assigns: %{user: user}} = conn, %{id: activity_id, emoji: emoji}) do
-    with {:ok, _activity} <-
-           CommonAPI.unreact_with_emoji(activity_id, user, emoji),
-         activity <- Activity.get_by_id(activity_id) do
-      conn
-      |> put_view(StatusView)
-      |> render("show.json", %{activity: activity, for: user, as: :activity})
-    end
-  end
 
   def conversation(%{assigns: %{user: user}} = conn, %{id: participation_id}) do
     with %Participation{} = participation <- Participation.get(participation_id),
