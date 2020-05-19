@@ -325,7 +325,7 @@ defmodule Pleroma.Web.Router do
       get("/mascot", MascotController, :show)
       put("/mascot", MascotController, :update)
 
-      post("/scrobble", ScrobbleController, :new_scrobble)
+      post("/scrobble", ScrobbleController, :create)
     end
 
     scope [] do
@@ -345,7 +345,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     pipe_through(:api)
-    get("/accounts/:id/scrobbles", ScrobbleController, :user_scrobbles)
+    get("/accounts/:id/scrobbles", ScrobbleController, :index)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
