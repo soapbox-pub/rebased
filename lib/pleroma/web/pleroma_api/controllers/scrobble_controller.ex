@@ -11,7 +11,6 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleController do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.MastodonAPI.StatusView
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
@@ -26,9 +25,7 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleController do
 
   def create(%{assigns: %{user: user}, body_params: params} = conn, _) do
     with {:ok, activity} <- CommonAPI.listen(user, params) do
-      conn
-      |> put_view(StatusView)
-      |> render("listen.json", %{activity: activity, for: user})
+      render(conn, "show.json", activity: activity, for: user)
     else
       {:error, message} ->
         conn
@@ -48,8 +45,7 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleController do
 
       conn
       |> add_link_headers(activities)
-      |> put_view(StatusView)
-      |> render("listens.json", %{
+      |> render("index.json", %{
         activities: activities,
         for: reading_user,
         as: :activity
