@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaScrobbleOperation do
   def create_operation do
     %Operation{
       tags: ["Scrobbles"],
-      summary: "Gets user mascot image",
+      summary: "Creates a new Listen activity for an account",
       security: [%{"oAuth" => ["write"]}],
       operationId: "PleromaAPI.ScrobbleController.create",
       requestBody: request_body("Parameters", create_request(), requried: true),
