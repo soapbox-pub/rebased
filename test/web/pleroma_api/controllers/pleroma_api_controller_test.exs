@@ -27,7 +27,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
       |> assign(:user, other_user)
       |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["write:statuses"]))
       |> put("/api/v1/pleroma/statuses/#{activity.id}/reactions/☕")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     # We return the status, but this our implementation detail.
     assert %{"id" => id} = result
@@ -53,7 +53,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
       |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["write:statuses"]))
       |> delete("/api/v1/pleroma/statuses/#{activity.id}/reactions/☕")
 
-    assert %{"id" => id} = json_response(result, 200)
+    assert %{"id" => id} = json_response_and_validate_schema(result, 200)
     assert to_string(activity.id) == id
 
     ObanHelpers.perform_all()
@@ -73,7 +73,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     result =
       conn
       |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert result == []
 
@@ -85,7 +85,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     result =
       conn
       |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     [%{"name" => "🎅", "count" => 1, "accounts" => [represented_user], "me" => false}] = result
 
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
       |> assign(:user, other_user)
       |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["read:statuses"]))
       |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert [%{"name" => "🎅", "count" => 1, "accounts" => [_represented_user], "me" => true}] =
              result
@@ -111,7 +111,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     result =
       conn
       |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions/🎅")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert result == []
 
@@ -121,7 +121,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     result =
       conn
       |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions/🎅")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     [%{"name" => "🎅", "count" => 1, "accounts" => [represented_user], "me" => false}] = result
 
@@ -140,7 +140,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     result =
       conn
       |> get("/api/v1/pleroma/conversations/#{participation.id}")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert result["id"] == participation.id |> to_string()
   end
@@ -168,7 +168,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     result =
       conn
       |> get("/api/v1/pleroma/conversations/#{participation.id}/statuses")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert length(result) == 2
 
@@ -186,12 +186,12 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     assert [%{"id" => ^id_two}, %{"id" => ^id_three}] =
              conn
              |> get("/api/v1/pleroma/conversations/#{participation.id}/statuses?limit=2")
-             |> json_response(:ok)
+             |> json_response_and_validate_schema(:ok)
 
     assert [%{"id" => ^id_three}] =
              conn
              |> get("/api/v1/pleroma/conversations/#{participation.id}/statuses?min_id=#{id_two}")
-             |> json_response(:ok)
+             |> json_response_and_validate_schema(:ok)
   end
 
   test "PATCH /api/v1/pleroma/conversations/:id" do
@@ -208,12 +208,12 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     assert [user] == participation.recipients
     assert other_user not in participation.recipients
 
+    query = "recipients[]=#{user.id}&recipients[]=#{other_user.id}"
+
     result =
       conn
-      |> patch("/api/v1/pleroma/conversations/#{participation.id}", %{
-        "recipients" => [user.id, other_user.id]
-      })
-      |> json_response(200)
+      |> patch("/api/v1/pleroma/conversations/#{participation.id}?#{query}")
+      |> json_response_and_validate_schema(200)
 
     assert result["id"] == participation.id |> to_string
 
@@ -242,7 +242,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     [%{"unread" => false}, %{"unread" => false}] =
       conn
       |> post("/api/v1/pleroma/conversations/read", %{})
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     [participation2, participation1] = Participation.for_user(other_user)
     assert Participation.get(participation2.id).read == true
@@ -262,8 +262,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
       response =
         conn
-        |> post("/api/v1/pleroma/notifications/read", %{"id" => "#{notification1.id}"})
-        |> json_response(:ok)
+        |> post("/api/v1/pleroma/notifications/read?id=#{notification1.id}")
+        |> json_response_and_validate_schema(:ok)
 
       assert %{"pleroma" => %{"is_seen" => true}} = response
       assert Repo.get(Notification, notification1.id).seen
@@ -280,8 +280,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
       [response1, response2] =
         conn
-        |> post("/api/v1/pleroma/notifications/read", %{"max_id" => "#{notification2.id}"})
-        |> json_response(:ok)
+        |> post("/api/v1/pleroma/notifications/read?max_id=#{notification2.id}")
+        |> json_response_and_validate_schema(:ok)
 
       assert %{"pleroma" => %{"is_seen" => true}} = response1
       assert %{"pleroma" => %{"is_seen" => true}} = response2
@@ -293,8 +293,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     test "it returns error when notification not found", %{conn: conn} do
       response =
         conn
-        |> post("/api/v1/pleroma/notifications/read", %{"id" => "22222222222222"})
-        |> json_response(:bad_request)
+        |> post("/api/v1/pleroma/notifications/read?id=22222222222222")
+        |> json_response_and_validate_schema(:bad_request)
 
       assert response == %{"error" => "Cannot get notification"}
     end

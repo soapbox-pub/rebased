@@ -20,6 +20,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"]}
@@ -49,14 +51,16 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     %{scopes: ["write:notifications"]} when action == :mark_notifications_as_read
   )
 
-  def emoji_reactions_by(%{assigns: %{user: user}} = conn, %{"id" => activity_id} = params) do
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaOperation
+
+  def emoji_reactions_by(%{assigns: %{user: user}} = conn, %{id: activity_id} = params) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
          %Object{data: %{"reactions" => emoji_reactions}} when is_list(emoji_reactions) <-
            Object.normalize(activity) do
       reactions =
         emoji_reactions
         |> Enum.map(fn [emoji, user_ap_ids] ->
-          if params["emoji"] && params["emoji"] != emoji do
+          if params[:emoji] && params[:emoji] != emoji do
             nil
           else
             users =
@@ -79,7 +83,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
             }
           end
         end)
-        |> Enum.filter(& &1)
+        |> Enum.reject(&is_nil/1)
 
       conn
       |> json(reactions)
@@ -90,7 +94,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def react_with_emoji(%{assigns: %{user: user}} = conn, %{"id" => activity_id, "emoji" => emoji}) do
+  def react_with_emoji(%{assigns: %{user: user}} = conn, %{id: activity_id, emoji: emoji}) do
     with {:ok, _activity} <- CommonAPI.react_with_emoji(activity_id, user, emoji),
          activity <- Activity.get_by_id(activity_id) do
       conn
@@ -99,10 +103,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def unreact_with_emoji(%{assigns: %{user: user}} = conn, %{
-        "id" => activity_id,
-        "emoji" => emoji
-      }) do
+  def unreact_with_emoji(%{assigns: %{user: user}} = conn, %{id: activity_id, emoji: emoji}) do
     with {:ok, _activity} <-
            CommonAPI.unreact_with_emoji(activity_id, user, emoji),
          activity <- Activity.get_by_id(activity_id) do
@@ -112,7 +113,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def conversation(%{assigns: %{user: user}} = conn, %{"id" => participation_id}) do
+  def conversation(%{assigns: %{user: user}} = conn, %{id: participation_id}) do
     with %Participation{} = participation <- Participation.get(participation_id),
          true <- user.id == participation.user_id do
       conn
@@ -128,12 +129,13 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   def conversation_statuses(
         %{assigns: %{user: %{id: user_id} = user}} = conn,
-        %{"id" => participation_id} = params
+        %{id: participation_id} = params
       ) do
     with %Participation{user_id: ^user_id} = participation <-
            Participation.get(participation_id, preload: [:conversation]) do
       params =
         params
+        |> Map.new(fn {key, value} -> {to_string(key), value} end)
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)
         |> Map.put("user", user)
@@ -162,7 +164,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
   def update_conversation(
         %{assigns: %{user: user}} = conn,
-        %{"id" => participation_id, "recipients" => recipients}
+        %{id: participation_id, recipients: recipients}
       ) do
     with %Participation{} = participation <- Participation.get(participation_id),
          true <- user.id == participation.user_id,
@@ -192,7 +194,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def mark_notifications_as_read(%{assigns: %{user: user}} = conn, %{"id" => notification_id}) do
+  def mark_notifications_as_read(%{assigns: %{user: user}} = conn, %{id: notification_id}) do
     with {:ok, notification} <- Notification.read_one(user, notification_id) do
       conn
       |> put_view(NotificationView)
@@ -205,7 +207,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
     end
   end
 
-  def mark_notifications_as_read(%{assigns: %{user: user}} = conn, %{"max_id" => max_id}) do
+  def mark_notifications_as_read(%{assigns: %{user: user}} = conn, %{max_id: max_id}) do
     with notifications <- Notification.set_read_up_to(user, max_id) do
       notifications = Enum.take(notifications, 80)
 
