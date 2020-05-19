@@ -177,8 +177,7 @@ defmodule Pleroma.User.Query do
       )
 
     from(u in query,
-      where: u.ap_id in ^to or u.id in subquery(following_query),
-      distinct: true
+      where: u.ap_id in ^to or u.id in subquery(following_query)
     )
   end
 
