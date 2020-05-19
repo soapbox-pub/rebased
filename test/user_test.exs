@@ -555,6 +555,7 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
+    @tag capture_log: true
     test "returns nil if no user could be fetched" do
       {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
       assert fetched_user == "not found nonexistant@social.heldscal.la"
