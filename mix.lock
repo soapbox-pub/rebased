@@ -21,7 +21,7 @@
   "cowlib": {:hex, :cowlib, "2.8.0", "fd0ff1787db84ac415b8211573e9a30a3ebe71b5cbff7f720089972b2319c8a4", [:rebar3], [], "hexpm", "79f954a7021b302186a950a32869dbc185523d99d3e44ce430cd1f3289f41ed4"},
   "credo": {:hex, :credo, "1.1.5", "caec7a3cadd2e58609d7ee25b3931b129e739e070539ad1a0cd7efeeb47014f4", [:mix], [{:bunt, "~> 0.2.0", [hex: :bunt, repo: "hexpm", optional: false]}, {:jason, "~> 1.0", [hex: :jason, repo: "hexpm", optional: false]}], "hexpm", "d0bbd3222607ccaaac5c0340f7f525c627ae4d7aee6c8c8c108922620c5b6446"},
   "crontab": {:hex, :crontab, "1.1.8", "2ce0e74777dfcadb28a1debbea707e58b879e6aa0ffbf9c9bb540887bce43617", [:mix], [{:ecto, "~> 1.0 or ~> 2.0 or ~> 3.0", [hex: :ecto, repo: "hexpm", optional: true]}], "hexpm"},
-  "crypt": {:git, "https://github.com/msantos/crypt", "1f2b58927ab57e72910191a7ebaeff984382a1d3", [ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"]},
+  "crypt": {:git, "https://github.com/msantos/crypt", "f63a705f92c26955977ee62a313012e309a4d77a", [ref: "f63a705f92c26955977ee62a313012e309a4d77a"]},
   "custom_base": {:hex, :custom_base, "0.2.1", "4a832a42ea0552299d81652aa0b1f775d462175293e99dfbe4d7dbaab785a706", [:mix], [], "hexpm", "8df019facc5ec9603e94f7270f1ac73ddf339f56ade76a721eaa57c1493ba463"},
   "db_connection": {:hex, :db_connection, "2.2.1", "caee17725495f5129cb7faebde001dc4406796f12a62b8949f4ac69315080566", [:mix], [{:connection, "~> 1.0.2", [hex: :connection, repo: "hexpm", optional: false]}], "hexpm", "2b02ece62d9f983fcd40954e443b7d9e6589664380e5546b2b9b523cd0fb59e1"},
   "decimal": {:hex, :decimal, "1.8.1", "a4ef3f5f3428bdbc0d35374029ffcf4ede8533536fa79896dd450168d9acdf3c", [:mix], [], "hexpm", "3cb154b00225ac687f6cbd4acc4b7960027c757a5152b369923ead9ddbca7aec"},
