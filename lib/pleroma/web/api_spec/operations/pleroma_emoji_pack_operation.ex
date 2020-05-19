@@ -179,7 +179,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
         shortcode: %Schema{
           type: :string,
           description:
-            "Shortcode for new emoji, must be uniq for all emoji. If not sended, shortcode will be taken from original filename."
+            "Shortcode for new emoji, must be unique for all emoji. If not sended, shortcode will be taken from original filename."
         },
         filename: %Schema{
           type: :string,
