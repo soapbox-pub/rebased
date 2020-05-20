@@ -5,29 +5,11 @@
 defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
-
-  alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.NotificationView
-  alias Pleroma.Web.MastodonAPI.StatusView
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["read:statuses"]}
-    when action in [:conversation, :conversation_statuses]
-  )
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:conversations"]}
-    when action in [:update_conversation, :mark_conversations_as_read]
-  )
 
   plug(
     OAuthScopesPlug,
@@ -35,87 +17,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   )
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaOperation
-
-  def conversation(%{assigns: %{user: user}} = conn, %{id: participation_id}) do
-    with %Participation{} = participation <- Participation.get(participation_id),
-         true <- user.id == participation.user_id do
-      conn
-      |> put_view(ConversationView)
-      |> render("participation.json", %{participation: participation, for: user})
-    else
-      _error ->
-        conn
-        |> put_status(404)
-        |> json(%{"error" => "Unknown conversation id"})
-    end
-  end
-
-  def conversation_statuses(
-        %{assigns: %{user: %{id: user_id} = user}} = conn,
-        %{id: participation_id} = params
-      ) do
-    with %Participation{user_id: ^user_id} = participation <-
-           Participation.get(participation_id, preload: [:conversation]) do
-      params =
-        params
-        |> Map.new(fn {key, value} -> {to_string(key), value} end)
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("user", user)
-
-      activities =
-        participation.conversation.ap_id
-        |> ActivityPub.fetch_activities_for_context_query(params)
-        |> Pleroma.Pagination.fetch_paginated(Map.put(params, "total", false))
-        |> Enum.reverse()
-
-      conn
-      |> add_link_headers(activities)
-      |> put_view(StatusView)
-      |> render("index.json",
-        activities: activities,
-        for: user,
-        as: :activity
-      )
-    else
-      _error ->
-        conn
-        |> put_status(404)
-        |> json(%{"error" => "Unknown conversation id"})
-    end
-  end
-
-  def update_conversation(
-        %{assigns: %{user: user}} = conn,
-        %{id: participation_id, recipients: recipients}
-      ) do
-    with %Participation{} = participation <- Participation.get(participation_id),
-         true <- user.id == participation.user_id,
-         {:ok, participation} <- Participation.set_recipients(participation, recipients) do
-      conn
-      |> put_view(ConversationView)
-      |> render("participation.json", %{participation: participation, for: user})
-    else
-      {:error, message} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{"error" => message})
-
-      _error ->
-        conn
-        |> put_status(404)
-        |> json(%{"error" => "Unknown conversation id"})
-    end
-  end
-
-  def mark_conversations_as_read(%{assigns: %{user: user}} = conn, _params) do
-    with {:ok, _, participations} <- Participation.mark_all_as_read(user) do
-      conn
-      |> add_link_headers(participations)
-      |> put_view(ConversationView)
-      |> render("participations.json", participations: participations, for: user)
-    end
-  end
 
   def mark_notifications_as_read(%{assigns: %{user: user}} = conn, %{id: notification_id}) do
     with {:ok, notification} <- Notification.read_one(user, notification_id) do

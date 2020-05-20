@@ -305,15 +305,11 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:authenticated_api)
 
-      get("/conversations/:id/statuses", PleromaAPIController, :conversation_statuses)
-      get("/conversations/:id", PleromaAPIController, :conversation)
-      post("/conversations/read", PleromaAPIController, :mark_conversations_as_read)
-    end
+      get("/conversations/:id/statuses", ConversationController, :statuses)
+      get("/conversations/:id", ConversationController, :show)
+      post("/conversations/read", ConversationController, :mark_as_read)
+      patch("/conversations/:id", ConversationController, :update)
 
-    scope [] do
-      pipe_through(:authenticated_api)
-
-      patch("/conversations/:id", PleromaAPIController, :update_conversation)
       put("/statuses/:id/reactions/:emoji", EmojiReactionController, :create)
       delete("/statuses/:id/reactions/:emoji", EmojiReactionController, :delete)
       post("/notifications/read", PleromaAPIController, :mark_notifications_as_read)
