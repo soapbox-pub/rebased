@@ -393,7 +393,6 @@ config :pleroma, :media_proxy,
 # Note: media preview proxy depends on media proxy to be enabled
 config :pleroma, :media_preview_proxy,
   enabled: false,
-  enable_eimp: true,
   thumbnail_max_width: 400,
   thumbnail_max_height: 200,
   proxy_opts: [

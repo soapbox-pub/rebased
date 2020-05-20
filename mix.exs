@@ -146,7 +146,6 @@ defmodule Pleroma.Mixfile do
        github: "ninenines/gun", ref: "e1a69b36b180a574c0ac314ced9613fdd52312cc", override: true},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
-      {:eimp, "~> 1.0.14"},
       {:ex_aws, "~> 2.1"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.6.6"},
@@ -198,6 +197,7 @@ defmodule Pleroma.Mixfile do
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:mox, "~> 0.5", only: :test},
       {:restarter, path: "./restarter"},
+      {:exexec, "~> 0.2"},
       {:open_api_spex,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
        ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"}

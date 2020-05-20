@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Config
-  alias Pleroma.Helpers.MogrifyHelper
+  alias Pleroma.Helpers.MediaHelper
   alias Pleroma.ReverseProxy
   alias Pleroma.Web.MediaProxy
 
@@ -82,51 +82,19 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     {thumbnail_max_width, thumbnail_max_height}
   end
 
-  defp thumbnail_binary(url, body, params) do
-    {thumbnail_max_width, thumbnail_max_height} = thumbnail_max_dimensions(params)
-
-    with true <- Config.get([:media_preview_proxy, :enable_eimp]),
-         {:ok, [type: image_type, width: source_width, height: source_height]} <-
-           :eimp.identify(body),
-         scale_factor <-
-           Enum.max([source_width / thumbnail_max_width, source_height / thumbnail_max_height]),
-         {:ok, thumbnail_binary} =
-           :eimp.convert(body, image_type, [
-             {:scale, {round(source_width / scale_factor), round(source_height / scale_factor)}}
-           ]) do
-      {:ok, thumbnail_binary}
-    else
-      _ ->
-        mogrify_dimensions = "#{thumbnail_max_width}x#{thumbnail_max_height}"
-
-        with {:ok, path} <- MogrifyHelper.store_as_temporary_file(url, body),
-             %Mogrify.Image{} <-
-               MogrifyHelper.in_place_resize_to_limit(path, mogrify_dimensions),
-             {:ok, thumbnail_binary} <- File.read(path),
-             _ <- File.rm(path) do
-          {:ok, thumbnail_binary}
-        else
-          _ -> :error
-        end
-    end
-  end
-
   defp handle_preview("image/" <> _ = content_type, %{params: params} = conn, url) do
-    with {:ok, %{status: status, body: image_contents}} when status in 200..299 <-
-           url
-           |> MediaProxy.url()
-           |> Tesla.get(opts: [adapter: [timeout: preview_timeout()]]),
-         {:ok, thumbnail_binary} <- thumbnail_binary(url, image_contents, params) do
+    with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(params),
+         media_proxy_url <- MediaProxy.url(url),
+         {:ok, thumbnail_binary} <-
+           MediaHelper.ffmpeg_resize_remote(
+             media_proxy_url,
+             thumbnail_max_width,
+             thumbnail_max_height
+           ) do
       conn
       |> put_resp_header("content-type", content_type)
       |> send_resp(200, thumbnail_binary)
     else
-      {_, %{status: _}} ->
-        send_resp(conn, :failed_dependency, "Can't fetch the image.")
-
-      {:error, :recv_response_timeout} ->
-        send_resp(conn, :failed_dependency, "Downstream timeout.")
-
       _ ->
         send_resp(conn, :failed_dependency, "Can't handle image preview.")
     end
