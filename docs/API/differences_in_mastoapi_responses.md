@@ -216,6 +216,7 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `avatar_upload_limit`: The same for avatars
 - `background_upload_limit`: The same for backgrounds
 - `banner_upload_limit`: The same for banners
+- `background_image`: A background image that frontends can use
 - `pleroma.metadata.features`: A list of supported features
 - `pleroma.metadata.federation`: The federation restrictions of this instance
 - `vapid_public_key`: The public key needed for push messages

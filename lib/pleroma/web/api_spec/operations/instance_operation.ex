@@ -130,6 +130,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
       example: %{
         "avatar_upload_limit" => 2_000_000,
         "background_upload_limit" => 4_000_000,
+        "background_image" => "/static/image.png",
         "banner_upload_limit" => 4_000_000,
         "description" => "A Pleroma instance, an alternative fediverse server",
         "email" => "lain@lain.com",
