@@ -347,11 +347,14 @@ defmodule Pleroma.Web.CommonAPI do
     |> check_expiry_date()
   end
 
-  def listen(user, %{"title" => _} = data) do
-    with visibility <- data["visibility"] || "public",
-         {to, cc} <- get_to_and_cc(user, [], nil, visibility, nil),
+  def listen(user, data) do
+    visibility = Map.get(data, :visibility, "public")
+
+    with {to, cc} <- get_to_and_cc(user, [], nil, visibility, nil),
          listen_data <-
-           Map.take(data, ["album", "artist", "title", "length"])
+           data
+           |> Map.take([:album, :artist, :title, :length])
+           |> Map.new(fn {key, value} -> {to_string(key), value} end)
            |> Map.put("type", "Audio")
            |> Map.put("to", to)
            |> Map.put("cc", cc)

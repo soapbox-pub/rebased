@@ -5,34 +5,27 @@
 defmodule Pleroma.Web.PleromaAPI.ScrobbleController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2, fetch_integer_param: 2]
+  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.MastodonAPI.StatusView
+
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read"], fallback: :proceed_unauthenticated} when action == :user_scrobbles
+    %{scopes: ["read"], fallback: :proceed_unauthenticated} when action == :index
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["write"]} when action != :user_scrobbles)
+  plug(OAuthScopesPlug, %{scopes: ["write"]} when action == :create)
 
-  def new_scrobble(%{assigns: %{user: user}} = conn, %{"title" => _} = params) do
-    params =
-      if !params["length"] do
-        params
-      else
-        params
-        |> Map.put("length", fetch_integer_param(params, "length"))
-      end
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaScrobbleOperation
 
+  def create(%{assigns: %{user: user}, body_params: params} = conn, _) do
     with {:ok, activity} <- CommonAPI.listen(user, params) do
-      conn
-      |> put_view(StatusView)
-      |> render("listen.json", %{activity: activity, for: user})
+      render(conn, "show.json", activity: activity, for: user)
     else
       {:error, message} ->
         conn
@@ -41,16 +34,18 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleController do
     end
   end
 
-  def user_scrobbles(%{assigns: %{user: reading_user}} = conn, params) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"], for: reading_user) do
-      params = Map.put(params, "type", ["Listen"])
+  def index(%{assigns: %{user: reading_user}} = conn, %{id: id} = params) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(id, for: reading_user) do
+      params =
+        params
+        |> Map.new(fn {key, value} -> {to_string(key), value} end)
+        |> Map.put("type", ["Listen"])
 
       activities = ActivityPub.fetch_user_abstract_activities(user, reading_user, params)
 
       conn
       |> add_link_headers(activities)
-      |> put_view(StatusView)
-      |> render("listens.json", %{
+      |> render("index.json", %{
         activities: activities,
         for: reading_user,
         as: :activity
