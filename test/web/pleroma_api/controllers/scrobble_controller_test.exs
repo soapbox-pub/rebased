@@ -12,14 +12,16 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleControllerTest do
       %{conn: conn} = oauth_access(["write"])
 
       conn =
-        post(conn, "/api/v1/pleroma/scrobble", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/scrobble", %{
           "title" => "lain radio episode 1",
           "artist" => "lain",
           "album" => "lain radio",
           "length" => "180000"
         })
 
-      assert %{"title" => "lain radio episode 1"} = json_response(conn, 200)
+      assert %{"title" => "lain radio episode 1"} = json_response_and_validate_schema(conn, 200)
     end
   end
 
@@ -29,28 +31,28 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleControllerTest do
 
       {:ok, _activity} =
         CommonAPI.listen(user, %{
-          "title" => "lain radio episode 1",
-          "artist" => "lain",
-          "album" => "lain radio"
+          title: "lain radio episode 1",
+          artist: "lain",
+          album: "lain radio"
         })
 
       {:ok, _activity} =
         CommonAPI.listen(user, %{
-          "title" => "lain radio episode 2",
-          "artist" => "lain",
-          "album" => "lain radio"
+          title: "lain radio episode 2",
+          artist: "lain",
+          album: "lain radio"
         })
 
       {:ok, _activity} =
         CommonAPI.listen(user, %{
-          "title" => "lain radio episode 3",
-          "artist" => "lain",
-          "album" => "lain radio"
+          title: "lain radio episode 3",
+          artist: "lain",
+          album: "lain radio"
         })
 
       conn = get(conn, "/api/v1/pleroma/accounts/#{user.id}/scrobbles")
 
-      result = json_response(conn, 200)
+      result = json_response_and_validate_schema(conn, 200)
 
       assert length(result) == 3
     end

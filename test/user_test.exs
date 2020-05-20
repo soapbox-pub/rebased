@@ -555,6 +555,7 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
+    @tag capture_log: true
     test "returns nil if no user could be fetched" do
       {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
       assert fetched_user == "not found nonexistant@social.heldscal.la"
@@ -1168,6 +1169,33 @@ defmodule Pleroma.UserTest do
       refute Activity.get_by_id(like.id)
       refute Activity.get_by_id(like_two.id)
       refute Activity.get_by_id(repeat.id)
+    end
+  end
+
+  describe "delete/1 when confirmation is pending" do
+    setup do
+      user = insert(:user, confirmation_pending: true)
+      {:ok, user: user}
+    end
+
+    test "deletes user from database when activation required", %{user: user} do
+      clear_config([:instance, :account_activation_required], true)
+
+      {:ok, job} = User.delete(user)
+      {:ok, _} = ObanHelpers.perform(job)
+
+      refute User.get_cached_by_id(user.id)
+      refute User.get_by_id(user.id)
+    end
+
+    test "deactivates user when activation is not required", %{user: user} do
+      clear_config([:instance, :account_activation_required], false)
+
+      {:ok, job} = User.delete(user)
+      {:ok, _} = ObanHelpers.perform(job)
+
+      assert %{deactivated: true} = User.get_cached_by_id(user.id)
+      assert %{deactivated: true} = User.get_by_id(user.id)
     end
   end
 

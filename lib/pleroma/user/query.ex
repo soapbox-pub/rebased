@@ -167,20 +167,18 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query({:recipients_from_activity, to}, query) do
-    query
-    |> join(:left, [u], r in FollowingRelationship,
-      as: :relationships,
-      on: r.follower_id == u.id
+    following_query =
+      from(u in User,
+        join: f in FollowingRelationship,
+        on: u.id == f.following_id,
+        where: f.state == ^:follow_accept,
+        where: u.follower_address in ^to,
+        select: f.follower_id
+      )
+
+    from(u in query,
+      where: u.ap_id in ^to or u.id in subquery(following_query)
     )
-    |> join(:left, [relationships: r], f in User,
-      as: :following,
-      on: f.id == r.following_id
-    )
-    |> where(
-      [u, following: f, relationships: r],
-      u.ap_id in ^to or (f.follower_address in ^to and r.state == ^:follow_accept)
-    )
-    |> distinct(true)
   end
 
   defp compose_query({:order_by, key}, query) do

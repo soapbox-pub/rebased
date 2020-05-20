@@ -265,7 +265,7 @@ See [Admin-API](admin_api.md)
 * Method `PUT`
 * Authentication: required
 * Params:
-    * `image`: Multipart image
+    * `file`: Multipart image
 * Response: JSON. Returns a mastodon media attachment entity
   when successful, otherwise returns HTTP 415 `{"error": "error_msg"}`
 * Example response:

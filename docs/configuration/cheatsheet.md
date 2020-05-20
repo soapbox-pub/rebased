@@ -249,6 +249,40 @@ This section describe PWA manifest instance-specific values. Currently this opti
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
 * `proxy_opts`: All options defined in `Pleroma.ReverseProxy` documentation, defaults to `[max_body_length: (25*1_048_576)]`.
 * `whitelist`: List of domains to bypass the mediaproxy
+* `invalidation`: options for remove media from cache after delete object:
+    * `enabled`: Enables purge cache
+    * `provider`: Which one of  the [purge cache strategy](#purge-cache-strategy) to use.
+
+### Purge cache strategy
+
+#### Pleroma.Web.MediaProxy.Invalidation.Script
+
+This strategy allow perform external bash script to purge cache.
+Urls of attachments pass to script as arguments.
+
+* `script_path`: path to external script.
+
+Example:
+```elixir
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
+  script_path: "./installation/nginx-cache-purge.example"
+```
+
+#### Pleroma.Web.MediaProxy.Invalidation.Http
+
+This strategy allow perform custom http request to purge cache.
+
+* `method`: http method. default is `purge`
+* `headers`: http headers. default is empty
+* `options`: request options. default is empty
+
+Example:
+```elixir
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
+  method: :purge,
+  headers: [],
+  options: []
+```
 
 ## Link previews
 
@@ -618,24 +652,6 @@ config :pleroma, :workers,
 * `max_retries` is replaced with `config :pleroma, :workers, retries: [federator_outgoing: 5]`
 * `enabled: false` corresponds to `config :pleroma, :workers, retries: [federator_outgoing: 1]`
 * deprecated options: `max_jobs`, `initial_timeout`
-
-### Pleroma.Scheduler
-
-Configuration for [Quantum](https://github.com/quantum-elixir/quantum-core) jobs scheduler.
-
-See [Quantum readme](https://github.com/quantum-elixir/quantum-core#usage) for the list of supported options.
-
-Example:
-
-```elixir
-config :pleroma, Pleroma.Scheduler,
-  global: true,
-  overlap: true,
-  timezone: :utc,
-  jobs: [{"0 */6 * * * *", {Pleroma.Web.Websub, :refresh_subscriptions, []}}]
-```
-
-The above example defines a single job which invokes `Pleroma.Web.Websub.refresh_subscriptions()` every 6 hours ("0 */6 * * * *", [crontab format](https://en.wikipedia.org/wiki/Cron)).
 
 ## :web_push_encryption, :vapid_details
 

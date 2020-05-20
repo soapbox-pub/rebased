@@ -125,11 +125,17 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         },
         avatar_upload_limit: %Schema{type: :integer, description: "The title of the website"},
         background_upload_limit: %Schema{type: :integer, description: "The title of the website"},
-        banner_upload_limit: %Schema{type: :integer, description: "The title of the website"}
+        banner_upload_limit: %Schema{type: :integer, description: "The title of the website"},
+        background_image: %Schema{
+          type: :string,
+          format: :uri,
+          description: "The background image for the website"
+        }
       },
       example: %{
         "avatar_upload_limit" => 2_000_000,
         "background_upload_limit" => 4_000_000,
+        "background_image" => "/static/image.png",
         "banner_upload_limit" => 4_000_000,
         "description" => "A Pleroma instance, an alternative fediverse server",
         "email" => "lain@lain.com",

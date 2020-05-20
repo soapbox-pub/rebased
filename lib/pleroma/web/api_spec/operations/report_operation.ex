@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ApiSpec.ReportOperation do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
+  alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
@@ -47,7 +48,7 @@ defmodule Pleroma.Web.ApiSpec.ReportOperation do
           description: "Reason for the report"
         },
         forward: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           default: false,
           description:
