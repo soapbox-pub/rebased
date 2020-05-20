@@ -1117,6 +1117,7 @@ config :pleroma, :config_description, [
             redirectRootLogin: "/main/friends",
             redirectRootNoLogin: "/main/all",
             scopeCopy: true,
+            sidebarRight: false,
             showFeaturesPanel: true,
             showInstanceSpecificPanel: false,
             subjectLineBehavior: "email",
@@ -1255,6 +1256,12 @@ config :pleroma, :config_description, [
             label: "Scope copy",
             type: :boolean,
             description: "Copy the scope (private/unlisted/public) in replies to posts by default"
+          },
+          %{
+            key: :sidebarRight,
+            label: "Sidebar on Right",
+            type: :boolean,
+            description: "Change alignment of sidebar and panels to the right."
           },
           %{
             key: :showFeaturesPanel,
