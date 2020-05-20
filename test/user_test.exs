@@ -1172,6 +1172,33 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "delete/1 when confirmation is pending" do
+    setup do
+      user = insert(:user, confirmation_pending: true)
+      {:ok, user: user}
+    end
+
+    test "deletes user from database when activation required", %{user: user} do
+      clear_config([:instance, :account_activation_required], true)
+
+      {:ok, job} = User.delete(user)
+      {:ok, _} = ObanHelpers.perform(job)
+
+      refute User.get_cached_by_id(user.id)
+      refute User.get_by_id(user.id)
+    end
+
+    test "deactivates user when activation is not required", %{user: user} do
+      clear_config([:instance, :account_activation_required], false)
+
+      {:ok, job} = User.delete(user)
+      {:ok, _} = ObanHelpers.perform(job)
+
+      assert %{deactivated: true} = User.get_cached_by_id(user.id)
+      assert %{deactivated: true} = User.get_by_id(user.id)
+    end
+  end
+
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
