@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ApiSpec.PleromaOperation do
+defmodule Pleroma.Web.ApiSpec.PleromaNotificationOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.NotificationOperation
@@ -13,7 +13,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaOperation do
     apply(__MODULE__, operation, [])
   end
 
-  def mark_notifications_as_read_operation do
+  def mark_as_read_operation do
     %Operation{
       tags: ["Notifications"],
       summary: "Mark notifications as read. Query parameters are mutually exclusive.",
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaOperation do
         Operation.parameter(:max_id, :query, :string, "Read all notifications up to this id")
       ],
       security: [%{"oAuth" => ["write:notifications"]}],
-      operationId: "PleromaController.mark_notifications_as_read",
+      operationId: "PleromaAPI.NotificationController.mark_as_read",
       responses: %{
         200 =>
           Operation.response(
