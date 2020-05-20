@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.SideEffects
   alias Pleroma.Web.Federator
+  alias Pleroma.Config
 
   @spec common_pipeline(map(), keyword()) ::
           {:ok, Activity.t() | Object.t(), keyword()} | {:error, any()}
@@ -44,7 +45,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
 
   defp maybe_federate(%Activity{} = activity, meta) do
     with {:ok, local} <- Keyword.fetch(meta, :local) do
-      do_not_federate = meta[:do_not_federate]
+      do_not_federate = meta[:do_not_federate] || !Config.get([:instance, :federating])
 
       if !do_not_federate && local do
         Federator.publish(activity)
