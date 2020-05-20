@@ -27,6 +27,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
+  # Tasks this handles:
+  # - Add announce to object
+  # - Set up notification
+  def handle(%{data: %{"type" => "Announce"}} = object, meta) do
+    announced_object = Object.get_by_ap_id(object.data["object"])
+    Utils.add_announce_to_object(object, announced_object)
+
+    Notification.create_notifications(object)
+
+    {:ok, object, meta}
+  end
+
   def handle(%{data: %{"type" => "Undo", "object" => undone_object}} = object, meta) do
     with undone_object <- Activity.get_by_ap_id(undone_object),
          :ok <- handle_undoing(undone_object) do

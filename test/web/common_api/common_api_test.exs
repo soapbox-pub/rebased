@@ -416,7 +416,8 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
 
-      {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, %Activity{} = announce_activity} = CommonAPI.repeat(activity.id, user)
+      assert Visibility.is_public?(announce_activity)
     end
 
     test "can't repeat a repeat" do
@@ -424,9 +425,9 @@ defmodule Pleroma.Web.CommonAPITest do
       other_user = insert(:user)
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
 
-      {:ok, %Activity{} = announce, _} = CommonAPI.repeat(activity.id, other_user)
+      {:ok, %Activity{} = announce} = CommonAPI.repeat(activity.id, other_user)
 
-      refute match?({:ok, %Activity{}, _}, CommonAPI.repeat(announce.id, user))
+      refute match?({:ok, %Activity{}}, CommonAPI.repeat(announce.id, user))
     end
 
     test "repeating a status privately" do
@@ -435,7 +436,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
 
-      {:ok, %Activity{} = announce_activity, _} =
+      {:ok, %Activity{} = announce_activity} =
         CommonAPI.repeat(activity.id, user, %{visibility: "private"})
 
       assert Visibility.is_private?(announce_activity)
@@ -458,8 +459,8 @@ defmodule Pleroma.Web.CommonAPITest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
-      {:ok, %Activity{} = announce, object} = CommonAPI.repeat(activity.id, user)
-      {:ok, ^announce, ^object} = CommonAPI.repeat(activity.id, user)
+      {:ok, %Activity{} = announce} = CommonAPI.repeat(activity.id, user)
+      {:ok, ^announce} = CommonAPI.repeat(activity.id, user)
     end
 
     test "favoriting a status twice returns ok, but without the like activity" do

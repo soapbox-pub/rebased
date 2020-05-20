@@ -289,4 +289,29 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       assert Repo.get_by(Notification, user_id: poster.id, activity_id: like.id)
     end
   end
+
+  describe "announce objects" do
+    setup do
+      poster = insert(:user)
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey"})
+
+      {:ok, announce_data, _meta} = Builder.announce(user, post.object)
+      {:ok, announce, _meta} = ActivityPub.persist(announce_data, local: true)
+
+      %{announce: announce, user: user, poster: poster}
+    end
+
+    test "add the announce to the original object", %{announce: announce, user: user} do
+      {:ok, announce, _} = SideEffects.handle(announce)
+      object = Object.get_by_ap_id(announce.data["object"])
+      assert object.data["announcement_count"] == 1
+      assert user.ap_id in object.data["announcements"]
+    end
+
+    test "creates a notification", %{announce: announce, poster: poster} do
+      {:ok, announce, _} = SideEffects.handle(announce)
+      assert Repo.get_by(Notification, user_id: poster.id, activity_id: announce.id)
+    end
+  end
 end

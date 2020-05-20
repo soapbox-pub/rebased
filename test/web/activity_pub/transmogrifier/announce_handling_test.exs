@@ -13,7 +13,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
   import Pleroma.Factory
 
   test "it works for incoming honk announces" do
-    _user = insert(:user, ap_id: "https://honktest/u/test", local: false)
+    user = insert(:user, ap_id: "https://honktest/u/test", local: false)
     other_user = insert(:user)
     {:ok, post} = CommonAPI.post(other_user, %{status: "bonkeronk"})
 
@@ -28,6 +28,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
     }
 
     {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(announce)
+
+    object = Object.get_by_ap_id(post.data["object"])
+
+    assert length(object.data["announcements"]) == 1
+    assert user.ap_id in object.data["announcements"]
   end
 
   test "it works for incoming announces with actor being inlined (kroeg)" do
@@ -48,8 +53,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
   end
 
   test "it works for incoming announces, fetching the announced object" do
-    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-    data = File.read!("test/fixtures/mastodon-announce.json") |> Poison.decode!()
+    data =
+      File.read!("test/fixtures/mastodon-announce.json")
+      |> Poison.decode!()
+      |> Map.put("object", "http://mastodon.example.org/users/admin/statuses/99541947525187367")
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{status: 200, body: File.read!("test/fixtures/mastodon-note-object.json")}
+    end)
 
     _user = insert(:user, local: false, ap_id: data["actor"])
 
@@ -92,6 +104,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
     assert Activity.get_create_by_object_ap_id(data["object"]).id == activity.id
   end
 
+  # Ignore inlined activities for now
+  @tag skip: true
   test "it works for incoming announces with an inlined activity" do
     data =
       File.read!("test/fixtures/mastodon-announce-private.json")

@@ -662,26 +662,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> handle_incoming(options)
   end
 
-  def handle_incoming(%{"type" => type} = data, _options) when type in ["Like", "EmojiReact"] do
+  def handle_incoming(%{"type" => type} = data, _options)
+      when type in ["Like", "EmojiReact", "Announce"] do
     with :ok <- ObjectValidator.fetch_actor_and_object(data),
          {:ok, activity, _meta} <-
            Pipeline.common_pipeline(data, local: false) do
-      {:ok, activity}
-    else
-      e -> {:error, e}
-    end
-  end
-
-  def handle_incoming(
-        %{"type" => "Announce", "object" => object_id, "actor" => _actor, "id" => id} = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {_, {:ok, %User{} = actor}} <- {:fetch_user, User.get_or_fetch_by_ap_id(actor)},
-         {_, {:ok, object}} <- {:get_embedded, get_embedded_obj_helper(object_id, actor)},
-         public <- Visibility.is_public?(data),
-         {_, {:ok, activity, _object}} <-
-           {:announce, ActivityPub.announce(actor, object, id, false, public)} do
       {:ok, activity}
     else
       e -> {:error, e}

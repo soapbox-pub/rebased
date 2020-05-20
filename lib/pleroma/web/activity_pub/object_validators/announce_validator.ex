@@ -18,9 +18,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
     field(:type, :string)
     field(:object, Types.ObjectID)
     field(:actor, Types.ObjectID)
-    field(:context, :string)
+    field(:context, :string, autogenerate: {Utils, :generate_context_id, []})
     field(:to, Types.Recipients, default: [])
     field(:cc, Types.Recipients, default: [])
+    field(:published, Types.DateTime)
   end
 
   def cast_and_validate(data) do
@@ -47,7 +48,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
   def validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Announce"])
-    |> validate_required([:id, :type, :object, :actor, :context, :to, :cc])
+    |> validate_required([:id, :type, :object, :actor, :to, :cc])
     |> validate_actor_presence()
     |> validate_object_presence()
     |> validate_existing_announce()
