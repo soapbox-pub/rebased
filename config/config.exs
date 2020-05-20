@@ -376,6 +376,10 @@ config :pleroma, :rich_media,
 
 config :pleroma, :media_proxy,
   enabled: false,
+  invalidation: [
+    enabled: false,
+    provider: Pleroma.Web.MediaProxy.Invalidation.Script
+  ],
   proxy_opts: [
     redirect_on_failure: false,
     max_body_length: 25 * 1_048_576,
