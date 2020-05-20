@@ -33,6 +33,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
       background_upload_limit: Keyword.get(instance, :background_upload_limit),
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
+      background_image: Keyword.get(instance, :background_image),
       pleroma: %{
         metadata: %{
           features: features(),

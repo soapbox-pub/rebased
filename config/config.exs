@@ -183,6 +183,7 @@ config :pleroma, :instance,
   email: "example@example.com",
   notify_email: "noreply@example.com",
   description: "A Pleroma instance, an alternative fediverse server",
+  background_image: "/images/city.jpg",
   limit: 5_000,
   chat_limit: 5_000,
   remote_limit: 100_000,
@@ -250,8 +251,6 @@ config :pleroma, :instance,
       length: 16
     ]
   ]
-
-config :pleroma, :extensions, output_relationships_in_statuses_by_default: true
 
 config :pleroma, :feed,
   post_title: %{
@@ -378,6 +377,10 @@ config :pleroma, :rich_media,
 
 config :pleroma, :media_proxy,
   enabled: false,
+  invalidation: [
+    enabled: false,
+    provider: Pleroma.Web.MediaProxy.Invalidation.Script
+  ],
   proxy_opts: [
     redirect_on_failure: false,
     max_body_length: 25 * 1_048_576,

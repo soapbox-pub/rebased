@@ -349,10 +349,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
       summary: "Bookmarked statuses",
       description: "Statuses the user has bookmarked",
       operationId: "StatusController.bookmarks",
-      parameters: [
-        Operation.parameter(:with_relationships, :query, BooleanLike, "Include relationships")
-        | pagination_params()
-      ],
+      parameters: pagination_params(),
       security: [%{"oAuth" => ["read:bookmarks"]}],
       responses: %{
         200 => Operation.response("Array of Statuses", "application/json", array_of_statuses())
@@ -398,12 +395,12 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
                 "Duration the poll should be open, in seconds. Must be provided with `poll[options]`"
             },
             multiple: %Schema{
-              type: :boolean,
+              allOf: [BooleanLike],
               nullable: true,
               description: "Allow multiple choices?"
             },
             hide_totals: %Schema{
-              type: :boolean,
+              allOf: [BooleanLike],
               nullable: true,
               description: "Hide vote counts until the poll ends?"
             }
@@ -415,7 +412,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           description: "ID of the status being replied to, if status is a reply"
         },
         sensitive: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "Mark status and attached media as sensitive?"
         },
@@ -439,7 +436,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
         },
         # Pleroma-specific properties:
         preview: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description:
             "If set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example"

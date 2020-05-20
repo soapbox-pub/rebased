@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [add_link_headers: 2, add_link_headers: 3, skip_relationships?: 1]
+    only: [add_link_headers: 2, add_link_headers: 3]
 
   alias Pleroma.Pagination
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
@@ -63,8 +63,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     |> render("index.json",
       activities: activities,
       for: user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 
@@ -88,8 +87,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     |> render("index.json",
       activities: activities,
       for: user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 
@@ -125,8 +123,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> render("index.json",
         activities: activities,
         for: user,
-        as: :activity,
-        skip_relationships: skip_relationships?(params)
+        as: :activity
       )
     end
   end
@@ -173,8 +170,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     |> render("index.json",
       activities: activities,
       for: user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 
@@ -203,8 +199,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       render(conn, "index.json",
         activities: activities,
         for: user,
-        as: :activity,
-        skip_relationships: skip_relationships?(params)
+        as: :activity
       )
     else
       _e -> render_error(conn, :forbidden, "Error.")

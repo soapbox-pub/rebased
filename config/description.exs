@@ -680,15 +680,6 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :federation_publisher_modules,
-        type: {:list, :module},
-        description:
-          "List of modules for federation publishing. Module names are shortened (removed leading `Pleroma.Web.` part), but on adding custom module you need to use full name.",
-        suggestions: [
-          Pleroma.Web.ActivityPub.Publisher
-        ]
-      },
-      %{
         key: :allow_relay,
         type: :boolean,
         description: "Enable Pleroma's Relay, which makes it possible to follow a whole instance"
@@ -1903,12 +1894,6 @@ config :pleroma, :config_description, [
     """,
     children: [
       %{
-        key: :repo,
-        type: :module,
-        description: "Application's Ecto repo",
-        suggestions: [Pleroma.Repo]
-      },
-      %{
         key: :verbose,
         type: {:dropdown, :atom},
         description: "Logs verbose mode",
@@ -2679,18 +2664,6 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean
-      }
-    ]
-  },
-  %{
-    group: :http_signatures,
-    type: :group,
-    description: "HTTP Signatures settings",
-    children: [
-      %{
-        key: :adapter,
-        type: :module,
-        suggestions: [Pleroma.Signature]
       }
     ]
   },

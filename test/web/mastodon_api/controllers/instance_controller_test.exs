@@ -31,7 +31,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "upload_limit" => _,
              "avatar_upload_limit" => _,
              "background_upload_limit" => _,
-             "banner_upload_limit" => _
+             "banner_upload_limit" => _,
+             "background_image" => _
            } = result
 
     assert result["pleroma"]["metadata"]["features"]

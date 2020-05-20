@@ -19,6 +19,7 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
     apply(__MODULE__, operation, [])
   end
 
+  # Note: `with_relationships` param is not supported (PleromaFE uses this op for autocomplete)
   def account_search_operation do
     %Operation{
       tags: ["Search"],
@@ -96,8 +97,8 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
           :query,
           %Schema{type: :integer},
           "Offset"
-        )
-        | pagination_params()
+        ),
+        with_relationships_param() | pagination_params()
       ],
       responses: %{
         200 => Operation.response("Results", "application/json", results())
@@ -138,8 +139,8 @@ defmodule Pleroma.Web.ApiSpec.SearchOperation do
           :query,
           %Schema{allOf: [BooleanLike], default: false},
           "Only include accounts that the user is following"
-        )
-        | pagination_params()
+        ),
+        with_relationships_param() | pagination_params()
       ],
       responses: %{
         200 => Operation.response("Results", "application/json", results2())

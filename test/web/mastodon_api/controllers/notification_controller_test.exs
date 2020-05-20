@@ -12,9 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
   import Pleroma.Factory
 
-  test "does NOT render account/pleroma/relationship if this is disabled by default" do
-    clear_config([:extensions, :output_relationships_in_statuses_by_default], false)
-
+  test "does NOT render account/pleroma/relationship by default" do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
 

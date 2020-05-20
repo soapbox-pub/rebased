@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Helpers
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
+  alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
   alias Pleroma.Web.ApiSpec.Schemas.PushSubscription
 
   def open_api_operation(action) do
@@ -117,27 +118,27 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
               type: :object,
               properties: %{
                 follow: %Schema{
-                  type: :boolean,
+                  allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive follow notifications?"
                 },
                 favourite: %Schema{
-                  type: :boolean,
+                  allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive favourite notifications?"
                 },
                 reblog: %Schema{
-                  type: :boolean,
+                  allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive reblog notifications?"
                 },
                 mention: %Schema{
-                  type: :boolean,
+                  allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive mention notifications?"
                 },
                 poll: %Schema{
-                  type: :boolean,
+                  allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive poll notifications?"
                 }
@@ -181,27 +182,27 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
               type: :object,
               properties: %{
                 follow: %Schema{
-                  type: :boolean,
+                  allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive follow notifications?"
                 },
                 favourite: %Schema{
-                  type: :boolean,
+                  allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive favourite notifications?"
                 },
                 reblog: %Schema{
-                  type: :boolean,
+                  allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive reblog notifications?"
                 },
                 mention: %Schema{
-                  type: :boolean,
+                  allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive mention notifications?"
                 },
                 poll: %Schema{
-                  type: :boolean,
+                  allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive poll notifications?"
                 }

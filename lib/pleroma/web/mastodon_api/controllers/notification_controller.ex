@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.NotificationController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2, skip_relationships?: 1]
+  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
   alias Pleroma.Notification
   alias Pleroma.Plugs.OAuthScopesPlug
@@ -50,8 +50,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     |> add_link_headers(notifications)
     |> render("index.json",
       notifications: notifications,
-      for: user,
-      skip_relationships: skip_relationships?(params)
+      for: user
     )
   end
 
