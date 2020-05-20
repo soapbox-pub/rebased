@@ -426,7 +426,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Authentication: required
 * Params:
   * `file`: file needs to be uploaded with the multipart request or link to remote file.
-  * `shortcode`: (*optional*) shortcode for new emoji, must be uniq for all emoji. If not sended, shortcode will be taken from original filename.
+  * `shortcode`: (*optional*) shortcode for new emoji, must be unique for all emoji. If not sended, shortcode will be taken from original filename.
   * `filename`: (*optional*) new emoji file name. If not specified will be taken from original filename.
 * Response: JSON, list of files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 

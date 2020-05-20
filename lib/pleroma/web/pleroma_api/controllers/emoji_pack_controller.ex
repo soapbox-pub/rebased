@@ -1,7 +1,9 @@
-defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
+defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Emoji.Pack
+
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(
     Pleroma.Plugs.OAuthScopesPlug,
@@ -19,39 +21,37 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
          ]
   )
 
-  plug(
-    :skip_plug,
-    [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug]
-    when action in [:archive, :show, :list]
-  )
+  @skip_plugs [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug]
+  plug(:skip_plug, @skip_plugs when action in [:archive, :show, :list])
 
-  def remote(conn, %{"url" => url}) do
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEmojiPackOperation
+
+  def remote(conn, %{url: url}) do
     with {:ok, packs} <- Pack.list_remote(url) do
       json(conn, packs)
     else
-      {:shareable, _} ->
+      {:error, :not_shareable} ->
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "The requested instance does not support sharing emoji packs"})
     end
   end
 
-  def list(conn, _params) do
+  def index(conn, _params) do
     emoji_path =
-      Path.join(
-        Pleroma.Config.get!([:instance, :static_dir]),
-        "emoji"
-      )
+      [:instance, :static_dir]
+      |> Pleroma.Config.get!()
+      |> Path.join("emoji")
 
     with {:ok, packs} <- Pack.list_local() do
       json(conn, packs)
     else
-      {:create_dir, {:error, e}} ->
+      {:error, :create_dir, e} ->
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "Failed to create the emoji pack directory at #{emoji_path}: #{e}"})
 
-      {:ls, {:error, e}} ->
+      {:error, :ls, e} ->
         conn
         |> put_status(:internal_server_error)
         |> json(%{
@@ -60,13 +60,13 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def show(conn, %{"name" => name}) do
+  def show(conn, %{name: name}) do
     name = String.trim(name)
 
     with {:ok, pack} <- Pack.show(name) do
       json(conn, pack)
     else
-      {:loaded, _} ->
+      {:error, :not_found} ->
         conn
         |> put_status(:not_found)
         |> json(%{error: "Pack #{name} does not exist"})
@@ -78,11 +78,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def archive(conn, %{"name" => name}) do
+  def archive(conn, %{name: name}) do
     with {:ok, archive} <- Pack.get_archive(name) do
       send_download(conn, {:binary, archive}, filename: "#{name}.zip")
     else
-      {:can_download?, _} ->
+      {:error, :cant_download} ->
         conn
         |> put_status(:forbidden)
         |> json(%{
@@ -90,23 +90,23 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
             "Pack #{name} cannot be downloaded from this instance, either pack sharing was disabled for this pack or some files are missing"
         })
 
-      {:exists?, _} ->
+      {:error, :not_found} ->
         conn
         |> put_status(:not_found)
         |> json(%{error: "Pack #{name} does not exist"})
     end
   end
 
-  def download(conn, %{"url" => url, "name" => name} = params) do
-    with :ok <- Pack.download(name, url, params["as"]) do
+  def download(%{body_params: %{url: url, name: name} = params} = conn, _) do
+    with {:ok, _pack} <- Pack.download(name, url, params[:as]) do
       json(conn, "ok")
     else
-      {:shareable, _} ->
+      {:error, :not_shareable} ->
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "The requested instance does not support sharing emoji packs"})
 
-      {:checksum, _} ->
+      {:error, :imvalid_checksum} ->
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "SHA256 for the pack doesn't match the one sent by the server"})
@@ -118,10 +118,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def create(conn, %{"name" => name}) do
+  def create(conn, %{name: name}) do
     name = String.trim(name)
 
-    with :ok <- Pack.create(name) do
+    with {:ok, _pack} <- Pack.create(name) do
       json(conn, "ok")
     else
       {:error, :eexist} ->
@@ -143,7 +143,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def delete(conn, %{"name" => name}) do
+  def delete(conn, %{name: name}) do
     name = String.trim(name)
 
     with {:ok, deleted} when deleted != [] <- Pack.delete(name) do
@@ -166,11 +166,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def update(conn, %{"name" => name, "metadata" => metadata}) do
+  def update(%{body_params: %{metadata: metadata}} = conn, %{name: name}) do
     with {:ok, pack} <- Pack.update_metadata(name, metadata) do
       json(conn, pack.pack)
     else
-      {:has_all_files?, _} ->
+      {:error, :incomplete} ->
         conn
         |> put_status(:bad_request)
         |> json(%{error: "The fallback archive does not have all files specified in pack.json"})
@@ -184,19 +184,19 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def add_file(conn, %{"name" => name} = params) do
-    filename = params["filename"] || get_filename(params["file"])
-    shortcode = params["shortcode"] || Path.basename(filename, Path.extname(filename))
+  def add_file(%{body_params: params} = conn, %{name: name}) do
+    filename = params[:filename] || get_filename(params[:file])
+    shortcode = params[:shortcode] || Path.basename(filename, Path.extname(filename))
 
-    with {:ok, pack} <- Pack.add_file(name, shortcode, filename, params["file"]) do
+    with {:ok, pack} <- Pack.add_file(name, shortcode, filename, params[:file]) do
       json(conn, pack.files)
     else
-      {:exists, _} ->
+      {:error, :already_exists} ->
         conn
         |> put_status(:conflict)
         |> json(%{error: "An emoji with the \"#{shortcode}\" shortcode already exists"})
 
-      {:loaded, _} ->
+      {:error, :not_found} ->
         conn
         |> put_status(:bad_request)
         |> json(%{error: "pack \"#{name}\" is not found"})
@@ -215,20 +215,20 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def update_file(conn, %{"name" => name, "shortcode" => shortcode} = params) do
-    new_shortcode = params["new_shortcode"]
-    new_filename = params["new_filename"]
-    force = params["force"] == true
+  def update_file(%{body_params: %{shortcode: shortcode} = params} = conn, %{name: name}) do
+    new_shortcode = params[:new_shortcode]
+    new_filename = params[:new_filename]
+    force = params[:force]
 
     with {:ok, pack} <- Pack.update_file(name, shortcode, new_shortcode, new_filename, force) do
       json(conn, pack.files)
     else
-      {:exists, _} ->
+      {:error, :doesnt_exist} ->
         conn
         |> put_status(:bad_request)
         |> json(%{error: "Emoji \"#{shortcode}\" does not exist"})
 
-      {:not_used, _} ->
+      {:error, :already_exists} ->
         conn
         |> put_status(:conflict)
         |> json(%{
@@ -236,7 +236,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
             "New shortcode \"#{new_shortcode}\" is already used. If you want to override emoji use 'force' option"
         })
 
-      {:loaded, _} ->
+      {:error, :not_found} ->
         conn
         |> put_status(:bad_request)
         |> json(%{error: "pack \"#{name}\" is not found"})
@@ -255,16 +255,16 @@ defmodule Pleroma.Web.PleromaAPI.EmojiAPIController do
     end
   end
 
-  def delete_file(conn, %{"name" => name, "shortcode" => shortcode}) do
+  def delete_file(conn, %{name: name, shortcode: shortcode}) do
     with {:ok, pack} <- Pack.delete_file(name, shortcode) do
       json(conn, pack.files)
     else
-      {:exists, _} ->
+      {:error, :doesnt_exist} ->
         conn
         |> put_status(:bad_request)
         |> json(%{error: "Emoji \"#{shortcode}\" does not exist"})
 
-      {:loaded, _} ->
+      {:error, :not_found} ->
         conn
         |> put_status(:bad_request)
         |> json(%{error: "pack \"#{name}\" is not found"})
