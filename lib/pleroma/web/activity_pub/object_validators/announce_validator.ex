@@ -5,11 +5,16 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
   use Ecto.Schema
 
+  alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Visibility
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
+
+  require Pleroma.Constants
 
   @primary_key false
 
@@ -52,6 +57,33 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
     |> validate_actor_presence()
     |> validate_object_presence()
     |> validate_existing_announce()
+    |> validate_announcable()
+  end
+
+  def validate_announcable(cng) do
+    with actor when is_binary(actor) <- get_field(cng, :actor),
+         object when is_binary(object) <- get_field(cng, :object),
+         %User{} = actor <- User.get_cached_by_ap_id(actor),
+         %Object{} = object <- Object.get_cached_by_ap_id(object),
+         false <- Visibility.is_public?(object) do
+      same_actor = object.data["actor"] == actor.ap_id
+      is_public = Pleroma.Constants.as_public() in (get_field(cng, :to) ++ get_field(cng, :cc))
+
+      cond do
+        same_actor && is_public ->
+          cng
+          |> add_error(:actor, "can not announce this object publicly")
+
+        !same_actor ->
+          cng
+          |> add_error(:actor, "can not announce this object")
+
+        true ->
+          cng
+      end
+    else
+      _ -> cng
+    end
   end
 
   def validate_existing_announce(cng) do
