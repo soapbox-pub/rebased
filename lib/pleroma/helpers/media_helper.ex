@@ -7,8 +7,6 @@ defmodule Pleroma.Helpers.MediaHelper do
   Handles common media-related operations.
   """
 
-  @ffmpeg_opts [{:sync, true}, {:stdout, true}]
-
   def ffmpeg_resize_remote(uri, %{max_width: max_width, max_height: max_height}) do
     cmd = ~s"""
     curl -L "#{uri}" |
@@ -20,7 +18,7 @@ defmodule Pleroma.Helpers.MediaHelper do
     cat
     """
 
-    with {:ok, [stdout: stdout_list]} <- Exexec.run(cmd, @ffmpeg_opts) do
+    with {:ok, [stdout: stdout_list]} <- Pleroma.Exec.cmd(cmd) do
       {:ok, Enum.join(stdout_list)}
     end
   end

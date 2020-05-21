@@ -6,6 +6,7 @@ variables: &global_variables
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
   MIX_ENV: test
+  USER: root
 
 cache: &global_cache_policy
   key: ${CI_COMMIT_REF_SLUG}
