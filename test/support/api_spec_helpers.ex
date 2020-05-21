@@ -51,7 +51,7 @@ defmodule Pleroma.Tests.ApiSpecHelpers do
       |> Map.take([:delete, :get, :head, :options, :patch, :post, :put, :trace])
       |> Map.values()
       |> Enum.reject(&is_nil/1)
-      |> Enum.uniq()
     end)
+    |> Enum.uniq()
   end
 end

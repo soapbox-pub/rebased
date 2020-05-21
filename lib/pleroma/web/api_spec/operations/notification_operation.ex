@@ -145,7 +145,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
     }
   end
 
-  defp notification do
+  def notification do
     %Schema{
       title: "Notification",
       description: "Response schema for a notification",
