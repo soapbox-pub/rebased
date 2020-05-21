@@ -9,54 +9,19 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   @ffmpeg_opts [{:sync, true}, {:stdout, true}]
 
-  def ffmpeg_resize_remote(uri, max_width, max_height) do
+  def ffmpeg_resize_remote(uri, %{max_width: max_width, max_height: max_height}) do
     cmd = ~s"""
     curl -L "#{uri}" |
-    ffmpeg -i pipe:0 -vf \
-      "scale='min(#{max_width},iw)':min'(#{max_height},ih)':force_original_aspect_ratio=decrease" \
-      -f image2 pipe:1 | \
+    ffmpeg -i pipe:0 -f lavfi -i color=c=white \
+      -filter_complex "[0:v] scale='min(#{max_width},iw)':'min(#{max_height},ih)': \
+        force_original_aspect_ratio=decrease [scaled]; \
+        [1][scaled] scale2ref [bg][img]; [bg] setsar=1 [bg]; [bg][img] overlay=shortest=1" \
+      -f image2 -vcodec mjpeg -frames:v 1 pipe:1 | \
     cat
     """
 
     with {:ok, [stdout: stdout_list]} <- Exexec.run(cmd, @ffmpeg_opts) do
       {:ok, Enum.join(stdout_list)}
-    end
-  end
-
-  @doc "Returns a temporary path for an URI"
-  def temporary_path_for(uri) do
-    name = Path.basename(uri)
-    random = rand_uniform(999_999)
-    Path.join(System.tmp_dir(), "#{random}-#{name}")
-  end
-
-  @doc "Stores binary content fetched from specified URL as a temporary file."
-  @spec store_as_temporary_file(String.t(), binary()) :: {:ok, String.t()} | {:error, atom()}
-  def store_as_temporary_file(url, body) do
-    path = temporary_path_for(url)
-    with :ok <- File.write(path, body), do: {:ok, path}
-  end
-
-  @doc "Modifies image file at specified path by resizing to specified limit dimensions."
-  @spec mogrify_resize_to_limit(String.t(), String.t()) :: :ok | any()
-  def mogrify_resize_to_limit(path, resize_dimensions) do
-    with %Mogrify.Image{} <-
-           path
-           |> Mogrify.open()
-           |> Mogrify.resize_to_limit(resize_dimensions)
-           |> Mogrify.save(in_place: true) do
-      :ok
-    end
-  end
-
-  defp rand_uniform(high) do
-    Code.ensure_loaded(:rand)
-
-    if function_exported?(:rand, :uniform, 1) do
-      :rand.uniform(high)
-    else
-      # Erlang/OTP < 19
-      apply(:crypto, :rand_uniform, [1, high])
     end
   end
 end

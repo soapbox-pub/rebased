@@ -82,17 +82,16 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     {thumbnail_max_width, thumbnail_max_height}
   end
 
-  defp handle_preview("image/" <> _ = content_type, %{params: params} = conn, url) do
+  defp handle_preview("image/" <> _ = _content_type, %{params: params} = conn, url) do
     with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(params),
          media_proxy_url <- MediaProxy.url(url),
          {:ok, thumbnail_binary} <-
            MediaHelper.ffmpeg_resize_remote(
              media_proxy_url,
-             thumbnail_max_width,
-             thumbnail_max_height
+             %{max_width: thumbnail_max_width, max_height: thumbnail_max_height}
            ) do
       conn
-      |> put_resp_header("content-type", content_type)
+      |> put_resp_header("content-type", "image/jpeg")
       |> send_resp(200, thumbnail_binary)
     else
       _ ->
