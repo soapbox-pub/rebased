@@ -24,4 +24,7 @@ defmodule Pleroma.Helpers.UriHelper do
       params
     end
   end
+
+  def maybe_add_base("/" <> uri, base), do: Path.join([base, uri])
+  def maybe_add_base(uri, _base), do: uri
 end
