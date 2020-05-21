@@ -350,7 +350,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}")
 
-      assert "Not found" == json_response(conn, 404)
+      assert %{"error" => "Not found"} == json_response(conn, 404)
     end
   end
 
@@ -683,7 +683,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
 
       assert json_response(conn, :bad_request) ==
-               "To send invites you need to set the `invites_enabled` option to true."
+               %{
+                 "error" =>
+                   "To send invites you need to set the `invites_enabled` option to true."
+               }
     end
 
     test "it returns 500 if `registrations_open` is enabled", %{conn: conn} do
@@ -693,7 +696,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
 
       assert json_response(conn, :bad_request) ==
-               "To send invites you need to set the `registrations_open` option to false."
+               %{
+                 "error" =>
+                   "To send invites you need to set the `registrations_open` option to false."
+               }
     end
   end
 
@@ -1307,7 +1313,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> put("/api/pleroma/admin/users/disable_mfa", %{nickname: "nickname"})
         |> json_response(404)
 
-      assert response == "Not found"
+      assert response == %{"error" => "Not found"}
     end
   end
 
@@ -1413,7 +1419,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "with invalid token", %{conn: conn} do
       conn = post(conn, "/api/pleroma/admin/users/revoke_invite", %{"token" => "foo"})
 
-      assert json_response(conn, :not_found) == "Not found"
+      assert json_response(conn, :not_found) == %{"error" => "Not found"}
     end
   end
 
@@ -1440,7 +1446,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "returns 404 when report id is invalid", %{conn: conn} do
       conn = get(conn, "/api/pleroma/admin/reports/test")
 
-      assert json_response(conn, :not_found) == "Not found"
+      assert json_response(conn, :not_found) == %{"error" => "Not found"}
     end
   end
 
@@ -1705,7 +1711,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response(conn, 400) ==
-               "To use this endpoint you need to enable configuration from database."
+               %{
+                 "error" => "To use this endpoint you need to enable configuration from database."
+               }
     end
 
     test "with settings only in db", %{conn: conn} do
@@ -1827,7 +1835,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     conn = post(conn, "/api/pleroma/admin/config", %{"configs" => []})
 
     assert json_response(conn, 400) ==
-             "To use this endpoint you need to enable configuration from database."
+             %{"error" => "To use this endpoint you need to enable configuration from database."}
   end
 
   describe "POST /api/pleroma/admin/config" do

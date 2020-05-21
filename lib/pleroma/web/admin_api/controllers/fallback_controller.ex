@@ -8,13 +8,13 @@ defmodule Pleroma.Web.AdminAPI.FallbackController do
   def call(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
-    |> json(dgettext("errors", "Not found"))
+    |> json(%{error: dgettext("errors", "Not found")})
   end
 
   def call(conn, {:error, reason}) do
     conn
     |> put_status(:bad_request)
-    |> json(reason)
+    |> json(%{error: reason})
   end
 
   def call(conn, {:param_cast, _}) do
@@ -26,6 +26,6 @@ defmodule Pleroma.Web.AdminAPI.FallbackController do
   def call(conn, _) do
     conn
     |> put_status(:internal_server_error)
-    |> json(dgettext("errors", "Something went wrong"))
+    |> json(%{error: dgettext("errors", "Something went wrong")})
   end
 end

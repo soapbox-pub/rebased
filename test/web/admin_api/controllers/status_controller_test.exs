@@ -30,7 +30,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
     test "not found", %{conn: conn} do
       assert conn
              |> get("/api/pleroma/admin/statuses/not_found")
-             |> json_response(:not_found)
+             |> json_response_and_validate_schema(:not_found)
     end
 
     test "shows activity", %{conn: conn} do
@@ -39,7 +39,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       response =
         conn
         |> get("/api/pleroma/admin/statuses/#{activity.id}")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert response["id"] == activity.id
     end
@@ -55,8 +55,9 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
     test "toggle sensitive flag", %{conn: conn, id: id, admin: admin} do
       response =
         conn
+        |> put_req_header("content-type", "application/json")
         |> put("/api/pleroma/admin/statuses/#{id}", %{"sensitive" => "true"})
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert response["sensitive"]
 
@@ -67,8 +68,9 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
 
       response =
         conn
+        |> put_req_header("content-type", "application/json")
         |> put("/api/pleroma/admin/statuses/#{id}", %{"sensitive" => "false"})
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       refute response["sensitive"]
     end
@@ -76,8 +78,9 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
     test "change visibility flag", %{conn: conn, id: id, admin: admin} do
       response =
         conn
+        |> put_req_header("content-type", "application/json")
         |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "public"})
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert response["visibility"] == "public"
 
@@ -88,23 +91,29 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
 
       response =
         conn
+        |> put_req_header("content-type", "application/json")
         |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "private"})
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert response["visibility"] == "private"
 
       response =
         conn
+        |> put_req_header("content-type", "application/json")
         |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "unlisted"})
-        |> json_response(:ok)
+        |> json_response_and_validate_schema(:ok)
 
       assert response["visibility"] == "unlisted"
     end
 
     test "returns 400 when visibility is unknown", %{conn: conn, id: id} do
-      conn = put(conn, "/api/pleroma/admin/statuses/#{id}", %{visibility: "test"})
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "test"})
 
-      assert json_response(conn, :bad_request) == "Unsupported visibility"
+      assert %{"error" => "test - Invalid value for enum."} =
+               json_response_and_validate_schema(conn, :bad_request)
     end
   end
 
@@ -118,7 +127,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
     test "deletes status", %{conn: conn, id: id, admin: admin} do
       conn
       |> delete("/api/pleroma/admin/statuses/#{id}")
-      |> json_response(:ok)
+      |> json_response_and_validate_schema(:ok)
 
       refute Activity.get_by_id(id)
 
@@ -131,7 +140,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
     test "returns 404 when the status does not exist", %{conn: conn} do
       conn = delete(conn, "/api/pleroma/admin/statuses/test")
 
-      assert json_response(conn, :not_found) == "Not found"
+      assert json_response_and_validate_schema(conn, :not_found) == %{"error" => "Not found"}
     end
   end
 
@@ -151,7 +160,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       response =
         conn
         |> get("/api/pleroma/admin/statuses")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       refute "private" in Enum.map(response, & &1["visibility"])
       assert length(response) == 3
@@ -166,7 +175,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       response =
         conn
         |> get("/api/pleroma/admin/statuses?local_only=true")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert length(response) == 1
     end
@@ -179,7 +188,7 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
       {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "private"})
       {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
       conn = get(conn, "/api/pleroma/admin/statuses?godmode=true")
-      assert json_response(conn, 200) |> length() == 3
+      assert json_response_and_validate_schema(conn, 200) |> length() == 3
     end
   end
 end

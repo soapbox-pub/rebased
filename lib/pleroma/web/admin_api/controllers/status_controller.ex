@@ -14,8 +14,7 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
 
   require Logger
 
-  @users_page_size 50
-
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"], admin: true} when action in [:index, :show])
 
   plug(
@@ -25,25 +24,22 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)
 
-  def index(%{assigns: %{user: _admin}} = conn, params) do
-    godmode = params["godmode"] == "true" || params["godmode"] == true
-    local_only = params["local_only"] == "true" || params["local_only"] == true
-    with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
-    {page, page_size} = page_params(params)
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.StatusOperation
 
+  def index(%{assigns: %{user: _admin}} = conn, params) do
     activities =
       ActivityPub.fetch_statuses(nil, %{
-        "godmode" => godmode,
-        "local_only" => local_only,
-        "limit" => page_size,
-        "offset" => (page - 1) * page_size,
-        "exclude_reblogs" => !with_reblogs && "true"
+        "godmode" => params.godmode,
+        "local_only" => params.local_only,
+        "limit" => params.page_size,
+        "offset" => (params.page - 1) * params.page_size,
+        "exclude_reblogs" => not params.with_reblogs
       })
 
-    render(conn, "index.json", %{activities: activities, as: :activity})
+    render(conn, "index.json", activities: activities, as: :activity)
   end
 
-  def show(conn, %{"id" => id}) do
+  def show(conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id(id) do
       conn
       |> put_view(MastodonAPI.StatusView)
@@ -53,20 +49,13 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
     end
   end
 
-  def update(%{assigns: %{user: admin}} = conn, %{"id" => id} = params) do
-    params =
-      params
-      |> Map.take(["sensitive", "visibility"])
-      |> Map.new(fn {key, value} -> {String.to_existing_atom(key), value} end)
-
+  def update(%{assigns: %{user: admin}, body_params: params} = conn, %{id: id}) do
     with {:ok, activity} <- CommonAPI.update_activity_scope(id, params) do
-      {:ok, sensitive} = Ecto.Type.cast(:boolean, params[:sensitive])
-
       ModerationLog.insert_log(%{
         action: "status_update",
         actor: admin,
         subject: activity,
-        sensitive: sensitive,
+        sensitive: params[:sensitive],
         visibility: params[:visibility]
       })
 
@@ -76,7 +65,7 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
     end
   end
 
-  def delete(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+  def delete(%{assigns: %{user: user}} = conn, %{id: id}) do
     with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
       ModerationLog.insert_log(%{
         action: "status_delete",
@@ -85,28 +74,6 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
       })
 
       json(conn, %{})
-    end
-  end
-
-  defp page_params(params) do
-    {get_page(params["page"]), get_page_size(params["page_size"])}
-  end
-
-  defp get_page(page_string) when is_nil(page_string), do: 1
-
-  defp get_page(page_string) do
-    case Integer.parse(page_string) do
-      {page, _} -> page
-      :error -> 1
-    end
-  end
-
-  defp get_page_size(page_size_string) when is_nil(page_size_string), do: @users_page_size
-
-  defp get_page_size(page_size_string) do
-    case Integer.parse(page_size_string) do
-      {page_size, _} -> page_size
-      :error -> @users_page_size
     end
   end
 end
