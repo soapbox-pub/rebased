@@ -7,8 +7,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AnnounceHandlingTest do
 
   alias Pleroma.Activity
   alias Pleroma.Object
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
 

@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.Pipeline do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -11,7 +12,6 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
   alias Pleroma.Web.ActivityPub.ObjectValidator
   alias Pleroma.Web.ActivityPub.SideEffects
   alias Pleroma.Web.Federator
-  alias Pleroma.Config
 
   @spec common_pipeline(map(), keyword()) ::
           {:ok, Activity.t() | Object.t(), keyword()} | {:error, any()}
