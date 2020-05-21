@@ -256,7 +256,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       User.block(user_one, user_two)
 
       {:ok, activity} = CommonAPI.post(user_two, %{status: "User one sux0rz"})
-      {:ok, repeat, _} = CommonAPI.repeat(activity.id, user_three)
+      {:ok, repeat} = CommonAPI.repeat(activity.id, user_three)
 
       assert resp =
                conn
@@ -375,7 +375,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
     test "gets a user's statuses without reblogs", %{user: user, conn: conn} do
       {:ok, %{id: post_id}} = CommonAPI.post(user, %{status: "HI!!!"})
-      {:ok, _, _} = CommonAPI.repeat(post_id, user)
+      {:ok, _} = CommonAPI.repeat(post_id, user)
 
       conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?exclude_reblogs=true")
       assert [%{"id" => ^post_id}] = json_response_and_validate_schema(conn, 200)
@@ -678,7 +678,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{"showing_reblogs" => false} = json_response_and_validate_schema(ret_conn, 200)
 
       {:ok, activity} = CommonAPI.post(other_user, %{status: "hey"})
-      {:ok, %{id: reblog_id}, _} = CommonAPI.repeat(activity.id, followed)
+      {:ok, %{id: reblog_id}} = CommonAPI.repeat(activity.id, followed)
 
       assert [] ==
                conn

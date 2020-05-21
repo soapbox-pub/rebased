@@ -442,7 +442,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
     activity = insert(:note_activity)
 
-    {:ok, reblog, _} = CommonAPI.repeat(activity.id, user)
+    {:ok, reblog} = CommonAPI.repeat(activity.id, user)
 
     represented = StatusView.render("show.json", %{for: user, activity: reblog})
 
@@ -600,7 +600,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         status: "˙˙ɐʎns"
       })
 
-    {:ok, activity, _object} = CommonAPI.repeat(activity.id, other_user)
+    {:ok, activity} = CommonAPI.repeat(activity.id, other_user)
 
     result = StatusView.render("show.json", %{activity: activity, for: user})
 

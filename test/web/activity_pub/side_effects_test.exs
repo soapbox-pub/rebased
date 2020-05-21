@@ -325,14 +325,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       assert user.ap_id in object.data["announcements"]
     end
 
-    test "does not add the announce to the original object if the announce is private", %{
-      private_announce: announce
-    } do
-      {:ok, announce, _} = SideEffects.handle(announce)
-      object = Object.get_by_ap_id(announce.data["object"])
-      assert object.data["announcement_count"] == nil
-    end
-
     test "does not add the announce to the original object if the actor is a service actor", %{
       relay_announce: announce
     } do

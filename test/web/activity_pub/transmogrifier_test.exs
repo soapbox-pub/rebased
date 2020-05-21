@@ -1079,7 +1079,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, activity} = CommonAPI.post(user, %{status: "hey", visibility: "private"})
 
-      {:ok, announce_activity, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, announce_activity} = CommonAPI.repeat(activity.id, user)
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(announce_activity.data)
 

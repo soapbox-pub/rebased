@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ActivityPub.Utils
 
   def handle(object, meta \\ [])
@@ -35,9 +34,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle(%{data: %{"type" => "Announce"}} = object, meta) do
     announced_object = Object.get_by_ap_id(object.data["object"])
 
-    if Visibility.is_public?(object) do
-      Utils.add_announce_to_object(object, announced_object)
-    end
+    Utils.add_announce_to_object(object, announced_object)
 
     Notification.create_notifications(object)
     ActivityPub.stream_out(object)

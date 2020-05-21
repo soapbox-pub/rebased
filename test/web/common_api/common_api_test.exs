@@ -41,6 +41,8 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, post} = CommonAPI.post(user, %{status: "namu amida butsu"})
 
+      clear_config([:instance, :federating], true)
+
       Object.normalize(post, false)
       |> Object.prune()
 
@@ -58,6 +60,8 @@ defmodule Pleroma.Web.CommonAPITest do
       user = insert(:user)
 
       {:ok, post} = CommonAPI.post(user, %{status: "namu amida butsu"})
+
+      clear_config([:instance, :federating], true)
 
       with_mock Pleroma.Web.Federator,
         publish: fn _ -> nil end do
@@ -440,6 +444,7 @@ defmodule Pleroma.Web.CommonAPITest do
         CommonAPI.repeat(activity.id, user, %{visibility: "private"})
 
       assert Visibility.is_private?(announce_activity)
+      refute Visibility.visible_for_user?(announce_activity, nil)
     end
 
     test "favoriting a status" do

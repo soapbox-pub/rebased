@@ -151,7 +151,7 @@ defmodule Pleroma.Web.Push.ImplTest do
           "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
-    {:ok, announce_activity, _} = CommonAPI.repeat(activity.id, user)
+    {:ok, announce_activity} = CommonAPI.repeat(activity.id, user)
     object = Object.normalize(activity)
 
     assert Impl.format_body(%{activity: announce_activity}, user, object) ==

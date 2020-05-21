@@ -537,7 +537,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_one)
 
     {:ok, _user_relationship} = User.block(user, %{ap_id: activity_three.data["actor"]})
-    {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
+    {:ok, %{data: %{"object" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Activity.get_by_id(activity_three.id)
 
@@ -592,7 +592,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, activity_two} = CommonAPI.post(blockee, %{status: "hey! @#{friend.nickname}"})
 
-    {:ok, activity_three, _} = CommonAPI.repeat(activity_two.id, friend)
+    {:ok, activity_three} = CommonAPI.repeat(activity_two.id, friend)
 
     activities =
       ActivityPub.fetch_activities([], %{"blocking_user" => blocker})
@@ -618,7 +618,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     followed_user = insert(:user)
     ActivityPub.follow(user, followed_user)
-    {:ok, repeat_activity, _} = CommonAPI.repeat(activity.id, followed_user)
+    {:ok, repeat_activity} = CommonAPI.repeat(activity.id, followed_user)
 
     activities =
       ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
@@ -651,7 +651,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     another_user = insert(:user, %{ap_id: "https://#{domain}/@meanie2"})
     bad_note = insert(:note, %{data: %{"actor" => another_user.ap_id}})
     bad_activity = insert(:note_activity, %{note: bad_note})
-    {:ok, repeat_activity, _} = CommonAPI.repeat(bad_activity.id, domain_user)
+    {:ok, repeat_activity} = CommonAPI.repeat(bad_activity.id, domain_user)
 
     activities =
       ActivityPub.fetch_activities([], %{"blocking_user" => blocker, "skip_preload" => true})
@@ -699,7 +699,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     activity_three_actor = User.get_by_ap_id(activity_three.data["actor"])
     {:ok, _user_relationships} = User.mute(user, activity_three_actor)
-    {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
+    {:ok, %{data: %{"object" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Activity.get_by_id(activity_three.id)
 
@@ -749,7 +749,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, user} = User.follow(user, booster)
 
-    {:ok, announce, _object} = CommonAPI.repeat(activity_three.id, booster)
+    {:ok, announce} = CommonAPI.repeat(activity_three.id, booster)
 
     [announce_activity] = ActivityPub.fetch_activities([user.ap_id | User.following(user)])
 
@@ -846,7 +846,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       booster = insert(:user)
       {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, booster)
 
-      {:ok, activity, _} = CommonAPI.repeat(activity.id, booster)
+      {:ok, activity} = CommonAPI.repeat(activity.id, booster)
 
       activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
 
@@ -860,80 +860,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, booster)
       {:ok, _reblog_mute} = CommonAPI.show_reblogs(user, booster)
 
-      {:ok, activity, _} = CommonAPI.repeat(activity.id, booster)
+      {:ok, activity} = CommonAPI.repeat(activity.id, booster)
 
       activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
 
       assert Enum.any?(activities, fn %{id: id} -> id == activity.id end)
-    end
-  end
-
-  describe "announcing an object" do
-    test "adds an announce activity to the db" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      {:ok, announce_activity, object} = ActivityPub.announce(user, object)
-      assert object.data["announcement_count"] == 1
-      assert object.data["announcements"] == [user.ap_id]
-
-      assert announce_activity.data["to"] == [
-               User.ap_followers(user),
-               note_activity.data["actor"]
-             ]
-
-      assert announce_activity.data["object"] == object.data["id"]
-      assert announce_activity.data["actor"] == user.ap_id
-      assert announce_activity.data["context"] == object.data["context"]
-    end
-
-    test "reverts annouce from object on error" do
-      note_activity = insert(:note_activity)
-      object = Object.normalize(note_activity)
-      user = insert(:user)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.announce(user, object)
-      end
-
-      reloaded_object = Object.get_by_ap_id(object.data["id"])
-      assert reloaded_object == object
-      refute reloaded_object.data["announcement_count"]
-      refute reloaded_object.data["announcements"]
-    end
-  end
-
-  describe "announcing a private object" do
-    test "adds an announce activity to the db if the audience is not widened" do
-      user = insert(:user)
-      {:ok, note_activity} = CommonAPI.post(user, %{status: ".", visibility: "private"})
-      object = Object.normalize(note_activity)
-
-      {:ok, announce_activity, object} = ActivityPub.announce(user, object, nil, true, false)
-
-      assert announce_activity.data["to"] == [User.ap_followers(user)]
-
-      assert announce_activity.data["object"] == object.data["id"]
-      assert announce_activity.data["actor"] == user.ap_id
-      assert announce_activity.data["context"] == object.data["context"]
-    end
-
-    test "does not add an announce activity to the db if the audience is widened" do
-      user = insert(:user)
-      {:ok, note_activity} = CommonAPI.post(user, %{status: ".", visibility: "private"})
-      object = Object.normalize(note_activity)
-
-      assert {:error, _} = ActivityPub.announce(user, object, nil, true, true)
-    end
-
-    test "does not add an announce activity to the db if the announcer is not the author" do
-      user = insert(:user)
-      announcer = insert(:user)
-      {:ok, note_activity} = CommonAPI.post(user, %{status: ".", visibility: "private"})
-      object = Object.normalize(note_activity)
-
-      assert {:error, _} = ActivityPub.announce(announcer, object, nil, true, false)
     end
   end
 
