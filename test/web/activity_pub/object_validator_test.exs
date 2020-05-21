@@ -364,7 +364,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
 
       assert {:ok, _, _} = ObjectValidator.validate(announce, [])
 
-      # The actor of the object can not announce it publicly 
+      # The actor of the object can not announce it publicly
       {:ok, announce, []} = Builder.announce(user, object, public: true)
 
       {:error, cng} = ObjectValidator.validate(announce, [])
