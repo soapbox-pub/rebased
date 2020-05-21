@@ -117,7 +117,7 @@ mix pleroma.user deactivate NICKNAME
 
 ## Deactivate all accounts from an instance and unsubscribe local users on it
 ```sh tab="OTP"
- ./bin/pleroma_ctl user deacitivate_all_from_instance <instance>
+ ./bin/pleroma_ctl user deactivate_all_from_instance <instance>
 ```
 
 ```sh tab="From Source"
