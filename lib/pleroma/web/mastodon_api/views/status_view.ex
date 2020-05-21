@@ -436,27 +436,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("listen.json", %{activity: %Activity{data: %{"type" => "Listen"}} = activity} = opts) do
-    object = Object.normalize(activity)
-
-    user = get_user(activity.data["actor"])
-    created_at = Utils.to_masto_date(activity.data["published"])
-
-    %{
-      id: activity.id,
-      account: AccountView.render("show.json", %{user: user, for: opts[:for]}),
-      created_at: created_at,
-      title: object.data["title"] |> HTML.strip_tags(),
-      artist: object.data["artist"] |> HTML.strip_tags(),
-      album: object.data["album"] |> HTML.strip_tags(),
-      length: object.data["length"]
-    }
-  end
-
-  def render("listens.json", opts) do
-    safe_render_many(opts.activities, StatusView, "listen.json", opts)
-  end
-
   def render("context.json", %{activity: activity, activities: activities, user: user}) do
     %{ancestors: ancestors, descendants: descendants} =
       activities

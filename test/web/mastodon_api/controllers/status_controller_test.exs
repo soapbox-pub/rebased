@@ -62,7 +62,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "spoiler_text" => "2hu",
-          "sensitive" => "false"
+          "sensitive" => "0"
         })
 
       {:ok, ttl} = Cachex.ttl(:idempotency_cache, idempotency_key)
@@ -81,7 +81,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "spoiler_text" => "2hu",
-          "sensitive" => "false"
+          "sensitive" => 0
         })
 
       assert %{"id" => second_id} = json_response(conn_two, 200)
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "spoiler_text" => "2hu",
-          "sensitive" => "false"
+          "sensitive" => "False"
         })
 
       assert %{"id" => third_id} = json_response_and_validate_schema(conn_three, 200)

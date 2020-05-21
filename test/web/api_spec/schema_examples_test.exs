@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ApiSpec.SchemaExamplesTest do
       end
     end
 
-    for {status, response} <- operation.responses do
+    for {status, response} <- operation.responses, is_map(response.content[@content_type]) do
       describe "#{operation.operationId} - #{status} Response" do
         @schema resolve_schema(response.content[@content_type].schema)
 

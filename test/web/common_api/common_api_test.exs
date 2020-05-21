@@ -916,10 +916,10 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, activity} =
         CommonAPI.listen(user, %{
-          "title" => "lain radio episode 1",
-          "album" => "lain radio",
-          "artist" => "lain",
-          "length" => 180_000
+          title: "lain radio episode 1",
+          album: "lain radio",
+          artist: "lain",
+          length: 180_000
         })
 
       object = Object.normalize(activity)
@@ -934,11 +934,11 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, activity} =
         CommonAPI.listen(user, %{
-          "title" => "lain radio episode 1",
-          "album" => "lain radio",
-          "artist" => "lain",
-          "length" => 180_000,
-          "visibility" => "private"
+          title: "lain radio episode 1",
+          album: "lain radio",
+          artist: "lain",
+          length: 180_000,
+          visibility: "private"
         })
 
       object = Object.normalize(activity)

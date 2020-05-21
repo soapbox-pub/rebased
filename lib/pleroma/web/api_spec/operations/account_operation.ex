@@ -393,7 +393,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           format: :password
         },
         agreement: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           description:
             "Whether the user agrees to the local rules, terms, and policies. These should be presented to the user in order to allow them to consent before setting this parameter to TRUE."
         },
@@ -463,7 +463,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       type: :object,
       properties: %{
         bot: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "Whether the account has a bot flag."
         },
@@ -486,7 +486,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           format: :binary
         },
         locked: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "Whether manual approval of follow requests is required."
         },
@@ -510,37 +510,37 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
         # Pleroma-specific fields
         no_rich_text: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "html tags are stripped from all statuses requested from the API"
         },
         hide_followers: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "user's followers will be hidden"
         },
         hide_follows: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "user's follows will be hidden"
         },
         hide_followers_count: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "user's follower count will be hidden"
         },
         hide_follows_count: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "user's follow count will be hidden"
         },
         hide_favorites: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "user's favorites timeline will be hidden"
         },
         show_role: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "user's role (e.g admin, moderator) will be exposed to anyone in the
         API"
@@ -552,12 +552,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           description: "Opaque user settings to be saved on the backend."
         },
         skip_thread_containment: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "Skip filtering out broken threads"
         },
         allow_following_move: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "Allows automatically follow moved following accounts"
         },
@@ -568,7 +568,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           format: :binary
         },
         discoverable: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description:
             "Discovery of this account in search results and other services is allowed."
@@ -678,7 +678,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       type: :object,
       properties: %{
         notifications: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "Mute notifications in addition to statuses? Defaults to true.",
           default: true

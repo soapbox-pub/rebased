@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.AccountOperation
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
+  alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.ScheduledStatus
   alias Pleroma.Web.ApiSpec.Schemas.Status
@@ -394,12 +395,12 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
                 "Duration the poll should be open, in seconds. Must be provided with `poll[options]`"
             },
             multiple: %Schema{
-              type: :boolean,
+              allOf: [BooleanLike],
               nullable: true,
               description: "Allow multiple choices?"
             },
             hide_totals: %Schema{
-              type: :boolean,
+              allOf: [BooleanLike],
               nullable: true,
               description: "Hide vote counts until the poll ends?"
             }
@@ -411,7 +412,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
           description: "ID of the status being replied to, if status is a reply"
         },
         sensitive: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description: "Mark status and attached media as sensitive?"
         },
@@ -435,7 +436,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
         },
         # Pleroma-specific properties:
         preview: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           nullable: true,
           description:
             "If set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example"

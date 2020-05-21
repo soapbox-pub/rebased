@@ -9,8 +9,11 @@ defmodule Pleroma.Web.PleromaAPI.MascotController do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["read:accounts"]} when action == :show)
   plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action != :show)
+
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaMascotOperation
 
   @doc "GET /api/v1/pleroma/mascot"
   def show(%{assigns: %{user: user}} = conn, _params) do
@@ -18,7 +21,7 @@ defmodule Pleroma.Web.PleromaAPI.MascotController do
   end
 
   @doc "PUT /api/v1/pleroma/mascot"
-  def update(%{assigns: %{user: user}} = conn, %{"file" => file}) do
+  def update(%{assigns: %{user: user}, body_params: %{file: file}} = conn, _) do
     with {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)),
          # Reject if not an image
          %{type: "image"} = attachment <- render_attachment(object) do
