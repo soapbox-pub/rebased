@@ -63,7 +63,7 @@ defmodule Pleroma.InstanceTest do
         "--uploads-dir",
         "test/uploads",
         "--static-dir",
-        "instance/static/"
+        "./test/../test/instance/static/"
       ])
     end
 
@@ -83,6 +83,7 @@ defmodule Pleroma.InstanceTest do
     assert generated_config =~ "configurable_from_database: true"
     assert generated_config =~ "http: [ip: {127, 0, 0, 1}, port: 4000]"
     assert File.read!(tmp_path() <> "setup.psql") == generated_setup_psql()
+    assert File.exists?(Path.expand("./test/instance/static/robots.txt"))
   end
 
   defp generated_setup_psql do

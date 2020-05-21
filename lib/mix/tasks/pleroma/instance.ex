@@ -147,6 +147,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           "What directory should media uploads go in (when using the local uploader)?",
           Pleroma.Config.get([Pleroma.Uploaders.Local, :uploads])
         )
+        |> Path.expand()
 
       static_dir =
         get_option(
@@ -155,6 +156,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           "What directory should custom public files be read from (custom emojis, frontend bundle overrides, robots.txt, etc.)?",
           Pleroma.Config.get([:instance, :static_dir])
         )
+        |> Path.expand()
 
       Config.put([:instance, :static_dir], static_dir)
 
@@ -204,7 +206,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
       shell_info("Writing the postgres script to #{psql_path}.")
       File.write(psql_path, result_psql)
 
-      write_robots_txt(indexable, template_dir)
+      write_robots_txt(static_dir, indexable, template_dir)
 
       shell_info(
         "\n All files successfully written! Refer to the installation instructions for your platform for next steps."
@@ -224,14 +226,12 @@ defmodule Mix.Tasks.Pleroma.Instance do
     end
   end
 
-  defp write_robots_txt(indexable, template_dir) do
+  defp write_robots_txt(static_dir, indexable, template_dir) do
     robots_txt =
       EEx.eval_file(
         template_dir <> "/robots_txt.eex",
         indexable: indexable
       )
-
-    static_dir = Pleroma.Config.get([:instance, :static_dir], "instance/static/")
 
     unless File.exists?(static_dir) do
       File.mkdir_p!(static_dir)
