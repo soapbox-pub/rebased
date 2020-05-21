@@ -169,7 +169,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
   end
 
-  describe "running unsubscribe" do
+  describe "running deactivate" do
     test "user is unsubscribed" do
       followed = insert(:user)
       remote_followed = insert(:user, local: false)
@@ -178,7 +178,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       User.follow(user, followed, :follow_accept)
       User.follow(user, remote_followed, :follow_accept)
 
-      Mix.Tasks.Pleroma.User.run(["unsubscribe", user.nickname])
+      Mix.Tasks.Pleroma.User.run(["deactivate", user.nickname])
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Deactivating"
@@ -192,8 +192,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert user.deactivated
     end
 
-    test "no user to unsubscribe" do
-      Mix.Tasks.Pleroma.User.run(["unsubscribe", "nonexistent"])
+    test "no user to deactivate" do
+      Mix.Tasks.Pleroma.User.run(["deactivate", "nonexistent"])
 
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No user"

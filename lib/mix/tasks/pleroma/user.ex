@@ -144,7 +144,7 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
-  def run(["unsubscribe", nickname]) do
+  def run(["deactivate", nickname]) do
     start_pleroma()
 
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
@@ -163,7 +163,7 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
-  def run(["unsubscribe_all_from_instance", instance]) do
+  def run(["deactivate_all_from_instance", instance]) do
     start_pleroma()
 
     Pleroma.User.Query.build(%{nickname: "@#{instance}"})
@@ -171,7 +171,7 @@ defmodule Mix.Tasks.Pleroma.User do
     |> Stream.each(fn users ->
       users
       |> Enum.each(fn user ->
-        run(["unsubscribe", user.nickname])
+        run(["deactivate", user.nickname])
       end)
     end)
     |> Stream.run()
