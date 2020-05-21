@@ -25,6 +25,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       assert {:ok, attachment} =
                AttachmentValidator.cast_and_validate(attachment)
                |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "application/octet-stream"
     end
 
     test "it turns mastodon attachments into our attachments" do
@@ -48,6 +50,27 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
                  mediaType: "image/jpeg"
                }
              ] = attachment.url
+
+      assert attachment.mediaType == "image/jpeg"
+    end
+
+    test "it handles our own uploads" do
+      user = insert(:user)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, attachment} = ActivityPub.upload(file, actor: user.ap_id)
+
+      {:ok, attachment} =
+        attachment.data
+        |> AttachmentValidator.cast_and_validate()
+        |> Ecto.Changeset.apply_action(:insert)
+
+      assert attachment.mediaType == "image/jpeg"
     end
   end
 

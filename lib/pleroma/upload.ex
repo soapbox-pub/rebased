@@ -67,6 +67,7 @@ defmodule Pleroma.Upload do
       {:ok,
        %{
          "type" => opts.activity_type,
+         "mediaType" => upload.content_type,
          "url" => [
            %{
              "type" => "Link",
