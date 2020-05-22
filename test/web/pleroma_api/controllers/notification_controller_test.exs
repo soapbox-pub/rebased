@@ -23,7 +23,8 @@ defmodule Pleroma.Web.PleromaAPI.NotificationControllerTest do
 
       response =
         conn
-        |> post("/api/v1/pleroma/notifications/read?id=#{notification1.id}")
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/notifications/read", %{id: notification1.id})
         |> json_response_and_validate_schema(:ok)
 
       assert %{"pleroma" => %{"is_seen" => true}} = response
@@ -41,7 +42,8 @@ defmodule Pleroma.Web.PleromaAPI.NotificationControllerTest do
 
       [response1, response2] =
         conn
-        |> post("/api/v1/pleroma/notifications/read?max_id=#{notification2.id}")
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/notifications/read", %{max_id: notification2.id})
         |> json_response_and_validate_schema(:ok)
 
       assert %{"pleroma" => %{"is_seen" => true}} = response1
@@ -54,7 +56,10 @@ defmodule Pleroma.Web.PleromaAPI.NotificationControllerTest do
     test "it returns error when notification not found", %{conn: conn} do
       response =
         conn
-        |> post("/api/v1/pleroma/notifications/read?id=22222222222222")
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/pleroma/notifications/read", %{
+          id: 22_222_222_222_222
+        })
         |> json_response_and_validate_schema(:bad_request)
 
       assert response == %{"error" => "Cannot get notification"}
