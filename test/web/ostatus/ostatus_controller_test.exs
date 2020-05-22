@@ -10,7 +10,11 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Endpoint
+
+  require Pleroma.Constants
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -18,6 +22,37 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   end
 
   setup do: clear_config([:instance, :federating], true)
+
+  describe "Mastodon compatibility routes" do
+    setup %{conn: conn} do
+      conn = put_req_header(conn, "accept", "text/html")
+      %{conn: conn}
+    end
+
+    test "redirects to /notice/:id for html format", %{conn: conn} do
+      {:ok, object} =
+        %{
+          "type" => "Note",
+          "content" => "hey",
+          "id" => Endpoint.url() <> "/users/raymoo/statuses/999999999",
+          "actor" => Endpoint.url() <> "/users/raymoo",
+          "to" => [Pleroma.Constants.as_public()]
+        }
+        |> Object.create()
+
+      {:ok, activity, _} =
+        %{
+          "type" => "Create",
+          "object" => object.data["id"],
+          "actor" => object.data["actor"],
+          "to" => object.data["to"]
+        }
+        |> ActivityPub.persist(local: true)
+
+      conn = get(conn, "/users/raymoo/statuses/999999999")
+      assert redirected_to(conn) == "/notice/#{activity.id}"
+    end
+  end
 
   # Note: see ActivityPubControllerTest for JSON format tests
   describe "GET /objects/:uuid (text/html)" do
