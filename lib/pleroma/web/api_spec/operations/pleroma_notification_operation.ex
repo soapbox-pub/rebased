@@ -8,6 +8,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaNotificationOperation do
   alias Pleroma.Web.ApiSpec.NotificationOperation
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
 
+  import Pleroma.Web.ApiSpec.Helpers
+
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
     apply(__MODULE__, operation, [])
@@ -17,10 +19,14 @@ defmodule Pleroma.Web.ApiSpec.PleromaNotificationOperation do
     %Operation{
       tags: ["Notifications"],
       summary: "Mark notifications as read. Query parameters are mutually exclusive.",
-      parameters: [
-        Operation.parameter(:id, :query, :string, "A single notification ID to read"),
-        Operation.parameter(:max_id, :query, :string, "Read all notifications up to this id")
-      ],
+      requestBody:
+        request_body("Parameters", %Schema{
+          type: :object,
+          properties: %{
+            id: %Schema{type: :integer, description: "A single notification ID to read"},
+            max_id: %Schema{type: :integer, description: "Read all notifications up to this ID"}
+          }
+        }),
       security: [%{"oAuth" => ["write:notifications"]}],
       operationId: "PleromaAPI.NotificationController.mark_as_read",
       responses: %{
