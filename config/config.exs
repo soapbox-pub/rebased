@@ -71,7 +71,8 @@ config :pleroma, Pleroma.Upload,
       follow_redirect: true,
       pool: :upload
     ]
-  ]
+  ],
+  filename_display_max_length: 30
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
