@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.Account
+  alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
   alias Pleroma.Web.ApiSpec.Schemas.Status
 
@@ -46,7 +47,8 @@ defmodule Pleroma.Web.ApiSpec.EmojiReactionOperation do
       security: [%{"oAuth" => ["write:statuses"]}],
       operationId: "EmojiReactionController.create",
       responses: %{
-        200 => Operation.response("Status", "application/json", Status)
+        200 => Operation.response("Status", "application/json", Status),
+        400 => Operation.response("Bad Request", "application/json", ApiError)
       }
     }
   end

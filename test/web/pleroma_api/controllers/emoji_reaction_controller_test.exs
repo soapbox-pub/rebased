@@ -33,6 +33,13 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionControllerTest do
     assert result["pleroma"]["emoji_reactions"] == [
              %{"name" => "☕", "count" => 1, "me" => true}
            ]
+
+    # Reacting with a non-emoji
+    assert conn
+           |> assign(:user, other_user)
+           |> assign(:token, insert(:oauth_token, user: other_user, scopes: ["write:statuses"]))
+           |> put("/api/v1/pleroma/statuses/#{activity.id}/reactions/x")
+           |> json_response_and_validate_schema(400)
   end
 
   test "DELETE /api/v1/pleroma/statuses/:id/reactions/:emoji", %{conn: conn} do
