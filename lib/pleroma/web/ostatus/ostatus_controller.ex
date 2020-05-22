@@ -59,8 +59,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     ActivityPubController.call(conn, :activity)
   end
 
-  def activity(%{assigns: %{format: format}} = conn, %{"uuid" => uuid}) do
-    with id <- o_status_url(conn, :activity, uuid),
+  def activity(%{assigns: %{format: format}} = conn, _params) do
+    with id <- Endpoint.url() <> conn.request_path,
          {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
       case format do

@@ -26,10 +26,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   describe "Mastodon compatibility routes" do
     setup %{conn: conn} do
       conn = put_req_header(conn, "accept", "text/html")
-      %{conn: conn}
-    end
 
-    test "redirects to /notice/:id for html format", %{conn: conn} do
       {:ok, object} =
         %{
           "type" => "Note",
@@ -50,7 +47,19 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
         }
         |> ActivityPub.persist(local: true)
 
+      %{conn: conn, activity: activity}
+    end
+
+    test "redirects to /notice/:id for html format", %{conn: conn, activity: activity} do
       conn = get(conn, "/users/raymoo/statuses/999999999")
+      assert redirected_to(conn) == "/notice/#{activity.id}"
+    end
+
+    test "redirects to /notice/:id for html format for activity", %{
+      conn: conn,
+      activity: activity
+    } do
+      conn = get(conn, "/users/raymoo/statuses/999999999/activity")
       assert redirected_to(conn) == "/notice/#{activity.id}"
     end
   end
