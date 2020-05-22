@@ -13,6 +13,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Object
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.UserView
@@ -192,6 +193,37 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/users/raymoo/statuses/999999999")
 
       assert json_response(conn, 200) == ObjectView.render("object.json", %{object: object})
+    end
+
+    test "it returns a json representation of the activity with accept application/json", %{
+      conn: conn
+    } do
+      {:ok, object} =
+        %{
+          "type" => "Note",
+          "content" => "hey",
+          "id" => Endpoint.url() <> "/users/raymoo/statuses/999999999",
+          "actor" => Endpoint.url() <> "/users/raymoo",
+          "to" => [Pleroma.Constants.as_public()]
+        }
+        |> Object.create()
+
+      {:ok, activity, _} =
+        %{
+          "id" => object.data["id"] <> "/activity",
+          "type" => "Create",
+          "object" => object.data["id"],
+          "actor" => object.data["actor"],
+          "to" => object.data["to"]
+        }
+        |> ActivityPub.persist(local: true)
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/users/raymoo/statuses/999999999/activity")
+
+      assert json_response(conn, 200) == ObjectView.render("object.json", %{object: activity})
     end
   end
 

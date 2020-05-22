@@ -102,8 +102,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
   end
 
-  def activity(conn, %{"uuid" => uuid}) do
-    with ap_id <- o_status_url(conn, :activity, uuid),
+  def activity(conn, _params) do
+    with ap_id <- Endpoint.url() <> conn.request_path,
          %Activity{} = activity <- Activity.normalize(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
       conn

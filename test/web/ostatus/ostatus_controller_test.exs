@@ -42,6 +42,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
       {:ok, activity, _} =
         %{
+          "id" => object.data["id"] <> "/activity",
           "type" => "Create",
           "object" => object.data["id"],
           "actor" => object.data["actor"],
