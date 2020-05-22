@@ -396,10 +396,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def to_masto_date(_), do: ""
 
   defp shortname(name) do
-    if String.length(name) < 30 do
-      name
+    with max_length when max_length > 0 <-
+           Config.get([Pleroma.Upload, :filename_display_max_length], 30),
+         true <- String.length(name) > max_length do
+      String.slice(name, 0..max_length) <> "…"
     else
-      String.slice(name, 0..30) <> "…"
+      _ -> name
     end
   end
 
