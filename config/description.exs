@@ -119,6 +119,11 @@ config :pleroma, :config_description, [
             ]
           }
         ]
+      },
+      %{
+        key: :filename_display_max_length,
+        type: :integer,
+        description: "Set max length of a filename to display. 0 = no limit. Default: 30"
       }
     ]
   },
