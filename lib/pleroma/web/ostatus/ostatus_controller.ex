@@ -32,7 +32,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   action_fallback(:errors)
 
-  def object(%{assigns: %{format: format}} = conn, %{"uuid" => _uuid})
+  def object(%{assigns: %{format: format}} = conn, _params)
       when format in ["json", "activity+json"] do
     ActivityPubController.call(conn, :object)
   end

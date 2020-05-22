@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  import Pleroma.Factory
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Delivery
@@ -19,7 +18,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Workers.ReceiverWorker
+
+  import Pleroma.Factory
+
+  require Pleroma.Constants
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -165,6 +169,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         )
 
       ensure_federating_or_authenticated(conn, "/users/#{user.nickname}.json", user)
+    end
+  end
+
+  describe "mastodon compatibility routes" do
+    test "it returns a json representation of the object with accept application/json", %{
+      conn: conn
+    } do
+      {:ok, object} =
+        %{
+          "type" => "Note",
+          "content" => "hey",
+          "id" => Endpoint.url() <> "/users/raymoo/statuses/999999999",
+          "actor" => Endpoint.url() <> "/users/raymoo",
+          "to" => [Pleroma.Constants.as_public()]
+        }
+        |> Object.create()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/users/raymoo/statuses/999999999")
+
+      assert json_response(conn, 200) == ObjectView.render("object.json", %{object: object})
     end
   end
 

@@ -556,6 +556,9 @@ defmodule Pleroma.Web.Router do
     get("/notice/:id", OStatus.OStatusController, :notice)
     get("/notice/:id/embed_player", OStatus.OStatusController, :notice_player)
 
+    # Mastodon compat routes
+    get("/users/:nickname/statuses/:id", OStatus.OStatusController, :object)
+
     get("/users/:nickname/feed", Feed.UserController, :feed, as: :user_feed)
     get("/users/:nickname", Feed.UserController, :feed_redirect, as: :user_feed)
 
