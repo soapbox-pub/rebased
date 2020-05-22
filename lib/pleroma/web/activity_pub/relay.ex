@@ -4,9 +4,10 @@
 
 defmodule Pleroma.Web.ActivityPub.Relay do
   alias Pleroma.Activity
-  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI
   require Logger
 
   @relay_nickname "relay"
@@ -48,11 +49,11 @@ defmodule Pleroma.Web.ActivityPub.Relay do
     end
   end
 
-  @spec publish(any()) :: {:ok, Activity.t(), Object.t()} | {:error, any()}
+  @spec publish(any()) :: {:ok, Activity.t()} | {:error, any()}
   def publish(%Activity{data: %{"type" => "Create"}} = activity) do
     with %User{} = user <- get_actor(),
-         %Object{} = object <- Object.normalize(activity) do
-      ActivityPub.announce(user, object, nil, true, false)
+         true <- Visibility.is_public?(activity) do
+      CommonAPI.repeat(activity.id, user)
     else
       error -> format_error(error)
     end

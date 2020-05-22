@@ -172,7 +172,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, post} = CommonAPI.post(poster, %{status: "hey"})
       {:ok, like} = CommonAPI.favorite(user, post.id)
       {:ok, reaction} = CommonAPI.react_with_emoji(post.id, user, "👍")
-      {:ok, announce, _} = CommonAPI.repeat(post.id, user)
+      {:ok, announce} = CommonAPI.repeat(post.id, user)
       {:ok, block} = ActivityPub.block(user, poster)
       User.block(user, poster)
 
@@ -287,6 +287,63 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     test "creates a notification", %{like: like, poster: poster} do
       {:ok, like, _} = SideEffects.handle(like)
       assert Repo.get_by(Notification, user_id: poster.id, activity_id: like.id)
+    end
+  end
+
+  describe "announce objects" do
+    setup do
+      poster = insert(:user)
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(poster, %{status: "hey"})
+      {:ok, private_post} = CommonAPI.post(poster, %{status: "hey", visibility: "private"})
+
+      {:ok, announce_data, _meta} = Builder.announce(user, post.object, public: true)
+
+      {:ok, private_announce_data, _meta} =
+        Builder.announce(user, private_post.object, public: false)
+
+      {:ok, relay_announce_data, _meta} =
+        Builder.announce(Pleroma.Web.ActivityPub.Relay.get_actor(), post.object, public: true)
+
+      {:ok, announce, _meta} = ActivityPub.persist(announce_data, local: true)
+      {:ok, private_announce, _meta} = ActivityPub.persist(private_announce_data, local: true)
+      {:ok, relay_announce, _meta} = ActivityPub.persist(relay_announce_data, local: true)
+
+      %{
+        announce: announce,
+        user: user,
+        poster: poster,
+        private_announce: private_announce,
+        relay_announce: relay_announce
+      }
+    end
+
+    test "adds the announce to the original object", %{announce: announce, user: user} do
+      {:ok, announce, _} = SideEffects.handle(announce)
+      object = Object.get_by_ap_id(announce.data["object"])
+      assert object.data["announcement_count"] == 1
+      assert user.ap_id in object.data["announcements"]
+    end
+
+    test "does not add the announce to the original object if the actor is a service actor", %{
+      relay_announce: announce
+    } do
+      {:ok, announce, _} = SideEffects.handle(announce)
+      object = Object.get_by_ap_id(announce.data["object"])
+      assert object.data["announcement_count"] == nil
+    end
+
+    test "creates a notification", %{announce: announce, poster: poster} do
+      {:ok, announce, _} = SideEffects.handle(announce)
+      assert Repo.get_by(Notification, user_id: poster.id, activity_id: announce.id)
+    end
+
+    test "it streams out the announce", %{announce: announce} do
+      with_mock Pleroma.Web.ActivityPub.ActivityPub, [:passthrough], stream_out: fn _ -> nil end do
+        {:ok, announce, _} = SideEffects.handle(announce)
+
+        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out(announce))
+      end
     end
   end
 end

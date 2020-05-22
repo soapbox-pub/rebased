@@ -356,36 +356,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec announce(User.t(), Object.t(), String.t() | nil, boolean(), boolean()) ::
-          {:ok, Activity.t(), Object.t()} | {:error, any()}
-  def announce(
-        %User{ap_id: _} = user,
-        %Object{data: %{"id" => _}} = object,
-        activity_id \\ nil,
-        local \\ true,
-        public \\ true
-      ) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_announce(user, object, activity_id, local, public) end) do
-      result
-    end
-  end
-
-  defp do_announce(user, object, activity_id, local, public) do
-    with true <- is_announceable?(object, user, public),
-         object <- Object.get_by_id(object.id),
-         announce_data <- make_announce_data(user, object, activity_id, public),
-         {:ok, activity} <- insert(announce_data, local),
-         {:ok, object} <- add_announce_to_object(activity, object),
-         _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity, object}
-    else
-      false -> {:error, false}
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
   @spec follow(User.t(), User.t(), String.t() | nil, boolean()) ::
           {:ok, Activity.t()} | {:error, any()}
   def follow(follower, followed, activity_id \\ nil, local \\ true) do

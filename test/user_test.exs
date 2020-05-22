@@ -992,7 +992,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user, local: true)
 
       {:ok, activity} = CommonAPI.post(actor, %{status: "hello"})
-      {:ok, announce, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, announce} = CommonAPI.repeat(activity.id, user)
 
       recipients = User.get_recipients_from_activity(announce)
 
@@ -1147,7 +1147,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, like} = CommonAPI.favorite(user, activity_two.id)
       {:ok, like_two} = CommonAPI.favorite(follower, activity.id)
-      {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
+      {:ok, repeat} = CommonAPI.repeat(activity_two.id, user)
 
       {:ok, job} = User.delete(user)
       {:ok, _user} = ObanHelpers.perform(job)

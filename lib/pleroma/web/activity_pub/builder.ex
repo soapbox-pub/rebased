@@ -10,6 +10,8 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
+  require Pleroma.Constants
+
   @spec emoji_react(User.t(), Object.t(), String.t()) :: {:ok, map(), keyword()}
   def emoji_react(actor, object, emoji) do
     with {:ok, data, meta} <- object_action(actor, object) do
@@ -81,6 +83,29 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
       {:ok, data, meta}
     end
+  end
+
+  def announce(actor, object, options \\ []) do
+    public? = Keyword.get(options, :public, false)
+    to = [actor.follower_address, object.data["actor"]]
+
+    to =
+      if public? do
+        [Pleroma.Constants.as_public() | to]
+      else
+        to
+      end
+
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "actor" => actor.ap_id,
+       "object" => object.data["id"],
+       "to" => to,
+       "context" => object.data["context"],
+       "type" => "Announce",
+       "published" => Utils.make_date()
+     }, []}
   end
 
   @spec object_action(User.t(), Object.t()) :: {:ok, map(), keyword()}

@@ -148,6 +148,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   describe "DELETE /api/pleroma/admin/users" do
     test "single user", %{admin: admin, conn: conn} do
       user = insert(:user)
+      clear_config([:instance, :federating], true)
 
       with_mock Pleroma.Web.Federator,
         publish: fn _ -> nil end do
@@ -2944,6 +2945,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert ":proxy_url" in db
     end
 
+    @tag capture_log: true
     test "doesn't set keys not in the whitelist", %{conn: conn} do
       clear_config(:database_config_whitelist, [
         {:pleroma, :key1},
@@ -3096,7 +3098,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "excludes reblogs by default", %{conn: conn, user: user} do
       other_user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{status: "."})
-      {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, other_user)
+      {:ok, %Activity{}} = CommonAPI.repeat(activity.id, other_user)
 
       conn_res = get(conn, "/api/pleroma/admin/users/#{other_user.nickname}/statuses")
       assert json_response(conn_res, 200) |> length() == 0

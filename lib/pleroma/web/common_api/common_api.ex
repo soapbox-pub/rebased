@@ -127,18 +127,19 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def repeat(id, user, params \\ %{}) do
-    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id) do
-      object = Object.normalize(activity)
-      announce_activity = Utils.get_existing_announce(user.ap_id, object)
-      public = public_announce?(object, params)
-
-      if announce_activity do
-        {:ok, announce_activity, object}
-      else
-        ActivityPub.announce(user, object, nil, true, public)
-      end
+    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
+         object = %Object{} <- Object.normalize(activity, false),
+         {_, nil} <- {:existing_announce, Utils.get_existing_announce(user.ap_id, object)},
+         public = public_announce?(object, params),
+         {:ok, announce, _} <- Builder.announce(user, object, public: public),
+         {:ok, activity, _} <- Pipeline.common_pipeline(announce, local: true) do
+      {:ok, activity}
     else
-      _ -> {:error, :not_found}
+      {:existing_announce, %Activity{} = announce} ->
+        {:ok, announce}
+
+      _ ->
+        {:error, :not_found}
     end
   end
 
