@@ -397,7 +397,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   defp shortname(name) do
     with max_length when max_length > 0 <-
-           Pleroma.Config.get([Pleroma.Upload, :filename_display_max_length], 30),
+           Config.get([Pleroma.Upload, :filename_display_max_length], 30),
          true <- String.length(name) > max_length do
       String.slice(name, 0..max_length) <> "…"
     else
