@@ -335,6 +335,32 @@ defmodule Pleroma.Web.CommonAPITest do
       end)
     end
 
+    test "replying with a direct message will NOT auto-add the author of the reply to the recipient list" do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+
+      {:ok, post} = CommonAPI.post(user, %{status: "I'm stupid"})
+
+      {:ok, open_answer} =
+        CommonAPI.post(other_user, %{status: "No ur smart", in_reply_to_status_id: post.id})
+
+      # The OP is implicitly added
+      assert user.ap_id in open_answer.recipients
+
+      {:ok, secret_answer} =
+        CommonAPI.post(other_user, %{
+          status: "lol, that guy really is stupid, right, @#{third_user.nickname}?",
+          in_reply_to_status_id: post.id,
+          visibility: "direct"
+        })
+
+      assert third_user.ap_id in secret_answer.recipients
+
+      # The OP is not added
+      refute user.ap_id in secret_answer.recipients
+    end
+
     test "it allows to address a list" do
       user = insert(:user)
       {:ok, list} = Pleroma.List.create("foo", user)
