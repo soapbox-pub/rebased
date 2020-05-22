@@ -22,6 +22,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.EmojiReactionOperation
 
+  action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
+
   def index(%{assigns: %{user: user}} = conn, %{id: activity_id} = params) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
          %Object{data: %{"reactions" => reactions}} when is_list(reactions) <-
