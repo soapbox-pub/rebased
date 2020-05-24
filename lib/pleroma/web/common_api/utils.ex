@@ -470,6 +470,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         |> Enum.map(& &1.ap_id)
 
       recipients ++ subscriber_ids
+    else
+      _e -> recipients
     end
   end
 
@@ -481,6 +483,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       |> User.get_followers()
       |> Enum.map(& &1.ap_id)
       |> Enum.concat(recipients)
+    else
+      _e -> recipients
     end
   end
 
