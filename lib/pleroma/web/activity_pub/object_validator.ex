@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator
@@ -84,6 +85,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
+  def validate(%{"type" => "Announce"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> AnnounceValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object |> Map.from_struct())
+      {:ok, object, meta}
+    end
+  end
+
   def cast_and_apply(%{"type" => "ChatMessage"} = object) do
     ChatMessageValidator.cast_and_apply(object)
   end
@@ -116,7 +127,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def fetch_actor_and_object(object) do
     fetch_actor(object)
-    Object.normalize(object["object"])
+    Object.normalize(object["object"], true)
     :ok
   end
 end

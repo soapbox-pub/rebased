@@ -21,6 +21,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.FederatingPlug
   alias Pleroma.Web.Federator
 
@@ -75,8 +76,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def object(conn, %{"uuid" => uuid}) do
-    with ap_id <- o_status_url(conn, :object, uuid),
+  def object(conn, _) do
+    with ap_id <- Endpoint.url() <> conn.request_path,
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(object)} do
       conn
@@ -101,8 +102,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
   end
 
-  def activity(conn, %{"uuid" => uuid}) do
-    with ap_id <- o_status_url(conn, :activity, uuid),
+  def activity(conn, _params) do
+    with ap_id <- Endpoint.url() <> conn.request_path,
          %Activity{} = activity <- Activity.normalize(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
       conn

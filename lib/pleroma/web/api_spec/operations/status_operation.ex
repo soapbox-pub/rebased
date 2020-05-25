@@ -487,7 +487,7 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
     }
   end
 
-  defp id_param do
+  def id_param do
     Operation.parameter(:id, :path, FlakeID, "Status ID",
       example: "9umDrYheeY451cQnEe",
       required: true

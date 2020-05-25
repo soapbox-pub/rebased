@@ -305,8 +305,13 @@ defmodule Pleroma.User do
 
   def avatar_url(user, options \\ []) do
     case user.avatar do
-      %{"url" => [%{"href" => href} | _]} -> href
-      _ -> !options[:no_default] && "#{Web.base_url()}/images/avi.png"
+      %{"url" => [%{"href" => href} | _]} ->
+        href
+
+      _ ->
+        unless options[:no_default] do
+          Config.get([:assets, :default_user_avatar], "#{Web.base_url()}/images/avi.png")
+        end
     end
   end
 

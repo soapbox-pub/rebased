@@ -992,7 +992,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user, local: true)
 
       {:ok, activity} = CommonAPI.post(actor, %{status: "hello"})
-      {:ok, announce, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, announce} = CommonAPI.repeat(activity.id, user)
 
       recipients = User.get_recipients_from_activity(announce)
 
@@ -1147,7 +1147,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, like} = CommonAPI.favorite(user, activity_two.id)
       {:ok, like_two} = CommonAPI.favorite(follower, activity.id)
-      {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
+      {:ok, repeat} = CommonAPI.repeat(activity_two.id, user)
 
       {:ok, job} = User.delete(user)
       {:ok, _user} = ObanHelpers.perform(job)
@@ -1776,5 +1776,17 @@ defmodule Pleroma.UserTest do
       assert {:ok, result} = User.update_email_notifications(user, %{"digest" => false})
       assert result.email_notifications["digest"] == false
     end
+  end
+
+  test "avatar fallback" do
+    user = insert(:user)
+    assert User.avatar_url(user) =~ "/images/avi.png"
+
+    Pleroma.Config.put([:assets, :default_user_avatar], "avatar.png")
+
+    user = User.get_cached_by_nickname_or_id(user.nickname)
+    assert User.avatar_url(user) =~ "avatar.png"
+
+    assert User.avatar_url(user, no_default: true) == nil
   end
 end

@@ -91,6 +91,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
   describe "running rm" do
     test "user is deleted" do
+      clear_config([:instance, :federating], true)
       user = insert(:user)
 
       with_mock Pleroma.Web.Federator,
@@ -108,8 +109,10 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
     test "a remote user's create activity is deleted when the object has been pruned" do
       user = insert(:user)
-
       {:ok, post} = CommonAPI.post(user, %{status: "uguu"})
+
+      clear_config([:instance, :federating], true)
+
       object = Object.normalize(post)
       Object.prune(object)
 

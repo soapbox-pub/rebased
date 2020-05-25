@@ -280,8 +280,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       {:ok, unlisted_activity} =
         CommonAPI.post(other_user, %{status: ".", visibility: "unlisted"})
 
-      {:ok, _, _} = CommonAPI.repeat(public_activity.id, user)
-      {:ok, _, _} = CommonAPI.repeat(unlisted_activity.id, user)
+      {:ok, _} = CommonAPI.repeat(public_activity.id, user)
+      {:ok, _} = CommonAPI.repeat(unlisted_activity.id, user)
 
       activity_ids =
         conn
@@ -301,7 +301,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     {:ok, mention_activity} = CommonAPI.post(other_user, %{status: "hey @#{user.nickname}"})
     {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
     {:ok, favorite_activity} = CommonAPI.favorite(other_user, create_activity.id)
-    {:ok, reblog_activity, _} = CommonAPI.repeat(create_activity.id, other_user)
+    {:ok, reblog_activity} = CommonAPI.repeat(create_activity.id, other_user)
     {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
 
     mention_notification_id = get_notification_id_by_activity(mention_activity)
@@ -339,7 +339,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     {:ok, mention_activity} = CommonAPI.post(other_user, %{status: "hey @#{user.nickname}"})
     {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
     {:ok, favorite_activity} = CommonAPI.favorite(other_user, create_activity.id)
-    {:ok, reblog_activity, _} = CommonAPI.repeat(create_activity.id, other_user)
+    {:ok, reblog_activity} = CommonAPI.repeat(create_activity.id, other_user)
     {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
 
     mention_notification_id = get_notification_id_by_activity(mention_activity)

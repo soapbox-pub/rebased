@@ -1,9 +1,45 @@
-{"@context":["https://www.w3.org/ns/activitystreams","https://w3id.org/security/v1",{"manuallyApprovesFollowers":"as:manuallyApprovesFollowers","sensitive":"as:sensitive","movedTo":"as:movedTo","Hashtag":"as:Hashtag","ostatus":"http://ostatus.org#","atomUri":"ostatus:atomUri","inReplyToAtomUri":"ostatus:inReplyToAtomUri","conversation":"ostatus:conversation","toot":"http://joinmastodon.org/ns#","Emoji":"toot:Emoji"}],"id":"http://mastodon.example.org/users/admin/statuses/99541947525187367","type":"Note","summary":null,"content":"\u003cp\u003eyeah.\u003c/p\u003e","inReplyTo":null,"published":"2018-02-17T17:46:20Z","url":"http://mastodon.example.org/@admin/99541947525187367","attributedTo":"http://mastodon.example.org/users/admin","to":["https://www.w3.org/ns/activitystreams#Public"],"cc":["http://mastodon.example.org/users/admin/followers"],"sensitive":false,"atomUri":"http://mastodon.example.org/users/admin/statuses/99541947525187367","inReplyToAtomUri":null,"conversation":"tag:mastodon.example.org,2018-02-17:objectId=59:objectType=Conversation","tag":[],
-    "attachment": [
+{
+   "@context" : [
+      "https://www.w3.org/ns/activitystreams",
+      "https://w3id.org/security/v1",
       {
-        "url": "http://mastodon.example.org/system/media_attachments/files/000/000/002/original/334ce029e7bfb920.jpg",
-        "type": "Document",
-        "name": null,
-        "mediaType": "image/jpeg"
+         "Emoji" : "toot:Emoji",
+         "Hashtag" : "as:Hashtag",
+         "atomUri" : "ostatus:atomUri",
+         "conversation" : "ostatus:conversation",
+         "inReplyToAtomUri" : "ostatus:inReplyToAtomUri",
+         "manuallyApprovesFollowers" : "as:manuallyApprovesFollowers",
+         "movedTo" : "as:movedTo",
+         "ostatus" : "http://ostatus.org#",
+         "sensitive" : "as:sensitive",
+         "toot" : "http://joinmastodon.org/ns#"
       }
-    ]}
+   ],
+   "atomUri" : "http://mastodon.example.org/users/admin/statuses/99541947525187367",
+   "attachment" : [
+      {
+         "mediaType" : "image/jpeg",
+         "name" : null,
+         "type" : "Document",
+         "url" : "http://mastodon.example.org/system/media_attachments/files/000/000/002/original/334ce029e7bfb920.jpg"
+      }
+   ],
+   "attributedTo" : "http://mastodon.example.org/users/admin",
+   "cc" : [
+      "http://mastodon.example.org/users/admin/followers"
+   ],
+   "content" : "<p>yeah.</p>",
+   "conversation" : "tag:mastodon.example.org,2018-02-17:objectId=59:objectType=Conversation",
+   "id" : "http://mastodon.example.org/users/admin/statuses/99541947525187367",
+   "inReplyTo" : null,
+   "inReplyToAtomUri" : null,
+   "published" : "2018-02-17T17:46:20Z",
+   "sensitive" : false,
+   "summary" : null,
+   "tag" : [],
+   "to" : [
+      "https://www.w3.org/ns/activitystreams#Public"
+   ],
+   "type" : "Note",
+   "url" : "http://mastodon.example.org/@admin/99541947525187367"
+}

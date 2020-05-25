@@ -498,6 +498,7 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
 * `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
+* `filename_display_max_length`: Set max length of a filename to display. 0 = no limit. Default: 30.
 
 !!! warning
     `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.

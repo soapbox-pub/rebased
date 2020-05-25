@@ -9,6 +9,11 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
   import Pleroma.Factory
 
   describe "common_pipeline/2" do
+    setup do
+      clear_config([:instance, :federating], true)
+      :ok
+    end
+
     test "it goes through validation, filtering, persisting, side effects and federation for local activities" do
       activity = insert(:note_activity)
       meta = [local: true]
@@ -50,6 +55,45 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
     test "it goes through validation, filtering, persisting, side effects without federation for remote activities" do
       activity = insert(:note_activity)
       meta = [local: false]
+
+      with_mocks([
+        {Pleroma.Web.ActivityPub.ObjectValidator, [], [validate: fn o, m -> {:ok, o, m} end]},
+        {
+          Pleroma.Web.ActivityPub.MRF,
+          [],
+          [filter: fn o -> {:ok, o} end]
+        },
+        {
+          Pleroma.Web.ActivityPub.ActivityPub,
+          [],
+          [persist: fn o, m -> {:ok, o, m} end]
+        },
+        {
+          Pleroma.Web.ActivityPub.SideEffects,
+          [],
+          [handle: fn o, m -> {:ok, o, m} end]
+        },
+        {
+          Pleroma.Web.Federator,
+          [],
+          []
+        }
+      ]) do
+        assert {:ok, ^activity, ^meta} =
+                 Pleroma.Web.ActivityPub.Pipeline.common_pipeline(activity, meta)
+
+        assert_called(Pleroma.Web.ActivityPub.ObjectValidator.validate(activity, meta))
+        assert_called(Pleroma.Web.ActivityPub.MRF.filter(activity))
+        assert_called(Pleroma.Web.ActivityPub.ActivityPub.persist(activity, meta))
+        assert_called(Pleroma.Web.ActivityPub.SideEffects.handle(activity, meta))
+      end
+    end
+
+    test "it goes through validation, filtering, persisting, side effects without federation for local activities if federation is deactivated" do
+      clear_config([:instance, :federating], false)
+
+      activity = insert(:note_activity)
+      meta = [local: true]
 
       with_mocks([
         {Pleroma.Web.ActivityPub.ObjectValidator, [], [validate: fn o, m -> {:ok, o, m} end]},

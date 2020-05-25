@@ -73,7 +73,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
     object = Object.normalize(note)
     user = insert(:user)
 
-    {:ok, announce_activity, _} = CommonAPI.repeat(note.id, user)
+    {:ok, announce_activity} = CommonAPI.repeat(note.id, user)
 
     result = ObjectView.render("object.json", %{object: announce_activity})
 
