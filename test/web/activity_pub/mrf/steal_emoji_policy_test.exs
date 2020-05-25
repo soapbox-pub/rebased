@@ -19,6 +19,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicyTest do
     File.mkdir!(emoji_path)
 
     Pleroma.Emoji.reload()
+
+    on_exit(fn ->
+      File.rm_rf!(emoji_path)
+    end)
+
+    :ok
   end
 
   test "does nothing by default" do
