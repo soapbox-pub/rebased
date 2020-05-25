@@ -126,6 +126,21 @@ defmodule Pleroma.Web.StreamerTest do
       refute Streamer.filtered_by_user?(user, notify)
     end
 
+    test "it sends chat message notifications to the 'user:notification' stream", %{user: user} do
+      other_user = insert(:user)
+
+      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey")
+
+      notify =
+        Repo.get_by(Pleroma.Notification, user_id: user.id, activity_id: create_activity.id)
+        |> Repo.preload(:activity)
+
+      Streamer.get_topic_and_add_socket("user:notification", user)
+      Streamer.stream("user:notification", notify)
+      assert_receive {:render_with_user, _, _, ^notify}
+      refute Streamer.filtered_by_user?(user, notify)
+    end
+
     test "it doesn't send notify to the 'user:notification' stream when a user is blocked", %{
       user: user
     } do

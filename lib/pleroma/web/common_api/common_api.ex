@@ -467,11 +467,12 @@ defmodule Pleroma.Web.CommonAPI do
     {:ok, activity}
   end
 
-  def thread_muted?(%{id: nil} = _user, _activity), do: false
-
-  def thread_muted?(user, activity) do
-    ThreadMute.exists?(user.id, activity.data["context"])
+  def thread_muted?(%User{id: user_id}, %{data: %{"context" => context}})
+      when is_binary("context") do
+    ThreadMute.exists?(user_id, context)
   end
+
+  def thread_muted?(_, _), do: false
 
   def report(user, data) do
     with {:ok, account} <- get_reported_account(data.account_id),
