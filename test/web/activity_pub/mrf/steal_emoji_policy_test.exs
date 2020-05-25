@@ -14,13 +14,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicyTest do
   end
 
   setup do
-    clear_config(:mrf_steal_emoji)
-
     emoji_path = Path.join(Config.get([:instance, :static_dir]), "emoji/stolen")
     File.rm_rf!(emoji_path)
     File.mkdir!(emoji_path)
 
     Pleroma.Emoji.reload()
+
+    on_exit(fn ->
+      File.rm_rf!(emoji_path)
+    end)
+
+    :ok
   end
 
   test "does nothing by default" do
@@ -53,8 +57,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.StealEmojiPolicyTest do
       }
     }
 
-    Config.put([:mrf_steal_emoji, :hosts], ["example.org"])
-    Config.put([:mrf_steal_emoji, :size_limit], 284_468)
+    clear_config([:mrf_steal_emoji, :hosts], ["example.org"])
+    clear_config([:mrf_steal_emoji, :size_limit], 284_468)
 
     assert {:ok, message} == StealEmojiPolicy.filter(message)
 
