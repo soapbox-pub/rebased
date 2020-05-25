@@ -308,6 +308,22 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://framatube.org/accounts/framasoft", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/https___framatube.org_accounts_framasoft.json")
+     }}
+  end
+
+  def get("https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/framatube.org-video.json")
+     }}
+  end
+
   def get("https://peertube.social/accounts/craigmaloney", _, _, _) do
     {:ok,
      %Tesla.Env{
