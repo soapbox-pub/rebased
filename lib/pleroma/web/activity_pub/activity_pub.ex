@@ -538,14 +538,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Repo.one()
   end
 
-  @spec fetch_public_activities(map(), Pagination.type()) :: [Activity.t()]
-  def fetch_public_activities(opts \\ %{}, pagination \\ :keyset) do
+  @spec fetch_public_or_unlisted_activities(map(), Pagination.type()) :: [Activity.t()]
+  def fetch_public_or_unlisted_activities(opts \\ %{}, pagination \\ :keyset) do
     opts = Map.drop(opts, ["user"])
 
-    [Constants.as_public()]
-    |> fetch_activities_query(opts)
-    |> restrict_unlisted()
-    |> Pagination.fetch_paginated(opts, pagination)
+    query = fetch_activities_query([Constants.as_public()], opts)
+
+    query =
+      if opts["restrict_unlisted"] do
+        restrict_unlisted(query)
+      else
+        query
+      end
+
+    Pagination.fetch_paginated(query, opts, pagination)
+  end
+
+  @spec fetch_public_activities(map(), Pagination.type()) :: [Activity.t()]
+  def fetch_public_activities(opts \\ %{}, pagination \\ :keyset) do
+    opts
+    |> Map.put("restrict_unlisted", true)
+    |> fetch_public_or_unlisted_activities(pagination)
   end
 
   @valid_visibilities ~w[direct unlisted public private]
