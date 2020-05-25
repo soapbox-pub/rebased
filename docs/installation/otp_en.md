@@ -63,7 +63,7 @@ apt install postgresql-11-rum
 ```
 
 #### (Optional) Performance configuration
-Check out our Postgresql document for a guide on optimizing Postgresql performance settings.
+It is encouraged to check [Optimizing your Postgresql performance](../configuration/postgresql.md) document, for tips on PostgreSQL tuning.
 
 ```sh tab="Alpine"
 rc-service postgresql restart
