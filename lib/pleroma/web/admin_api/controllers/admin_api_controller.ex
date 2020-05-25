@@ -98,13 +98,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["read:statuses"], admin: true}
-    when action in [:list_statuses, :list_user_statuses, :list_instance_statuses, :status_show]
-  )
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:statuses"], admin: true}
-    when action in [:status_update, :status_delete]
+    when action in [:list_user_statuses, :list_instance_statuses]
   )
 
   plug(
@@ -136,7 +130,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          ]
   )
 
-  action_fallback(:errors)
+  action_fallback(AdminAPI.FallbackController)
 
   def user_delete(conn, %{"nickname" => nickname}) do
     user_delete(conn, %{"nicknames" => [nickname]})
@@ -597,16 +591,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       json_response(conn, :no_content, "")
     else
       {:registrations_open, _} ->
-        errors(
-          conn,
-          {:error, "To send invites you need to set the `registrations_open` option to false."}
-        )
+        {:error, "To send invites you need to set the `registrations_open` option to false."}
 
       {:invites_enabled, _} ->
-        errors(
-          conn,
-          {:error, "To send invites you need to set the `invites_enabled` option to true."}
-        )
+        {:error, "To send invites you need to set the `invites_enabled` option to true."}
     end
   end
 
@@ -814,71 +802,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def list_statuses(%{assigns: %{user: _admin}} = conn, params) do
-    godmode = params["godmode"] == "true" || params["godmode"] == true
-    local_only = params["local_only"] == "true" || params["local_only"] == true
-    with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
-    {page, page_size} = page_params(params)
-
-    activities =
-      ActivityPub.fetch_statuses(nil, %{
-        "godmode" => godmode,
-        "local_only" => local_only,
-        "limit" => page_size,
-        "offset" => (page - 1) * page_size,
-        "exclude_reblogs" => !with_reblogs && "true"
-      })
-
-    conn
-    |> put_view(AdminAPI.StatusView)
-    |> render("index.json", %{activities: activities, as: :activity})
-  end
-
-  def status_show(conn, %{"id" => id}) do
-    with %Activity{} = activity <- Activity.get_by_id(id) do
-      conn
-      |> put_view(MastodonAPI.StatusView)
-      |> render("show.json", %{activity: activity})
-    else
-      _ -> errors(conn, {:error, :not_found})
-    end
-  end
-
-  def status_update(%{assigns: %{user: admin}} = conn, %{"id" => id} = params) do
-    params =
-      params
-      |> Map.take(["sensitive", "visibility"])
-      |> Map.new(fn {key, value} -> {String.to_existing_atom(key), value} end)
-
-    with {:ok, activity} <- CommonAPI.update_activity_scope(id, params) do
-      {:ok, sensitive} = Ecto.Type.cast(:boolean, params[:sensitive])
-
-      ModerationLog.insert_log(%{
-        action: "status_update",
-        actor: admin,
-        subject: activity,
-        sensitive: sensitive,
-        visibility: params[:visibility]
-      })
-
-      conn
-      |> put_view(MastodonAPI.StatusView)
-      |> render("show.json", %{activity: activity})
-    end
-  end
-
-  def status_delete(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
-      ModerationLog.insert_log(%{
-        action: "status_delete",
-        actor: user,
-        subject_id: id
-      })
-
-      json(conn, %{})
-    end
-  end
-
   def list_log(conn, params) do
     {page, page_size} = page_params(params)
 
@@ -904,7 +827,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def config_show(conn, %{"only_db" => true}) do
-    with :ok <- configurable_from_database(conn) do
+    with :ok <- configurable_from_database() do
       configs = Pleroma.Repo.all(ConfigDB)
 
       conn
@@ -914,7 +837,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def config_show(conn, _params) do
-    with :ok <- configurable_from_database(conn) do
+    with :ok <- configurable_from_database() do
       configs = ConfigDB.get_all_as_keyword()
 
       merged =
@@ -953,7 +876,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def config_update(conn, %{"configs" => configs}) do
-    with :ok <- configurable_from_database(conn) do
+    with :ok <- configurable_from_database() do
       {_errors, results} =
         configs
         |> Enum.filter(&whitelisted_config?/1)
@@ -997,7 +920,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def restart(conn, _params) do
-    with :ok <- configurable_from_database(conn) do
+    with :ok <- configurable_from_database() do
       Restarter.Pleroma.restart(Config.get(:env), 50)
 
       json(conn, %{})
@@ -1008,14 +931,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     json(conn, %{need_reboot: Restarter.Pleroma.need_reboot?()})
   end
 
-  defp configurable_from_database(conn) do
+  defp configurable_from_database do
     if Config.get(:configurable_from_database) do
       :ok
     else
-      errors(
-        conn,
-        {:error, "To use this endpoint you need to enable configuration from database."}
-      )
+      {:error, "To use this endpoint you need to enable configuration from database."}
     end
   end
 
@@ -1157,30 +1077,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> json(%{"status_visibility" => count})
-  end
-
-  defp errors(conn, {:error, :not_found}) do
-    conn
-    |> put_status(:not_found)
-    |> json(dgettext("errors", "Not found"))
-  end
-
-  defp errors(conn, {:error, reason}) do
-    conn
-    |> put_status(:bad_request)
-    |> json(reason)
-  end
-
-  defp errors(conn, {:param_cast, _}) do
-    conn
-    |> put_status(:bad_request)
-    |> json(dgettext("errors", "Invalid parameters"))
-  end
-
-  defp errors(conn, _) do
-    conn
-    |> put_status(:internal_server_error)
-    |> json(dgettext("errors", "Something went wrong"))
   end
 
   defp page_params(params) do

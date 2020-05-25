@@ -351,7 +351,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}")
 
-      assert "Not found" == json_response(conn, 404)
+      assert %{"error" => "Not found"} == json_response(conn, 404)
     end
   end
 
@@ -684,7 +684,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
 
       assert json_response(conn, :bad_request) ==
-               "To send invites you need to set the `invites_enabled` option to true."
+               %{
+                 "error" =>
+                   "To send invites you need to set the `invites_enabled` option to true."
+               }
     end
 
     test "it returns 500 if `registrations_open` is enabled", %{conn: conn} do
@@ -694,7 +697,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
 
       assert json_response(conn, :bad_request) ==
-               "To send invites you need to set the `registrations_open` option to false."
+               %{
+                 "error" =>
+                   "To send invites you need to set the `registrations_open` option to false."
+               }
     end
   end
 
@@ -1308,7 +1314,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> put("/api/pleroma/admin/users/disable_mfa", %{nickname: "nickname"})
         |> json_response(404)
 
-      assert response == "Not found"
+      assert response == %{"error" => "Not found"}
     end
   end
 
@@ -1414,7 +1420,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "with invalid token", %{conn: conn} do
       conn = post(conn, "/api/pleroma/admin/users/revoke_invite", %{"token" => "foo"})
 
-      assert json_response(conn, :not_found) == "Not found"
+      assert json_response(conn, :not_found) == %{"error" => "Not found"}
     end
   end
 
@@ -1441,7 +1447,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     test "returns 404 when report id is invalid", %{conn: conn} do
       conn = get(conn, "/api/pleroma/admin/reports/test")
 
-      assert json_response(conn, :not_found) == "Not found"
+      assert json_response(conn, :not_found) == %{"error" => "Not found"}
     end
   end
 
@@ -1698,115 +1704,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "GET /api/pleroma/admin/statuses/:id" do
-    test "not found", %{conn: conn} do
-      assert conn
-             |> get("/api/pleroma/admin/statuses/not_found")
-             |> json_response(:not_found)
-    end
-
-    test "shows activity", %{conn: conn} do
-      activity = insert(:note_activity)
-
-      response =
-        conn
-        |> get("/api/pleroma/admin/statuses/#{activity.id}")
-        |> json_response(200)
-
-      assert response["id"] == activity.id
-    end
-  end
-
-  describe "PUT /api/pleroma/admin/statuses/:id" do
-    setup do
-      activity = insert(:note_activity)
-
-      %{id: activity.id}
-    end
-
-    test "toggle sensitive flag", %{conn: conn, id: id, admin: admin} do
-      response =
-        conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{"sensitive" => "true"})
-        |> json_response(:ok)
-
-      assert response["sensitive"]
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} updated status ##{id}, set sensitive: 'true'"
-
-      response =
-        conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{"sensitive" => "false"})
-        |> json_response(:ok)
-
-      refute response["sensitive"]
-    end
-
-    test "change visibility flag", %{conn: conn, id: id, admin: admin} do
-      response =
-        conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "public"})
-        |> json_response(:ok)
-
-      assert response["visibility"] == "public"
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} updated status ##{id}, set visibility: 'public'"
-
-      response =
-        conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "private"})
-        |> json_response(:ok)
-
-      assert response["visibility"] == "private"
-
-      response =
-        conn
-        |> put("/api/pleroma/admin/statuses/#{id}", %{visibility: "unlisted"})
-        |> json_response(:ok)
-
-      assert response["visibility"] == "unlisted"
-    end
-
-    test "returns 400 when visibility is unknown", %{conn: conn, id: id} do
-      conn = put(conn, "/api/pleroma/admin/statuses/#{id}", %{visibility: "test"})
-
-      assert json_response(conn, :bad_request) == "Unsupported visibility"
-    end
-  end
-
-  describe "DELETE /api/pleroma/admin/statuses/:id" do
-    setup do
-      activity = insert(:note_activity)
-
-      %{id: activity.id}
-    end
-
-    test "deletes status", %{conn: conn, id: id, admin: admin} do
-      conn
-      |> delete("/api/pleroma/admin/statuses/#{id}")
-      |> json_response(:ok)
-
-      refute Activity.get_by_id(id)
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} deleted status ##{id}"
-    end
-
-    test "returns 404 when the status does not exist", %{conn: conn} do
-      conn = delete(conn, "/api/pleroma/admin/statuses/test")
-
-      assert json_response(conn, :not_found) == "Not found"
-    end
-  end
-
   describe "GET /api/pleroma/admin/config" do
     setup do: clear_config(:configurable_from_database, true)
 
@@ -1815,7 +1712,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = get(conn, "/api/pleroma/admin/config")
 
       assert json_response(conn, 400) ==
-               "To use this endpoint you need to enable configuration from database."
+               %{
+                 "error" => "To use this endpoint you need to enable configuration from database."
+               }
     end
 
     test "with settings only in db", %{conn: conn} do
@@ -1937,7 +1836,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     conn = post(conn, "/api/pleroma/admin/config", %{"configs" => []})
 
     assert json_response(conn, 400) ==
-             "To use this endpoint you need to enable configuration from database."
+             %{"error" => "To use this endpoint you need to enable configuration from database."}
   end
 
   describe "POST /api/pleroma/admin/config" do
@@ -2998,54 +2897,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
            |> json_response(200) == %{"need_reboot" => true}
 
     on_exit(fn -> Restarter.Pleroma.refresh() end)
-  end
-
-  describe "GET /api/pleroma/admin/statuses" do
-    test "returns all public and unlisted statuses", %{conn: conn, admin: admin} do
-      blocked = insert(:user)
-      user = insert(:user)
-      User.block(admin, blocked)
-
-      {:ok, _} = CommonAPI.post(user, %{status: "@#{admin.nickname}", visibility: "direct"})
-
-      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "unlisted"})
-      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "private"})
-      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
-      {:ok, _} = CommonAPI.post(blocked, %{status: ".", visibility: "public"})
-
-      response =
-        conn
-        |> get("/api/pleroma/admin/statuses")
-        |> json_response(200)
-
-      refute "private" in Enum.map(response, & &1["visibility"])
-      assert length(response) == 3
-    end
-
-    test "returns only local statuses with local_only on", %{conn: conn} do
-      user = insert(:user)
-      remote_user = insert(:user, local: false, nickname: "archaeme@archae.me")
-      insert(:note_activity, user: user, local: true)
-      insert(:note_activity, user: remote_user, local: false)
-
-      response =
-        conn
-        |> get("/api/pleroma/admin/statuses?local_only=true")
-        |> json_response(200)
-
-      assert length(response) == 1
-    end
-
-    test "returns private and direct statuses with godmode on", %{conn: conn, admin: admin} do
-      user = insert(:user)
-
-      {:ok, _} = CommonAPI.post(user, %{status: "@#{admin.nickname}", visibility: "direct"})
-
-      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "private"})
-      {:ok, _} = CommonAPI.post(user, %{status: ".", visibility: "public"})
-      conn = get(conn, "/api/pleroma/admin/statuses?godmode=true")
-      assert json_response(conn, 200) |> length() == 3
-    end
   end
 
   describe "GET /api/pleroma/admin/users/:nickname/statuses" do
