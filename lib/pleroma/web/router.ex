@@ -164,10 +164,10 @@ defmodule Pleroma.Web.Router do
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
-    post("/users/invite_token", AdminAPIController, :create_invite_token)
-    get("/users/invites", AdminAPIController, :invites)
-    post("/users/revoke_invite", AdminAPIController, :revoke_invite)
-    post("/users/email_invite", AdminAPIController, :email_invite)
+    post("/users/invite_token", InviteTokenController, :create)
+    get("/users/invites", InviteTokenController, :index)
+    post("/users/revoke_invite", InviteTokenController, :revoke)
+    post("/users/email_invite", InviteTokenController, :email)
 
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
     patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
