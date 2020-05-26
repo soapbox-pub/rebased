@@ -24,10 +24,7 @@ defmodule Pleroma.Activity.Queries do
 
   @spec by_actor(query, String.t()) :: query
   def by_actor(query \\ Activity, actor) do
-    from(
-      activity in query,
-      where: fragment("(?)->>'actor' = ?", activity.data, ^actor)
-    )
+    from(a in query, where: a.actor == ^actor)
   end
 
   @spec by_author(query, User.t()) :: query
