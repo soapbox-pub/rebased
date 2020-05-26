@@ -32,12 +32,14 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
       recipient_name = "J. D."
 
       conn =
-        post(
-          conn,
-          "/api/pleroma/admin/users/email_invite?email=#{recipient_email}&name=#{recipient_name}"
-        )
+        conn
+        |> put_req_header("content-type", "application/json;charset=utf-8")
+        |> post("/api/pleroma/admin/users/email_invite", %{
+          email: recipient_email,
+          name: recipient_name
+        })
 
-      assert json_response(conn, :no_content)
+      assert json_response_and_validate_schema(conn, :no_content)
 
       token_record = List.last(Repo.all(Pleroma.UserInviteToken))
       assert token_record
@@ -69,7 +71,11 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
         build_conn()
         |> assign(:user, non_admin_user)
         |> assign(:token, token)
-        |> post("/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
+        |> put_req_header("content-type", "application/json;charset=utf-8")
+        |> post("/api/pleroma/admin/users/email_invite", %{
+          email: "foo@bar.com",
+          name: "JD"
+        })
 
       assert json_response(conn, :forbidden)
     end
@@ -80,7 +86,7 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
       conn
       |> put_req_header("content-type", "application/json;charset=utf-8")
       |> post("/api/pleroma/admin/users/email_invite", %{email: recipient_email})
-      |> json_response(:no_content)
+      |> json_response_and_validate_schema(:no_content)
 
       token_record =
         Pleroma.UserInviteToken
@@ -116,9 +122,15 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
       Config.put([:instance, :registrations_open], false)
       Config.put([:instance, :invites_enabled], false)
 
-      conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/users/email_invite", %{
+          email: "foo@bar.com",
+          name: "JD"
+        })
 
-      assert json_response(conn, :bad_request) ==
+      assert json_response_and_validate_schema(conn, :bad_request) ==
                %{
                  "error" =>
                    "To send invites you need to set the `invites_enabled` option to true."
@@ -129,9 +141,15 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
       Config.put([:instance, :registrations_open], true)
       Config.put([:instance, :invites_enabled], true)
 
-      conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/users/email_invite", %{
+          email: "foo@bar.com",
+          name: "JD"
+        })
 
-      assert json_response(conn, :bad_request) ==
+      assert json_response_and_validate_schema(conn, :bad_request) ==
                %{
                  "error" =>
                    "To send invites you need to set the `registrations_open` option to false."
@@ -141,9 +159,12 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
 
   describe "POST /api/pleroma/admin/users/invite_token" do
     test "without options", %{conn: conn} do
-      conn = post(conn, "/api/pleroma/admin/users/invite_token")
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/users/invite_token")
 
-      invite_json = json_response(conn, 200)
+      invite_json = json_response_and_validate_schema(conn, 200)
       invite = UserInviteToken.find_by_token!(invite_json["token"])
       refute invite.used
       refute invite.expires_at
@@ -153,11 +174,13 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
 
     test "with expires_at", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/users/invite_token", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/users/invite_token", %{
           "expires_at" => Date.to_string(Date.utc_today())
         })
 
-      invite_json = json_response(conn, 200)
+      invite_json = json_response_and_validate_schema(conn, 200)
       invite = UserInviteToken.find_by_token!(invite_json["token"])
 
       refute invite.used
@@ -167,9 +190,12 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
     end
 
     test "with max_use", %{conn: conn} do
-      conn = post(conn, "/api/pleroma/admin/users/invite_token", %{"max_use" => 150})
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/users/invite_token", %{"max_use" => 150})
 
-      invite_json = json_response(conn, 200)
+      invite_json = json_response_and_validate_schema(conn, 200)
       invite = UserInviteToken.find_by_token!(invite_json["token"])
       refute invite.used
       refute invite.expires_at
@@ -179,12 +205,14 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
 
     test "with max use and expires_at", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/users/invite_token", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/users/invite_token", %{
           "max_use" => 150,
           "expires_at" => Date.to_string(Date.utc_today())
         })
 
-      invite_json = json_response(conn, 200)
+      invite_json = json_response_and_validate_schema(conn, 200)
       invite = UserInviteToken.find_by_token!(invite_json["token"])
       refute invite.used
       assert invite.expires_at == Date.utc_today()
@@ -197,7 +225,7 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
     test "no invites", %{conn: conn} do
       conn = get(conn, "/api/pleroma/admin/users/invites")
 
-      assert json_response(conn, 200) == %{"invites" => []}
+      assert json_response_and_validate_schema(conn, 200) == %{"invites" => []}
     end
 
     test "with invite", %{conn: conn} do
@@ -205,7 +233,7 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users/invites")
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "invites" => [
                  %{
                    "expires_at" => nil,
@@ -225,9 +253,12 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
     test "with token", %{conn: conn} do
       {:ok, invite} = UserInviteToken.create_invite()
 
-      conn = post(conn, "/api/pleroma/admin/users/revoke_invite", %{"token" => invite.token})
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/users/revoke_invite", %{"token" => invite.token})
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "expires_at" => nil,
                "id" => invite.id,
                "invite_type" => "one_time",
@@ -239,9 +270,12 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenControllerTest do
     end
 
     test "with invalid token", %{conn: conn} do
-      conn = post(conn, "/api/pleroma/admin/users/revoke_invite", %{"token" => "foo"})
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/users/revoke_invite", %{"token" => "foo"})
 
-      assert json_response(conn, :not_found) == %{"error" => "Not found"}
+      assert json_response_and_validate_schema(conn, :not_found) == %{"error" => "Not found"}
     end
   end
 end

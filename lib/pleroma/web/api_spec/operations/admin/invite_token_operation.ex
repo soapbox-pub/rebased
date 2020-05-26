@@ -5,14 +5,9 @@
 defmodule Pleroma.Web.ApiSpec.Admin.InviteTokenOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
-  alias Pleroma.Web.ApiSpec.Schemas.FlakeID
-  alias Pleroma.Web.ApiSpec.Schemas.Status
-  alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
   import Pleroma.Web.ApiSpec.Helpers
-  import Pleroma.Web.ApiSpec.StatusOperation, only: [id_param: 0]
 
   def open_api_operation(action) do
     operation = String.to_existing_atom("#{action}_operation")
@@ -21,144 +16,132 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteTokenOperation do
 
   def index_operation do
     %Operation{
-      tags: ["Admin", "Statuses"],
-      operationId: "AdminAPI.StatusController.index",
-      security: [%{"oAuth" => ["read:statuses"]}],
-      parameters: [
-        Operation.parameter(
-          :godmode,
-          :query,
-          %Schema{type: :boolean, default: false},
-          "Allows to see private statuses"
-        ),
-        Operation.parameter(
-          :local_only,
-          :query,
-          %Schema{type: :boolean, default: false},
-          "Excludes remote statuses"
-        ),
-        Operation.parameter(
-          :with_reblogs,
-          :query,
-          %Schema{type: :boolean, default: false},
-          "Allows to see reblogs"
-        ),
-        Operation.parameter(
-          :page,
-          :query,
-          %Schema{type: :integer, default: 1},
-          "Page"
-        ),
-        Operation.parameter(
-          :page_size,
-          :query,
-          %Schema{type: :integer, default: 50},
-          "Number of statuses to return"
-        )
-      ],
+      tags: ["Admin", "Invites"],
+      summary: "Get a list of generated invites",
+      operationId: "AdminAPI.InviteTokenController.index",
+      security: [%{"oAuth" => ["read:invites"]}],
       responses: %{
         200 =>
-          Operation.response("Array of statuses", "application/json", %Schema{
-            type: :array,
-            items: status()
+          Operation.response("Intites", "application/json", %Schema{
+            type: :object,
+            properties: %{
+              invites: %Schema{type: :array, items: invite()}
+            },
+            example: %{
+              "invites" => [
+                %{
+                  "id" => 123,
+                  "token" => "kSQtDj_GNy2NZsL9AQDFIsHN5qdbguB6qRg3WHw6K1U=",
+                  "used" => true,
+                  "expires_at" => nil,
+                  "uses" => 0,
+                  "max_use" => nil,
+                  "invite_type" => "one_time"
+                }
+              ]
+            }
           })
       }
     }
   end
 
-  def show_operation do
+  def create_operation do
     %Operation{
-      tags: ["Admin", "Statuses"],
-      summary: "Show Status",
-      operationId: "AdminAPI.StatusController.show",
-      parameters: [id_param()],
-      security: [%{"oAuth" => ["read:statuses"]}],
-      responses: %{
-        200 => Operation.response("Status", "application/json", Status),
-        404 => Operation.response("Not Found", "application/json", ApiError)
-      }
-    }
-  end
-
-  def update_operation do
-    %Operation{
-      tags: ["Admin", "Statuses"],
-      summary: "Change the scope of an individual reported status",
-      operationId: "AdminAPI.StatusController.update",
-      parameters: [id_param()],
-      security: [%{"oAuth" => ["write:statuses"]}],
-      requestBody: request_body("Parameters", update_request(), required: true),
-      responses: %{
-        200 => Operation.response("Status", "application/json", Status),
-        400 => Operation.response("Error", "application/json", ApiError)
-      }
-    }
-  end
-
-  def delete_operation do
-    %Operation{
-      tags: ["Admin", "Statuses"],
-      summary: "Delete an individual reported status",
-      operationId: "AdminAPI.StatusController.delete",
-      parameters: [id_param()],
-      security: [%{"oAuth" => ["write:statuses"]}],
-      responses: %{
-        200 => empty_object_response(),
-        404 => Operation.response("Not Found", "application/json", ApiError)
-      }
-    }
-  end
-
-  defp status do
-    %Schema{
-      anyOf: [
-        Status,
-        %Schema{
+      tags: ["Admin", "Invites"],
+      summary: "Create an account registration invite token",
+      operationId: "AdminAPI.InviteTokenController.create",
+      security: [%{"oAuth" => ["write:invites"]}],
+      requestBody:
+        request_body("Parameters", %Schema{
           type: :object,
           properties: %{
-            account: %Schema{allOf: [Account, admin_account()]}
+            max_use: %Schema{type: :integer},
+            expires_at: %Schema{type: :string, format: :date, example: "2020-04-20"}
           }
+        }),
+      responses: %{
+        200 => Operation.response("Invite", "application/json", invite())
+      }
+    }
+  end
+
+  def revoke_operation do
+    %Operation{
+      tags: ["Admin", "Invites"],
+      summary: "Revoke invite by token",
+      operationId: "AdminAPI.InviteTokenController.revoke",
+      security: [%{"oAuth" => ["write:invites"]}],
+      requestBody:
+        request_body(
+          "Parameters",
+          %Schema{
+            type: :object,
+            required: [:token],
+            properties: %{
+              token: %Schema{type: :string}
+            }
+          },
+          required: true
+        ),
+      responses: %{
+        200 => Operation.response("Invite", "application/json", invite()),
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
+      }
+    }
+  end
+
+  def email_operation do
+    %Operation{
+      tags: ["Admin", "Invites"],
+      summary: "Sends registration invite via email",
+      operationId: "AdminAPI.InviteTokenController.email",
+      security: [%{"oAuth" => ["write:invites"]}],
+      requestBody:
+        request_body(
+          "Parameters",
+          %Schema{
+            type: :object,
+            required: [:email],
+            properties: %{
+              email: %Schema{type: :string, format: :email},
+              name: %Schema{type: :string}
+            }
+          },
+          required: true
+        ),
+      responses: %{
+        204 => no_content_response(),
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        403 => Operation.response("Forbidden", "application/json", ApiError)
+      }
+    }
+  end
+
+  defp invite do
+    %Schema{
+      title: "Invite",
+      type: :object,
+      properties: %{
+        id: %Schema{type: :integer},
+        token: %Schema{type: :string},
+        used: %Schema{type: :boolean},
+        expires_at: %Schema{type: :string, format: :date, nullable: true},
+        uses: %Schema{type: :integer},
+        max_use: %Schema{type: :integer, nullable: true},
+        invite_type: %Schema{
+          type: :string,
+          enum: ["one_time", "reusable", "date_limited", "reusable_date_limited"]
         }
-      ]
-    }
-  end
-
-  defp admin_account do
-    %Schema{
-      type: :object,
-      properties: %{
-        id: FlakeID,
-        avatar: %Schema{type: :string},
-        nickname: %Schema{type: :string},
-        display_name: %Schema{type: :string},
-        deactivated: %Schema{type: :boolean},
-        local: %Schema{type: :boolean},
-        roles: %Schema{
-          type: :object,
-          properties: %{
-            admin: %Schema{type: :boolean},
-            moderator: %Schema{type: :boolean}
-          }
-        },
-        tags: %Schema{type: :string},
-        confirmation_pending: %Schema{type: :string}
-      }
-    }
-  end
-
-  defp update_request do
-    %Schema{
-      type: :object,
-      properties: %{
-        sensitive: %Schema{
-          type: :boolean,
-          description: "Mark status and attached media as sensitive?"
-        },
-        visibility: VisibilityScope
       },
       example: %{
-        "visibility" => "private",
-        "sensitive" => "false"
+        "id" => 123,
+        "token" => "kSQtDj_GNy2NZsL9AQDFIsHN5qdbguB6qRg3WHw6K1U=",
+        "used" => true,
+        "expires_at" => nil,
+        "uses" => 0,
+        "max_use" => nil,
+        "invite_type" => "one_time"
       }
     }
   end

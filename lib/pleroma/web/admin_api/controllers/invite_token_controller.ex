@@ -14,6 +14,7 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenController do
 
   require Logger
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["read:invites"], admin: true} when action == :index)
 
   plug(
@@ -22,6 +23,8 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenController do
   )
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)
+
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.InviteTokenOperation
 
   @doc "Get list of created invites"
   def index(conn, _params) do
@@ -33,26 +36,14 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenController do
   end
 
   @doc "Create an account registration invite token"
-  def create(conn, params) do
-    opts = %{}
-
-    opts =
-      if params["max_use"],
-        do: Map.put(opts, :max_use, params["max_use"]),
-        else: opts
-
-    opts =
-      if params["expires_at"],
-        do: Map.put(opts, :expires_at, params["expires_at"]),
-        else: opts
-
-    {:ok, invite} = UserInviteToken.create_invite(opts)
+  def create(%{body_params: params} = conn, _) do
+    {:ok, invite} = UserInviteToken.create_invite(params)
 
     json(conn, AccountView.render("invite.json", %{invite: invite}))
   end
 
   @doc "Revokes invite by token"
-  def revoke(conn, %{"token" => token}) do
+  def revoke(%{body_params: %{token: token}} = conn, _) do
     with {:ok, invite} <- UserInviteToken.find_by_token(token),
          {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true}) do
       conn
@@ -64,7 +55,7 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenController do
   end
 
   @doc "Sends registration invite via email"
-  def email(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
+  def email(%{assigns: %{user: user}, body_params: %{email: email} = params} = conn, _) do
     with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
          {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
          {:ok, invite_token} <- UserInviteToken.create_invite(),
@@ -73,7 +64,7 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenController do
              user,
              invite_token,
              email,
-             params["name"]
+             params[:name]
            ),
          {:ok, _} <- Pleroma.Emails.Mailer.deliver(email) do
       json_response(conn, :no_content, "")
