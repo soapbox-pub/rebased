@@ -81,7 +81,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(
     RateLimiter,
-    [name: :relation_id_action, params: ["id", "uri"]] when action in @relationship_actions
+    [name: :relation_id_action, params: [:id, :uri]] when action in @relationship_actions
   )
 
   plug(RateLimiter, [name: :relations_actions] when action in @relationship_actions)
