@@ -1618,12 +1618,19 @@ defmodule Pleroma.User do
   def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
 
   def get_or_fetch_by_ap_id(ap_id) do
-    user = get_cached_by_ap_id(ap_id)
+    cached_user = get_cached_by_ap_id(ap_id)
 
-    if !is_nil(user) and !needs_update?(user) do
-      {:ok, user}
-    else
-      fetch_by_ap_id(ap_id)
+    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id)
+
+    case {cached_user, maybe_fetched_user} do
+      {_, {:ok, %User{} = user}} ->
+        {:ok, user}
+
+      {%User{} = user, _} ->
+        {:ok, user}
+
+      _ ->
+        {:error, :not_found}
     end
   end
 

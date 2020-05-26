@@ -586,6 +586,26 @@ defmodule Pleroma.UserTest do
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
     end
+
+    @tag capture_log: true
+    test "it returns the old user if stale, but unfetchable" do
+      a_week_ago = NaiveDateTime.add(NaiveDateTime.utc_now(), -604_800)
+
+      orig_user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: "http://mastodon.example.org/users/raymoo",
+          last_refreshed_at: a_week_ago
+        )
+
+      assert orig_user.last_refreshed_at == a_week_ago
+
+      {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/raymoo")
+
+      assert user.last_refreshed_at == orig_user.last_refreshed_at
+    end
   end
 
   test "returns an ap_id for a user" do
