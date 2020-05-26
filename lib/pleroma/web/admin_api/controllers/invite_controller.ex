@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.AdminAPI.InviteTokenController do
+defmodule Pleroma.Web.AdminAPI.InviteController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
@@ -10,7 +10,6 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenController do
   alias Pleroma.Config
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.UserInviteToken
-  alias Pleroma.Web.AdminAPI.AccountView
 
   require Logger
 
@@ -24,33 +23,30 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenController do
 
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)
 
-  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.InviteTokenOperation
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.InviteOperation
 
   @doc "Get list of created invites"
   def index(conn, _params) do
     invites = UserInviteToken.list_invites()
 
-    conn
-    |> put_view(AccountView)
-    |> render("invites.json", %{invites: invites})
+    render(conn, "index.json", invites: invites)
   end
 
   @doc "Create an account registration invite token"
   def create(%{body_params: params} = conn, _) do
     {:ok, invite} = UserInviteToken.create_invite(params)
 
-    json(conn, AccountView.render("invite.json", %{invite: invite}))
+    render(conn, "show.json", invite: invite)
   end
 
   @doc "Revokes invite by token"
   def revoke(%{body_params: %{token: token}} = conn, _) do
     with {:ok, invite} <- UserInviteToken.find_by_token(token),
          {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true}) do
-      conn
-      |> put_view(AccountView)
-      |> render("invite.json", %{invite: updated_invite})
+      render(conn, "show.json", invite: updated_invite)
     else
       nil -> {:error, :not_found}
+      error -> error
     end
   end
 
@@ -59,14 +55,14 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenController do
     with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
          {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
          {:ok, invite_token} <- UserInviteToken.create_invite(),
-         email <-
-           Pleroma.Emails.UserEmail.user_invitation_email(
-             user,
+         {:ok, _} <-
+           user
+           |> Pleroma.Emails.UserEmail.user_invitation_email(
              invite_token,
              email,
              params[:name]
-           ),
-         {:ok, _} <- Pleroma.Emails.Mailer.deliver(email) do
+           )
+           |> Pleroma.Emails.Mailer.deliver() do
       json_response(conn, :no_content, "")
     else
       {:registrations_open, _} ->
@@ -74,6 +70,9 @@ defmodule Pleroma.Web.AdminAPI.InviteTokenController do
 
       {:invites_enabled, _} ->
         {:error, "To send invites you need to set the `invites_enabled` option to true."}
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 end

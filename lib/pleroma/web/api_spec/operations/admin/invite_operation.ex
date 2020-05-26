@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ApiSpec.Admin.InviteTokenOperation do
+defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
   alias OpenApiSpex.Operation
   alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteTokenOperation do
     %Operation{
       tags: ["Admin", "Invites"],
       summary: "Get a list of generated invites",
-      operationId: "AdminAPI.InviteTokenController.index",
+      operationId: "AdminAPI.InviteController.index",
       security: [%{"oAuth" => ["read:invites"]}],
       responses: %{
         200 =>
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteTokenOperation do
     %Operation{
       tags: ["Admin", "Invites"],
       summary: "Create an account registration invite token",
-      operationId: "AdminAPI.InviteTokenController.create",
+      operationId: "AdminAPI.InviteController.create",
       security: [%{"oAuth" => ["write:invites"]}],
       requestBody:
         request_body("Parameters", %Schema{
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteTokenOperation do
     %Operation{
       tags: ["Admin", "Invites"],
       summary: "Revoke invite by token",
-      operationId: "AdminAPI.InviteTokenController.revoke",
+      operationId: "AdminAPI.InviteController.revoke",
       security: [%{"oAuth" => ["write:invites"]}],
       requestBody:
         request_body(
@@ -95,7 +95,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteTokenOperation do
     %Operation{
       tags: ["Admin", "Invites"],
       summary: "Sends registration invite via email",
-      operationId: "AdminAPI.InviteTokenController.email",
+      operationId: "AdminAPI.InviteController.email",
       security: [%{"oAuth" => ["write:invites"]}],
       requestBody:
         request_body(
