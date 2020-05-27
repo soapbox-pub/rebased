@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
       security: [%{"oAuth" => ["read:invites"]}],
       responses: %{
         200 =>
-          Operation.response("Intites", "application/json", %Schema{
+          Operation.response("Invites", "application/json", %Schema{
             type: :object,
             properties: %{
               invites: %Schema{type: :array, items: invite()}
