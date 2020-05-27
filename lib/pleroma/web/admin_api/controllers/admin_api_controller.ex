@@ -715,11 +715,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       json(conn, %{status: "success"})
     else
       {:error, changeset} ->
-        errors =
-          Enum.reduce(changeset.errors, %{}, fn
-            {key, {error, _}}, acc ->
-              Map.put(acc, key, error)
-          end)
+        errors = Map.new(changeset.errors, fn {key, {error, _}} -> {key, error} end)
 
         json(conn, %{errors: errors})
 
