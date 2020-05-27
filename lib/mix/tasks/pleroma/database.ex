@@ -135,4 +135,30 @@ defmodule Mix.Tasks.Pleroma.Database do
     end)
     |> Stream.run()
   end
+
+  def run(["vacuum", args]) do
+    start_pleroma()
+
+    case args do
+      "analyze" ->
+        Logger.info("Runnning VACUUM ANALYZE.")
+        Repo.query!(
+          "vacuum analyze;",
+          [],
+          timeout: :infinity
+        )
+
+      "full" ->
+        Logger.info("Runnning VACUUM FULL. This could take a while.")
+
+        Repo.query!(
+          "vacuum full;",
+          [],
+          timeout: :infinity
+        )
+
+      _ ->
+        Logger.error("Error: invalid vacuum argument.")
+    end
+  end
 end
