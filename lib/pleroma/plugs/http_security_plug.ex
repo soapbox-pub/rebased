@@ -67,11 +67,23 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     websocket_url = Pleroma.Web.Endpoint.websocket_url()
     report_uri = Config.get([:http_security, :report_uri])
 
+    img_src = "img-src 'self' data: blob:"
+    media_src = "media-src 'self'"
+
+    {img_src, media_src} =
+      if Config.get([:media_proxy, :enabled]) &&
+           !Config.get([:media_proxy, :proxy_opts, :redirect_on_failure]) do
+        sources = get_proxy_and_attachment_sources()
+        {[img_src, sources], [media_src, sources]}
+      else
+        {img_src, media_src}
+      end
+
     connect_src = ["connect-src 'self' ", static_url, ?\s, websocket_url]
 
     connect_src =
       if Pleroma.Config.get(:env) == :dev do
-        [connect_src," http://localhost:3035/"]
+        [connect_src, " http://localhost:3035/"]
       else
         connect_src
       end
@@ -87,14 +99,37 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     insecure = if scheme == "https", do: "upgrade-insecure-requests"
 
     @csp_start
-    |> add_csp_param("img-src 'self' data: blob: https:")
-    |> add_csp_param("media-src 'self' https:")
+    |> add_csp_param(img_src)
+    |> add_csp_param(media_src)
     |> add_csp_param(connect_src)
     |> add_csp_param(script_src)
     |> add_csp_param(insecure)
     |> add_csp_param(report)
     |> :erlang.iolist_to_binary()
   end
+
+  defp get_proxy_and_attachment_sources do
+    media_proxy_whitelist =
+      Enum.reduce(Config.get([:media_proxy, :whitelist]), [], fn host, acc ->
+        add_source(acc, host)
+      end)
+
+    upload_base_url =
+      if Config.get([Pleroma.Upload, :base_url]),
+        do: URI.parse(Config.get([Pleroma.Upload, :base_url])).host
+
+    s3_endpoint =
+      if Config.get([Pleroma.Upload, :uploader]) == Pleroma.Uploaders.S3,
+        do: URI.parse(Config.get([Pleroma.Uploaders.S3, :public_endpoint])).host
+
+    []
+    |> add_source(upload_base_url)
+    |> add_source(s3_endpoint)
+    |> add_source(media_proxy_whitelist)
+  end
+
+  defp add_source(iodata, nil), do: iodata
+  defp add_source(iodata, source), do: [[?\s, source] | iodata]
 
   defp add_csp_param(csp_iodata, nil), do: csp_iodata
 
