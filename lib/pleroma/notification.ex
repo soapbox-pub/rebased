@@ -361,7 +361,8 @@ defmodule Pleroma.Notification do
       when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact"] do
     potential_receiver_ap_ids = get_potential_receiver_ap_ids(activity)
 
-    potential_receivers = User.get_users_from_set(potential_receiver_ap_ids, local_only)
+    potential_receivers =
+      User.get_users_from_set(potential_receiver_ap_ids, local_only: local_only)
 
     notification_enabled_ap_ids =
       potential_receiver_ap_ids
