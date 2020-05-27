@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
 
   def handle(object, meta \\ [])
@@ -34,10 +33,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Stream out the announce
   def handle(%{data: %{"type" => "Announce"}} = object, meta) do
     announced_object = Object.get_by_ap_id(object.data["object"])
+    user = User.get_cached_by_ap_id(object.data["actor"])
 
     Utils.add_announce_to_object(object, announced_object)
 
-    if object.data["actor"] != Relay.relay_ap_id() do
+    if !User.is_internal_user?(user) do
       Notification.create_notifications(object)
       ActivityPub.stream_out(object)
     end
