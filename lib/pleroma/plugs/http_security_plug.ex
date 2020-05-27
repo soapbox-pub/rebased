@@ -31,7 +31,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
       {"x-content-type-options", "nosniff"},
       {"referrer-policy", referrer_policy},
       {"x-download-options", "noopen"},
-      {"content-security-policy", csp_string() <> ";"}
+      {"content-security-policy", csp_string()}
     ]
 
     if report_uri do
@@ -43,11 +43,23 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
         ]
       }
 
-      headers ++ [{"reply-to", Jason.encode!(report_group)}]
+      [{"reply-to", Jason.encode!(report_group)} | headers]
     else
       headers
     end
   end
+
+  @csp_start [
+               "default-src 'none'",
+               "base-uri 'self'",
+               "frame-ancestors 'none'",
+               "style-src 'self' 'unsafe-inline'",
+               "font-src 'self'",
+               "manifest-src 'self'"
+             ]
+             |> Enum.join(";")
+             |> Kernel.<>(";")
+             |> List.wrap()
 
   defp csp_string do
     scheme = Config.get([Pleroma.Web.Endpoint, :url])[:scheme]
@@ -55,11 +67,11 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     websocket_url = Pleroma.Web.Endpoint.websocket_url()
     report_uri = Config.get([:http_security, :report_uri])
 
-    connect_src = "connect-src 'self' #{static_url} #{websocket_url}"
+    connect_src = ["connect-src 'self' ", static_url, ?\s, websocket_url]
 
     connect_src =
       if Pleroma.Config.get(:env) == :dev do
-        connect_src <> " http://localhost:3035/"
+        [connect_src," http://localhost:3035/"]
       else
         connect_src
       end
@@ -71,26 +83,22 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
         "script-src 'self'"
       end
 
-    main_part = [
-      "default-src 'none'",
-      "base-uri 'self'",
-      "frame-ancestors 'none'",
-      "img-src 'self' data: blob: https:",
-      "media-src 'self' https:",
-      "style-src 'self' 'unsafe-inline'",
-      "font-src 'self'",
-      "manifest-src 'self'",
-      connect_src,
-      script_src
-    ]
+    report = if report_uri, do: ["report-uri ", report_uri, ";report-to csp-endpoint"]
+    insecure = if scheme == "https", do: "upgrade-insecure-requests"
 
-    report = if report_uri, do: ["report-uri #{report_uri}; report-to csp-endpoint"], else: []
-
-    insecure = if scheme == "https", do: ["upgrade-insecure-requests"], else: []
-
-    (main_part ++ report ++ insecure)
-    |> Enum.join("; ")
+    @csp_start
+    |> add_csp_param("img-src 'self' data: blob: https:")
+    |> add_csp_param("media-src 'self' https:")
+    |> add_csp_param(connect_src)
+    |> add_csp_param(script_src)
+    |> add_csp_param(insecure)
+    |> add_csp_param(report)
+    |> :erlang.iolist_to_binary()
   end
+
+  defp add_csp_param(csp_iodata, nil), do: csp_iodata
+
+  defp add_csp_param(csp_iodata, param), do: [[param, ?;] | csp_iodata]
 
   def warn_if_disabled do
     unless Config.get([:http_security, :enabled]) do
