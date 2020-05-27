@@ -34,7 +34,11 @@ defmodule Mix.Tasks.Pleroma.Database do
     )
 
     if Keyword.get(options, :vacuum) do
-      Logger.info("Runnning VACUUM FULL. This could take a while.")
+      Logger.info("Runnning VACUUM FULL.")
+
+      Logger.warn(
+        "Re-packing your entire database may take a while and will consume extra disk space during the process."
+      )
 
       Repo.query!(
         "vacuum full;",
@@ -94,7 +98,11 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> Repo.delete_all(timeout: :infinity)
 
     if Keyword.get(options, :vacuum) do
-      Logger.info("Runnning VACUUM FULL. This could take a while.")
+      Logger.info("Runnning VACUUM FULL.")
+
+      Logger.warn(
+        "Re-packing your entire database may take a while and will consume extra disk space during the process."
+      )
 
       Repo.query!(
         "vacuum full;",
@@ -142,6 +150,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     case args do
       "analyze" ->
         Logger.info("Runnning VACUUM ANALYZE.")
+
         Repo.query!(
           "vacuum analyze;",
           [],
@@ -149,7 +158,11 @@ defmodule Mix.Tasks.Pleroma.Database do
         )
 
       "full" ->
-        Logger.info("Runnning VACUUM FULL. This could take a while.")
+        Logger.info("Runnning VACUUM FULL.")
+
+        Logger.warn(
+          "Re-packing your entire database may take a while and will consume extra disk space during the process."
+        )
 
         Repo.query!(
           "vacuum full;",
