@@ -34,7 +34,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     )
 
     if Keyword.get(options, :vacuum) do
-      Logger.info("Runnning VACUUM FULL")
+      Logger.info("Runnning VACUUM FULL. This could take a while.")
 
       Repo.query!(
         "vacuum full;",
@@ -94,7 +94,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> Repo.delete_all(timeout: :infinity)
 
     if Keyword.get(options, :vacuum) do
-      Logger.info("Runnning VACUUM FULL")
+      Logger.info("Runnning VACUUM FULL. This could take a while.")
 
       Repo.query!(
         "vacuum full;",
