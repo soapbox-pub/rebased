@@ -4,8 +4,8 @@
 
 defmodule Mix.Tasks.Pleroma.Database do
   alias Pleroma.Conversation
-  alias Pleroma.Object
   alias Pleroma.Maintenance
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   require Logger
