@@ -5,6 +5,7 @@
 defmodule Mix.Tasks.Pleroma.Database do
   alias Pleroma.Conversation
   alias Pleroma.Object
+  alias Pleroma.Maintenance
   alias Pleroma.Repo
   alias Pleroma.User
   require Logger
@@ -34,17 +35,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     )
 
     if Keyword.get(options, :vacuum) do
-      Logger.info("Runnning VACUUM FULL.")
-
-      Logger.warn(
-        "Re-packing your entire database may take a while and will consume extra disk space during the process."
-      )
-
-      Repo.query!(
-        "vacuum full;",
-        [],
-        timeout: :infinity
-      )
+      Maintenance.vacuum("full")
     end
   end
 
@@ -98,17 +89,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> Repo.delete_all(timeout: :infinity)
 
     if Keyword.get(options, :vacuum) do
-      Logger.info("Runnning VACUUM FULL.")
-
-      Logger.warn(
-        "Re-packing your entire database may take a while and will consume extra disk space during the process."
-      )
-
-      Repo.query!(
-        "vacuum full;",
-        [],
-        timeout: :infinity
-      )
+      Maintenance.vacuum("full")
     end
   end
 
@@ -147,31 +128,6 @@ defmodule Mix.Tasks.Pleroma.Database do
   def run(["vacuum", args]) do
     start_pleroma()
 
-    case args do
-      "analyze" ->
-        Logger.info("Runnning VACUUM ANALYZE.")
-
-        Repo.query!(
-          "vacuum analyze;",
-          [],
-          timeout: :infinity
-        )
-
-      "full" ->
-        Logger.info("Runnning VACUUM FULL.")
-
-        Logger.warn(
-          "Re-packing your entire database may take a while and will consume extra disk space during the process."
-        )
-
-        Repo.query!(
-          "vacuum full;",
-          [],
-          timeout: :infinity
-        )
-
-      _ ->
-        Logger.error("Error: invalid vacuum argument.")
-    end
+    Maintenance.vacuum(args)
   end
 end
