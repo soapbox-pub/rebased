@@ -3191,8 +3191,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "PATCH /users/:nickname/credentials" do
-    test "changes password and email", %{conn: conn, admin: admin} do
+    setup do
       user = insert(:user)
+      [user: user]
+    end
+
+    test "changes password and email", %{conn: conn, admin: admin, user: user} do
       assert user.password_reset_pending == false
 
       conn =
@@ -3222,9 +3226,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} forced password reset for users: @#{user.nickname}"
     end
 
-    test "returns 403 if requested by a non-admin" do
-      user = insert(:user)
-
+    test "returns 403 if requested by a non-admin", %{user: user} do
       conn =
         build_conn()
         |> assign(:user, user)
@@ -3235,6 +3237,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         })
 
       assert json_response(conn, :forbidden)
+    end
+
+    test "changes actor type from permitted list", %{conn: conn, user: user} do
+      assert user.actor_type == "Person"
+
+      assert patch(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials", %{
+               "actor_type" => "Service"
+             })
+             |> json_response(200) == %{"status" => "success"}
+
+      updated_user = User.get_by_id(user.id)
+
+      assert updated_user.actor_type == "Service"
+
+      assert patch(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials", %{
+               "actor_type" => "Application"
+             })
+             |> json_response(200) == %{"errors" => %{"actor_type" => "is invalid"}}
+    end
+
+    test "update non existing user", %{conn: conn} do
+      assert patch(conn, "/api/pleroma/admin/users/non-existing/credentials", %{
+               "password" => "new_password"
+             })
+             |> json_response(200) == %{"error" => "Unable to update user."}
     end
   end
 
