@@ -30,7 +30,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       Config.put(:configurable_from_database, false)
       conn = get(conn, "/api/pleroma/admin/config")
 
-      assert json_response(conn, 400) ==
+      assert json_response_and_validate_schema(conn, 400) ==
                %{
                  "error" => "To use this endpoint you need to enable configuration from database."
                }
@@ -40,7 +40,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       config1 = insert(:config)
       config2 = insert(:config)
 
-      conn = get(conn, "/api/pleroma/admin/config", %{"only_db" => true})
+      conn = get(conn, "/api/pleroma/admin/config?only_db=true")
 
       %{
         "configs" => [
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
             "value" => _
           }
         ]
-      } = json_response(conn, 200)
+      } = json_response_and_validate_schema(conn, 200)
 
       assert key1 == config1.key
       assert key2 == config2.key
@@ -67,7 +67,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       %{"configs" => configs} =
         conn
         |> get("/api/pleroma/admin/config")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       [instance_config] =
         Enum.filter(configs, fn %{"group" => group, "key" => key} ->
@@ -89,7 +89,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       %{"configs" => configs} =
         conn
         |> get("/api/pleroma/admin/config")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert length(configs) > 3
 
@@ -133,7 +133,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       %{"configs" => configs} =
         conn
         |> get("/api/pleroma/admin/config")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       vals =
         Enum.filter(configs, fn %{"group" => group, "key" => key} ->
@@ -152,9 +152,12 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
   end
 
   test "POST /api/pleroma/admin/config error", %{conn: conn} do
-    conn = post(conn, "/api/pleroma/admin/config", %{"configs" => []})
+    conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/pleroma/admin/config", %{"configs" => []})
 
-    assert json_response(conn, 400) ==
+    assert json_response_and_validate_schema(conn, 400) ==
              %{"error" => "To use this endpoint you need to enable configuration from database."}
   end
 
@@ -185,7 +188,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       on_exit(fn -> Application.put_env(:ueberauth, Ueberauth, ueberauth) end)
 
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{group: ":pleroma", key: ":key1", value: "value1"},
             %{
@@ -225,7 +230,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
@@ -310,7 +315,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       end)
 
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               group: ":quack",
@@ -330,7 +337,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":quack",
@@ -362,13 +369,15 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       config = insert(:config, key: ":key1", value: :erlang.term_to_binary(key1: 1, key2: 2))
 
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{group: config.group, key: config.key, value: [%{"tuple" => [":key3", 3]}]}
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
@@ -388,8 +397,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       chat = Config.get(:chat)
       on_exit(fn -> Config.put(:chat, chat) end)
 
-      assert post(
-               conn,
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post(
                "/api/pleroma/admin/config",
                %{
                  configs: [
@@ -397,7 +407,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                  ]
                }
              )
-             |> json_response(200) == %{
+             |> json_response_and_validate_schema(200) == %{
                "configs" => [
                  %{
                    "db" => [":enabled"],
@@ -412,18 +422,19 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       configs =
         conn
         |> get("/api/pleroma/admin/config")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert configs["need_reboot"]
 
       capture_log(fn ->
-        assert conn |> get("/api/pleroma/admin/restart") |> json_response(200) == %{}
+        assert conn |> get("/api/pleroma/admin/restart") |> json_response(200) ==
+                 %{}
       end) =~ "pleroma restarted"
 
       configs =
         conn
         |> get("/api/pleroma/admin/config")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert configs["need_reboot"] == false
     end
@@ -432,8 +443,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       chat = Config.get(:chat)
       on_exit(fn -> Config.put(:chat, chat) end)
 
-      assert post(
-               conn,
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post(
                "/api/pleroma/admin/config",
                %{
                  configs: [
@@ -441,7 +453,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                  ]
                }
              )
-             |> json_response(200) == %{
+             |> json_response_and_validate_schema(200) == %{
                "configs" => [
                  %{
                    "db" => [":enabled"],
@@ -453,12 +465,14 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                "need_reboot" => true
              }
 
-      assert post(conn, "/api/pleroma/admin/config", %{
+      assert conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/pleroma/admin/config", %{
                configs: [
                  %{group: ":pleroma", key: ":key1", value: [%{"tuple" => [":key3", 3]}]}
                ]
              })
-             |> json_response(200) == %{
+             |> json_response_and_validate_schema(200) == %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
@@ -473,13 +487,14 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
              }
 
       capture_log(fn ->
-        assert conn |> get("/api/pleroma/admin/restart") |> json_response(200) == %{}
+        assert conn |> get("/api/pleroma/admin/restart") |> json_response(200) ==
+                 %{}
       end) =~ "pleroma restarted"
 
       configs =
         conn
         |> get("/api/pleroma/admin/config")
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert configs["need_reboot"] == false
     end
@@ -489,7 +504,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         insert(:config, key: ":key1", value: :erlang.term_to_binary(key1: 1, key2: [k1: 1, k2: 2]))
 
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               group: config.group,
@@ -510,7 +527,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
@@ -537,7 +554,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     test "saving special atoms", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           "configs" => [
             %{
               "group" => ":pleroma",
@@ -554,7 +573,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
@@ -593,7 +612,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       assert Application.get_env(:logger, :backends) == []
 
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               group: config.group,
@@ -603,7 +624,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":logger",
@@ -630,13 +651,15 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         )
 
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{group: config.group, key: config.key, value: "Tesla.Adapter.Httpc"}
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":tesla",
@@ -664,14 +687,16 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         )
 
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{group: config1.group, key: config1.key, value: "another_value"},
             %{group: config2.group, key: config2.key, value: "another_value"}
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
@@ -696,6 +721,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         build_conn()
         |> assign(:user, admin)
         |> assign(:token, token)
+        |> put_req_header("content-type", "application/json")
         |> post("/api/pleroma/admin/config", %{
           configs: [
             %{group: config2.group, key: config2.key, delete: true},
@@ -707,7 +733,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => []
              }
 
@@ -717,7 +743,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     test "common config example", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               "group" => ":pleroma",
@@ -741,7 +769,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
       assert Config.get([Pleroma.Captcha.NotReal, :name]) == "Pleroma"
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
@@ -779,7 +807,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     test "tuples with more than two values", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               "group" => ":pleroma",
@@ -843,7 +873,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
@@ -911,7 +941,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     test "settings with nesting map", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               "group" => ":pleroma",
@@ -940,7 +972,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) ==
+      assert json_response_and_validate_schema(conn, 200) ==
                %{
                  "configs" => [
                    %{
@@ -974,7 +1006,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     test "value as map", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               "group" => ":pleroma",
@@ -984,7 +1018,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) ==
+      assert json_response_and_validate_schema(conn, 200) ==
                %{
                  "configs" => [
                    %{
@@ -999,7 +1033,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     test "queues key as atom", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               "group" => ":oban",
@@ -1017,7 +1053,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":oban",
@@ -1053,7 +1089,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         )
 
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               group: config.group,
@@ -1064,7 +1102,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == %{
+      assert json_response_and_validate_schema(conn, 200) == %{
                "configs" => [
                  %{
                    "group" => ":pleroma",
@@ -1078,7 +1116,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     test "proxy tuple localhost", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               group: ":pleroma",
@@ -1099,7 +1139,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                    "db" => db
                  }
                ]
-             } = json_response(conn, 200)
+             } = json_response_and_validate_schema(conn, 200)
 
       assert %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "localhost", 1234]}]} in value
       assert ":proxy_url" in db
@@ -1107,7 +1147,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     test "proxy tuple domain", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               group: ":pleroma",
@@ -1128,7 +1170,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                    "db" => db
                  }
                ]
-             } = json_response(conn, 200)
+             } = json_response_and_validate_schema(conn, 200)
 
       assert %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "domain.com", 1234]}]} in value
       assert ":proxy_url" in db
@@ -1136,7 +1178,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
 
     test "proxy tuple ip", %{conn: conn} do
       conn =
-        post(conn, "/api/pleroma/admin/config", %{
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/config", %{
           configs: [
             %{
               group: ":pleroma",
@@ -1157,7 +1201,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
                    "db" => db
                  }
                ]
-             } = json_response(conn, 200)
+             } = json_response_and_validate_schema(conn, 200)
 
       assert %{"tuple" => [":proxy_url", %{"tuple" => [":socks5", "127.0.0.1", 1234]}]} in value
       assert ":proxy_url" in db
@@ -1172,7 +1216,9 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         {:not_real}
       ])
 
-      post(conn, "/api/pleroma/admin/config", %{
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/pleroma/admin/config", %{
         configs: [
           %{group: ":pleroma", key: ":key1", value: "value1"},
           %{group: ":pleroma", key: ":key2", value: "value2"},
@@ -1200,7 +1246,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         assign(conn, :user, admin)
         |> get("/api/pleroma/admin/config/descriptions")
 
-      assert [child | _others] = json_response(conn, 200)
+      assert [child | _others] = json_response_and_validate_schema(conn, 200)
 
       assert child["children"]
       assert child["key"]
@@ -1222,7 +1268,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
         assign(conn, :user, admin)
         |> get("/api/pleroma/admin/config/descriptions")
 
-      children = json_response(conn, 200)
+      children = json_response_and_validate_schema(conn, 200)
 
       assert length(children) == 4
 

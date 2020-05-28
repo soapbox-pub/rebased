@@ -11,15 +11,18 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
 
   @descriptions Pleroma.Docs.JSON.compile()
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action == :update)
+
   plug(
     OAuthScopesPlug,
     %{scopes: ["read"], admin: true}
     when action in [:show, :descriptions]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action == :update)
-
   action_fallback(Pleroma.Web.AdminAPI.FallbackController)
+
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.ConfigOperation
 
   def descriptions(conn, _params) do
     descriptions = Enum.filter(@descriptions, &whitelisted_config?/1)
@@ -27,7 +30,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
     json(conn, descriptions)
   end
 
-  def show(conn, %{"only_db" => true}) do
+  def show(conn, %{only_db: true}) do
     with :ok <- configurable_from_database() do
       configs = Pleroma.Repo.all(ConfigDB)
       render(conn, "index.json", %{configs: configs})
@@ -73,16 +76,16 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
     end
   end
 
-  def update(conn, %{"configs" => configs}) do
+  def update(%{body_params: %{configs: configs}} = conn, _) do
     with :ok <- configurable_from_database() do
       results =
         configs
         |> Enum.filter(&whitelisted_config?/1)
         |> Enum.map(fn
-          %{"group" => group, "key" => key, "delete" => true} = params ->
-            ConfigDB.delete(%{group: group, key: key, subkeys: params["subkeys"]})
+          %{group: group, key: key, delete: true} = params ->
+            ConfigDB.delete(%{group: group, key: key, subkeys: params[:subkeys]})
 
-          %{"group" => group, "key" => key, "value" => value} ->
+          %{group: group, key: key, value: value} ->
             ConfigDB.update_or_create(%{group: group, key: key, value: value})
         end)
         |> Enum.reject(fn {result, _} -> result == :error end)
@@ -140,11 +143,11 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
     end
   end
 
-  defp whitelisted_config?(%{"group" => group, "key" => key}) do
+  defp whitelisted_config?(%{group: group, key: key}) do
     whitelisted_config?(group, key)
   end
 
-  defp whitelisted_config?(%{:group => group} = config) do
+  defp whitelisted_config?(%{group: group} = config) do
     whitelisted_config?(group, config[:key])
   end
 end
