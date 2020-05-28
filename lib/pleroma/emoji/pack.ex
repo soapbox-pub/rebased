@@ -499,7 +499,7 @@ defmodule Pleroma.Emoji.Pack do
       if Base.decode16!(sha) == :crypto.hash(:sha256, archive) do
         {:ok, archive}
       else
-        {:error, :imvalid_checksum}
+        {:error, :invalid_checksum}
       end
     end
   end
