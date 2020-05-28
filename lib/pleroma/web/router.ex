@@ -194,9 +194,9 @@ defmodule Pleroma.Web.Router do
     delete("/statuses/:id", StatusController, :delete)
     get("/statuses", StatusController, :index)
 
-    get("/config", AdminAPIController, :config_show)
-    post("/config", AdminAPIController, :config_update)
-    get("/config/descriptions", AdminAPIController, :config_descriptions)
+    get("/config", ConfigController, :show)
+    post("/config", ConfigController, :update)
+    get("/config/descriptions", ConfigController, :descriptions)
     get("/need_reboot", AdminAPIController, :need_reboot)
     get("/restart", AdminAPIController, :restart)
 
