@@ -237,7 +237,9 @@ defmodule Pleroma.NotificationTest do
       follower = insert(:user)
 
       followed =
-        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{from_followers: false})
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{from_followers: false}
+        )
 
       User.follow(follower, followed)
       {:ok, activity} = CommonAPI.post(follower, %{status: "hey @#{followed.nickname}"})
@@ -258,7 +260,9 @@ defmodule Pleroma.NotificationTest do
 
     test "it disables notifications from people the user follows" do
       follower =
-        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{from_following: false})
+        insert(:user,
+          notification_settings: %Pleroma.User.NotificationSetting{from_following: false}
+        )
 
       followed = insert(:user)
       User.follow(follower, followed)
