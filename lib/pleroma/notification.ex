@@ -459,10 +459,9 @@ defmodule Pleroma.Notification do
   def skip?(%Activity{} = activity, %User{} = user) do
     [
       :self,
-      :followers,
-      :follows,
-      :non_followers,
-      :non_follows,
+      :from_followers,
+      :from_following,
+      :from_strangers,
       :recently_followed
     ]
     |> Enum.find(&skip?(&1, activity, user))
@@ -476,9 +475,9 @@ defmodule Pleroma.Notification do
   end
 
   def skip?(
-        :followers,
+        :from_followers,
         %Activity{} = activity,
-        %User{notification_settings: %{followers: false}} = user
+        %User{notification_settings: %{from_followers: false}} = user
       ) do
     actor = activity.data["actor"]
     follower = User.get_cached_by_ap_id(actor)
@@ -486,9 +485,9 @@ defmodule Pleroma.Notification do
   end
 
   def skip?(
-        :non_followers,
+        :from_strangers,
         %Activity{} = activity,
-        %User{notification_settings: %{non_followers: false}} = user
+        %User{notification_settings: %{from_strangers: false}} = user
       ) do
     actor = activity.data["actor"]
     follower = User.get_cached_by_ap_id(actor)
@@ -496,23 +495,13 @@ defmodule Pleroma.Notification do
   end
 
   def skip?(
-        :follows,
+        :from_following,
         %Activity{} = activity,
-        %User{notification_settings: %{follows: false}} = user
+        %User{notification_settings: %{from_following: false}} = user
       ) do
     actor = activity.data["actor"]
     followed = User.get_cached_by_ap_id(actor)
     User.following?(user, followed)
-  end
-
-  def skip?(
-        :non_follows,
-        %Activity{} = activity,
-        %User{notification_settings: %{non_follows: false}} = user
-      ) do
-    actor = activity.data["actor"]
-    followed = User.get_cached_by_ap_id(actor)
-    !User.following?(user, followed)
   end
 
   # To do: consider defining recency in hours and checking FollowingRelationship with a single SQL

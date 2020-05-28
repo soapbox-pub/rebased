@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 <details>
   <summary>API Changes</summary>
 - **Breaking:** Emoji API: changed methods and renamed routes.
+- **Breaking:** Notification Settings API for suppressing notification
+  now supports the following controls: `from_followers`, `from_following`,
+  and `from_strangers`.
 </details>
 
 ### Removed
