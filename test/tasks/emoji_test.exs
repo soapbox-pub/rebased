@@ -73,6 +73,19 @@ defmodule Mix.Tasks.Pleroma.EmojiTest do
       on_exit(fn -> File.rm_rf!("test/instance_static/emoji/finmoji") end)
     end
 
+    test "install local emoji pack" do
+      assert capture_io(fn ->
+               Emoji.run([
+                 "get-packs",
+                 "local",
+                 "--manifest",
+                 "test/instance_static/local_pack/manifest.json"
+               ])
+             end) =~ "Writing pack.json for"
+
+      on_exit(fn -> File.rm_rf!("test/instance_static/emoji/local") end)
+    end
+
     test "pack not found" do
       mock(fn
         %{

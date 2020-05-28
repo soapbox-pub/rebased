@@ -15,7 +15,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
     {options, [], []} = parse_global_opts(args)
 
     url_or_path = options[:manifest] || default_manifest()
-    manifest = fetch_manifest(url_or_path)
+    manifest = fetch_and_decode(url_or_path)
 
     Enum.each(manifest, fn {name, info} ->
       to_print = [
@@ -42,12 +42,12 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     url_or_path = options[:manifest] || default_manifest()
 
-    manifest = fetch_manifest(url_or_path)
+    manifest = fetch_and_decode(url_or_path)
 
     for pack_name <- pack_names do
       if Map.has_key?(manifest, pack_name) do
         pack = manifest[pack_name]
-        src_url = pack["src"]
+        src = pack["src"]
 
         IO.puts(
           IO.ANSI.format([
@@ -57,11 +57,11 @@ defmodule Mix.Tasks.Pleroma.Emoji do
             :normal,
             " from ",
             :underline,
-            src_url
+            src
           ])
         )
 
-        binary_archive = Tesla.get!(client(), src_url).body
+        {:ok, binary_archive} = fetch(src)
         archive_sha = :crypto.hash(:sha256, binary_archive) |> Base.encode16()
 
         sha_status_text = ["SHA256 of ", :bright, pack_name, :normal, " source file is ", :bright]
@@ -74,8 +74,8 @@ defmodule Mix.Tasks.Pleroma.Emoji do
           raise "Bad SHA256 for #{pack_name}"
         end
 
-        # The url specified in files should be in the same directory
-        files_url =
+        # The location specified in files should be in the same directory
+        files_loc =
           url_or_path
           |> Path.dirname()
           |> Path.join(pack["files"])
@@ -88,11 +88,11 @@ defmodule Mix.Tasks.Pleroma.Emoji do
             :normal,
             " from ",
             :underline,
-            files_url
+            files_loc
           ])
         )
 
-        files = Tesla.get!(client(), files_url).body |> Jason.decode!()
+        files = fetch_and_decode(files_loc)
 
         IO.puts(IO.ANSI.format(["Unpacking ", :bright, pack_name]))
 
@@ -237,15 +237,19 @@ defmodule Mix.Tasks.Pleroma.Emoji do
     end
   end
 
-  defp fetch_manifest(from) do
-    Jason.decode!(
-      if String.starts_with?(from, "http") do
-        Tesla.get!(client(), from).body
-      else
-        File.read!(from)
-      end
-    )
+  defp fetch_and_decode(from) do
+    with {:ok, json} <- fetch(from) do
+      Jason.decode!(json)
+    end
   end
+
+  defp fetch("http" <> _ = from) do
+    with {:ok, %{body: body}} <- Tesla.get(client(), from) do
+      {:ok, body}
+    end
+  end
+
+  defp fetch(path), do: File.read(path)
 
   defp parse_global_opts(args) do
     OptionParser.parse(
