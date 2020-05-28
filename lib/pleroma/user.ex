@@ -538,9 +538,10 @@ defmodule Pleroma.User do
     |> delete_change(:also_known_as)
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
+    |> validate_inclusion(:actor_type, ["Person", "Service"])
   end
 
-  @spec update_as_admin(%User{}, map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_as_admin(User.t(), map()) :: {:ok, User.t()} | {:error, Changeset.t()}
   def update_as_admin(user, params) do
     params = Map.put(params, "password_confirmation", params["password"])
     changeset = update_as_admin_changeset(user, params)
@@ -561,7 +562,7 @@ defmodule Pleroma.User do
     |> put_change(:password_reset_pending, false)
   end
 
-  @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  @spec reset_password(User.t(), map()) :: {:ok, User.t()} | {:error, Changeset.t()}
   def reset_password(%User{} = user, params) do
     reset_password(user, user, params)
   end

@@ -693,7 +693,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         %{assigns: %{user: admin}} = conn,
         %{"nickname" => nickname} = params
       ) do
-    with {_, user} <- {:user, User.get_cached_by_nickname(nickname)},
+    with {_, %User{} = user} <- {:user, User.get_cached_by_nickname(nickname)},
          {:ok, _user} <-
            User.update_as_admin(user, params) do
       ModerationLog.insert_log(%{
@@ -715,11 +715,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       json(conn, %{status: "success"})
     else
       {:error, changeset} ->
-        {_, {error, _}} = Enum.at(changeset.errors, 0)
-        json(conn, %{error: "New password #{error}."})
+        errors = Map.new(changeset.errors, fn {key, {error, _}} -> {key, error} end)
+
+        json(conn, %{errors: errors})
 
       _ ->
-        json(conn, %{error: "Unable to change password."})
+        json(conn, %{error: "Unable to update user."})
     end
   end
 
