@@ -38,8 +38,8 @@ sudo apt install git build-essential postgresql postgresql-contrib
 * Download and add the Erlang repository:
 
 ```shell
-wget -P /tmp/ https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
-sudo dpkg -i /tmp/erlang-solutions_1.0_all.deb
+wget -P /tmp/ https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb
+sudo dpkg -i /tmp/erlang-solutions_2.0_all.deb
 ```
 
 * Install Elixir and Erlang:

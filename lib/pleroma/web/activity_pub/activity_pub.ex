@@ -545,14 +545,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Repo.one()
   end
 
-  @spec fetch_public_activities(map(), Pagination.type()) :: [Activity.t()]
-  def fetch_public_activities(opts \\ %{}, pagination \\ :keyset) do
+  @spec fetch_public_or_unlisted_activities(map(), Pagination.type()) :: [Activity.t()]
+  def fetch_public_or_unlisted_activities(opts \\ %{}, pagination \\ :keyset) do
     opts = Map.drop(opts, ["user"])
 
-    [Constants.as_public()]
-    |> fetch_activities_query(opts)
-    |> restrict_unlisted()
-    |> Pagination.fetch_paginated(opts, pagination)
+    query = fetch_activities_query([Constants.as_public()], opts)
+
+    query =
+      if opts["restrict_unlisted"] do
+        restrict_unlisted(query)
+      else
+        query
+      end
+
+    Pagination.fetch_paginated(query, opts, pagination)
+  end
+
+  @spec fetch_public_activities(map(), Pagination.type()) :: [Activity.t()]
+  def fetch_public_activities(opts \\ %{}, pagination \\ :keyset) do
+    opts
+    |> Map.put("restrict_unlisted", true)
+    |> fetch_public_or_unlisted_activities(pagination)
   end
 
   @valid_visibilities ~w[direct unlisted public private]
@@ -1165,7 +1178,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_joined_object()
     |> Object.with_joined_activity()
     |> select([_like, object, activity], %{activity | object: object})
-    |> order_by([like, _, _], desc: like.id)
+    |> order_by([like, _, _], desc_nulls_last: like.id)
     |> Pagination.fetch_paginated(
       Map.merge(params, %{"skip_order" => true}),
       pagination,

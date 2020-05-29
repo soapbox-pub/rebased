@@ -274,7 +274,7 @@ config :pleroma, :markup,
 config :pleroma, :frontend_configurations,
   pleroma_fe: %{
     alwaysShowSubjectInput: true,
-    background: "/static/aurora_borealis.jpg",
+    background: "/images/city.jpg",
     collapseMessageWithSubject: false,
     disableChat: false,
     greentext: false,

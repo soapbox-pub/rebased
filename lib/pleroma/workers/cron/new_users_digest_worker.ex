@@ -55,7 +55,11 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorker do
         |> Repo.all()
         |> Enum.map(&Pleroma.Emails.NewUsersDigestEmail.new_users(&1, users_and_statuses))
         |> Enum.each(&Pleroma.Emails.Mailer.deliver/1)
+      else
+        :ok
       end
+    else
+      :ok
     end
   end
 end

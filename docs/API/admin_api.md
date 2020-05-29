@@ -511,7 +511,23 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `discoverable`
   - `actor_type`
 
-- Response: none (code `200`)
+- Response:
+
+```json
+{"status": "success"}
+```
+
+```json
+{"errors":
+  {"actor_type": "is invalid"},
+  {"email": "has invalid format"},
+  ...
+ }
+```
+
+```json
+{"error": "Unable to update user."}
+```
 
 ## `GET /api/pleroma/admin/reports`
 
