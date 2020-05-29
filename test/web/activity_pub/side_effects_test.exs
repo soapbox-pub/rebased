@@ -309,6 +309,27 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       assert Repo.get_by(Notification, user_id: recipient.id, activity_id: create_activity.id)
     end
 
+    test "it streams the created ChatMessage" do
+      author = insert(:user, local: true)
+      recipient = insert(:user, local: true)
+
+      {:ok, chat_message_data, _meta} = Builder.chat_message(author, recipient.ap_id, "hey")
+
+      {:ok, create_activity_data, _meta} =
+        Builder.create(author, chat_message_data["id"], [recipient.ap_id])
+
+      {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
+
+      with_mock Pleroma.Web.Streamer, [], stream: fn _, _ -> nil end do
+        {:ok, _create_activity, _meta} =
+          SideEffects.handle(create_activity, local: false, object_data: chat_message_data)
+
+        object = Object.normalize(create_activity, false)
+
+        assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], object))
+      end
+    end
+
     test "it creates a Chat for the local users and bumps the unread count, except for the author" do
       author = insert(:user, local: true)
       recipient = insert(:user, local: true)
