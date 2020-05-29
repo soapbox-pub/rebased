@@ -49,17 +49,16 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     end
   end
 
-  @csp_start [
-               "default-src 'none'",
-               "base-uri 'self'",
-               "frame-ancestors 'none'",
-               "style-src 'self' 'unsafe-inline'",
-               "font-src 'self'",
-               "manifest-src 'self'"
-             ]
-             |> Enum.join(";")
-             |> Kernel.<>(";")
-             |> List.wrap()
+  static_csp_rules = [
+    "default-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
+    "manifest-src 'self'"
+  ]
+
+  @csp_start [Enum.join(static_csp_rules, ";") <> ";"]
 
   defp csp_string do
     scheme = Config.get([Pleroma.Web.Endpoint, :url])[:scheme]
