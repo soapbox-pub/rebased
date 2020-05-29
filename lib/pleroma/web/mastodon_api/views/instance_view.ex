@@ -36,6 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       background_image: Keyword.get(instance, :background_image),
       pleroma: %{
         metadata: %{
+          account_activation_required: Keyword.get(instance, :account_activation_required),
           features: features(),
           federation: federation()
         },
