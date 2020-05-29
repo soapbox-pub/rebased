@@ -124,7 +124,7 @@ defmodule Pleroma.Web.StreamerTest do
         |> Map.put("object", activity.data["object"])
         |> Map.put("actor", user.ap_id)
 
-      {:ok, %Pleroma.Activity{data: data, local: false} = announce} =
+      {:ok, %Pleroma.Activity{data: _data, local: false} = announce} =
         Pleroma.Web.ActivityPub.Transmogrifier.handle_incoming(data)
 
       assert_receive {:render_with_user, Pleroma.Web.StreamerView, "update.json", ^announce}
