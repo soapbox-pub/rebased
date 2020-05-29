@@ -127,7 +127,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
   def handle_object_creation(%{"type" => "ChatMessage"} = object, meta) do
     with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
-      Streamer.stream(["user", "user:pleroma_chat"], object)
       actor = User.get_cached_by_ap_id(object.data["actor"])
       recipient = User.get_cached_by_ap_id(hd(object.data["to"]))
 
@@ -142,6 +141,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         end
       end)
 
+      Streamer.stream(["user", "user:pleroma_chat"], object)
       {:ok, object, meta}
     end
   end
