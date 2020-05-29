@@ -16,9 +16,9 @@ defmodule Pleroma.Web.StreamerView do
     chat = Chat.get(user.id, hd(recipients -- [user.ap_id]))
 
     representation =
-      Pleroma.Web.PleromaAPI.ChatMessageView.render(
+      Pleroma.Web.PleromaAPI.ChatView.render(
         "show.json",
-        %{object: object, chat: chat}
+        %{message: object, chat: chat}
       )
 
     %{

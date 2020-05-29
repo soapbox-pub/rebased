@@ -14,7 +14,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
   def render("show.json", %{chat: %Chat{} = chat} = opts) do
     recipient = User.get_cached_by_ap_id(chat.recipient)
 
-    last_message = Chat.last_message_for_chat(chat)
+    last_message = opts[:message] || Chat.last_message_for_chat(chat)
 
     %{
       id: chat.id |> to_string(),
