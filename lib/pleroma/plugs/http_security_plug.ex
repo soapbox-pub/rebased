@@ -75,7 +75,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
         sources = get_proxy_and_attachment_sources()
         {[img_src, sources], [media_src, sources]}
       else
-        {img_src <> " https:", media_src <> " https:"}
+        {[img_src, " https:"], [media_src, " https:"]}
       end
 
     connect_src = ["connect-src 'self' ", static_url, ?\s, websocket_url]
