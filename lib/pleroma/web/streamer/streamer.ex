@@ -10,6 +10,7 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
@@ -22,7 +23,7 @@ defmodule Pleroma.Web.Streamer do
   def registry, do: @registry
 
   @public_streams ["public", "public:local", "public:media", "public:local:media"]
-  @user_streams ["user", "user:notification", "direct"]
+  @user_streams ["user", "user:notification", "direct", "user:pleroma_chat"]
 
   @doc "Expands and authorizes a stream, and registers the process for streaming."
   @spec get_topic_and_add_socket(stream :: String.t(), User.t() | nil, Map.t() | nil) ::
@@ -196,6 +197,26 @@ defmodule Pleroma.Web.Streamer do
     Registry.dispatch(@registry, "#{topic}:#{item.user_id}", fn list ->
       Enum.each(list, fn {pid, _auth} ->
         send(pid, {:render_with_user, StreamerView, "notification.json", item})
+      end)
+    end)
+  end
+
+  defp do_stream(topic, %{data: %{"type" => "ChatMessage"}} = object)
+       when topic in ["user", "user:pleroma_chat"] do
+    recipients = [object.data["actor"] | object.data["to"]]
+
+    topics =
+      %{ap_id: recipients, local: true}
+      |> Pleroma.User.Query.build()
+      |> Repo.all()
+      |> Enum.map(fn %{id: id} = user -> {user, "#{topic}:#{id}"} end)
+
+    Enum.each(topics, fn {user, topic} ->
+      Registry.dispatch(@registry, topic, fn list ->
+        Enum.each(list, fn {pid, _auth} ->
+          text = StreamerView.render("chat_update.json", object, user, recipients)
+          send(pid, {:text, text})
+        end)
       end)
     end)
   end

@@ -9,9 +9,11 @@ defmodule Pleroma.Web.StreamerTest do
 
   alias Pleroma.Conversation.Participation
   alias Pleroma.List
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Streamer
+  alias Pleroma.Web.StreamerView
 
   @moduletag needs_streamer: true, capture_log: true
 
@@ -124,6 +126,28 @@ defmodule Pleroma.Web.StreamerTest do
       Streamer.stream("user:notification", notify)
       assert_receive {:render_with_user, _, _, ^notify}
       refute Streamer.filtered_by_user?(user, notify)
+    end
+
+    test "it sends chat messages to the 'user:pleroma_chat' stream", %{user: user} do
+      other_user = insert(:user)
+
+      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey")
+      object = Object.normalize(create_activity, false)
+      Streamer.get_topic_and_add_socket("user:pleroma_chat", user)
+      Streamer.stream("user:pleroma_chat", object)
+      text = StreamerView.render("chat_update.json", object, user, [user.ap_id, other_user.ap_id])
+      assert_receive {:text, ^text}
+    end
+
+    test "it sends chat messages to the 'user' stream", %{user: user} do
+      other_user = insert(:user)
+
+      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey")
+      object = Object.normalize(create_activity, false)
+      Streamer.get_topic_and_add_socket("user", user)
+      Streamer.stream("user", object)
+      text = StreamerView.render("chat_update.json", object, user, [user.ap_id, other_user.ap_id])
+      assert_receive {:text, ^text}
     end
 
     test "it sends chat message notifications to the 'user:notification' stream", %{user: user} do

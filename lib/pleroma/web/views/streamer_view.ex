@@ -6,10 +6,29 @@ defmodule Pleroma.Web.StreamerView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
+  alias Pleroma.Chat
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.User
   alias Pleroma.Web.MastodonAPI.NotificationView
+
+  def render("chat_update.json", object, user, recipients) do
+    chat = Chat.get(user.id, hd(recipients -- [user.ap_id]))
+
+    representation =
+      Pleroma.Web.PleromaAPI.ChatMessageView.render(
+        "show.json",
+        %{object: object, chat: chat}
+      )
+
+    %{
+      event: "pleroma:chat_update",
+      payload:
+        representation
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
 
   def render("update.json", %Activity{} = activity, %User{} = user) do
     %{
