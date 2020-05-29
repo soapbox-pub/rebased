@@ -220,3 +220,7 @@ There's a new `pleroma:chat_mention` notification, which has this form:
   "created_at": "somedate"
 }
 ```
+
+### Streaming
+
+There is an additional `user:pleroma_chat` stream. Incoming chat messages will make the current chat be sent to this `user` stream. The `event` of an incoming chat message is `pleroma:chat_update`. The payload is the updated chat with the incoming chat message in the `last_message` field.
