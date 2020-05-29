@@ -33,11 +33,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Stream out the announce
   def handle(%{data: %{"type" => "Announce"}} = object, meta) do
     announced_object = Object.get_by_ap_id(object.data["object"])
+    user = User.get_cached_by_ap_id(object.data["actor"])
 
     Utils.add_announce_to_object(object, announced_object)
 
-    Notification.create_notifications(object)
-    ActivityPub.stream_out(object)
+    if !User.is_internal_user?(user) do
+      Notification.create_notifications(object)
+      ActivityPub.stream_out(object)
+    end
 
     {:ok, object, meta}
   end
