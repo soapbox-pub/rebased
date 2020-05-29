@@ -75,6 +75,40 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       assert status["id"] == to_string(activity.id)
     end
 
+    test "constructs hashtags from search query", %{conn: conn} do
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "some text with #explicit #hashtags"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "explicit", "url" => "#{Web.base_url()}/tag/explicit"},
+               %{"name" => "hashtags", "url" => "#{Web.base_url()}/tag/hashtags"}
+             ]
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "john doe JOHN DOE"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "john", "url" => "#{Web.base_url()}/tag/john"},
+               %{"name" => "doe", "url" => "#{Web.base_url()}/tag/doe"},
+               %{"name" => "JohnDoe", "url" => "#{Web.base_url()}/tag/JohnDoe"}
+             ]
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "accident-prone"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "accident", "url" => "#{Web.base_url()}/tag/accident"},
+               %{"name" => "prone", "url" => "#{Web.base_url()}/tag/prone"},
+               %{"name" => "AccidentProne", "url" => "#{Web.base_url()}/tag/AccidentProne"}
+             ]
+    end
+
     test "excludes a blocked users from search results", %{conn: conn} do
       user = insert(:user)
       user_smith = insert(:user, %{nickname: "Agent", name: "I love 2hu"})
@@ -179,7 +213,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       [account | _] = results["accounts"]
       assert account["id"] == to_string(user_three.id)
 
-      assert results["hashtags"] == []
+      assert results["hashtags"] == ["2hu"]
 
       [status] = results["statuses"]
       assert status["id"] == to_string(activity.id)
