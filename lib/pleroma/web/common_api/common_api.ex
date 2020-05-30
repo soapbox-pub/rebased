@@ -50,7 +50,12 @@ defmodule Pleroma.Web.CommonAPI do
   defp format_chat_content(nil), do: nil
 
   defp format_chat_content(content) do
-    content |> Formatter.html_escape("text/plain")
+    {text, _, _} =
+      content
+      |> Formatter.html_escape("text/plain")
+      |> Formatter.linkify()
+
+    text
   end
 
   defp validate_chat_content_length(_, true), do: :ok

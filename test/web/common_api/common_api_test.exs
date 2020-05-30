@@ -50,6 +50,29 @@ defmodule Pleroma.Web.CommonAPITest do
       assert activity
     end
 
+    test "it linkifies" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "https://example.org is the site of @#{other_user.nickname} #2hu"
+        )
+
+      assert other_user.ap_id not in activity.recipients
+
+      object = Object.normalize(activity, false)
+
+      assert object.data["content"] ==
+               "<a href=\"https://example.org\" rel=\"ugc\">https://example.org</a> is the site of <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{
+                 other_user.id
+               }\" href=\"#{other_user.ap_id}\" rel=\"ugc\">@<span>#{other_user.nickname}</span></a></span> <a class=\"hashtag\" data-tag=\"2hu\" href=\"http://localhost:4001/tag/2hu\">#2hu</a>"
+    end
+
     test "it posts a chat message" do
       author = insert(:user)
       recipient = insert(:user)
