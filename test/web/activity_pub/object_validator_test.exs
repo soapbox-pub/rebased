@@ -113,6 +113,20 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       %{user: user, recipient: recipient, valid_chat_message: valid_chat_message}
     end
 
+    test "let's through some basic html", %{user: user, recipient: recipient} do
+      {:ok, valid_chat_message, _} =
+        Builder.chat_message(
+          user,
+          recipient.ap_id,
+          "hey <a href='https://example.org'>example</a> <script>alert('uguu')</script>"
+        )
+
+      assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
+
+      assert object["content"] ==
+               "hey <a href=\"https://example.org\">example</a> alert(&#39;uguu&#39;)"
+    end
+
     test "validates for a basic object we build", %{valid_chat_message: valid_chat_message} do
       assert {:ok, object, _meta} = ObjectValidator.validate(valid_chat_message, [])
 

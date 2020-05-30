@@ -17,6 +17,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.SafeTextTest do
     assert {:ok, "hey look xss alert(&#39;foo&#39;)"} == SafeText.cast(text)
   end
 
+  test "it keeps basic html tags" do
+    text = "hey <a href='http://gensokyo.2hu'>look</a> xss <script>alert('foo')</script>"
+
+    assert {:ok, "hey <a href=\"http://gensokyo.2hu\">look</a> xss alert(&#39;foo&#39;)"} ==
+             SafeText.cast(text)
+  end
+
   test "errors for non-text" do
     assert :error == SafeText.cast(1)
   end

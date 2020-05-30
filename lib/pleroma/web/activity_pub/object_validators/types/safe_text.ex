@@ -10,7 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.SafeText do
   def type, do: :string
 
   def cast(str) when is_binary(str) do
-    {:ok, HTML.strip_tags(str)}
+    {:ok, HTML.filter_tags(str)}
   end
 
   def cast(_), do: :error
