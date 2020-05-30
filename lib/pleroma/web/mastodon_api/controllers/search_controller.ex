@@ -124,7 +124,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   defp prepare_tags(query, add_joined_tag \\ true) do
     tags =
       query
-      |> String.split(~r/[^#\w]+/, trim: true)
+      |> String.split(~r/[^#\w]+/u, trim: true)
       |> Enum.uniq_by(&String.downcase/1)
 
     explicit_tags = Enum.filter(tags, fn tag -> String.starts_with?(tag, "#") end)

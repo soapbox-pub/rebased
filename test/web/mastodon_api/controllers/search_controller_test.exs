@@ -71,6 +71,10 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         get(conn, "/api/v2/search?q=天子")
         |> json_response_and_validate_schema(200)
 
+      assert results["hashtags"] == [
+               %{"name" => "天子", "url" => "#{Web.base_url()}/tag/天子"}
+             ]
+
       [status] = results["statuses"]
       assert status["id"] == to_string(activity.id)
     end
