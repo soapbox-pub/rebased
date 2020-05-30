@@ -1802,7 +1802,7 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
     assert User.avatar_url(user) =~ "/images/avi.png"
 
-    Pleroma.Config.put([:assets, :default_user_avatar], "avatar.png")
+    clear_config([:assets, :default_user_avatar], "avatar.png")
 
     user = User.get_cached_by_nickname_or_id(user.nickname)
     assert User.avatar_url(user) =~ "avatar.png"
