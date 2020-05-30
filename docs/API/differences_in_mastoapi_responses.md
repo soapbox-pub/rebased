@@ -6,10 +6,6 @@ A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma
 
 Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are lexically sortable strings
 
-## Attachment cap
-
-Some apps operate under the assumption that no more than 4 attachments can be returned or uploaded. Pleroma however does not enforce any limits on attachment count neither when returning the status object nor when posting.
-
 ## Timelines
 
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
@@ -32,11 +28,19 @@ Has these additional fields under the `pleroma` object:
 - `thread_muted`: true if the thread the post belongs to is muted
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
 
-## Attachments
+## Media Attachments
 
 Has these additional fields under the `pleroma` object:
 
 - `mime_type`: mime type of the attachment.
+
+### Attachment cap
+
+Some apps operate under the assumption that no more than 4 attachments can be returned or uploaded. Pleroma however does not enforce any limits on attachment count neither when returning the status object nor when posting.
+
+### Limitations
+
+Pleroma does not process remote images and therefore cannot include fields such as `meta` and `blurhash`. It does not support focal points or aspect ratios. The frontend is expected to handle it.
 
 ## Accounts
 

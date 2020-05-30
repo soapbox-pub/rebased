@@ -75,10 +75,10 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
         sources = get_proxy_and_attachment_sources()
         {[img_src, sources], [media_src, sources]}
       else
-        {img_src, media_src}
+        {[img_src, " https:"], [media_src, " https:"]}
       end
 
-    connect_src = ["connect-src 'self' ", static_url, ?\s, websocket_url]
+    connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
 
     connect_src =
       if Pleroma.Config.get(:env) == :dev do

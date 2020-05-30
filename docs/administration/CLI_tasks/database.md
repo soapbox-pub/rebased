@@ -69,3 +69,32 @@ mix pleroma.database update_users_following_followers_counts
 ```sh tab="From Source"
 mix pleroma.database fix_likes_collections
 ```
+
+## Vacuum the database
+
+### Analyze
+
+Running an `analyze` vacuum job can improve performance by updating statistics used by the query planner. **It is safe to cancel this.**
+
+```sh tab="OTP"
+./bin/pleroma_ctl database vacuum analyze
+```
+
+```sh tab="From Source"
+mix pleroma.database vacuum analyze
+```
+
+### Full
+
+Running a `full` vacuum job rebuilds your entire database by reading all of the data and rewriting it into smaller
+and more compact files with an optimized layout. This process will take a long time and use additional disk space as
+it builds the files side-by-side the existing database files. It can make your database faster and use less disk space,
+but should only be run if necessary. **It is safe to cancel this.**
+
+```sh tab="OTP"
+./bin/pleroma_ctl database vacuum full
+```
+
+```sh tab="From Source"
+mix pleroma.database vacuum full
+```
