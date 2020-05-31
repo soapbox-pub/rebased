@@ -43,7 +43,7 @@ defmodule Pleroma.ConfigDBTest do
 
       params = [
         %{group: :pleroma, key: key2, value: "another_value"},
-        %{group: :pleroma, key: config.key, value: "new_value"}
+        %{group: :pleroma, key: config.key, value: [a: 1, b: 2, c: "new_value"]}
       ]
 
       assert Repo.all(ConfigDB) |> length() == 1
@@ -55,7 +55,7 @@ defmodule Pleroma.ConfigDBTest do
       config1 = ConfigDB.get_by_params(%{group: config.group, key: config.key})
       config2 = ConfigDB.get_by_params(%{group: :pleroma, key: key2})
 
-      assert config1.value == "new_value"
+      assert config1.value == [a: 1, b: 2, c: "new_value"]
       assert config2.value == "another_value"
     end
 
@@ -396,6 +396,10 @@ defmodule Pleroma.ConfigDBTest do
                key1: 150,
                key2: "string"
              ]
+    end
+
+    test "trandformed keyword" do
+      assert ConfigDB.to_elixir_types(a: 1, b: 2, c: "string") == [a: 1, b: 2, c: "string"]
     end
 
     test "complex keyword with nested mixed childs" do

@@ -135,7 +135,8 @@ defmodule Pleroma.ConfigDB do
 
     with %ConfigDB{} = config <- ConfigDB.get_by_params(search_opts),
          {_, true, config} <- {:partial_update, can_be_partially_updated?(config), config},
-         {_, true, config} <- {:can_be_merged, is_list(params[:value]), config} do
+         {_, true, config} <-
+           {:can_be_merged, is_list(params[:value]) and is_list(config.value), config} do
       new_value = merge_group(config.group, config.key, config.value, params[:value])
       update(config, %{value: new_value})
     else
