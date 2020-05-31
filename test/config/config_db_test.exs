@@ -382,12 +382,6 @@ defmodule Pleroma.ConfigDBTest do
       assert ConfigDB.to_elixir_types([%{"tuple" => [":key", "value"]}]) == [key: "value"]
     end
 
-    test "keyword with partial_chain key" do
-      assert ConfigDB.to_elixir_types([
-               %{"tuple" => [":partial_chain", "&:hackney_connect.partial_chain/1"]}
-             ]) == [partial_chain: &:hackney_connect.partial_chain/1]
-    end
-
     test "keyword" do
       assert ConfigDB.to_elixir_types([
                %{"tuple" => [":types", "Pleroma.PostgresTypes"]},
