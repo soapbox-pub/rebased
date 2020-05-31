@@ -331,7 +331,7 @@ defmodule Pleroma.ConfigDB do
   def string_to_elixir_types(":" <> atom), do: String.to_atom(atom)
 
   def string_to_elixir_types(value) do
-    if is_module_name?(value) do
+    if module_name?(value) do
       String.to_existing_atom("Elixir." <> value)
     else
       value
@@ -373,8 +373,8 @@ defmodule Pleroma.ConfigDB do
     end
   end
 
-  @spec is_module_name?(String.t()) :: boolean()
-  def is_module_name?(string) do
+  @spec module_name?(String.t()) :: boolean()
+  def module_name?(string) do
     Regex.match?(~r/^(Pleroma|Phoenix|Tesla|Quack|Ueberauth|Swoosh)\./, string) or
       string in ["Oban", "Ueberauth", "ExSyslogger"]
   end
