@@ -11,7 +11,7 @@ defmodule Pleroma.Web.Auth.BasicAuthTest do
     conn: conn
   } do
     user = insert(:user)
-    assert Comeonin.Pbkdf2.checkpw("test", user.password_hash)
+    assert Pbkdf2.verify_pass("test", user.password_hash)
 
     basic_auth_contents =
       (URI.encode_www_form(user.nickname) <> ":" <> URI.encode_www_form("test"))

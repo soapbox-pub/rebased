@@ -688,7 +688,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert json_response(conn, 200) == %{"status" => "success"}
       fetched_user = User.get_cached_by_id(user.id)
-      assert Comeonin.Pbkdf2.checkpw("newpass", fetched_user.password_hash) == true
+      assert Pbkdf2.verify_pass("newpass", fetched_user.password_hash) == true
     end
   end
 

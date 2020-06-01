@@ -3,15 +3,21 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.UserTest do
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
 
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
 
-  import Pleroma.Factory
   import ExUnit.CaptureIO
+  import Mock
+  import Pleroma.Factory
 
   setup_all do
     Mix.shell(Mix.Shell.Process)
@@ -85,14 +91,44 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
   describe "running rm" do
     test "user is deleted" do
+      clear_config([:instance, :federating], true)
       user = insert(:user)
 
-      Mix.Tasks.Pleroma.User.run(["rm", user.nickname])
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        Mix.Tasks.Pleroma.User.run(["rm", user.nickname])
+        ObanHelpers.perform_all()
 
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ " deleted"
+        assert_received {:mix_shell, :info, [message]}
+        assert message =~ " deleted"
+        assert %{deactivated: true} = User.get_by_nickname(user.nickname)
 
-      assert %{deactivated: true} = User.get_by_nickname(user.nickname)
+        assert called(Pleroma.Web.Federator.publish(:_))
+      end
+    end
+
+    test "a remote user's create activity is deleted when the object has been pruned" do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{status: "uguu"})
+
+      clear_config([:instance, :federating], true)
+
+      object = Object.normalize(post)
+      Object.prune(object)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        Mix.Tasks.Pleroma.User.run(["rm", user.nickname])
+        ObanHelpers.perform_all()
+
+        assert_received {:mix_shell, :info, [message]}
+        assert message =~ " deleted"
+        assert %{deactivated: true} = User.get_by_nickname(user.nickname)
+
+        assert called(Pleroma.Web.Federator.publish(:_))
+      end
+
+      refute Activity.get_by_id(post.id)
     end
 
     test "no user to delete" do
@@ -136,31 +172,31 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
   end
 
-  describe "running unsubscribe" do
+  describe "running deactivate" do
     test "user is unsubscribed" do
       followed = insert(:user)
+      remote_followed = insert(:user, local: false)
       user = insert(:user)
-      User.follow(user, followed, :follow_accept)
 
-      Mix.Tasks.Pleroma.User.run(["unsubscribe", user.nickname])
+      User.follow(user, followed, :follow_accept)
+      User.follow(user, remote_followed, :follow_accept)
+
+      Mix.Tasks.Pleroma.User.run(["deactivate", user.nickname])
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Deactivating"
-
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ "Unsubscribing"
 
       # Note that the task has delay :timer.sleep(500)
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Successfully unsubscribed"
 
       user = User.get_cached_by_nickname(user.nickname)
-      assert Enum.empty?(User.get_friends(user))
+      assert Enum.empty?(Enum.filter(User.get_friends(user), & &1.local))
       assert user.deactivated
     end
 
-    test "no user to unsubscribe" do
-      Mix.Tasks.Pleroma.User.run(["unsubscribe", "nonexistent"])
+    test "no user to deactivate" do
+      Mix.Tasks.Pleroma.User.run(["deactivate", "nonexistent"])
 
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No user"

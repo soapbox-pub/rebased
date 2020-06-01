@@ -15,7 +15,6 @@ defmodule Pleroma.UserTest do
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  import Mock
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
@@ -556,6 +555,7 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
+    @tag capture_log: true
     test "returns nil if no user could be fetched" do
       {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
       assert fetched_user == "not found nonexistant@social.heldscal.la"
@@ -585,6 +585,26 @@ defmodule Pleroma.UserTest do
       assert user.inbox
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
+    end
+
+    @tag capture_log: true
+    test "it returns the old user if stale, but unfetchable" do
+      a_week_ago = NaiveDateTime.add(NaiveDateTime.utc_now(), -604_800)
+
+      orig_user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: "http://mastodon.example.org/users/raymoo",
+          last_refreshed_at: a_week_ago
+        )
+
+      assert orig_user.last_refreshed_at == a_week_ago
+
+      {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/raymoo")
+
+      assert user.last_refreshed_at == orig_user.last_refreshed_at
     end
   end
 
@@ -991,8 +1011,8 @@ defmodule Pleroma.UserTest do
       actor = insert(:user)
       user = insert(:user, local: true)
 
-      {:ok, activity} = CommonAPI.post(actor, %{"status" => "hello"})
-      {:ok, announce, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, activity} = CommonAPI.post(actor, %{status: "hello"})
+      {:ok, announce} = CommonAPI.repeat(activity.id, user)
 
       recipients = User.get_recipients_from_activity(announce)
 
@@ -1008,7 +1028,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, activity} =
         CommonAPI.post(actor, %{
-          "status" => "hey @#{addressed.nickname} @#{addressed_remote.nickname}"
+          status: "hey @#{addressed.nickname} @#{addressed_remote.nickname}"
         })
 
       assert Enum.map([actor, addressed], & &1.ap_id) --
@@ -1030,7 +1050,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, activity} =
         CommonAPI.post(actor, %{
-          "status" => "hey @#{addressed.nickname}"
+          status: "hey @#{addressed.nickname}"
         })
 
       assert Enum.map([actor, addressed], & &1.ap_id) --
@@ -1091,7 +1111,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, user2} = User.follow(user2, user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey @#{user2.nickname}"})
 
       activity = Repo.preload(activity, :bookmark)
 
@@ -1127,11 +1147,11 @@ defmodule Pleroma.UserTest do
     setup do: clear_config([:instance, :federating])
 
     test ".delete_user_activities deletes all create activities", %{user: user} do
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "2hu"})
 
       User.delete_user_activities(user)
 
-      # TODO: Remove favorites, repeats, delete activities.
+      # TODO: Test removal favorites, repeats, delete activities.
       refute Activity.get_by_id(activity.id)
     end
 
@@ -1147,7 +1167,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, like} = CommonAPI.favorite(user, activity_two.id)
       {:ok, like_two} = CommonAPI.favorite(follower, activity.id)
-      {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
+      {:ok, repeat} = CommonAPI.repeat(activity_two.id, user)
 
       {:ok, job} = User.delete(user)
       {:ok, _user} = ObanHelpers.perform(job)
@@ -1170,30 +1190,32 @@ defmodule Pleroma.UserTest do
       refute Activity.get_by_id(like_two.id)
       refute Activity.get_by_id(repeat.id)
     end
+  end
 
-    test_with_mock "it sends out User Delete activity",
-                   %{user: user},
-                   Pleroma.Web.ActivityPub.Publisher,
-                   [:passthrough],
-                   [] do
-      Pleroma.Config.put([:instance, :federating], true)
+  describe "delete/1 when confirmation is pending" do
+    setup do
+      user = insert(:user, confirmation_pending: true)
+      {:ok, user: user}
+    end
 
-      {:ok, follower} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
-      {:ok, _} = User.follow(follower, user)
+    test "deletes user from database when activation required", %{user: user} do
+      clear_config([:instance, :account_activation_required], true)
 
       {:ok, job} = User.delete(user)
-      {:ok, _user} = ObanHelpers.perform(job)
+      {:ok, _} = ObanHelpers.perform(job)
 
-      assert ObanHelpers.member?(
-               %{
-                 "op" => "publish_one",
-                 "params" => %{
-                   "inbox" => "http://mastodon.example.org/inbox",
-                   "id" => "pleroma:fakeid"
-                 }
-               },
-               all_enqueued(worker: Pleroma.Workers.PublisherWorker)
-             )
+      refute User.get_cached_by_id(user.id)
+      refute User.get_by_id(user.id)
+    end
+
+    test "deactivates user when activation is not required", %{user: user} do
+      clear_config([:instance, :account_activation_required], false)
+
+      {:ok, job} = User.delete(user)
+      {:ok, _} = ObanHelpers.perform(job)
+
+      assert %{deactivated: true} = User.get_cached_by_id(user.id)
+      assert %{deactivated: true} = User.get_by_id(user.id)
     end
   end
 
@@ -1437,7 +1459,7 @@ defmodule Pleroma.UserTest do
 
         {:ok, _} =
           CommonAPI.post(user, %{
-            "status" => "hey @#{to.nickname}"
+            status: "hey @#{to.nickname}"
           })
       end)
 
@@ -1469,12 +1491,12 @@ defmodule Pleroma.UserTest do
       Enum.each(recipients, fn to ->
         {:ok, _} =
           CommonAPI.post(sender, %{
-            "status" => "hey @#{to.nickname}"
+            status: "hey @#{to.nickname}"
           })
 
         {:ok, _} =
           CommonAPI.post(sender, %{
-            "status" => "hey again @#{to.nickname}"
+            status: "hey again @#{to.nickname}"
           })
       end)
 
@@ -1774,5 +1796,17 @@ defmodule Pleroma.UserTest do
       assert {:ok, result} = User.update_email_notifications(user, %{"digest" => false})
       assert result.email_notifications["digest"] == false
     end
+  end
+
+  test "avatar fallback" do
+    user = insert(:user)
+    assert User.avatar_url(user) =~ "/images/avi.png"
+
+    clear_config([:assets, :default_user_avatar], "avatar.png")
+
+    user = User.get_cached_by_nickname_or_id(user.nickname)
+    assert User.avatar_url(user) =~ "avatar.png"
+
+    assert User.avatar_url(user, no_default: true) == nil
   end
 end

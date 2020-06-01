@@ -15,7 +15,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
     admin = insert(:user, %{is_admin: true})
     user = insert(:user, %{inserted_at: yesterday})
     user2 = insert(:user, %{inserted_at: yesterday})
-    CommonAPI.post(user, %{"status" => "cofe"})
+    CommonAPI.post(user, %{status: "cofe"})
 
     NewUsersDigestWorker.perform(nil, nil)
     ObanHelpers.perform_all()
@@ -28,6 +28,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
     assert email.html_body =~ user.nickname
     assert email.html_body =~ user2.nickname
     assert email.html_body =~ "cofe"
+    assert email.html_body =~ "#{Pleroma.Web.Endpoint.url()}/static/logo.png"
   end
 
   test "it doesn't fail when admin has no email" do
@@ -36,7 +37,7 @@ defmodule Pleroma.Workers.Cron.NewUsersDigestWorkerTest do
     insert(:user, %{inserted_at: yesterday})
     user = insert(:user, %{inserted_at: yesterday})
 
-    CommonAPI.post(user, %{"status" => "cofe"})
+    CommonAPI.post(user, %{status: "cofe"})
 
     NewUsersDigestWorker.perform(nil, nil)
     ObanHelpers.perform_all()

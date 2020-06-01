@@ -66,7 +66,7 @@ defmodule Pleroma.BBS.Handler do
 
     with %Activity{} <- Activity.get_by_id(activity_id),
          {:ok, _activity} <-
-           CommonAPI.post(user, %{"status" => rest, "in_reply_to_status_id" => activity_id}) do
+           CommonAPI.post(user, %{status: rest, in_reply_to_status_id: activity_id}) do
       IO.puts("Replied!")
     else
       _e -> IO.puts("Could not reply...")
@@ -78,7 +78,7 @@ defmodule Pleroma.BBS.Handler do
   def handle_command(%{user: user} = state, "p " <> text) do
     text = String.trim(text)
 
-    with {:ok, _activity} <- CommonAPI.post(user, %{"status" => text}) do
+    with {:ok, _activity} <- CommonAPI.post(user, %{status: text}) do
       IO.puts("Posted!")
     else
       _e -> IO.puts("Could not post...")

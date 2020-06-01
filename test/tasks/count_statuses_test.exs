@@ -13,11 +13,11 @@ defmodule Mix.Tasks.Pleroma.CountStatusesTest do
 
   test "counts statuses" do
     user = insert(:user)
-    {:ok, _} = CommonAPI.post(user, %{"status" => "test"})
-    {:ok, _} = CommonAPI.post(user, %{"status" => "test2"})
+    {:ok, _} = CommonAPI.post(user, %{status: "test"})
+    {:ok, _} = CommonAPI.post(user, %{status: "test2"})
 
     user2 = insert(:user)
-    {:ok, _} = CommonAPI.post(user2, %{"status" => "test3"})
+    {:ok, _} = CommonAPI.post(user2, %{status: "test3"})
 
     user = refresh_record(user)
     user2 = refresh_record(user2)

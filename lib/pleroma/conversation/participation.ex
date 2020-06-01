@@ -128,7 +128,7 @@ defmodule Pleroma.Conversation.Participation do
     |> Pleroma.Pagination.fetch_paginated(params)
   end
 
-  def restrict_recipients(query, user, %{"recipients" => user_ids}) do
+  def restrict_recipients(query, user, %{recipients: user_ids}) do
     user_binary_ids =
       [user.id | user_ids]
       |> Enum.uniq()
@@ -172,7 +172,7 @@ defmodule Pleroma.Conversation.Participation do
         | last_activity_id: activity_id
       }
     end)
-    |> Enum.filter(& &1.last_activity_id)
+    |> Enum.reject(&is_nil(&1.last_activity_id))
   end
 
   def get(_, _ \\ [])

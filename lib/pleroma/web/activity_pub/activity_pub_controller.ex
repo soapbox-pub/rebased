@@ -21,6 +21,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Web.FederatingPlug
   alias Pleroma.Web.Federator
 
@@ -34,7 +35,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   plug(
     EnsureAuthenticatedPlug,
-    [unless_func: &FederatingPlug.federating?/0] when action not in @federating_only_actions
+    [unless_func: &FederatingPlug.federating?/1] when action not in @federating_only_actions
   )
 
   # Note: :following and :followers must be served even without authentication (as via :api)
@@ -75,8 +76,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def object(conn, %{"uuid" => uuid}) do
-    with ap_id <- o_status_url(conn, :object, uuid),
+  def object(conn, _) do
+    with ap_id <- Endpoint.url() <> conn.request_path,
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(object)} do
       conn
@@ -101,8 +102,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
   end
 
-  def activity(conn, %{"uuid" => uuid}) do
-    with ap_id <- o_status_url(conn, :activity, uuid),
+  def activity(conn, _params) do
+    with ap_id <- Endpoint.url() <> conn.request_path,
          %Activity{} = activity <- Activity.normalize(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
       conn
@@ -396,7 +397,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     |> json(err)
   end
 
-  defp handle_user_activity(%User{} = user, %{"type" => "Create"} = params) do
+  defp handle_user_activity(
+         %User{} = user,
+         %{"type" => "Create", "object" => %{"type" => "Note"}} = params
+       ) do
     object =
       params["object"]
       |> Map.merge(Map.take(params, ["to", "cc"]))
@@ -415,7 +419,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   defp handle_user_activity(%User{} = user, %{"type" => "Delete"} = params) do
     with %Object{} = object <- Object.normalize(params["object"]),
          true <- user.is_moderator || user.ap_id == object.data["actor"],
-         {:ok, delete} <- ActivityPub.delete(object) do
+         {:ok, delete_data, _} <- Builder.delete(user, object.data["id"]),
+         {:ok, delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
       {:ok, delete}
     else
       _ -> {:error, dgettext("errors", "Can't delete object")}

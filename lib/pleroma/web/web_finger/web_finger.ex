@@ -86,54 +86,24 @@ defmodule Pleroma.Web.WebFinger do
     |> XmlBuilder.to_doc()
   end
 
-  defp get_magic_key("data:application/magic-public-key," <> magic_key) do
-    {:ok, magic_key}
-  end
-
-  defp get_magic_key(nil) do
-    Logger.debug("Undefined magic key.")
-    {:ok, nil}
-  end
-
-  defp get_magic_key(_) do
-    {:error, "Missing magic key data."}
-  end
-
   defp webfinger_from_xml(doc) do
-    with magic_key <- XML.string_from_xpath(~s{//Link[@rel="magic-public-key"]/@href}, doc),
-         {:ok, magic_key} <- get_magic_key(magic_key),
-         topic <-
-           XML.string_from_xpath(
-             ~s{//Link[@rel="http://schemas.google.com/g/2010#updates-from"]/@href},
-             doc
-           ),
-         subject <- XML.string_from_xpath("//Subject", doc),
-         subscribe_address <-
-           XML.string_from_xpath(
-             ~s{//Link[@rel="http://ostatus.org/schema/1.0/subscribe"]/@template},
-             doc
-           ),
-         ap_id <-
-           XML.string_from_xpath(
-             ~s{//Link[@rel="self" and @type="application/activity+json"]/@href},
-             doc
-           ) do
-      data = %{
-        "magic_key" => magic_key,
-        "topic" => topic,
-        "subject" => subject,
-        "subscribe_address" => subscribe_address,
-        "ap_id" => ap_id
-      }
+    subject = XML.string_from_xpath("//Subject", doc)
 
-      {:ok, data}
-    else
-      {:error, e} ->
-        {:error, e}
+    subscribe_address =
+      ~s{//Link[@rel="http://ostatus.org/schema/1.0/subscribe"]/@template}
+      |> XML.string_from_xpath(doc)
 
-      e ->
-        {:error, e}
-    end
+    ap_id =
+      ~s{//Link[@rel="self" and @type="application/activity+json"]/@href}
+      |> XML.string_from_xpath(doc)
+
+    data = %{
+      "subject" => subject,
+      "subscribe_address" => subscribe_address,
+      "ap_id" => ap_id
+    }
+
+    {:ok, data}
   end
 
   defp webfinger_from_json(doc) do
@@ -145,9 +115,6 @@ defmodule Pleroma.Web.WebFinger do
 
           {"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"", "self"} ->
             Map.put(data, "ap_id", link["href"])
-
-          {_, "http://ostatus.org/schema/1.0/subscribe"} ->
-            Map.put(data, "subscribe_address", link["template"])
 
           _ ->
             Logger.debug("Unhandled type: #{inspect(link["type"])}")
@@ -194,13 +161,15 @@ defmodule Pleroma.Web.WebFinger do
           URI.parse(account).host
       end
 
+    encoded_account = URI.encode("acct:#{account}")
+
     address =
       case find_lrdd_template(domain) do
         {:ok, template} ->
-          String.replace(template, "{uri}", URI.encode(account))
+          String.replace(template, "{uri}", encoded_account)
 
         _ ->
-          "https://#{domain}/.well-known/webfinger?resource=acct:#{account}"
+          "https://#{domain}/.well-known/webfinger?resource=#{encoded_account}"
       end
 
     with response <-

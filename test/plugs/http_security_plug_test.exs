@@ -67,7 +67,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
 
       [csp] = Conn.get_resp_header(conn, "content-security-policy")
 
-      assert csp =~ ~r|report-uri https://endpoint.com; report-to csp-endpoint;|
+      assert csp =~ ~r|report-uri https://endpoint.com;report-to csp-endpoint;|
 
       [reply_to] = Conn.get_resp_header(conn, "reply-to")
 

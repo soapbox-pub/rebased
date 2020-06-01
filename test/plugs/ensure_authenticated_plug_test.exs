@@ -24,11 +24,36 @@ defmodule Pleroma.Plugs.EnsureAuthenticatedPlugTest do
     end
   end
 
+  test "it halts if user is assigned and MFA enabled", %{conn: conn} do
+    conn =
+      conn
+      |> assign(:user, %User{multi_factor_authentication_settings: %{enabled: true}})
+      |> assign(:auth_credentials, %{password: "xd-42"})
+      |> EnsureAuthenticatedPlug.call(%{})
+
+    assert conn.status == 403
+    assert conn.halted == true
+
+    assert conn.resp_body ==
+             "{\"error\":\"Two-factor authentication enabled, you must use a access token.\"}"
+  end
+
+  test "it continues if user is assigned and MFA disabled", %{conn: conn} do
+    conn =
+      conn
+      |> assign(:user, %User{multi_factor_authentication_settings: %{enabled: false}})
+      |> assign(:auth_credentials, %{password: "xd-42"})
+      |> EnsureAuthenticatedPlug.call(%{})
+
+    refute conn.status == 403
+    refute conn.halted
+  end
+
   describe "with :if_func / :unless_func options" do
     setup do
       %{
-        true_fn: fn -> true end,
-        false_fn: fn -> false end
+        true_fn: fn _conn -> true end,
+        false_fn: fn _conn -> false end
       }
     end
 

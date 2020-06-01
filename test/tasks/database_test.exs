@@ -26,7 +26,7 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
   describe "running remove_embedded_objects" do
     test "it replaces objects with references" do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
       new_data = Map.put(activity.data, "object", activity.object.data)
 
       {:ok, activity} =
@@ -99,8 +99,8 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
     test "it turns OrderedCollection likes into empty arrays" do
       [user, user2] = insert_pair(:user)
 
-      {:ok, %{id: id, object: object}} = CommonAPI.post(user, %{"status" => "test"})
-      {:ok, %{object: object2}} = CommonAPI.post(user, %{"status" => "test test"})
+      {:ok, %{id: id, object: object}} = CommonAPI.post(user, %{status: "test"})
+      {:ok, %{object: object2}} = CommonAPI.post(user, %{status: "test test"})
 
       CommonAPI.favorite(user2, id)
 

@@ -10,7 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
   test "get instance information", %{conn: conn} do
     conn = get(conn, "/api/v1/instance")
-    assert result = json_response(conn, 200)
+    assert result = json_response_and_validate_schema(conn, 200)
 
     email = Pleroma.Config.get([:instance, :email])
     # Note: not checking for "max_toot_chars" since it's optional
@@ -31,7 +31,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "upload_limit" => _,
              "avatar_upload_limit" => _,
              "background_upload_limit" => _,
-             "banner_upload_limit" => _
+             "banner_upload_limit" => _,
+             "background_image" => _
            } = result
 
     assert result["pleroma"]["metadata"]["features"]
@@ -50,13 +51,13 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
     insert(:user, %{local: false, nickname: "u@peer1.com"})
     insert(:user, %{local: false, nickname: "u@peer2.com"})
 
-    {:ok, _} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofe"})
+    {:ok, _} = Pleroma.Web.CommonAPI.post(user, %{status: "cofe"})
 
     Pleroma.Stats.force_update()
 
     conn = get(conn, "/api/v1/instance")
 
-    assert result = json_response(conn, 200)
+    assert result = json_response_and_validate_schema(conn, 200)
 
     stats = result["stats"]
 
@@ -74,7 +75,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
 
     conn = get(conn, "/api/v1/instance/peers")
 
-    assert result = json_response(conn, 200)
+    assert result = json_response_and_validate_schema(conn, 200)
 
     assert ["peer1.com", "peer2.com"] == Enum.sort(result)
   end

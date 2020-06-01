@@ -10,8 +10,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       add_link_headers: 2,
       truthy_param?: 1,
       assign_account_by_id: 2,
-      json_response: 3,
-      skip_relationships?: 1
+      embed_relationships?: 1,
+      json_response: 3
     ]
 
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
@@ -27,7 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
-  plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   plug(:skip_plug, [OAuthScopesPlug, EnsurePublicOrAuthenticatedPlug] when action == :create)
 
@@ -81,7 +81,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(
     RateLimiter,
-    [name: :relation_id_action, params: ["id", "uri"]] when action in @relationship_actions
+    [name: :relation_id_action, params: [:id, :uri]] when action in @relationship_actions
   )
 
   plug(RateLimiter, [name: :relations_actions] when action in @relationship_actions)
@@ -177,6 +177,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       )
       |> add_if_present(params, :pleroma_settings_store, :pleroma_settings_store)
       |> add_if_present(params, :default_scope, :default_scope)
+      |> add_if_present(params["source"], "privacy", :default_scope)
       |> add_if_present(params, :actor_type, :actor_type)
 
     changeset = User.update_changeset(user, user_params)
@@ -189,7 +190,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   defp add_if_present(map, params, params_field, map_field, value_function \\ &{:ok, &1}) do
-    with true <- Map.has_key?(params, params_field),
+    with true <- is_map(params),
+         true <- Map.has_key?(params, params_field),
          {:ok, new_value} <- value_function.(Map.get(params, params_field)) do
       Map.put(map, map_field, new_value)
     else
@@ -247,8 +249,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> render("index.json",
         activities: activities,
         for: reading_user,
-        as: :activity,
-        skip_relationships: skip_relationships?(params)
+        as: :activity
       )
     else
       _e -> render_error(conn, :not_found, "Can't find user")
@@ -271,7 +272,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
     conn
     |> add_link_headers(followers)
-    |> render("index.json", for: for_user, users: followers, as: :user)
+    # https://git.pleroma.social/pleroma/pleroma-fe/-/issues/838#note_59223
+    |> render("index.json",
+      for: for_user,
+      users: followers,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
   end
 
   @doc "GET /api/v1/accounts/:id/following"
@@ -290,7 +297,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
     conn
     |> add_link_headers(followers)
-    |> render("index.json", for: for_user, users: followers, as: :user)
+    # https://git.pleroma.social/pleroma/pleroma-fe/-/issues/838#note_59223
+    |> render("index.json",
+      for: for_user,
+      users: followers,
+      as: :user,
+      embed_relationships: embed_relationships?(params)
+    )
   end
 
   @doc "GET /api/v1/accounts/:id/lists"
@@ -356,8 +369,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/unblock"
   def unblock(%{assigns: %{user: blocker, account: blocked}} = conn, _params) do
-    with {:ok, _user_block} <- User.unblock(blocker, blocked),
-         {:ok, _activity} <- ActivityPub.unblock(blocker, blocked) do
+    with {:ok, _activity} <- CommonAPI.unblock(blocker, blocked) do
       render(conn, "relationship.json", user: blocker, target: blocked)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})

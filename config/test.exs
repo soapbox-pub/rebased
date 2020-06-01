@@ -56,6 +56,19 @@ config :pleroma, :rich_media,
   ignore_hosts: [],
   ignore_tld: ["local", "localdomain", "lan"]
 
+config :pleroma, :instance,
+  multi_factor_authentication: [
+    totp: [
+      # digits 6 or 8
+      digits: 6,
+      period: 30
+    ],
+    backup_codes: [
+      number: 2,
+      length: 6
+    ]
+  ]
+
 config :web_push_encryption, :vapid_details,
   subject: "mailto:administrator@example.com",
   public_key:
@@ -95,6 +108,8 @@ config :pleroma, Pleroma.Gun, Pleroma.GunMock
 config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: true
 
 config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
+
+config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

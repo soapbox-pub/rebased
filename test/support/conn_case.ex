@@ -74,7 +74,7 @@ defmodule Pleroma.Web.ConnCase do
         status = Plug.Conn.Status.code(status)
 
         unless lookup[op_id].responses[status] do
-          err = "Response schema not found for #{conn.status} #{conn.method} #{conn.request_path}"
+          err = "Response schema not found for #{status} #{conn.method} #{conn.request_path}"
           flunk(err)
         end
 
@@ -139,7 +139,11 @@ defmodule Pleroma.Web.ConnCase do
     end
 
     if tags[:needs_streamer] do
-      start_supervised(Pleroma.Web.Streamer.supervisor())
+      start_supervised(%{
+        id: Pleroma.Web.Streamer.registry(),
+        start:
+          {Registry, :start_link, [[keys: :duplicate, name: Pleroma.Web.Streamer.registry()]]}
+      })
     end
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}

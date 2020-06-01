@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.Changeset
   alias Ecto.UUID
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -169,8 +170,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Enqueues an activity for federation if it's local
   """
   @spec maybe_federate(any()) :: :ok
-  def maybe_federate(%Activity{local: true} = activity) do
-    if Pleroma.Config.get!([:instance, :federating]) do
+  def maybe_federate(%Activity{local: true, data: %{"type" => type}} = activity) do
+    outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
+
+    with true <- Config.get!([:instance, :federating]),
+         true <- type != "Block" || outgoing_blocks do
       Pleroma.Web.Federator.publish(activity)
     end
 
@@ -512,7 +516,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   #### Announce-related helpers
 
   @doc """
-  Retruns an existing announce activity if the notice has already been announced
+  Returns an existing announce activity if the notice has already been announced
   """
   @spec get_existing_announce(String.t(), map()) :: Activity.t() | nil
   def get_existing_announce(actor, %{data: %{"id" => ap_id}}) do
@@ -558,45 +562,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "to" => [user.follower_address, object.data["actor"]],
       "cc" => [Pleroma.Constants.as_public()],
       "context" => object.data["context"]
-    }
-    |> maybe_put("id", activity_id)
-  end
-
-  @doc """
-  Make unannounce activity data for the given actor and object
-  """
-  def make_unannounce_data(
-        %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context, "object" => object}} = activity,
-        activity_id
-      ) do
-    object = Object.normalize(object)
-
-    %{
-      "type" => "Undo",
-      "actor" => ap_id,
-      "object" => activity.data,
-      "to" => [user.follower_address, object.data["actor"]],
-      "cc" => [Pleroma.Constants.as_public()],
-      "context" => context
-    }
-    |> maybe_put("id", activity_id)
-  end
-
-  def make_unlike_data(
-        %User{ap_id: ap_id} = user,
-        %Activity{data: %{"context" => context, "object" => object}} = activity,
-        activity_id
-      ) do
-    object = Object.normalize(object)
-
-    %{
-      "type" => "Undo",
-      "actor" => ap_id,
-      "object" => activity.data,
-      "to" => [user.follower_address, object.data["actor"]],
-      "cc" => [Pleroma.Constants.as_public()],
-      "context" => context
     }
     |> maybe_put("id", activity_id)
   end
@@ -684,16 +649,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => blocker.ap_id,
       "to" => [blocked.ap_id],
       "object" => blocked.ap_id
-    }
-    |> maybe_put("id", activity_id)
-  end
-
-  def make_unblock_data(blocker, blocked, block_activity, activity_id) do
-    %{
-      "type" => "Undo",
-      "actor" => blocker.ap_id,
-      "to" => [blocked.ap_id],
-      "object" => block_activity.data
     }
     |> maybe_put("id", activity_id)
   end

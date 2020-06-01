@@ -48,6 +48,7 @@ benchmark:
 
 unit-testing:
   stage: test
+  retry: 2
   cache: &testing_cache_policy
     <<: *global_cache_policy
     policy: pull
@@ -80,6 +81,7 @@ unit-testing:
 
 unit-testing-rum:
   stage: test
+  retry: 2
   cache: *testing_cache_policy
   services:
   - name: minibikini/postgres-with-rum:12

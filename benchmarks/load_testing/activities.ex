@@ -123,7 +123,7 @@ defmodule Pleroma.LoadTesting.Activities do
     Enum.each(1..activity_count, fn _ ->
       random = :rand.uniform()
       i = Enum.find_index(intervals, fn {lower, upper} -> lower <= random && upper > random end)
-      CommonAPI.post(Enum.random(users), %{"status" => "a post with the tag #tag_#{i}"})
+      CommonAPI.post(Enum.random(users), %{status: "a post with the tag #tag_#{i}"})
     end)
   end
 
@@ -137,8 +137,8 @@ defmodule Pleroma.LoadTesting.Activities do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "Start of #{visibility} long thread",
-        "visibility" => visibility
+        status: "Start of #{visibility} long thread",
+        visibility: visibility
       })
 
     Agent.update(:benchmark_state, fn state ->
@@ -186,7 +186,7 @@ defmodule Pleroma.LoadTesting.Activities do
     {:ok, _activity} =
       group
       |> get_actor(user, friends, non_friends)
-      |> CommonAPI.post(%{"status" => "Simple status", "visibility" => visibility})
+      |> CommonAPI.post(%{status: "Simple status", visibility: visibility})
   end
 
   defp insert_activity("emoji", visibility, group, user, friends, non_friends, _opts) do
@@ -194,8 +194,8 @@ defmodule Pleroma.LoadTesting.Activities do
       group
       |> get_actor(user, friends, non_friends)
       |> CommonAPI.post(%{
-        "status" => "Simple status with emoji :firefox:",
-        "visibility" => visibility
+        status: "Simple status with emoji :firefox:",
+        visibility: visibility
       })
   end
 
@@ -213,8 +213,8 @@ defmodule Pleroma.LoadTesting.Activities do
       group
       |> get_actor(user, friends, non_friends)
       |> CommonAPI.post(%{
-        "status" => Enum.join(user_mentions, ", ") <> " simple status with mentions",
-        "visibility" => visibility
+        status: Enum.join(user_mentions, ", ") <> " simple status with mentions",
+        visibility: visibility
       })
   end
 
@@ -236,8 +236,8 @@ defmodule Pleroma.LoadTesting.Activities do
       group
       |> get_actor(user, friends, non_friends)
       |> CommonAPI.post(%{
-        "status" => mentions <> " hell thread status",
-        "visibility" => visibility
+        status: mentions <> " hell thread status",
+        visibility: visibility
       })
   end
 
@@ -262,9 +262,9 @@ defmodule Pleroma.LoadTesting.Activities do
 
     {:ok, _activity} =
       CommonAPI.post(actor, %{
-        "status" => "Post with attachment",
-        "visibility" => visibility,
-        "media_ids" => [object.id]
+        status: "Post with attachment",
+        visibility: visibility,
+        media_ids: [object.id]
       })
   end
 
@@ -272,7 +272,7 @@ defmodule Pleroma.LoadTesting.Activities do
     {:ok, _activity} =
       group
       |> get_actor(user, friends, non_friends)
-      |> CommonAPI.post(%{"status" => "Status with #tag", "visibility" => visibility})
+      |> CommonAPI.post(%{status: "Status with #tag", visibility: visibility})
   end
 
   defp insert_activity("like", visibility, group, user, friends, non_friends, opts) do
@@ -312,8 +312,7 @@ defmodule Pleroma.LoadTesting.Activities do
     actor = get_actor(group, user, friends, non_friends)
     tasks = get_reply_tasks(visibility, group)
 
-    {:ok, activity} =
-      CommonAPI.post(user, %{"status" => "Simple status", "visibility" => visibility})
+    {:ok, activity} = CommonAPI.post(user, %{status: "Simple status", visibility: visibility})
 
     acc = {activity.id, ["@" <> actor.nickname, "reply to status"]}
     insert_replies(tasks, visibility, user, friends, non_friends, acc)
@@ -336,8 +335,8 @@ defmodule Pleroma.LoadTesting.Activities do
 
     {:ok, activity} =
       CommonAPI.post(actor, %{
-        "status" => Enum.join(data, ", ") <> "simple status",
-        "visibility" => "direct"
+        status: Enum.join(data, ", ") <> "simple status",
+        visibility: "direct"
       })
 
     acc = {activity.id, ["@" <> user.nickname | data] ++ ["reply to status"]}
@@ -527,9 +526,9 @@ defmodule Pleroma.LoadTesting.Activities do
   defp insert_reply(actor, data, activity_id, visibility) do
     {:ok, reply} =
       CommonAPI.post(actor, %{
-        "status" => Enum.join(data, ", "),
-        "visibility" => visibility,
-        "in_reply_to_status_id" => activity_id
+        status: Enum.join(data, ", "),
+        visibility: visibility,
+        in_reply_to_status_id: activity_id
       })
 
     {reply.id, ["@" <> actor.nickname | data]}

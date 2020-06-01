@@ -8,7 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.DomainBlockController do
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
 
-  plug(OpenApiSpex.Plug.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.DomainBlockOperation
 
   plug(

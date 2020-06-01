@@ -164,7 +164,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
     posts =
       for i <- 0..25 do
-        {:ok, activity} = CommonAPI.post(user, %{"status" => "post #{i}"})
+        {:ok, activity} = CommonAPI.post(user, %{status: "post #{i}"})
         activity
       end
 

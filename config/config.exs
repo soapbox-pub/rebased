@@ -71,7 +71,8 @@ config :pleroma, Pleroma.Upload,
       follow_redirect: true,
       pool: :upload
     ]
-  ]
+  ],
+  filename_display_max_length: 30
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
@@ -183,6 +184,7 @@ config :pleroma, :instance,
   email: "example@example.com",
   notify_email: "noreply@example.com",
   description: "A Pleroma instance, an alternative fediverse server",
+  background_image: "/images/city.jpg",
   limit: 5_000,
   chat_limit: 5_000,
   remote_limit: 100_000,
@@ -238,9 +240,18 @@ config :pleroma, :instance,
   account_field_value_length: 2048,
   external_user_synchronization: true,
   extended_nickname_format: true,
-  cleanup_attachments: false
-
-config :pleroma, :extensions, output_relationships_in_statuses_by_default: true
+  cleanup_attachments: false,
+  multi_factor_authentication: [
+    totp: [
+      # digits 6 or 8
+      digits: 6,
+      period: 30
+    ],
+    backup_codes: [
+      number: 5,
+      length: 16
+    ]
+  ]
 
 config :pleroma, :feed,
   post_title: %{
@@ -262,20 +273,33 @@ config :pleroma, :markup,
 
 config :pleroma, :frontend_configurations,
   pleroma_fe: %{
-    theme: "pleroma-dark",
-    logo: "/static/logo.png",
+    alwaysShowSubjectInput: true,
     background: "/images/city.jpg",
-    redirectRootNoLogin: "/main/all",
-    redirectRootLogin: "/main/friends",
-    showInstanceSpecificPanel: true,
-    scopeOptionsEnabled: false,
-    formattingOptionsEnabled: false,
     collapseMessageWithSubject: false,
+    disableChat: false,
+    greentext: false,
+    hideFilteredStatuses: false,
+    hideMutedPosts: false,
     hidePostStats: false,
+    hideSitename: false,
     hideUserStats: false,
+    loginMethod: "password",
+    logo: "/static/logo.png",
+    logoMargin: ".1em",
+    logoMask: true,
+    minimalScopesMode: false,
+    noAttachmentLinks: false,
+    nsfwCensorImage: "",
+    postContentType: "text/plain",
+    redirectRootLogin: "/main/friends",
+    redirectRootNoLogin: "/main/all",
     scopeCopy: true,
+    sidebarRight: false,
+    showFeaturesPanel: true,
+    showInstanceSpecificPanel: false,
     subjectLineBehavior: "email",
-    alwaysShowSubjectInput: true
+    theme: "pleroma-dark",
+    webPushNotifications: false
   },
   masto_fe: %{
     showInstanceSpecificPanel: true
@@ -369,6 +393,10 @@ config :pleroma, :rich_media,
 
 config :pleroma, :media_proxy,
   enabled: false,
+  invalidation: [
+    enabled: false,
+    provider: Pleroma.Web.MediaProxy.Invalidation.Script
+  ],
   proxy_opts: [
     redirect_on_failure: false,
     max_body_length: 25 * 1_048_576,
@@ -654,6 +682,8 @@ config :pleroma, :restrict_unauthenticated,
   timelines: %{local: false, federated: false},
   profiles: %{local: false, remote: false},
   activities: %{local: false, remote: false}
+
+config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

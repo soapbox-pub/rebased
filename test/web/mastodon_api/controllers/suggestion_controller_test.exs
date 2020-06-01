@@ -11,7 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.SuggestionControllerTest do
     res =
       conn
       |> get("/api/v1/suggestions")
-      |> json_response(200)
+      |> json_response_and_validate_schema(200)
 
     assert res == []
   end

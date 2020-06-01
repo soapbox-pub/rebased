@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.Pipeline do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -44,7 +45,9 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
 
   defp maybe_federate(%Activity{} = activity, meta) do
     with {:ok, local} <- Keyword.fetch(meta, :local) do
-      if local do
+      do_not_federate = meta[:do_not_federate] || !Config.get([:instance, :federating])
+
+      if !do_not_federate && local do
         Federator.publish(activity)
         {:ok, :federated}
       else

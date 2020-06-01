@@ -22,10 +22,10 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "Is Tenshi eating a corndog cute?",
-        "poll" => %{
-          "options" => ["absolutely!", "sure", "yes", "why are you even asking?"],
-          "expires_in" => 20
+        status: "Is Tenshi eating a corndog cute?",
+        poll: %{
+          options: ["absolutely!", "sure", "yes", "why are you even asking?"],
+          expires_in: 20
         }
       })
 
@@ -62,11 +62,11 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "Which Mastodon developer is your favourite?",
-        "poll" => %{
-          "options" => ["Gargron", "Eugen"],
-          "expires_in" => 20,
-          "multiple" => true
+        status: "Which Mastodon developer is your favourite?",
+        poll: %{
+          options: ["Gargron", "Eugen"],
+          expires_in: 20,
+          multiple: true
         }
       })
 
@@ -91,10 +91,10 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "What's with the smug face?",
-        "poll" => %{
-          "options" => [":blank: sip", ":blank::blank: sip", ":blank::blank::blank: sip"],
-          "expires_in" => 20
+        status: "What's with the smug face?",
+        poll: %{
+          options: [":blank: sip", ":blank::blank: sip", ":blank::blank::blank: sip"],
+          expires_in: 20
         }
       })
 
@@ -109,11 +109,11 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "Which input devices do you use?",
-        "poll" => %{
-          "options" => ["mouse", "trackball", "trackpoint"],
-          "multiple" => true,
-          "expires_in" => 20
+        status: "Which input devices do you use?",
+        poll: %{
+          options: ["mouse", "trackball", "trackpoint"],
+          multiple: true,
+          expires_in: 20
         }
       })
 

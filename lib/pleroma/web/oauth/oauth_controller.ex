@@ -6,6 +6,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Helpers.UriHelper
+  alias Pleroma.MFA
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Registration
   alias Pleroma.Repo
@@ -14,6 +15,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.MFAController
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
@@ -121,7 +123,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         %{"authorization" => _} = params,
         opts \\ []
       ) do
-    with {:ok, auth} <- do_create_authorization(conn, params, opts[:user]) do
+    with {:ok, auth, user} <- do_create_authorization(conn, params, opts[:user]),
+         {:mfa_required, _, _, false} <- {:mfa_required, user, auth, MFA.require?(user)} do
       after_create_authorization(conn, auth, params)
     else
       error ->
@@ -181,6 +184,22 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   defp handle_create_authorization_error(
          %Plug.Conn{} = conn,
+         {:mfa_required, user, auth, _},
+         params
+       ) do
+    {:ok, token} = MFA.Token.create_token(user, auth)
+
+    data = %{
+      "mfa_token" => token.token,
+      "redirect_uri" => params["authorization"]["redirect_uri"],
+      "state" => params["authorization"]["state"]
+    }
+
+    MFAController.show(conn, data)
+  end
+
+  defp handle_create_authorization_error(
+         %Plug.Conn{} = conn,
          {:account_status, :password_reset_pending},
          %{"authorization" => _} = params
        ) do
@@ -231,7 +250,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
       json(conn, Token.Response.build(user, token, response_attrs))
     else
-      _error -> render_invalid_credentials_error(conn)
+      error ->
+        handle_token_exchange_error(conn, error)
     end
   end
 
@@ -244,6 +264,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:account_status, :active} <- {:account_status, User.account_status(user)},
          {:ok, scopes} <- validate_scopes(app, params),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
+         {:mfa_required, _, _, false} <- {:mfa_required, user, auth, MFA.require?(user)},
          {:ok, token} <- Token.exchange_token(app, auth) do
       json(conn, Token.Response.build(user, token))
     else
@@ -270,12 +291,19 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:ok, token} <- Token.exchange_token(app, auth) do
       json(conn, Token.Response.build_for_client_credentials(token))
     else
-      _error -> render_invalid_credentials_error(conn)
+      _error ->
+        handle_token_exchange_error(conn, :invalid_credentails)
     end
   end
 
   # Bad request
   def token_exchange(%Plug.Conn{} = conn, params), do: bad_request(conn, params)
+
+  defp handle_token_exchange_error(%Plug.Conn{} = conn, {:mfa_required, user, auth, _}) do
+    conn
+    |> put_status(:forbidden)
+    |> json(build_and_response_mfa_token(user, auth))
+  end
 
   defp handle_token_exchange_error(%Plug.Conn{} = conn, {:account_status, :deactivated}) do
     render_error(
@@ -434,7 +462,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   def register(%Plug.Conn{} = conn, %{"authorization" => _, "op" => "connect"} = params) do
     with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
          %Registration{} = registration <- Repo.get(Registration, registration_id),
-         {_, {:ok, auth}} <- {:create_authorization, do_create_authorization(conn, params)},
+         {_, {:ok, auth, _user}} <-
+           {:create_authorization, do_create_authorization(conn, params)},
          %User{} = user <- Repo.preload(auth, :user).user,
          {:ok, _updated_registration} <- Registration.bind_to_user(registration, user) do
       conn
@@ -500,8 +529,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
          {:ok, scopes} <- validate_scopes(app, auth_attrs),
-         {:account_status, :active} <- {:account_status, User.account_status(user)} do
-      Authorization.create_authorization(app, user, scopes)
+         {:account_status, :active} <- {:account_status, User.account_status(user)},
+         {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
+      {:ok, auth, user}
     end
   end
 
@@ -514,6 +544,12 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   defp put_session_registration_id(%Plug.Conn{} = conn, registration_id),
     do: put_session(conn, :registration_id, registration_id)
+
+  defp build_and_response_mfa_token(user, auth) do
+    with {:ok, token} <- MFA.Token.create_token(user, auth) do
+      Token.Response.build_for_mfa_token(user, token)
+    end
+  end
 
   @spec validate_scopes(App.t(), map()) ::
           {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}

@@ -24,19 +24,19 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
     # min_id
     conn_res = get(conn, "/api/v1/scheduled_statuses?limit=2&min_id=#{scheduled_activity_id1}")
 
-    result = json_response(conn_res, 200)
+    result = json_response_and_validate_schema(conn_res, 200)
     assert [%{"id" => ^scheduled_activity_id3}, %{"id" => ^scheduled_activity_id2}] = result
 
     # since_id
     conn_res = get(conn, "/api/v1/scheduled_statuses?limit=2&since_id=#{scheduled_activity_id1}")
 
-    result = json_response(conn_res, 200)
+    result = json_response_and_validate_schema(conn_res, 200)
     assert [%{"id" => ^scheduled_activity_id4}, %{"id" => ^scheduled_activity_id3}] = result
 
     # max_id
     conn_res = get(conn, "/api/v1/scheduled_statuses?limit=2&max_id=#{scheduled_activity_id4}")
 
-    result = json_response(conn_res, 200)
+    result = json_response_and_validate_schema(conn_res, 200)
     assert [%{"id" => ^scheduled_activity_id3}, %{"id" => ^scheduled_activity_id2}] = result
   end
 
@@ -46,12 +46,12 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
 
     res_conn = get(conn, "/api/v1/scheduled_statuses/#{scheduled_activity.id}")
 
-    assert %{"id" => scheduled_activity_id} = json_response(res_conn, 200)
+    assert %{"id" => scheduled_activity_id} = json_response_and_validate_schema(res_conn, 200)
     assert scheduled_activity_id == scheduled_activity.id |> to_string()
 
     res_conn = get(conn, "/api/v1/scheduled_statuses/404")
 
-    assert %{"error" => "Record not found"} = json_response(res_conn, 404)
+    assert %{"error" => "Record not found"} = json_response_and_validate_schema(res_conn, 404)
   end
 
   test "updates a scheduled activity" do
@@ -74,22 +74,32 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
     assert job.args == %{"activity_id" => scheduled_activity.id}
     assert DateTime.truncate(job.scheduled_at, :second) == to_datetime(scheduled_at)
 
-    new_scheduled_at = Timex.shift(NaiveDateTime.utc_now(), minutes: 120)
+    new_scheduled_at =
+      NaiveDateTime.utc_now()
+      |> Timex.shift(minutes: 120)
+      |> Timex.format!("%Y-%m-%dT%H:%M:%S.%fZ", :strftime)
 
     res_conn =
-      put(conn, "/api/v1/scheduled_statuses/#{scheduled_activity.id}", %{
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> put("/api/v1/scheduled_statuses/#{scheduled_activity.id}", %{
         scheduled_at: new_scheduled_at
       })
 
-    assert %{"scheduled_at" => expected_scheduled_at} = json_response(res_conn, 200)
+    assert %{"scheduled_at" => expected_scheduled_at} =
+             json_response_and_validate_schema(res_conn, 200)
+
     assert expected_scheduled_at == Pleroma.Web.CommonAPI.Utils.to_masto_date(new_scheduled_at)
     job = refresh_record(job)
 
     assert DateTime.truncate(job.scheduled_at, :second) == to_datetime(new_scheduled_at)
 
-    res_conn = put(conn, "/api/v1/scheduled_statuses/404", %{scheduled_at: new_scheduled_at})
+    res_conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> put("/api/v1/scheduled_statuses/404", %{scheduled_at: new_scheduled_at})
 
-    assert %{"error" => "Record not found"} = json_response(res_conn, 404)
+    assert %{"error" => "Record not found"} = json_response_and_validate_schema(res_conn, 404)
   end
 
   test "deletes a scheduled activity" do
@@ -115,7 +125,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
       |> assign(:user, user)
       |> delete("/api/v1/scheduled_statuses/#{scheduled_activity.id}")
 
-    assert %{} = json_response(res_conn, 200)
+    assert %{} = json_response_and_validate_schema(res_conn, 200)
     refute Repo.get(ScheduledActivity, scheduled_activity.id)
     refute Repo.get(Oban.Job, job.id)
 
@@ -124,6 +134,6 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityControllerTest do
       |> assign(:user, user)
       |> delete("/api/v1/scheduled_statuses/#{scheduled_activity.id}")
 
-    assert %{"error" => "Record not found"} = json_response(res_conn, 404)
+    assert %{"error" => "Record not found"} = json_response_and_validate_schema(res_conn, 404)
   end
 end

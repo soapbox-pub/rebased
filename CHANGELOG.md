@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [unreleased]
 
 ### Changed
+- MFR policy to set global expiration for all local Create activities
 <details>
   <summary>API Changes</summary>
 - **Breaking:** Emoji API: changed methods and renamed routes.
@@ -15,14 +16,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
+- ActivityPub: Added support for existing AP ids for instances migrated from Mastodon.
+- Instance: Add `background_image` to configuration and `/api/v1/instance`
 - Instance: Extend `/api/v1/instance` with Pleroma-specific information.
 - NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
 - NodeInfo: `pleroma_emoji_reactions` to the `features` list.
 - Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
+- Configuration: Add `:database_config_whitelist` setting to whitelist settings which can be configured from AdminFE.
+- Configuration: `filename_display_max_length` option to set filename truncate limit, if filename display enabled (0 = no limit).
 - New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
 - Mix task to create trusted OAuth App.
 - Notifications: Added `follow_request` notification type.
 - Added `:reject_deletes` group to SimplePolicy
+- MRF (`EmojiStealPolicy`): New MRF Policy which allows to automatically download emojis from remote instances
 <details>
   <summary>API Changes</summary>
 - Mastodon API: Extended `/api/v1/instance`.
@@ -30,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 - Mastodon API: Add support for filtering replies in public and home timelines
 - Admin API: endpoints for create/update/delete OAuth Apps.
+- Admin API: endpoint for status view.
 </details>
 
 ### Fixed
@@ -37,26 +44,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: SimplePolicy `:reject` and `:accept` allow deletions again
 - Fix follower/blocks import when nicknames starts with @
 - Filtering of push notifications on activities from blocked domains
+- Resolving Peertube accounts with Webfinger
+- `blob:` urls not being allowed by connect-src CSP
 
-### Changed
-- MFR policy to set global expiration for all local Create activities
+## [Unreleased (patch)]
 
-## [unreleased-patch]
+### Fixed
+- Healthcheck reporting the number of memory currently used, rather than allocated in total
+- `InsertSkeletonsForDeletedUsers` failing on some instances
+
+## [2.0.3] - 2020-05-02
+
 ### Security
 - Disallow re-registration of previously deleted users, which allowed viewing direct messages addressed to them
 - Mastodon API: Fix `POST /api/v1/follow_requests/:id/authorize` allowing to force a follow from a local user even if they didn't request to follow
+- CSP: Sandbox uploads
 
 ### Fixed
-- Logger configuration through AdminFE
+- Notifications from blocked domains
+- Potential federation issues with Mastodon versions before 3.0.0
 - HTTP Basic Authentication permissions issue
+- Follow/Block imports not being able to find the user if the nickname started with an `@`
+- Instance stats counting internal users
+- Inability to run a From Source release without git
 - ObjectAgePolicy didn't filter out old messages
+- `blob:` urls not being allowed by CSP
 
 ### Added
 - NodeInfo: ObjectAgePolicy settings to the `federation` list.
+- Follow request notifications
 <details>
   <summary>API Changes</summary>
 - Admin API: `GET /api/pleroma/admin/need_reboot`.
 </details>
+
+### Upgrade notes
+
+1. Restart Pleroma
+2. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+
 
 ## [2.0.2] - 2020-04-08
 ### Added
@@ -156,6 +184,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `pleroma.thread_muted` to the Status entity
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
 - Mastodon API, streaming: Add `pleroma.direct_conversation_id` to the `conversation` stream event payload.
+- Mastodon API: Add `pleroma.unread_count` to the Marker entity
 - Admin API: Render whole status in grouped reports
 - Mastodon API: User timelines will now respect blocks, unless you are getting the user timeline of somebody you blocked (which would be empty otherwise).
 - Mastodon API: Favoriting / Repeating a post multiple times will now return the identical response every time. Before, executing that action twice would return an error ("already favorited") on the second try.

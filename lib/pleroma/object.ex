@@ -9,11 +9,13 @@ defmodule Pleroma.Object do
   import Ecto.Changeset
 
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
   alias Pleroma.ObjectTombstone
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Workers.AttachmentsCleanupWorker
 
   require Logger
 
@@ -138,12 +140,17 @@ defmodule Pleroma.Object do
 
   def normalize(_, _, _), do: nil
 
-  # Owned objects can only be mutated by their owner
-  def authorize_mutation(%Object{data: %{"actor" => actor}}, %User{ap_id: ap_id}),
-    do: actor == ap_id
+  # Owned objects can only be accessed by their owner
+  def authorize_access(%Object{data: %{"actor" => actor}}, %User{ap_id: ap_id}) do
+    if actor == ap_id do
+      :ok
+    else
+      {:error, :forbidden}
+    end
+  end
 
-  # Legacy objects can be mutated by anybody
-  def authorize_mutation(%Object{}, %User{}), do: true
+  # Legacy objects can be accessed by anybody
+  def authorize_access(%Object{}, %User{}), do: :ok
 
   @spec get_cached_by_ap_id(String.t()) :: Object.t() | nil
   def get_cached_by_ap_id(ap_id) do
@@ -183,24 +190,34 @@ defmodule Pleroma.Object do
   def delete(%Object{data: %{"id" => id}} = object) do
     with {:ok, _obj} = swap_object_with_tombstone(object),
          deleted_activity = Activity.delete_all_by_object_ap_id(id),
-         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}"),
-         {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path) do
-      with true <- Pleroma.Config.get([:instance, :cleanup_attachments]) do
-        {:ok, _} =
-          Pleroma.Workers.AttachmentsCleanupWorker.enqueue("cleanup_attachments", %{
-            "object" => object
-          })
-      end
+         {:ok, _} <- invalid_object_cache(object) do
+      cleanup_attachments(
+        Config.get([:instance, :cleanup_attachments]),
+        %{"object" => object}
+      )
 
       {:ok, object, deleted_activity}
     end
   end
 
-  def prune(%Object{data: %{"id" => id}} = object) do
+  @spec cleanup_attachments(boolean(), %{required(:object) => map()}) ::
+          {:ok, Oban.Job.t() | nil}
+  def cleanup_attachments(true, %{"object" => _} = params) do
+    AttachmentsCleanupWorker.enqueue("cleanup_attachments", params)
+  end
+
+  def cleanup_attachments(_, _), do: {:ok, nil}
+
+  def prune(%Object{data: %{"id" => _id}} = object) do
     with {:ok, object} <- Repo.delete(object),
-         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}"),
-         {:ok, _} <- Cachex.del(:web_resp_cache, URI.parse(id).path) do
+         {:ok, _} <- invalid_object_cache(object) do
       {:ok, object}
+    end
+  end
+
+  def invalid_object_cache(%Object{data: %{"id" => id}}) do
+    with {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
+      Cachex.del(:web_resp_cache, URI.parse(id).path)
     end
   end
 

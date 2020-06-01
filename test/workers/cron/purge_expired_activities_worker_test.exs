@@ -51,7 +51,7 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorkerTest do
 
     days = Pleroma.Config.get([:mrf_activity_expiration, :days], 365)
 
-    {:ok, %{id: id} = activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "cofe"})
+    {:ok, %{id: id} = activity} = Pleroma.Web.CommonAPI.post(user, %{status: "cofe"})
 
     past_date =
       NaiveDateTime.utc_now() |> Timex.shift(days: -days) |> NaiveDateTime.truncate(:second)

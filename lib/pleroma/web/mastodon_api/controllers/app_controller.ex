@@ -22,7 +22,7 @@ defmodule Pleroma.Web.MastodonAPI.AppController do
 
   plug(OAuthScopesPlug, %{scopes: ["read"]} when action == :verify_credentials)
 
-  plug(OpenApiSpex.Plug.CastAndValidate)
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
   @local_mastodon_name "Mastodon-Local"
 

@@ -36,7 +36,7 @@ defmodule Pleroma.Mixfile do
       releases: [
         pleroma: [
           include_executables_for: [:unix],
-          applications: [ex_syslogger: :load, syslog: :load],
+          applications: [ex_syslogger: :load, syslog: :load, eldap: :transient],
           steps: [:assemble, &put_otp_version/1, &copy_files/1, &copy_nginx_config/1]
         ]
       ]
@@ -72,7 +72,14 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack, :fast_sanitize, :ssl],
+      extra_applications: [
+        :logger,
+        :runtime_tools,
+        :comeonin,
+        :quack,
+        :fast_sanitize,
+        :ssl
+      ],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -119,8 +126,8 @@ defmodule Pleroma.Mixfile do
       {:postgrex, ">= 0.13.5"},
       {:oban, "~> 1.2"},
       {:gettext, "~> 0.15"},
-      {:comeonin, "~> 4.1.1"},
-      {:pbkdf2_elixir, "~> 0.12.3"},
+      {:pbkdf2_elixir, "~> 1.0"},
+      {:bcrypt_elixir, "~> 2.0"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:fast_sanitize, "~> 0.1"},
       {:html_entities, "~> 0.5", override: true},
@@ -148,7 +155,7 @@ defmodule Pleroma.Mixfile do
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.3", only: :test},
       {:crypt,
-       git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
+       git: "https://github.com/msantos/crypt", ref: "f63a705f92c26955977ee62a313012e309a4d77a"},
       {:cors_plug, "~> 1.5"},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
@@ -176,6 +183,7 @@ defmodule Pleroma.Mixfile do
       {:quack, "~> 0.1.1"},
       {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
+      {:pot, "~> 0.10.2"},
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
@@ -191,7 +199,7 @@ defmodule Pleroma.Mixfile do
       {:restarter, path: "./restarter"},
       {:open_api_spex,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
-       ref: "b862ebd78de0df95875cf46feb6e9607130dc2a8"}
+       ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"}
     ] ++ oauth_deps()
   end
 

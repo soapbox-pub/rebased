@@ -8,6 +8,8 @@ defmodule Mix.Tasks.Pleroma.User do
   alias Ecto.Changeset
   alias Pleroma.User
   alias Pleroma.UserInviteToken
+  alias Pleroma.Web.ActivityPub.Builder
+  alias Pleroma.Web.ActivityPub.Pipeline
 
   @shortdoc "Manages Pleroma users"
   @moduledoc File.read!("docs/administration/CLI_tasks/user.md")
@@ -96,8 +98,9 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["rm", nickname]) do
     start_pleroma()
 
-    with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      User.perform(:delete, user)
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname),
+         {:ok, delete_data, _} <- Builder.delete(user, user.ap_id),
+         {:ok, _delete, _} <- Pipeline.common_pipeline(delete_data, local: true) do
       shell_info("User #{nickname} deleted.")
     else
       _ -> shell_error("No local user #{nickname}")
@@ -141,28 +144,18 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
-  def run(["unsubscribe", nickname]) do
+  def run(["deactivate", nickname]) do
     start_pleroma()
 
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       shell_info("Deactivating #{user.nickname}")
       User.deactivate(user)
-
-      user
-      |> User.get_friends()
-      |> Enum.each(fn friend ->
-        user = User.get_cached_by_id(user.id)
-
-        shell_info("Unsubscribing #{friend.nickname} from #{user.nickname}")
-        User.unfollow(user, friend)
-      end)
-
       :timer.sleep(500)
 
       user = User.get_cached_by_id(user.id)
 
-      if Enum.empty?(User.get_friends(user)) do
-        shell_info("Successfully unsubscribed all followers from #{user.nickname}")
+      if Enum.empty?(Enum.filter(User.get_friends(user), & &1.local)) do
+        shell_info("Successfully unsubscribed all local followers from #{user.nickname}")
       end
     else
       _ ->
@@ -170,7 +163,7 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
-  def run(["unsubscribe_all_from_instance", instance]) do
+  def run(["deactivate_all_from_instance", instance]) do
     start_pleroma()
 
     Pleroma.User.Query.build(%{nickname: "@#{instance}"})
@@ -178,7 +171,7 @@ defmodule Mix.Tasks.Pleroma.User do
     |> Stream.each(fn users ->
       users
       |> Enum.each(fn user ->
-        run(["unsubscribe", user.nickname])
+        run(["deactivate", user.nickname])
       end)
     end)
     |> Stream.run()

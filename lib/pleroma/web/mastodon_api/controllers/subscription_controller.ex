@@ -11,14 +11,16 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionController do
 
   action_fallback(:errors)
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
+  plug(:restrict_push_enabled)
   plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["push"]})
 
-  plug(:restrict_push_enabled)
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.SubscriptionOperation
 
   # Creates PushSubscription
   # POST /api/v1/push/subscription
   #
-  def create(%{assigns: %{user: user, token: token}} = conn, params) do
+  def create(%{assigns: %{user: user, token: token}, body_params: params} = conn, _) do
     with {:ok, _} <- Subscription.delete_if_exists(user, token),
          {:ok, subscription} <- Subscription.create(user, token, params) do
       render(conn, "show.json", subscription: subscription)
@@ -28,7 +30,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionController do
   # Gets PushSubscription
   # GET /api/v1/push/subscription
   #
-  def get(%{assigns: %{user: user, token: token}} = conn, _params) do
+  def show(%{assigns: %{user: user, token: token}} = conn, _params) do
     with {:ok, subscription} <- Subscription.get(user, token) do
       render(conn, "show.json", subscription: subscription)
     end
@@ -37,7 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionController do
   # Updates PushSubscription
   # PUT /api/v1/push/subscription
   #
-  def update(%{assigns: %{user: user, token: token}} = conn, params) do
+  def update(%{assigns: %{user: user, token: token}, body_params: params} = conn, _) do
     with {:ok, subscription} <- Subscription.update(user, token, params) do
       render(conn, "show.json", subscription: subscription)
     end
@@ -66,7 +68,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionController do
   def errors(conn, {:error, :not_found}) do
     conn
     |> put_status(:not_found)
-    |> json(dgettext("errors", "Not found"))
+    |> json(%{error: dgettext("errors", "Record not found")})
   end
 
   def errors(conn, _) do

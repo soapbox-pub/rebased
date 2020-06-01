@@ -1,0 +1,24 @@
+<%= if get_flash(@conn, :info) do %>
+<p class="alert alert-info" role="alert"><%= get_flash(@conn, :info) %></p>
+<% end %>
+<%= if get_flash(@conn, :error) do %>
+<p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
+<% end %>
+
+<h2>Two-factor authentication</h2>
+
+<%= form_for @conn, mfa_verify_path(@conn, :verify), [as: "mfa"], fn f -> %>
+<div class="input">
+  <%= label f, :code, "Authentication code" %>
+  <%= text_input f, :code %>
+  <%= hidden_input f, :mfa_token, value: @mfa_token %>
+  <%= hidden_input f, :state, value: @state %>
+  <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
+  <%= hidden_input f, :challenge_type, value: "totp" %>
+</div>
+
+<%= submit "Verify" %>
+<% end %>
+<a href="<%= mfa_path(@conn, :show, %{challenge_type: "recovery", mfa_token: @mfa_token, state: @state, redirect_uri: @redirect_uri}) %>">
+  Enter a two-factor recovery code
+</a>

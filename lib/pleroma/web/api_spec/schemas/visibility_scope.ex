@@ -9,6 +9,6 @@ defmodule Pleroma.Web.ApiSpec.Schemas.VisibilityScope do
     title: "VisibilityScope",
     description: "Status visibility",
     type: :string,
-    enum: ["public", "unlisted", "private", "direct"]
+    enum: ["public", "unlisted", "private", "direct", "list"]
   })
 end

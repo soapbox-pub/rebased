@@ -43,11 +43,9 @@ defmodule Pleroma.ConfigDBTest do
              {ConfigDB.from_string(saved.key), ConfigDB.from_binary(saved.value)}
            ]
 
-    assert config[:quack] == [
-             level: :info,
-             meta: [:none],
-             webhook_url: "https://hooks.slack.com/services/KEY/some_val"
-           ]
+    assert config[:quack][:level] == :info
+    assert config[:quack][:meta] == [:none]
+    assert config[:quack][:webhook_url] == "https://hooks.slack.com/services/KEY/some_val"
   end
 
   describe "update_or_create/1" do
@@ -476,6 +474,14 @@ defmodule Pleroma.ConfigDBTest do
       assert binary == :erlang.term_to_binary([{:key, "value"}])
       assert ConfigDB.from_binary(binary) == [{:key, "value"}]
       assert ConfigDB.from_binary(binary) == [key: "value"]
+    end
+
+    test "keyword with partial_chain key" do
+      binary =
+        ConfigDB.transform([%{"tuple" => [":partial_chain", "&:hackney_connect.partial_chain/1"]}])
+
+      assert binary == :erlang.term_to_binary(partial_chain: &:hackney_connect.partial_chain/1)
+      assert ConfigDB.from_binary(binary) == [partial_chain: &:hackney_connect.partial_chain/1]
     end
 
     test "keyword" do

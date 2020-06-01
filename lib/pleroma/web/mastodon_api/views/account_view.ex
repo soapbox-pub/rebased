@@ -15,13 +15,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   def render("index.json", %{users: users} = opts) do
     reading_user = opts[:for]
 
-    # Note: :skip_relationships option is currently intentionally not supported for accounts
     relationships_opt =
       cond do
         Map.has_key?(opts, :relationships) ->
           opts[:relationships]
 
-        is_nil(reading_user) ->
+        is_nil(reading_user) || !opts[:embed_relationships] ->
           UserRelationship.view_relationships_option(nil, [])
 
         true ->
@@ -36,9 +35,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   def render("show.json", %{user: user} = opts) do
-    if User.visible_for?(user, opts[:for]),
-      do: do_render("show.json", opts),
-      else: %{}
+    if User.visible_for?(user, opts[:for]) do
+      do_render("show.json", opts)
+    else
+      %{}
+    end
   end
 
   def render("mention.json", %{user: user}) do
@@ -181,24 +182,26 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     bot = user.actor_type in ["Application", "Service"]
 
     emojis =
-      Enum.map(user.emoji, fn {shortcode, url} ->
+      Enum.map(user.emoji, fn {shortcode, raw_url} ->
+        url = MediaProxy.url(raw_url)
+
         %{
-          "shortcode" => shortcode,
-          "url" => url,
-          "static_url" => url,
-          "visible_in_picker" => false
+          shortcode: shortcode,
+          url: url,
+          static_url: url,
+          visible_in_picker: false
         }
       end)
 
     relationship =
-      if opts[:skip_relationships] do
-        %{}
-      else
+      if opts[:embed_relationships] do
         render("relationship.json", %{
           user: opts[:for],
           target: user,
           relationships: opts[:relationships]
         })
+      else
+        %{}
       end
 
     %{
@@ -221,7 +224,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       fields: user.fields,
       bot: bot,
       source: %{
-        note: (user.bio || "") |> String.replace(~r(<br */?>), "\n") |> Pleroma.HTML.strip_tags(),
+        note: prepare_user_bio(user),
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
@@ -253,7 +256,19 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_follow_requests_count(user, opts[:for])
     |> maybe_put_allow_following_move(user, opts[:for])
     |> maybe_put_unread_conversation_count(user, opts[:for])
+    |> maybe_put_unread_notification_count(user, opts[:for])
   end
+
+  defp prepare_user_bio(%User{bio: ""}), do: ""
+
+  defp prepare_user_bio(%User{bio: bio}) when is_binary(bio) do
+    bio
+    |> String.replace(~r(<br */?>), "\n")
+    |> Pleroma.HTML.strip_tags()
+    |> HtmlEntities.decode()
+  end
+
+  defp prepare_user_bio(_), do: ""
 
   defp username_from_nickname(string) when is_binary(string) do
     hd(String.split(string, "@"))
@@ -323,7 +338,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp maybe_put_role(data, _, _), do: data
 
   defp maybe_put_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
-    Kernel.put_in(data, [:pleroma, :notification_settings], user.notification_settings)
+    Kernel.put_in(
+      data,
+      [:pleroma, :notification_settings],
+      Map.from_struct(user.notification_settings)
+    )
   end
 
   defp maybe_put_notification_settings(data, _, _), do: data
@@ -349,6 +368,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_unread_conversation_count(data, _, _), do: data
+
+  defp maybe_put_unread_notification_count(data, %User{id: user_id}, %User{id: user_id} = user) do
+    Kernel.put_in(
+      data,
+      [:pleroma, :unread_notifications_count],
+      Pleroma.Notification.unread_notifications_count(user)
+    )
+  end
+
+  defp maybe_put_unread_notification_count(data, _, _), do: data
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil

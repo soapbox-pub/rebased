@@ -102,34 +102,6 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     end
   end
 
-  describe "make_unlike_data/3" do
-    test "returns data for unlike activity" do
-      user = insert(:user)
-      like_activity = insert(:like_activity, data_attrs: %{"context" => "test context"})
-
-      object = Object.normalize(like_activity.data["object"])
-
-      assert Utils.make_unlike_data(user, like_activity, nil) == %{
-               "type" => "Undo",
-               "actor" => user.ap_id,
-               "object" => like_activity.data,
-               "to" => [user.follower_address, object.data["actor"]],
-               "cc" => [Pleroma.Constants.as_public()],
-               "context" => like_activity.data["context"]
-             }
-
-      assert Utils.make_unlike_data(user, like_activity, "9mJEZK0tky1w2xD2vY") == %{
-               "type" => "Undo",
-               "actor" => user.ap_id,
-               "object" => like_activity.data,
-               "to" => [user.follower_address, object.data["actor"]],
-               "cc" => [Pleroma.Constants.as_public()],
-               "context" => like_activity.data["context"],
-               "id" => "9mJEZK0tky1w2xD2vY"
-             }
-    end
-  end
-
   describe "make_like_data" do
     setup do
       user = insert(:user)
@@ -148,7 +120,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" =>
+          status:
             "hey @#{other_user.nickname}, @#{third_user.nickname} how about beering together this weekend?"
         })
 
@@ -167,8 +139,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "@#{other_user.nickname} @#{third_user.nickname} bought a new swimsuit!",
-          "visibility" => "private"
+          status: "@#{other_user.nickname} @#{third_user.nickname} bought a new swimsuit!",
+          visibility: "private"
         })
 
       %{"to" => to, "cc" => cc} = Utils.make_like_data(other_user, activity, nil)
@@ -196,11 +168,11 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "How do I pronounce LaTeX?",
-          "poll" => %{
-            "options" => ["laytekh", "lahtekh", "latex"],
-            "expires_in" => 20,
-            "multiple" => true
+          status: "How do I pronounce LaTeX?",
+          poll: %{
+            options: ["laytekh", "lahtekh", "latex"],
+            expires_in: 20,
+            multiple: true
           }
         })
 
@@ -215,10 +187,10 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "Are we living in a society?",
-          "poll" => %{
-            "options" => ["yes", "no"],
-            "expires_in" => 20
+          status: "Are we living in a society?",
+          poll: %{
+            options: ["yes", "no"],
+            expires_in: 20
           }
         })
 
@@ -362,7 +334,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       assert object = Object.normalize(note_activity)
       actor = insert(:user)
 
-      {:ok, announce, _object} = ActivityPub.announce(actor, object)
+      {:ok, announce} = CommonAPI.repeat(note_activity.id, actor)
       assert Utils.get_existing_announce(actor.ap_id, object) == announce
     end
   end
@@ -497,7 +469,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     test "returns map with Flag object" do
       reporter = insert(:user)
       target_account = insert(:user)
-      {:ok, activity} = CommonAPI.post(target_account, %{"status" => "foobar"})
+      {:ok, activity} = CommonAPI.post(target_account, %{status: "foobar"})
       context = Utils.generate_context_id()
       content = "foobar"
 

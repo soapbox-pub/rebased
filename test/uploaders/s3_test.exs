@@ -58,7 +58,7 @@ defmodule Pleroma.Uploaders.S3Test do
         name: "image-tet.jpg",
         content_type: "image/jpg",
         path: "test_folder/image-tet.jpg",
-        tempfile: Path.absname("test/fixtures/image_tmp.jpg")
+        tempfile: Path.absname("test/instance_static/add/shortcode.png")
       }
 
       [file_upload: file_upload]

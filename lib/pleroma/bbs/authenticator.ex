@@ -4,7 +4,7 @@
 
 defmodule Pleroma.BBS.Authenticator do
   use Sshd.PasswordAuthenticator
-  alias Comeonin.Pbkdf2
+  alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.User
 
   def authenticate(username, password) do
@@ -12,7 +12,7 @@ defmodule Pleroma.BBS.Authenticator do
     password = to_string(password)
 
     with %User{} = user <- User.get_by_nickname(username) do
-      Pbkdf2.checkpw(password, user.password_hash)
+      AuthenticationPlug.checkpw(password, user.password_hash)
     else
       _e -> false
     end

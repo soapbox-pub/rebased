@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  import Pleroma.Factory
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Delivery
@@ -14,12 +13,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Object
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Workers.ReceiverWorker
+
+  import Pleroma.Factory
+
+  require Pleroma.Constants
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -165,6 +170,60 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         )
 
       ensure_federating_or_authenticated(conn, "/users/#{user.nickname}.json", user)
+    end
+  end
+
+  describe "mastodon compatibility routes" do
+    test "it returns a json representation of the object with accept application/json", %{
+      conn: conn
+    } do
+      {:ok, object} =
+        %{
+          "type" => "Note",
+          "content" => "hey",
+          "id" => Endpoint.url() <> "/users/raymoo/statuses/999999999",
+          "actor" => Endpoint.url() <> "/users/raymoo",
+          "to" => [Pleroma.Constants.as_public()]
+        }
+        |> Object.create()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/users/raymoo/statuses/999999999")
+
+      assert json_response(conn, 200) == ObjectView.render("object.json", %{object: object})
+    end
+
+    test "it returns a json representation of the activity with accept application/json", %{
+      conn: conn
+    } do
+      {:ok, object} =
+        %{
+          "type" => "Note",
+          "content" => "hey",
+          "id" => Endpoint.url() <> "/users/raymoo/statuses/999999999",
+          "actor" => Endpoint.url() <> "/users/raymoo",
+          "to" => [Pleroma.Constants.as_public()]
+        }
+        |> Object.create()
+
+      {:ok, activity, _} =
+        %{
+          "id" => object.data["id"] <> "/activity",
+          "type" => "Create",
+          "object" => object.data["id"],
+          "actor" => object.data["actor"],
+          "to" => object.data["to"]
+        }
+        |> ActivityPub.persist(local: true)
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/users/raymoo/statuses/999999999/activity")
+
+      assert json_response(conn, 200) == ObjectView.render("object.json", %{object: activity})
     end
   end
 
@@ -341,7 +400,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
     test "cached purged after activity deletion", %{conn: conn} do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "cofe"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "cofe"})
 
       uuid = String.split(activity.data["id"], "/") |> List.last()
 
@@ -379,6 +438,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   describe "/inbox" do
     test "it inserts an incoming activity into the database", %{conn: conn} do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_ap_id(data["id"])
+    end
+
+    @tag capture_log: true
+    test "it inserts an incoming activity into the database" <>
+           "even if we can't fetch the user but have it in our db",
+         %{conn: conn} do
+      user =
+        insert(:user,
+          ap_id: "https://mastodon.example.org/users/raymoo",
+          ap_enabled: true,
+          local: false,
+          last_refreshed_at: nil
+        )
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", user.ap_id)
+        |> put_in(["object", "attridbutedTo"], user.ap_id)
 
       conn =
         conn
@@ -815,26 +904,49 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert object["content"] == activity["object"]["content"]
     end
 
+    test "it rejects anything beyond 'Note' creations", %{conn: conn, activity: activity} do
+      user = insert(:user)
+
+      activity =
+        activity
+        |> put_in(["object", "type"], "Benis")
+
+      _result =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", activity)
+        |> json_response(400)
+    end
+
     test "it inserts an incoming sensitive activity into the database", %{
       conn: conn,
       activity: activity
     } do
       user = insert(:user)
+      conn = assign(conn, :user, user)
       object = Map.put(activity["object"], "sensitive", true)
       activity = Map.put(activity, "object", object)
 
-      result =
+      response =
         conn
-        |> assign(:user, user)
         |> put_req_header("content-type", "application/activity+json")
         |> post("/users/#{user.nickname}/outbox", activity)
         |> json_response(201)
 
-      assert Activity.get_by_ap_id(result["id"])
-      assert result["object"]
-      assert %Object{data: object} = Object.normalize(result["object"])
-      assert object["sensitive"] == activity["object"]["sensitive"]
-      assert object["content"] == activity["object"]["content"]
+      assert Activity.get_by_ap_id(response["id"])
+      assert response["object"]
+      assert %Object{data: response_object} = Object.normalize(response["object"])
+      assert response_object["sensitive"] == true
+      assert response_object["content"] == activity["object"]["content"]
+
+      representation =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(response["id"])
+        |> json_response(200)
+
+      assert representation["object"]["sensitive"] == true
     end
 
     test "it rejects an incoming activity with bogus type", %{conn: conn, activity: activity} do

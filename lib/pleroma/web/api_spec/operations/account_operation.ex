@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
   alias Pleroma.Web.ApiSpec.Schemas.ActorType
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.BooleanLike
+  alias Pleroma.Web.ApiSpec.Schemas.List
   alias Pleroma.Web.ApiSpec.Schemas.Status
   alias Pleroma.Web.ApiSpec.Schemas.VisibilityScope
 
@@ -154,8 +155,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       security: [%{"oAuth" => ["read:accounts"]}],
       description:
         "Accounts which follow the given account, if network is not hidden by the account owner.",
-      parameters:
-        [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}] ++ pagination_params(),
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        with_relationships_param() | pagination_params()
+      ],
       responses: %{
         200 => Operation.response("Accounts", "application/json", array_of_accounts())
       }
@@ -170,8 +173,10 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       security: [%{"oAuth" => ["read:accounts"]}],
       description:
         "Accounts which the given account is following, if network is not hidden by the account owner.",
-      parameters:
-        [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}] ++ pagination_params(),
+      parameters: [
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        with_relationships_param() | pagination_params()
+      ],
       responses: %{200 => Operation.response("Accounts", "application/json", array_of_accounts())}
     }
   end
@@ -366,15 +371,18 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       title: "AccountCreateRequest",
       description: "POST body for creating an account",
       type: :object,
+      required: [:username, :password, :agreement],
       properties: %{
         reason: %Schema{
           type: :string,
+          nullable: true,
           description:
             "Text that will be reviewed by moderators if registrations require manual approval"
         },
         username: %Schema{type: :string, description: "The desired username for the account"},
         email: %Schema{
           type: :string,
+          nullable: true,
           description:
             "The email address to be used for login. Required when `account_activation_required` is enabled.",
           format: :email
@@ -385,29 +393,39 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           format: :password
         },
         agreement: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
           description:
             "Whether the user agrees to the local rules, terms, and policies. These should be presented to the user in order to allow them to consent before setting this parameter to TRUE."
         },
         locale: %Schema{
           type: :string,
+          nullable: true,
           description: "The language of the confirmation email that will be sent"
         },
         # Pleroma-specific properties:
-        fullname: %Schema{type: :string, description: "Full name"},
-        bio: %Schema{type: :string, description: "Bio", default: ""},
+        fullname: %Schema{type: :string, nullable: true, description: "Full name"},
+        bio: %Schema{type: :string, description: "Bio", nullable: true, default: ""},
         captcha_solution: %Schema{
           type: :string,
+          nullable: true,
           description: "Provider-specific captcha solution"
         },
-        captcha_token: %Schema{type: :string, description: "Provider-specific captcha token"},
-        captcha_answer_data: %Schema{type: :string, description: "Provider-specific captcha data"},
+        captcha_token: %Schema{
+          type: :string,
+          nullable: true,
+          description: "Provider-specific captcha token"
+        },
+        captcha_answer_data: %Schema{
+          type: :string,
+          nullable: true,
+          description: "Provider-specific captcha data"
+        },
         token: %Schema{
           type: :string,
+          nullable: true,
           description: "Invite token required when the registrations aren't public"
         }
       },
-      required: [:username, :password, :agreement],
       example: %{
         "username" => "cofe",
         "email" => "cofe@example.com",
@@ -445,29 +463,35 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       type: :object,
       properties: %{
         bot: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description: "Whether the account has a bot flag."
         },
         display_name: %Schema{
           type: :string,
+          nullable: true,
           description: "The display name to use for the profile."
         },
         note: %Schema{type: :string, description: "The account bio."},
         avatar: %Schema{
           type: :string,
+          nullable: true,
           description: "Avatar image encoded using multipart/form-data",
           format: :binary
         },
         header: %Schema{
           type: :string,
+          nullable: true,
           description: "Header image encoded using multipart/form-data",
           format: :binary
         },
         locked: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description: "Whether manual approval of follow requests is required."
         },
         fields_attributes: %Schema{
+          nullable: true,
           oneOf: [
             %Schema{type: :array, items: attribute_field()},
             %Schema{type: :object, additionalProperties: %Schema{type: attribute_field()}}
@@ -486,48 +510,66 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
 
         # Pleroma-specific fields
         no_rich_text: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description: "html tags are stripped from all statuses requested from the API"
         },
-        hide_followers: %Schema{type: :boolean, description: "user's followers will be hidden"},
-        hide_follows: %Schema{type: :boolean, description: "user's follows will be hidden"},
+        hide_followers: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "user's followers will be hidden"
+        },
+        hide_follows: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "user's follows will be hidden"
+        },
         hide_followers_count: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description: "user's follower count will be hidden"
         },
         hide_follows_count: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description: "user's follow count will be hidden"
         },
         hide_favorites: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description: "user's favorites timeline will be hidden"
         },
         show_role: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description: "user's role (e.g admin, moderator) will be exposed to anyone in the
         API"
         },
         default_scope: VisibilityScope,
         pleroma_settings_store: %Schema{
           type: :object,
+          nullable: true,
           description: "Opaque user settings to be saved on the backend."
         },
         skip_thread_containment: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description: "Skip filtering out broken threads"
         },
         allow_following_move: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description: "Allows automatically follow moved following accounts"
         },
         pleroma_background_image: %Schema{
           type: :string,
+          nullable: true,
           description: "Sets the background image of the user.",
           format: :binary
         },
         discoverable: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description:
             "Discovery of this account in search results and other services is allowed."
         },
@@ -555,11 +597,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  defp array_of_accounts do
+  def array_of_accounts do
     %Schema{
       title: "ArrayOfAccounts",
       type: :array,
-      items: Account
+      items: Account,
+      example: [Account.schema().example]
     }
   end
 
@@ -622,7 +665,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "POST body for muting an account",
       type: :object,
       properties: %{
-        uri: %Schema{type: :string, format: :uri}
+        uri: %Schema{type: :string, nullable: true, format: :uri}
       },
       required: [:uri]
     }
@@ -635,7 +678,8 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       type: :object,
       properties: %{
         notifications: %Schema{
-          type: :boolean,
+          allOf: [BooleanLike],
+          nullable: true,
           description: "Mute notifications in addition to statuses? Defaults to true.",
           default: true
         }
@@ -646,28 +690,12 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  defp list do
-    %Schema{
-      title: "List",
-      description: "Response schema for a list",
-      type: :object,
-      properties: %{
-        id: %Schema{type: :string},
-        title: %Schema{type: :string}
-      },
-      example: %{
-        "id" => "123",
-        "title" => "my list"
-      }
-    }
-  end
-
   defp array_of_lists do
     %Schema{
       title: "ArrayOfLists",
       description: "Response schema for lists",
       type: :array,
-      items: list(),
+      items: List,
       example: [
         %{"id" => "123", "title" => "my list"},
         %{"id" => "1337", "title" => "anotehr list"}

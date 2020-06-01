@@ -14,18 +14,41 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
   @public_address "https://www.w3.org/ns/activitystreams#Public"
 
-  test "it adds attachment links to a given text and attachment set" do
-    name =
-      "Sakura%20Mana%20%E2%80%93%20Turned%20on%20by%20a%20Senior%20OL%20with%20a%20Temptating%20Tight%20Skirt-s%20Full%20Hipline%20and%20Panty%20Shot-%20Beautiful%20Thick%20Thighs-%20and%20Erotic%20Ass-%20-2015-%20--%20Oppaitime%208-28-2017%206-50-33%20PM.png"
+  describe "add_attachments/2" do
+    setup do
+      name =
+        "Sakura Mana – Turned on by a Senior OL with a Temptating Tight Skirt-s Full Hipline and Panty Shot- Beautiful Thick Thighs- and Erotic Ass- -2015- -- Oppaitime 8-28-2017 6-50-33 PM.png"
 
-    attachment = %{
-      "url" => [%{"href" => name}]
-    }
+      attachment = %{
+        "url" => [%{"href" => URI.encode(name)}]
+      }
 
-    res = Utils.add_attachments("", [attachment])
+      %{name: name, attachment: attachment}
+    end
 
-    assert res ==
-             "<br><a href=\"#{name}\" class='attachment'>Sakura Mana – Turned on by a Se…</a>"
+    test "it adds attachment links to a given text and attachment set", %{
+      name: name,
+      attachment: attachment
+    } do
+      len = 10
+      clear_config([Pleroma.Upload, :filename_display_max_length], len)
+
+      expected =
+        "<br><a href=\"#{URI.encode(name)}\" class='attachment'>#{String.slice(name, 0..len)}…</a>"
+
+      assert Utils.add_attachments("", [attachment]) == expected
+    end
+
+    test "doesn't truncate file name if config for truncate is set to 0", %{
+      name: name,
+      attachment: attachment
+    } do
+      clear_config([Pleroma.Upload, :filename_display_max_length], 0)
+
+      expected = "<br><a href=\"#{URI.encode(name)}\" class='attachment'>#{name}</a>"
+
+      assert Utils.add_attachments("", [attachment]) == expected
+    end
   end
 
   describe "it confirms the password given is the current users password" do
@@ -228,7 +251,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "public", nil)
@@ -261,7 +284,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "unlisted", nil)
@@ -292,16 +315,15 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "private", nil)
 
-      assert length(to) == 3
+      assert length(to) == 2
       assert Enum.empty?(cc)
 
       assert mentioned_user.ap_id in to
-      assert third_user.ap_id in to
       assert user.follower_address in to
     end
 
@@ -322,10 +344,19 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       user = insert(:user)
       mentioned_user = insert(:user)
       third_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      {:ok, activity} = CommonAPI.post(third_user, %{status: "uguu"})
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "direct", nil)
+
+      assert length(to) == 1
+      assert Enum.empty?(cc)
+
+      assert mentioned_user.ap_id in to
+
+      {:ok, direct_activity} = CommonAPI.post(third_user, %{status: "uguu", visibility: "direct"})
+
+      {to, cc} = Utils.get_to_and_cc(user, mentions, direct_activity, "direct", nil)
 
       assert length(to) == 2
       assert Enum.empty?(cc)
@@ -463,8 +494,8 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       desc = Jason.encode!(%{object.id => "test-desc"})
 
       assert Utils.attachments_from_ids(%{
-               "media_ids" => ["#{object.id}"],
-               "descriptions" => desc
+               media_ids: ["#{object.id}"],
+               descriptions: desc
              }) == [
                Map.merge(object.data, %{"name" => "test-desc"})
              ]
@@ -472,7 +503,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
     test "returns attachments without descs" do
       object = insert(:note)
-      assert Utils.attachments_from_ids(%{"media_ids" => ["#{object.id}"]}) == [object.data]
+      assert Utils.attachments_from_ids(%{media_ids: ["#{object.id}"]}) == [object.data]
     end
 
     test "returns [] when not pass media_ids" do

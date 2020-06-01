@@ -27,7 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
 
       conn = get(conn, "/api/v1/follow_requests")
 
-      assert [relationship] = json_response(conn, 200)
+      assert [relationship] = json_response_and_validate_schema(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
     end
 
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
 
       conn = post(conn, "/api/v1/follow_requests/#{other_user.id}/authorize")
 
-      assert relationship = json_response(conn, 200)
+      assert relationship = json_response_and_validate_schema(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
 
       user = User.get_cached_by_id(user.id)
@@ -62,7 +62,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
 
       conn = post(conn, "/api/v1/follow_requests/#{other_user.id}/reject")
 
-      assert relationship = json_response(conn, 200)
+      assert relationship = json_response_and_validate_schema(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
 
       user = User.get_cached_by_id(user.id)
