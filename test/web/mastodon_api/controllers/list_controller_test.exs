@@ -12,37 +12,44 @@ defmodule Pleroma.Web.MastodonAPI.ListControllerTest do
   test "creating a list" do
     %{conn: conn} = oauth_access(["write:lists"])
 
-    conn = post(conn, "/api/v1/lists", %{"title" => "cuties"})
-
-    assert %{"title" => title} = json_response(conn, 200)
-    assert title == "cuties"
+    assert %{"title" => "cuties"} =
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/lists", %{"title" => "cuties"})
+             |> json_response_and_validate_schema(:ok)
   end
 
   test "renders error for invalid params" do
     %{conn: conn} = oauth_access(["write:lists"])
 
-    conn = post(conn, "/api/v1/lists", %{"title" => nil})
+    conn =
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/v1/lists", %{"title" => nil})
 
-    assert %{"error" => "can't be blank"} == json_response(conn, :unprocessable_entity)
+    assert %{"error" => "title - null value where string expected."} =
+             json_response_and_validate_schema(conn, 400)
   end
 
   test "listing a user's lists" do
     %{conn: conn} = oauth_access(["read:lists", "write:lists"])
 
     conn
+    |> put_req_header("content-type", "application/json")
     |> post("/api/v1/lists", %{"title" => "cuties"})
-    |> json_response(:ok)
+    |> json_response_and_validate_schema(:ok)
 
     conn
+    |> put_req_header("content-type", "application/json")
     |> post("/api/v1/lists", %{"title" => "cofe"})
-    |> json_response(:ok)
+    |> json_response_and_validate_schema(:ok)
 
     conn = get(conn, "/api/v1/lists")
 
     assert [
              %{"id" => _, "title" => "cofe"},
              %{"id" => _, "title" => "cuties"}
-           ] = json_response(conn, :ok)
+           ] = json_response_and_validate_schema(conn, :ok)
   end
 
   test "adding users to a list" do
@@ -50,9 +57,12 @@ defmodule Pleroma.Web.MastodonAPI.ListControllerTest do
     other_user = insert(:user)
     {:ok, list} = Pleroma.List.create("name", user)
 
-    conn = post(conn, "/api/v1/lists/#{list.id}/accounts", %{"account_ids" => [other_user.id]})
+    assert %{} ==
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> post("/api/v1/lists/#{list.id}/accounts", %{"account_ids" => [other_user.id]})
+             |> json_response_and_validate_schema(:ok)
 
-    assert %{} == json_response(conn, 200)
     %Pleroma.List{following: following} = Pleroma.List.get(list.id, user)
     assert following == [other_user.follower_address]
   end
@@ -65,9 +75,12 @@ defmodule Pleroma.Web.MastodonAPI.ListControllerTest do
     {:ok, list} = Pleroma.List.follow(list, other_user)
     {:ok, list} = Pleroma.List.follow(list, third_user)
 
-    conn = delete(conn, "/api/v1/lists/#{list.id}/accounts", %{"account_ids" => [other_user.id]})
+    assert %{} ==
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> delete("/api/v1/lists/#{list.id}/accounts", %{"account_ids" => [other_user.id]})
+             |> json_response_and_validate_schema(:ok)
 
-    assert %{} == json_response(conn, 200)
     %Pleroma.List{following: following} = Pleroma.List.get(list.id, user)
     assert following == [third_user.follower_address]
   end
@@ -83,7 +96,7 @@ defmodule Pleroma.Web.MastodonAPI.ListControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/lists/#{list.id}/accounts", %{"account_ids" => [other_user.id]})
 
-    assert [%{"id" => id}] = json_response(conn, 200)
+    assert [%{"id" => id}] = json_response_and_validate_schema(conn, 200)
     assert id == to_string(other_user.id)
   end
 
@@ -96,7 +109,7 @@ defmodule Pleroma.Web.MastodonAPI.ListControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/lists/#{list.id}")
 
-    assert %{"id" => id} = json_response(conn, 200)
+    assert %{"id" => id} = json_response_and_validate_schema(conn, 200)
     assert id == to_string(list.id)
   end
 
@@ -105,17 +118,18 @@ defmodule Pleroma.Web.MastodonAPI.ListControllerTest do
 
     conn = get(conn, "/api/v1/lists/666")
 
-    assert %{"error" => "List not found"} = json_response(conn, :not_found)
+    assert %{"error" => "List not found"} = json_response_and_validate_schema(conn, :not_found)
   end
 
   test "renaming a list" do
     %{user: user, conn: conn} = oauth_access(["write:lists"])
     {:ok, list} = Pleroma.List.create("name", user)
 
-    conn = put(conn, "/api/v1/lists/#{list.id}", %{"title" => "newname"})
-
-    assert %{"title" => name} = json_response(conn, 200)
-    assert name == "newname"
+    assert %{"title" => "newname"} =
+             conn
+             |> put_req_header("content-type", "application/json")
+             |> put("/api/v1/lists/#{list.id}", %{"title" => "newname"})
+             |> json_response_and_validate_schema(:ok)
   end
 
   test "validates title when renaming a list" do
@@ -125,9 +139,11 @@ defmodule Pleroma.Web.MastodonAPI.ListControllerTest do
     conn =
       conn
       |> assign(:user, user)
+      |> put_req_header("content-type", "application/json")
       |> put("/api/v1/lists/#{list.id}", %{"title" => "  "})
 
-    assert %{"error" => "can't be blank"} == json_response(conn, :unprocessable_entity)
+    assert %{"error" => "can't be blank"} ==
+             json_response_and_validate_schema(conn, :unprocessable_entity)
   end
 
   test "deleting a list" do
@@ -136,7 +152,7 @@ defmodule Pleroma.Web.MastodonAPI.ListControllerTest do
 
     conn = delete(conn, "/api/v1/lists/#{list.id}")
 
-    assert %{} = json_response(conn, 200)
+    assert %{} = json_response_and_validate_schema(conn, 200)
     assert is_nil(Repo.get(Pleroma.List, list.id))
   end
 end

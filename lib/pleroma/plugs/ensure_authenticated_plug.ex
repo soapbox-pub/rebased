@@ -5,32 +5,35 @@
 defmodule Pleroma.Plugs.EnsureAuthenticatedPlug do
   import Plug.Conn
   import Pleroma.Web.TranslationHelpers
+
   alias Pleroma.User
+
+  use Pleroma.Web, :plug
 
   def init(options) do
     options
   end
 
-  def call(%{assigns: %{user: %User{}}} = conn, _) do
+  @impl true
+  def perform(
+        %{
+          assigns: %{
+            auth_credentials: %{password: _},
+            user: %User{multi_factor_authentication_settings: %{enabled: true}}
+          }
+        } = conn,
+        _
+      ) do
+    conn
+    |> render_error(:forbidden, "Two-factor authentication enabled, you must use a access token.")
+    |> halt()
+  end
+
+  def perform(%{assigns: %{user: %User{}}} = conn, _) do
     conn
   end
 
-  def call(conn, options) do
-    perform =
-      cond do
-        options[:if_func] -> options[:if_func].()
-        options[:unless_func] -> !options[:unless_func].()
-        true -> true
-      end
-
-    if perform do
-      fail(conn)
-    else
-      conn
-    end
-  end
-
-  def fail(conn) do
+  def perform(conn, _) do
     conn
     |> render_error(:forbidden, "Invalid credentials.")
     |> halt()

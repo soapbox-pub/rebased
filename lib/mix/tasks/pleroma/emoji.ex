@@ -4,18 +4,18 @@
 
 defmodule Mix.Tasks.Pleroma.Emoji do
   use Mix.Task
+  import Mix.Pleroma
 
   @shortdoc "Manages emoji packs"
   @moduledoc File.read!("docs/administration/CLI_tasks/emoji.md")
 
   def run(["ls-packs" | args]) do
-    Mix.Pleroma.start_pleroma()
-    Application.ensure_all_started(:hackney)
+    start_pleroma()
 
     {options, [], []} = parse_global_opts(args)
 
-    manifest =
-      fetch_manifest(if options[:manifest], do: options[:manifest], else: default_manifest())
+    url_or_path = options[:manifest] || default_manifest()
+    manifest = fetch_and_decode(url_or_path)
 
     Enum.each(manifest, fn {name, info} ->
       to_print = [
@@ -36,19 +36,18 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   end
 
   def run(["get-packs" | args]) do
-    Mix.Pleroma.start_pleroma()
-    Application.ensure_all_started(:hackney)
+    start_pleroma()
 
     {options, pack_names, []} = parse_global_opts(args)
 
-    manifest_url = if options[:manifest], do: options[:manifest], else: default_manifest()
+    url_or_path = options[:manifest] || default_manifest()
 
-    manifest = fetch_manifest(manifest_url)
+    manifest = fetch_and_decode(url_or_path)
 
     for pack_name <- pack_names do
       if Map.has_key?(manifest, pack_name) do
         pack = manifest[pack_name]
-        src_url = pack["src"]
+        src = pack["src"]
 
         IO.puts(
           IO.ANSI.format([
@@ -58,11 +57,11 @@ defmodule Mix.Tasks.Pleroma.Emoji do
             :normal,
             " from ",
             :underline,
-            src_url
+            src
           ])
         )
 
-        binary_archive = Tesla.get!(client(), src_url).body
+        {:ok, binary_archive} = fetch(src)
         archive_sha = :crypto.hash(:sha256, binary_archive) |> Base.encode16()
 
         sha_status_text = ["SHA256 of ", :bright, pack_name, :normal, " source file is ", :bright]
@@ -75,8 +74,11 @@ defmodule Mix.Tasks.Pleroma.Emoji do
           raise "Bad SHA256 for #{pack_name}"
         end
 
-        # The url specified in files should be in the same directory
-        files_url = Path.join(Path.dirname(manifest_url), pack["files"])
+        # The location specified in files should be in the same directory
+        files_loc =
+          url_or_path
+          |> Path.dirname()
+          |> Path.join(pack["files"])
 
         IO.puts(
           IO.ANSI.format([
@@ -86,11 +88,11 @@ defmodule Mix.Tasks.Pleroma.Emoji do
             :normal,
             " from ",
             :underline,
-            files_url
+            files_loc
           ])
         )
 
-        files = Tesla.get!(client(), files_url).body |> Jason.decode!()
+        files = fetch_and_decode(files_loc)
 
         IO.puts(IO.ANSI.format(["Unpacking ", :bright, pack_name]))
 
@@ -134,37 +136,50 @@ defmodule Mix.Tasks.Pleroma.Emoji do
     end
   end
 
-  def run(["gen-pack", src]) do
-    Application.ensure_all_started(:hackney)
+  def run(["gen-pack" | args]) do
+    start_pleroma()
 
-    proposed_name = Path.basename(src) |> Path.rootname()
-    name = String.trim(IO.gets("Pack name [#{proposed_name}]: "))
-    # If there's no name, use the default one
-    name = if String.length(name) > 0, do: name, else: proposed_name
-
-    license = String.trim(IO.gets("License: "))
-    homepage = String.trim(IO.gets("Homepage: "))
-    description = String.trim(IO.gets("Description: "))
-
-    proposed_files_name = "#{name}.json"
-    files_name = String.trim(IO.gets("Save file list to [#{proposed_files_name}]: "))
-    files_name = if String.length(files_name) > 0, do: files_name, else: proposed_files_name
-
-    default_exts = [".png", ".gif"]
-    default_exts_str = Enum.join(default_exts, " ")
-
-    exts =
-      String.trim(
-        IO.gets("Emoji file extensions (separated with spaces) [#{default_exts_str}]: ")
+    {opts, [src], []} =
+      OptionParser.parse(
+        args,
+        strict: [
+          name: :string,
+          license: :string,
+          homepage: :string,
+          description: :string,
+          files: :string,
+          extensions: :string
+        ]
       )
 
+    proposed_name = Path.basename(src) |> Path.rootname()
+    name = get_option(opts, :name, "Pack name:", proposed_name)
+    license = get_option(opts, :license, "License:")
+    homepage = get_option(opts, :homepage, "Homepage:")
+    description = get_option(opts, :description, "Description:")
+
+    proposed_files_name = "#{name}_files.json"
+    files_name = get_option(opts, :files, "Save file list to:", proposed_files_name)
+
+    default_exts = [".png", ".gif"]
+
+    custom_exts =
+      get_option(
+        opts,
+        :extensions,
+        "Emoji file extensions (separated with spaces):",
+        Enum.join(default_exts, " ")
+      )
+      |> String.split(" ", trim: true)
+
     exts =
-      if String.length(exts) > 0 do
-        String.split(exts, " ")
-        |> Enum.filter(fn e -> e |> String.trim() |> String.length() > 0 end)
-      else
+      if MapSet.equal?(MapSet.new(default_exts), MapSet.new(custom_exts)) do
         default_exts
+      else
+        custom_exts
       end
+
+    IO.puts("Using #{Enum.join(exts, " ")} extensions")
 
     IO.puts("Downloading the pack and generating SHA256")
 
@@ -195,14 +210,16 @@ defmodule Mix.Tasks.Pleroma.Emoji do
     IO.puts("""
 
     #{files_name} has been created and contains the list of all found emojis in the pack.
-    Please review the files in the remove those not needed.
+    Please review the files in the pack and remove those not needed.
     """)
 
-    if File.exists?("index.json") do
-      existing_data = File.read!("index.json") |> Jason.decode!()
+    pack_file = "#{name}.json"
+
+    if File.exists?(pack_file) do
+      existing_data = File.read!(pack_file) |> Jason.decode!()
 
       File.write!(
-        "index.json",
+        pack_file,
         Jason.encode!(
           Map.merge(
             existing_data,
@@ -212,23 +229,27 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         )
       )
 
-      IO.puts("index.json file has been update with the #{name} pack")
+      IO.puts("#{pack_file} has been updated with the #{name} pack")
     else
-      File.write!("index.json", Jason.encode!(pack_json, pretty: true))
+      File.write!(pack_file, Jason.encode!(pack_json, pretty: true))
 
-      IO.puts("index.json has been created with the #{name} pack")
+      IO.puts("#{pack_file} has been created with the #{name} pack")
     end
   end
 
-  defp fetch_manifest(from) do
-    Jason.decode!(
-      if String.starts_with?(from, "http") do
-        Tesla.get!(client(), from).body
-      else
-        File.read!(from)
-      end
-    )
+  defp fetch_and_decode(from) do
+    with {:ok, json} <- fetch(from) do
+      Jason.decode!(json)
+    end
   end
+
+  defp fetch("http" <> _ = from) do
+    with {:ok, %{body: body}} <- Tesla.get(client(), from) do
+      {:ok, body}
+    end
+  end
+
+  defp fetch(path), do: File.read(path)
 
   defp parse_global_opts(args) do
     OptionParser.parse(

@@ -29,7 +29,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
     {:ok, user} =
       insert(:user)
-      |> User.upgrade_changeset(%{fields: fields})
+      |> User.update_changeset(%{fields: fields})
       |> User.update_and_set_cache()
 
     assert %{
@@ -38,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
   end
 
   test "Renders with emoji tags" do
-    user = insert(:user, emoji: [%{"bib" => "/test"}])
+    user = insert(:user, emoji: %{"bib" => "/test"})
 
     assert %{
              "tag" => [
@@ -164,7 +164,7 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
     posts =
       for i <- 0..25 do
-        {:ok, activity} = CommonAPI.post(user, %{"status" => "post #{i}"})
+        {:ok, activity} = CommonAPI.post(user, %{status: "post #{i}"})
         activity
       end
 

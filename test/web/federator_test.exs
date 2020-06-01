@@ -29,7 +29,7 @@ defmodule Pleroma.Web.FederatorTest do
   describe "Publish an activity" do
     setup do
       user = insert(:user)
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "HI"})
 
       relay_mock = {
         Pleroma.Web.ActivityPub.Relay,
@@ -78,7 +78,7 @@ defmodule Pleroma.Web.FederatorTest do
         local: false,
         nickname: "nick1@domain.com",
         ap_id: "https://domain.com/users/nick1",
-        source_data: %{"inbox" => inbox1},
+        inbox: inbox1,
         ap_enabled: true
       })
 
@@ -86,7 +86,7 @@ defmodule Pleroma.Web.FederatorTest do
         local: false,
         nickname: "nick2@domain2.com",
         ap_id: "https://domain2.com/users/nick2",
-        source_data: %{"inbox" => inbox2},
+        inbox: inbox2,
         ap_enabled: true
       })
 
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.FederatorTest do
       Instances.set_consistently_unreachable(URI.parse(inbox2).host)
 
       {:ok, _activity} =
-        CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
+        CommonAPI.post(user, %{status: "HI @nick1@domain.com, @nick2@domain2.com!"})
 
       expected_dt = NaiveDateTime.to_iso8601(dt)
 
@@ -130,6 +130,9 @@ defmodule Pleroma.Web.FederatorTest do
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
       assert {:ok, _activity} = ObanHelpers.perform(job)
+
+      assert {:ok, job} = Federator.incoming_ap_doc(params)
+      assert {:error, :already_present} = ObanHelpers.perform(job)
     end
 
     test "rejects incoming AP docs with incorrect origin" do
@@ -148,7 +151,7 @@ defmodule Pleroma.Web.FederatorTest do
       }
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
-      assert :error = ObanHelpers.perform(job)
+      assert {:error, :origin_containment_failed} = ObanHelpers.perform(job)
     end
 
     test "it does not crash if MRF rejects the post" do
@@ -164,7 +167,7 @@ defmodule Pleroma.Web.FederatorTest do
         |> Poison.decode!()
 
       assert {:ok, job} = Federator.incoming_ap_doc(params)
-      assert :error = ObanHelpers.perform(job)
+      assert {:error, _} = ObanHelpers.perform(job)
     end
   end
 end

@@ -16,7 +16,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
     other_user = insert(:user)
 
     {:ok, _activity} =
-      CommonAPI.post(user, %{"status" => "Hey @#{other_user.nickname}.", "visibility" => "direct"})
+      CommonAPI.post(user, %{status: "Hey @#{other_user.nickname}.", visibility: "direct"})
 
     [participation] = Participation.for_user(user)
 
@@ -30,7 +30,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
     other_user = insert(:user)
 
     {:ok, _} =
-      CommonAPI.post(user, %{"status" => "Hey @#{other_user.nickname}.", "visibility" => "direct"})
+      CommonAPI.post(user, %{status: "Hey @#{other_user.nickname}.", visibility: "direct"})
 
     user = User.get_cached_by_id(user.id)
     other_user = User.get_cached_by_id(other_user.id)
@@ -43,9 +43,9 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
     {:ok, _} =
       CommonAPI.post(other_user, %{
-        "status" => "Hey @#{user.nickname}.",
-        "visibility" => "direct",
-        "in_reply_to_conversation_id" => participation.id
+        status: "Hey @#{user.nickname}.",
+        visibility: "direct",
+        in_reply_to_conversation_id: participation.id
       })
 
     user = User.get_cached_by_id(user.id)
@@ -64,7 +64,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
     third_user = insert(:user)
 
     {:ok, activity} =
-      CommonAPI.post(user, %{"status" => "Hey @#{other_user.nickname}.", "visibility" => "direct"})
+      CommonAPI.post(user, %{status: "Hey @#{other_user.nickname}.", visibility: "direct"})
 
     user = User.get_cached_by_id(user.id)
     other_user = User.get_cached_by_id(other_user.id)
@@ -79,9 +79,9 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
     {:ok, _activity} =
       CommonAPI.post(user, %{
-        "in_reply_to_status_id" => activity.id,
-        "status" => "Hey @#{third_user.nickname}.",
-        "visibility" => "direct"
+        in_reply_to_status_id: activity.id,
+        status: "Hey @#{third_user.nickname}.",
+        visibility: "direct"
       })
 
     [participation] = Participation.for_user(user)
@@ -154,14 +154,14 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
   test "gets all the participations for a user, ordered by updated at descending" do
     user = insert(:user)
-    {:ok, activity_one} = CommonAPI.post(user, %{"status" => "x", "visibility" => "direct"})
-    {:ok, activity_two} = CommonAPI.post(user, %{"status" => "x", "visibility" => "direct"})
+    {:ok, activity_one} = CommonAPI.post(user, %{status: "x", visibility: "direct"})
+    {:ok, activity_two} = CommonAPI.post(user, %{status: "x", visibility: "direct"})
 
     {:ok, activity_three} =
       CommonAPI.post(user, %{
-        "status" => "x",
-        "visibility" => "direct",
-        "in_reply_to_status_id" => activity_one.id
+        status: "x",
+        visibility: "direct",
+        in_reply_to_status_id: activity_one.id
       })
 
     # Offset participations because the accuracy of updated_at is down to a second
@@ -201,7 +201,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
   test "Doesn't die when the conversation gets empty" do
     user = insert(:user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+    {:ok, activity} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
     [participation] = Participation.for_user_with_last_activity_id(user)
 
     assert participation.last_activity_id == activity.id
@@ -215,7 +215,7 @@ defmodule Pleroma.Conversation.ParticipationTest do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, _activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+    {:ok, _activity} = CommonAPI.post(user, %{status: ".", visibility: "direct"})
     [participation] = Participation.for_user_with_last_activity_id(user)
 
     participation = Repo.preload(participation, :recipients)
@@ -239,26 +239,26 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
       {:ok, _direct1} =
         CommonAPI.post(third_user, %{
-          "status" => "Hi @#{blocker.nickname}",
-          "visibility" => "direct"
+          status: "Hi @#{blocker.nickname}",
+          visibility: "direct"
         })
 
       {:ok, _direct2} =
         CommonAPI.post(third_user, %{
-          "status" => "Hi @#{blocker.nickname}, @#{blocked.nickname}",
-          "visibility" => "direct"
+          status: "Hi @#{blocker.nickname}, @#{blocked.nickname}",
+          visibility: "direct"
         })
 
       {:ok, _direct3} =
         CommonAPI.post(blocked, %{
-          "status" => "Hi @#{blocker.nickname}",
-          "visibility" => "direct"
+          status: "Hi @#{blocker.nickname}",
+          visibility: "direct"
         })
 
       {:ok, _direct4} =
         CommonAPI.post(blocked, %{
-          "status" => "Hi @#{blocker.nickname}, @#{third_user.nickname}",
-          "visibility" => "direct"
+          status: "Hi @#{blocker.nickname}, @#{third_user.nickname}",
+          visibility: "direct"
         })
 
       assert [%{read: false}, %{read: false}, %{read: false}, %{read: false}] =
@@ -293,8 +293,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
       # When the blocked user is the author
       {:ok, _direct1} =
         CommonAPI.post(blocked, %{
-          "status" => "Hi @#{blocker.nickname}",
-          "visibility" => "direct"
+          status: "Hi @#{blocker.nickname}",
+          visibility: "direct"
         })
 
       assert [%{read: true}] = Participation.for_user(blocker)
@@ -303,8 +303,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
       # When the blocked user is a recipient
       {:ok, _direct2} =
         CommonAPI.post(third_user, %{
-          "status" => "Hi @#{blocker.nickname}, @#{blocked.nickname}",
-          "visibility" => "direct"
+          status: "Hi @#{blocker.nickname}, @#{blocked.nickname}",
+          visibility: "direct"
         })
 
       assert [%{read: true}, %{read: true}] = Participation.for_user(blocker)
@@ -321,8 +321,8 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
       {:ok, _direct1} =
         CommonAPI.post(blocker, %{
-          "status" => "Hi @#{third_user.nickname}, @#{blocked.nickname}",
-          "visibility" => "direct"
+          status: "Hi @#{third_user.nickname}, @#{blocked.nickname}",
+          visibility: "direct"
         })
 
       {:ok, _user_relationship} = User.block(blocker, blocked)
@@ -334,9 +334,9 @@ defmodule Pleroma.Conversation.ParticipationTest do
       # When it's a reply from the blocked user
       {:ok, _direct2} =
         CommonAPI.post(blocked, %{
-          "status" => "reply",
-          "visibility" => "direct",
-          "in_reply_to_conversation_id" => blocked_participation.id
+          status: "reply",
+          visibility: "direct",
+          in_reply_to_conversation_id: blocked_participation.id
         })
 
       assert [%{read: true}] = Participation.for_user(blocker)
@@ -347,9 +347,9 @@ defmodule Pleroma.Conversation.ParticipationTest do
       # When it's a reply from the third user
       {:ok, _direct3} =
         CommonAPI.post(third_user, %{
-          "status" => "reply",
-          "visibility" => "direct",
-          "in_reply_to_conversation_id" => third_user_participation.id
+          status: "reply",
+          visibility: "direct",
+          in_reply_to_conversation_id: third_user_participation.id
         })
 
       assert [%{read: true}] = Participation.for_user(blocker)

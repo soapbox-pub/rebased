@@ -19,15 +19,6 @@ defmodule Pleroma.Web.EmbedView do
 
   @media_types ["image", "audio", "video"]
 
-  defp emoji_for_user(%User{} = user) do
-    user.source_data
-    |> Map.get("tag", [])
-    |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
-    |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
-      {String.trim(name, ":"), url}
-    end)
-  end
-
   defp fetch_media_type(%{"mediaType" => mediaType}) do
     Utils.fetch_media_type(@media_types, mediaType)
   end

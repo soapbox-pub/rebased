@@ -1,13 +1,11 @@
 {
-    "pack": {
-        "license": "Test license",
-        "homepage": "https://pleroma.social",
-        "description": "Test description",
-
-        "share-files": true
-    },
-
     "files": {
         "blank": "blank.png"
+    },
+    "pack": {
+        "description": "Test description",
+        "homepage": "https://pleroma.social",
+        "license": "Test license",
+        "share-files": true
     }
 }

@@ -5,10 +5,16 @@
 defmodule Pleroma.Web.ControllerHelper do
   use Pleroma.Web, :controller
 
-  # As in MastoAPI, per https://api.rubyonrails.org/classes/ActiveModel/Type/Boolean.html
+  # As in Mastodon API, per https://api.rubyonrails.org/classes/ActiveModel/Type/Boolean.html
   @falsy_param_values [false, 0, "0", "f", "F", "false", "False", "FALSE", "off", "OFF"]
-  def truthy_param?(blank_value) when blank_value in [nil, ""], do: nil
-  def truthy_param?(value), do: value not in @falsy_param_values
+
+  def explicitly_falsy_param?(value), do: value in @falsy_param_values
+
+  # Note: `nil` and `""` are considered falsy values in Pleroma
+  def falsy_param?(value),
+    do: explicitly_falsy_param?(value) or value in [nil, ""]
+
+  def truthy_param?(value), do: not falsy_param?(value)
 
   def json_response(conn, status, json) do
     conn
@@ -34,7 +40,12 @@ defmodule Pleroma.Web.ControllerHelper do
 
   defp param_to_integer(_, default), do: default
 
-  def add_link_headers(conn, activities, extra_params \\ %{}) do
+  def add_link_headers(conn, activities, extra_params \\ %{})
+
+  def add_link_headers(%{assigns: %{skip_link_headers: true}} = conn, _activities, _extra_params),
+    do: conn
+
+  def add_link_headers(conn, activities, extra_params) do
     case List.last(activities) do
       %{id: max_id} ->
         params =
@@ -69,8 +80,9 @@ defmodule Pleroma.Web.ControllerHelper do
     end
   end
 
-  def assign_account_by_id(%{params: %{"id" => id}} = conn, _) do
-    case Pleroma.User.get_cached_by_id(id) do
+  def assign_account_by_id(conn, _) do
+    # TODO: use `conn.params[:id]` only after moving to OpenAPI
+    case Pleroma.User.get_cached_by_id(conn.params[:id] || conn.params["id"]) do
       %Pleroma.User{} = account -> assign(conn, :account, account)
       nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
     end
@@ -91,4 +103,17 @@ defmodule Pleroma.Web.ControllerHelper do
   def put_if_exist(map, _key, nil), do: map
 
   def put_if_exist(map, key, value), do: Map.put(map, key, value)
+
+  @doc """
+  Returns true if request specifies to include embedded relationships in account objects.
+  May only be used in selected account-related endpoints; has no effect for status- or
+    notification-related endpoints.
+  """
+  # Intended for PleromaFE: https://git.pleroma.social/pleroma/pleroma-fe/-/issues/838
+  def embed_relationships?(params) do
+    # To do once OpenAPI transition mess is over: just `truthy_param?(params[:with_relationships])`
+    params
+    |> Map.get(:with_relationships, params["with_relationships"])
+    |> truthy_param?()
+  end
 end

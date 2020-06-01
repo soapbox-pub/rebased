@@ -12,7 +12,7 @@ RUN apk add git gcc g++ musl-dev make &&\
 	mkdir release &&\
 	mix release --path release
 
-FROM alpine:3.9
+FROM alpine:3.11
 
 ARG BUILD_DATE
 ARG VCS_REF
@@ -33,7 +33,7 @@ ARG DATA=/var/lib/pleroma
 
 RUN echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories &&\
 	apk update &&\
-	apk add ncurses postgresql-client &&\
+	apk add imagemagick ncurses postgresql-client &&\
 	adduser --system --shell /bin/false --home ${HOME} pleroma &&\
 	mkdir -p ${DATA}/uploads &&\
 	mkdir -p ${DATA}/static &&\

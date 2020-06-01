@@ -5,8 +5,10 @@
 defmodule Pleroma.Plugs.RateLimiterTest do
   use Pleroma.Web.ConnCase
 
+  alias Phoenix.ConnTest
   alias Pleroma.Config
   alias Pleroma.Plugs.RateLimiter
+  alias Plug.Conn
 
   import Pleroma.Factory
   import Pleroma.Tests.Helpers, only: [clear_config: 1, clear_config: 2]
@@ -36,8 +38,15 @@ defmodule Pleroma.Plugs.RateLimiterTest do
   end
 
   test "it is disabled if it remote ip plug is enabled but no remote ip is found" do
-    Config.put([Pleroma.Web.Endpoint, :http, :ip], {127, 0, 0, 1})
-    assert RateLimiter.disabled?(Plug.Conn.assign(build_conn(), :remote_ip_found, false))
+    assert RateLimiter.disabled?(Conn.assign(build_conn(), :remote_ip_found, false))
+  end
+
+  test "it is enabled if remote ip found" do
+    refute RateLimiter.disabled?(Conn.assign(build_conn(), :remote_ip_found, true))
+  end
+
+  test "it is enabled if remote_ip_found flag doesn't exist" do
+    refute RateLimiter.disabled?(build_conn())
   end
 
   test "it restricts based on config values" do
@@ -58,7 +67,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
     end
 
     conn = RateLimiter.call(conn, plug_opts)
-    assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+    assert %{"error" => "Throttled"} = ConnTest.json_response(conn, :too_many_requests)
     assert conn.halted
 
     Process.sleep(50)
@@ -68,7 +77,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
     conn = RateLimiter.call(conn, plug_opts)
     assert {1, 4} = RateLimiter.inspect_bucket(conn, limiter_name, plug_opts)
 
-    refute conn.status == Plug.Conn.Status.code(:too_many_requests)
+    refute conn.status == Conn.Status.code(:too_many_requests)
     refute conn.resp_body
     refute conn.halted
   end
@@ -98,7 +107,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
       plug_opts = RateLimiter.init(name: limiter_name, params: ["id"])
 
       conn = build_conn(:get, "/?id=1")
-      conn = Plug.Conn.fetch_query_params(conn)
+      conn = Conn.fetch_query_params(conn)
       conn_2 = build_conn(:get, "/?id=2")
 
       RateLimiter.call(conn, plug_opts)
@@ -119,7 +128,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
       id = "100"
 
       conn = build_conn(:get, "/?id=#{id}")
-      conn = Plug.Conn.fetch_query_params(conn)
+      conn = Conn.fetch_query_params(conn)
       conn_2 = build_conn(:get, "/?id=#{101}")
 
       RateLimiter.call(conn, plug_opts)
@@ -147,13 +156,13 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
       conn = RateLimiter.call(conn, plug_opts)
 
-      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+      assert %{"error" => "Throttled"} = ConnTest.json_response(conn, :too_many_requests)
       assert conn.halted
 
       conn_2 = RateLimiter.call(conn_2, plug_opts)
       assert {1, 4} = RateLimiter.inspect_bucket(conn_2, limiter_name, plug_opts)
 
-      refute conn_2.status == Plug.Conn.Status.code(:too_many_requests)
+      refute conn_2.status == Conn.Status.code(:too_many_requests)
       refute conn_2.resp_body
       refute conn_2.halted
     end
@@ -187,7 +196,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
 
       conn = RateLimiter.call(conn, plug_opts)
 
-      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+      assert %{"error" => "Throttled"} = ConnTest.json_response(conn, :too_many_requests)
       assert conn.halted
     end
 
@@ -210,12 +219,12 @@ defmodule Pleroma.Plugs.RateLimiterTest do
       end
 
       conn = RateLimiter.call(conn, plug_opts)
-      assert %{"error" => "Throttled"} = Phoenix.ConnTest.json_response(conn, :too_many_requests)
+      assert %{"error" => "Throttled"} = ConnTest.json_response(conn, :too_many_requests)
       assert conn.halted
 
       conn_2 = RateLimiter.call(conn_2, plug_opts)
       assert {1, 4} = RateLimiter.inspect_bucket(conn_2, limiter_name, plug_opts)
-      refute conn_2.status == Plug.Conn.Status.code(:too_many_requests)
+      refute conn_2.status == Conn.Status.code(:too_many_requests)
       refute conn_2.resp_body
       refute conn_2.halted
     end

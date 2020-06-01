@@ -39,7 +39,7 @@ config :pleroma, Pleroma.Repo,
   adapter: Ecto.Adapters.Postgres,
   username: "postgres",
   password: "postgres",
-  database: "pleroma_test",
+  database: "pleroma_benchmark",
   hostname: System.get_env("DB_HOST") || "localhost",
   pool_size: 10
 

@@ -25,13 +25,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     when action == :follow_import
   )
 
-  # Note: follower can submit the form (with password auth) not being signed in (having no token)
-  plug(
-    OAuthScopesPlug,
-    %{fallback: :proceed_unauthenticated, scopes: ["follow", "write:follows"]}
-    when action == :do_remote_follow
-  )
-
   plug(OAuthScopesPlug, %{scopes: ["follow", "write:blocks"]} when action == :blocks_import)
 
   plug(
@@ -199,15 +192,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def follow_import(%{assigns: %{user: follower}} = conn, %{"list" => list}) do
-    with lines <- String.split(list, "\n"),
-         followed_identifiers <-
-           Enum.map(lines, fn line ->
-             String.split(line, ",") |> List.first()
-           end)
-           |> List.delete("Account address") do
-      User.follow_import(follower, followed_identifiers)
-      json(conn, "job started")
-    end
+    followed_identifiers =
+      list
+      |> String.split("\n")
+      |> Enum.map(&(&1 |> String.split(",") |> List.first()))
+      |> List.delete("Account address")
+      |> Enum.map(&(&1 |> String.trim() |> String.trim_leading("@")))
+      |> Enum.reject(&(&1 == ""))
+
+    User.follow_import(follower, followed_identifiers)
+    json(conn, "job started")
   end
 
   def blocks_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
@@ -215,10 +209,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
-    with blocked_identifiers <- String.split(list) do
-      User.blocks_import(blocker, blocked_identifiers)
-      json(conn, "job started")
-    end
+    blocked_identifiers = list |> String.split() |> Enum.map(&String.trim_leading(&1, "@"))
+    User.blocks_import(blocker, blocked_identifiers)
+    json(conn, "job started")
   end
 
   def change_password(%{assigns: %{user: user}} = conn, params) do

@@ -32,6 +32,18 @@ defmodule Pleroma.Object.Containment do
     get_actor(%{"actor" => actor})
   end
 
+  def get_object(%{"object" => id}) when is_binary(id) do
+    id
+  end
+
+  def get_object(%{"object" => %{"id" => id}}) when is_binary(id) do
+    id
+  end
+
+  def get_object(_) do
+    nil
+  end
+
   # TODO: We explicitly allow 'tag' URIs through, due to references to legacy OStatus
   # objects being present in the test suite environment.  Once these objects are
   # removed, please also remove this.

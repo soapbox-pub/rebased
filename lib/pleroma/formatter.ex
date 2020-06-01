@@ -31,13 +31,23 @@ defmodule Pleroma.Formatter do
   def mention_handler("@" <> nickname, buffer, opts, acc) do
     case User.get_cached_by_nickname(nickname) do
       %User{id: id} = user ->
-        ap_id = get_ap_id(user)
+        user_url = user.uri || user.ap_id
         nickname_text = get_nickname_text(nickname, opts)
 
         link =
-          ~s(<span class="h-card"><a data-user="#{id}" class="u-url mention" href="#{ap_id}" rel="ugc">@<span>#{
-            nickname_text
-          }</span></a></span>)
+          Phoenix.HTML.Tag.content_tag(
+            :span,
+            Phoenix.HTML.Tag.content_tag(
+              :a,
+              ["@", Phoenix.HTML.Tag.content_tag(:span, nickname_text)],
+              "data-user": id,
+              class: "u-url mention",
+              href: user_url,
+              rel: "ugc"
+            ),
+            class: "h-card"
+          )
+          |> Phoenix.HTML.safe_to_string()
 
         {link, %{acc | mentions: MapSet.put(acc.mentions, {"@" <> nickname, user})}}
 
@@ -49,7 +59,15 @@ defmodule Pleroma.Formatter do
   def hashtag_handler("#" <> tag = tag_text, _buffer, _opts, acc) do
     tag = String.downcase(tag)
     url = "#{Pleroma.Web.base_url()}/tag/#{tag}"
-    link = ~s(<a class="hashtag" data-tag="#{tag}" href="#{url}" rel="tag ugc">#{tag_text}</a>)
+
+    link =
+      Phoenix.HTML.Tag.content_tag(:a, tag_text,
+        class: "hashtag",
+        "data-tag": tag,
+        href: url,
+        rel: "tag ugc"
+      )
+      |> Phoenix.HTML.safe_to_string()
 
     {link, %{acc | tags: MapSet.put(acc.tags, {tag_text, tag})}}
   end
@@ -127,9 +145,6 @@ defmodule Pleroma.Formatter do
       String.slice(text, 0, length_with_omission) <> omission
     end
   end
-
-  defp get_ap_id(%User{source_data: %{"url" => url}}) when is_binary(url), do: url
-  defp get_ap_id(%User{ap_id: ap_id}), do: ap_id
 
   defp get_nickname_text(nickname, %{mentions_format: :full}), do: User.full_nickname(nickname)
   defp get_nickname_text(nickname, _), do: User.local_nickname(nickname)

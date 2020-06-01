@@ -25,20 +25,28 @@ defmodule Pleroma.Web.Push.Subscription do
     timestamps()
   end
 
-  @supported_alert_types ~w[follow favourite mention reblog]
+  @supported_alert_types ~w[follow favourite mention reblog]a
 
-  defp alerts(%{"data" => %{"alerts" => alerts}}) do
+  defp alerts(%{data: %{alerts: alerts}}) do
     alerts = Map.take(alerts, @supported_alert_types)
     %{"alerts" => alerts}
+  end
+
+  def enabled?(subscription, "follow_request") do
+    enabled?(subscription, "follow")
+  end
+
+  def enabled?(subscription, alert_type) do
+    get_in(subscription.data, ["alerts", alert_type])
   end
 
   def create(
         %User{} = user,
         %Token{} = token,
         %{
-          "subscription" => %{
-            "endpoint" => endpoint,
-            "keys" => %{"auth" => key_auth, "p256dh" => key_p256dh}
+          subscription: %{
+            endpoint: endpoint,
+            keys: %{auth: key_auth, p256dh: key_p256dh}
           }
         } = params
       ) do

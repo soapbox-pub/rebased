@@ -22,10 +22,10 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "Is Tenshi eating a corndog cute?",
-        "poll" => %{
-          "options" => ["absolutely!", "sure", "yes", "why are you even asking?"],
-          "expires_in" => 20
+        status: "Is Tenshi eating a corndog cute?",
+        poll: %{
+          options: ["absolutely!", "sure", "yes", "why are you even asking?"],
+          expires_in: 20
         }
       })
 
@@ -43,7 +43,8 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
         %{title: "why are you even asking?", votes_count: 0}
       ],
       voted: false,
-      votes_count: 0
+      votes_count: 0,
+      voters_count: nil
     }
 
     result = PollView.render("show.json", %{object: object})
@@ -61,17 +62,28 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "Which Mastodon developer is your favourite?",
-        "poll" => %{
-          "options" => ["Gargron", "Eugen"],
-          "expires_in" => 20,
-          "multiple" => true
+        status: "Which Mastodon developer is your favourite?",
+        poll: %{
+          options: ["Gargron", "Eugen"],
+          expires_in: 20,
+          multiple: true
         }
       })
 
+    voter = insert(:user)
+
     object = Object.normalize(activity)
 
-    assert %{multiple: true} = PollView.render("show.json", %{object: object})
+    {:ok, _votes, object} = CommonAPI.vote(voter, object, [0, 1])
+
+    assert match?(
+             %{
+               multiple: true,
+               voters_count: 1,
+               votes_count: 2
+             },
+             PollView.render("show.json", %{object: object})
+           )
   end
 
   test "detects emoji" do
@@ -79,10 +91,10 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "What's with the smug face?",
-        "poll" => %{
-          "options" => [":blank: sip", ":blank::blank: sip", ":blank::blank::blank: sip"],
-          "expires_in" => 20
+        status: "What's with the smug face?",
+        poll: %{
+          options: [":blank: sip", ":blank::blank: sip", ":blank::blank::blank: sip"],
+          expires_in: 20
         }
       })
 
@@ -97,11 +109,11 @@ defmodule Pleroma.Web.MastodonAPI.PollViewTest do
 
     {:ok, activity} =
       CommonAPI.post(user, %{
-        "status" => "Which input devices do you use?",
-        "poll" => %{
-          "options" => ["mouse", "trackball", "trackpoint"],
-          "multiple" => true,
-          "expires_in" => 20
+        status: "Which input devices do you use?",
+        poll: %{
+          options: ["mouse", "trackball", "trackpoint"],
+          multiple: true,
+          expires_in: 20
         }
       })
 

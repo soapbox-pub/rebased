@@ -6,12 +6,16 @@ defmodule Pleroma.Captcha.Mock do
   alias Pleroma.Captcha.Service
   @behaviour Service
 
+  @solution "63615261b77f5354fb8c4e4986477555"
+
+  def solution, do: @solution
+
   @impl Service
   def new,
     do: %{
       type: :mock,
       token: "afa1815e14e29355e6c8f6b143a39fa2",
-      answer_data: "63615261b77f5354fb8c4e4986477555",
+      answer_data: @solution,
       url: "https://example.org/captcha.png"
     }
 

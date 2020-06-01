@@ -8,6 +8,10 @@ For from source installations Pleroma configuration works by first importing the
 
 To add configuration to your config file, you can copy it from the base config. The latest version of it can be viewed [here](https://git.pleroma.social/pleroma/pleroma/blob/develop/config/config.exs). You can also use this file if you don't know how an option is supposed to be formatted.
 
+## :chat
+
+* `enabled` - Enables the backend chat. Defaults to `true`.
+
 ## :instance
 * `name`: The instance’s name.
 * `email`: Email used to reach an Administrator/Moderator of the instance.
@@ -145,6 +149,11 @@ config :pleroma, :mrf_user_allowlist,
   * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
   * `:reject` rejects the message entirely
 
+#### mrf_steal_emoji
+* `hosts`: List of hosts to steal emojis from
+* `rejected_shortcodes`: Regex-list of shortcodes to reject
+* `size_limit`: File size limit (in bytes), checked before an emoji is saved to the disk
+
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed
 * `outgoing_blocks`: Whether to federate blocks to other instances
@@ -245,6 +254,40 @@ This section describe PWA manifest instance-specific values. Currently this opti
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
 * `proxy_opts`: All options defined in `Pleroma.ReverseProxy` documentation, defaults to `[max_body_length: (25*1_048_576)]`.
 * `whitelist`: List of domains to bypass the mediaproxy
+* `invalidation`: options for remove media from cache after delete object:
+    * `enabled`: Enables purge cache
+    * `provider`: Which one of  the [purge cache strategy](#purge-cache-strategy) to use.
+
+### Purge cache strategy
+
+#### Pleroma.Web.MediaProxy.Invalidation.Script
+
+This strategy allow perform external bash script to purge cache.
+Urls of attachments pass to script as arguments.
+
+* `script_path`: path to external script.
+
+Example:
+```elixir
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
+  script_path: "./installation/nginx-cache-purge.example"
+```
+
+#### Pleroma.Web.MediaProxy.Invalidation.Http
+
+This strategy allow perform custom http request to purge cache.
+
+* `method`: http method. default is `purge`
+* `headers`: http headers. default is empty
+* `options`: request options. default is empty
+
+Example:
+```elixir
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
+  method: :purge,
+  headers: [],
+  options: []
+```
 
 ## Link previews
 
@@ -369,8 +412,7 @@ Available caches:
 * `proxy_url`: an upstream proxy to fetch posts and/or media with, (default: `nil`)
 * `send_user_agent`: should we include a user agent with HTTP requests? (default: `true`)
 * `user_agent`: what user agent should we use? (default: `:default`), must be string or `:default`
-* `adapter`: array of hackney options
-
+* `adapter`: array of adapter options
 
 ### :hackney_pools
 
@@ -387,6 +429,42 @@ For each pool, the options are:
 
 * `max_connections` - how much connections a pool can hold
 * `timeout` - retention duration for connections
+
+
+### :connections_pool
+
+*For `gun` adapter*
+
+Advanced settings for connections pool. Pool with opened connections. These connections can be reused in worker pools.
+
+For big instances it's recommended to increase `config :pleroma, :connections_pool, max_connections: 500` up to 500-1000.
+It will increase memory usage, but federation would work faster.
+
+* `:checkin_timeout` - timeout to checkin connection from pool. Default: 250ms.
+* `:max_connections` - maximum number of connections in the pool. Default: 250 connections.
+* `:retry` - number of retries, while `gun` will try to reconnect if connection goes down. Default: 1.
+* `:retry_timeout` - time between retries when `gun` will try to reconnect in milliseconds. Default: 1000ms.
+* `:await_up_timeout` - timeout while `gun` will wait until connection is up. Default: 5000ms.
+
+### :pools
+
+*For `gun` adapter*
+
+Advanced settings for workers pools.
+
+There are four pools used:
+
+* `:federation` for the federation jobs.
+  You may want this pool max_connections to be at least equal to the number of federator jobs + retry queue jobs.
+* `:media` for rich media, media proxy
+* `:upload` for uploaded media (if using a remote uploader and `proxy_remote: true`)
+* `:default` for other requests
+
+For each pool, the options are:
+
+* `:size` - how much workers the pool can hold
+* `:timeout` - timeout while `gun` will wait for response
+* `:max_overflow` - additional workers if pool is under load
 
 
 ## Captcha
@@ -420,6 +498,7 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
 * `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
+* `filename_display_max_length`: Set max length of a filename to display. 0 = no limit. Default: 30.
 
 !!! warning
     `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
@@ -579,24 +658,6 @@ config :pleroma, :workers,
 * `max_retries` is replaced with `config :pleroma, :workers, retries: [federator_outgoing: 5]`
 * `enabled: false` corresponds to `config :pleroma, :workers, retries: [federator_outgoing: 1]`
 * deprecated options: `max_jobs`, `initial_timeout`
-
-### Pleroma.Scheduler
-
-Configuration for [Quantum](https://github.com/quantum-elixir/quantum-core) jobs scheduler.
-
-See [Quantum readme](https://github.com/quantum-elixir/quantum-core#usage) for the list of supported options.
-
-Example:
-
-```elixir
-config :pleroma, Pleroma.Scheduler,
-  global: true,
-  overlap: true,
-  timezone: :utc,
-  jobs: [{"0 */6 * * * *", {Pleroma.Web.Websub, :refresh_subscriptions, []}}]
-```
-
-The above example defines a single job which invokes `Pleroma.Web.Websub.refresh_subscriptions()` every 6 hours ("0 */6 * * * *", [crontab format](https://en.wikipedia.org/wiki/Cron)).
 
 ## :web_push_encryption, :vapid_details
 
@@ -868,12 +929,33 @@ config :auto_linker,
 
 * `runtime_dir`: A path to custom Elixir modules (such as MRF policies).
 
-
 ## :configurable_from_database
 
 Boolean, enables/disables in-database configuration. Read [Transfering the config to/from the database](../administration/CLI_tasks/config.md) for more information.
 
+## :database_config_whitelist
 
+List of valid configuration sections which are allowed to be configured from the
+database. Settings stored in the database before the whitelist is configured are
+still applied, so it is suggested to only use the whitelist on instances that
+have not migrated the config to the database.
+
+Example:
+```elixir
+config :pleroma, :database_config_whitelist, [
+  {:pleroma, :instance},
+  {:pleroma, Pleroma.Web.Metadata},
+  {:auto_linker}
+]
+```
+
+### Multi-factor authentication -  :two_factor_authentication
+* `totp` - a list containing TOTP configuration
+  - `digits` - Determines the length of a one-time pass-code in characters. Defaults to 6 characters.
+  - `period` - a period for which the TOTP code will be valid in seconds. Defaults to 30 seconds.
+* `backup_codes` - a list containing backup codes configuration
+  - `number` - number of backup codes to generate.
+  - `length` - backup code length. Defaults to 16 characters.
 
 ## Restrict entities access for unauthenticated users
 
@@ -890,3 +972,8 @@ Restrict access for unauthenticated users to timelines (public and federate), us
 * `activities` - statuses
   * `local`
   * `remote`
+
+
+## Pleroma.Web.ApiSpec.CastAndValidate
+
+* `:strict` a boolean, enables strict input validation (useful in development, not recommended in production). Defaults to `false`.

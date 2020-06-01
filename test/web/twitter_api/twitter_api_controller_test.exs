@@ -19,13 +19,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials, without any params" do
-      %{user: current_user, conn: conn} =
-        oauth_access(["read:notifications", "write:notifications"])
+      %{conn: conn} = oauth_access(["write:notifications"])
 
-      conn =
-        conn
-        |> assign(:user, current_user)
-        |> post("/api/qvitter/statuses/notifications/read")
+      conn = post(conn, "/api/qvitter/statuses/notifications/read")
 
       assert json_response(conn, 400) == %{
                "error" => "You need to specify latest_id",

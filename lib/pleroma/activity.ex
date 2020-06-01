@@ -27,16 +27,12 @@ defmodule Pleroma.Activity do
   # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
   @mastodon_notification_types %{
     "Create" => "mention",
-    "Follow" => "follow",
+    "Follow" => ["follow", "follow_request"],
     "Announce" => "reblog",
     "Like" => "favourite",
     "Move" => "move",
     "EmojiReact" => "pleroma:emoji_reaction"
   }
-
-  @mastodon_to_ap_notification_types for {k, v} <- @mastodon_notification_types,
-                                         into: %{},
-                                         do: {v, k}
 
   schema "activities" do
     field(:data, :map)
@@ -93,6 +89,17 @@ defmodule Pleroma.Activity do
     |> has_named_binding?(:object)
     |> if(do: query, else: with_joined_object(query, join_type))
     |> preload([activity, object: object], object: object)
+  end
+
+  # Note: applies to fake activities (ActivityPub.Utils.get_notified_from_object/1 etc.)
+  def user_actor(%Activity{actor: nil}), do: nil
+
+  def user_actor(%Activity{} = activity) do
+    with %User{} <- activity.user_actor do
+      activity.user_actor
+    else
+      _ -> User.get_cached_by_ap_id(activity.actor)
+    end
   end
 
   def with_joined_user_actor(query, join_type \\ :inner) do
@@ -280,15 +287,43 @@ defmodule Pleroma.Activity do
 
   defp purge_web_resp_cache(nil), do: nil
 
-  for {ap_type, type} <- @mastodon_notification_types do
+  def follow_accepted?(
+        %Activity{data: %{"type" => "Follow", "object" => followed_ap_id}} = activity
+      ) do
+    with %User{} = follower <- Activity.user_actor(activity),
+         %User{} = followed <- User.get_cached_by_ap_id(followed_ap_id) do
+      Pleroma.FollowingRelationship.following?(follower, followed)
+    else
+      _ -> false
+    end
+  end
+
+  def follow_accepted?(_), do: false
+
+  @spec mastodon_notification_type(Activity.t()) :: String.t() | nil
+
+  for {ap_type, type} <- @mastodon_notification_types, not is_list(type) do
     def mastodon_notification_type(%Activity{data: %{"type" => unquote(ap_type)}}),
       do: unquote(type)
   end
 
+  def mastodon_notification_type(%Activity{data: %{"type" => "Follow"}} = activity) do
+    if follow_accepted?(activity) do
+      "follow"
+    else
+      "follow_request"
+    end
+  end
+
   def mastodon_notification_type(%Activity{}), do: nil
 
+  @spec from_mastodon_notification_type(String.t()) :: String.t() | nil
+  @doc "Converts Mastodon notification type to AR activity type"
   def from_mastodon_notification_type(type) do
-    Map.get(@mastodon_to_ap_notification_types, type)
+    with {k, _v} <-
+           Enum.find(@mastodon_notification_types, fn {_k, v} -> type in List.wrap(v) end) do
+      k
+    end
   end
 
   def all_by_actor_and_id(actor, status_ids \\ [])

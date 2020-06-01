@@ -19,6 +19,7 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
       expired: expired,
       multiple: multiple,
       votes_count: votes_count,
+      voters_count: (multiple || nil) && voters_count(object),
       options: options,
       voted: voted?(params),
       emojis: Pleroma.Web.MastodonAPI.StatusView.build_emojis(object.data["emoji"])
@@ -61,6 +62,12 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
        }, current_count + count}
     end)
   end
+
+  defp voters_count(%{data: %{"voters" => [_ | _] = voters}}) do
+    length(voters)
+  end
+
+  defp voters_count(_), do: 0
 
   defp voted?(%{object: object} = opts) do
     if opts[:for] do

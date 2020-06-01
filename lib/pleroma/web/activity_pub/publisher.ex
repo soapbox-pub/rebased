@@ -141,8 +141,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     |> Enum.map(& &1.ap_id)
   end
 
-  defp maybe_use_sharedinbox(%User{source_data: data}),
-    do: (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
+  defp maybe_use_sharedinbox(%User{shared_inbox: nil, inbox: inbox}), do: inbox
+  defp maybe_use_sharedinbox(%User{shared_inbox: shared_inbox}), do: shared_inbox
 
   @doc """
   Determine a user inbox to use based on heuristics.  These heuristics
@@ -157,7 +157,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   """
   def determine_inbox(
         %Activity{data: activity_data},
-        %User{source_data: data} = user
+        %User{inbox: inbox} = user
       ) do
     to = activity_data["to"] || []
     cc = activity_data["cc"] || []
@@ -174,7 +174,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
         maybe_use_sharedinbox(user)
 
       true ->
-        data["inbox"]
+        inbox
     end
   end
 
@@ -192,14 +192,13 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     inboxes =
       recipients
       |> Enum.filter(&User.ap_enabled?/1)
-      |> Enum.map(fn %{source_data: data} -> data["inbox"] end)
+      |> Enum.map(fn actor -> actor.inbox end)
       |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
       |> Instances.filter_reachable()
 
     Repo.checkout(fn ->
       Enum.each(inboxes, fn {inbox, unreachable_since} ->
-        %User{ap_id: ap_id} =
-          Enum.find(recipients, fn %{source_data: data} -> data["inbox"] == inbox end)
+        %User{ap_id: ap_id} = Enum.find(recipients, fn actor -> actor.inbox == inbox end)
 
         # Get all the recipients on the same host and add them to cc. Otherwise, a remote
         # instance would only accept a first message for the first recipient and ignore the rest.

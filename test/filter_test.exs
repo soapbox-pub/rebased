@@ -141,17 +141,15 @@ defmodule Pleroma.FilterTest do
       context: ["home"]
     }
 
-    query_two = %Pleroma.Filter{
-      user_id: user.id,
-      filter_id: 1,
+    changes = %{
       phrase: "who",
       context: ["home", "timeline"]
     }
 
     {:ok, filter_one} = Pleroma.Filter.create(query_one)
-    {:ok, filter_two} = Pleroma.Filter.update(query_two)
+    {:ok, filter_two} = Pleroma.Filter.update(filter_one, changes)
     assert filter_one != filter_two
-    assert filter_two.phrase == query_two.phrase
-    assert filter_two.context == query_two.context
+    assert filter_two.phrase == changes.phrase
+    assert filter_two.context == changes.context
   end
 end

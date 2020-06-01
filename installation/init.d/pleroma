@@ -1,21 +1,45 @@
 #!/sbin/openrc-run
-
-# Requires OpenRC >= 0.35
-directory=/opt/pleroma
-
-command=/usr/bin/mix
-command_args="phx.server"
+supervisor=supervise-daemon
 command_user=pleroma:pleroma
 command_background=1
-
-export PORT=4000
-export MIX_ENV=prod
-
 # Ask process to terminate within 30 seconds, otherwise kill it
 retry="SIGTERM/30/SIGKILL/5"
-
 pidfile="/var/run/pleroma.pid"
+directory=/opt/pleroma
+healthcheck_delay=60
+healthcheck_timer=30
+
+: ${pleroma_port:-4000}
+
+# Needs OpenRC >= 0.42
+#respawn_max=0
+#respawn_delay=5
+
+# put pleroma_console=YES in /etc/conf.d/pleroma if you want to be able to
+# connect to pleroma via an elixir console
+if yesno "${pleroma_console}"; then
+	command=elixir
+	command_args="--name pleroma@127.0.0.1 --erl '-kernel inet_dist_listen_min 9001 inet_dist_listen_max 9001 inet_dist_use_interface {127,0,0,1}' -S mix phx.server"
+
+	start_post() {
+		einfo "You can get a console by using this command as pleroma's user:"
+		einfo "iex --name console@127.0.0.1 --remsh pleroma@127.0.0.1"
+	}
+else
+	command=/usr/bin/mix
+	command_args="phx.server"
+fi
+
+export MIX_ENV=prod
 
 depend() {
-    need nginx postgresql
+	need nginx postgresql
+}
+
+healthcheck() {
+	# put pleroma_health=YES in /etc/conf.d/pleroma if you want healthchecking
+	# and make sure you have curl installed
+	yesno "$pleroma_health" || return 0
+
+	curl -q "localhost:${pleroma_port}/api/pleroma/healthcheck"
 }

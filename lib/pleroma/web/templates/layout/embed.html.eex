@@ -7,6 +7,7 @@
     <meta content='noindex' name='robots'>
     <%= Phoenix.HTML.raw(assigns[:meta] || "") %>
     <link rel="stylesheet" href="/embed.css">
+    <base target="_parent">
   </head>
   <body>
     <%= render @view_module, @view_template, assigns %>

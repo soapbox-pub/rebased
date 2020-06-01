@@ -4,22 +4,21 @@
 
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
-  import Pleroma.Factory
+
   alias Pleroma.User
+  alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
 
-  test "Represent a user account" do
-    source_data = %{
-      "tag" => [
-        %{
-          "type" => "Emoji",
-          "icon" => %{"url" => "/file.png"},
-          "name" => ":karjalanpiirakka:"
-        }
-      ]
-    }
+  import Pleroma.Factory
+  import Tesla.Mock
 
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
+  test "Represent a user account" do
     background_image = %{
       "url" => [%{"href" => "https://example.com/images/asuka_hospital.png"}]
     }
@@ -28,12 +27,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       insert(:user, %{
         follower_count: 3,
         note_count: 5,
-        source_data: source_data,
         background: background_image,
         nickname: "shp@shitposter.club",
         name: ":karjalanpiirakka: shp",
-        bio: "<script src=\"invalid-html\"></script><span>valid html</span>",
-        inserted_at: ~N[2017-08-15 15:47:06.597036]
+        bio:
+          "<script src=\"invalid-html\"></script><span>valid html</span>. a<br>b<br/>c<br >d<br />f '&<>\"",
+        inserted_at: ~N[2017-08-15 15:47:06.597036],
+        emoji: %{"karjalanpiirakka" => "/file.png"}
       })
 
     expected = %{
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       followers_count: 3,
       following_count: 0,
       statuses_count: 5,
-      note: "<span>valid html</span>",
+      note: "<span>valid html</span>. a<br/>b<br/>c<br/>d<br/>f &#39;&amp;&lt;&gt;&quot;",
       url: user.ap_id,
       avatar: "http://localhost:4001/images/avi.png",
       avatar_static: "http://localhost:4001/images/avi.png",
@@ -54,16 +54,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       header_static: "http://localhost:4001/images/banner.png",
       emojis: [
         %{
-          "static_url" => "/file.png",
-          "url" => "/file.png",
-          "shortcode" => "karjalanpiirakka",
-          "visible_in_picker" => false
+          static_url: "/file.png",
+          url: "/file.png",
+          shortcode: "karjalanpiirakka",
+          visible_in_picker: false
         }
       ],
       fields: [],
       bot: false,
       source: %{
-        note: "valid html",
+        note: "valid html. a\nb\nc\nd\nf '&<>\"",
         sensitive: false,
         pleroma: %{
           actor_type: "Person",
@@ -93,7 +93,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   test "Represent the user account for the account owner" do
     user = insert(:user)
 
-    notification_settings = %Pleroma.User.NotificationSetting{}
+    notification_settings = %{
+      followers: true,
+      follows: true,
+      non_followers: true,
+      non_follows: true,
+      privacy_option: false
+    }
+
     privacy = user.default_scope
 
     assert %{
@@ -107,7 +114,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       insert(:user, %{
         follower_count: 3,
         note_count: 5,
-        source_data: %{},
         actor_type: "Service",
         nickname: "shp@shitposter.club",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
@@ -160,6 +166,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert expected == AccountView.render("show.json", %{user: user})
   end
 
+  test "Represent a Funkwhale channel" do
+    {:ok, user} =
+      User.get_or_fetch_by_ap_id(
+        "https://channels.tests.funkwhale.audio/federation/actors/compositions"
+      )
+
+    assert represented = AccountView.render("show.json", %{user: user})
+    assert represented.acct == "compositions@channels.tests.funkwhale.audio"
+    assert represented.url == "https://channels.tests.funkwhale.audio/channels/compositions"
+  end
+
   test "Represent a deactivated user for an admin" do
     admin = insert(:user, is_admin: true)
     deactivated_user = insert(:user, deactivated: true)
@@ -181,6 +198,32 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   end
 
   describe "relationship" do
+    defp test_relationship_rendering(user, other_user, expected_result) do
+      opts = %{user: user, target: other_user, relationships: nil}
+      assert expected_result == AccountView.render("relationship.json", opts)
+
+      relationships_opt = UserRelationship.view_relationships_option(user, [other_user])
+      opts = Map.put(opts, :relationships, relationships_opt)
+      assert expected_result == AccountView.render("relationship.json", opts)
+
+      assert [expected_result] ==
+               AccountView.render("relationships.json", %{user: user, targets: [other_user]})
+    end
+
+    @blank_response %{
+      following: false,
+      followed_by: false,
+      blocking: false,
+      blocked_by: false,
+      muting: false,
+      muting_notifications: false,
+      subscribing: false,
+      requested: false,
+      domain_blocking: false,
+      showing_reblogs: true,
+      endorsed: false
+    }
+
     test "represent a relationship for the following and followed user" do
       user = insert(:user)
       other_user = insert(:user)
@@ -191,23 +234,21 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       {:ok, _user_relationships} = User.mute(user, other_user, true)
       {:ok, _reblog_mute} = CommonAPI.hide_reblogs(user, other_user)
 
-      expected = %{
-        id: to_string(other_user.id),
-        following: true,
-        followed_by: true,
-        blocking: false,
-        blocked_by: false,
-        muting: true,
-        muting_notifications: true,
-        subscribing: true,
-        requested: false,
-        domain_blocking: false,
-        showing_reblogs: false,
-        endorsed: false
-      }
+      expected =
+        Map.merge(
+          @blank_response,
+          %{
+            following: true,
+            followed_by: true,
+            muting: true,
+            muting_notifications: true,
+            subscribing: true,
+            showing_reblogs: false,
+            id: to_string(other_user.id)
+          }
+        )
 
-      assert expected ==
-               AccountView.render("relationship.json", %{user: user, target: other_user})
+      test_relationship_rendering(user, other_user, expected)
     end
 
     test "represent a relationship for the blocking and blocked user" do
@@ -219,23 +260,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       {:ok, _user_relationship} = User.block(user, other_user)
       {:ok, _user_relationship} = User.block(other_user, user)
 
-      expected = %{
-        id: to_string(other_user.id),
-        following: false,
-        followed_by: false,
-        blocking: true,
-        blocked_by: true,
-        muting: false,
-        muting_notifications: false,
-        subscribing: false,
-        requested: false,
-        domain_blocking: false,
-        showing_reblogs: true,
-        endorsed: false
-      }
+      expected =
+        Map.merge(
+          @blank_response,
+          %{following: false, blocking: true, blocked_by: true, id: to_string(other_user.id)}
+        )
 
-      assert expected ==
-               AccountView.render("relationship.json", %{user: user, target: other_user})
+      test_relationship_rendering(user, other_user, expected)
     end
 
     test "represent a relationship for the user blocking a domain" do
@@ -244,8 +275,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
       {:ok, user} = User.block_domain(user, "bad.site")
 
-      assert %{domain_blocking: true, blocking: false} =
-               AccountView.render("relationship.json", %{user: user, target: other_user})
+      expected =
+        Map.merge(
+          @blank_response,
+          %{domain_blocking: true, blocking: false, id: to_string(other_user.id)}
+        )
+
+      test_relationship_rendering(user, other_user, expected)
     end
 
     test "represent a relationship for the user with a pending follow request" do
@@ -256,101 +292,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       user = User.get_cached_by_id(user.id)
       other_user = User.get_cached_by_id(other_user.id)
 
-      expected = %{
-        id: to_string(other_user.id),
-        following: false,
-        followed_by: false,
-        blocking: false,
-        blocked_by: false,
-        muting: false,
-        muting_notifications: false,
-        subscribing: false,
-        requested: true,
-        domain_blocking: false,
-        showing_reblogs: true,
-        endorsed: false
-      }
+      expected =
+        Map.merge(
+          @blank_response,
+          %{requested: true, following: false, id: to_string(other_user.id)}
+        )
 
-      assert expected ==
-               AccountView.render("relationship.json", %{user: user, target: other_user})
+      test_relationship_rendering(user, other_user, expected)
     end
-  end
-
-  test "represent an embedded relationship" do
-    user =
-      insert(:user, %{
-        follower_count: 0,
-        note_count: 5,
-        source_data: %{},
-        actor_type: "Service",
-        nickname: "shp@shitposter.club",
-        inserted_at: ~N[2017-08-15 15:47:06.597036]
-      })
-
-    other_user = insert(:user)
-    {:ok, other_user} = User.follow(other_user, user)
-    {:ok, _user_relationship} = User.block(other_user, user)
-    {:ok, _} = User.follow(insert(:user), user)
-
-    expected = %{
-      id: to_string(user.id),
-      username: "shp",
-      acct: user.nickname,
-      display_name: user.name,
-      locked: false,
-      created_at: "2017-08-15T15:47:06.000Z",
-      followers_count: 1,
-      following_count: 0,
-      statuses_count: 5,
-      note: user.bio,
-      url: user.ap_id,
-      avatar: "http://localhost:4001/images/avi.png",
-      avatar_static: "http://localhost:4001/images/avi.png",
-      header: "http://localhost:4001/images/banner.png",
-      header_static: "http://localhost:4001/images/banner.png",
-      emojis: [],
-      fields: [],
-      bot: true,
-      source: %{
-        note: user.bio,
-        sensitive: false,
-        pleroma: %{
-          actor_type: "Service",
-          discoverable: false
-        },
-        fields: []
-      },
-      pleroma: %{
-        background_image: nil,
-        confirmation_pending: false,
-        tags: [],
-        is_admin: false,
-        is_moderator: false,
-        hide_favorites: true,
-        hide_followers: false,
-        hide_follows: false,
-        hide_followers_count: false,
-        hide_follows_count: false,
-        relationship: %{
-          id: to_string(user.id),
-          following: false,
-          followed_by: false,
-          blocking: true,
-          blocked_by: false,
-          subscribing: false,
-          muting: false,
-          muting_notifications: false,
-          requested: false,
-          domain_blocking: false,
-          showing_reblogs: true,
-          endorsed: false
-        },
-        skip_thread_containment: false
-      }
-    }
-
-    assert expected ==
-             AccountView.render("show.json", %{user: refresh_record(user), for: other_user})
   end
 
   test "returns the settings store if the requesting user is the represented user and it's requested specifically" do
@@ -434,8 +383,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
       {:ok, _activity} =
         CommonAPI.post(other_user, %{
-          "status" => "Hey @#{user.nickname}.",
-          "visibility" => "direct"
+          status: "Hey @#{user.nickname}.",
+          visibility: "direct"
         })
 
       user = User.get_cached_by_ap_id(user.ap_id)
@@ -447,6 +396,24 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert AccountView.render("show.json", %{user: user, for: user})[:pleroma][
                :unread_conversation_count
              ] == 1
+    end
+
+    test "shows unread_count only to the account owner" do
+      user = insert(:user)
+      insert_list(7, :notification, user: user)
+      other_user = insert(:user)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: other_user}
+             )[:pleroma][:unread_notifications_count] == nil
+
+      assert AccountView.render(
+               "show.json",
+               %{user: user, for: user}
+             )[:pleroma][:unread_notifications_count] == 7
     end
   end
 
@@ -523,5 +490,32 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{locked: false, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
     end
+  end
+
+  test "uses mediaproxy urls when it's enabled" do
+    clear_config([:media_proxy, :enabled], true)
+
+    user =
+      insert(:user,
+        avatar: %{"url" => [%{"href" => "https://evil.website/avatar.png"}]},
+        banner: %{"url" => [%{"href" => "https://evil.website/banner.png"}]},
+        emoji: %{"joker_smile" => "https://evil.website/society.png"}
+      )
+
+    AccountView.render("show.json", %{user: user})
+    |> Enum.all?(fn
+      {key, url} when key in [:avatar, :avatar_static, :header, :header_static] ->
+        String.starts_with?(url, Pleroma.Web.base_url())
+
+      {:emojis, emojis} ->
+        Enum.all?(emojis, fn %{url: url, static_url: static_url} ->
+          String.starts_with?(url, Pleroma.Web.base_url()) &&
+            String.starts_with?(static_url, Pleroma.Web.base_url())
+        end)
+
+      _ ->
+        true
+    end)
+    |> assert()
   end
 end

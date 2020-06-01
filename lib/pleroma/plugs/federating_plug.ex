@@ -19,6 +19,9 @@ defmodule Pleroma.Web.FederatingPlug do
 
   def federating?, do: Pleroma.Config.get([:instance, :federating])
 
+  # Definition for the use in :if_func / :unless_func plug options
+  def federating?(_conn), do: federating?()
+
   defp fail(conn) do
     conn
     |> put_status(404)

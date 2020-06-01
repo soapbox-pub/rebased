@@ -6,15 +6,18 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Plugs.AuthenticationPlug
+  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Plugs.PlugHelper
   alias Pleroma.User
 
   import ExUnit.CaptureLog
+  import Pleroma.Factory
 
   setup %{conn: conn} do
     user = %User{
       id: 1,
       name: "dude",
-      password_hash: Comeonin.Pbkdf2.hashpwsalt("guy")
+      password_hash: Pbkdf2.hash_pwd_salt("guy")
     }
 
     conn =
@@ -36,25 +39,54 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
     assert ret_conn == conn
   end
 
-  test "with a correct password in the credentials, it assigns the auth_user", %{conn: conn} do
+  test "with a correct password in the credentials, " <>
+         "it assigns the auth_user and marks OAuthScopesPlug as skipped",
+       %{conn: conn} do
     conn =
       conn
       |> assign(:auth_credentials, %{password: "guy"})
       |> AuthenticationPlug.call(%{})
 
     assert conn.assigns.user == conn.assigns.auth_user
+    assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
   end
 
-  test "with a wrong password in the credentials, it does nothing", %{conn: conn} do
+  test "with a bcrypt hash, it updates to a pkbdf2 hash", %{conn: conn} do
+    user = insert(:user, password_hash: Bcrypt.hash_pwd_salt("123"))
+    assert "$2" <> _ = user.password_hash
+
     conn =
       conn
-      |> assign(:auth_credentials, %{password: "wrong"})
-
-    ret_conn =
-      conn
+      |> assign(:auth_user, user)
+      |> assign(:auth_credentials, %{password: "123"})
       |> AuthenticationPlug.call(%{})
 
-    assert conn == ret_conn
+    assert conn.assigns.user.id == conn.assigns.auth_user.id
+    assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
+
+    user = User.get_by_id(user.id)
+    assert "$pbkdf2" <> _ = user.password_hash
+  end
+
+  @tag :skip_on_mac
+  test "with a crypt hash, it updates to a pkbdf2 hash", %{conn: conn} do
+    user =
+      insert(:user,
+        password_hash:
+          "$6$9psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
+      )
+
+    conn =
+      conn
+      |> assign(:auth_user, user)
+      |> assign(:auth_credentials, %{password: "password"})
+      |> AuthenticationPlug.call(%{})
+
+    assert conn.assigns.user.id == conn.assigns.auth_user.id
+    assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
+
+    user = User.get_by_id(user.id)
+    assert "$pbkdf2" <> _ = user.password_hash
   end
 
   describe "checkpw/2" do
@@ -72,6 +104,13 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
         "$6$9psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
 
       assert AuthenticationPlug.checkpw("password", hash)
+    end
+
+    test "check bcrypt hash" do
+      hash = "$2a$10$uyhC/R/zoE1ndwwCtMusK.TLVzkQ/Ugsbqp3uXI.CTTz0gBw.24jS"
+
+      assert AuthenticationPlug.checkpw("password", hash)
+      refute AuthenticationPlug.checkpw("password1", hash)
     end
 
     test "it returns false when hash invalid" do

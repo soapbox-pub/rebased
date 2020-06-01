@@ -380,7 +380,8 @@ defmodule Pleroma.ObjectTest do
 
       user = insert(:user)
       activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      {:ok, _activity, object} = CommonAPI.favorite(activity.id, user)
+      {:ok, activity} = CommonAPI.favorite(user, activity.id)
+      object = Object.get_by_ap_id(activity.data["object"])
 
       assert object.data["like_count"] == 1
 

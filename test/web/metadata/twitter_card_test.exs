@@ -30,7 +30,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
 
   test "it uses summary twittercard if post has no attachment" do
     user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "HI"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "HI"})
 
     note =
       insert(:note, %{
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
   test "it renders avatar not attachment if post is nsfw and unfurl_nsfw is disabled" do
     Pleroma.Config.put([Pleroma.Web.Metadata, :unfurl_nsfw], false)
     user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "HI"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "HI"})
 
     note =
       insert(:note, %{
@@ -100,7 +100,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCardTest do
 
   test "it renders supported types of attachments and skips unknown types" do
     user = insert(:user, name: "Jimmy Hendriks", bio: "born 19 March 1994")
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "HI"})
+    {:ok, activity} = CommonAPI.post(user, %{status: "HI"})
 
     note =
       insert(:note, %{

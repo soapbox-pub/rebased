@@ -1,11 +1,11 @@
 <div>
   <div class="p-author h-card">
-    <a class="u-url" rel="author noopener" href="<%= User.profile_url(@author) %>">
+    <a class="u-url" rel="author noopener" href="<%= @author.ap_id %>">
       <div class="avatar">
         <img src="<%= User.avatar_url(@author) |> MediaProxy.url %>" width="48" height="48" alt="">
       </div>
       <span class="display-name" style="padding-left: 0.5em;">
-        <bdi><%= raw (@author.name |> Formatter.emojify(emoji_for_user(@author))) %></bdi>
+        <bdi><%= raw (@author.name |> Formatter.emojify(@author.emoji)) %></bdi>
         <span class="nickname"><%= full_nickname(@author) %></span>
       </span>
     </a>

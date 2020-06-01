@@ -43,11 +43,9 @@ defmodule Pleroma.ConfigDBTest do
              {ConfigDB.from_string(saved.key), ConfigDB.from_binary(saved.value)}
            ]
 
-    assert config[:quack] == [
-             level: :info,
-             meta: [:none],
-             webhook_url: "https://hooks.slack.com/services/KEY/some_val"
-           ]
+    assert config[:quack][:level] == :info
+    assert config[:quack][:meta] == [:none]
+    assert config[:quack][:webhook_url] == "https://hooks.slack.com/services/KEY/some_val"
   end
 
   describe "update_or_create/1" do

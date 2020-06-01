@@ -40,10 +40,16 @@ defmodule Pleroma.Tests.Helpers do
           clear_config: 2
         ]
 
-      def to_datetime(naive_datetime) do
+      def to_datetime(%NaiveDateTime{} = naive_datetime) do
         naive_datetime
         |> DateTime.from_naive!("Etc/UTC")
         |> DateTime.truncate(:second)
+      end
+
+      def to_datetime(datetime) when is_binary(datetime) do
+        datetime
+        |> NaiveDateTime.from_iso8601!()
+        |> to_datetime()
       end
 
       def collect_ids(collection) do

@@ -6,7 +6,9 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
   use Pleroma.Web, :view
 
   alias Pleroma.User
+  alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.MediaProxy
 
   def render("index.json", %{users: users, count: count, page_size: page_size}) do
@@ -21,6 +23,43 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
     %{
       users: render_many(users, AccountView, "show.json", as: :user)
     }
+  end
+
+  def render("credentials.json", %{user: user, for: for_user}) do
+    user = User.sanitize_html(user, User.html_filter_policy(for_user))
+    avatar = User.avatar_url(user) |> MediaProxy.url()
+    banner = User.banner_url(user) |> MediaProxy.url()
+    background = image_url(user.background) |> MediaProxy.url()
+
+    user
+    |> Map.take([
+      :id,
+      :bio,
+      :email,
+      :fields,
+      :name,
+      :nickname,
+      :locked,
+      :no_rich_text,
+      :default_scope,
+      :hide_follows,
+      :hide_followers_count,
+      :hide_follows_count,
+      :hide_followers,
+      :hide_favorites,
+      :allow_following_move,
+      :show_role,
+      :skip_thread_containment,
+      :pleroma_settings_store,
+      :raw_fields,
+      :discoverable,
+      :actor_type
+    ])
+    |> Map.merge(%{
+      "avatar" => avatar,
+      "banner" => banner,
+      "background" => background
+    })
   end
 
   def render("show.json", %{user: user}) do
@@ -82,6 +121,13 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
     }
   end
 
+  def merge_account_views(%User{} = user) do
+    MastodonAPI.AccountView.render("show.json", %{user: user})
+    |> Map.merge(AdminAPI.AccountView.render("show.json", %{user: user}))
+  end
+
+  def merge_account_views(_), do: %{}
+
   defp parse_error([]), do: ""
 
   defp parse_error(errors) do
@@ -104,4 +150,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
         ""
     end
   end
+
+  defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
+  defp image_url(_), do: nil
 end

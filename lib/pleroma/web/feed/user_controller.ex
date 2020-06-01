@@ -27,7 +27,7 @@ defmodule Pleroma.Web.Feed.UserController do
       when format in ["json", "activity+json"] do
     with %{halted: false} = conn <-
            Pleroma.Plugs.EnsureAuthenticatedPlug.call(conn,
-             unless_func: &Pleroma.Web.FederatingPlug.federating?/0
+             unless_func: &Pleroma.Web.FederatingPlug.federating?/1
            ) do
       ActivityPubController.call(conn, :user)
     end
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.Feed.UserController do
           "actor_id" => user.ap_id
         }
         |> put_if_exist("max_id", params["max_id"])
-        |> ActivityPub.fetch_public_activities()
+        |> ActivityPub.fetch_public_or_unlisted_activities()
 
       conn
       |> put_resp_content_type("application/#{format}+xml")

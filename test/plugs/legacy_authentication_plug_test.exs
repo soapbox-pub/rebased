@@ -8,6 +8,8 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlugTest do
   import Pleroma.Factory
 
   alias Pleroma.Plugs.LegacyAuthenticationPlug
+  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Plugs.PlugHelper
   alias Pleroma.User
 
   setup do
@@ -36,7 +38,8 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlugTest do
   end
 
   @tag :skip_on_mac
-  test "it authenticates the auth_user if present and password is correct and resets the password",
+  test "if `auth_user` is present and password is correct, " <>
+         "it authenticates the user, resets the password, marks OAuthScopesPlug as skipped",
        %{
          conn: conn,
          user: user
@@ -49,6 +52,7 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlugTest do
     conn = LegacyAuthenticationPlug.call(conn, %{})
 
     assert conn.assigns.user.id == user.id
+    assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
   end
 
   @tag :skip_on_mac

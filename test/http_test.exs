@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.HTTPTest do
-  use Pleroma.DataCase
+  use ExUnit.Case, async: true
+  use Pleroma.Tests.Helpers
   import Tesla.Mock
+  alias Pleroma.HTTP
 
   setup do
     mock(fn
@@ -27,7 +29,7 @@ defmodule Pleroma.HTTPTest do
 
   describe "get/1" do
     test "returns successfully result" do
-      assert Pleroma.HTTP.get("http://example.com/hello") == {
+      assert HTTP.get("http://example.com/hello") == {
                :ok,
                %Tesla.Env{status: 200, body: "hello"}
              }
@@ -36,7 +38,7 @@ defmodule Pleroma.HTTPTest do
 
   describe "get/2 (with headers)" do
     test "returns successfully result for json content-type" do
-      assert Pleroma.HTTP.get("http://example.com/hello", [{"content-type", "application/json"}]) ==
+      assert HTTP.get("http://example.com/hello", [{"content-type", "application/json"}]) ==
                {
                  :ok,
                  %Tesla.Env{
@@ -50,7 +52,7 @@ defmodule Pleroma.HTTPTest do
 
   describe "post/2" do
     test "returns successfully result" do
-      assert Pleroma.HTTP.post("http://example.com/world", "") == {
+      assert HTTP.post("http://example.com/world", "") == {
                :ok,
                %Tesla.Env{status: 200, body: "world"}
              }

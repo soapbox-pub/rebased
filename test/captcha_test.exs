@@ -61,7 +61,7 @@ defmodule Pleroma.CaptchaTest do
 
       assert is_binary(answer)
       assert :ok = Native.validate(token, answer, answer)
-      assert {:error, "Invalid CAPTCHA"} == Native.validate(token, answer, answer <> "foobar")
+      assert {:error, :invalid} == Native.validate(token, answer, answer <> "foobar")
     end
   end
 
@@ -78,6 +78,7 @@ defmodule Pleroma.CaptchaTest do
 
       assert is_binary(answer)
       assert :ok = Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", answer)
+      Cachex.del(:used_captcha_cache, token)
     end
 
     test "doesn't validate invalid answer" do
@@ -92,7 +93,7 @@ defmodule Pleroma.CaptchaTest do
 
       assert is_binary(answer)
 
-      assert {:error, "Invalid answer data"} =
+      assert {:error, :invalid_answer_data} =
                Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", answer <> "foobar")
     end
 
@@ -108,7 +109,7 @@ defmodule Pleroma.CaptchaTest do
 
       assert is_binary(answer)
 
-      assert {:error, "Invalid answer data"} =
+      assert {:error, :invalid_answer_data} =
                Captcha.validate(token, "63615261b77f5354fb8c4e4986477555", nil)
     end
   end

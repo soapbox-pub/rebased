@@ -95,33 +95,33 @@ mix pleroma.user sign_out <nickname>
 ```
 
 
-## Deactivate or activate a user 
+## Deactivate or activate a user
 ```sh tab="OTP"
- ./bin/pleroma_ctl user toggle_activated <nickname> 
+ ./bin/pleroma_ctl user toggle_activated <nickname>
 ```
 
 ```sh tab="From Source"
-mix pleroma.user toggle_activated <nickname> 
+mix pleroma.user toggle_activated <nickname>
 ```
 
 
-## Unsubscribe local users from a user and deactivate the user
+## Deactivate a user and unsubscribes local users from the user
 ```sh tab="OTP"
- ./bin/pleroma_ctl user unsubscribe NICKNAME
+ ./bin/pleroma_ctl user deactivate NICKNAME
 ```
 
 ```sh tab="From Source"
-mix pleroma.user unsubscribe NICKNAME
+mix pleroma.user deactivate NICKNAME
 ```
 
 
-## Unsubscribe local users from an instance and deactivate all accounts on it
+## Deactivate all accounts from an instance and unsubscribe local users on it
 ```sh tab="OTP"
- ./bin/pleroma_ctl user unsubscribe_all_from_instance <instance>
+ ./bin/pleroma_ctl user deactivate_all_from_instance <instance>
 ```
 
 ```sh tab="From Source"
-mix pleroma.user unsubscribe_all_from_instance <instance>
+mix pleroma.user deactivate_all_from_instance <instance>
 ```
 
 
@@ -177,4 +177,3 @@ mix pleroma.user untag <nickname> <tags>
 ```sh tab="From Source"
 mix pleroma.user toggle_confirmed <nickname>
 ```
-

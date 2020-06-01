@@ -10,8 +10,8 @@ defmodule Pleroma.User.WelcomeMessage do
     with %User{} = sender_user <- welcome_user(),
          message when is_binary(message) <- welcome_message() do
       CommonAPI.post(sender_user, %{
-        "visibility" => "direct",
-        "status" => "@#{user.nickname}\n#{message}"
+        visibility: "direct",
+        status: "@#{user.nickname}\n#{message}"
       })
     else
       _ -> {:ok, nil}

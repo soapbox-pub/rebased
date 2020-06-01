@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
@@ -110,6 +110,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
   end
 
   describe "with unknown actors" do
+    setup do
+      Tesla.Mock.mock(fn
+        %{method: :get, url: "http://invalid.actor"} ->
+          %Tesla.Env{status: 500, body: ""}
+      end)
+
+      :ok
+    end
+
     test "it rejects posts without links" do
       message =
         @linkless_message

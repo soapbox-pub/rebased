@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   use Pleroma.Web, :controller
+
   alias Pleroma.ReverseProxy
   alias Pleroma.Web.MediaProxy
 

@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
+
   alias Pleroma.Web.Push
   alias Pleroma.Web.Push.Subscription
 
@@ -27,6 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       build_conn()
       |> assign(:user, user)
       |> assign(:token, token)
+      |> put_req_header("content-type", "application/json")
 
     %{conn: conn, user: user, token: token}
   end
@@ -35,7 +37,10 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
     quote do
       vapid_details = Application.get_env(:web_push_encryption, :vapid_details, [])
       Application.put_env(:web_push_encryption, :vapid_details, [])
-      assert "Something went wrong" == unquote(yield)
+
+      assert %{"error" => "Web push subscription is disabled on this Pleroma instance"} ==
+               unquote(yield)
+
       Application.put_env(:web_push_encryption, :vapid_details, vapid_details)
     end
   end
@@ -44,8 +49,8 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
     test "returns error when push disabled ", %{conn: conn} do
       assert_error_when_disable_push do
         conn
-        |> post("/api/v1/push/subscription", %{})
-        |> json_response(500)
+        |> post("/api/v1/push/subscription", %{subscription: @sub})
+        |> json_response_and_validate_schema(403)
       end
     end
 
@@ -56,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
           "data" => %{"alerts" => %{"mention" => true, "test" => true}},
           "subscription" => @sub
         })
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       [subscription] = Pleroma.Repo.all(Subscription)
 
@@ -74,7 +79,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       assert_error_when_disable_push do
         conn
         |> get("/api/v1/push/subscription", %{})
-        |> json_response(500)
+        |> json_response_and_validate_schema(403)
       end
     end
 
@@ -82,9 +87,9 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       res =
         conn
         |> get("/api/v1/push/subscription", %{})
-        |> json_response(404)
+        |> json_response_and_validate_schema(404)
 
-      assert "Not found" == res
+      assert %{"error" => "Record not found"} == res
     end
 
     test "returns a user subsciption", %{conn: conn, user: user, token: token} do
@@ -98,7 +103,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       res =
         conn
         |> get("/api/v1/push/subscription", %{})
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       expect = %{
         "alerts" => %{"mention" => true},
@@ -127,7 +132,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       assert_error_when_disable_push do
         conn
         |> put("/api/v1/push/subscription", %{data: %{"alerts" => %{"mention" => false}}})
-        |> json_response(500)
+        |> json_response_and_validate_schema(403)
       end
     end
 
@@ -137,7 +142,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
         |> put("/api/v1/push/subscription", %{
           data: %{"alerts" => %{"mention" => false, "follow" => true}}
         })
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       expect = %{
         "alerts" => %{"follow" => true, "mention" => false},
@@ -155,7 +160,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       assert_error_when_disable_push do
         conn
         |> delete("/api/v1/push/subscription", %{})
-        |> json_response(500)
+        |> json_response_and_validate_schema(403)
       end
     end
 
@@ -163,9 +168,9 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       res =
         conn
         |> delete("/api/v1/push/subscription", %{})
-        |> json_response(404)
+        |> json_response_and_validate_schema(404)
 
-      assert "Not found" == res
+      assert %{"error" => "Record not found"} == res
     end
 
     test "returns empty result and delete user subsciption", %{
@@ -183,7 +188,7 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionControllerTest do
       res =
         conn
         |> delete("/api/v1/push/subscription", %{})
-        |> json_response(200)
+        |> json_response_and_validate_schema(200)
 
       assert %{} == res
       refute Pleroma.Repo.get(Subscription, subscription.id)

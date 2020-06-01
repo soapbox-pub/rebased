@@ -16,8 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.AppControllerTest do
 
     conn =
       conn
-      |> assign(:user, token.user)
-      |> assign(:token, token)
+      |> put_req_header("authorization", "Bearer #{token.token}")
       |> get("/api/v1/apps/verify_credentials")
 
     app = Repo.preload(token, :app).app
@@ -28,7 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.AppControllerTest do
       "vapid_key" => Push.vapid_config() |> Keyword.get(:public_key)
     }
 
-    assert expected == json_response(conn, 200)
+    assert expected == json_response_and_validate_schema(conn, 200)
   end
 
   test "creates an oauth app", %{conn: conn} do
@@ -37,6 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.AppControllerTest do
 
     conn =
       conn
+      |> put_req_header("content-type", "application/json")
       |> assign(:user, user)
       |> post("/api/v1/apps", %{
         client_name: app_attrs.client_name,
@@ -55,6 +55,6 @@ defmodule Pleroma.Web.MastodonAPI.AppControllerTest do
       "vapid_key" => Push.vapid_config() |> Keyword.get(:public_key)
     }
 
-    assert expected == json_response(conn, 200)
+    assert expected == json_response_and_validate_schema(conn, 200)
   end
 end

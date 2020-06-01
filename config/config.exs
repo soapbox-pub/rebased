@@ -58,20 +58,6 @@ config :pleroma, Pleroma.Captcha,
 
 config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
 
-config :pleroma, :hackney_pools,
-  federation: [
-    max_connections: 50,
-    timeout: 150_000
-  ],
-  media: [
-    max_connections: 50,
-    timeout: 150_000
-  ],
-  upload: [
-    max_connections: 25,
-    timeout: 300_000
-  ]
-
 # Upload configuration
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
@@ -85,7 +71,8 @@ config :pleroma, Pleroma.Upload,
       follow_redirect: true,
       pool: :upload
     ]
-  ]
+  ],
+  filename_display_max_length: 30
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
@@ -184,27 +171,20 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :tesla, adapter: Tesla.Adapter.Hackney
-
+config :tesla, adapter: Tesla.Adapter.Gun
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
   proxy_url: nil,
   send_user_agent: true,
   user_agent: :default,
-  adapter: [
-    ssl_options: [
-      # Workaround for remote server certificate chain issues
-      partial_chain: &:hackney_connect.partial_chain/1,
-      # We don't support TLS v1.3 yet
-      versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
-    ]
-  ]
+  adapter: []
 
 config :pleroma, :instance,
   name: "Pleroma",
   email: "example@example.com",
   notify_email: "noreply@example.com",
   description: "A Pleroma instance, an alternative fediverse server",
+  background_image: "/images/city.jpg",
   limit: 5_000,
   chat_limit: 5_000,
   remote_limit: 100_000,
@@ -260,7 +240,18 @@ config :pleroma, :instance,
   account_field_value_length: 2048,
   external_user_synchronization: true,
   extended_nickname_format: true,
-  cleanup_attachments: false
+  cleanup_attachments: false,
+  multi_factor_authentication: [
+    totp: [
+      # digits 6 or 8
+      digits: 6,
+      period: 30
+    ],
+    backup_codes: [
+      number: 5,
+      length: 16
+    ]
+  ]
 
 config :pleroma, :feed,
   post_title: %{
@@ -282,20 +273,33 @@ config :pleroma, :markup,
 
 config :pleroma, :frontend_configurations,
   pleroma_fe: %{
-    theme: "pleroma-dark",
-    logo: "/static/logo.png",
+    alwaysShowSubjectInput: true,
     background: "/images/city.jpg",
-    redirectRootNoLogin: "/main/all",
-    redirectRootLogin: "/main/friends",
-    showInstanceSpecificPanel: true,
-    scopeOptionsEnabled: false,
-    formattingOptionsEnabled: false,
     collapseMessageWithSubject: false,
+    disableChat: false,
+    greentext: false,
+    hideFilteredStatuses: false,
+    hideMutedPosts: false,
     hidePostStats: false,
+    hideSitename: false,
     hideUserStats: false,
+    loginMethod: "password",
+    logo: "/static/logo.png",
+    logoMargin: ".1em",
+    logoMask: true,
+    minimalScopesMode: false,
+    noAttachmentLinks: false,
+    nsfwCensorImage: "",
+    postContentType: "text/plain",
+    redirectRootLogin: "/main/friends",
+    redirectRootNoLogin: "/main/all",
     scopeCopy: true,
+    sidebarRight: false,
+    showFeaturesPanel: true,
+    showInstanceSpecificPanel: false,
     subjectLineBehavior: "email",
-    alwaysShowSubjectInput: true
+    theme: "pleroma-dark",
+    webPushNotifications: false
   },
   masto_fe: %{
     showInstanceSpecificPanel: true
@@ -356,7 +360,8 @@ config :pleroma, :mrf_simple,
   reject: [],
   accept: [],
   avatar_removal: [],
-  banner_removal: []
+  banner_removal: [],
+  reject_deletes: []
 
 config :pleroma, :mrf_keyword,
   reject: [],
@@ -386,6 +391,10 @@ config :pleroma, :rich_media,
 
 config :pleroma, :media_proxy,
   enabled: false,
+  invalidation: [
+    enabled: false,
+    provider: Pleroma.Web.MediaProxy.Invalidation.Script
+  ],
   proxy_opts: [
     redirect_on_failure: false,
     max_body_length: 25 * 1_048_576,
@@ -624,10 +633,55 @@ config :pleroma, Pleroma.Repo,
   parameters: [gin_fuzzy_search_limit: "500"],
   prepare: :unnamed
 
+config :pleroma, :connections_pool,
+  checkin_timeout: 250,
+  max_connections: 250,
+  retry: 1,
+  retry_timeout: 1000,
+  await_up_timeout: 5_000
+
+config :pleroma, :pools,
+  federation: [
+    size: 50,
+    max_overflow: 10,
+    timeout: 150_000
+  ],
+  media: [
+    size: 50,
+    max_overflow: 10,
+    timeout: 150_000
+  ],
+  upload: [
+    size: 25,
+    max_overflow: 5,
+    timeout: 300_000
+  ],
+  default: [
+    size: 10,
+    max_overflow: 2,
+    timeout: 10_000
+  ]
+
+config :pleroma, :hackney_pools,
+  federation: [
+    max_connections: 50,
+    timeout: 150_000
+  ],
+  media: [
+    max_connections: 50,
+    timeout: 150_000
+  ],
+  upload: [
+    max_connections: 25,
+    timeout: 300_000
+  ]
+
 config :pleroma, :restrict_unauthenticated,
   timelines: %{local: false, federated: false},
   profiles: %{local: false, remote: false},
   activities: %{local: false, remote: false}
+
+config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

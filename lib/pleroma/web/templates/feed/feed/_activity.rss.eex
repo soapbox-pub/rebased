@@ -2,10 +2,10 @@
   <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
   <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
   <guid><%= @data["id"] %></guid>
-  <title><%= activity_title(@object, Keyword.get(@feed_config, :post_title, %{})) %></title>
-  <description><%= activity_content(@object) %></description>
-  <pubDate><%= @data["published"] %></pubDate>
-  <updated><%= @data["published"] %></updated>
+  <title><%= activity_title(@data, Keyword.get(@feed_config, :post_title, %{})) %></title>
+  <description><%= activity_content(@data) %></description>
+  <pubDate><%= @activity.data["published"] %></pubDate>
+  <updated><%= @activity.data["published"] %></updated>
   <ostatus:conversation ref="<%= activity_context(@activity) %>">
     <%= activity_context(@activity) %>
   </ostatus:conversation>

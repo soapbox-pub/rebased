@@ -4,6 +4,8 @@
 
 defmodule Pleroma.Plugs.LegacyAuthenticationPlug do
   import Plug.Conn
+
+  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
 
   def init(options) do
@@ -27,6 +29,7 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlug do
       conn
       |> assign(:auth_user, user)
       |> assign(:user, user)
+      |> OAuthScopesPlug.skip_plug()
     else
       _ ->
         conn

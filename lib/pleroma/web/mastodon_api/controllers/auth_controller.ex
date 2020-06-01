@@ -13,9 +13,9 @@ defmodule Pleroma.Web.MastodonAPI.AuthController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
-  @local_mastodon_name "Mastodon-Local"
-
   plug(Pleroma.Plugs.RateLimiter, [name: :password_reset] when action == :password_reset)
+
+  @local_mastodon_name "Mastodon-Local"
 
   @doc "GET /web/login"
   def login(%{assigns: %{user: %User{}}} = conn, _params) do

@@ -28,7 +28,8 @@ config :pleroma, :config_description, [
       %{
         key: :filters,
         type: {:list, :module},
-        description: "List of filter modules for uploads",
+        description:
+          "List of filter modules for uploads. Module names are shortened (removed leading `Pleroma.Upload.Filter.` part), but on adding custom module you need to use full name.",
         suggestions:
           Generator.list_modules_in_dir(
             "lib/pleroma/upload/filter",
@@ -118,6 +119,11 @@ config :pleroma, :config_description, [
             ]
           }
         ]
+      },
+      %{
+        key: :filename_display_max_length,
+        type: :integer,
+        description: "Set max length of a filename to display. 0 = no limit. Default: 30"
       }
     ]
   },
@@ -679,14 +685,6 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :federation_publisher_modules,
-        type: {:list, :module},
-        description: "List of modules for federation publishing",
-        suggestions: [
-          Pleroma.Web.ActivityPub.Publisher
-        ]
-      },
-      %{
         key: :allow_relay,
         type: :boolean,
         description: "Enable Pleroma's Relay, which makes it possible to follow a whole instance"
@@ -694,7 +692,8 @@ config :pleroma, :config_description, [
       %{
         key: :rewrite_policy,
         type: [:module, {:list, :module}],
-        description: "A list of MRF policies enabled",
+        description:
+          "A list of enabled MRF policies. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
         suggestions:
           Generator.list_modules_in_dir(
             "lib/pleroma/web/activity_pub/mrf",
@@ -712,7 +711,7 @@ config :pleroma, :config_description, [
         key: :quarantined_instances,
         type: {:list, :string},
         description:
-          "List of ActivityPub instances where private (DMs, followers-only) activities will not be send",
+          "List of ActivityPub instances where private (DMs, followers-only) activities will not be sent",
         suggestions: [
           "quarantined.com",
           "*.quarantined.com"
@@ -919,6 +918,69 @@ config :pleroma, :config_description, [
         key: :external_user_synchronization,
         type: :boolean,
         description: "Enabling following/followers counters synchronization for external users"
+      },
+      %{
+        key: :multi_factor_authentication,
+        type: :keyword,
+        description: "Multi-factor authentication settings",
+        suggestions: [
+          [
+            totp: [digits: 6, period: 30],
+            backup_codes: [number: 5, length: 16]
+          ]
+        ],
+        children: [
+          %{
+            key: :totp,
+            type: :keyword,
+            description: "TOTP settings",
+            suggestions: [digits: 6, period: 30],
+            children: [
+              %{
+                key: :digits,
+                type: :integer,
+                suggestions: [6],
+                description:
+                  "Determines the length of a one-time pass-code, in characters. Defaults to 6 characters."
+              },
+              %{
+                key: :period,
+                type: :integer,
+                suggestions: [30],
+                description:
+                  "a period for which the TOTP code will be valid, in seconds. Defaults to 30 seconds."
+              }
+            ]
+          },
+          %{
+            key: :backup_codes,
+            type: :keyword,
+            description: "MFA backup codes settings",
+            suggestions: [number: 5, length: 16],
+            children: [
+              %{
+                key: :number,
+                type: :integer,
+                suggestions: [5],
+                description: "number of backup codes to generate."
+              },
+              %{
+                key: :length,
+                type: :integer,
+                suggestions: [16],
+                description:
+                  "Determines the length of backup one-time pass-codes, in characters. Defaults to 16 characters."
+              }
+            ]
+          }
+        ]
+      },
+      %{
+        key: :instance_thumbnail,
+        type: :string,
+        description:
+          "The instance thumbnail image. It will appear in [Pleroma Instances](http://distsn.org/pleroma-instances.html)",
+        suggestions: ["/instance/thumbnail.jpeg"]
       }
     ]
   },
@@ -1046,32 +1108,98 @@ config :pleroma, :config_description, [
         description: "Settings for Pleroma FE",
         suggestions: [
           %{
-            theme: "pleroma-dark",
-            logo: "/static/logo.png",
-            background: "/images/city.jpg",
-            redirectRootNoLogin: "/main/all",
-            redirectRootLogin: "/main/friends",
-            showInstanceSpecificPanel: true,
-            scopeOptionsEnabled: false,
-            formattingOptionsEnabled: false,
-            collapseMessageWithSubject: false,
-            hidePostStats: false,
-            hideUserStats: false,
-            scopeCopy: true,
-            subjectLineBehavior: "email",
             alwaysShowSubjectInput: true,
-            logoMask: false,
+            background: "/static/aurora_borealis.jpg",
+            collapseMessageWithSubject: false,
+            disableChat: false,
+            greentext: false,
+            hideFilteredStatuses: false,
+            hideMutedPosts: false,
+            hidePostStats: false,
+            hideSitename: false,
+            hideUserStats: false,
+            loginMethod: "password",
+            logo: "/static/logo.png",
             logoMargin: ".1em",
-            stickers: false,
-            enableEmojiPicker: false
+            logoMask: true,
+            minimalScopesMode: false,
+            noAttachmentLinks: false,
+            nsfwCensorImage: "/static/img/nsfw.74818f9.png",
+            postContentType: "text/plain",
+            redirectRootLogin: "/main/friends",
+            redirectRootNoLogin: "/main/all",
+            scopeCopy: true,
+            sidebarRight: false,
+            showFeaturesPanel: true,
+            showInstanceSpecificPanel: false,
+            subjectLineBehavior: "email",
+            theme: "pleroma-dark",
+            webPushNotifications: false
           }
         ],
         children: [
           %{
-            key: :theme,
+            key: :alwaysShowSubjectInput,
+            label: "Always show subject input",
+            type: :boolean,
+            description: "When disabled, auto-hide the subject field if it's empty"
+          },
+          %{
+            key: :background,
             type: :string,
-            description: "Which theme to use, they are defined in styles.json",
-            suggestions: ["pleroma-dark"]
+            description:
+              "URL of the background, unless viewing a user profile with a background that is set",
+            suggestions: ["/images/city.jpg"]
+          },
+          %{
+            key: :collapseMessageWithSubject,
+            label: "Collapse message with subject",
+            type: :boolean,
+            description:
+              "When a message has a subject (aka Content Warning), collapse it by default"
+          },
+          %{
+            key: :disableChat,
+            label: "PleromaFE Chat",
+            type: :boolean,
+            description: "Disables PleromaFE Chat component"
+          },
+          %{
+            key: :greentext,
+            label: "Greentext",
+            type: :boolean,
+            description: "Enables green text on lines prefixed with the > character."
+          },
+          %{
+            key: :hideFilteredStatuses,
+            label: "Hide Filtered Statuses",
+            type: :boolean,
+            description: "Hides filtered statuses from timelines."
+          },
+          %{
+            key: :hideMutedPosts,
+            label: "Hide Muted Posts",
+            type: :boolean,
+            description: "Hides muted statuses from timelines."
+          },
+          %{
+            key: :hidePostStats,
+            label: "Hide post stats",
+            type: :boolean,
+            description: "Hide notices statistics (repeats, favorites, ...)"
+          },
+          %{
+            key: :hideSitename,
+            label: "Hide Sitename",
+            type: :boolean,
+            description: "Hides instance name from PleromaFE banner."
+          },
+          %{
+            key: :hideUserStats,
+            label: "Hide user stats",
+            type: :boolean,
+            description:
+              "Hide profile statistics (posts, posts per day, followers, followings, ...)"
           },
           %{
             key: :logo,
@@ -1080,11 +1208,44 @@ config :pleroma, :config_description, [
             suggestions: ["/static/logo.png"]
           },
           %{
-            key: :background,
+            key: :logoMargin,
+            label: "Logo margin",
             type: :string,
             description:
-              "URL of the background, unless viewing a user profile with a background that is set",
-            suggestions: ["/images/city.jpg"]
+              "Allows you to adjust vertical margins between logo boundary and navbar borders. " <>
+                "The idea is that to have logo's image without any extra margins and instead adjust them to your need in layout.",
+            suggestions: [".1em"]
+          },
+          %{
+            key: :logoMask,
+            label: "Logo mask",
+            type: :boolean,
+            description:
+              "By default it assumes logo used will be monochrome with alpha channel to be compatible with both light and dark themes. " <>
+                "If you want a colorful logo you must disable logoMask."
+          },
+          %{
+            key: :minimalScopesMode,
+            label: "Minimal scopes mode",
+            type: :boolean,
+            description:
+              "Limit scope selection to Direct, User default, and Scope of post replying to. " <>
+                "Also prevents replying to a DM with a public post from PleromaFE."
+          },
+          %{
+            key: :nsfwCensorImage,
+            label: "NSFW Censor Image",
+            type: :string,
+            description:
+              "URL of the image to use for hiding NSFW media attachments in the timeline.",
+            suggestions: ["/static/img/nsfw.74818f9.png"]
+          },
+          %{
+            key: :postContentType,
+            label: "Post Content Type",
+            type: {:dropdown, :atom},
+            description: "Default post formatting option.",
+            suggestions: ["text/plain", "text/html", "text/markdown", "text/bbcode"]
           },
           %{
             key: :redirectRootNoLogin,
@@ -1103,49 +1264,29 @@ config :pleroma, :config_description, [
             suggestions: ["/main/friends"]
           },
           %{
-            key: :showInstanceSpecificPanel,
-            label: "Show instance specific panel",
-            type: :boolean,
-            description: "Whenether to show the instance's specific panel"
-          },
-          %{
-            key: :scopeOptionsEnabled,
-            label: "Scope options enabled",
-            type: :boolean,
-            description: "Enable setting a notice visibility and subject/CW when posting"
-          },
-          %{
-            key: :formattingOptionsEnabled,
-            label: "Formatting options enabled",
-            type: :boolean,
-            description:
-              "Enable setting a formatting different than plain-text (ie. HTML, Markdown) when posting, relates to `:instance`, `allowed_post_formats`"
-          },
-          %{
-            key: :collapseMessageWithSubject,
-            label: "Collapse message with subject",
-            type: :boolean,
-            description:
-              "When a message has a subject (aka Content Warning), collapse it by default"
-          },
-          %{
-            key: :hidePostStats,
-            label: "Hide post stats",
-            type: :boolean,
-            description: "Hide notices statistics (repeats, favorites, ...)"
-          },
-          %{
-            key: :hideUserStats,
-            label: "Hide user stats",
-            type: :boolean,
-            description:
-              "Hide profile statistics (posts, posts per day, followers, followings, ...)"
-          },
-          %{
             key: :scopeCopy,
             label: "Scope copy",
             type: :boolean,
             description: "Copy the scope (private/unlisted/public) in replies to posts by default"
+          },
+          %{
+            key: :sidebarRight,
+            label: "Sidebar on Right",
+            type: :boolean,
+            description: "Change alignment of sidebar and panels to the right."
+          },
+          %{
+            key: :showFeaturesPanel,
+            label: "Show instance features panel",
+            type: :boolean,
+            description:
+              "Enables panel displaying functionality of the instance on the About page."
+          },
+          %{
+            key: :showInstanceSpecificPanel,
+            label: "Show instance specific panel",
+            type: :boolean,
+            description: "Whether to show the instance's custom panel"
           },
           %{
             key: :subjectLineBehavior,
@@ -1158,38 +1299,10 @@ config :pleroma, :config_description, [
             suggestions: ["email", "masto", "noop"]
           },
           %{
-            key: :alwaysShowSubjectInput,
-            label: "Always show subject input",
-            type: :boolean,
-            description: "When disabled, auto-hide the subject field if it's empty"
-          },
-          %{
-            key: :logoMask,
-            label: "Logo mask",
-            type: :boolean,
-            description:
-              "By default it assumes logo used will be monochrome with alpha channel to be compatible with both light and dark themes. " <>
-                "If you want a colorful logo you must disable logoMask."
-          },
-          %{
-            key: :logoMargin,
-            label: "Logo margin",
+            key: :theme,
             type: :string,
-            description:
-              "Allows you to adjust vertical margins between logo boundary and navbar borders. " <>
-                "The idea is that to have logo's image without any extra margins and instead adjust them to your need in layout.",
-            suggestions: [".1em"]
-          },
-          %{
-            key: :stickers,
-            type: :boolean,
-            description: "Enables stickers."
-          },
-          %{
-            key: :enableEmojiPicker,
-            label: "Emoji picker",
-            type: :boolean,
-            description: "Enables emoji picker."
+            description: "Which theme to use. Available themes are defined in styles.json",
+            suggestions: ["pleroma-dark"]
           }
         ]
       },
@@ -1245,6 +1358,12 @@ config :pleroma, :config_description, [
         suggestions: [
           :pleroma_fox_tan
         ]
+      },
+      %{
+        key: :default_user_avatar,
+        type: :string,
+        description: "URL of the default user avatar.",
+        suggestions: ["/images/avi.png"]
       }
     ]
   },
@@ -1317,13 +1436,13 @@ config :pleroma, :config_description, [
       %{
         key: :reject,
         type: {:list, :string},
-        description: "List of instances to reject any activities from",
+        description: "List of instances to reject activities from (except deletes)",
         suggestions: ["example.com", "*.example.com"]
       },
       %{
         key: :accept,
         type: {:list, :string},
-        description: "List of instances to accept any activities from",
+        description: "List of instances to only accept activities from (except deletes)",
         suggestions: ["example.com", "*.example.com"]
       },
       %{
@@ -1342,6 +1461,12 @@ config :pleroma, :config_description, [
         key: :banner_removal,
         type: {:list, :string},
         description: "List of instances to strip banners from",
+        suggestions: ["example.com", "*.example.com"]
+      },
+      %{
+        key: :reject_deletes,
+        type: {:list, :string},
+        description: "List of instances to reject deletions from",
         suggestions: ["example.com", "*.example.com"]
       }
     ]
@@ -1794,12 +1919,6 @@ config :pleroma, :config_description, [
     """,
     children: [
       %{
-        key: :repo,
-        type: :module,
-        description: "Application's Ecto repo",
-        suggestions: [Pleroma.Repo]
-      },
-      %{
         key: :verbose,
         type: {:dropdown, :atom},
         description: "Logs verbose mode",
@@ -1969,7 +2088,8 @@ config :pleroma, :config_description, [
       %{
         key: :parsers,
         type: {:list, :module},
-        description: "List of Rich Media parsers.",
+        description:
+          "List of Rich Media parsers. Module names are shortened (removed leading `Pleroma.Web.RichMedia.Parsers.` part), but on adding custom module you need to use full name.",
         suggestions: [
           Pleroma.Web.RichMedia.Parsers.MetaTagsParser,
           Pleroma.Web.RichMedia.Parsers.OEmbed,
@@ -1981,7 +2101,8 @@ config :pleroma, :config_description, [
         key: :ttl_setters,
         label: "TTL setters",
         type: {:list, :module},
-        description: "List of rich media TTL setters.",
+        description:
+          "List of rich media TTL setters. Module names are shortened (removed leading `Pleroma.Web.RichMedia.Parser.` part), but on adding custom module you need to use full name.",
         suggestions: [
           Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl
         ]
@@ -2241,6 +2362,7 @@ config :pleroma, :config_description, [
         children: [
           %{
             key: :active,
+            label: "Enabled",
             type: :boolean,
             description: "Globally enable or disable digest emails"
           },
@@ -2442,7 +2564,7 @@ config :pleroma, :config_description, [
       %{
         key: :relations_actions,
         type: [:tuple, {:list, :tuple}],
-        description: "For actions on relations with all users (follow, unfollow)",
+        description: "For actions on relationships with all users (follow, unfollow)",
         suggestions: [{1000, 10}, [{10_000, 10}, {10_000, 50}]]
       },
       %{
@@ -2571,18 +2693,6 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :http_signatures,
-    type: :group,
-    description: "HTTP Signatures settings",
-    children: [
-      %{
-        key: :adapter,
-        type: :module,
-        suggestions: [Pleroma.Signature]
-      }
-    ]
-  },
-  %{
     group: :pleroma,
     key: :http,
     type: :group,
@@ -2654,6 +2764,8 @@ config :pleroma, :config_description, [
       %{
         key: :scrub_policy,
         type: {:list, :module},
+        description:
+          "Module names are shortened (removed leading `Pleroma.HTML.` part), but on adding custom module you need to use full name.",
         suggestions: [Pleroma.HTML.Transform.MediaProxy, Pleroma.HTML.Scrubber.Default]
       }
     ]
@@ -2918,6 +3030,219 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :connections_pool,
+    type: :group,
+    description: "Advanced settings for `gun` connections pool",
+    children: [
+      %{
+        key: :checkin_timeout,
+        type: :integer,
+        description: "Timeout to checkin connection from pool. Default: 250ms.",
+        suggestions: [250]
+      },
+      %{
+        key: :max_connections,
+        type: :integer,
+        description: "Maximum number of connections in the pool. Default: 250 connections.",
+        suggestions: [250]
+      },
+      %{
+        key: :retry,
+        type: :integer,
+        description:
+          "Number of retries, while `gun` will try to reconnect if connection goes down. Default: 1.",
+        suggestions: [1]
+      },
+      %{
+        key: :retry_timeout,
+        type: :integer,
+        description:
+          "Time between retries when `gun` will try to reconnect in milliseconds. Default: 1000ms.",
+        suggestions: [1000]
+      },
+      %{
+        key: :await_up_timeout,
+        type: :integer,
+        description: "Timeout while `gun` will wait until connection is up. Default: 5000ms.",
+        suggestions: [5000]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :pools,
+    type: :group,
+    description: "Advanced settings for `gun` workers pools",
+    children: [
+      %{
+        key: :federation,
+        type: :keyword,
+        description: "Settings for federation pool.",
+        children: [
+          %{
+            key: :size,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [50]
+          },
+          %{
+            key: :max_overflow,
+            type: :integer,
+            description: "Number of additional workers if pool is under load.",
+            suggestions: [10]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `gun` will wait for response.",
+            suggestions: [150_000]
+          }
+        ]
+      },
+      %{
+        key: :media,
+        type: :keyword,
+        description: "Settings for media pool.",
+        children: [
+          %{
+            key: :size,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [50]
+          },
+          %{
+            key: :max_overflow,
+            type: :integer,
+            description: "Number of additional workers if pool is under load.",
+            suggestions: [10]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `gun` will wait for response.",
+            suggestions: [150_000]
+          }
+        ]
+      },
+      %{
+        key: :upload,
+        type: :keyword,
+        description: "Settings for upload pool.",
+        children: [
+          %{
+            key: :size,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [25]
+          },
+          %{
+            key: :max_overflow,
+            type: :integer,
+            description: "Number of additional workers if pool is under load.",
+            suggestions: [5]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `gun` will wait for response.",
+            suggestions: [300_000]
+          }
+        ]
+      },
+      %{
+        key: :default,
+        type: :keyword,
+        description: "Settings for default pool.",
+        children: [
+          %{
+            key: :size,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [10]
+          },
+          %{
+            key: :max_overflow,
+            type: :integer,
+            description: "Number of additional workers if pool is under load.",
+            suggestions: [2]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `gun` will wait for response.",
+            suggestions: [10_000]
+          }
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :hackney_pools,
+    type: :group,
+    description: "Advanced settings for `hackney` connections pools",
+    children: [
+      %{
+        key: :federation,
+        type: :keyword,
+        description: "Settings for federation pool.",
+        children: [
+          %{
+            key: :max_connections,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [50]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `hackney` will wait for response.",
+            suggestions: [150_000]
+          }
+        ]
+      },
+      %{
+        key: :media,
+        type: :keyword,
+        description: "Settings for media pool.",
+        children: [
+          %{
+            key: :max_connections,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [50]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `hackney` will wait for response.",
+            suggestions: [150_000]
+          }
+        ]
+      },
+      %{
+        key: :upload,
+        type: :keyword,
+        description: "Settings for upload pool.",
+        children: [
+          %{
+            key: :max_connections,
+            type: :integer,
+            description: "Number workers in the pool.",
+            suggestions: [25]
+          },
+          %{
+            key: :timeout,
+            type: :integer,
+            description: "Timeout while `hackney` will wait for response.",
+            suggestions: [300_000]
+          }
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :restrict_unauthenticated,
     type: :group,
     description:
@@ -2973,6 +3298,20 @@ config :pleroma, :config_description, [
             description: "Disallow view remote statuses."
           }
         ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.ApiSpec.CastAndValidate,
+    type: :group,
+    children: [
+      %{
+        key: :strict,
+        type: :boolean,
+        description:
+          "Enables strict input validation (useful in development, not recommended in production)",
+        suggestions: [false]
       }
     ]
   }

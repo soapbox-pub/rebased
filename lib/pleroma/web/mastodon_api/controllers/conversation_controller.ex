@@ -13,13 +13,15 @@ defmodule Pleroma.Web.MastodonAPI.ConversationController do
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
+  plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["read:statuses"]} when action == :index)
-  plug(OAuthScopesPlug, %{scopes: ["write:conversations"]} when action == :read)
+  plug(OAuthScopesPlug, %{scopes: ["write:conversations"]} when action != :index)
 
-  plug(Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug)
+  defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ConversationOperation
 
   @doc "GET /api/v1/conversations"
   def index(%{assigns: %{user: user}} = conn, params) do
+    params = stringify_pagination_params(params)
     participations = Participation.for_user_with_last_activity_id(user, params)
 
     conn
@@ -28,11 +30,27 @@ defmodule Pleroma.Web.MastodonAPI.ConversationController do
   end
 
   @doc "POST /api/v1/conversations/:id/read"
-  def read(%{assigns: %{user: user}} = conn, %{"id" => participation_id}) do
+  def mark_as_read(%{assigns: %{user: user}} = conn, %{id: participation_id}) do
     with %Participation{} = participation <-
            Repo.get_by(Participation, id: participation_id, user_id: user.id),
          {:ok, participation} <- Participation.mark_as_read(participation) do
       render(conn, "participation.json", participation: participation, for: user)
     end
+  end
+
+  defp stringify_pagination_params(params) do
+    atom_keys =
+      Pleroma.Pagination.page_keys()
+      |> Enum.map(&String.to_atom(&1))
+
+    str_keys =
+      params
+      |> Map.take(atom_keys)
+      |> Enum.map(fn {key, value} -> {to_string(key), value} end)
+      |> Enum.into(%{})
+
+    params
+    |> Map.delete(atom_keys)
+    |> Map.merge(str_keys)
   end
 end
