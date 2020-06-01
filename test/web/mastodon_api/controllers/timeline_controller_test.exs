@@ -60,9 +60,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "public" do
     @tag capture_log: true
     test "the public timeline", %{conn: conn} do
-      following = insert(:user)
+      user = insert(:user)
 
-      {:ok, _activity} = CommonAPI.post(following, %{status: "test"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
 
       _activity = insert(:note_activity, local: false)
 
@@ -77,6 +77,13 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       conn = get(build_conn(), "/api/v1/timelines/public?local=1")
 
       assert [%{"content" => "test"}] = json_response_and_validate_schema(conn, :ok)
+
+      # does not contain repeats
+      {:ok, _} = CommonAPI.repeat(activity.id, user)
+
+      conn = get(build_conn(), "/api/v1/timelines/public?local=true")
+
+      assert [_] = json_response_and_validate_schema(conn, :ok)
     end
 
     test "the public timeline includes only public statuses for an authenticated user" do
