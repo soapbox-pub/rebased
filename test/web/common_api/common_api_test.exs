@@ -50,6 +50,26 @@ defmodule Pleroma.Web.CommonAPITest do
       assert activity
     end
 
+    test "it adds html newlines" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "uguu\nuguuu"
+        )
+
+      assert other_user.ap_id not in activity.recipients
+
+      object = Object.normalize(activity, false)
+
+      assert object.data["content"] == "uguu<br/>uguuu"
+    end
+
     test "it linkifies" do
       author = insert(:user)
       recipient = insert(:user)

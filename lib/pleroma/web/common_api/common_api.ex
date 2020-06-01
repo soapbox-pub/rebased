@@ -54,6 +54,9 @@ defmodule Pleroma.Web.CommonAPI do
       content
       |> Formatter.html_escape("text/plain")
       |> Formatter.linkify()
+      |> (fn {text, mentions, tags} ->
+            {String.replace(text, ~r/\r?\n/, "<br>"), mentions, tags}
+          end).()
 
     text
   end
