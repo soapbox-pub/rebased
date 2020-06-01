@@ -139,9 +139,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "PATCH /api/v1/accounts/update_credentials"
-  def update_credentials(%{assigns: %{user: original_user}, body_params: params} = conn, _params) do
-    user = original_user
-
+  def update_credentials(%{assigns: %{user: user}, body_params: params} = conn, _params) do
     params =
       params
       |> Enum.filter(fn {_, value} -> not is_nil(value) end)
@@ -183,10 +181,29 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     changeset = User.update_changeset(user, user_params)
 
     with {:ok, user} <- User.update_and_set_cache(changeset) do
+      user
+      |> build_update_activity_params()
+      |> ActivityPub.update()
+
       render(conn, "show.json", user: user, for: user, with_pleroma_settings: true)
     else
       _e -> render_error(conn, :forbidden, "Invalid request")
     end
+  end
+
+  # Hotfix, handling will be redone with the pipeline
+  defp build_update_activity_params(user) do
+    object =
+      Pleroma.Web.ActivityPub.UserView.render("user.json", user: user)
+      |> Map.delete("@context")
+
+    %{
+      local: true,
+      to: [user.follower_address],
+      cc: [],
+      object: object,
+      actor: user.ap_id
+    }
   end
 
   defp add_if_present(map, params, params_field, map_field, value_function \\ &{:ok, &1}) do
