@@ -42,6 +42,14 @@ defmodule Pleroma.Web.AdminAPI.StatusControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert response["id"] == activity.id
+
+      account = response["account"]
+      actor = User.get_by_ap_id(activity.actor)
+
+      assert account["id"] == actor.id
+      assert account["nickname"] == actor.nickname
+      assert account["deactivated"] == actor.deactivated
+      assert account["confirmation_pending"] == actor.confirmation_pending
     end
   end
 

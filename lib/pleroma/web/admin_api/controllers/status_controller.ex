@@ -42,7 +42,7 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
   def show(conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id(id) do
       conn
-      |> put_view(MastodonAPI.StatusView)
+      |> put_view(Pleroma.Web.AdminAPI.StatusView)
       |> render("show.json", %{activity: activity})
     else
       nil -> {:error, :not_found}
