@@ -757,8 +757,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "pagination works correctly with service users", %{conn: conn} do
-      service1 = insert(:user, ap_id: Web.base_url() <> "/relay")
-      service2 = insert(:user, ap_id: Web.base_url() <> "/internal/fetch")
+      service1 = User.get_or_create_service_actor_by_ap_id(Web.base_url() <> "/meido", "meido")
+
       insert_list(25, :user)
 
       assert %{"count" => 26, "page_size" => 10, "users" => users1} =
@@ -767,8 +767,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                |> json_response(200)
 
       assert Enum.count(users1) == 10
-      assert service1 not in [users1]
-      assert service2 not in [users1]
+      assert service1 not in users1
 
       assert %{"count" => 26, "page_size" => 10, "users" => users2} =
                conn
@@ -776,8 +775,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                |> json_response(200)
 
       assert Enum.count(users2) == 10
-      assert service1 not in [users2]
-      assert service2 not in [users2]
+      assert service1 not in users2
 
       assert %{"count" => 26, "page_size" => 10, "users" => users3} =
                conn
@@ -785,8 +783,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                |> json_response(200)
 
       assert Enum.count(users3) == 6
-      assert service1 not in [users3]
-      assert service2 not in [users3]
+      assert service1 not in users3
     end
 
     test "renders empty array for the second page", %{conn: conn} do
