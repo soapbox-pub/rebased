@@ -37,7 +37,7 @@ defmodule Pleroma.Notification do
     timestamps()
   end
 
-  def fill_in_notification_types() do
+  def fill_in_notification_types do
     query =
       from(n in __MODULE__,
         where: is_nil(n.type),
