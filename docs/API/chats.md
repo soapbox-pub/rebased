@@ -204,7 +204,7 @@ Returned data is the deleted message.
 
 ### Notifications
 
-There's a new `pleroma:chat_mention` notification, which has this form:
+There's a new `pleroma:chat_mention` notification, which has this form. It is not given out in the notifications endpoint by default, you need to explicitly request it with `include_types[]=pleroma:chat_mention`:
 
 ```json
 {
