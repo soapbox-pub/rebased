@@ -16,7 +16,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.ReportNote
   alias Pleroma.Stats
   alias Pleroma.User
-  alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
@@ -67,14 +66,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :right_delete_multiple,
            :update_user_credentials
          ]
-  )
-
-  plug(OAuthScopesPlug, %{scopes: ["read:invites"], admin: true} when action == :invites)
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:invites"], admin: true}
-    when action in [:create_invite_token, :revoke_invite, :email_invite]
   )
 
   plug(
@@ -572,69 +563,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         conn
         |> put_status(500)
         |> json(target)
-    end
-  end
-
-  @doc "Sends registration invite via email"
-  def email_invite(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
-    with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
-         {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
-         {:ok, invite_token} <- UserInviteToken.create_invite(),
-         email <-
-           Pleroma.Emails.UserEmail.user_invitation_email(
-             user,
-             invite_token,
-             email,
-             params["name"]
-           ),
-         {:ok, _} <- Pleroma.Emails.Mailer.deliver(email) do
-      json_response(conn, :no_content, "")
-    else
-      {:registrations_open, _} ->
-        {:error, "To send invites you need to set the `registrations_open` option to false."}
-
-      {:invites_enabled, _} ->
-        {:error, "To send invites you need to set the `invites_enabled` option to true."}
-    end
-  end
-
-  @doc "Create an account registration invite token"
-  def create_invite_token(conn, params) do
-    opts = %{}
-
-    opts =
-      if params["max_use"],
-        do: Map.put(opts, :max_use, params["max_use"]),
-        else: opts
-
-    opts =
-      if params["expires_at"],
-        do: Map.put(opts, :expires_at, params["expires_at"]),
-        else: opts
-
-    {:ok, invite} = UserInviteToken.create_invite(opts)
-
-    json(conn, AccountView.render("invite.json", %{invite: invite}))
-  end
-
-  @doc "Get list of created invites"
-  def invites(conn, _params) do
-    invites = UserInviteToken.list_invites()
-
-    conn
-    |> put_view(AccountView)
-    |> render("invites.json", %{invites: invites})
-  end
-
-  @doc "Revokes invite by token"
-  def revoke_invite(conn, %{"token" => token}) do
-    with {:ok, invite} <- UserInviteToken.find_by_token(token),
-         {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true}) do
-      conn
-      |> put_view(AccountView)
-      |> render("invite.json", %{invite: updated_invite})
-    else
-      nil -> {:error, :not_found}
     end
   end
 
