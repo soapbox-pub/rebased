@@ -664,6 +664,8 @@ defmodule Pleroma.Web.Router do
     post("/auth/password", MastodonAPI.AuthController, :password_reset)
 
     get("/web/*path", MastoFEController, :index)
+
+    get("/embed/:id", EmbedController, :show)
   end
 
   scope "/proxy/", Pleroma.Web.MediaProxy do
