@@ -255,6 +255,16 @@ defmodule Pleroma.FormatterTest do
 
       assert {_text, ^expected_mentions, []} = Formatter.linkify(text)
     end
+
+    test "it parses URL containing local mention" do
+      _user = insert(:user, %{nickname: "lain"})
+
+      text = "https://example.com/@lain"
+
+      expected = ~S(<a href="https://example.com/@lain" rel="ugc">https://example.com/@lain</a>)
+
+      assert {^expected, [], []} = Formatter.linkify(text)
+    end
   end
 
   describe ".parse_tags" do
