@@ -22,6 +22,8 @@ defmodule Pleroma.Web.Preload do
   end
 
   def build_script_tag(content) do
+    content = Base.encode64(content)
+
     HTML.Tag.content_tag(:script, HTML.raw(content),
       id: "initial-results",
       type: "application/json"

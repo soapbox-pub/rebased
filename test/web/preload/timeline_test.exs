@@ -52,9 +52,9 @@ defmodule Pleroma.Web.Preload.Providers.TimelineTest do
     end
 
     test "returns public items", %{user: user} do
-      {:ok, _} = CommonAPI.post(user, %{"status" => "it's post 1!"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "it's post 2!"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "it's post 3!"})
+      {:ok, _} = CommonAPI.post(user, %{status: "it's post 1!"})
+      {:ok, _} = CommonAPI.post(user, %{status: "it's post 2!"})
+      {:ok, _} = CommonAPI.post(user, %{status: "it's post 3!"})
 
       assert Timelines.generate_terms(%{})
              |> Map.fetch!(@public_url)
@@ -62,9 +62,9 @@ defmodule Pleroma.Web.Preload.Providers.TimelineTest do
     end
 
     test "does not return non-public items", %{user: user} do
-      {:ok, _} = CommonAPI.post(user, %{"status" => "it's post 1!", "visibility" => "unlisted"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "it's post 2!", "visibility" => "direct"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "it's post 3!"})
+      {:ok, _} = CommonAPI.post(user, %{status: "it's post 1!", visibility: "unlisted"})
+      {:ok, _} = CommonAPI.post(user, %{status: "it's post 2!", visibility: "direct"})
+      {:ok, _} = CommonAPI.post(user, %{status: "it's post 3!"})
 
       assert Timelines.generate_terms(%{})
              |> Map.fetch!(@public_url)

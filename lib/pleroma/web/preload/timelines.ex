@@ -11,32 +11,29 @@ defmodule Pleroma.Web.Preload.Providers.Timelines do
   @public_url :"/api/v1/timelines/public"
 
   @impl Provider
-  def generate_terms(_params) do
-    build_public_tag(%{})
+  def generate_terms(params) do
+    build_public_tag(%{}, params)
   end
 
-  def build_public_tag(acc) do
+  def build_public_tag(acc, params) do
     if Pleroma.Config.get([:restrict_unauthenticated, :timelines, :federated], true) do
       acc
     else
-      Map.put(acc, @public_url, public_timeline(nil))
+      Map.put(acc, @public_url, public_timeline(params))
     end
   end
 
-  defp public_timeline(user) do
+  defp public_timeline(%{"path" => ["main", "all"]}), do: get_public_timeline(false)
+
+  defp public_timeline(_params), do: get_public_timeline(true)
+
+  defp get_public_timeline(local_only) do
     activities =
-      create_timeline_params(user)
-      |> Map.put("local_only", false)
-      |> ActivityPub.fetch_public_activities()
+      ActivityPub.fetch_public_activities(%{
+        "type" => ["Create"],
+        "local_only" => local_only
+      })
 
-    StatusView.render("index.json", activities: activities, for: user, as: :activity)
-  end
-
-  defp create_timeline_params(user) do
-    %{}
-    |> Map.put("type", ["Create", "Announce"])
-    |> Map.put("blocking_user", user)
-    |> Map.put("muting_user", user)
-    |> Map.put("user", user)
+    StatusView.render("index.json", activities: activities, for: nil, as: :activity)
   end
 end
