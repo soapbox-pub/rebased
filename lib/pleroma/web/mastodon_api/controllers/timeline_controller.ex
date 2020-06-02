@@ -109,23 +109,14 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     if restrict? and is_nil(user) do
       render_error(conn, :unauthorized, "authorization required for timeline view")
     else
-      # TODO: return back after benchmarks
-      params =
+      activities =
         params
         |> Map.put("type", ["Create", "Announce"])
         |> Map.put("local_only", local_only)
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)
         |> Map.put("reply_filtering_user", user)
-
-      params =
-        if params["method"] do
-          Map.put(params, :method, String.to_existing_atom(params["method"]))
-        else
-          params
-        end
-
-      activities = ActivityPub.fetch_public_activities(params)
+        |> ActivityPub.fetch_public_activities()
 
       conn
       |> add_link_headers(activities, %{"local" => local_only})

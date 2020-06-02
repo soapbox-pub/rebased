@@ -62,13 +62,6 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
         only_media_param(),
         with_muted_param(),
         exclude_visibilities_param(),
-        # TODO: remove after benchmarks
-        Operation.parameter(
-          :method,
-          :query,
-          %Schema{type: :string},
-          "Temp parameter"
-        ),
         reply_visibility_param() | pagination_params()
       ],
       operationId: "TimelineController.public",

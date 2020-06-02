@@ -111,7 +111,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       [%{"id" => ^activity_id}] = json_response_and_validate_schema(res_conn, 200)
     end
 
-    # TODO: update after benchmarks
     test "doesn't return replies if follow is posting with users from blocked domain" do
       %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
       friend = insert(:user)
@@ -129,31 +128,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       {:ok, _reply_from_friend} =
         CommonAPI.post(friend, %{status: "status", in_reply_to_status_id: reply_from_blockee})
 
-      res_conn = get(conn, "/api/v1/timelines/public?method=fun")
-
-      activities = json_response_and_validate_schema(res_conn, 200)
-      [%{"id" => ^activity_id}] = activities
-    end
-
-    # TODO: update after benchmarks
-    test "doesn't return replies if follow is posting with users from blocked domain with unnest param" do
-      %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
-      friend = insert(:user)
-      blockee = insert(:user, ap_id: "https://example.com/users/blocked")
-      {:ok, blocker} = User.follow(blocker, friend)
-      {:ok, blocker} = User.block_domain(blocker, "example.com")
-
-      conn = assign(conn, :user, blocker)
-
-      {:ok, %{id: activity_id} = activity} = CommonAPI.post(friend, %{status: "hey!"})
-
-      {:ok, reply_from_blockee} =
-        CommonAPI.post(blockee, %{status: "heya", in_reply_to_status_id: activity})
-
-      {:ok, _reply_from_friend} =
-        CommonAPI.post(friend, %{status: "status", in_reply_to_status_id: reply_from_blockee})
-
-      res_conn = get(conn, "/api/v1/timelines/public?method=unnest")
+      res_conn = get(conn, "/api/v1/timelines/public")
 
       activities = json_response_and_validate_schema(res_conn, 200)
       [%{"id" => ^activity_id}] = activities

@@ -228,24 +228,16 @@ defmodule Pleroma.LoadTesting.Fetcher do
     fetch_public_timeline(opts, "public timeline only media")
   end
 
-  # TODO: remove using `:method` after benchmarks
   defp fetch_public_timeline(user, :with_blocks) do
     opts = opts_for_public_timeline(user)
 
     remote_non_friends = Agent.get(:non_friends_remote, & &1)
 
-    Benchee.run(
-      %{
-        "public timeline without blocks" => fn opts ->
-          ActivityPub.fetch_public_activities(opts)
-        end
-      },
-      inputs: %{
-        "old filtering" => Map.delete(opts, :method),
-        "with psql fun" => Map.put(opts, :method, :fun),
-        "with unnest" => Map.put(opts, :method, :unnest)
-      }
-    )
+    Benchee.run(%{
+      "public timeline without blocks" => fn ->
+        ActivityPub.fetch_public_activities(opts)
+      end
+    })
 
     Enum.each(remote_non_friends, fn non_friend ->
       {:ok, _} = User.block(user, non_friend)
@@ -257,15 +249,10 @@ defmodule Pleroma.LoadTesting.Fetcher do
 
     Benchee.run(
       %{
-        "public timeline with user block" => fn opts ->
+        "public timeline with user block" => fn ->
           ActivityPub.fetch_public_activities(opts)
         end
       },
-      inputs: %{
-        "old filtering" => Map.delete(opts, :method),
-        "with psql fun" => Map.put(opts, :method, :fun),
-        "with unnest" => Map.put(opts, :method, :unnest)
-      }
     )
 
     domains =
@@ -289,11 +276,6 @@ defmodule Pleroma.LoadTesting.Fetcher do
         "public timeline with domain block" => fn opts ->
           ActivityPub.fetch_public_activities(opts)
         end
-      },
-      inputs: %{
-        "old filtering" => Map.delete(opts, :method),
-        "with psql fun" => Map.put(opts, :method, :fun),
-        "with unnest" => Map.put(opts, :method, :unnest)
       }
     )
   end

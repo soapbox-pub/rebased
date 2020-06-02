@@ -932,37 +932,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     query =
       if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
 
-    # TODO: update after benchmarks
-    query =
-      case opts[:method] do
-        :fun ->
-          from(a in query,
-            where:
-              fragment(
-                "recipients_contain_blocked_domains(?, ?) = false",
-                a.recipients,
-                ^domain_blocks
-              )
-          )
-
-        :unnest ->
-          from(a in query,
-            where:
-              fragment(
-                "NOT ? && (SELECT ARRAY(SELECT split_part(UNNEST(?), '/', 3)))",
-                ^domain_blocks,
-                a.recipients
-              )
-          )
-
-        _ ->
-          query
-      end
-
     from(
       [activity, object: o] in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocked_ap_ids),
       where: fragment("not (? && ?)", activity.recipients, ^blocked_ap_ids),
+      where:
+        fragment(
+          "recipients_contain_blocked_domains(?, ?) = false",
+          activity.recipients,
+          ^domain_blocks
+        ),
       where:
         fragment(
           "not (?->>'type' = 'Announce' and ?->'to' \\?| ?)",
