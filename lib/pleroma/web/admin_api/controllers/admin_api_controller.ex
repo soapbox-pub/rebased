@@ -16,7 +16,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.ReportNote
   alias Pleroma.Stats
   alias Pleroma.User
-  alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
@@ -31,8 +30,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MastodonAPI
-  alias Pleroma.Web.MastodonAPI.AppView
-  alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.Router
 
   require Logger
@@ -66,14 +63,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :right_delete_multiple,
            :update_user_credentials
          ]
-  )
-
-  plug(OAuthScopesPlug, %{scopes: ["read:invites"], admin: true} when action == :invites)
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:invites"], admin: true}
-    when action in [:create_invite_token, :revoke_invite, :email_invite]
   )
 
   plug(
@@ -120,10 +109,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :config_update,
            :resend_confirmation_email,
            :confirm_email,
-           :oauth_app_create,
-           :oauth_app_list,
-           :oauth_app_update,
-           :oauth_app_delete,
            :reload_emoji
          ]
   )
@@ -529,69 +514,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     render_error(conn, :forbidden, "You can't revoke your own admin status.")
   end
 
-  @doc "Sends registration invite via email"
-  def email_invite(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
-    with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
-         {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
-         {:ok, invite_token} <- UserInviteToken.create_invite(),
-         email <-
-           Pleroma.Emails.UserEmail.user_invitation_email(
-             user,
-             invite_token,
-             email,
-             params["name"]
-           ),
-         {:ok, _} <- Pleroma.Emails.Mailer.deliver(email) do
-      json_response(conn, :no_content, "")
-    else
-      {:registrations_open, _} ->
-        {:error, "To send invites you need to set the `registrations_open` option to false."}
-
-      {:invites_enabled, _} ->
-        {:error, "To send invites you need to set the `invites_enabled` option to true."}
-    end
-  end
-
-  @doc "Create an account registration invite token"
-  def create_invite_token(conn, params) do
-    opts = %{}
-
-    opts =
-      if params["max_use"],
-        do: Map.put(opts, :max_use, params["max_use"]),
-        else: opts
-
-    opts =
-      if params["expires_at"],
-        do: Map.put(opts, :expires_at, params["expires_at"]),
-        else: opts
-
-    {:ok, invite} = UserInviteToken.create_invite(opts)
-
-    json(conn, AccountView.render("invite.json", %{invite: invite}))
-  end
-
-  @doc "Get list of created invites"
-  def invites(conn, _params) do
-    invites = UserInviteToken.list_invites()
-
-    conn
-    |> put_view(AccountView)
-    |> render("invites.json", %{invites: invites})
-  end
-
-  @doc "Revokes invite by token"
-  def revoke_invite(conn, %{"token" => token}) do
-    with {:ok, invite} <- UserInviteToken.find_by_token(token),
-         {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true}) do
-      conn
-      |> put_view(AccountView)
-      |> render("invite.json", %{invite: updated_invite})
-    else
-      nil -> {:error, :not_found}
-    end
-  end
-
   @doc "Get a password reset token (base64 string) for given nickname"
   def get_password_reset(conn, %{"nickname" => nickname}) do
     (%User{local: true} = user) = User.get_cached_by_nickname(nickname)
@@ -647,7 +569,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         %{assigns: %{user: admin}} = conn,
         %{"nickname" => nickname} = params
       ) do
-    with {_, user} <- {:user, User.get_cached_by_nickname(nickname)},
+    with {_, %User{} = user} <- {:user, User.get_cached_by_nickname(nickname)},
          {:ok, _user} <-
            User.update_as_admin(user, params) do
       ModerationLog.insert_log(%{
@@ -669,11 +591,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       json(conn, %{status: "success"})
     else
       {:error, changeset} ->
-        {_, {error, _}} = Enum.at(changeset.errors, 0)
-        json(conn, %{error: "New password #{error}."})
+        errors = Map.new(changeset.errors, fn {key, {error, _}} -> {key, error} end)
+
+        json(conn, %{errors: errors})
 
       _ ->
-        json(conn, %{error: "Unable to change password."})
+        json(conn, %{error: "Unable to update user."})
     end
   end
 
@@ -947,83 +870,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     })
 
     conn |> json("")
-  end
-
-  def oauth_app_create(conn, params) do
-    params =
-      if params["name"] do
-        Map.put(params, "client_name", params["name"])
-      else
-        params
-      end
-
-    result =
-      case App.create(params) do
-        {:ok, app} ->
-          AppView.render("show.json", %{app: app, admin: true})
-
-        {:error, changeset} ->
-          App.errors(changeset)
-      end
-
-    json(conn, result)
-  end
-
-  def oauth_app_update(conn, params) do
-    params =
-      if params["name"] do
-        Map.put(params, "client_name", params["name"])
-      else
-        params
-      end
-
-    with {:ok, app} <- App.update(params) do
-      json(conn, AppView.render("show.json", %{app: app, admin: true}))
-    else
-      {:error, changeset} ->
-        json(conn, App.errors(changeset))
-
-      nil ->
-        json_response(conn, :bad_request, "")
-    end
-  end
-
-  def oauth_app_list(conn, params) do
-    {page, page_size} = page_params(params)
-
-    search_params = %{
-      client_name: params["name"],
-      client_id: params["client_id"],
-      page: page,
-      page_size: page_size
-    }
-
-    search_params =
-      if Map.has_key?(params, "trusted") do
-        Map.put(search_params, :trusted, params["trusted"])
-      else
-        search_params
-      end
-
-    with {:ok, apps, count} <- App.search(search_params) do
-      json(
-        conn,
-        AppView.render("index.json",
-          apps: apps,
-          count: count,
-          page_size: page_size,
-          admin: true
-        )
-      )
-    end
-  end
-
-  def oauth_app_delete(conn, params) do
-    with {:ok, _app} <- App.destroy(params["id"]) do
-      json_response(conn, :no_content, "")
-    else
-      _ -> json_response(conn, :bad_request, "")
-    end
   end
 
   def stats(conn, _) do

@@ -1094,23 +1094,28 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} =
         CommonAPI.post(user, %{status: "hey, @#{other_user.nickname}, how are ya? #2hu"})
 
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-      object = modified["object"]
+      with_mock Pleroma.Notification,
+        get_notified_from_activity: fn _, _ -> [] end do
+        {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
-      expected_mention = %{
-        "href" => other_user.ap_id,
-        "name" => "@#{other_user.nickname}",
-        "type" => "Mention"
-      }
+        object = modified["object"]
 
-      expected_tag = %{
-        "href" => Pleroma.Web.Endpoint.url() <> "/tags/2hu",
-        "type" => "Hashtag",
-        "name" => "#2hu"
-      }
+        expected_mention = %{
+          "href" => other_user.ap_id,
+          "name" => "@#{other_user.nickname}",
+          "type" => "Mention"
+        }
 
-      assert Enum.member?(object["tag"], expected_tag)
-      assert Enum.member?(object["tag"], expected_mention)
+        expected_tag = %{
+          "href" => Pleroma.Web.Endpoint.url() <> "/tags/2hu",
+          "type" => "Hashtag",
+          "name" => "#2hu"
+        }
+
+        refute called(Pleroma.Notification.get_notified_from_activity(:_, :_))
+        assert Enum.member?(object["tag"], expected_tag)
+        assert Enum.member?(object["tag"], expected_mention)
+      end
     end
 
     test "it adds the sensitive property" do

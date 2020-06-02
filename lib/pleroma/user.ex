@@ -538,9 +538,10 @@ defmodule Pleroma.User do
     |> delete_change(:also_known_as)
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
+    |> validate_inclusion(:actor_type, ["Person", "Service"])
   end
 
-  @spec update_as_admin(%User{}, map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_as_admin(User.t(), map()) :: {:ok, User.t()} | {:error, Changeset.t()}
   def update_as_admin(user, params) do
     params = Map.put(params, "password_confirmation", params["password"])
     changeset = update_as_admin_changeset(user, params)
@@ -561,7 +562,7 @@ defmodule Pleroma.User do
     |> put_change(:password_reset_pending, false)
   end
 
-  @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  @spec reset_password(User.t(), map()) :: {:ok, User.t()} | {:error, Changeset.t()}
   def reset_password(%User{} = user, params) do
     reset_password(user, user, params)
   end
@@ -1208,8 +1209,9 @@ defmodule Pleroma.User do
 
   def increment_unread_conversation_count(_, user), do: {:ok, user}
 
-  @spec get_users_from_set([String.t()], boolean()) :: [User.t()]
-  def get_users_from_set(ap_ids, local_only \\ true) do
+  @spec get_users_from_set([String.t()], keyword()) :: [User.t()]
+  def get_users_from_set(ap_ids, opts \\ []) do
+    local_only = Keyword.get(opts, :local_only, true)
     criteria = %{ap_id: ap_ids, deactivated: false}
     criteria = if local_only, do: Map.put(criteria, :local, true), else: criteria
 
@@ -1618,12 +1620,19 @@ defmodule Pleroma.User do
   def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
 
   def get_or_fetch_by_ap_id(ap_id) do
-    user = get_cached_by_ap_id(ap_id)
+    cached_user = get_cached_by_ap_id(ap_id)
 
-    if !is_nil(user) and !needs_update?(user) do
-      {:ok, user}
-    else
-      fetch_by_ap_id(ap_id)
+    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id)
+
+    case {cached_user, maybe_fetched_user} do
+      {_, {:ok, %User{} = user}} ->
+        {:ok, user}
+
+      {%User{} = user, _} ->
+        {:ok, user}
+
+      _ ->
+        {:error, :not_found}
     end
   end
 

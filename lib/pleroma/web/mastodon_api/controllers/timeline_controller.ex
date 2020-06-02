@@ -111,7 +111,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     else
       activities =
         params
-        |> Map.put("type", ["Create", "Announce"])
+        |> Map.put("type", ["Create"])
         |> Map.put("local_only", local_only)
         |> Map.put("blocking_user", user)
         |> Map.put("muting_user", user)

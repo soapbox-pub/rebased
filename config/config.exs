@@ -171,7 +171,8 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :tesla, adapter: Tesla.Adapter.Gun
+config :tesla, adapter: Tesla.Adapter.Hackney
+
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
   proxy_url: nil,
@@ -183,7 +184,7 @@ config :pleroma, :instance,
   name: "Pleroma",
   email: "example@example.com",
   notify_email: "noreply@example.com",
-  description: "A Pleroma instance, an alternative fediverse server",
+  description: "Pleroma: An efficient and flexible fediverse server",
   background_image: "/images/city.jpg",
   limit: 5_000,
   chat_limit: 5_000,
@@ -274,7 +275,7 @@ config :pleroma, :markup,
 config :pleroma, :frontend_configurations,
   pleroma_fe: %{
     alwaysShowSubjectInput: true,
-    background: "/static/aurora_borealis.jpg",
+    background: "/images/city.jpg",
     collapseMessageWithSubject: false,
     disableChat: false,
     greentext: false,

@@ -112,6 +112,25 @@ defmodule Pleroma.Web.StreamerTest do
       refute Streamer.filtered_by_user?(user, announce)
     end
 
+    test "it streams boosts of mastodon user in the 'user' stream", %{user: user} do
+      Streamer.get_topic_and_add_socket("user", user)
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(other_user, %{status: "hey"})
+
+      data =
+        File.read!("test/fixtures/mastodon-announce.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+        |> Map.put("actor", user.ap_id)
+
+      {:ok, %Pleroma.Activity{data: _data, local: false} = announce} =
+        Pleroma.Web.ActivityPub.Transmogrifier.handle_incoming(data)
+
+      assert_receive {:render_with_user, Pleroma.Web.StreamerView, "update.json", ^announce}
+      refute Streamer.filtered_by_user?(user, announce)
+    end
+
     test "it sends notify to in the 'user' stream", %{user: user, notify: notify} do
       Streamer.get_topic_and_add_socket("user", user)
       Streamer.stream("user", notify)

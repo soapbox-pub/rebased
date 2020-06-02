@@ -1045,10 +1045,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "tag", tags)
   end
 
+  # TODO These should be added on our side on insertion, it doesn't make much
+  # sense to regenerate these all the time
   def add_mention_tags(object) do
-    {enabled_receivers, disabled_receivers} = Utils.get_notified_from_object(object)
-    potential_receivers = enabled_receivers ++ disabled_receivers
-    mentions = Enum.map(potential_receivers, &build_mention_tag/1)
+    to = object["to"] || []
+    cc = object["cc"] || []
+    mentioned = User.get_users_from_set(to ++ cc, local_only: false)
+
+    mentions = Enum.map(mentioned, &build_mention_tag/1)
 
     tags = object["tag"] || []
     Map.put(object, "tag", tags ++ mentions)

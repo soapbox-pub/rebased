@@ -451,6 +451,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Activity.get_by_ap_id(data["id"])
     end
 
+    @tag capture_log: true
+    test "it inserts an incoming activity into the database" <>
+           "even if we can't fetch the user but have it in our db",
+         %{conn: conn} do
+      user =
+        insert(:user,
+          ap_id: "https://mastodon.example.org/users/raymoo",
+          ap_enabled: true,
+          local: false,
+          last_refreshed_at: nil
+        )
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", user.ap_id)
+        |> put_in(["object", "attridbutedTo"], user.ap_id)
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_ap_id(data["id"])
+    end
+
     test "it clears `unreachable` federation status of the sender", %{conn: conn} do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 

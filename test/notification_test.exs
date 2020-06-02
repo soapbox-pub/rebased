@@ -454,8 +454,7 @@ defmodule Pleroma.NotificationTest do
           status: "hey again @#{other_user.nickname}!"
         })
 
-      [n2, n1] = notifs = Notification.for_user(other_user)
-      assert length(notifs) == 2
+      [n2, n1] = Notification.for_user(other_user)
 
       assert n2.id > n1.id
 
@@ -464,7 +463,9 @@ defmodule Pleroma.NotificationTest do
           status: "hey yet again @#{other_user.nickname}!"
         })
 
-      Notification.set_read_up_to(other_user, n2.id)
+      [_, read_notification] = Notification.set_read_up_to(other_user, n2.id)
+
+      assert read_notification.activity.object
 
       [n3, n2, n1] = Notification.for_user(other_user)
 
@@ -972,7 +973,9 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _activity} = CommonAPI.post(muted, %{status: "hey @#{user.nickname}"})
 
-      assert length(Notification.for_user(user)) == 1
+      [notification] = Notification.for_user(user)
+
+      assert notification.activity.object
     end
 
     test "it doesn't return notifications for muted user with notifications" do

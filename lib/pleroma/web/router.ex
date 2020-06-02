@@ -164,10 +164,10 @@ defmodule Pleroma.Web.Router do
     post("/relay", RelayController, :follow)
     delete("/relay", RelayController, :unfollow)
 
-    post("/users/invite_token", AdminAPIController, :create_invite_token)
-    get("/users/invites", AdminAPIController, :invites)
-    post("/users/revoke_invite", AdminAPIController, :revoke_invite)
-    post("/users/email_invite", AdminAPIController, :email_invite)
+    post("/users/invite_token", InviteController, :create)
+    get("/users/invites", InviteController, :index)
+    post("/users/revoke_invite", InviteController, :revoke)
+    post("/users/email_invite", InviteController, :email)
 
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
     patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
@@ -205,10 +205,10 @@ defmodule Pleroma.Web.Router do
     post("/reload_emoji", AdminAPIController, :reload_emoji)
     get("/stats", AdminAPIController, :stats)
 
-    get("/oauth_app", AdminAPIController, :oauth_app_list)
-    post("/oauth_app", AdminAPIController, :oauth_app_create)
-    patch("/oauth_app/:id", AdminAPIController, :oauth_app_update)
-    delete("/oauth_app/:id", AdminAPIController, :oauth_app_delete)
+    get("/oauth_app", OAuthAppController, :index)
+    post("/oauth_app", OAuthAppController, :create)
+    patch("/oauth_app/:id", OAuthAppController, :update)
+    delete("/oauth_app/:id", OAuthAppController, :delete)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -664,6 +664,8 @@ defmodule Pleroma.Web.Router do
     post("/auth/password", MastodonAPI.AuthController, :password_reset)
 
     get("/web/*path", MastoFEController, :index)
+
+    get("/embed/:id", EmbedController, :show)
   end
 
   scope "/proxy/", Pleroma.Web.MediaProxy do

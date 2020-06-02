@@ -20,7 +20,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   alias Pleroma.ReportNote
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.UserInviteToken
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
@@ -588,122 +587,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "POST /api/pleroma/admin/email_invite, with valid config" do
-    setup do: clear_config([:instance, :registrations_open], false)
-    setup do: clear_config([:instance, :invites_enabled], true)
-
-    test "sends invitation and returns 204", %{admin: admin, conn: conn} do
-      recipient_email = "foo@bar.com"
-      recipient_name = "J. D."
-
-      conn =
-        post(
-          conn,
-          "/api/pleroma/admin/users/email_invite?email=#{recipient_email}&name=#{recipient_name}"
-        )
-
-      assert json_response(conn, :no_content)
-
-      token_record = List.last(Repo.all(Pleroma.UserInviteToken))
-      assert token_record
-      refute token_record.used
-
-      notify_email = Config.get([:instance, :notify_email])
-      instance_name = Config.get([:instance, :name])
-
-      email =
-        Pleroma.Emails.UserEmail.user_invitation_email(
-          admin,
-          token_record,
-          recipient_email,
-          recipient_name
-        )
-
-      Swoosh.TestAssertions.assert_email_sent(
-        from: {instance_name, notify_email},
-        to: {recipient_name, recipient_email},
-        html_body: email.html_body
-      )
-    end
-
-    test "it returns 403 if requested by a non-admin" do
-      non_admin_user = insert(:user)
-      token = insert(:oauth_token, user: non_admin_user)
-
-      conn =
-        build_conn()
-        |> assign(:user, non_admin_user)
-        |> assign(:token, token)
-        |> post("/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
-
-      assert json_response(conn, :forbidden)
-    end
-
-    test "email with +", %{conn: conn, admin: admin} do
-      recipient_email = "foo+bar@baz.com"
-
-      conn
-      |> put_req_header("content-type", "application/json;charset=utf-8")
-      |> post("/api/pleroma/admin/users/email_invite", %{email: recipient_email})
-      |> json_response(:no_content)
-
-      token_record =
-        Pleroma.UserInviteToken
-        |> Repo.all()
-        |> List.last()
-
-      assert token_record
-      refute token_record.used
-
-      notify_email = Config.get([:instance, :notify_email])
-      instance_name = Config.get([:instance, :name])
-
-      email =
-        Pleroma.Emails.UserEmail.user_invitation_email(
-          admin,
-          token_record,
-          recipient_email
-        )
-
-      Swoosh.TestAssertions.assert_email_sent(
-        from: {instance_name, notify_email},
-        to: recipient_email,
-        html_body: email.html_body
-      )
-    end
-  end
-
-  describe "POST /api/pleroma/admin/users/email_invite, with invalid config" do
-    setup do: clear_config([:instance, :registrations_open])
-    setup do: clear_config([:instance, :invites_enabled])
-
-    test "it returns 500 if `invites_enabled` is not enabled", %{conn: conn} do
-      Config.put([:instance, :registrations_open], false)
-      Config.put([:instance, :invites_enabled], false)
-
-      conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
-
-      assert json_response(conn, :bad_request) ==
-               %{
-                 "error" =>
-                   "To send invites you need to set the `invites_enabled` option to true."
-               }
-    end
-
-    test "it returns 500 if `registrations_open` is enabled", %{conn: conn} do
-      Config.put([:instance, :registrations_open], true)
-      Config.put([:instance, :invites_enabled], true)
-
-      conn = post(conn, "/api/pleroma/admin/users/email_invite?email=foo@bar.com&name=JD")
-
-      assert json_response(conn, :bad_request) ==
-               %{
-                 "error" =>
-                   "To send invites you need to set the `registrations_open` option to false."
-               }
-    end
-  end
-
   test "/api/pleroma/admin/users/:nickname/password_reset", %{conn: conn} do
     user = insert(:user)
 
@@ -757,8 +640,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "pagination works correctly with service users", %{conn: conn} do
-      service1 = insert(:user, ap_id: Web.base_url() <> "/relay")
-      service2 = insert(:user, ap_id: Web.base_url() <> "/internal/fetch")
+      service1 = User.get_or_create_service_actor_by_ap_id(Web.base_url() <> "/meido", "meido")
+
       insert_list(25, :user)
 
       assert %{"count" => 26, "page_size" => 10, "users" => users1} =
@@ -767,8 +650,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                |> json_response(200)
 
       assert Enum.count(users1) == 10
-      assert service1 not in [users1]
-      assert service2 not in [users1]
+      assert service1 not in users1
 
       assert %{"count" => 26, "page_size" => 10, "users" => users2} =
                conn
@@ -776,8 +658,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                |> json_response(200)
 
       assert Enum.count(users2) == 10
-      assert service1 not in [users2]
-      assert service2 not in [users2]
+      assert service1 not in users2
 
       assert %{"count" => 26, "page_size" => 10, "users" => users3} =
                conn
@@ -785,8 +666,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                |> json_response(200)
 
       assert Enum.count(users3) == 6
-      assert service1 not in [users3]
-      assert service2 not in [users3]
+      assert service1 not in users3
     end
 
     test "renders empty array for the second page", %{conn: conn} do
@@ -1315,112 +1195,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> json_response(404)
 
       assert response == %{"error" => "Not found"}
-    end
-  end
-
-  describe "POST /api/pleroma/admin/users/invite_token" do
-    test "without options", %{conn: conn} do
-      conn = post(conn, "/api/pleroma/admin/users/invite_token")
-
-      invite_json = json_response(conn, 200)
-      invite = UserInviteToken.find_by_token!(invite_json["token"])
-      refute invite.used
-      refute invite.expires_at
-      refute invite.max_use
-      assert invite.invite_type == "one_time"
-    end
-
-    test "with expires_at", %{conn: conn} do
-      conn =
-        post(conn, "/api/pleroma/admin/users/invite_token", %{
-          "expires_at" => Date.to_string(Date.utc_today())
-        })
-
-      invite_json = json_response(conn, 200)
-      invite = UserInviteToken.find_by_token!(invite_json["token"])
-
-      refute invite.used
-      assert invite.expires_at == Date.utc_today()
-      refute invite.max_use
-      assert invite.invite_type == "date_limited"
-    end
-
-    test "with max_use", %{conn: conn} do
-      conn = post(conn, "/api/pleroma/admin/users/invite_token", %{"max_use" => 150})
-
-      invite_json = json_response(conn, 200)
-      invite = UserInviteToken.find_by_token!(invite_json["token"])
-      refute invite.used
-      refute invite.expires_at
-      assert invite.max_use == 150
-      assert invite.invite_type == "reusable"
-    end
-
-    test "with max use and expires_at", %{conn: conn} do
-      conn =
-        post(conn, "/api/pleroma/admin/users/invite_token", %{
-          "max_use" => 150,
-          "expires_at" => Date.to_string(Date.utc_today())
-        })
-
-      invite_json = json_response(conn, 200)
-      invite = UserInviteToken.find_by_token!(invite_json["token"])
-      refute invite.used
-      assert invite.expires_at == Date.utc_today()
-      assert invite.max_use == 150
-      assert invite.invite_type == "reusable_date_limited"
-    end
-  end
-
-  describe "GET /api/pleroma/admin/users/invites" do
-    test "no invites", %{conn: conn} do
-      conn = get(conn, "/api/pleroma/admin/users/invites")
-
-      assert json_response(conn, 200) == %{"invites" => []}
-    end
-
-    test "with invite", %{conn: conn} do
-      {:ok, invite} = UserInviteToken.create_invite()
-
-      conn = get(conn, "/api/pleroma/admin/users/invites")
-
-      assert json_response(conn, 200) == %{
-               "invites" => [
-                 %{
-                   "expires_at" => nil,
-                   "id" => invite.id,
-                   "invite_type" => "one_time",
-                   "max_use" => nil,
-                   "token" => invite.token,
-                   "used" => false,
-                   "uses" => 0
-                 }
-               ]
-             }
-    end
-  end
-
-  describe "POST /api/pleroma/admin/users/revoke_invite" do
-    test "with token", %{conn: conn} do
-      {:ok, invite} = UserInviteToken.create_invite()
-
-      conn = post(conn, "/api/pleroma/admin/users/revoke_invite", %{"token" => invite.token})
-
-      assert json_response(conn, 200) == %{
-               "expires_at" => nil,
-               "id" => invite.id,
-               "invite_type" => "one_time",
-               "max_use" => nil,
-               "token" => invite.token,
-               "used" => true,
-               "uses" => 0
-             }
-    end
-
-    test "with invalid token", %{conn: conn} do
-      conn = post(conn, "/api/pleroma/admin/users/revoke_invite", %{"token" => "foo"})
-
-      assert json_response(conn, :not_found) == %{"error" => "Not found"}
     end
   end
 
@@ -3191,8 +2965,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   end
 
   describe "PATCH /users/:nickname/credentials" do
-    test "changes password and email", %{conn: conn, admin: admin} do
+    setup do
       user = insert(:user)
+      [user: user]
+    end
+
+    test "changes password and email", %{conn: conn, admin: admin, user: user} do
       assert user.password_reset_pending == false
 
       conn =
@@ -3222,9 +3000,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} forced password reset for users: @#{user.nickname}"
     end
 
-    test "returns 403 if requested by a non-admin" do
-      user = insert(:user)
-
+    test "returns 403 if requested by a non-admin", %{user: user} do
       conn =
         build_conn()
         |> assign(:user, user)
@@ -3235,6 +3011,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         })
 
       assert json_response(conn, :forbidden)
+    end
+
+    test "changes actor type from permitted list", %{conn: conn, user: user} do
+      assert user.actor_type == "Person"
+
+      assert patch(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials", %{
+               "actor_type" => "Service"
+             })
+             |> json_response(200) == %{"status" => "success"}
+
+      updated_user = User.get_by_id(user.id)
+
+      assert updated_user.actor_type == "Service"
+
+      assert patch(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials", %{
+               "actor_type" => "Application"
+             })
+             |> json_response(200) == %{"errors" => %{"actor_type" => "is invalid"}}
+    end
+
+    test "update non existing user", %{conn: conn} do
+      assert patch(conn, "/api/pleroma/admin/users/non-existing/credentials", %{
+               "password" => "new_password"
+             })
+             |> json_response(200) == %{"error" => "Unable to update user."}
     end
   end
 
@@ -3469,191 +3270,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert %{"direct" => 0, "private" => 0, "public" => 1, "unlisted" => 2} =
                response["status_visibility"]
-    end
-  end
-
-  describe "POST /api/pleroma/admin/oauth_app" do
-    test "errors", %{conn: conn} do
-      response = conn |> post("/api/pleroma/admin/oauth_app", %{}) |> json_response(200)
-
-      assert response == %{"name" => "can't be blank", "redirect_uris" => "can't be blank"}
-    end
-
-    test "success", %{conn: conn} do
-      base_url = Web.base_url()
-      app_name = "Trusted app"
-
-      response =
-        conn
-        |> post("/api/pleroma/admin/oauth_app", %{
-          name: app_name,
-          redirect_uris: base_url
-        })
-        |> json_response(200)
-
-      assert %{
-               "client_id" => _,
-               "client_secret" => _,
-               "name" => ^app_name,
-               "redirect_uri" => ^base_url,
-               "trusted" => false
-             } = response
-    end
-
-    test "with trusted", %{conn: conn} do
-      base_url = Web.base_url()
-      app_name = "Trusted app"
-
-      response =
-        conn
-        |> post("/api/pleroma/admin/oauth_app", %{
-          name: app_name,
-          redirect_uris: base_url,
-          trusted: true
-        })
-        |> json_response(200)
-
-      assert %{
-               "client_id" => _,
-               "client_secret" => _,
-               "name" => ^app_name,
-               "redirect_uri" => ^base_url,
-               "trusted" => true
-             } = response
-    end
-  end
-
-  describe "GET /api/pleroma/admin/oauth_app" do
-    setup do
-      app = insert(:oauth_app)
-      {:ok, app: app}
-    end
-
-    test "list", %{conn: conn} do
-      response =
-        conn
-        |> get("/api/pleroma/admin/oauth_app")
-        |> json_response(200)
-
-      assert %{"apps" => apps, "count" => count, "page_size" => _} = response
-
-      assert length(apps) == count
-    end
-
-    test "with page size", %{conn: conn} do
-      insert(:oauth_app)
-      page_size = 1
-
-      response =
-        conn
-        |> get("/api/pleroma/admin/oauth_app", %{page_size: to_string(page_size)})
-        |> json_response(200)
-
-      assert %{"apps" => apps, "count" => _, "page_size" => ^page_size} = response
-
-      assert length(apps) == page_size
-    end
-
-    test "search by client name", %{conn: conn, app: app} do
-      response =
-        conn
-        |> get("/api/pleroma/admin/oauth_app", %{name: app.client_name})
-        |> json_response(200)
-
-      assert %{"apps" => [returned], "count" => _, "page_size" => _} = response
-
-      assert returned["client_id"] == app.client_id
-      assert returned["name"] == app.client_name
-    end
-
-    test "search by client id", %{conn: conn, app: app} do
-      response =
-        conn
-        |> get("/api/pleroma/admin/oauth_app", %{client_id: app.client_id})
-        |> json_response(200)
-
-      assert %{"apps" => [returned], "count" => _, "page_size" => _} = response
-
-      assert returned["client_id"] == app.client_id
-      assert returned["name"] == app.client_name
-    end
-
-    test "only trusted", %{conn: conn} do
-      app = insert(:oauth_app, trusted: true)
-
-      response =
-        conn
-        |> get("/api/pleroma/admin/oauth_app", %{trusted: true})
-        |> json_response(200)
-
-      assert %{"apps" => [returned], "count" => _, "page_size" => _} = response
-
-      assert returned["client_id"] == app.client_id
-      assert returned["name"] == app.client_name
-    end
-  end
-
-  describe "DELETE /api/pleroma/admin/oauth_app/:id" do
-    test "with id", %{conn: conn} do
-      app = insert(:oauth_app)
-
-      response =
-        conn
-        |> delete("/api/pleroma/admin/oauth_app/" <> to_string(app.id))
-        |> json_response(:no_content)
-
-      assert response == ""
-    end
-
-    test "with non existance id", %{conn: conn} do
-      response =
-        conn
-        |> delete("/api/pleroma/admin/oauth_app/0")
-        |> json_response(:bad_request)
-
-      assert response == ""
-    end
-  end
-
-  describe "PATCH /api/pleroma/admin/oauth_app/:id" do
-    test "with id", %{conn: conn} do
-      app = insert(:oauth_app)
-
-      name = "another name"
-      url = "https://example.com"
-      scopes = ["admin"]
-      id = app.id
-      website = "http://website.com"
-
-      response =
-        conn
-        |> patch("/api/pleroma/admin/oauth_app/" <> to_string(app.id), %{
-          name: name,
-          trusted: true,
-          redirect_uris: url,
-          scopes: scopes,
-          website: website
-        })
-        |> json_response(200)
-
-      assert %{
-               "client_id" => _,
-               "client_secret" => _,
-               "id" => ^id,
-               "name" => ^name,
-               "redirect_uri" => ^url,
-               "trusted" => true,
-               "website" => ^website
-             } = response
-    end
-
-    test "without id", %{conn: conn} do
-      response =
-        conn
-        |> patch("/api/pleroma/admin/oauth_app/0")
-        |> json_response(:bad_request)
-
-      assert response == ""
     end
   end
 end

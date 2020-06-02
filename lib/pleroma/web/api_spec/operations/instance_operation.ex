@@ -137,7 +137,7 @@ defmodule Pleroma.Web.ApiSpec.InstanceOperation do
         "background_upload_limit" => 4_000_000,
         "background_image" => "/static/image.png",
         "banner_upload_limit" => 4_000_000,
-        "description" => "A Pleroma instance, an alternative fediverse server",
+        "description" => "Pleroma: An efficient and flexible fediverse server",
         "email" => "lain@lain.com",
         "languages" => ["en"],
         "max_toot_chars" => 5000,

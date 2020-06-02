@@ -92,8 +92,9 @@ defmodule Pleroma.Notification do
     |> join(:left, [n, a], object in Object,
       on:
         fragment(
-          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
+          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
           object.data,
+          a.data,
           a.data
         )
     )
@@ -224,18 +225,8 @@ defmodule Pleroma.Notification do
       |> Marker.multi_set_last_read_id(user, "notifications")
       |> Repo.transaction()
 
-    Notification
+    for_user_query(user)
     |> where([n], n.id in ^notification_ids)
-    |> join(:inner, [n], activity in assoc(n, :activity))
-    |> join(:left, [n, a], object in Object,
-      on:
-        fragment(
-          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
-          object.data,
-          a.data
-        )
-    )
-    |> preload([n, a, o], activity: {a, object: o})
     |> Repo.all()
   end
 
@@ -370,7 +361,8 @@ defmodule Pleroma.Notification do
       when type in ["Create", "Like", "Announce", "Follow", "Move", "EmojiReact"] do
     potential_receiver_ap_ids = get_potential_receiver_ap_ids(activity)
 
-    potential_receivers = User.get_users_from_set(potential_receiver_ap_ids, local_only)
+    potential_receivers =
+      User.get_users_from_set(potential_receiver_ap_ids, local_only: local_only)
 
     notification_enabled_ap_ids =
       potential_receiver_ap_ids

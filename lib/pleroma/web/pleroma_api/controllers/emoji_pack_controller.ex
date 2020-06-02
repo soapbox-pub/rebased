@@ -106,7 +106,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
         |> put_status(:internal_server_error)
         |> json(%{error: "The requested instance does not support sharing emoji packs"})
 
-      {:error, :imvalid_checksum} ->
+      {:error, :invalid_checksum} ->
         conn
         |> put_status(:internal_server_error)
         |> json(%{error: "SHA256 for the pack doesn't match the one sent by the server"})
