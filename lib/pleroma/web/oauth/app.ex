@@ -25,12 +25,12 @@ defmodule Pleroma.Web.OAuth.App do
     timestamps()
   end
 
-  @spec changeset(App.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(struct, params) do
     cast(struct, params, [:client_name, :redirect_uris, :scopes, :website, :trusted])
   end
 
-  @spec register_changeset(App.t(), map()) :: Ecto.Changeset.t()
+  @spec register_changeset(t(), map()) :: Ecto.Changeset.t()
   def register_changeset(struct, params \\ %{}) do
     changeset =
       struct
@@ -52,18 +52,19 @@ defmodule Pleroma.Web.OAuth.App do
     end
   end
 
-  @spec create(map()) :: {:ok, App.t()} | {:error, Ecto.Changeset.t()}
+  @spec create(map()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
   def create(params) do
-    with changeset <- __MODULE__.register_changeset(%__MODULE__{}, params) do
-      Repo.insert(changeset)
-    end
+    %__MODULE__{}
+    |> register_changeset(params)
+    |> Repo.insert()
   end
 
-  @spec update(map()) :: {:ok, App.t()} | {:error, Ecto.Changeset.t()}
-  def update(params) do
-    with %__MODULE__{} = app <- Repo.get(__MODULE__, params["id"]),
-         changeset <- changeset(app, params) do
-      Repo.update(changeset)
+  @spec update(pos_integer(), map()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
+  def update(id, params) do
+    with %__MODULE__{} = app <- Repo.get(__MODULE__, id) do
+      app
+      |> changeset(params)
+      |> Repo.update()
     end
   end
 
@@ -71,7 +72,7 @@ defmodule Pleroma.Web.OAuth.App do
   Gets app by attrs or create new  with attrs.
   And updates the scopes if need.
   """
-  @spec get_or_make(map(), list(String.t())) :: {:ok, App.t()} | {:error, Ecto.Changeset.t()}
+  @spec get_or_make(map(), list(String.t())) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
   def get_or_make(attrs, scopes) do
     with %__MODULE__{} = app <- Repo.get_by(__MODULE__, attrs) do
       update_scopes(app, scopes)
@@ -92,7 +93,7 @@ defmodule Pleroma.Web.OAuth.App do
     |> Repo.update()
   end
 
-  @spec search(map()) :: {:ok, [App.t()], non_neg_integer()}
+  @spec search(map()) :: {:ok, [t()], non_neg_integer()}
   def search(params) do
     query = from(a in __MODULE__)
 
@@ -128,7 +129,7 @@ defmodule Pleroma.Web.OAuth.App do
     {:ok, Repo.all(query), count}
   end
 
-  @spec destroy(pos_integer()) :: {:ok, App.t()} | {:error, Ecto.Changeset.t()}
+  @spec destroy(pos_integer()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
   def destroy(id) do
     with %__MODULE__{} = app <- Repo.get(__MODULE__, id) do
       Repo.delete(app)
