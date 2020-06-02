@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Activity
   alias Pleroma.EarmarkRenderer
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
@@ -594,6 +595,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
       User.update_follower_count(followed)
       User.update_following_count(follower)
+
+      Notification.update_notification_type(followed, follow_activity)
 
       ActivityPub.accept(%{
         to: follow_activity.data["to"],

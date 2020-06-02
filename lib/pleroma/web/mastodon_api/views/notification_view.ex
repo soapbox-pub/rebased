@@ -81,22 +81,6 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       end
     end
 
-    # This returns the notification type by activity, but both chats and statuses
-    # are in "Create" activities.
-    mastodon_type =
-      case Activity.mastodon_notification_type(activity) do
-        "mention" ->
-          object = Object.normalize(activity)
-
-          case object do
-            %{data: %{"type" => "ChatMessage"}} -> "pleroma:chat_mention"
-            _ -> "mention"
-          end
-
-        type ->
-          type
-      end
-
     # Note: :relationships contain user mutes (needed for :muted flag in :status)
     status_render_opts = %{relationships: opts[:relationships]}
 
@@ -107,7 +91,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
            ) do
       response = %{
         id: to_string(notification.id),
-        type: mastodon_type,
+        type: notification.type,
         created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
         account: account,
         pleroma: %{
@@ -115,7 +99,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         }
       }
 
-      case mastodon_type do
+      case notification.type do
         "mention" ->
           put_status(response, activity, reading_user, status_render_opts)
 

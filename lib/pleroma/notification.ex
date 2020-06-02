@@ -30,10 +30,24 @@ defmodule Pleroma.Notification do
 
   schema "notifications" do
     field(:seen, :boolean, default: false)
+    field(:type, :string)
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:activity, Activity, type: FlakeId.Ecto.CompatType)
 
     timestamps()
+  end
+
+  def update_notification_type(user, activity) do
+    with %__MODULE__{} = notification <-
+           Repo.get_by(__MODULE__, user_id: user.id, activity_id: activity.id) do
+      type =
+        activity
+        |> type_from_activity()
+
+      notification
+      |> changeset(%{type: type})
+      |> Repo.update()
+    end
   end
 
   @spec unread_notifications_count(User.t()) :: integer()
@@ -46,7 +60,7 @@ defmodule Pleroma.Notification do
 
   def changeset(%Notification{} = notification, attrs) do
     notification
-    |> cast(attrs, [:seen])
+    |> cast(attrs, [:seen, :type])
   end
 
   @spec last_read_query(User.t()) :: Ecto.Queryable.t()
@@ -330,12 +344,55 @@ defmodule Pleroma.Notification do
     {:ok, notifications}
   end
 
+  defp type_from_activity(%{data: %{"type" => type}} = activity) do
+    case type do
+      "Follow" ->
+        if Activity.follow_accepted?(activity) do
+          "follow"
+        else
+          "follow_request"
+        end
+
+      "Announce" ->
+        "reblog"
+
+      "Like" ->
+        "favourite"
+
+      "Move" ->
+        "move"
+
+      "EmojiReact" ->
+        "pleroma:emoji_reaction"
+
+      "Create" ->
+        activity
+        |> type_from_activity_object()
+
+      t ->
+        raise "No notification type for activity type #{t}"
+    end
+  end
+
+  defp type_from_activity_object(%{data: %{"type" => "Create"}} = activity) do
+    object = Object.normalize(activity, false)
+
+    case object.data["type"] do
+      "ChatMessage" -> "pleroma:chat_mention"
+      _ -> "mention"
+    end
+  end
+
   # TODO move to sql, too.
   def create_notification(%Activity{} = activity, %User{} = user, do_send \\ true) do
     unless skip?(activity, user) do
       {:ok, %{notification: notification}} =
         Multi.new()
-        |> Multi.insert(:notification, %Notification{user_id: user.id, activity: activity})
+        |> Multi.insert(:notification, %Notification{
+          user_id: user.id,
+          activity: activity,
+          type: type_from_activity(activity)
+        })
         |> Marker.multi_set_last_read_id(user, "notifications")
         |> Repo.transaction()
 

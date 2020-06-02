@@ -121,6 +121,7 @@ defmodule Pleroma.Web.CommonAPI do
              object: follow_activity.data["id"],
              type: "Accept"
            }) do
+      Notification.update_notification_type(followed, follow_activity)
       {:ok, follower}
     end
   end
