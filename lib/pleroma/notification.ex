@@ -37,6 +37,26 @@ defmodule Pleroma.Notification do
     timestamps()
   end
 
+  def fill_in_notification_types() do
+    query =
+      from(n in __MODULE__,
+        where: is_nil(n.type),
+        preload: :activity
+      )
+
+    query
+    |> Repo.all()
+    |> Enum.each(fn notification ->
+      type =
+        notification.activity
+        |> type_from_activity()
+
+      notification
+      |> changeset(%{type: type})
+      |> Repo.update()
+    end)
+  end
+
   def update_notification_type(user, activity) do
     with %__MODULE__{} = notification <-
            Repo.get_by(__MODULE__, user_id: user.id, activity_id: activity.id) do
