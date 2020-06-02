@@ -4,7 +4,9 @@
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
+
   require Logger
+
   alias Pleroma.User
   alias Pleroma.Web.Metadata
   alias Pleroma.Web.Preload
@@ -38,8 +40,7 @@ defmodule Fallback.RedirectController do
 
     response =
       index_content
-      |> String.replace("<!--server-generated-meta-->", tags)
-      |> String.replace("<!--server-generated-initial-data-->", preloads)
+      |> String.replace("<!--server-generated-meta-->", tags <> preloads)
 
     conn
     |> put_resp_content_type("text/html")
@@ -56,7 +57,7 @@ defmodule Fallback.RedirectController do
 
     response =
       index_content
-      |> String.replace("<!--server-generated-initial-data-->", preloads)
+      |> String.replace("<!--server-generated-meta-->", preloads)
 
     conn
     |> put_resp_content_type("text/html")

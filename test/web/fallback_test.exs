@@ -11,7 +11,12 @@ defmodule Pleroma.Web.FallbackTest do
       response = get(conn, "/registration/foo")
 
       assert html_response(response, 200) =~ "<!--server-generated-meta-->"
-      assert html_response(response, 200) =~ "<!--server-generated-initial-data-->"
+    end
+
+    test "GET /*path", %{conn: conn} do
+      assert conn
+             |> get("/foo")
+             |> html_response(200) =~ "<!--server-generated-meta-->"
     end
   end
 
@@ -21,20 +26,35 @@ defmodule Pleroma.Web.FallbackTest do
       user_missing = get(conn, "/foo")
       user_present = get(conn, "/#{user.nickname}")
 
-      assert html_response(user_missing, 200) =~ "<!--server-generated-meta-->"
+      assert(html_response(user_missing, 200) =~ "<!--server-generated-meta-->")
       refute html_response(user_present, 200) =~ "<!--server-generated-meta-->"
+      assert html_response(user_present, 200) =~ "initial-results"
+    end
 
-      assert html_response(user_missing, 200) =~ "<!--server-generated-initial-data-->"
-      refute html_response(user_present, 200) =~ "<!--server-generated-initial-data-->"
+    test "GET /*path", %{conn: conn} do
+      assert conn
+             |> get("/foo")
+             |> html_response(200) =~ "<!--server-generated-meta-->"
+
+      refute conn
+             |> get("/foo/bar")
+             |> html_response(200) =~ "<!--server-generated-meta-->"
     end
   end
 
-  describe "preloaded data only attached to" do
-    test "GET /*path", %{conn: conn} do
+  describe "preloaded data is attached to" do
+    test "GET /main/public", %{conn: conn} do
       public_page = get(conn, "/main/public")
 
-      assert html_response(public_page, 200) =~ "<!--server-generated-meta-->"
-      refute html_response(public_page, 200) =~ "<!--server-generated-initial-data-->"
+      refute html_response(public_page, 200) =~ "<!--server-generated-meta-->"
+      assert html_response(public_page, 200) =~ "initial-results"
+    end
+
+    test "GET /main/all", %{conn: conn} do
+      public_page = get(conn, "/main/all")
+
+      refute html_response(public_page, 200) =~ "<!--server-generated-meta-->"
+      assert html_response(public_page, 200) =~ "initial-results"
     end
   end
 
@@ -46,16 +66,6 @@ defmodule Pleroma.Web.FallbackTest do
 
   test "GET /pleroma/admin -> /pleroma/admin/", %{conn: conn} do
     assert redirected_to(get(conn, "/pleroma/admin")) =~ "/pleroma/admin/"
-  end
-
-  test "GET /*path", %{conn: conn} do
-    assert conn
-           |> get("/foo")
-           |> html_response(200) =~ "<!--server-generated-meta-->"
-
-    assert conn
-           |> get("/foo/bar")
-           |> html_response(200) =~ "<!--server-generated-meta-->"
   end
 
   test "OPTIONS /*path", %{conn: conn} do
