@@ -938,6 +938,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       where: fragment("not (? && ?)", activity.recipients, ^blocked_ap_ids),
       where:
         fragment(
+          "recipients_contain_blocked_domains(?, ?) = false",
+          activity.recipients,
+          ^domain_blocks
+        ),
+      where:
+        fragment(
           "not (?->>'type' = 'Announce' and ?->'to' \\?| ?)",
           activity.data,
           activity.data,
