@@ -49,7 +49,7 @@ defmodule Pleroma.Notification do
     |> Enum.each(fn notification ->
       type =
         notification.activity
-        |> type_from_activity()
+        |> type_from_activity(no_cachex: true)
 
       notification
       |> changeset(%{type: type})
@@ -364,10 +364,23 @@ defmodule Pleroma.Notification do
     {:ok, notifications}
   end
 
-  defp type_from_activity(%{data: %{"type" => type}} = activity) do
+  defp type_from_activity(%{data: %{"type" => type}} = activity, opts \\ []) do
     case type do
       "Follow" ->
-        if Activity.follow_accepted?(activity) do
+        accepted_function =
+          if Keyword.get(opts, :no_cachex, false) do
+            # A special function to make this usable in a migration.
+            fn activity ->
+              with %User{} = follower <- User.get_by_ap_id(activity.data["actor"]),
+                   %User{} = followed <- User.get_by_ap_id(activity.data["object"]) do
+                Pleroma.FollowingRelationship.following?(follower, followed)
+              end
+            end
+          else
+            &Activity.follow_accepted?/1
+          end
+
+        if accepted_function.(activity) do
           "follow"
         else
           "follow_request"
@@ -394,8 +407,10 @@ defmodule Pleroma.Notification do
     end
   end
 
+  defp type_from_activity_object(%{data: %{"type" => "Create", "object" => %{}}}), do: "mention"
+
   defp type_from_activity_object(%{data: %{"type" => "Create"}} = activity) do
-    object = Object.normalize(activity, false)
+    object = Object.get_by_ap_id(activity.data["object"])
 
     case object.data["type"] do
       "ChatMessage" -> "pleroma:chat_mention"
