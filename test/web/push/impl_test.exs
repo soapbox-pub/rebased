@@ -60,7 +60,8 @@ defmodule Pleroma.Web.Push.ImplTest do
     notif =
       insert(:notification,
         user: user,
-        activity: activity
+        activity: activity,
+        type: "mention"
       )
 
     assert Impl.perform(notif) == {:ok, [:ok, :ok]}
@@ -126,7 +127,7 @@ defmodule Pleroma.Web.Push.ImplTest do
            ) ==
              "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
 
-    assert Impl.format_title(%{activity: activity}) ==
+    assert Impl.format_title(%{activity: activity, type: "mention"}) ==
              "New Mention"
   end
 
@@ -136,9 +137,10 @@ defmodule Pleroma.Web.Push.ImplTest do
     {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
     object = Object.normalize(activity, false)
 
-    assert Impl.format_body(%{activity: activity}, user, object) == "@Bob has followed you"
+    assert Impl.format_body(%{activity: activity, type: "follow"}, user, object) ==
+             "@Bob has followed you"
 
-    assert Impl.format_title(%{activity: activity}) ==
+    assert Impl.format_title(%{activity: activity, type: "follow"}) ==
              "New Follower"
   end
 
@@ -157,7 +159,7 @@ defmodule Pleroma.Web.Push.ImplTest do
     assert Impl.format_body(%{activity: announce_activity}, user, object) ==
              "@#{user.nickname} repeated: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
 
-    assert Impl.format_title(%{activity: announce_activity}) ==
+    assert Impl.format_title(%{activity: announce_activity, type: "reblog"}) ==
              "New Repeat"
   end
 
@@ -173,9 +175,10 @@ defmodule Pleroma.Web.Push.ImplTest do
     {:ok, activity} = CommonAPI.favorite(user, activity.id)
     object = Object.normalize(activity)
 
-    assert Impl.format_body(%{activity: activity}, user, object) == "@Bob has favorited your post"
+    assert Impl.format_body(%{activity: activity, type: "favourite"}, user, object) ==
+             "@Bob has favorited your post"
 
-    assert Impl.format_title(%{activity: activity}) ==
+    assert Impl.format_title(%{activity: activity, type: "favourite"}) ==
              "New Favorite"
   end
 
@@ -218,7 +221,7 @@ defmodule Pleroma.Web.Push.ImplTest do
           status: "<Lorem ipsum dolor sit amet."
         })
 
-      notif = insert(:notification, user: user2, activity: activity)
+      notif = insert(:notification, user: user2, activity: activity, type: "mention")
 
       actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
       object = Object.normalize(activity)
@@ -229,7 +232,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       {:ok, activity} = CommonAPI.favorite(user, activity.id)
 
-      notif = insert(:notification, user: user2, activity: activity)
+      notif = insert(:notification, user: user2, activity: activity, type: "favourite")
 
       actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
       object = Object.normalize(activity)
@@ -268,7 +271,7 @@ defmodule Pleroma.Web.Push.ImplTest do
             "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
         })
 
-      notif = insert(:notification, user: user2, activity: activity)
+      notif = insert(:notification, user: user2, activity: activity, type: "mention")
 
       actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
       object = Object.normalize(activity)
@@ -281,7 +284,7 @@ defmodule Pleroma.Web.Push.ImplTest do
 
       {:ok, activity} = CommonAPI.favorite(user, activity.id)
 
-      notif = insert(:notification, user: user2, activity: activity)
+      notif = insert(:notification, user: user2, activity: activity, type: "favourite")
 
       actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
       object = Object.normalize(activity)

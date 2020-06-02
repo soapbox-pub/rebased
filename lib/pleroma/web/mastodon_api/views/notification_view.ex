@@ -16,18 +16,17 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.PleromaAPI.ChatMessageView
 
+  @parent_types ~w{Like Announce EmojiReact}
+
   def render("index.json", %{notifications: notifications, for: reading_user} = opts) do
     activities = Enum.map(notifications, & &1.activity)
 
     parent_activities =
       activities
-      |> Enum.filter(
-        &(Activity.mastodon_notification_type(&1) in [
-            "favourite",
-            "reblog",
-            "pleroma:emoji_reaction"
-          ])
-      )
+      |> Enum.filter(fn
+        %{data: %{"type" => type}} ->
+          type in @parent_types
+      end)
       |> Enum.map(& &1.data["object"])
       |> Activity.create_by_object_ap_id()
       |> Activity.with_preloaded_object(:left)
@@ -44,7 +43,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         true ->
           move_activities_targets =
             activities
-            |> Enum.filter(&(Activity.mastodon_notification_type(&1) == "move"))
+            |> Enum.filter(&(&1.data["type"] == "Move"))
             |> Enum.map(&User.get_cached_by_ap_id(&1.data["target"]))
 
           actors =
