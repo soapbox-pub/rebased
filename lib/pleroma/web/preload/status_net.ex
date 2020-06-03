@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Preload.Providers.StatusNet do
-  alias Pleroma.Web.TwitterAPI.UtilView
   alias Pleroma.Web.Preload.Providers.Provider
+  alias Pleroma.Web.TwitterAPI.UtilView
 
   @behaviour Provider
   @config_url :"/api/statusnet/config.json"
