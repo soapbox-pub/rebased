@@ -6,9 +6,7 @@ defmodule Pleroma.Chat do
   use Ecto.Schema
 
   import Ecto.Changeset
-  import Ecto.Query
 
-  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
 
@@ -24,38 +22,6 @@ defmodule Pleroma.Chat do
     field(:unread, :integer, default: 0, read_after_writes: true)
 
     timestamps()
-  end
-
-  def last_message_for_chat(chat) do
-    messages_for_chat_query(chat)
-    |> order_by(desc: :id)
-    |> limit(1)
-    |> Repo.one()
-  end
-
-  def messages_for_chat_query(chat) do
-    chat =
-      chat
-      |> Repo.preload(:user)
-
-    from(o in Object,
-      where: fragment("?->>'type' = ?", o.data, "ChatMessage"),
-      where:
-        fragment(
-          """
-          (?->>'actor' = ? and ?->'to' = ?) 
-          OR (?->>'actor' = ? and ?->'to' = ?) 
-          """,
-          o.data,
-          ^chat.user.ap_id,
-          o.data,
-          ^[chat.recipient],
-          o.data,
-          ^chat.recipient,
-          o.data,
-          ^[chat.user.ap_id]
-        )
-    )
   end
 
   def creation_cng(struct, params) do
