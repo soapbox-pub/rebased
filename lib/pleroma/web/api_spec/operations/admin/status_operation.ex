@@ -123,7 +123,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
     }
   end
 
-  defp admin_account do
+  def admin_account do
     %Schema{
       type: :object,
       properties: %{
