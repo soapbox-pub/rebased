@@ -325,9 +325,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
         {:ok, _create_activity, _meta} =
           SideEffects.handle(create_activity, local: false, object_data: chat_message_data)
 
-        object = Object.normalize(create_activity, false)
-
-        assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], object))
+        assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], {author, :_}))
+        assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], {recipient, :_}))
       end
     end
 

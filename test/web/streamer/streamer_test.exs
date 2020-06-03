@@ -7,6 +7,8 @@ defmodule Pleroma.Web.StreamerTest do
 
   import Pleroma.Factory
 
+  alias Pleroma.Chat
+  alias Pleroma.ChatMessageReference
   alias Pleroma.Conversation.Participation
   alias Pleroma.List
   alias Pleroma.Object
@@ -150,22 +152,36 @@ defmodule Pleroma.Web.StreamerTest do
     test "it sends chat messages to the 'user:pleroma_chat' stream", %{user: user} do
       other_user = insert(:user)
 
-      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey")
+      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey cirno")
       object = Object.normalize(create_activity, false)
+      chat = Chat.get(user.id, other_user.ap_id)
+      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+      cm_ref = %{cm_ref | chat: chat, object: object}
+
       Streamer.get_topic_and_add_socket("user:pleroma_chat", user)
-      Streamer.stream("user:pleroma_chat", object)
-      text = StreamerView.render("chat_update.json", object, user, [user.ap_id, other_user.ap_id])
+      Streamer.stream("user:pleroma_chat", {user, cm_ref})
+
+      text = StreamerView.render("chat_update.json", %{chat_message_reference: cm_ref})
+
+      assert text =~ "hey cirno"
       assert_receive {:text, ^text}
     end
 
     test "it sends chat messages to the 'user' stream", %{user: user} do
       other_user = insert(:user)
 
-      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey")
+      {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey cirno")
       object = Object.normalize(create_activity, false)
+      chat = Chat.get(user.id, other_user.ap_id)
+      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+      cm_ref = %{cm_ref | chat: chat, object: object}
+
       Streamer.get_topic_and_add_socket("user", user)
-      Streamer.stream("user", object)
-      text = StreamerView.render("chat_update.json", object, user, [user.ap_id, other_user.ap_id])
+      Streamer.stream("user", {user, cm_ref})
+
+      text = StreamerView.render("chat_update.json", %{chat_message_reference: cm_ref})
+
+      assert text =~ "hey cirno"
       assert_receive {:text, ^text}
     end
 

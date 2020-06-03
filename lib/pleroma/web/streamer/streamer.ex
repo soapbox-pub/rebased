@@ -6,11 +6,11 @@ defmodule Pleroma.Web.Streamer do
   require Logger
 
   alias Pleroma.Activity
+  alias Pleroma.ChatMessageReference
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
-  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
@@ -201,22 +201,15 @@ defmodule Pleroma.Web.Streamer do
     end)
   end
 
-  defp do_stream(topic, %{data: %{"type" => "ChatMessage"}} = object)
+  defp do_stream(topic, {user, %ChatMessageReference{} = cm_ref})
        when topic in ["user", "user:pleroma_chat"] do
-    recipients = [object.data["actor"] | object.data["to"]]
+    topic = "#{topic}:#{user.id}"
 
-    topics =
-      %{ap_id: recipients, local: true}
-      |> Pleroma.User.Query.build()
-      |> Repo.all()
-      |> Enum.map(fn %{id: id} = user -> {user, "#{topic}:#{id}"} end)
+    text = StreamerView.render("chat_update.json", %{chat_message_reference: cm_ref})
 
-    Enum.each(topics, fn {user, topic} ->
-      Registry.dispatch(@registry, topic, fn list ->
-        Enum.each(list, fn {pid, _auth} ->
-          text = StreamerView.render("chat_update.json", object, user, recipients)
-          send(pid, {:text, text})
-        end)
+    Registry.dispatch(@registry, topic, fn list ->
+      Enum.each(list, fn {pid, _auth} ->
+        send(pid, {:text, text})
       end)
     end)
   end

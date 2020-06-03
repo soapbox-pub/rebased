@@ -140,11 +140,15 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       |> Enum.each(fn [user, other_user] ->
         if user.local do
           {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
-          ChatMessageReference.create(chat, object, user.ap_id == actor.ap_id)
+          {:ok, cm_ref} = ChatMessageReference.create(chat, object, user.ap_id == actor.ap_id)
+
+          Streamer.stream(
+            ["user", "user:pleroma_chat"],
+            {user, %{cm_ref | chat: chat, object: object}}
+          )
         end
       end)
 
-      Streamer.stream(["user", "user:pleroma_chat"], object)
       {:ok, object, meta}
     end
   end

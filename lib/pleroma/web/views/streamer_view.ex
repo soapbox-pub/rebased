@@ -6,35 +6,10 @@ defmodule Pleroma.Web.StreamerView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
-  alias Pleroma.Chat
-  alias Pleroma.ChatMessageReference
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.User
   alias Pleroma.Web.MastodonAPI.NotificationView
-
-  def render("chat_update.json", object, user, recipients) do
-    chat = Chat.get(user.id, hd(recipients -- [user.ap_id]))
-
-    # Explicitly giving the cmr for the object here, so we don't accidentally
-    # send a later 'last_message' that was inserted between inserting this and
-    # streaming it out
-    cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
-
-    representation =
-      Pleroma.Web.PleromaAPI.ChatView.render(
-        "show.json",
-        %{last_message: cm_ref, chat: chat}
-      )
-
-    %{
-      event: "pleroma:chat_update",
-      payload:
-        representation
-        |> Jason.encode!()
-    }
-    |> Jason.encode!()
-  end
 
   def render("update.json", %Activity{} = activity, %User{} = user) do
     %{
@@ -71,6 +46,27 @@ defmodule Pleroma.Web.StreamerView do
           "show.json",
           activity: activity
         )
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
+  def render("chat_update.json", %{chat_message_reference: cm_ref}) do
+    # Explicitly giving the cmr for the object here, so we don't accidentally
+    # send a later 'last_message' that was inserted between inserting this and
+    # streaming it out
+    Logger.debug("Trying to stream out #{inspect(cm_ref)}")
+
+    representation =
+      Pleroma.Web.PleromaAPI.ChatView.render(
+        "show.json",
+        %{last_message: cm_ref, chat: cm_ref.chat}
+      )
+
+    %{
+      event: "pleroma:chat_update",
+      payload:
+        representation
         |> Jason.encode!()
     }
     |> Jason.encode!()
