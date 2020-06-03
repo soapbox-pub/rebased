@@ -74,7 +74,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
       parameters: [id_param()],
       security: [%{"oAuth" => ["read:statuses"]}],
       responses: %{
-        200 => Operation.response("Status", "application/json", Status),
+        200 => Operation.response("Status", "application/json", status()),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }
     }
