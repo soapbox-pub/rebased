@@ -13,8 +13,8 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.PleromaAPI.ChatView
   alias Pleroma.Web.PleromaAPI.ChatMessageReferenceView
+  alias Pleroma.Web.PleromaAPI.ChatView
 
   import Ecto.Query
   import Pleroma.Web.ActivityPub.ObjectValidator, only: [stringify_keys: 1]
