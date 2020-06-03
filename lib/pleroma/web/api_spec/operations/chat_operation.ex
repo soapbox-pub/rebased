@@ -39,6 +39,31 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
     }
   end
 
+  def mark_message_as_read_operation do
+    %Operation{
+      tags: ["chat"],
+      summary: "Mark one message in the chat as read",
+      operationId: "ChatController.mark_message_as_read",
+      parameters: [
+        Operation.parameter(:id, :path, :string, "The ID of the Chat"),
+        Operation.parameter(:message_id, :path, :string, "The ID of the message")
+      ],
+      responses: %{
+        200 =>
+          Operation.response(
+            "The read ChatMessage",
+            "application/json",
+            ChatMessage
+          )
+      },
+      security: [
+        %{
+          "oAuth" => ["write"]
+        }
+      ]
+    }
+  end
+
   def show_operation do
     %Operation{
       tags: ["chat"],
@@ -274,7 +299,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
           "content" => "Check this out :firefox:",
           "id" => "13",
           "chat_id" => "1",
-          "actor_id" => "someflakeid"
+          "actor_id" => "someflakeid",
+          "unread" => false
         },
         %{
           "actor_id" => "someflakeid",
@@ -282,7 +308,8 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
           "id" => "12",
           "chat_id" => "1",
           "emojis" => [],
-          "created_at" => "2020-04-21T15:06:45.000Z"
+          "created_at" => "2020-04-21T15:06:45.000Z",
+          "unread" => false
         }
       ]
     }

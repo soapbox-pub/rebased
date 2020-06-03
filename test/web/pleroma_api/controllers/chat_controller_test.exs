@@ -13,6 +13,33 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
   import Pleroma.Factory
 
+  describe "POST /api/v1/pleroma/chats/:id/messages/:message_id/read" do
+    setup do: oauth_access(["write:statuses"])
+
+    test "it marks one message as read", %{conn: conn, user: user} do
+      other_user = insert(:user)
+
+      {:ok, create} = CommonAPI.post_chat_message(other_user, user, "sup")
+      {:ok, _create} = CommonAPI.post_chat_message(other_user, user, "sup part 2")
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+      object = Object.normalize(create, false)
+      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+
+      assert cm_ref.seen == false
+
+      result =
+        conn
+        |> post("/api/v1/pleroma/chats/#{chat.id}/messages/#{cm_ref.id}/read")
+        |> json_response_and_validate_schema(200)
+
+      assert result["unread"] == false
+
+      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+
+      assert cm_ref.seen == true
+    end
+  end
+
   describe "POST /api/v1/pleroma/chats/:id/read" do
     setup do: oauth_access(["write:statuses"])
 
@@ -20,6 +47,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       other_user = insert(:user)
 
       {:ok, create} = CommonAPI.post_chat_message(other_user, user, "sup")
+      {:ok, _create} = CommonAPI.post_chat_message(other_user, user, "sup part 2")
       {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
       object = Object.normalize(create, false)
       cm_ref = ChatMessageReference.for_chat_and_object(chat, object)

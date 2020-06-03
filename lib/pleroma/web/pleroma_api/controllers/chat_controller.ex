@@ -24,7 +24,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:statuses"]}
-    when action in [:post_chat_message, :create, :mark_as_read, :delete_message]
+    when action in [
+           :post_chat_message,
+           :create,
+           :mark_as_read,
+           :mark_message_as_read,
+           :delete_message
+         ]
   )
 
   plug(
@@ -82,6 +88,21 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
            ),
          message <- Object.normalize(activity, false),
          cm_ref <- ChatMessageReference.for_chat_and_object(chat, message) do
+      conn
+      |> put_view(ChatMessageReferenceView)
+      |> render("show.json", for: user, chat_message_reference: cm_ref)
+    end
+  end
+
+  def mark_message_as_read(%{assigns: %{user: %{id: user_id} = user}} = conn, %{
+        id: chat_id,
+        message_id: message_id
+      }) do
+    with %ChatMessageReference{} = cm_ref <-
+           ChatMessageReference.get_by_id(message_id),
+         ^chat_id <- cm_ref.chat_id |> to_string(),
+         %Chat{user_id: ^user_id} <- Chat.get_by_id(chat_id),
+         {:ok, cm_ref} <- ChatMessageReference.mark_as_read(cm_ref) do
       conn
       |> put_view(ChatMessageReferenceView)
       |> render("show.json", for: user, chat_message_reference: cm_ref)

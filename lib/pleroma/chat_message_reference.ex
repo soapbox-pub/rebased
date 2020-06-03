@@ -92,6 +92,12 @@ defmodule Pleroma.ChatMessageReference do
     |> Repo.aggregate(:count)
   end
 
+  def mark_as_read(cm_ref) do
+    cm_ref
+    |> changeset(%{seen: true})
+    |> Repo.update()
+  end
+
   def set_all_seen_for_chat(chat) do
     chat
     |> for_chat_query()
