@@ -5,6 +5,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Chat
+  alias Pleroma.ChatMessageReference
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -95,7 +96,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   describe "DELETE /api/v1/pleroma/chats/:id/messages/:message_id" do
     setup do: oauth_access(["write:statuses"])
 
-    test "it deletes a message for the author of the message", %{conn: conn, user: user} do
+    test "it deletes a message from the chat", %{conn: conn, user: user} do
       recipient = insert(:user)
 
       {:ok, message} =
@@ -107,23 +108,32 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       chat = Chat.get(user.id, recipient.ap_id)
 
+      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+
+      # Deleting your own message removes the message and the reference
       result =
         conn
         |> put_req_header("content-type", "application/json")
-        |> delete("/api/v1/pleroma/chats/#{chat.id}/messages/#{object.id}")
+        |> delete("/api/v1/pleroma/chats/#{chat.id}/messages/#{cm_ref.id}")
         |> json_response_and_validate_schema(200)
 
-      assert result["id"] == to_string(object.id)
+      assert result["id"] == cm_ref.id
+      refute ChatMessageReference.get_by_id(cm_ref.id)
+      assert %{data: %{"type" => "Tombstone"}} = Object.get_by_id(object.id)
 
+      # Deleting other people's messages just removes the reference
       object = Object.normalize(other_message, false)
+      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
 
       result =
         conn
         |> put_req_header("content-type", "application/json")
-        |> delete("/api/v1/pleroma/chats/#{chat.id}/messages/#{object.id}")
-        |> json_response(400)
+        |> delete("/api/v1/pleroma/chats/#{chat.id}/messages/#{cm_ref.id}")
+        |> json_response_and_validate_schema(200)
 
-      assert result == %{"error" => "could_not_delete"}
+      assert result["id"] == cm_ref.id
+      refute ChatMessageReference.get_by_id(cm_ref.id)
+      assert Object.get_by_id(object.id)
     end
   end
 

@@ -72,6 +72,11 @@ defmodule Pleroma.Chat do
     |> unique_constraint(:user_id, name: :chats_user_id_recipient_index)
   end
 
+  def get_by_id(id) do
+    __MODULE__
+    |> Repo.get(id)
+  end
+
   def get(user_id, recipient) do
     __MODULE__
     |> Repo.get_by(user_id: user_id, recipient: recipient)

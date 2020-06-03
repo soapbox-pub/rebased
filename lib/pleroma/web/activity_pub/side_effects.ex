@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   """
   alias Pleroma.Activity
   alias Pleroma.Chat
+  alias Pleroma.ChatMessageReference
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -104,6 +105,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
               Object.decrease_replies_count(in_reply_to)
             end
 
+            ChatMessageReference.delete_for_object(deleted_object)
+
             ActivityPub.stream_out(object)
             ActivityPub.stream_out_participations(deleted_object, user)
             :ok
@@ -137,9 +140,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       |> Enum.each(fn [user, other_user] ->
         if user.local do
           if user.ap_id == actor.ap_id do
-            Chat.get_or_create(user.id, other_user.ap_id)
+            {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+            ChatMessageReference.create(chat, object, true)
           else
-            Chat.bump_or_create(user.id, other_user.ap_id)
+            {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
+            ChatMessageReference.create(chat, object, false)
           end
         end
       end)

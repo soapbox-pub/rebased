@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
   alias Pleroma.Activity
   alias Pleroma.Chat
+  alias Pleroma.ChatMessageReference
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -330,7 +331,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       end
     end
 
-    test "it creates a Chat for the local users and bumps the unread count, except for the author" do
+    test "it creates a Chat and ChatMessageReferences for the local users and bumps the unread count, except for the author" do
       author = insert(:user, local: true)
       recipient = insert(:user, local: true)
 
@@ -347,8 +348,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       chat = Chat.get(author.id, recipient.ap_id)
       assert chat.unread == 0
 
+      [cm_ref] = ChatMessageReference.for_chat_query(chat) |> Repo.all()
+
+      assert cm_ref.object.data["content"] == "hey"
+      assert cm_ref.seen == true
+
       chat = Chat.get(recipient.id, author.ap_id)
       assert chat.unread == 1
+
+      [cm_ref] = ChatMessageReference.for_chat_query(chat) |> Repo.all()
+
+      assert cm_ref.object.data["content"] == "hey"
+      assert cm_ref.seen == false
     end
 
     test "it creates a Chat for the local users and bumps the unread count" do

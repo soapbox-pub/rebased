@@ -2,14 +2,15 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.PleromaAPI.ChatMessageViewTest do
+defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Chat
+  alias Pleroma.ChatMessageReference
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.PleromaAPI.ChatMessageView
+  alias Pleroma.Web.PleromaAPI.ChatMessageReferenceView
 
   import Pleroma.Factory
 
@@ -30,25 +31,32 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageViewTest do
 
     object = Object.normalize(activity)
 
-    chat_message = ChatMessageView.render("show.json", object: object, for: user, chat: chat)
+    cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
 
-    assert chat_message[:id] == object.id |> to_string()
+    chat_message = ChatMessageReferenceView.render("show.json", chat_message_reference: cm_ref)
+
+    assert chat_message[:id] == cm_ref.id
     assert chat_message[:content] == "kippis :firefox:"
     assert chat_message[:account_id] == user.id
     assert chat_message[:chat_id]
     assert chat_message[:created_at]
+    assert chat_message[:seen] == true
     assert match?([%{shortcode: "firefox"}], chat_message[:emojis])
 
     {:ok, activity} = CommonAPI.post_chat_message(recipient, user, "gkgkgk", media_id: upload.id)
 
     object = Object.normalize(activity)
 
-    chat_message_two = ChatMessageView.render("show.json", object: object, for: user, chat: chat)
+    cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
 
-    assert chat_message_two[:id] == object.id |> to_string()
+    chat_message_two =
+      ChatMessageReferenceView.render("show.json", chat_message_reference: cm_ref)
+
+    assert chat_message_two[:id] == cm_ref.id
     assert chat_message_two[:content] == "gkgkgk"
     assert chat_message_two[:account_id] == recipient.id
     assert chat_message_two[:chat_id] == chat_message[:chat_id]
     assert chat_message_two[:attachment]
+    assert chat_message_two[:seen] == false
   end
 end

@@ -6,14 +6,15 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   alias Pleroma.Activity
   alias Pleroma.Chat
+  alias Pleroma.ChatMessageReference
   alias Pleroma.Object
   alias Pleroma.Pagination
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.PleromaAPI.ChatMessageView
   alias Pleroma.Web.PleromaAPI.ChatView
+  alias Pleroma.Web.PleromaAPI.ChatMessageReferenceView
 
   import Ecto.Query
   import Pleroma.Web.ActivityPub.ObjectValidator, only: [stringify_keys: 1]
@@ -35,26 +36,36 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.ChatOperation
 
-  def delete_message(%{assigns: %{user: %{ap_id: actor} = user}} = conn, %{
-        message_id: id
+  def delete_message(%{assigns: %{user: %{id: user_id} = user}} = conn, %{
+        message_id: message_id,
+        id: chat_id
       }) do
-    with %Object{
-           data: %{
-             "actor" => ^actor,
-             "id" => object,
-             "to" => [recipient],
-             "type" => "ChatMessage"
-           }
-         } = message <- Object.get_by_id(id),
-         %Chat{} = chat <- Chat.get(user.id, recipient),
-         %Activity{} = activity <- Activity.get_create_by_object_ap_id(object),
-         {:ok, _delete} <- CommonAPI.delete(activity.id, user) do
+    with %ChatMessageReference{} = cm_ref <-
+           ChatMessageReference.get_by_id(message_id),
+         ^chat_id <- cm_ref.chat_id |> to_string(),
+         %Chat{user_id: ^user_id} <- Chat.get_by_id(chat_id),
+         {:ok, _} <- remove_or_delete(cm_ref, user) do
       conn
-      |> put_view(ChatMessageView)
-      |> render("show.json", for: user, object: message, chat: chat)
+      |> put_view(ChatMessageReferenceView)
+      |> render("show.json", chat_message_reference: cm_ref)
     else
-      _e -> {:error, :could_not_delete}
+      _e ->
+        {:error, :could_not_delete}
     end
+  end
+
+  defp remove_or_delete(
+         %{object: %{data: %{"actor" => actor, "id" => id}}},
+         %{ap_id: actor} = user
+       ) do
+    with %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
+      CommonAPI.delete(activity.id, user)
+    end
+  end
+
+  defp remove_or_delete(cm_ref, _) do
+    cm_ref
+    |> ChatMessageReference.delete()
   end
 
   def post_chat_message(
@@ -69,10 +80,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
            CommonAPI.post_chat_message(user, recipient, params[:content],
              media_id: params[:media_id]
            ),
-         message <- Object.normalize(activity) do
+         message <- Object.normalize(activity, false),
+         cm_ref <- ChatMessageReference.for_chat_and_object(chat, message) do
       conn
-      |> put_view(ChatMessageView)
-      |> render("show.json", for: user, object: message, chat: chat)
+      |> put_view(ChatMessageReferenceView)
+      |> render("show.json", for: user, chat_message_reference: cm_ref)
     end
   end
 
@@ -87,14 +99,14 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   def messages(%{assigns: %{user: %{id: user_id} = user}} = conn, %{id: id} = params) do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id) do
-      messages =
+      cm_refs =
         chat
-        |> Chat.messages_for_chat_query()
+        |> ChatMessageReference.for_chat_query()
         |> Pagination.fetch_paginated(params |> stringify_keys())
 
       conn
-      |> put_view(ChatMessageView)
-      |> render("index.json", for: user, objects: messages, chat: chat)
+      |> put_view(ChatMessageReferenceView)
+      |> render("index.json", for: user, chat_message_references: cm_refs)
     else
       _ ->
         conn
