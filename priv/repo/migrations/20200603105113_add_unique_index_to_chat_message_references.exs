@@ -1,4 +1,4 @@
-defmodule Pleroma.Repo.Migrations.BackfillChatMessageReferences do
+defmodule Pleroma.Repo.Migrations.AddUniqueIndexToChatMessageReferences do
   use Ecto.Migration
 
   def change do
