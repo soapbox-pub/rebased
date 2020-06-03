@@ -412,7 +412,7 @@ defmodule Pleroma.Notification do
   defp type_from_activity_object(%{data: %{"type" => "Create"}} = activity) do
     object = Object.get_by_ap_id(activity.data["object"])
 
-    case object.data["type"] do
+    case object && object.data["type"] do
       "ChatMessage" -> "pleroma:chat_mention"
       _ -> "mention"
     end
