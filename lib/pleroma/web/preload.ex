@@ -9,7 +9,13 @@ defmodule Pleroma.Web.Preload do
   def build_tags(_conn, params) do
     preload_data =
       Enum.reduce(Pleroma.Config.get([__MODULE__, :providers], []), %{}, fn parser, acc ->
-        Map.merge(acc, parser.generate_terms(params))
+        terms =
+          params
+          |> parser.generate_terms()
+          |> Enum.map(fn {k, v} -> {k, Base.encode64(Jason.encode!(v))} end)
+          |> Enum.into(%{})
+
+        Map.merge(acc, terms)
       end)
 
     rendered_html =
@@ -22,8 +28,6 @@ defmodule Pleroma.Web.Preload do
   end
 
   def build_script_tag(content) do
-    content = Base.encode64(content)
-
     HTML.Tag.content_tag(:script, HTML.raw(content),
       id: "initial-results",
       type: "application/json"
