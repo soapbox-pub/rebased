@@ -30,7 +30,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.Router
 
   require Logger
@@ -279,7 +278,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         })
 
       conn
-      |> put_view(MastodonAPI.StatusView)
+      |> put_view(AdminAPI.StatusView)
       |> render("index.json", %{activities: activities, as: :activity})
     else
       _ -> {:error, :not_found}
