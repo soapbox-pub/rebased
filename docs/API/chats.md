@@ -94,6 +94,15 @@ Returned data:
 }
 ```
 
+### Marking a single chat message as read
+
+To set the `unread` property of a message to `false`
+
+`POST /api/v1/pleroma/chats/:id/messages/:message_id/read`
+
+Returned data:
+
+The modified chat message
 
 ### Getting a list of Chats
 
@@ -149,7 +158,8 @@ Returned data:
         "visible_in_picker": false
       }
     ],
-    "id": "13"
+    "id": "13",
+    "unread": true
   },
   {
     "account_id": "someflakeid",
@@ -157,7 +167,8 @@ Returned data:
     "content": "Whats' up?",
     "created_at": "2020-04-21T15:06:45.000Z",
     "emojis": [],
-    "id": "12"
+    "id": "12",
+    "unread": false
   }
 ]
 ```
@@ -190,7 +201,8 @@ Returned data:
       "visible_in_picker": false
     }
   ],
-  "id": "13"
+  "id": "13",
+  "unread": false
 }
 ```
 
@@ -215,7 +227,8 @@ There's a new `pleroma:chat_mention` notification, which has this form. It is no
     "chat_id": "1",
     "id": "10",
     "content": "Hello",
-    "account_id": "someflakeid"
+    "account_id": "someflakeid",
+    "unread": false
   },
   "created_at": "somedate"
 }
