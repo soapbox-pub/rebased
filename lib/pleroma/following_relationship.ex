@@ -62,13 +62,10 @@ defmodule Pleroma.FollowingRelationship do
         follow(follower, following, state)
 
       following_relationship ->
-        {:ok, relationship} =
-          following_relationship
-          |> cast(%{state: state}, [:state])
-          |> validate_required([:state])
-          |> Repo.update()
-
-        {:ok, relationship}
+        following_relationship
+        |> cast(%{state: state}, [:state])
+        |> validate_required([:state])
+        |> Repo.update()
     end
   end
 
