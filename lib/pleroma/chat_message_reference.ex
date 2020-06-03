@@ -84,4 +84,20 @@ defmodule Pleroma.ChatMessageReference do
     |> changeset(params)
     |> Repo.insert()
   end
+
+  def unread_count_for_chat(chat) do
+    chat
+    |> for_chat_query()
+    |> where([cmr], cmr.seen == false)
+    |> Repo.aggregate(:count)
+  end
+
+  def set_all_seen_for_chat(chat) do
+    chat
+    |> for_chat_query()
+    |> exclude(:order_by)
+    |> exclude(:preload)
+    |> where([cmr], cmr.seen == false)
+    |> Repo.update_all(set: [seen: true])
+  end
 end

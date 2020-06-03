@@ -19,14 +19,13 @@ defmodule Pleroma.Chat do
   schema "chats" do
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     field(:recipient, :string)
-    field(:unread, :integer, default: 0, read_after_writes: true)
 
     timestamps()
   end
 
   def creation_cng(struct, params) do
     struct
-    |> cast(params, [:user_id, :recipient, :unread])
+    |> cast(params, [:user_id, :recipient])
     |> validate_change(:recipient, fn
       :recipient, recipient ->
         case User.get_cached_by_ap_id(recipient) do
@@ -61,16 +60,10 @@ defmodule Pleroma.Chat do
 
   def bump_or_create(user_id, recipient) do
     %__MODULE__{}
-    |> creation_cng(%{user_id: user_id, recipient: recipient, unread: 1})
+    |> creation_cng(%{user_id: user_id, recipient: recipient})
     |> Repo.insert(
-      on_conflict: [set: [updated_at: NaiveDateTime.utc_now()], inc: [unread: 1]],
+      on_conflict: [set: [updated_at: NaiveDateTime.utc_now()]],
       conflict_target: [:user_id, :recipient]
     )
-  end
-
-  def mark_as_read(chat) do
-    chat
-    |> change(%{unread: 0})
-    |> Repo.update()
   end
 end

@@ -19,9 +19,12 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
     test "it marks all messages in a chat as read", %{conn: conn, user: user} do
       other_user = insert(:user)
 
-      {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
+      {:ok, create} = CommonAPI.post_chat_message(other_user, user, "sup")
+      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+      object = Object.normalize(create, false)
+      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
 
-      assert chat.unread == 1
+      assert cm_ref.seen == false
 
       result =
         conn
@@ -30,9 +33,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       assert result["unread"] == 0
 
-      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
+      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
 
-      assert chat.unread == 0
+      assert cm_ref.seen == true
     end
   end
 

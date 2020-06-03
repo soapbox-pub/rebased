@@ -346,7 +346,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
         SideEffects.handle(create_activity, local: false, object_data: chat_message_data)
 
       chat = Chat.get(author.id, recipient.ap_id)
-      assert chat.unread == 0
 
       [cm_ref] = ChatMessageReference.for_chat_query(chat) |> Repo.all()
 
@@ -354,7 +353,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       assert cm_ref.seen == true
 
       chat = Chat.get(recipient.id, author.ap_id)
-      assert chat.unread == 1
 
       [cm_ref] = ChatMessageReference.for_chat_query(chat) |> Repo.all()
 

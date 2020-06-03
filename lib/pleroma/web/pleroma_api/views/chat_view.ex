@@ -20,7 +20,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
     %{
       id: chat.id |> to_string(),
       account: AccountView.render("show.json", Map.put(opts, :user, recipient)),
-      unread: chat.unread,
+      unread: ChatMessageReference.unread_count_for_chat(chat),
       last_message:
         last_message &&
           ChatMessageReferenceView.render("show.json", chat_message_reference: last_message),

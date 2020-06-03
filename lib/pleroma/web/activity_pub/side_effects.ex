@@ -139,13 +139,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       [[actor, recipient], [recipient, actor]]
       |> Enum.each(fn [user, other_user] ->
         if user.local do
-          if user.ap_id == actor.ap_id do
-            {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
-            ChatMessageReference.create(chat, object, true)
-          else
-            {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
-            ChatMessageReference.create(chat, object, false)
-          end
+          {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
+          ChatMessageReference.create(chat, object, user.ap_id == actor.ap_id)
         end
       end)
 
