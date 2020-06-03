@@ -40,7 +40,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     assert chat_message[:account_id] == user.id
     assert chat_message[:chat_id]
     assert chat_message[:created_at]
-    assert chat_message[:seen] == true
+    assert chat_message[:unread] == false
     assert match?([%{shortcode: "firefox"}], chat_message[:emojis])
 
     {:ok, activity} = CommonAPI.post_chat_message(recipient, user, "gkgkgk", media_id: upload.id)
@@ -57,6 +57,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
     assert chat_message_two[:account_id] == recipient.id
     assert chat_message_two[:chat_id] == chat_message[:chat_id]
     assert chat_message_two[:attachment]
-    assert chat_message_two[:seen] == false
+    assert chat_message_two[:unread] == true
   end
 end

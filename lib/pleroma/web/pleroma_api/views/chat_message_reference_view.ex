@@ -30,7 +30,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceView do
       attachment:
         chat_message["attachment"] &&
           StatusView.render("attachment.json", attachment: chat_message["attachment"]),
-      seen: seen
+      unread: !seen
     }
   end
 
