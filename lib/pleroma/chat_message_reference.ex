@@ -66,6 +66,13 @@ defmodule Pleroma.ChatMessageReference do
     )
   end
 
+  def last_message_for_chat(chat) do
+    chat
+    |> for_chat_query()
+    |> limit(1)
+    |> Repo.one()
+  end
+
   def create(chat, object, seen) do
     params = %{
       chat_id: chat.id,

@@ -6,22 +6,24 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
   use Pleroma.Web, :view
 
   alias Pleroma.Chat
+  alias Pleroma.ChatMessageReference
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
-  alias Pleroma.Web.PleromaAPI.ChatMessageView
+  alias Pleroma.Web.PleromaAPI.ChatMessageReferenceView
 
   def render("show.json", %{chat: %Chat{} = chat} = opts) do
     recipient = User.get_cached_by_ap_id(chat.recipient)
 
-    last_message = opts[:message] || Chat.last_message_for_chat(chat)
+    last_message = opts[:last_message] || ChatMessageReference.last_message_for_chat(chat)
 
     %{
       id: chat.id |> to_string(),
       account: AccountView.render("show.json", Map.put(opts, :user, recipient)),
       unread: chat.unread,
       last_message:
-        last_message && ChatMessageView.render("show.json", chat: chat, object: last_message),
+        last_message &&
+          ChatMessageReferenceView.render("show.json", chat_message_reference: last_message),
       updated_at: Utils.to_masto_date(chat.updated_at)
     }
   end

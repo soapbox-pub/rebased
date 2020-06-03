@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
   alias Pleroma.Activity
   alias Pleroma.Chat
+  alias Pleroma.ChatMessageReference
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -16,7 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.PleromaAPI.ChatMessageView
+  alias Pleroma.Web.PleromaAPI.ChatMessageReferenceView
   import Pleroma.Factory
 
   defp test_notifications_rendering(notifications, user, expected_result) do
@@ -44,13 +45,15 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     object = Object.normalize(activity)
     chat = Chat.get(recipient.id, user.ap_id)
 
+    cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+
     expected = %{
       id: to_string(notification.id),
       pleroma: %{is_seen: false},
       type: "pleroma:chat_mention",
       account: AccountView.render("show.json", %{user: user, for: recipient}),
       chat_message:
-        ChatMessageView.render("show.json", %{object: object, for: recipient, chat: chat}),
+        ChatMessageReferenceView.render("show.json", %{chat_message_reference: cm_ref}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 

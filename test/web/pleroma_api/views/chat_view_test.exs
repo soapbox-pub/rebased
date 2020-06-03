@@ -6,11 +6,12 @@ defmodule Pleroma.Web.PleromaAPI.ChatViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Chat
+  alias Pleroma.ChatMessageReference
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
-  alias Pleroma.Web.PleromaAPI.ChatMessageView
+  alias Pleroma.Web.PleromaAPI.ChatMessageReferenceView
   alias Pleroma.Web.PleromaAPI.ChatView
 
   import Pleroma.Factory
@@ -39,7 +40,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatViewTest do
 
     represented_chat = ChatView.render("show.json", chat: chat)
 
+    cm_ref = ChatMessageReference.for_chat_and_object(chat, chat_message)
+
     assert represented_chat[:last_message] ==
-             ChatMessageView.render("show.json", chat: chat, object: chat_message)
+             ChatMessageReferenceView.render("show.json", chat_message_reference: cm_ref)
   end
 end
