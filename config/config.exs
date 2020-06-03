@@ -420,7 +420,8 @@ config :pleroma, Pleroma.Web.Preload,
   providers: [
     Pleroma.Web.Preload.Providers.Instance,
     Pleroma.Web.Preload.Providers.User,
-    Pleroma.Web.Preload.Providers.Timelines
+    Pleroma.Web.Preload.Providers.Timelines,
+    Pleroma.Web.Preload.Providers.StatusNet
   ]
 
 config :pleroma, :http_security,
