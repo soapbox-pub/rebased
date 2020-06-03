@@ -547,7 +547,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ```json
 {
-  "totalReports" : 1,
+  "total" : 1,
   "reports": [
     {
       "account": {
@@ -768,7 +768,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
   - On success: `204`, empty response
 
-## `POST /api/pleroma/admin/reports/:report_id/notes/:id`
+## `DELETE /api/pleroma/admin/reports/:report_id/notes/:id`
 
 ### Delete report note
 
