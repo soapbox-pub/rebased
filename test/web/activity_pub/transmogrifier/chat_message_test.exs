@@ -13,7 +13,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   describe "handle_incoming" do
-    test "handles this" do
+    test "handles chonks with attachment" do
       data = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
         "actor" => "https://honk.tedunangst.com/u/tedu",
