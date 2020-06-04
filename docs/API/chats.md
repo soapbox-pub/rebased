@@ -237,3 +237,7 @@ There's a new `pleroma:chat_mention` notification, which has this form. It is no
 ### Streaming
 
 There is an additional `user:pleroma_chat` stream. Incoming chat messages will make the current chat be sent to this `user` stream. The `event` of an incoming chat message is `pleroma:chat_update`. The payload is the updated chat with the incoming chat message in the `last_message` field.
+
+### Web Push
+
+If you want to receive push messages for this type, you'll need to add the `pleroma:chat_mention` type to your alerts in the push subscription.
