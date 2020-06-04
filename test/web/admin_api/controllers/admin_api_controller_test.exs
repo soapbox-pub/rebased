@@ -1744,7 +1744,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-
   describe "/api/pleroma/admin/stats" do
     test "status visibility count", %{conn: conn} do
       admin = insert(:user, is_admin: true)
