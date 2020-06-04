@@ -938,6 +938,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       where: fragment("not (? && ?)", activity.recipients, ^blocked_ap_ids),
       where:
         fragment(
+          "recipients_contain_blocked_domains(?, ?) = false",
+          activity.recipients,
+          ^domain_blocks
+        ),
+      where:
+        fragment(
           "not (?->>'type' = 'Announce' and ?->'to' \\?| ?)",
           activity.data,
           activity.data,
@@ -1028,6 +1034,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     else
       query
     end
+  end
+
+  defp exclude_invisible_actors(query, %{"invisible_actors" => true}), do: query
+
+  defp exclude_invisible_actors(query, _opts) do
+    invisible_ap_ids =
+      User.Query.build(%{invisible: true, select: [:ap_id]})
+      |> Repo.all()
+      |> Enum.map(fn %{ap_id: ap_id} -> ap_id end)
+
+    from([activity] in query, where: activity.actor not in ^invisible_ap_ids)
   end
 
   defp exclude_id(query, %{"exclude_id" => id}) when is_binary(id) do
@@ -1135,6 +1152,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_instance(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
+    |> exclude_invisible_actors(opts)
     |> exclude_visibility(opts)
   end
 

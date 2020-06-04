@@ -3,14 +3,16 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-05-15 09:37+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2020-06-02 07:36+0000\n"
+"Last-Translator: Fristi <fristi@subcon.town>\n"
+"Language-Team: Dutch <https://translate.pleroma.social/projects/pleroma/"
+"pleroma/nl/>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Translate Toolkit 2.5.1\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.0.4\n"
 
 ## This file is a PO Template file.
 ##
@@ -23,142 +25,142 @@ msgstr ""
 ## effect: edit them in PO (`.po`) files instead.
 ## From Ecto.Changeset.cast/4
 msgid "can't be blank"
-msgstr ""
+msgstr "kan niet leeg zijn"
 
 ## From Ecto.Changeset.unique_constraint/3
 msgid "has already been taken"
-msgstr ""
+msgstr "is al bezet"
 
 ## From Ecto.Changeset.put_change/3
 msgid "is invalid"
-msgstr ""
+msgstr "is ongeldig"
 
 ## From Ecto.Changeset.validate_format/3
 msgid "has invalid format"
-msgstr ""
+msgstr "heeft een ongeldig formaat"
 
 ## From Ecto.Changeset.validate_subset/3
 msgid "has an invalid entry"
-msgstr ""
+msgstr "heeft een ongeldige entry"
 
 ## From Ecto.Changeset.validate_exclusion/3
 msgid "is reserved"
-msgstr ""
+msgstr "is gereserveerd"
 
 ## From Ecto.Changeset.validate_confirmation/3
 msgid "does not match confirmation"
-msgstr ""
+msgstr "komt niet overeen met bevestiging"
 
 ## From Ecto.Changeset.no_assoc_constraint/3
 msgid "is still associated with this entry"
-msgstr ""
+msgstr "is nog geassocieerd met deze entry"
 
 msgid "are still associated with this entry"
-msgstr ""
+msgstr "zijn nog geassocieerd met deze entry"
 
 ## From Ecto.Changeset.validate_length/3
 msgid "should be %{count} character(s)"
 msgid_plural "should be %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "dient %{count} karakter te bevatten"
+msgstr[1] "dient %{count} karakters te bevatten"
 
 msgid "should have %{count} item(s)"
 msgid_plural "should have %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "dient %{count} item te bevatten"
+msgstr[1] "dient %{count} items te bevatten"
 
 msgid "should be at least %{count} character(s)"
 msgid_plural "should be at least %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "dient ten minste %{count} karakter te bevatten"
+msgstr[1] "dient ten minste %{count} karakters te bevatten"
 
 msgid "should have at least %{count} item(s)"
 msgid_plural "should have at least %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "dient ten minste %{count} item te bevatten"
+msgstr[1] "dient ten minste %{count} items te bevatten"
 
 msgid "should be at most %{count} character(s)"
 msgid_plural "should be at most %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "dient niet meer dan %{count} karakter te bevatten"
+msgstr[1] "dient niet meer dan %{count} karakters te bevatten"
 
 msgid "should have at most %{count} item(s)"
 msgid_plural "should have at most %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "dient niet meer dan %{count} item te bevatten"
+msgstr[1] "dient niet meer dan %{count} items te bevatten"
 
 ## From Ecto.Changeset.validate_number/3
 msgid "must be less than %{number}"
-msgstr ""
+msgstr "dient kleiner te zijn dan %{number}"
 
 msgid "must be greater than %{number}"
-msgstr ""
+msgstr "dient groter te zijn dan %{number}"
 
 msgid "must be less than or equal to %{number}"
-msgstr ""
+msgstr "dient kleiner dan of gelijk te zijn aan %{number}"
 
 msgid "must be greater than or equal to %{number}"
-msgstr ""
+msgstr "dient groter dan of gelijk te zijn aan %{number}"
 
 msgid "must be equal to %{number}"
-msgstr ""
+msgstr "dient gelijk te zijn aan %{number}"
 
 #: lib/pleroma/web/common_api/common_api.ex:421
 #, elixir-format
 msgid "Account not found"
-msgstr ""
+msgstr "Account niet gevonden"
 
 #: lib/pleroma/web/common_api/common_api.ex:249
 #, elixir-format
 msgid "Already voted"
-msgstr ""
+msgstr "Al gestemd"
 
 #: lib/pleroma/web/oauth/oauth_controller.ex:360
 #, elixir-format
 msgid "Bad request"
-msgstr ""
+msgstr "Bad request"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:425
 #, elixir-format
 msgid "Can't delete object"
-msgstr ""
+msgstr "Object kan niet verwijderd worden"
 
 #: lib/pleroma/web/mastodon_api/controllers/status_controller.ex:196
 #, elixir-format
 msgid "Can't delete this post"
-msgstr ""
+msgstr "Bericht kan niet verwijderd worden"
 
 #: lib/pleroma/web/controller_helper.ex:95
 #: lib/pleroma/web/controller_helper.ex:101
 #, elixir-format
 msgid "Can't display this activity"
-msgstr ""
+msgstr "Activiteit kan niet worden getoond"
 
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:227
 #: lib/pleroma/web/mastodon_api/controllers/account_controller.ex:254
 #, elixir-format
 msgid "Can't find user"
-msgstr ""
+msgstr "Gebruiker kan niet gevonden worden"
 
 #: lib/pleroma/web/pleroma_api/controllers/account_controller.ex:114
 #, elixir-format
 msgid "Can't get favorites"
-msgstr ""
+msgstr "Favorieten konden niet opgehaald worden"
 
 #: lib/pleroma/web/activity_pub/activity_pub_controller.ex:437
 #, elixir-format
 msgid "Can't like object"
-msgstr ""
+msgstr "Object kan niet geliked worden"
 
 #: lib/pleroma/web/common_api/utils.ex:556
 #, elixir-format
 msgid "Cannot post an empty status without attachments"
-msgstr ""
+msgstr "Status kan niet geplaatst worden zonder tekst of bijlagen"
 
 #: lib/pleroma/web/common_api/utils.ex:504
 #, elixir-format
 msgid "Comment must be up to %{max_size} characters"
-msgstr ""
+msgstr "Opmerking dient maximaal %{max_size} karakters te bevatten"
 
 #: lib/pleroma/config/config_db.ex:222
 #, elixir-format

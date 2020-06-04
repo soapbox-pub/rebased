@@ -7,31 +7,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
-  alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.MFA
   alias Pleroma.ModerationLog
   alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.ReportNote
   alias Pleroma.Stats
   alias Pleroma.User
-  alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.AdminAPI.ModerationLogView
-  alias Pleroma.Web.AdminAPI.Report
-  alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.AdminAPI.Search
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.MastodonAPI
-  alias Pleroma.Web.MastodonAPI.AppView
-  alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.Router
 
   require Logger
@@ -66,30 +56,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          ]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["read:invites"], admin: true} when action == :invites)
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:invites"], admin: true}
-    when action in [:create_invite_token, :revoke_invite, :email_invite]
-  )
-
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:follows"], admin: true}
     when action in [:user_follow, :user_unfollow, :relay_follow, :relay_unfollow]
-  )
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["read:reports"], admin: true}
-    when action in [:list_reports, :report_show]
-  )
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:reports"], admin: true}
-    when action in [:reports_update, :report_notes_create, :report_notes_delete]
   )
 
   plug(
@@ -116,10 +86,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :restart,
            :resend_confirmation_email,
            :confirm_email,
-           :oauth_app_create,
-           :oauth_app_list,
-           :oauth_app_update,
-           :oauth_app_delete,
            :reload_emoji
          ]
   )
@@ -288,7 +254,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         })
 
       conn
-      |> put_view(MastodonAPI.StatusView)
+      |> put_view(AdminAPI.StatusView)
       |> render("index.json", %{activities: activities, as: :activity})
     else
       _ -> {:error, :not_found}
@@ -569,69 +535,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  @doc "Sends registration invite via email"
-  def email_invite(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
-    with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
-         {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
-         {:ok, invite_token} <- UserInviteToken.create_invite(),
-         email <-
-           Pleroma.Emails.UserEmail.user_invitation_email(
-             user,
-             invite_token,
-             email,
-             params["name"]
-           ),
-         {:ok, _} <- Pleroma.Emails.Mailer.deliver(email) do
-      json_response(conn, :no_content, "")
-    else
-      {:registrations_open, _} ->
-        {:error, "To send invites you need to set the `registrations_open` option to false."}
-
-      {:invites_enabled, _} ->
-        {:error, "To send invites you need to set the `invites_enabled` option to true."}
-    end
-  end
-
-  @doc "Create an account registration invite token"
-  def create_invite_token(conn, params) do
-    opts = %{}
-
-    opts =
-      if params["max_use"],
-        do: Map.put(opts, :max_use, params["max_use"]),
-        else: opts
-
-    opts =
-      if params["expires_at"],
-        do: Map.put(opts, :expires_at, params["expires_at"]),
-        else: opts
-
-    {:ok, invite} = UserInviteToken.create_invite(opts)
-
-    json(conn, AccountView.render("invite.json", %{invite: invite}))
-  end
-
-  @doc "Get list of created invites"
-  def invites(conn, _params) do
-    invites = UserInviteToken.list_invites()
-
-    conn
-    |> put_view(AccountView)
-    |> render("invites.json", %{invites: invites})
-  end
-
-  @doc "Revokes invite by token"
-  def revoke_invite(conn, %{"token" => token}) do
-    with {:ok, invite} <- UserInviteToken.find_by_token(token),
-         {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true}) do
-      conn
-      |> put_view(AccountView)
-      |> render("invite.json", %{invite: updated_invite})
-    else
-      nil -> {:error, :not_found}
-    end
-  end
-
   @doc "Get a password reset token (base64 string) for given nickname"
   def get_password_reset(conn, %{"nickname" => nickname}) do
     (%User{local: true} = user) = User.get_cached_by_nickname(nickname)
@@ -718,85 +621,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def list_reports(conn, params) do
-    {page, page_size} = page_params(params)
-
-    reports = Utils.get_reports(params, page, page_size)
-
-    conn
-    |> put_view(ReportView)
-    |> render("index.json", %{reports: reports})
-  end
-
-  def report_show(conn, %{"id" => id}) do
-    with %Activity{} = report <- Activity.get_by_id(id) do
-      conn
-      |> put_view(ReportView)
-      |> render("show.json", Report.extract_report_info(report))
-    else
-      _ -> {:error, :not_found}
-    end
-  end
-
-  def reports_update(%{assigns: %{user: admin}} = conn, %{"reports" => reports}) do
-    result =
-      reports
-      |> Enum.map(fn report ->
-        with {:ok, activity} <- CommonAPI.update_report_state(report["id"], report["state"]) do
-          ModerationLog.insert_log(%{
-            action: "report_update",
-            actor: admin,
-            subject: activity
-          })
-
-          activity
-        else
-          {:error, message} -> %{id: report["id"], error: message}
-        end
-      end)
-
-    case Enum.any?(result, &Map.has_key?(&1, :error)) do
-      true -> json_response(conn, :bad_request, result)
-      false -> json_response(conn, :no_content, "")
-    end
-  end
-
-  def report_notes_create(%{assigns: %{user: user}} = conn, %{
-        "id" => report_id,
-        "content" => content
-      }) do
-    with {:ok, _} <- ReportNote.create(user.id, report_id, content) do
-      ModerationLog.insert_log(%{
-        action: "report_note",
-        actor: user,
-        subject: Activity.get_by_id(report_id),
-        text: content
-      })
-
-      json_response(conn, :no_content, "")
-    else
-      _ -> json_response(conn, :bad_request, "")
-    end
-  end
-
-  def report_notes_delete(%{assigns: %{user: user}} = conn, %{
-        "id" => note_id,
-        "report_id" => report_id
-      }) do
-    with {:ok, note} <- ReportNote.destroy(note_id) do
-      ModerationLog.insert_log(%{
-        action: "report_note_delete",
-        actor: user,
-        subject: Activity.get_by_id(report_id),
-        text: note.content
-      })
-
-      json_response(conn, :no_content, "")
-    else
-      _ -> json_response(conn, :bad_request, "")
-    end
-  end
-
   def list_log(conn, params) do
     {page, page_size} = page_params(params)
 
@@ -867,83 +691,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     })
 
     conn |> json("")
-  end
-
-  def oauth_app_create(conn, params) do
-    params =
-      if params["name"] do
-        Map.put(params, "client_name", params["name"])
-      else
-        params
-      end
-
-    result =
-      case App.create(params) do
-        {:ok, app} ->
-          AppView.render("show.json", %{app: app, admin: true})
-
-        {:error, changeset} ->
-          App.errors(changeset)
-      end
-
-    json(conn, result)
-  end
-
-  def oauth_app_update(conn, params) do
-    params =
-      if params["name"] do
-        Map.put(params, "client_name", params["name"])
-      else
-        params
-      end
-
-    with {:ok, app} <- App.update(params) do
-      json(conn, AppView.render("show.json", %{app: app, admin: true}))
-    else
-      {:error, changeset} ->
-        json(conn, App.errors(changeset))
-
-      nil ->
-        json_response(conn, :bad_request, "")
-    end
-  end
-
-  def oauth_app_list(conn, params) do
-    {page, page_size} = page_params(params)
-
-    search_params = %{
-      client_name: params["name"],
-      client_id: params["client_id"],
-      page: page,
-      page_size: page_size
-    }
-
-    search_params =
-      if Map.has_key?(params, "trusted") do
-        Map.put(search_params, :trusted, params["trusted"])
-      else
-        search_params
-      end
-
-    with {:ok, apps, count} <- App.search(search_params) do
-      json(
-        conn,
-        AppView.render("index.json",
-          apps: apps,
-          count: count,
-          page_size: page_size,
-          admin: true
-        )
-      )
-    end
-  end
-
-  def oauth_app_delete(conn, params) do
-    with {:ok, _app} <- App.destroy(params["id"]) do
-      json_response(conn, :no_content, "")
-    else
-      _ -> json_response(conn, :bad_request, "")
-    end
   end
 
   def stats(conn, _) do

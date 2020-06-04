@@ -31,17 +31,5 @@ defmodule Pleroma.HTTP.AdapterHelper.HackneyTest do
       assert opts[:b] == 1
       refute Keyword.has_key?(opts, :proxy)
     end
-
-    test "add opts for https" do
-      uri = URI.parse("https://domain.com")
-
-      opts = Hackney.options(uri)
-
-      assert opts[:ssl_options] == [
-               partial_chain: &:hackney_connect.partial_chain/1,
-               versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"],
-               server_name_indication: 'domain.com'
-             ]
-    end
   end
 end

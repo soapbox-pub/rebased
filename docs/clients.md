@@ -42,6 +42,12 @@ Feel free to contact us to be added to this list!
 - Platforms: SailfishOS
 - Features: No Streaming
 
+### Husky
+- Source code: <https://git.mentality.rip/FWGS/Husky>
+- Contact: [@Husky@enigmatic.observer](https://enigmatic.observer/users/Husky)
+- Platforms: Android
+- Features: No Streaming, Emoji Reactions, Text Formatting, FE Stickers
+
 ### Nekonium
 - Homepage: [F-Droid Repository](https://repo.gdgd.jp.net/), [Google Play](https://play.google.com/store/apps/details?id=com.apps.nekonium), [Amazon](https://www.amazon.co.jp/dp/B076FXPRBC/)
 - Source: <https://gogs.gdgd.jp.net/lin/nekonium>

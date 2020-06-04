@@ -740,6 +740,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def get_reports(params, page, page_size) do
     params =
       params
+      |> Map.new(fn {key, value} -> {to_string(key), value} end)
       |> Map.put("type", "Flag")
       |> Map.put("skip_preload", true)
       |> Map.put("preload_report_notes", true)

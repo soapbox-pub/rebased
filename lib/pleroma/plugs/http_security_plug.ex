@@ -31,7 +31,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
       {"x-content-type-options", "nosniff"},
       {"referrer-policy", referrer_policy},
       {"x-download-options", "noopen"},
-      {"content-security-policy", csp_string() <> ";"}
+      {"content-security-policy", csp_string()}
     ]
 
     if report_uri do
@@ -43,11 +43,22 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
         ]
       }
 
-      headers ++ [{"reply-to", Jason.encode!(report_group)}]
+      [{"reply-to", Jason.encode!(report_group)} | headers]
     else
       headers
     end
   end
+
+  static_csp_rules = [
+    "default-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
+    "manifest-src 'self'"
+  ]
+
+  @csp_start [Enum.join(static_csp_rules, ";") <> ";"]
 
   defp csp_string do
     scheme = Config.get([Pleroma.Web.Endpoint, :url])[:scheme]
@@ -55,11 +66,23 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     websocket_url = Pleroma.Web.Endpoint.websocket_url()
     report_uri = Config.get([:http_security, :report_uri])
 
-    connect_src = "connect-src 'self' #{static_url} #{websocket_url}"
+    img_src = "img-src 'self' data: blob:"
+    media_src = "media-src 'self'"
+
+    {img_src, media_src} =
+      if Config.get([:media_proxy, :enabled]) &&
+           !Config.get([:media_proxy, :proxy_opts, :redirect_on_failure]) do
+        sources = get_proxy_and_attachment_sources()
+        {[img_src, sources], [media_src, sources]}
+      else
+        {[img_src, " https:"], [media_src, " https:"]}
+      end
+
+    connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
 
     connect_src =
       if Pleroma.Config.get(:env) == :dev do
-        connect_src <> " http://localhost:3035/"
+        [connect_src, " http://localhost:3035/"]
       else
         connect_src
       end
@@ -71,26 +94,45 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
         "script-src 'self'"
       end
 
-    main_part = [
-      "default-src 'none'",
-      "base-uri 'self'",
-      "frame-ancestors 'none'",
-      "img-src 'self' data: blob: https:",
-      "media-src 'self' https:",
-      "style-src 'self' 'unsafe-inline'",
-      "font-src 'self'",
-      "manifest-src 'self'",
-      connect_src,
-      script_src
-    ]
+    report = if report_uri, do: ["report-uri ", report_uri, ";report-to csp-endpoint"]
+    insecure = if scheme == "https", do: "upgrade-insecure-requests"
 
-    report = if report_uri, do: ["report-uri #{report_uri}; report-to csp-endpoint"], else: []
-
-    insecure = if scheme == "https", do: ["upgrade-insecure-requests"], else: []
-
-    (main_part ++ report ++ insecure)
-    |> Enum.join("; ")
+    @csp_start
+    |> add_csp_param(img_src)
+    |> add_csp_param(media_src)
+    |> add_csp_param(connect_src)
+    |> add_csp_param(script_src)
+    |> add_csp_param(insecure)
+    |> add_csp_param(report)
+    |> :erlang.iolist_to_binary()
   end
+
+  defp get_proxy_and_attachment_sources do
+    media_proxy_whitelist =
+      Enum.reduce(Config.get([:media_proxy, :whitelist]), [], fn host, acc ->
+        add_source(acc, host)
+      end)
+
+    upload_base_url =
+      if Config.get([Pleroma.Upload, :base_url]),
+        do: URI.parse(Config.get([Pleroma.Upload, :base_url])).host
+
+    s3_endpoint =
+      if Config.get([Pleroma.Upload, :uploader]) == Pleroma.Uploaders.S3,
+        do: URI.parse(Config.get([Pleroma.Uploaders.S3, :public_endpoint])).host
+
+    []
+    |> add_source(upload_base_url)
+    |> add_source(s3_endpoint)
+    |> add_source(media_proxy_whitelist)
+  end
+
+  defp add_source(iodata, nil), do: iodata
+  defp add_source(iodata, source), do: [[?\s, source] | iodata]
+
+  defp add_csp_param(csp_iodata, nil), do: csp_iodata
+
+  defp add_csp_param(csp_iodata, param), do: [[param, ?;] | csp_iodata]
 
   def warn_if_disabled do
     unless Config.get([:http_security, :enabled]) do
