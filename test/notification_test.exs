@@ -8,8 +8,10 @@ defmodule Pleroma.NotificationTest do
   import Pleroma.Factory
   import Mock
 
+  alias Pleroma.Activity
   alias Pleroma.FollowingRelationship
   alias Pleroma.Notification
+  alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -29,8 +31,18 @@ defmodule Pleroma.NotificationTest do
       {:ok, chat} = CommonAPI.post_chat_message(user, other_user, "yo")
       {:ok, react} = CommonAPI.react_with_emoji(post.id, other_user, "☕")
       {:ok, like} = CommonAPI.favorite(other_user, post.id)
+      {:ok, react_2} = CommonAPI.react_with_emoji(post.id, other_user, "☕")
 
-      assert {4, nil} = Repo.update_all(Notification, set: [type: nil])
+      data =
+        react_2.data
+        |> Map.put("type", "EmojiReaction")
+
+      {:ok, react_2} =
+        react_2
+        |> Activity.change(%{data: data})
+        |> Repo.update()
+
+      assert {5, nil} = Repo.update_all(Notification, set: [type: nil])
 
       Notification.fill_in_notification_types()
 
@@ -42,6 +54,9 @@ defmodule Pleroma.NotificationTest do
 
       assert %{type: "pleroma:emoji_reaction"} =
                Repo.get_by(Notification, user_id: user.id, activity_id: react.id)
+
+      assert %{type: "pleroma:emoji_reaction"} =
+               Repo.get_by(Notification, user_id: user.id, activity_id: react_2.id)
 
       assert %{type: "pleroma:chat_mention"} =
                Repo.get_by(Notification, user_id: other_user.id, activity_id: chat.id)

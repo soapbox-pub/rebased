@@ -398,6 +398,10 @@ defmodule Pleroma.Notification do
       "EmojiReact" ->
         "pleroma:emoji_reaction"
 
+      # Compatibility with old reactions
+      "EmojiReaction" ->
+        "pleroma:emoji_reaction"
+
       "Create" ->
         activity
         |> type_from_activity_object()
