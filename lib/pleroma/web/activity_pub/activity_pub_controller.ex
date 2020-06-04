@@ -233,16 +233,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       activities =
         if params["max_id"] do
           ActivityPub.fetch_user_activities(user, for_user, %{
-            "max_id" => params["max_id"],
+            max_id: params["max_id"],
             # This is a hack because postgres generates inefficient queries when filtering by
             # 'Answer', poll votes will be hidden by the visibility filter in this case anyway
-            "include_poll_votes" => true,
-            "limit" => 10
+            include_poll_votes: true,
+            limit: 10
           })
         else
           ActivityPub.fetch_user_activities(user, for_user, %{
-            "limit" => 10,
-            "include_poll_votes" => true
+            limit: 10,
+            include_poll_votes: true
           })
         end
 
@@ -356,11 +356,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     activities =
       if params["max_id"] do
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], %{
-          "max_id" => params["max_id"],
-          "limit" => 10
+          max_id: params["max_id"],
+          limit: 10
         })
       else
-        ActivityPub.fetch_activities([user.ap_id | User.following(user)], %{"limit" => 10})
+        ActivityPub.fetch_activities([user.ap_id | User.following(user)], %{limit: 10})
       end
 
     conn

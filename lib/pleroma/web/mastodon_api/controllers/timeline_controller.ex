@@ -44,12 +44,11 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   def home(%{assigns: %{user: user}} = conn, params) do
     params =
       params
-      |> Map.new(fn {key, value} -> {to_string(key), value} end)
-      |> Map.put("type", ["Create", "Announce"])
-      |> Map.put("blocking_user", user)
-      |> Map.put("muting_user", user)
-      |> Map.put("reply_filtering_user", user)
-      |> Map.put("user", user)
+      |> Map.put(:type, ["Create", "Announce"])
+      |> Map.put(:blocking_user, user)
+      |> Map.put(:muting_user, user)
+      |> Map.put(:reply_filtering_user, user)
+      |> Map.put(:user, user)
 
     recipients = [user.ap_id | User.following(user)]
 
@@ -71,10 +70,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   def direct(%{assigns: %{user: user}} = conn, params) do
     params =
       params
-      |> Map.new(fn {key, value} -> {to_string(key), value} end)
-      |> Map.put("type", "Create")
-      |> Map.put("blocking_user", user)
-      |> Map.put("user", user)
+      |> Map.put(:type, "Create")
+      |> Map.put(:blocking_user, user)
+      |> Map.put(:user, user)
       |> Map.put(:visibility, "direct")
 
     activities =
@@ -93,9 +91,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
   # GET /api/v1/timelines/public
   def public(%{assigns: %{user: user}} = conn, params) do
-    params = Map.new(params, fn {key, value} -> {to_string(key), value} end)
-
-    local_only = params["local"]
+    local_only = params[:local]
 
     cfg_key =
       if local_only do
@@ -111,11 +107,11 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     else
       activities =
         params
-        |> Map.put("type", ["Create"])
-        |> Map.put("local_only", local_only)
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("reply_filtering_user", user)
+        |> Map.put(:type, ["Create"])
+        |> Map.put(:local_only, local_only)
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_filtering_user, user)
         |> ActivityPub.fetch_public_activities()
 
       conn
@@ -130,39 +126,38 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
   defp hashtag_fetching(params, user, local_only) do
     tags =
-      [params["tag"], params["any"]]
+      [params[:tag], params[:any]]
       |> List.flatten()
       |> Enum.uniq()
-      |> Enum.filter(& &1)
-      |> Enum.map(&String.downcase(&1))
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(&String.downcase/1)
 
     tag_all =
       params
-      |> Map.get("all", [])
-      |> Enum.map(&String.downcase(&1))
+      |> Map.get(:all, [])
+      |> Enum.map(&String.downcase/1)
 
     tag_reject =
       params
-      |> Map.get("none", [])
-      |> Enum.map(&String.downcase(&1))
+      |> Map.get(:none, [])
+      |> Enum.map(&String.downcase/1)
 
     _activities =
       params
-      |> Map.put("type", "Create")
-      |> Map.put("local_only", local_only)
-      |> Map.put("blocking_user", user)
-      |> Map.put("muting_user", user)
-      |> Map.put("user", user)
-      |> Map.put("tag", tags)
-      |> Map.put("tag_all", tag_all)
-      |> Map.put("tag_reject", tag_reject)
+      |> Map.put(:type, "Create")
+      |> Map.put(:local_only, local_only)
+      |> Map.put(:blocking_user, user)
+      |> Map.put(:muting_user, user)
+      |> Map.put(:user, user)
+      |> Map.put(:tag, tags)
+      |> Map.put(:tag_all, tag_all)
+      |> Map.put(:tag_reject, tag_reject)
       |> ActivityPub.fetch_public_activities()
   end
 
   # GET /api/v1/timelines/tag/:tag
   def hashtag(%{assigns: %{user: user}} = conn, params) do
-    params = Map.new(params, fn {key, value} -> {to_string(key), value} end)
-    local_only = params["local"]
+    local_only = params[:local]
     activities = hashtag_fetching(params, user, local_only)
 
     conn
