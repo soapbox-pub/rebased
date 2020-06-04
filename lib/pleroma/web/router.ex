@@ -183,11 +183,11 @@ defmodule Pleroma.Web.Router do
     patch("/users/confirm_email", AdminAPIController, :confirm_email)
     patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
 
-    get("/reports", AdminAPIController, :list_reports)
-    get("/reports/:id", AdminAPIController, :report_show)
-    patch("/reports", AdminAPIController, :reports_update)
-    post("/reports/:id/notes", AdminAPIController, :report_notes_create)
-    delete("/reports/:report_id/notes/:id", AdminAPIController, :report_notes_delete)
+    get("/reports", ReportController, :index)
+    get("/reports/:id", ReportController, :show)
+    patch("/reports", ReportController, :update)
+    post("/reports/:id/notes", ReportController, :notes_create)
+    delete("/reports/:report_id/notes/:id", ReportController, :notes_delete)
 
     get("/statuses/:id", StatusController, :show)
     put("/statuses/:id", StatusController, :update)

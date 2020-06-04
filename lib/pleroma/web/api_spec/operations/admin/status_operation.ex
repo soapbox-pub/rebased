@@ -74,7 +74,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
       parameters: [id_param()],
       security: [%{"oAuth" => ["read:statuses"]}],
       responses: %{
-        200 => Operation.response("Status", "application/json", Status),
+        200 => Operation.response("Status", "application/json", status()),
         404 => Operation.response("Not Found", "application/json", ApiError)
       }
     }
@@ -123,7 +123,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
     }
   end
 
-  defp admin_account do
+  def admin_account do
     %Schema{
       type: :object,
       properties: %{
