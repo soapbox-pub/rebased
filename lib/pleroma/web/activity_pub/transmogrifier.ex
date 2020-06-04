@@ -538,6 +538,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            {_, false} <- {:user_blocked, User.blocks?(followed, follower) && deny_follow_blocked},
            {_, false} <- {:user_locked, User.locked?(followed)},
            {_, {:ok, follower}} <- {:follow, User.follow(follower, followed)},
+           _ <- Notification.update_notification_type(followed, activity),
            {_, {:ok, _}} <-
              {:follow_state_update, Utils.update_follow_state_for_all(activity, "accept")},
            {:ok, _relationship} <-

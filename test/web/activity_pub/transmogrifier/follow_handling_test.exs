@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Notification
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -57,9 +58,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
       activity = Repo.get(Activity, activity.id)
       assert activity.data["state"] == "accept"
       assert User.following?(User.get_cached_by_ap_id(data["actor"]), user)
+
+      [notification] = Notification.for_user(user)
+      assert notification.type == "follow"
     end
 
-    test "with locked accounts, it does not create a follow or an accept" do
+    test "with locked accounts, it does create a Follow, but not an Accept" do
       user = insert(:user, locked: true)
 
       data =
@@ -81,6 +85,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
         |> Repo.all()
 
       assert Enum.empty?(accepts)
+
+      [notification] = Notification.for_user(user)
+      assert notification.type == "follow_request"
     end
 
     test "it works for follow requests when you are already followed, creating a new accept activity" do
