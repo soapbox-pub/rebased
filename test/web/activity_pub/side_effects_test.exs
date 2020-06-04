@@ -325,10 +325,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
         stream: fn _, payload ->
           case payload do
             {^author, cm_ref} ->
-              assert cm_ref.seen == true
+              assert cm_ref.unread == false
 
             {^recipient, cm_ref} ->
-              assert cm_ref.seen == false
+              assert cm_ref.unread == true
 
               view =
                 Pleroma.Web.PleromaAPI.ChatView.render("show.json",
@@ -369,14 +369,14 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       [cm_ref] = ChatMessageReference.for_chat_query(chat) |> Repo.all()
 
       assert cm_ref.object.data["content"] == "hey"
-      assert cm_ref.seen == true
+      assert cm_ref.unread == false
 
       chat = Chat.get(recipient.id, author.ap_id)
 
       [cm_ref] = ChatMessageReference.for_chat_query(chat) |> Repo.all()
 
       assert cm_ref.object.data["content"] == "hey"
-      assert cm_ref.seen == false
+      assert cm_ref.unread == true
     end
 
     test "it creates a Chat for the local users and bumps the unread count" do

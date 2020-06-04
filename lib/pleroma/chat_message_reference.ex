@@ -23,15 +23,15 @@ defmodule Pleroma.ChatMessageReference do
     belongs_to(:object, Object)
     belongs_to(:chat, Chat)
 
-    field(:seen, :boolean, default: false)
+    field(:unread, :boolean, default: true)
 
     timestamps()
   end
 
   def changeset(struct, params) do
     struct
-    |> cast(params, [:object_id, :chat_id, :seen])
-    |> validate_required([:object_id, :chat_id, :seen])
+    |> cast(params, [:object_id, :chat_id, :unread])
+    |> validate_required([:object_id, :chat_id, :unread])
   end
 
   def get_by_id(id) do
@@ -73,11 +73,11 @@ defmodule Pleroma.ChatMessageReference do
     |> Repo.one()
   end
 
-  def create(chat, object, seen) do
+  def create(chat, object, unread) do
     params = %{
       chat_id: chat.id,
       object_id: object.id,
-      seen: seen
+      unread: unread
     }
 
     %__MODULE__{}
@@ -88,13 +88,13 @@ defmodule Pleroma.ChatMessageReference do
   def unread_count_for_chat(chat) do
     chat
     |> for_chat_query()
-    |> where([cmr], cmr.seen == false)
+    |> where([cmr], cmr.unread == true)
     |> Repo.aggregate(:count)
   end
 
   def mark_as_read(cm_ref) do
     cm_ref
-    |> changeset(%{seen: true})
+    |> changeset(%{unread: false})
     |> Repo.update()
   end
 
@@ -103,7 +103,7 @@ defmodule Pleroma.ChatMessageReference do
     |> for_chat_query()
     |> exclude(:order_by)
     |> exclude(:preload)
-    |> where([cmr], cmr.seen == false)
-    |> Repo.update_all(set: [seen: true])
+    |> where([cmr], cmr.unread == true)
+    |> Repo.update_all(set: [unread: false])
   end
 end

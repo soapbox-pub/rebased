@@ -25,7 +25,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       object = Object.normalize(create, false)
       cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
 
-      assert cm_ref.seen == false
+      assert cm_ref.unread == true
 
       result =
         conn
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
 
-      assert cm_ref.seen == true
+      assert cm_ref.unread == false
     end
   end
 
@@ -52,7 +52,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       object = Object.normalize(create, false)
       cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
 
-      assert cm_ref.seen == false
+      assert cm_ref.unread == true
 
       result =
         conn
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
 
-      assert cm_ref.seen == true
+      assert cm_ref.unread == false
     end
   end
 

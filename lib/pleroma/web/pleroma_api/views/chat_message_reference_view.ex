@@ -16,7 +16,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceView do
             id: id,
             object: %{data: chat_message},
             chat_id: chat_id,
-            seen: seen
+            unread: unread
           }
         }
       ) do
@@ -30,7 +30,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceView do
       attachment:
         chat_message["attachment"] &&
           StatusView.render("attachment.json", attachment: chat_message["attachment"]),
-      unread: !seen
+      unread: unread
     }
   end
 
