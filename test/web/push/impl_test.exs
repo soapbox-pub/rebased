@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Push.ImplTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -196,6 +197,22 @@ defmodule Pleroma.Web.Push.ImplTest do
   end
 
   describe "build_content/3" do
+    test "builds content for chat messages" do
+      user = insert(:user)
+      recipient = insert(:user)
+
+      {:ok, chat} = CommonAPI.post_chat_message(user, recipient, "hey")
+      object = Object.normalize(chat, false)
+      [notification] = Notification.for_user(recipient)
+
+      res = Impl.build_content(notification, user, object)
+
+      assert res == %{
+               body: "@#{user.nickname}: hey",
+               title: "New Chat Message"
+             }
+    end
+
     test "hides details for notifications when privacy option enabled" do
       user = insert(:user, nickname: "Bob")
       user2 = insert(:user, nickname: "Rob", notification_settings: %{privacy_option: true})
