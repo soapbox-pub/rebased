@@ -321,7 +321,27 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
       {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
 
-      with_mock Pleroma.Web.Streamer, [], stream: fn _, _ -> nil end do
+      with_mock Pleroma.Web.Streamer, [],
+        stream: fn _, payload ->
+          case payload do
+            {^author, cm_ref} ->
+              assert cm_ref.seen == true
+
+            {^recipient, cm_ref} ->
+              assert cm_ref.seen == false
+
+              view =
+                Pleroma.Web.PleromaAPI.ChatView.render("show.json",
+                  last_message: cm_ref,
+                  chat: cm_ref.chat
+                )
+
+              assert view.unread == 1
+
+            _ ->
+              nil
+          end
+        end do
         {:ok, _create_activity, _meta} =
           SideEffects.handle(create_activity, local: false, object_data: chat_message_data)
 
