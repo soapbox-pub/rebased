@@ -42,12 +42,7 @@ defmodule Pleroma.Web.AdminAPI.OAuthAppController do
   end
 
   def create(%{body_params: params} = conn, _) do
-    params =
-      if params[:name] do
-        Map.put(params, :client_name, params[:name])
-      else
-        params
-      end
+    params = Pleroma.Maps.put_if_present(params, :client_name, params[:name])
 
     case App.create(params) do
       {:ok, app} ->
@@ -59,12 +54,7 @@ defmodule Pleroma.Web.AdminAPI.OAuthAppController do
   end
 
   def update(%{body_params: params} = conn, %{id: id}) do
-    params =
-      if params[:name] do
-        Map.put(params, :client_name, params.name)
-      else
-        params
-      end
+    params = Pleroma.Maps.put_if_present(params, :client_name, params[:name])
 
     with {:ok, app} <- App.update(id, params) do
       render(conn, "show.json", app: app, admin: true)
