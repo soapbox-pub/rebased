@@ -545,19 +545,13 @@ defmodule Pleroma.Web.Router do
     get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end
 
+  # Server to Server (S2S) AP interactions
   pipeline :activitypub do
-    plug(:accepts, ["activity+json", "json"])
-    plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
-    plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
+    plug(:ap_service_actor)
+    plug(:http_signature)
   end
 
-  scope "/", Pleroma.Web.ActivityPub do
-    # XXX: not really ostatus
-    pipe_through(:ostatus)
-
-    get("/users/:nickname/outbox", ActivityPubController, :outbox)
-  end
-
+  # Client to Server (C2S) AP interactions
   pipeline :activitypub_client do
     plug(:accepts, ["activity+json", "json"])
     plug(:fetch_session)
@@ -578,6 +572,7 @@ defmodule Pleroma.Web.Router do
     get("/api/ap/whoami", ActivityPubController, :whoami)
     get("/users/:nickname/inbox", ActivityPubController, :read_inbox)
 
+    get("/users/:nickname/outbox", ActivityPubController, :outbox)
     post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
     post("/api/ap/upload_media", ActivityPubController, :upload_media)
 
