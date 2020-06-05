@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Activity
   alias Pleroma.EarmarkRenderer
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
@@ -208,12 +209,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("conversation", context)
   end
 
-  defp add_if_present(map, _key, nil), do: map
-
-  defp add_if_present(map, key, value) do
-    Map.put(map, key, value)
-  end
-
   def fix_attachments(%{"attachment" => attachment} = object) when is_list(attachment) do
     attachments =
       Enum.map(attachment, fn data ->
@@ -241,13 +236,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         attachment_url =
           %{"href" => href}
-          |> add_if_present("mediaType", media_type)
-          |> add_if_present("type", Map.get(url || %{}, "type"))
+          |> Maps.put_if_present("mediaType", media_type)
+          |> Maps.put_if_present("type", Map.get(url || %{}, "type"))
 
         %{"url" => [attachment_url]}
-        |> add_if_present("mediaType", media_type)
-        |> add_if_present("type", data["type"])
-        |> add_if_present("name", data["name"])
+        |> Maps.put_if_present("mediaType", media_type)
+        |> Maps.put_if_present("type", data["type"])
+        |> Maps.put_if_present("name", data["name"])
       end)
 
     Map.put(object, "attachment", attachments)

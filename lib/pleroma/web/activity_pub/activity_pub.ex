@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Constants
   alias Pleroma.Conversation
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Maps
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
@@ -19,7 +20,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.Transmogrifier
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.WebFinger
   alias Pleroma.Workers.BackgroundWorker
@@ -161,12 +161,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         })
 
       # Splice in the child object if we have one.
-      activity =
-        if not is_nil(object) do
-          Map.put(activity, :object, object)
-        else
-          activity
-        end
+      activity = Maps.put_if_present(activity, :object, object)
 
       BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
 
@@ -328,7 +323,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     with data <-
            %{"to" => to, "type" => type, "actor" => actor.ap_id, "object" => object}
-           |> Utils.maybe_put("id", activity_id),
+           |> Maps.put_if_present("id", activity_id),
          {:ok, activity} <- insert(data, local),
          _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
@@ -348,7 +343,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            "actor" => actor,
            "object" => object
          },
-         data <- Utils.maybe_put(data, "id", activity_id),
+         data <- Maps.put_if_present(data, "id", activity_id),
          {:ok, activity} <- insert(data, local),
          _ <- notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
@@ -1225,12 +1220,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   @spec upload(Upload.source(), keyword()) :: {:ok, Object.t()} | {:error, any()}
   def upload(file, opts \\ []) do
     with {:ok, data} <- Upload.store(file, opts) do
-      obj_data =
-        if opts[:actor] do
-          Map.put(data, "actor", opts[:actor])
-        else
-          data
-        end
+      obj_data = Maps.put_if_present(data, "actor", opts[:actor])
 
       Repo.insert(%Object{data: obj_data})
     end

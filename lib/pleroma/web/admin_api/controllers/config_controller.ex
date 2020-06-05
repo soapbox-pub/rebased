@@ -61,13 +61,12 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
                 value
               end
 
-            setting = %{
+            %{
               group: ConfigDB.convert(group),
               key: ConfigDB.convert(key),
               value: ConfigDB.convert(merged_value)
             }
-
-            if db, do: Map.put(setting, :db, db), else: setting
+            |> Pleroma.Maps.put_if_present(:db, db)
           end)
         end)
         |> List.flatten()

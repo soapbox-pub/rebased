@@ -6,6 +6,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Helpers.UriHelper
+  alias Pleroma.Maps
   alias Pleroma.MFA
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Registration
@@ -108,7 +109,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     if redirect_uri in String.split(app.redirect_uris) do
       redirect_uri = redirect_uri(conn, redirect_uri)
       url_params = %{access_token: token.token}
-      url_params = UriHelper.append_param_if_present(url_params, :state, params["state"])
+      url_params = Maps.put_if_present(url_params, :state, params["state"])
       url = UriHelper.append_uri_params(redirect_uri, url_params)
       redirect(conn, external: url)
     else
@@ -147,7 +148,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     if redirect_uri in String.split(app.redirect_uris) do
       redirect_uri = redirect_uri(conn, redirect_uri)
       url_params = %{code: auth.token}
-      url_params = UriHelper.append_param_if_present(url_params, :state, auth_attrs["state"])
+      url_params = Maps.put_if_present(url_params, :state, auth_attrs["state"])
       url = UriHelper.append_uri_params(redirect_uri, url_params)
       redirect(conn, external: url)
     else

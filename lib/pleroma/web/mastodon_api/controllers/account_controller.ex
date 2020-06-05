@@ -14,6 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       json_response: 3
     ]
 
+  alias Pleroma.Maps
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
@@ -160,23 +161,22 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :discoverable
       ]
       |> Enum.reduce(%{}, fn key, acc ->
-        add_if_present(acc, params, key, key, &{:ok, truthy_param?(&1)})
+        Maps.put_if_present(acc, key, params[key], &{:ok, truthy_param?(&1)})
       end)
-      |> add_if_present(params, :display_name, :name)
-      |> add_if_present(params, :note, :bio)
-      |> add_if_present(params, :avatar, :avatar)
-      |> add_if_present(params, :header, :banner)
-      |> add_if_present(params, :pleroma_background_image, :background)
-      |> add_if_present(
-        params,
-        :fields_attributes,
+      |> Maps.put_if_present(:name, params[:display_name])
+      |> Maps.put_if_present(:bio, params[:note])
+      |> Maps.put_if_present(:avatar, params[:avatar])
+      |> Maps.put_if_present(:banner, params[:header])
+      |> Maps.put_if_present(:background, params[:pleroma_background_image])
+      |> Maps.put_if_present(
         :raw_fields,
+        params[:fields_attributes],
         &{:ok, normalize_fields_attributes(&1)}
       )
-      |> add_if_present(params, :pleroma_settings_store, :pleroma_settings_store)
-      |> add_if_present(params, :default_scope, :default_scope)
-      |> add_if_present(params["source"], "privacy", :default_scope)
-      |> add_if_present(params, :actor_type, :actor_type)
+      |> Maps.put_if_present(:pleroma_settings_store, params[:pleroma_settings_store])
+      |> Maps.put_if_present(:default_scope, params[:default_scope])
+      |> Maps.put_if_present(:default_scope, params["source"]["privacy"])
+      |> Maps.put_if_present(:actor_type, params[:actor_type])
 
     changeset = User.update_changeset(user, user_params)
 
@@ -204,16 +204,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       object: object,
       actor: user.ap_id
     }
-  end
-
-  defp add_if_present(map, params, params_field, map_field, value_function \\ &{:ok, &1}) do
-    with true <- is_map(params),
-         true <- Map.has_key?(params, params_field),
-         {:ok, new_value} <- value_function.(Map.get(params, params_field)) do
-      Map.put(map, map_field, new_value)
-    else
-      _ -> map
-    end
   end
 
   defp normalize_fields_attributes(fields) do
