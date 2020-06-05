@@ -27,7 +27,7 @@ defmodule Pleroma.LoadTesting.Users do
 
     make_friends(main_user, opts[:friends])
 
-    Repo.get(User, main_user.id)
+    User.get_by_id(main_user.id)
   end
 
   def generate_users(max) do
@@ -165,5 +165,25 @@ defmodule Pleroma.LoadTesting.Users do
       timeout: 30_000
     )
     |> Stream.run()
+  end
+
+  @spec prepare_users(User.t(), keyword()) :: map()
+  def prepare_users(user, opts) do
+    friends_limit = opts[:friends_used]
+    non_friends_limit = opts[:non_friends_used]
+
+    %{
+      user: user,
+      friends_local: fetch_users(user, friends_limit, :local, true),
+      friends_remote: fetch_users(user, friends_limit, :external, true),
+      non_friends_local: fetch_users(user, non_friends_limit, :local, false),
+      non_friends_remote: fetch_users(user, non_friends_limit, :external, false)
+    }
+  end
+
+  defp fetch_users(user, limit, local, friends?) do
+    user
+    |> get_users(limit: limit, local: local, friends?: friends?)
+    |> Enum.shuffle()
   end
 end

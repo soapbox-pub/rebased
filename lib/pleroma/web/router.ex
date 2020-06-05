@@ -164,10 +164,10 @@ defmodule Pleroma.Web.Router do
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
-    post("/users/invite_token", AdminAPIController, :create_invite_token)
-    get("/users/invites", AdminAPIController, :invites)
-    post("/users/revoke_invite", AdminAPIController, :revoke_invite)
-    post("/users/email_invite", AdminAPIController, :email_invite)
+    post("/users/invite_token", InviteController, :create)
+    get("/users/invites", InviteController, :index)
+    post("/users/revoke_invite", InviteController, :revoke)
+    post("/users/email_invite", InviteController, :email)
 
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
     patch("/users/force_password_reset", AdminAPIController, :force_password_reset)
@@ -183,20 +183,20 @@ defmodule Pleroma.Web.Router do
     patch("/users/confirm_email", AdminAPIController, :confirm_email)
     patch("/users/resend_confirmation_email", AdminAPIController, :resend_confirmation_email)
 
-    get("/reports", AdminAPIController, :list_reports)
-    get("/reports/:id", AdminAPIController, :report_show)
-    patch("/reports", AdminAPIController, :reports_update)
-    post("/reports/:id/notes", AdminAPIController, :report_notes_create)
-    delete("/reports/:report_id/notes/:id", AdminAPIController, :report_notes_delete)
+    get("/reports", ReportController, :index)
+    get("/reports/:id", ReportController, :show)
+    patch("/reports", ReportController, :update)
+    post("/reports/:id/notes", ReportController, :notes_create)
+    delete("/reports/:report_id/notes/:id", ReportController, :notes_delete)
 
     get("/statuses/:id", StatusController, :show)
     put("/statuses/:id", StatusController, :update)
     delete("/statuses/:id", StatusController, :delete)
     get("/statuses", StatusController, :index)
 
-    get("/config", AdminAPIController, :config_show)
-    post("/config", AdminAPIController, :config_update)
-    get("/config/descriptions", AdminAPIController, :config_descriptions)
+    get("/config", ConfigController, :show)
+    post("/config", ConfigController, :update)
+    get("/config/descriptions", ConfigController, :descriptions)
     get("/need_reboot", AdminAPIController, :need_reboot)
     get("/restart", AdminAPIController, :restart)
 
@@ -205,10 +205,10 @@ defmodule Pleroma.Web.Router do
     post("/reload_emoji", AdminAPIController, :reload_emoji)
     get("/stats", AdminAPIController, :stats)
 
-    get("/oauth_app", AdminAPIController, :oauth_app_list)
-    post("/oauth_app", AdminAPIController, :oauth_app_create)
-    patch("/oauth_app/:id", AdminAPIController, :oauth_app_update)
-    delete("/oauth_app/:id", AdminAPIController, :oauth_app_delete)
+    get("/oauth_app", OAuthAppController, :index)
+    post("/oauth_app", OAuthAppController, :create)
+    patch("/oauth_app/:id", OAuthAppController, :update)
+    delete("/oauth_app/:id", OAuthAppController, :delete)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -673,6 +673,8 @@ defmodule Pleroma.Web.Router do
     post("/auth/password", MastodonAPI.AuthController, :password_reset)
 
     get("/web/*path", MastoFEController, :index)
+
+    get("/embed/:id", EmbedController, :show)
   end
 
   scope "/proxy/", Pleroma.Web.MediaProxy do

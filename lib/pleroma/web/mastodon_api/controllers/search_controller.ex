@@ -113,22 +113,44 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     query
     |> prepare_tags()
     |> Enum.map(fn tag ->
-      tag = String.trim_leading(tag, "#")
       %{name: tag, url: tags_path <> tag}
     end)
   end
 
   defp resource_search(:v1, "hashtags", query, _options) do
-    query
-    |> prepare_tags()
-    |> Enum.map(fn tag -> String.trim_leading(tag, "#") end)
+    prepare_tags(query)
   end
 
-  defp prepare_tags(query) do
-    query
-    |> String.split()
-    |> Enum.uniq()
-    |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
+  defp prepare_tags(query, add_joined_tag \\ true) do
+    tags =
+      query
+      |> String.split(~r/[^#\w]+/u, trim: true)
+      |> Enum.uniq_by(&String.downcase/1)
+
+    explicit_tags = Enum.filter(tags, fn tag -> String.starts_with?(tag, "#") end)
+
+    tags =
+      if Enum.any?(explicit_tags) do
+        explicit_tags
+      else
+        tags
+      end
+
+    tags = Enum.map(tags, fn tag -> String.trim_leading(tag, "#") end)
+
+    if Enum.empty?(explicit_tags) && add_joined_tag do
+      tags
+      |> Kernel.++([joined_tag(tags)])
+      |> Enum.uniq_by(&String.downcase/1)
+    else
+      tags
+    end
+  end
+
+  defp joined_tag(tags) do
+    tags
+    |> Enum.map(fn tag -> String.capitalize(tag) end)
+    |> Enum.join()
   end
 
   defp with_fallback(f, fallback \\ []) do

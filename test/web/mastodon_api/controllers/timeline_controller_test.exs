@@ -97,6 +97,49 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       res_conn = get(conn, "/api/v1/timelines/public")
       assert length(json_response_and_validate_schema(res_conn, 200)) == 1
     end
+
+    test "doesn't return replies if follower is posting with blocked user" do
+      %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
+      [blockee, friend] = insert_list(2, :user)
+      {:ok, blocker} = User.follow(blocker, friend)
+      {:ok, _} = User.block(blocker, blockee)
+
+      conn = assign(conn, :user, blocker)
+
+      {:ok, %{id: activity_id} = activity} = CommonAPI.post(friend, %{status: "hey!"})
+
+      {:ok, reply_from_blockee} =
+        CommonAPI.post(blockee, %{status: "heya", in_reply_to_status_id: activity})
+
+      {:ok, _reply_from_friend} =
+        CommonAPI.post(friend, %{status: "status", in_reply_to_status_id: reply_from_blockee})
+
+      res_conn = get(conn, "/api/v1/timelines/public")
+      [%{"id" => ^activity_id}] = json_response_and_validate_schema(res_conn, 200)
+    end
+
+    test "doesn't return replies if follow is posting with users from blocked domain" do
+      %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
+      friend = insert(:user)
+      blockee = insert(:user, ap_id: "https://example.com/users/blocked")
+      {:ok, blocker} = User.follow(blocker, friend)
+      {:ok, blocker} = User.block_domain(blocker, "example.com")
+
+      conn = assign(conn, :user, blocker)
+
+      {:ok, %{id: activity_id} = activity} = CommonAPI.post(friend, %{status: "hey!"})
+
+      {:ok, reply_from_blockee} =
+        CommonAPI.post(blockee, %{status: "heya", in_reply_to_status_id: activity})
+
+      {:ok, _reply_from_friend} =
+        CommonAPI.post(friend, %{status: "status", in_reply_to_status_id: reply_from_blockee})
+
+      res_conn = get(conn, "/api/v1/timelines/public")
+
+      activities = json_response_and_validate_schema(res_conn, 200)
+      [%{"id" => ^activity_id}] = activities
+    end
   end
 
   defp local_and_remote_activities do
