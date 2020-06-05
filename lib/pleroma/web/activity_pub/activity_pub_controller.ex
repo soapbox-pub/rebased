@@ -238,6 +238,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         params
         |> Map.drop(["nickname", "page"])
         |> Map.put("include_poll_votes", true)
+        |> Map.new(fn {k, v} -> {String.to_existing_atom(k), v} end)
 
       activities = ActivityPub.fetch_user_activities(user, for_user, params)
 
@@ -354,6 +355,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> Map.drop(["nickname", "page"])
       |> Map.put("blocking_user", user)
       |> Map.put("user", user)
+      |> Map.new(fn {k, v} -> {String.to_existing_atom(k), v} end)
 
     activities =
       [user.ap_id | User.following(user)]
