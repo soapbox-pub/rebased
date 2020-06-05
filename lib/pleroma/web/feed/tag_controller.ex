@@ -9,14 +9,12 @@ defmodule Pleroma.Web.Feed.TagController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.Feed.FeedView
 
-  import Pleroma.Web.ControllerHelper, only: [put_if_exist: 3]
-
   def feed(conn, %{"tag" => raw_tag} = params) do
     {format, tag} = parse_tag(raw_tag)
 
     activities =
       %{"type" => ["Create"], "tag" => tag}
-      |> put_if_exist("max_id", params["max_id"])
+      |> Pleroma.Maps.put_if_present("max_id", params["max_id"])
       |> ActivityPub.fetch_public_activities()
 
     conn

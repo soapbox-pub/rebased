@@ -30,7 +30,7 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityView do
   defp with_media_attachments(data, _), do: data
 
   defp status_params(params) do
-    data = %{
+    %{
       text: params["status"],
       sensitive: params["sensitive"],
       spoiler_text: params["spoiler_text"],
@@ -39,10 +39,6 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityView do
       poll: params["poll"],
       in_reply_to_id: params["in_reply_to_id"]
     }
-
-    case params["media_ids"] do
-      nil -> data
-      media_ids -> Map.put(data, :media_ids, media_ids)
-    end
+    |> Pleroma.Maps.put_if_present(:media_ids, params["media_ids"])
   end
 end

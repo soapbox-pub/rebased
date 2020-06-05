@@ -99,11 +99,6 @@ defmodule Pleroma.Web.ControllerHelper do
     render_error(conn, :not_implemented, "Can't display this activity")
   end
 
-  @spec put_if_exist(map(), atom() | String.t(), any) :: map()
-  def put_if_exist(map, _key, nil), do: map
-
-  def put_if_exist(map, key, value), do: Map.put(map, key, value)
-
   @doc """
   Returns true if request specifies to include embedded relationships in account objects.
   May only be used in selected account-related endpoints; has no effect for status- or
