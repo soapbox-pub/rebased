@@ -16,6 +16,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Streamer
+  alias Pleroma.Web.Push
 
   def handle(object, meta \\ [])
 
@@ -37,7 +38,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Set up notifications
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
     with {:ok, _object, _meta} <- handle_object_creation(meta[:object_data], meta) do
-      Notification.create_notifications(activity)
+      {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
+
+      meta =
+        meta
+        |> add_notifications(notifications)
+
       {:ok, activity, meta}
     else
       e -> Repo.rollback(e)
@@ -200,4 +206,26 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
+
+  defp send_notifications(meta) do
+    Keyword.get(meta, :created_notifications, [])
+    |> Enum.each(fn notification ->
+      Streamer.stream(["user", "user:notification"], notification)
+      Push.send(notification)
+    end)
+
+    meta
+  end
+
+  defp add_notifications(meta, notifications) do
+    existing = Keyword.get(meta, :created_notifications, [])
+
+    meta
+    |> Keyword.put(:created_notifications, notifications ++ existing)
+  end
+
+  def handle_after_transaction(meta) do
+    meta
+    |> send_notifications()
+  end
 end

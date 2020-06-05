@@ -334,30 +334,34 @@ defmodule Pleroma.Notification do
     end
   end
 
-  def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity) do
+  def create_notifications(activity, options \\ [])
+
+  def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity, options) do
     object = Object.normalize(activity, false)
 
     if object && object.data["type"] == "Answer" do
       {:ok, []}
     else
-      do_create_notifications(activity)
+      do_create_notifications(activity, options)
     end
   end
 
-  def create_notifications(%Activity{data: %{"type" => type}} = activity)
+  def create_notifications(%Activity{data: %{"type" => type}} = activity, options)
       when type in ["Follow", "Like", "Announce", "Move", "EmojiReact"] do
-    do_create_notifications(activity)
+    do_create_notifications(activity, options)
   end
 
-  def create_notifications(_), do: {:ok, []}
+  def create_notifications(_, _), do: {:ok, []}
 
-  defp do_create_notifications(%Activity{} = activity) do
+  defp do_create_notifications(%Activity{} = activity, options) do
+    do_send = Keyword.get(options, :do_send, true)
+
     {enabled_receivers, disabled_receivers} = get_notified_from_activity(activity)
     potential_receivers = enabled_receivers ++ disabled_receivers
 
     notifications =
       Enum.map(potential_receivers, fn user ->
-        do_send = user in enabled_receivers
+        do_send = do_send && user in enabled_receivers
         create_notification(activity, user, do_send)
       end)
 
@@ -623,4 +627,12 @@ defmodule Pleroma.Notification do
   end
 
   def skip?(_, _, _), do: false
+
+  def for_user_and_activity(user, activity) do
+    from(n in __MODULE__,
+      where: n.user_id == ^user.id,
+      where: n.activity_id == ^activity.id
+    )
+    |> Repo.one()
+  end
 end

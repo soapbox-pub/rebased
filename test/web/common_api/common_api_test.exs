@@ -7,6 +7,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Activity
   alias Pleroma.Chat
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -39,15 +40,41 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, upload} = ActivityPub.upload(file, actor: author.ap_id)
 
-      {:ok, activity} =
-        CommonAPI.post_chat_message(
-          author,
-          recipient,
-          nil,
-          media_id: upload.id
-        )
+      with_mocks([
+        {
+          Pleroma.Web.Streamer,
+          [],
+          [
+            stream: fn _, _ ->
+              nil
+            end
+          ]
+        },
+        {
+          Pleroma.Web.Push,
+          [],
+          [
+            send: fn _ -> nil end
+          ]
+        }
+      ]) do
+        {:ok, activity} =
+          CommonAPI.post_chat_message(
+            author,
+            recipient,
+            nil,
+            media_id: upload.id
+          )
 
-      assert activity
+        notification =
+          Notification.for_user_and_activity(recipient, activity)
+          |> Repo.preload(:activity)
+
+        assert called(Pleroma.Web.Push.send(notification))
+        assert called(Pleroma.Web.Streamer.stream(["user", "user:notification"], notification))
+
+        assert activity
+      end
     end
 
     test "it adds html newlines" do
