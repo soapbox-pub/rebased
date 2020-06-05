@@ -15,8 +15,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.Streamer
   alias Pleroma.Web.Push
+  alias Pleroma.Web.Streamer
 
   def handle(object, meta \\ [])
 

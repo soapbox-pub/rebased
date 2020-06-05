@@ -9,8 +9,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Activity
   alias Pleroma.EarmarkRenderer
   alias Pleroma.FollowingRelationship
-  alias Pleroma.Notification
   alias Pleroma.Maps
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
