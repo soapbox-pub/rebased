@@ -13,6 +13,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
 
   import Pleroma.Factory
   import Ecto.Query
+  import Mock
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -149,6 +150,23 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
       %Activity{} = activity = Activity.get_by_ap_id(id)
 
       assert activity.data["state"] == "reject"
+    end
+
+    test "it rejects incoming follow requests if the following errors for some reason" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      with_mock Pleroma.User, [:passthrough], follow: fn _, _ -> {:error, :testing} end do
+        {:ok, %Activity{data: %{"id" => id}}} = Transmogrifier.handle_incoming(data)
+
+        %Activity{} = activity = Activity.get_by_ap_id(id)
+
+        assert activity.data["state"] == "reject"
+      end
     end
 
     test "it works for incoming follow requests from hubzilla" do

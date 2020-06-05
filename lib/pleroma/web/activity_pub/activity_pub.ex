@@ -363,19 +363,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec follow(User.t(), User.t(), String.t() | nil, boolean()) ::
+  @spec follow(User.t(), User.t(), String.t() | nil, boolean(), keyword()) ::
           {:ok, Activity.t()} | {:error, any()}
-  def follow(follower, followed, activity_id \\ nil, local \\ true) do
+  def follow(follower, followed, activity_id \\ nil, local \\ true, opts \\ []) do
     with {:ok, result} <-
-           Repo.transaction(fn -> do_follow(follower, followed, activity_id, local) end) do
+           Repo.transaction(fn -> do_follow(follower, followed, activity_id, local, opts) end) do
       result
     end
   end
 
-  defp do_follow(follower, followed, activity_id, local) do
+  defp do_follow(follower, followed, activity_id, local, opts) do
+    skip_notify_and_stream = Keyword.get(opts, :skip_notify_and_stream, false)
+
     with data <- make_follow_data(follower, followed, activity_id),
          {:ok, activity} <- insert(data, local),
-         _ <- notify_and_stream(activity),
+         _ <- skip_notify_and_stream || notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else

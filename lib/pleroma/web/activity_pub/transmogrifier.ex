@@ -533,12 +533,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            User.get_cached_by_ap_id(Containment.get_actor(%{"actor" => followed})),
          {:ok, %User{} = follower} <-
            User.get_or_fetch_by_ap_id(Containment.get_actor(%{"actor" => follower})),
-         {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
+         {:ok, activity} <-
+           ActivityPub.follow(follower, followed, id, false, skip_notify_and_stream: true) do
       with deny_follow_blocked <- Pleroma.Config.get([:user, :deny_follow_blocked]),
            {_, false} <- {:user_blocked, User.blocks?(followed, follower) && deny_follow_blocked},
            {_, false} <- {:user_locked, User.locked?(followed)},
            {_, {:ok, follower}} <- {:follow, User.follow(follower, followed)},
-           _ <- Notification.update_notification_type(followed, activity),
            {_, {:ok, _}} <-
              {:follow_state_update, Utils.update_follow_state_for_all(activity, "accept")},
            {:ok, _relationship} <-
@@ -577,6 +577,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           :noop
       end
 
+      ActivityPub.notify_and_stream(activity)
       {:ok, activity}
     else
       _e ->
