@@ -55,7 +55,7 @@ defmodule Pleroma.Web.StreamerView do
     # Explicitly giving the cmr for the object here, so we don't accidentally
     # send a later 'last_message' that was inserted between inserting this and
     # streaming it out
-    # 
+    #
     # It also contains the chat with a cache of the correct unread count
     Logger.debug("Trying to stream out #{inspect(cm_ref)}")
 

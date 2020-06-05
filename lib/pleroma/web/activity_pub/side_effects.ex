@@ -142,7 +142,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
           {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
           {:ok, cm_ref} = ChatMessageReference.create(chat, object, user.ap_id != actor.ap_id)
 
-          # We add a cache of the unread value here so that it doesn't change when being streamed out
+          # We add a cache of the unread value here so that it 
+          # doesn't change when being streamed out
           chat =
             chat
             |> Map.put(:unread, ChatMessageReference.unread_count_for_chat(chat))
