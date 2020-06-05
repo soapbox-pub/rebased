@@ -16,6 +16,21 @@ defmodule Pleroma.Web.PleromaAPI.ChatViewTest do
 
   import Pleroma.Factory
 
+  test "giving a chat with an 'unread' field, it uses that" do
+    user = insert(:user)
+    recipient = insert(:user)
+
+    {:ok, chat} = Chat.get_or_create(user.id, recipient.ap_id)
+
+    chat =
+      chat
+      |> Map.put(:unread, 5)
+
+    represented_chat = ChatView.render("show.json", chat: chat)
+
+    assert represented_chat[:unread] == 5
+  end
+
   test "it represents a chat" do
     user = insert(:user)
     recipient = insert(:user)

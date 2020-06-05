@@ -90,29 +90,15 @@ defmodule Pleroma.Web.Streamer do
     if should_env_send?(), do: Registry.unregister(@registry, topic)
   end
 
-  def stream(topics, item) when is_list(topics) do
+  def stream(topics, items) do
     if should_env_send?() do
-      Enum.each(topics, fn t ->
-        spawn(fn -> do_stream(t, item) end)
+      List.wrap(topics)
+      |> Enum.each(fn topic ->
+        List.wrap(items)
+        |> Enum.each(fn item ->
+          spawn(fn -> do_stream(topic, item) end)
+        end)
       end)
-    end
-
-    :ok
-  end
-
-  def stream(topic, items) when is_list(items) do
-    if should_env_send?() do
-      Enum.each(items, fn i ->
-        spawn(fn -> do_stream(topic, i) end)
-      end)
-
-      :ok
-    end
-  end
-
-  def stream(topic, item) do
-    if should_env_send?() do
-      spawn(fn -> do_stream(topic, item) end)
     end
 
     :ok
