@@ -40,26 +40,6 @@ defmodule Pleroma.Notification do
     timestamps()
   end
 
-  def fill_in_notification_types do
-    query =
-      from(n in __MODULE__,
-        where: is_nil(n.type),
-        preload: :activity
-      )
-
-    query
-    |> Repo.all()
-    |> Enum.each(fn notification ->
-      type =
-        notification.activity
-        |> type_from_activity(no_cachex: true)
-
-      notification
-      |> changeset(%{type: type})
-      |> Repo.update()
-    end)
-  end
-
   def update_notification_type(user, activity) do
     with %__MODULE__{} = notification <-
            Repo.get_by(__MODULE__, user_id: user.id, activity_id: activity.id) do
@@ -371,23 +351,10 @@ defmodule Pleroma.Notification do
     {:ok, notifications}
   end
 
-  defp type_from_activity(%{data: %{"type" => type}} = activity, opts \\ []) do
+  defp type_from_activity(%{data: %{"type" => type}} = activity) do
     case type do
       "Follow" ->
-        accepted_function =
-          if Keyword.get(opts, :no_cachex, false) do
-            # A special function to make this usable in a migration.
-            fn activity ->
-              with %User{} = follower <- User.get_by_ap_id(activity.data["actor"]),
-                   %User{} = followed <- User.get_by_ap_id(activity.data["object"]) do
-                Pleroma.FollowingRelationship.following?(follower, followed)
-              end
-            end
-          else
-            &Activity.follow_accepted?/1
-          end
-
-        if accepted_function.(activity) do
+        if Activity.follow_accepted?(activity) do
           "follow"
         else
           "follow_request"

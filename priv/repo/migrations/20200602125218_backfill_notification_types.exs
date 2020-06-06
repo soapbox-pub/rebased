@@ -2,7 +2,7 @@ defmodule Pleroma.Repo.Migrations.BackfillNotificationTypes do
   use Ecto.Migration
 
   def up do
-    Pleroma.Notification.fill_in_notification_types()
+    Pleroma.MigrationHelper.fill_in_notification_types()
   end
 
   def down do
