@@ -17,7 +17,7 @@ defmodule Pleroma.ChatMessageReference do
   import Ecto.Changeset
   import Ecto.Query
 
-  @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
+  @primary_key {:id, FlakeId.Ecto.Type, autogenerate: true}
 
   schema "chat_message_references" do
     belongs_to(:object, Object)
