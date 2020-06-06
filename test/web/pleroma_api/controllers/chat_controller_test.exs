@@ -14,7 +14,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   import Pleroma.Factory
 
   describe "POST /api/v1/pleroma/chats/:id/messages/:message_id/read" do
-    setup do: oauth_access(["write:statuses"])
+    setup do: oauth_access(["write:chats"])
 
     test "it marks one message as read", %{conn: conn, user: user} do
       other_user = insert(:user)
@@ -41,7 +41,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   end
 
   describe "POST /api/v1/pleroma/chats/:id/read" do
-    setup do: oauth_access(["write:statuses"])
+    setup do: oauth_access(["write:chats"])
 
     test "it marks all messages in a chat as read", %{conn: conn, user: user} do
       other_user = insert(:user)
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   end
 
   describe "POST /api/v1/pleroma/chats/:id/messages" do
-    setup do: oauth_access(["write:statuses"])
+    setup do: oauth_access(["write:chats"])
 
     test "it posts a message to the chat", %{conn: conn, user: user} do
       other_user = insert(:user)
@@ -125,7 +125,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   end
 
   describe "DELETE /api/v1/pleroma/chats/:id/messages/:message_id" do
-    setup do: oauth_access(["write:statuses"])
+    setup do: oauth_access(["write:chats"])
 
     test "it deletes a message from the chat", %{conn: conn, user: user} do
       recipient = insert(:user)
@@ -169,7 +169,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   end
 
   describe "GET /api/v1/pleroma/chats/:id/messages" do
-    setup do: oauth_access(["read:statuses"])
+    setup do: oauth_access(["read:chats"])
 
     test "it paginates", %{conn: conn, user: user} do
       recipient = insert(:user)
@@ -229,7 +229,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   end
 
   describe "POST /api/v1/pleroma/chats/by-account-id/:id" do
-    setup do: oauth_access(["write:statuses"])
+    setup do: oauth_access(["write:chats"])
 
     test "it creates or returns a chat", %{conn: conn} do
       other_user = insert(:user)
@@ -244,7 +244,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   end
 
   describe "GET /api/v1/pleroma/chats/:id" do
-    setup do: oauth_access(["read:statuses"])
+    setup do: oauth_access(["read:chats"])
 
     test "it returns a chat", %{conn: conn, user: user} do
       other_user = insert(:user)
@@ -261,7 +261,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   end
 
   describe "GET /api/v1/pleroma/chats" do
-    setup do: oauth_access(["read:statuses"])
+    setup do: oauth_access(["read:chats"])
 
     test "it does not return chats with users you blocked", %{conn: conn, user: user} do
       recipient = insert(:user)

@@ -23,7 +23,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:statuses"]}
+    %{scopes: ["write:chats"]}
     when action in [
            :post_chat_message,
            :create,
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["read:statuses"]} when action in [:messages, :index, :show]
+    %{scopes: ["read:chats"]} when action in [:messages, :index, :show]
   )
 
   plug(OpenApiSpex.Plug.CastAndValidate, render_error: Pleroma.Web.ApiSpec.RenderError)

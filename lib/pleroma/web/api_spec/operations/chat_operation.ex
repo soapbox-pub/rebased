@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["write"]
+          "oAuth" => ["write:chats"]
         }
       ]
     }
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["write"]
+          "oAuth" => ["write:chats"]
         }
       ]
     }
@@ -120,7 +120,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["write"]
+          "oAuth" => ["write:chats"]
         }
       ]
     }
@@ -137,7 +137,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["read"]
+          "oAuth" => ["read:chats"]
         }
       ]
     }
@@ -161,7 +161,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["read"]
+          "oAuth" => ["read:chats"]
         }
       ]
     }
@@ -187,7 +187,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["write"]
+          "oAuth" => ["write:chats"]
         }
       ]
     }
@@ -212,7 +212,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       },
       security: [
         %{
-          "oAuth" => ["write"]
+          "oAuth" => ["write:chats"]
         }
       ]
     }
