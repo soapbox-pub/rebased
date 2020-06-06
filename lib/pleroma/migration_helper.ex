@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.MigrationHelper do
-  alias Pleroma.User
-  alias Pleroma.Object
   alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.User
 
   import Ecto.Query
 
