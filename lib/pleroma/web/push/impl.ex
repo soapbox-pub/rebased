@@ -124,6 +124,13 @@ defmodule Pleroma.Web.Push.Impl do
 
   def format_body(activity, actor, object, mastodon_type \\ nil)
 
+  def format_body(_activity, actor, %{data: %{"type" => "ChatMessage", "content" => content}}, _) do
+    case content do
+      nil -> "@#{actor.nickname}: (Attachment)"
+      content -> "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
+    end
+  end
+
   def format_body(
         %{activity: %{data: %{"type" => "Create"}}},
         actor,
