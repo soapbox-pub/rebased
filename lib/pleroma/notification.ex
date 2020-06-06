@@ -30,6 +30,9 @@ defmodule Pleroma.Notification do
 
   schema "notifications" do
     field(:seen, :boolean, default: false)
+    # This is an enum type in the database. If you add a new notification type,
+    # remembert to add a migration to add it to the `notifications_type` enum
+    # as well.
     field(:type, :string)
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:activity, Activity, type: FlakeId.Ecto.CompatType)
