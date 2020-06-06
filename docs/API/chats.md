@@ -41,7 +41,7 @@ This is the overview of using the API. The API is also documented via OpenAPI, s
 To create or get an existing Chat for a certain recipient (identified by Account ID)
 you can call:
 
-`POST /api/v1/pleroma/chats/by-account-id/{account_id}`
+`POST /api/v1/pleroma/chats/by-account-id/:account_id`
 
 The account id is the normal FlakeId of the user
 ```
@@ -136,7 +136,7 @@ The usual pagination options are implemented.
 
 For a given Chat id, you can get the associated messages with
 
-`GET /api/v1/pleroma/chats/{id}/messages`
+`GET /api/v1/pleroma/chats/:id/messages`
 
 This will return all messages, sorted by most recent to least recent. The usual
 pagination options are implemented.
@@ -177,7 +177,7 @@ Returned data:
 
 Posting a chat message for given Chat id works like this:
 
-`POST /api/v1/pleroma/chats/{id}/messages`
+`POST /api/v1/pleroma/chats/:id/messages`
 
 Parameters:
 - content: The text content of the message. Optional if media is attached.
@@ -210,7 +210,7 @@ Returned data:
 
 Deleting a chat message for given Chat id works like this:
 
-`DELETE /api/v1/pleroma/chats/{chat_id}/messages/{message_id}`
+`DELETE /api/v1/pleroma/chats/:chat_id/messages/:message_id`
 
 Returned data is the deleted message.
 
