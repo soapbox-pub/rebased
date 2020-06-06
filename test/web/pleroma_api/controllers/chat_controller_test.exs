@@ -5,7 +5,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Chat
-  alias Pleroma.ChatMessageReference
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -23,7 +23,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       {:ok, _create} = CommonAPI.post_chat_message(other_user, user, "sup part 2")
       {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
       object = Object.normalize(create, false)
-      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
 
       assert cm_ref.unread == true
 
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       assert result["unread"] == false
 
-      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
 
       assert cm_ref.unread == false
     end
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
       {:ok, _create} = CommonAPI.post_chat_message(other_user, user, "sup part 2")
       {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
       object = Object.normalize(create, false)
-      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
 
       assert cm_ref.unread == true
 
@@ -61,7 +61,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       assert result["unread"] == 0
 
-      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
 
       assert cm_ref.unread == false
     end
@@ -139,7 +139,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
 
       chat = Chat.get(user.id, recipient.ap_id)
 
-      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
 
       # Deleting your own message removes the message and the reference
       result =
@@ -149,12 +149,12 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert result["id"] == cm_ref.id
-      refute ChatMessageReference.get_by_id(cm_ref.id)
+      refute MessageReference.get_by_id(cm_ref.id)
       assert %{data: %{"type" => "Tombstone"}} = Object.get_by_id(object.id)
 
       # Deleting other people's messages just removes the reference
       object = Object.normalize(other_message, false)
-      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
 
       result =
         conn
@@ -163,7 +163,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert result["id"] == cm_ref.id
-      refute ChatMessageReference.get_by_id(cm_ref.id)
+      refute MessageReference.get_by_id(cm_ref.id)
       assert Object.get_by_id(object.id)
     end
   end

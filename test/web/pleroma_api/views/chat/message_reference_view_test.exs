@@ -2,15 +2,15 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
+defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Chat
-  alias Pleroma.ChatMessageReference
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.PleromaAPI.ChatMessageReferenceView
+  alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
 
   import Pleroma.Factory
 
@@ -31,9 +31,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
 
     object = Object.normalize(activity)
 
-    cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+    cm_ref = MessageReference.for_chat_and_object(chat, object)
 
-    chat_message = ChatMessageReferenceView.render("show.json", chat_message_reference: cm_ref)
+    chat_message = MessageReferenceView.render("show.json", chat_message_reference: cm_ref)
 
     assert chat_message[:id] == cm_ref.id
     assert chat_message[:content] == "kippis :firefox:"
@@ -47,10 +47,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatMessageReferenceViewTest do
 
     object = Object.normalize(activity)
 
-    cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+    cm_ref = MessageReference.for_chat_and_object(chat, object)
 
-    chat_message_two =
-      ChatMessageReferenceView.render("show.json", chat_message_reference: cm_ref)
+    chat_message_two = MessageReferenceView.render("show.json", chat_message_reference: cm_ref)
 
     assert chat_message_two[:id] == cm_ref.id
     assert chat_message_two[:content] == "gkgkgk"

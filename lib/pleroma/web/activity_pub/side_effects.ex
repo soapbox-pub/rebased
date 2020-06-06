@@ -7,7 +7,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   """
   alias Pleroma.Activity
   alias Pleroma.Chat
-  alias Pleroma.ChatMessageReference
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -111,7 +111,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
               Object.decrease_replies_count(in_reply_to)
             end
 
-            ChatMessageReference.delete_for_object(deleted_object)
+            MessageReference.delete_for_object(deleted_object)
 
             ActivityPub.stream_out(object)
             ActivityPub.stream_out_participations(deleted_object, user)
@@ -146,13 +146,13 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       |> Enum.each(fn [user, other_user] ->
         if user.local do
           {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
-          {:ok, cm_ref} = ChatMessageReference.create(chat, object, user.ap_id != actor.ap_id)
+          {:ok, cm_ref} = MessageReference.create(chat, object, user.ap_id != actor.ap_id)
 
           # We add a cache of the unread value here so that it
           # doesn't change when being streamed out
           chat =
             chat
-            |> Map.put(:unread, ChatMessageReference.unread_count_for_chat(chat))
+            |> Map.put(:unread, MessageReference.unread_count_for_chat(chat))
 
           Streamer.stream(
             ["user", "user:pleroma_chat"],

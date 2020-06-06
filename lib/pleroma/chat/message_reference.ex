@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.ChatMessageReference do
+defmodule Pleroma.Chat.MessageReference do
   @moduledoc """
   A reference that builds a relation between an AP chat message that a user can see and whether it has been seen
   by them, or should be displayed to them. Used to build the chat view that is presented to the user.

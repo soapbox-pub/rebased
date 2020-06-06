@@ -6,14 +6,14 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   alias Pleroma.Activity
   alias Pleroma.Chat
-  alias Pleroma.ChatMessageReference
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
   alias Pleroma.Pagination
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.PleromaAPI.ChatMessageReferenceView
+  alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
   alias Pleroma.Web.PleromaAPI.ChatView
 
   import Ecto.Query
@@ -46,13 +46,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
         message_id: message_id,
         id: chat_id
       }) do
-    with %ChatMessageReference{} = cm_ref <-
-           ChatMessageReference.get_by_id(message_id),
+    with %MessageReference{} = cm_ref <-
+           MessageReference.get_by_id(message_id),
          ^chat_id <- cm_ref.chat_id |> to_string(),
          %Chat{user_id: ^user_id} <- Chat.get_by_id(chat_id),
          {:ok, _} <- remove_or_delete(cm_ref, user) do
       conn
-      |> put_view(ChatMessageReferenceView)
+      |> put_view(MessageReferenceView)
       |> render("show.json", chat_message_reference: cm_ref)
     else
       _e ->
@@ -71,7 +71,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
   defp remove_or_delete(cm_ref, _) do
     cm_ref
-    |> ChatMessageReference.delete()
+    |> MessageReference.delete()
   end
 
   def post_chat_message(
@@ -87,9 +87,9 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
              media_id: params[:media_id]
            ),
          message <- Object.normalize(activity, false),
-         cm_ref <- ChatMessageReference.for_chat_and_object(chat, message) do
+         cm_ref <- MessageReference.for_chat_and_object(chat, message) do
       conn
-      |> put_view(ChatMessageReferenceView)
+      |> put_view(MessageReferenceView)
       |> render("show.json", for: user, chat_message_reference: cm_ref)
     end
   end
@@ -98,20 +98,20 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
         id: chat_id,
         message_id: message_id
       }) do
-    with %ChatMessageReference{} = cm_ref <-
-           ChatMessageReference.get_by_id(message_id),
+    with %MessageReference{} = cm_ref <-
+           MessageReference.get_by_id(message_id),
          ^chat_id <- cm_ref.chat_id |> to_string(),
          %Chat{user_id: ^user_id} <- Chat.get_by_id(chat_id),
-         {:ok, cm_ref} <- ChatMessageReference.mark_as_read(cm_ref) do
+         {:ok, cm_ref} <- MessageReference.mark_as_read(cm_ref) do
       conn
-      |> put_view(ChatMessageReferenceView)
+      |> put_view(MessageReferenceView)
       |> render("show.json", for: user, chat_message_reference: cm_ref)
     end
   end
 
   def mark_as_read(%{assigns: %{user: %{id: user_id}}} = conn, %{id: id}) do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id),
-         {_n, _} <- ChatMessageReference.set_all_seen_for_chat(chat) do
+         {_n, _} <- MessageReference.set_all_seen_for_chat(chat) do
       conn
       |> put_view(ChatView)
       |> render("show.json", chat: chat)
@@ -122,11 +122,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id) do
       cm_refs =
         chat
-        |> ChatMessageReference.for_chat_query()
+        |> MessageReference.for_chat_query()
         |> Pagination.fetch_paginated(params |> stringify_keys())
 
       conn
-      |> put_view(ChatMessageReferenceView)
+      |> put_view(MessageReferenceView)
       |> render("index.json", for: user, chat_message_references: cm_refs)
     else
       _ ->

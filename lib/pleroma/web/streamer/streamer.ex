@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Streamer do
   require Logger
 
   alias Pleroma.Activity
-  alias Pleroma.ChatMessageReference
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
@@ -187,7 +187,7 @@ defmodule Pleroma.Web.Streamer do
     end)
   end
 
-  defp do_stream(topic, {user, %ChatMessageReference{} = cm_ref})
+  defp do_stream(topic, {user, %MessageReference{} = cm_ref})
        when topic in ["user", "user:pleroma_chat"] do
     topic = "#{topic}:#{user.id}"
 

@@ -2,11 +2,11 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.ChatMessageReferenceTest do
+defmodule Pleroma.Chat.MessageReferenceTest do
   use Pleroma.DataCase, async: true
 
   alias Pleroma.Chat
-  alias Pleroma.ChatMessageReference
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -21,7 +21,7 @@ defmodule Pleroma.ChatMessageReferenceTest do
 
       {:ok, chat} = Chat.get_or_create(user.id, recipient.ap_id)
 
-      message = ChatMessageReference.last_message_for_chat(chat)
+      message = MessageReference.last_message_for_chat(chat)
 
       assert message.object.data["content"] == "ho"
     end

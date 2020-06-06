@@ -8,7 +8,7 @@ defmodule Pleroma.Web.StreamerTest do
   import Pleroma.Factory
 
   alias Pleroma.Chat
-  alias Pleroma.ChatMessageReference
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Conversation.Participation
   alias Pleroma.List
   alias Pleroma.Object
@@ -155,7 +155,7 @@ defmodule Pleroma.Web.StreamerTest do
       {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey cirno")
       object = Object.normalize(create_activity, false)
       chat = Chat.get(user.id, other_user.ap_id)
-      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
       cm_ref = %{cm_ref | chat: chat, object: object}
 
       Streamer.get_topic_and_add_socket("user:pleroma_chat", user)
@@ -173,7 +173,7 @@ defmodule Pleroma.Web.StreamerTest do
       {:ok, create_activity} = CommonAPI.post_chat_message(other_user, user, "hey cirno")
       object = Object.normalize(create_activity, false)
       chat = Chat.get(user.id, other_user.ap_id)
-      cm_ref = ChatMessageReference.for_chat_and_object(chat, object)
+      cm_ref = MessageReference.for_chat_and_object(chat, object)
       cm_ref = %{cm_ref | chat: chat, object: object}
 
       Streamer.get_topic_and_add_socket("user", user)
