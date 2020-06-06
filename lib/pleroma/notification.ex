@@ -61,9 +61,21 @@ defmodule Pleroma.Notification do
     |> Repo.aggregate(:count, :id)
   end
 
+  @notification_types ~w{
+    favourite
+    follow
+    follow_request
+    mention
+    move
+    pleroma:chat_mention
+    pleroma:emoji_reaction
+    reblog
+  }
+
   def changeset(%Notification{} = notification, attrs) do
     notification
     |> cast(attrs, [:seen, :type])
+    |> validate_inclusion(:type, @notification_types)
   end
 
   @spec last_read_query(User.t()) :: Ecto.Queryable.t()
