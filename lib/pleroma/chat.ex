@@ -23,7 +23,7 @@ defmodule Pleroma.Chat do
     timestamps()
   end
 
-  def creation_cng(struct, params) do
+  def changeset(struct, params) do
     struct
     |> cast(params, [:user_id, :recipient])
     |> validate_change(:recipient, fn
@@ -49,7 +49,7 @@ defmodule Pleroma.Chat do
 
   def get_or_create(user_id, recipient) do
     %__MODULE__{}
-    |> creation_cng(%{user_id: user_id, recipient: recipient})
+    |> changeset(%{user_id: user_id, recipient: recipient})
     |> Repo.insert(
       # Need to set something, otherwise we get nothing back at all
       on_conflict: [set: [recipient: recipient]],
@@ -60,7 +60,7 @@ defmodule Pleroma.Chat do
 
   def bump_or_create(user_id, recipient) do
     %__MODULE__{}
-    |> creation_cng(%{user_id: user_id, recipient: recipient})
+    |> changeset(%{user_id: user_id, recipient: recipient})
     |> Repo.insert(
       on_conflict: [set: [updated_at: NaiveDateTime.utc_now()]],
       conflict_target: [:user_id, :recipient]
