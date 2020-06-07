@@ -14,13 +14,12 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
 
   def render("show.json", %{chat: %Chat{} = chat} = opts) do
     recipient = User.get_cached_by_ap_id(chat.recipient)
-
     last_message = opts[:last_message] || MessageReference.last_message_for_chat(chat)
 
     %{
       id: chat.id |> to_string(),
       account: AccountView.render("show.json", Map.put(opts, :user, recipient)),
-      unread: Map.get(chat, :unread) || MessageReference.unread_count_for_chat(chat),
+      unread: MessageReference.unread_count_for_chat(chat),
       last_message:
         last_message &&
           MessageReferenceView.render("show.json", chat_message_reference: last_message),

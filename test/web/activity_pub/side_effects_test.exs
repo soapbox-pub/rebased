@@ -23,7 +23,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
   import Mock
 
   describe "handle_after_transaction" do
-    test "it streams out notifications" do
+    test "it streams out notifications and streams" do
       author = insert(:user, local: true)
       recipient = insert(:user, local: true)
 
@@ -37,7 +37,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       {:ok, _create_activity, meta} =
         SideEffects.handle(create_activity, local: false, object_data: chat_message_data)
 
-      assert [notification] = meta[:created_notifications]
+      assert [notification] = meta[:notifications]
 
       with_mocks([
         {
@@ -58,6 +58,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
         SideEffects.handle_after_transaction(meta)
 
         assert called(Pleroma.Web.Streamer.stream(["user", "user:notification"], notification))
+        assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], :_))
         assert called(Pleroma.Web.Push.send(notification))
       end
     end
@@ -362,33 +363,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
 
       {:ok, create_activity, _meta} = ActivityPub.persist(create_activity_data, local: false)
 
-      with_mock Pleroma.Web.Streamer, [],
-        stream: fn _, payload ->
-          case payload do
-            {^author, cm_ref} ->
-              assert cm_ref.unread == false
+      {:ok, _create_activity, meta} =
+        SideEffects.handle(create_activity, local: false, object_data: chat_message_data)
 
-            {^recipient, cm_ref} ->
-              assert cm_ref.unread == true
-
-              view =
-                Pleroma.Web.PleromaAPI.ChatView.render("show.json",
-                  last_message: cm_ref,
-                  chat: cm_ref.chat
-                )
-
-              assert view.unread == 1
-
-            _ ->
-              nil
-          end
-        end do
-        {:ok, _create_activity, _meta} =
-          SideEffects.handle(create_activity, local: false, object_data: chat_message_data)
-
-        assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], {author, :_}))
-        assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], {recipient, :_}))
-      end
+      assert [_, _] = meta[:streamables]
     end
 
     test "it creates a Chat and MessageReferences for the local users and bumps the unread count, except for the author" do
@@ -422,12 +400,17 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
           SideEffects.handle(create_activity, local: false, object_data: chat_message_data)
 
         # The notification gets created
-        assert [notification] = meta[:created_notifications]
+        assert [notification] = meta[:notifications]
         assert notification.activity_id == create_activity.id
 
         # But it is not sent out
         refute called(Pleroma.Web.Streamer.stream(["user", "user:notification"], notification))
         refute called(Pleroma.Web.Push.send(notification))
+
+        # Same for the user chat stream
+        assert [{topics, _}, _] = meta[:streamables]
+        assert topics == ["user", "user:pleroma_chat"]
+        refute called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], :_))
 
         chat = Chat.get(author.id, recipient.ap_id)
 

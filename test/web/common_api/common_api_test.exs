@@ -72,6 +72,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
         assert called(Pleroma.Web.Push.send(notification))
         assert called(Pleroma.Web.Streamer.stream(["user", "user:notification"], notification))
+        assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], :_))
 
         assert activity
       end
