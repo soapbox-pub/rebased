@@ -23,6 +23,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       summary: "Mark all messages in the chat as read",
       operationId: "ChatController.mark_as_read",
       parameters: [Operation.parameter(:id, :path, :string, "The ID of the Chat")],
+      requestBody: request_body("Parameters", mark_as_read()),
       responses: %{
         200 =>
           Operation.response(
@@ -330,6 +331,23 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       example: %{
         "content" => "Hey wanna buy feet pics?",
         "media_id" => "134234"
+      }
+    }
+  end
+
+  def mark_as_read do
+    %Schema{
+      title: "MarkAsReadRequest",
+      description: "POST body for marking a number of chat messages as read",
+      type: :object,
+      properties: %{
+        last_read_id: %Schema{
+          type: :string,
+          description: "The content of your message. Optional."
+        }
+      },
+      example: %{
+        "last_read_id" => "abcdef12456"
       }
     }
   end

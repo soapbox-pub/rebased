@@ -98,12 +98,20 @@ defmodule Pleroma.Chat.MessageReference do
     |> Repo.update()
   end
 
-  def set_all_seen_for_chat(chat) do
-    chat
-    |> for_chat_query()
-    |> exclude(:order_by)
-    |> exclude(:preload)
-    |> where([cmr], cmr.unread == true)
+  def set_all_seen_for_chat(chat, last_read_id \\ nil) do
+    query =
+      chat
+      |> for_chat_query()
+      |> exclude(:order_by)
+      |> exclude(:preload)
+      |> where([cmr], cmr.unread == true)
+
+    if last_read_id do
+      query
+      |> where([cmr], cmr.id <= ^last_read_id)
+    else
+      query
+    end
     |> Repo.update_all(set: [unread: false])
   end
 end
