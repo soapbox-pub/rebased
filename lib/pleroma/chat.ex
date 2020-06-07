@@ -16,6 +16,8 @@ defmodule Pleroma.Chat do
   It is a helper only, to make it easy to display a list of chats with other people, ordered by last bump. The actual messages are retrieved by querying the recipients of the ChatMessages.
   """
 
+  @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
+
   schema "chats" do
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     field(:recipient, :string)
@@ -63,6 +65,7 @@ defmodule Pleroma.Chat do
     |> changeset(%{user_id: user_id, recipient: recipient})
     |> Repo.insert(
       on_conflict: [set: [updated_at: NaiveDateTime.utc_now()]],
+      returning: true,
       conflict_target: [:user_id, :recipient]
     )
   end
