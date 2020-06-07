@@ -574,7 +574,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute Enum.member?(activities, activity_four)
   end
 
-  test "doesn't return announce activities concerning blocked users" do
+  test "doesn't return announce activities with blocked users in 'to'" do
     blocker = insert(:user)
     blockee = insert(:user)
     friend = insert(:user)
@@ -589,6 +589,39 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     activities =
       ActivityPub.fetch_activities([], %{blocking_user: blocker})
+      |> Enum.map(fn act -> act.id end)
+
+    assert Enum.member?(activities, activity_one.id)
+    refute Enum.member?(activities, activity_two.id)
+    refute Enum.member?(activities, activity_three.id)
+  end
+
+  test "doesn't return announce activities with blocked users in 'cc'" do
+    blocker = insert(:user)
+    blockee = insert(:user)
+    friend = insert(:user)
+
+    {:ok, _user_relationship} = User.block(blocker, blockee)
+
+    {:ok, activity_one} = CommonAPI.post(friend, %{status: "hey!"})
+
+    {:ok, activity_two} = CommonAPI.post(blockee, %{status: "hey! @#{friend.nickname}"})
+
+    assert object = Pleroma.Object.normalize(activity_two)
+
+    data = %{
+      "actor" => friend.ap_id,
+      "object" => object.data["id"],
+      "context" => object.data["context"],
+      "type" => "Announce",
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [blockee.ap_id]
+    }
+
+    assert {:ok, activity_three} = ActivityPub.insert(data)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => blocker})
       |> Enum.map(fn act -> act.id end)
 
     assert Enum.member?(activities, activity_one.id)
