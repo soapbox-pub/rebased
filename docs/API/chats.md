@@ -79,6 +79,11 @@ To set the `unread` count of a chat to 0, call
 
 `POST /api/v1/pleroma/chats/:id/read`
 
+
+Parameters:
+- last_read_id: Given this id, all chat messages until this one will be marked as read. This should always be used.
+
+
 Returned data:
 
 ```json
