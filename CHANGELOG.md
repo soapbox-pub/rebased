@@ -3,6 +3,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.6] - 2020-06-09
+
+### Security
+- CSP: harden `image-src` and `media-src` when MediaProxy is used
+
+### Fixed
+- AP C2S: Fix pagination in inbox/outbox
+- Various compilation errors on OTP 23
+- Mastodon API streaming: Repeats from muted threads not being filtered
+
+### Changed
+- Various database performance improvements
+
+### Upgrade notes
+1. Run database migrations (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl migrate`
+  - From Source: `mix ecto.migrate`
+2. Restart Pleroma
+
 ## [2.0.5] - 2020-05-13
 
 ### Security
