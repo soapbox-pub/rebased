@@ -109,10 +109,13 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def mark_as_read(%{assigns: %{user: %{id: user_id}}} = conn, %{id: id}) do
+  def mark_as_read(
+        %{body_params: %{last_read_id: last_read_id}, assigns: %{user: %{id: user_id}}} = conn,
+        %{id: id}
+      ) do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id),
          {_n, _} <-
-           MessageReference.set_all_seen_for_chat(chat, conn.body_params[:last_read_id]) do
+           MessageReference.set_all_seen_for_chat(chat, last_read_id) do
       conn
       |> put_view(ChatView)
       |> render("show.json", chat: chat)

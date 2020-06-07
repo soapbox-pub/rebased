@@ -340,10 +340,11 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
       title: "MarkAsReadRequest",
       description: "POST body for marking a number of chat messages as read",
       type: :object,
+      required: [:last_read_id],
       properties: %{
         last_read_id: %Schema{
           type: :string,
-          description: "The content of your message. Optional."
+          description: "The content of your message."
         }
       },
       example: %{

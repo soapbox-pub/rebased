@@ -43,30 +43,10 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
   describe "POST /api/v1/pleroma/chats/:id/read" do
     setup do: oauth_access(["write:chats"])
 
-    test "it marks all messages in a chat as read", %{conn: conn, user: user} do
-      other_user = insert(:user)
-
-      {:ok, create} = CommonAPI.post_chat_message(other_user, user, "sup")
-      {:ok, _create} = CommonAPI.post_chat_message(other_user, user, "sup part 2")
-      {:ok, chat} = Chat.get_or_create(user.id, other_user.ap_id)
-      object = Object.normalize(create, false)
-      cm_ref = MessageReference.for_chat_and_object(chat, object)
-
-      assert cm_ref.unread == true
-
-      result =
-        conn
-        |> post("/api/v1/pleroma/chats/#{chat.id}/read")
-        |> json_response_and_validate_schema(200)
-
-      assert result["unread"] == 0
-
-      cm_ref = MessageReference.for_chat_and_object(chat, object)
-
-      assert cm_ref.unread == false
-    end
-
-    test "it given a `last_read_id` ", %{conn: conn, user: user} do
+    test "given a `last_read_id`, it marks everything until then as read", %{
+      conn: conn,
+      user: user
+    } do
       other_user = insert(:user)
 
       {:ok, create} = CommonAPI.post_chat_message(other_user, user, "sup")
