@@ -75,13 +75,13 @@ Returned data:
 
 ### Marking a chat as read
 
-To set the `unread` count of a chat to 0, call
+To mark a number of messages in a chat up to a certain message as read, you can use
 
 `POST /api/v1/pleroma/chats/:id/read`
 
 
 Parameters:
-- last_read_id: Given this id, all chat messages until this one will be marked as read. This should always be used.
+- last_read_id: Given this id, all chat messages until this one will be marked as read. Required.
 
 
 Returned data:
