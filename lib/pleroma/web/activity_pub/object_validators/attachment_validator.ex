@@ -45,11 +45,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator do
       data
       |> Map.put_new("mediaType", data["mimeType"])
 
-    if data["mediaType"] == "" do
+    if MIME.valid?(data["mediaType"]) do
       data
-      |> Map.put("mediaType", "application/octet-stream")
     else
       data
+      |> Map.put("mediaType", "application/octet-stream")
     end
   end
 
