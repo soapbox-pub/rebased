@@ -91,6 +91,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
   describe "running rm" do
     test "user is deleted" do
+      clear_config([:instance, :federating], true)
       user = insert(:user)
 
       with_mock Pleroma.Web.Federator,
@@ -108,8 +109,10 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
     test "a remote user's create activity is deleted when the object has been pruned" do
       user = insert(:user)
-
       {:ok, post} = CommonAPI.post(user, %{status: "uguu"})
+
+      clear_config([:instance, :federating], true)
+
       object = Object.normalize(post)
       Object.prune(object)
 
@@ -169,31 +172,31 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
   end
 
-  describe "running unsubscribe" do
+  describe "running deactivate" do
     test "user is unsubscribed" do
       followed = insert(:user)
+      remote_followed = insert(:user, local: false)
       user = insert(:user)
-      User.follow(user, followed, :follow_accept)
 
-      Mix.Tasks.Pleroma.User.run(["unsubscribe", user.nickname])
+      User.follow(user, followed, :follow_accept)
+      User.follow(user, remote_followed, :follow_accept)
+
+      Mix.Tasks.Pleroma.User.run(["deactivate", user.nickname])
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Deactivating"
-
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ "Unsubscribing"
 
       # Note that the task has delay :timer.sleep(500)
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Successfully unsubscribed"
 
       user = User.get_cached_by_nickname(user.nickname)
-      assert Enum.empty?(User.get_friends(user))
+      assert Enum.empty?(Enum.filter(User.get_friends(user), & &1.local))
       assert user.deactivated
     end
 
-    test "no user to unsubscribe" do
-      Mix.Tasks.Pleroma.User.run(["unsubscribe", "nonexistent"])
+    test "no user to deactivate" do
+      Mix.Tasks.Pleroma.User.run(["deactivate", "nonexistent"])
 
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No user"

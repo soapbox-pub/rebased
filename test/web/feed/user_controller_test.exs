@@ -11,13 +11,14 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
   alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
 
   setup do: clear_config([:instance, :federating], true)
 
   describe "feed" do
     setup do: clear_config([:feed])
 
-    test "gets a feed", %{conn: conn} do
+    test "gets an atom feed", %{conn: conn} do
       Config.put(
         [:feed, :post_title],
         %{max_length: 10, omission: "..."}
@@ -156,6 +157,29 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> get(user_feed_path(conn, :feed, "nonexisting"))
 
       assert response(conn, 404)
+    end
+
+    test "returns feed with public and unlisted activities", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, _} = CommonAPI.post(user, %{status: "public", visibility: "public"})
+      {:ok, _} = CommonAPI.post(user, %{status: "direct", visibility: "direct"})
+      {:ok, _} = CommonAPI.post(user, %{status: "unlisted", visibility: "unlisted"})
+      {:ok, _} = CommonAPI.post(user, %{status: "private", visibility: "private"})
+
+      resp =
+        conn
+        |> put_req_header("accept", "application/atom+xml")
+        |> get(user_feed_path(conn, :feed, user.nickname))
+        |> response(200)
+
+      activity_titles =
+        resp
+        |> SweetXml.parse()
+        |> SweetXml.xpath(~x"//entry/title/text()"l)
+        |> Enum.sort()
+
+      assert activity_titles == ['public', 'unlisted']
     end
   end
 

@@ -305,8 +305,13 @@ defmodule Pleroma.User do
 
   def avatar_url(user, options \\ []) do
     case user.avatar do
-      %{"url" => [%{"href" => href} | _]} -> href
-      _ -> !options[:no_default] && "#{Web.base_url()}/images/avi.png"
+      %{"url" => [%{"href" => href} | _]} ->
+        href
+
+      _ ->
+        unless options[:no_default] do
+          Config.get([:assets, :default_user_avatar], "#{Web.base_url()}/images/avi.png")
+        end
     end
   end
 
@@ -533,9 +538,10 @@ defmodule Pleroma.User do
     |> delete_change(:also_known_as)
     |> unique_constraint(:email)
     |> validate_format(:email, @email_regex)
+    |> validate_inclusion(:actor_type, ["Person", "Service"])
   end
 
-  @spec update_as_admin(%User{}, map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_as_admin(User.t(), map()) :: {:ok, User.t()} | {:error, Changeset.t()}
   def update_as_admin(user, params) do
     params = Map.put(params, "password_confirmation", params["password"])
     changeset = update_as_admin_changeset(user, params)
@@ -556,7 +562,7 @@ defmodule Pleroma.User do
     |> put_change(:password_reset_pending, false)
   end
 
-  @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  @spec reset_password(User.t(), map()) :: {:ok, User.t()} | {:error, Changeset.t()}
   def reset_password(%User{} = user, params) do
     reset_password(user, user, params)
   end
@@ -749,7 +755,19 @@ defmodule Pleroma.User do
     {:error, "Not subscribed!"}
   end
 
+  @spec unfollow(User.t(), User.t()) :: {:ok, User.t(), Activity.t()} | {:error, String.t()}
   def unfollow(%User{} = follower, %User{} = followed) do
+    case do_unfollow(follower, followed) do
+      {:ok, follower, followed} ->
+        {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
+
+      error ->
+        error
+    end
+  end
+
+  @spec do_unfollow(User.t(), User.t()) :: {:ok, User.t(), User.t()} | {:error, String.t()}
+  defp do_unfollow(%User{} = follower, %User{} = followed) do
     case get_follow_state(follower, followed) do
       state when state in [:follow_pending, :follow_accept] ->
         FollowingRelationship.unfollow(follower, followed)
@@ -760,7 +778,7 @@ defmodule Pleroma.User do
           |> update_following_count()
           |> set_cache()
 
-        {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
+        {:ok, follower, followed}
 
       nil ->
         {:error, "Not subscribed!"}
@@ -1191,8 +1209,9 @@ defmodule Pleroma.User do
 
   def increment_unread_conversation_count(_, user), do: {:ok, user}
 
-  @spec get_users_from_set([String.t()], boolean()) :: [User.t()]
-  def get_users_from_set(ap_ids, local_only \\ true) do
+  @spec get_users_from_set([String.t()], keyword()) :: [User.t()]
+  def get_users_from_set(ap_ids, opts \\ []) do
+    local_only = Keyword.get(opts, :local_only, true)
     criteria = %{ap_id: ap_ids, deactivated: false}
     criteria = if local_only, do: Map.put(criteria, :local, true), else: criteria
 
@@ -1204,7 +1223,9 @@ defmodule Pleroma.User do
   def get_recipients_from_activity(%Activity{recipients: to, actor: actor}) do
     to = [actor | to]
 
-    User.Query.build(%{recipients_from_activity: to, local: true, deactivated: false})
+    query = User.Query.build(%{recipients_from_activity: to, local: true, deactivated: false})
+
+    query
     |> Repo.all()
   end
 
@@ -1400,15 +1421,13 @@ defmodule Pleroma.User do
       user
       |> get_followers()
       |> Enum.filter(& &1.local)
-      |> Enum.each(fn follower ->
-        follower |> update_following_count() |> set_cache()
-      end)
+      |> Enum.each(&set_cache(update_following_count(&1)))
 
       # Only update local user counts, remote will be update during the next pull.
       user
       |> get_friends()
       |> Enum.filter(& &1.local)
-      |> Enum.each(&update_follower_count/1)
+      |> Enum.each(&do_unfollow(user, &1))
 
       {:ok, user}
     end
@@ -1428,6 +1447,25 @@ defmodule Pleroma.User do
 
   def delete(%User{} = user) do
     BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
+  end
+
+  defp delete_and_invalidate_cache(%User{} = user) do
+    invalidate_cache(user)
+    Repo.delete(user)
+  end
+
+  defp delete_or_deactivate(%User{local: false} = user), do: delete_and_invalidate_cache(user)
+
+  defp delete_or_deactivate(%User{local: true} = user) do
+    status = account_status(user)
+
+    if status == :confirmation_pending do
+      delete_and_invalidate_cache(user)
+    else
+      user
+      |> change(%{deactivated: true, email: nil})
+      |> update_and_set_cache()
+    end
   end
 
   def perform(:force_password_reset, user), do: force_password_reset(user)
@@ -1451,14 +1489,9 @@ defmodule Pleroma.User do
 
     delete_user_activities(user)
 
-    if user.local do
-      user
-      |> change(%{deactivated: true, email: nil})
-      |> update_and_set_cache()
-    else
-      invalidate_cache(user)
-      Repo.delete(user)
-    end
+    delete_outgoing_pending_follow_requests(user)
+
+    delete_or_deactivate(user)
   end
 
   def perform(:deactivate_async, user, status), do: deactivate(user, status)
@@ -1580,6 +1613,12 @@ defmodule Pleroma.User do
 
   defp delete_activity(_activity, _user), do: "Doing nothing"
 
+  defp delete_outgoing_pending_follow_requests(user) do
+    user
+    |> FollowingRelationship.outgoing_pending_follow_requests_query()
+    |> Repo.delete_all()
+  end
+
   def html_filter_policy(%User{no_rich_text: true}) do
     Pleroma.HTML.Scrubber.TwitterText
   end
@@ -1589,12 +1628,19 @@ defmodule Pleroma.User do
   def fetch_by_ap_id(ap_id), do: ActivityPub.make_user_from_ap_id(ap_id)
 
   def get_or_fetch_by_ap_id(ap_id) do
-    user = get_cached_by_ap_id(ap_id)
+    cached_user = get_cached_by_ap_id(ap_id)
 
-    if !is_nil(user) and !needs_update?(user) do
-      {:ok, user}
-    else
-      fetch_by_ap_id(ap_id)
+    maybe_fetched_user = needs_update?(cached_user) && fetch_by_ap_id(ap_id)
+
+    case {cached_user, maybe_fetched_user} do
+      {_, {:ok, %User{} = user}} ->
+        {:ok, user}
+
+      {%User{} = user, _} ->
+        {:ok, user}
+
+      _ ->
+        {:error, :not_found}
     end
   end
 

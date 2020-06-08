@@ -442,7 +442,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
     activity = insert(:note_activity)
 
-    {:ok, reblog, _} = CommonAPI.repeat(activity.id, user)
+    {:ok, reblog} = CommonAPI.repeat(activity.id, user)
 
     represented = StatusView.render("show.json", %{for: user, activity: reblog})
 
@@ -600,7 +600,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         status: "˙˙ɐʎns"
       })
 
-    {:ok, activity, _object} = CommonAPI.repeat(activity.id, other_user)
+    {:ok, activity} = CommonAPI.repeat(activity.id, other_user)
 
     result = StatusView.render("show.json", %{activity: activity, for: user})
 
@@ -619,15 +619,5 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: activity)
 
     assert status.visibility == "list"
-  end
-
-  test "successfully renders a Listen activity (pleroma extension)" do
-    listen_activity = insert(:listen)
-
-    status = StatusView.render("listen.json", activity: listen_activity)
-
-    assert status.length == listen_activity.data["object"]["length"]
-    assert status.title == listen_activity.data["object"]["title"]
-    assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
   end
 end

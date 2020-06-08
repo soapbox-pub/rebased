@@ -23,7 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
       },
       stats: Pleroma.Stats.get_stats(),
-      thumbnail: Pleroma.Web.base_url() <> "/instance/thumbnail.jpeg",
+      thumbnail: instance_thumbnail(),
       languages: ["en"],
       registrations: Keyword.get(instance, :registrations_open),
       # Extra (not present in Mastodon):
@@ -33,6 +33,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
       background_upload_limit: Keyword.get(instance, :background_upload_limit),
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
+      background_image: Keyword.get(instance, :background_image),
       pleroma: %{
         metadata: %{
           features: features(),
@@ -85,5 +86,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       %{}
     end
     |> Map.put(:enabled, Config.get([:instance, :federating]))
+  end
+
+  defp instance_thumbnail do
+    Pleroma.Config.get([:instance, :instance_thumbnail]) ||
+      "#{Pleroma.Web.base_url()}/instance/thumbnail.jpeg"
   end
 end

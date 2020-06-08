@@ -71,7 +71,8 @@ config :pleroma, Pleroma.Upload,
       follow_redirect: true,
       pool: :upload
     ]
-  ]
+  ],
+  filename_display_max_length: 30
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
@@ -170,7 +171,8 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :tesla, adapter: Tesla.Adapter.Gun
+config :tesla, adapter: Tesla.Adapter.Hackney
+
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
   proxy_url: nil,
@@ -182,7 +184,8 @@ config :pleroma, :instance,
   name: "Pleroma",
   email: "example@example.com",
   notify_email: "noreply@example.com",
-  description: "A Pleroma instance, an alternative fediverse server",
+  description: "Pleroma: An efficient and flexible fediverse server",
+  background_image: "/images/city.jpg",
   limit: 5_000,
   chat_limit: 5_000,
   remote_limit: 100_000,
@@ -271,20 +274,33 @@ config :pleroma, :markup,
 
 config :pleroma, :frontend_configurations,
   pleroma_fe: %{
-    theme: "pleroma-dark",
-    logo: "/static/logo.png",
+    alwaysShowSubjectInput: true,
     background: "/images/city.jpg",
-    redirectRootNoLogin: "/main/all",
-    redirectRootLogin: "/main/friends",
-    showInstanceSpecificPanel: true,
-    scopeOptionsEnabled: false,
-    formattingOptionsEnabled: false,
     collapseMessageWithSubject: false,
+    disableChat: false,
+    greentext: false,
+    hideFilteredStatuses: false,
+    hideMutedPosts: false,
     hidePostStats: false,
+    hideSitename: false,
     hideUserStats: false,
+    loginMethod: "password",
+    logo: "/static/logo.png",
+    logoMargin: ".1em",
+    logoMask: true,
+    minimalScopesMode: false,
+    noAttachmentLinks: false,
+    nsfwCensorImage: "",
+    postContentType: "text/plain",
+    redirectRootLogin: "/main/friends",
+    redirectRootNoLogin: "/main/all",
     scopeCopy: true,
+    sidebarRight: false,
+    showFeaturesPanel: true,
+    showInstanceSpecificPanel: false,
     subjectLineBehavior: "email",
-    alwaysShowSubjectInput: true
+    theme: "pleroma-dark",
+    webPushNotifications: false
   },
   masto_fe: %{
     showInstanceSpecificPanel: true
@@ -376,6 +392,10 @@ config :pleroma, :rich_media,
 
 config :pleroma, :media_proxy,
   enabled: false,
+  invalidation: [
+    enabled: false,
+    provider: Pleroma.Web.MediaProxy.Invalidation.Script
+  ],
   proxy_opts: [
     redirect_on_failure: false,
     max_body_length: 25 * 1_048_576,

@@ -9,9 +9,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
-  setup do: oauth_access(["write:media"])
-
   describe "Upload media" do
+    setup do: oauth_access(["write:media"])
+
     setup do
       image = %Plug.Upload{
         content_type: "image/jpg",
@@ -42,7 +42,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert object.data["actor"] == User.ap_id(conn.assigns[:user])
     end
 
-    test "/api/v2/media", %{conn: conn, image: image} do
+    test "/api/v2/media", %{conn: conn, user: user, image: image} do
       desc = "Description of the image"
 
       response =
@@ -53,6 +53,8 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
 
       assert media_id = response["id"]
 
+      %{conn: conn} = oauth_access(["read:media"], user: user)
+
       media =
         conn
         |> get("/api/v1/media/#{media_id}")
@@ -61,12 +63,15 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert media["type"] == "image"
       assert media["description"] == desc
       assert media["id"]
+
       object = Object.get_by_id(media["id"])
-      assert object.data["actor"] == User.ap_id(conn.assigns[:user])
+      assert object.data["actor"] == user.ap_id
     end
   end
 
   describe "Update media description" do
+    setup do: oauth_access(["write:media"])
+
     setup %{user: actor} do
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -96,7 +101,9 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
     end
   end
 
-  describe "Get media by id" do
+  describe "Get media by id (/api/v1/media/:id)" do
+    setup do: oauth_access(["read:media"])
+
     setup %{user: actor} do
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -114,7 +121,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       [object: object]
     end
 
-    test "/api/v1/media/:id", %{conn: conn, object: object} do
+    test "it returns media object when requested by owner", %{conn: conn, object: object} do
       media =
         conn
         |> get("/api/v1/media/#{object.id}")
@@ -123,6 +130,17 @@ defmodule Pleroma.Web.MastodonAPI.MediaControllerTest do
       assert media["description"] == "test-media"
       assert media["type"] == "image"
       assert media["id"]
+    end
+
+    test "it returns 403 if media object requested by non-owner", %{object: object, user: user} do
+      %{conn: conn, user: other_user} = oauth_access(["read:media"])
+
+      assert object.data["actor"] == user.ap_id
+      refute user.id == other_user.id
+
+      conn
+      |> get("/api/v1/media/#{object.id}")
+      |> json_response(403)
     end
   end
 end

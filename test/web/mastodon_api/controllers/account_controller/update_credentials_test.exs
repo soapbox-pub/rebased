@@ -8,6 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
   use Pleroma.Web.ConnCase
 
+  import Mock
   import Pleroma.Factory
 
   setup do: clear_config([:instance, :max_account_fields])
@@ -52,24 +53,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       user = Repo.get(User, user_data["id"])
 
-      res_conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{
-          "pleroma_settings_store" => %{
-            masto_fe: %{
-              theme: "blub"
+      clear_config([:instance, :federating], true)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _activity -> :ok end do
+        res_conn =
+          conn
+          |> assign(:user, user)
+          |> patch("/api/v1/accounts/update_credentials", %{
+            "pleroma_settings_store" => %{
+              masto_fe: %{
+                theme: "blub"
+              }
             }
-          }
-        })
+          })
 
-      assert user_data = json_response_and_validate_schema(res_conn, 200)
+        assert user_data = json_response_and_validate_schema(res_conn, 200)
 
-      assert user_data["pleroma"]["settings_store"] ==
-               %{
-                 "pleroma_fe" => %{"theme" => "bla"},
-                 "masto_fe" => %{"theme" => "blub"}
-               }
+        assert user_data["pleroma"]["settings_store"] ==
+                 %{
+                   "pleroma_fe" => %{"theme" => "bla"},
+                   "masto_fe" => %{"theme" => "blub"}
+                 }
+
+        assert_called(Pleroma.Web.Federator.publish(:_))
+      end
     end
 
     test "updates the user's bio", %{conn: conn} do
@@ -107,6 +115,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
     test "updates the user's default scope", %{conn: conn} do
       conn = patch(conn, "/api/v1/accounts/update_credentials", %{default_scope: "unlisted"})
+
+      assert user_data = json_response_and_validate_schema(conn, 200)
+      assert user_data["source"]["privacy"] == "unlisted"
+    end
+
+    test "updates the user's privacy", %{conn: conn} do
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{source: %{privacy: "unlisted"}})
 
       assert user_data = json_response_and_validate_schema(conn, 200)
       assert user_data["source"]["privacy"] == "unlisted"

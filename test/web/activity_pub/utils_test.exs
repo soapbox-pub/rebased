@@ -334,7 +334,7 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       assert object = Object.normalize(note_activity)
       actor = insert(:user)
 
-      {:ok, announce, _object} = ActivityPub.announce(actor, object)
+      {:ok, announce} = CommonAPI.repeat(note_activity.id, actor)
       assert Utils.get_existing_announce(actor.ap_id, object) == announce
     end
   end

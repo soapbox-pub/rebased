@@ -62,7 +62,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "spoiler_text" => "2hu",
-          "sensitive" => "false"
+          "sensitive" => "0"
         })
 
       {:ok, ttl} = Cachex.ttl(:idempotency_cache, idempotency_key)
@@ -81,7 +81,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "spoiler_text" => "2hu",
-          "sensitive" => "false"
+          "sensitive" => 0
         })
 
       assert %{"id" => second_id} = json_response(conn_two, 200)
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "spoiler_text" => "2hu",
-          "sensitive" => "false"
+          "sensitive" => "False"
         })
 
       assert %{"id" => third_id} = json_response_and_validate_schema(conn_three, 200)
@@ -878,8 +878,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       user3 = insert(:user)
       {:ok, _} = CommonAPI.favorite(user2, activity.id)
       {:ok, _bookmark} = Pleroma.Bookmark.create(user2.id, activity.id)
-      {:ok, reblog_activity1, _object} = CommonAPI.repeat(activity.id, user1)
-      {:ok, _, _object} = CommonAPI.repeat(activity.id, user2)
+      {:ok, reblog_activity1} = CommonAPI.repeat(activity.id, user1)
+      {:ok, _} = CommonAPI.repeat(activity.id, user2)
 
       conn_res =
         build_conn()
@@ -917,7 +917,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "unreblogs and returns the unreblogged status", %{user: user, conn: conn} do
       activity = insert(:note_activity)
 
-      {:ok, _, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, _} = CommonAPI.repeat(activity.id, user)
 
       conn =
         conn
@@ -1427,7 +1427,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "returns users who have reblogged the status", %{conn: conn, activity: activity} do
       other_user = insert(:user)
-      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
+      {:ok, _} = CommonAPI.repeat(activity.id, other_user)
 
       response =
         conn
@@ -1458,7 +1458,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       other_user = insert(:user)
       {:ok, _user_relationship} = User.block(user, other_user)
 
-      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
+      {:ok, _} = CommonAPI.repeat(activity.id, other_user)
 
       response =
         conn
@@ -1469,12 +1469,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "does not return users who have reblogged the status privately", %{
-      conn: conn,
-      activity: activity
+      conn: conn
     } do
       other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(other_user, %{status: "my secret post"})
 
-      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user, %{visibility: "private"})
+      {:ok, _} = CommonAPI.repeat(activity.id, other_user, %{visibility: "private"})
 
       response =
         conn
@@ -1486,7 +1486,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "does not fail on an unauthenticated request", %{activity: activity} do
       other_user = insert(:user)
-      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
+      {:ok, _} = CommonAPI.repeat(activity.id, other_user)
 
       response =
         build_conn()

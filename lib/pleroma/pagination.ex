@@ -23,12 +23,12 @@ defmodule Pleroma.Pagination do
   @spec fetch_paginated(Ecto.Query.t(), map(), type(), atom() | nil) :: [Ecto.Schema.t()]
   def fetch_paginated(query, params, type \\ :keyset, table_binding \\ nil)
 
-  def fetch_paginated(query, %{"total" => true} = params, :keyset, table_binding) do
+  def fetch_paginated(query, %{total: true} = params, :keyset, table_binding) do
     total = Repo.aggregate(query, :count, :id)
 
     %{
       total: total,
-      items: fetch_paginated(query, Map.drop(params, ["total"]), :keyset, table_binding)
+      items: fetch_paginated(query, Map.drop(params, [:total]), :keyset, table_binding)
     }
   end
 
@@ -41,7 +41,7 @@ defmodule Pleroma.Pagination do
     |> enforce_order(options)
   end
 
-  def fetch_paginated(query, %{"total" => true} = params, :offset, table_binding) do
+  def fetch_paginated(query, %{total: true} = params, :offset, table_binding) do
     total =
       query
       |> Ecto.Query.exclude(:left_join)
@@ -49,7 +49,7 @@ defmodule Pleroma.Pagination do
 
     %{
       total: total,
-      items: fetch_paginated(query, Map.drop(params, ["total"]), :offset, table_binding)
+      items: fetch_paginated(query, Map.drop(params, [:total]), :offset, table_binding)
     }
   end
 
@@ -89,12 +89,6 @@ defmodule Pleroma.Pagination do
       limit: :integer,
       skip_order: :boolean
     }
-
-    params =
-      Enum.reduce(params, %{}, fn
-        {key, _value}, acc when is_atom(key) -> Map.drop(acc, [key])
-        {key, value}, acc -> Map.put(acc, key, value)
-      end)
 
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))
     changeset.changes

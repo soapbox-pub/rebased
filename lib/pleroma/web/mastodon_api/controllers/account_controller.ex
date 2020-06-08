@@ -14,6 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       json_response: 3
     ]
 
+  alias Pleroma.Maps
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
@@ -81,7 +82,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   plug(
     RateLimiter,
-    [name: :relation_id_action, params: ["id", "uri"]] when action in @relationship_actions
+    [name: :relation_id_action, params: [:id, :uri]] when action in @relationship_actions
   )
 
   plug(RateLimiter, [name: :relations_actions] when action in @relationship_actions)
@@ -139,9 +140,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   end
 
   @doc "PATCH /api/v1/accounts/update_credentials"
-  def update_credentials(%{assigns: %{user: original_user}, body_params: params} = conn, _params) do
-    user = original_user
-
+  def update_credentials(%{assigns: %{user: user}, body_params: params} = conn, _params) do
     params =
       params
       |> Enum.filter(fn {_, value} -> not is_nil(value) end)
@@ -162,39 +161,49 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :discoverable
       ]
       |> Enum.reduce(%{}, fn key, acc ->
-        add_if_present(acc, params, key, key, &{:ok, truthy_param?(&1)})
+        Maps.put_if_present(acc, key, params[key], &{:ok, truthy_param?(&1)})
       end)
-      |> add_if_present(params, :display_name, :name)
-      |> add_if_present(params, :note, :bio)
-      |> add_if_present(params, :avatar, :avatar)
-      |> add_if_present(params, :header, :banner)
-      |> add_if_present(params, :pleroma_background_image, :background)
-      |> add_if_present(
-        params,
-        :fields_attributes,
+      |> Maps.put_if_present(:name, params[:display_name])
+      |> Maps.put_if_present(:bio, params[:note])
+      |> Maps.put_if_present(:avatar, params[:avatar])
+      |> Maps.put_if_present(:banner, params[:header])
+      |> Maps.put_if_present(:background, params[:pleroma_background_image])
+      |> Maps.put_if_present(
         :raw_fields,
+        params[:fields_attributes],
         &{:ok, normalize_fields_attributes(&1)}
       )
-      |> add_if_present(params, :pleroma_settings_store, :pleroma_settings_store)
-      |> add_if_present(params, :default_scope, :default_scope)
-      |> add_if_present(params, :actor_type, :actor_type)
+      |> Maps.put_if_present(:pleroma_settings_store, params[:pleroma_settings_store])
+      |> Maps.put_if_present(:default_scope, params[:default_scope])
+      |> Maps.put_if_present(:default_scope, params["source"]["privacy"])
+      |> Maps.put_if_present(:actor_type, params[:actor_type])
 
     changeset = User.update_changeset(user, user_params)
 
     with {:ok, user} <- User.update_and_set_cache(changeset) do
+      user
+      |> build_update_activity_params()
+      |> ActivityPub.update()
+
       render(conn, "show.json", user: user, for: user, with_pleroma_settings: true)
     else
       _e -> render_error(conn, :forbidden, "Invalid request")
     end
   end
 
-  defp add_if_present(map, params, params_field, map_field, value_function \\ &{:ok, &1}) do
-    with true <- Map.has_key?(params, params_field),
-         {:ok, new_value} <- value_function.(Map.get(params, params_field)) do
-      Map.put(map, map_field, new_value)
-    else
-      _ -> map
-    end
+  # Hotfix, handling will be redone with the pipeline
+  defp build_update_activity_params(user) do
+    object =
+      Pleroma.Web.ActivityPub.UserView.render("user.json", user: user)
+      |> Map.delete("@context")
+
+    %{
+      local: true,
+      to: [user.follower_address],
+      cc: [],
+      object: object,
+      actor: user.ap_id
+    }
   end
 
   defp normalize_fields_attributes(fields) do
@@ -235,9 +244,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       params =
         params
         |> Map.delete(:tagged)
-        |> Enum.filter(&(not is_nil(&1)))
-        |> Map.new(fn {key, value} -> {to_string(key), value} end)
-        |> Map.put("tag", params[:tagged])
+        |> Map.put(:tag, params[:tagged])
 
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 

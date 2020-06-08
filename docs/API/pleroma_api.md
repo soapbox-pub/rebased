@@ -265,7 +265,7 @@ See [Admin-API](admin_api.md)
 * Method `PUT`
 * Authentication: required
 * Params:
-    * `image`: Multipart image
+    * `file`: Multipart image
 * Response: JSON. Returns a mastodon media attachment entity
   when successful, otherwise returns HTTP 415 `{"error": "error_msg"}`
 * Example response:
@@ -358,7 +358,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
     * `recipients`: A list of ids of users that should receive posts to this conversation. This will replace the current list of recipients, so submit the full list. The owner of owner of the conversation will always be part of the set of recipients, though.
 * Response: JSON, statuses (200 - healthy, 503 unhealthy)
 
-## `GET /api/v1/pleroma/conversations/read`
+## `POST /api/v1/pleroma/conversations/read`
 ### Marks all user's conversations as read.
 * Method `POST`
 * Authentication: required
@@ -426,7 +426,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Authentication: required
 * Params:
   * `file`: file needs to be uploaded with the multipart request or link to remote file.
-  * `shortcode`: (*optional*) shortcode for new emoji, must be uniq for all emoji. If not sended, shortcode will be taken from original filename.
+  * `shortcode`: (*optional*) shortcode for new emoji, must be unique for all emoji. If not sended, shortcode will be taken from original filename.
   * `filename`: (*optional*) new emoji file name. If not specified will be taken from original filename.
 * Response: JSON, list of files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
@@ -536,7 +536,7 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 ```
 
 ## `GET /api/v1/pleroma/statuses/:id/reactions/:emoji`
-### Get an object of emoji to account mappings with accounts that reacted to the post for a specific emoji`
+### Get an object of emoji to account mappings with accounts that reacted to the post for a specific emoji
 * Method: `GET`
 * Authentication: optional
 * Params: None

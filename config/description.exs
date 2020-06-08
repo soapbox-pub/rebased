@@ -119,6 +119,11 @@ config :pleroma, :config_description, [
             ]
           }
         ]
+      },
+      %{
+        key: :filename_display_max_length,
+        type: :integer,
+        description: "Set max length of a filename to display. 0 = no limit. Default: 30"
       }
     ]
   },
@@ -969,6 +974,13 @@ config :pleroma, :config_description, [
             ]
           }
         ]
+      },
+      %{
+        key: :instance_thumbnail,
+        type: :string,
+        description:
+          "The instance thumbnail image. It will appear in [Pleroma Instances](http://distsn.org/pleroma-instances.html)",
+        suggestions: ["/instance/thumbnail.jpeg"]
       }
     ]
   },
@@ -1112,11 +1124,12 @@ config :pleroma, :config_description, [
             logoMask: true,
             minimalScopesMode: false,
             noAttachmentLinks: false,
-            nsfwCensorImage: "",
+            nsfwCensorImage: "/static/img/nsfw.74818f9.png",
             postContentType: "text/plain",
             redirectRootLogin: "/main/friends",
             redirectRootNoLogin: "/main/all",
             scopeCopy: true,
+            sidebarRight: false,
             showFeaturesPanel: true,
             showInstanceSpecificPanel: false,
             subjectLineBehavior: "email",
@@ -1225,7 +1238,7 @@ config :pleroma, :config_description, [
             type: :string,
             description:
               "URL of the image to use for hiding NSFW media attachments in the timeline.",
-            suggestions: ["/static/img/nsfw.png"]
+            suggestions: ["/static/img/nsfw.74818f9.png"]
           },
           %{
             key: :postContentType,
@@ -1255,6 +1268,12 @@ config :pleroma, :config_description, [
             label: "Scope copy",
             type: :boolean,
             description: "Copy the scope (private/unlisted/public) in replies to posts by default"
+          },
+          %{
+            key: :sidebarRight,
+            label: "Sidebar on Right",
+            type: :boolean,
+            description: "Change alignment of sidebar and panels to the right."
           },
           %{
             key: :showFeaturesPanel,
@@ -1339,6 +1358,12 @@ config :pleroma, :config_description, [
         suggestions: [
           :pleroma_fox_tan
         ]
+      },
+      %{
+        key: :default_user_avatar,
+        type: :string,
+        description: "URL of the default user avatar.",
+        suggestions: ["/images/avi.png"]
       }
     ]
   },

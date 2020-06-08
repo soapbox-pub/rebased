@@ -555,6 +555,7 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
+    @tag capture_log: true
     test "returns nil if no user could be fetched" do
       {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
       assert fetched_user == "not found nonexistant@social.heldscal.la"
@@ -584,6 +585,26 @@ defmodule Pleroma.UserTest do
       assert user.inbox
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
+    end
+
+    @tag capture_log: true
+    test "it returns the old user if stale, but unfetchable" do
+      a_week_ago = NaiveDateTime.add(NaiveDateTime.utc_now(), -604_800)
+
+      orig_user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: "http://mastodon.example.org/users/raymoo",
+          last_refreshed_at: a_week_ago
+        )
+
+      assert orig_user.last_refreshed_at == a_week_ago
+
+      {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/raymoo")
+
+      assert user.last_refreshed_at == orig_user.last_refreshed_at
     end
   end
 
@@ -991,7 +1012,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user, local: true)
 
       {:ok, activity} = CommonAPI.post(actor, %{status: "hello"})
-      {:ok, announce, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, announce} = CommonAPI.repeat(activity.id, user)
 
       recipients = User.get_recipients_from_activity(announce)
 
@@ -1101,7 +1122,7 @@ defmodule Pleroma.UserTest do
 
       assert [%{activity | thread_muted?: CommonAPI.thread_muted?(user2, activity)}] ==
                ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
-                 "user" => user2
+                 user: user2
                })
 
       {:ok, _user} = User.deactivate(user)
@@ -1111,7 +1132,7 @@ defmodule Pleroma.UserTest do
 
       assert [] ==
                ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
-                 "user" => user2
+                 user: user2
                })
     end
   end
@@ -1138,6 +1159,9 @@ defmodule Pleroma.UserTest do
       follower = insert(:user)
       {:ok, follower} = User.follow(follower, user)
 
+      locked_user = insert(:user, name: "locked", locked: true)
+      {:ok, _} = User.follow(user, locked_user, :follow_pending)
+
       object = insert(:note, user: user)
       activity = insert(:note_activity, user: user, note: object)
 
@@ -1146,7 +1170,7 @@ defmodule Pleroma.UserTest do
 
       {:ok, like} = CommonAPI.favorite(user, activity_two.id)
       {:ok, like_two} = CommonAPI.favorite(follower, activity.id)
-      {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
+      {:ok, repeat} = CommonAPI.repeat(activity_two.id, user)
 
       {:ok, job} = User.delete(user)
       {:ok, _user} = ObanHelpers.perform(job)
@@ -1155,6 +1179,8 @@ defmodule Pleroma.UserTest do
 
       refute User.following?(follower, user)
       assert %{deactivated: true} = User.get_by_id(user.id)
+
+      assert [] == User.get_follow_requests(locked_user)
 
       user_activities =
         user.ap_id
@@ -1168,6 +1194,33 @@ defmodule Pleroma.UserTest do
       refute Activity.get_by_id(like.id)
       refute Activity.get_by_id(like_two.id)
       refute Activity.get_by_id(repeat.id)
+    end
+  end
+
+  describe "delete/1 when confirmation is pending" do
+    setup do
+      user = insert(:user, confirmation_pending: true)
+      {:ok, user: user}
+    end
+
+    test "deletes user from database when activation required", %{user: user} do
+      clear_config([:instance, :account_activation_required], true)
+
+      {:ok, job} = User.delete(user)
+      {:ok, _} = ObanHelpers.perform(job)
+
+      refute User.get_cached_by_id(user.id)
+      refute User.get_by_id(user.id)
+    end
+
+    test "deactivates user when activation is not required", %{user: user} do
+      clear_config([:instance, :account_activation_required], false)
+
+      {:ok, job} = User.delete(user)
+      {:ok, _} = ObanHelpers.perform(job)
+
+      assert %{deactivated: true} = User.get_cached_by_id(user.id)
+      assert %{deactivated: true} = User.get_by_id(user.id)
     end
   end
 
@@ -1748,5 +1801,17 @@ defmodule Pleroma.UserTest do
       assert {:ok, result} = User.update_email_notifications(user, %{"digest" => false})
       assert result.email_notifications["digest"] == false
     end
+  end
+
+  test "avatar fallback" do
+    user = insert(:user)
+    assert User.avatar_url(user) =~ "/images/avi.png"
+
+    clear_config([:assets, :default_user_avatar], "avatar.png")
+
+    user = User.get_cached_by_nickname_or_id(user.nickname)
+    assert User.avatar_url(user) =~ "avatar.png"
+
+    assert User.avatar_url(user, no_default: true) == nil
   end
 end

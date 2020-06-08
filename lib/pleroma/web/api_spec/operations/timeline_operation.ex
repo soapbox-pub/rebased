@@ -43,7 +43,7 @@ defmodule Pleroma.Web.ApiSpec.TimelineOperation do
       description:
         "View statuses with a “direct” privacy, from your account or in your notifications",
       deprecated: true,
-      parameters: pagination_params(),
+      parameters: [with_muted_param() | pagination_params()],
       security: [%{"oAuth" => ["read:statuses"]}],
       operationId: "TimelineController.direct",
       responses: %{
