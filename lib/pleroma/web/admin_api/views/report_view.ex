@@ -18,7 +18,7 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
     %{
       reports:
         reports[:items]
-        |> Enum.map(&Report.extract_report_info(&1))
+        |> Enum.map(&Report.extract_report_info/1)
         |> Enum.map(&render(__MODULE__, "show.json", &1))
         |> Enum.reverse(),
       total: reports[:total]

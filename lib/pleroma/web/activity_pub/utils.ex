@@ -245,7 +245,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Inserts a full object if it is contained in an activity.
   """
   def insert_full_object(%{"object" => %{"type" => type} = object_data} = map)
-      when is_map(object_data) and type in @supported_object_types do
+      when type in @supported_object_types do
     with {:ok, object} <- Object.create(object_data) do
       map = Map.put(map, "object", object.data["id"])
 
@@ -741,13 +741,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def get_reports(params, page, page_size) do
     params =
       params
-      |> Map.new(fn {key, value} -> {to_string(key), value} end)
-      |> Map.put("type", "Flag")
-      |> Map.put("skip_preload", true)
-      |> Map.put("preload_report_notes", true)
-      |> Map.put("total", true)
-      |> Map.put("limit", page_size)
-      |> Map.put("offset", (page - 1) * page_size)
+      |> Map.put(:type, "Flag")
+      |> Map.put(:skip_preload, true)
+      |> Map.put(:preload_report_notes, true)
+      |> Map.put(:total, true)
+      |> Map.put(:limit, page_size)
+      |> Map.put(:offset, (page - 1) * page_size)
 
     ActivityPub.fetch_activities([], params, :offset)
   end

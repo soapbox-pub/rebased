@@ -62,11 +62,11 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
 
       [undo_activity] =
         ActivityPub.fetch_activities([], %{
-          "type" => "Undo",
-          "actor_id" => follower_id,
-          "limit" => 1,
-          "skip_preload" => true,
-          "invisible_actors" => true
+          type: "Undo",
+          actor_id: follower_id,
+          limit: 1,
+          skip_preload: true,
+          invisible_actors: true
         })
 
       assert undo_activity.data["type"] == "Undo"

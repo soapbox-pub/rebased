@@ -21,7 +21,6 @@ defmodule Pleroma.Web.MastodonAPI.ConversationController do
 
   @doc "GET /api/v1/conversations"
   def index(%{assigns: %{user: user}} = conn, params) do
-    params = stringify_pagination_params(params)
     participations = Participation.for_user_with_last_activity_id(user, params)
 
     conn
@@ -36,21 +35,5 @@ defmodule Pleroma.Web.MastodonAPI.ConversationController do
          {:ok, participation} <- Participation.mark_as_read(participation) do
       render(conn, "participation.json", participation: participation, for: user)
     end
-  end
-
-  defp stringify_pagination_params(params) do
-    atom_keys =
-      Pleroma.Pagination.page_keys()
-      |> Enum.map(&String.to_atom(&1))
-
-    str_keys =
-      params
-      |> Map.take(atom_keys)
-      |> Enum.map(fn {key, value} -> {to_string(key), value} end)
-      |> Enum.into(%{})
-
-    params
-    |> Map.delete(atom_keys)
-    |> Map.merge(str_keys)
   end
 end

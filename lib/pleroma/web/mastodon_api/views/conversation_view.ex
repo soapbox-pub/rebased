@@ -24,8 +24,8 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
     last_activity_id =
       with nil <- participation.last_activity_id do
         ActivityPub.fetch_latest_activity_id_for_context(participation.conversation.ap_id, %{
-          "user" => user,
-          "blocking_user" => user
+          user: user,
+          blocking_user: user
         })
       end
 

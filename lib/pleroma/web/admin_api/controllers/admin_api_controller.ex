@@ -228,10 +228,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     activities =
       ActivityPub.fetch_statuses(nil, %{
-        "instance" => instance,
-        "limit" => page_size,
-        "offset" => (page - 1) * page_size,
-        "exclude_reblogs" => !with_reblogs && "true"
+        instance: instance,
+        limit: page_size,
+        offset: (page - 1) * page_size,
+        exclude_reblogs: not with_reblogs
       })
 
     conn
@@ -248,9 +248,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       activities =
         ActivityPub.fetch_user_activities(user, nil, %{
-          "limit" => page_size,
-          "godmode" => godmode,
-          "exclude_reblogs" => !with_reblogs && "true"
+          limit: page_size,
+          godmode: godmode,
+          exclude_reblogs: not with_reblogs
         })
 
       conn
