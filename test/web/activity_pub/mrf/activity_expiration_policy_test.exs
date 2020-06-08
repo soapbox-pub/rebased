@@ -10,7 +10,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicyTest do
 
   test "adds `expires_at` property" do
     assert {:ok, %{"type" => "Create", "expires_at" => expires_at}} =
-             ActivityExpirationPolicy.filter(%{"id" => @id, "type" => "Create"})
+             ActivityExpirationPolicy.filter(%{
+               "id" => @id,
+               "type" => "Create",
+               "object" => %{"type" => "Note"}
+             })
 
     assert Timex.diff(expires_at, NaiveDateTime.utc_now(), :days) == 364
   end
@@ -22,7 +26,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicyTest do
              ActivityExpirationPolicy.filter(%{
                "id" => @id,
                "type" => "Create",
-               "expires_at" => expires_at
+               "expires_at" => expires_at,
+               "object" => %{"type" => "Note"}
              })
   end
 
@@ -33,7 +38,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicyTest do
              ActivityExpirationPolicy.filter(%{
                "id" => @id,
                "type" => "Create",
-               "expires_at" => too_distant_future
+               "expires_at" => too_distant_future,
+               "object" => %{"type" => "Note"}
              })
 
     assert Timex.diff(expires_at, NaiveDateTime.utc_now(), :days) == 364
@@ -43,17 +49,27 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicyTest do
     assert {:ok, activity} =
              ActivityExpirationPolicy.filter(%{
                "id" => "https://example.com/123",
-               "type" => "Create"
+               "type" => "Create",
+               "object" => %{"type" => "Note"}
              })
 
     refute Map.has_key?(activity, "expires_at")
   end
 
-  test "ignores non-Create activities" do
+  test "ignores non-Create/Note activities" do
     assert {:ok, activity} =
              ActivityExpirationPolicy.filter(%{
                "id" => "https://example.com/123",
                "type" => "Follow"
+             })
+
+    refute Map.has_key?(activity, "expires_at")
+
+    assert {:ok, activity} =
+             ActivityExpirationPolicy.filter(%{
+               "id" => "https://example.com/123",
+               "type" => "Create",
+               "object" => %{"type" => "Cofe"}
              })
 
     refute Map.has_key?(activity, "expires_at")

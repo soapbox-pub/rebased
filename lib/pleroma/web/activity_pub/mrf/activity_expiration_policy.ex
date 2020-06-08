@@ -9,7 +9,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy do
   @impl true
   def filter(activity) do
     activity =
-      if activity["type"] == "Create" && local?(activity) do
+      if note?(activity) and local?(activity) do
         maybe_add_expiration(activity)
       else
         activity
@@ -23,6 +23,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy do
 
   defp local?(%{"id" => id}) do
     String.starts_with?(id, Pleroma.Web.Endpoint.url())
+  end
+
+  defp note?(activity) do
+    match?(%{"type" => "Create", "object" => %{"type" => "Note"}}, activity)
   end
 
   defp maybe_add_expiration(activity) do
