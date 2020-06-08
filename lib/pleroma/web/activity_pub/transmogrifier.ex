@@ -221,9 +221,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         media_type =
           cond do
-            is_map(url) && is_binary(url["mediaType"]) -> url["mediaType"]
-            is_binary(data["mediaType"]) -> data["mediaType"]
-            is_binary(data["mimeType"]) -> data["mimeType"]
+            is_map(url) && MIME.valid?(url["mediaType"]) -> url["mediaType"]
+            MIME.valid?(data["mediaType"]) -> data["mediaType"]
+            MIME.valid?(data["mimeType"]) -> data["mimeType"]
             true -> nil
           end
 
