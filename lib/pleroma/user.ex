@@ -1489,6 +1489,8 @@ defmodule Pleroma.User do
 
     delete_user_activities(user)
 
+    delete_outgoing_pending_follow_requests(user)
+
     delete_or_deactivate(user)
   end
 
@@ -1610,6 +1612,12 @@ defmodule Pleroma.User do
   end
 
   defp delete_activity(_activity, _user), do: "Doing nothing"
+
+  defp delete_outgoing_pending_follow_requests(user) do
+    user
+    |> FollowingRelationship.outgoing_pending_follow_requests_query()
+    |> Repo.delete_all()
+  end
 
   def html_filter_policy(%User{no_rich_text: true}) do
     Pleroma.HTML.Scrubber.TwitterText
