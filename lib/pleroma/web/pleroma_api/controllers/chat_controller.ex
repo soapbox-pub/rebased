@@ -17,7 +17,6 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.Web.PleromaAPI.ChatView
 
   import Ecto.Query
-  import Pleroma.Web.ActivityPub.ObjectValidator, only: [stringify_keys: 1]
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
@@ -127,7 +126,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
       cm_refs =
         chat
         |> MessageReference.for_chat_query()
-        |> Pagination.fetch_paginated(params |> stringify_keys())
+        |> Pagination.fetch_paginated(params)
 
       conn
       |> put_view(MessageReferenceView)

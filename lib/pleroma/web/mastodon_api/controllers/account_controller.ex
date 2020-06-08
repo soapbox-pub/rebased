@@ -244,9 +244,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       params =
         params
         |> Map.delete(:tagged)
-        |> Enum.filter(&(not is_nil(&1)))
-        |> Map.new(fn {key, value} -> {to_string(key), value} end)
-        |> Map.put("tag", params[:tagged])
+        |> Map.put(:tag, params[:tagged])
 
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 

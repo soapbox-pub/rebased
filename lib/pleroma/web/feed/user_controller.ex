@@ -50,10 +50,10 @@ defmodule Pleroma.Web.Feed.UserController do
     with {_, %User{} = user} <- {:fetch_user, User.get_cached_by_nickname(nickname)} do
       activities =
         %{
-          "type" => ["Create"],
-          "actor_id" => user.ap_id
+          type: ["Create"],
+          actor_id: user.ap_id
         }
-        |> Pleroma.Maps.put_if_present("max_id", params["max_id"])
+        |> Pleroma.Maps.put_if_present(:max_id, params["max_id"])
         |> ActivityPub.fetch_public_or_unlisted_activities()
 
       conn

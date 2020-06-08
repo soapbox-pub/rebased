@@ -13,8 +13,8 @@ defmodule Pleroma.Web.Feed.TagController do
     {format, tag} = parse_tag(raw_tag)
 
     activities =
-      %{"type" => ["Create"], "tag" => tag}
-      |> Pleroma.Maps.put_if_present("max_id", params["max_id"])
+      %{type: ["Create"], tag: tag}
+      |> Pleroma.Maps.put_if_present(:max_id, params["max_id"])
       |> ActivityPub.fetch_public_activities()
 
     conn

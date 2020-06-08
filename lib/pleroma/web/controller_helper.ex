@@ -93,8 +93,7 @@ defmodule Pleroma.Web.ControllerHelper do
   end
 
   def assign_account_by_id(conn, _) do
-    # TODO: use `conn.params[:id]` only after moving to OpenAPI
-    case Pleroma.User.get_cached_by_id(conn.params[:id] || conn.params["id"]) do
+    case Pleroma.User.get_cached_by_id(conn.params.id) do
       %Pleroma.User{} = account -> assign(conn, :account, account)
       nil -> Pleroma.Web.MastodonAPI.FallbackController.call(conn, {:error, :not_found}) |> halt()
     end
