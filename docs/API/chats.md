@@ -135,7 +135,7 @@ Returned data:
 ```
 
 The recipient of messages that are sent to this chat is given by their AP ID.
-The usual pagination options are implemented.
+No pagination is implemented for now.
 
 ### Getting the messages for a Chat
 

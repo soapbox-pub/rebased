@@ -140,7 +140,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def index(%{assigns: %{user: %{id: user_id} = user}} = conn, params) do
+  def index(%{assigns: %{user: %{id: user_id} = user}} = conn, _params) do
     blocked_ap_ids = User.blocked_users_ap_ids(user)
 
     chats =
@@ -149,7 +149,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
         where: c.recipient not in ^blocked_ap_ids,
         order_by: [desc: c.updated_at]
       )
-      |> Pagination.fetch_paginated(params |> stringify_keys)
+      |> Repo.all()
 
     conn
     |> put_view(ChatView)
