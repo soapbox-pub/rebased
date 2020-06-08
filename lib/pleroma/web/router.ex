@@ -160,9 +160,9 @@ defmodule Pleroma.Web.Router do
       :right_delete_multiple
     )
 
-    get("/relay", AdminAPIController, :relay_list)
-    post("/relay", AdminAPIController, :relay_follow)
-    delete("/relay", AdminAPIController, :relay_unfollow)
+    get("/relay", RelayController, :index)
+    post("/relay", RelayController, :follow)
+    delete("/relay", RelayController, :unfollow)
 
     post("/users/invite_token", InviteController, :create)
     get("/users/invites", InviteController, :index)
