@@ -1122,7 +1122,7 @@ defmodule Pleroma.UserTest do
 
       assert [%{activity | thread_muted?: CommonAPI.thread_muted?(user2, activity)}] ==
                ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
-                 "user" => user2
+                 user: user2
                })
 
       {:ok, _user} = User.deactivate(user)
@@ -1132,7 +1132,7 @@ defmodule Pleroma.UserTest do
 
       assert [] ==
                ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
-                 "user" => user2
+                 user: user2
                })
     end
   end
@@ -1159,6 +1159,9 @@ defmodule Pleroma.UserTest do
       follower = insert(:user)
       {:ok, follower} = User.follow(follower, user)
 
+      locked_user = insert(:user, name: "locked", locked: true)
+      {:ok, _} = User.follow(user, locked_user, :follow_pending)
+
       object = insert(:note, user: user)
       activity = insert(:note_activity, user: user, note: object)
 
@@ -1176,6 +1179,8 @@ defmodule Pleroma.UserTest do
 
       refute User.following?(follower, user)
       assert %{deactivated: true} = User.get_by_id(user.id)
+
+      assert [] == User.get_follow_requests(locked_user)
 
       user_activities =
         user.ap_id

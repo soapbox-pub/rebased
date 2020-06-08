@@ -82,30 +82,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, private_activity} = CommonAPI.post(user, %{status: ".", visibility: "private"})
 
-      activities =
-        ActivityPub.fetch_activities([], %{:visibility => "direct", "actor_id" => user.ap_id})
+      activities = ActivityPub.fetch_activities([], %{visibility: "direct", actor_id: user.ap_id})
 
       assert activities == [direct_activity]
 
       activities =
-        ActivityPub.fetch_activities([], %{:visibility => "unlisted", "actor_id" => user.ap_id})
+        ActivityPub.fetch_activities([], %{visibility: "unlisted", actor_id: user.ap_id})
 
       assert activities == [unlisted_activity]
 
       activities =
-        ActivityPub.fetch_activities([], %{:visibility => "private", "actor_id" => user.ap_id})
+        ActivityPub.fetch_activities([], %{visibility: "private", actor_id: user.ap_id})
 
       assert activities == [private_activity]
 
-      activities =
-        ActivityPub.fetch_activities([], %{:visibility => "public", "actor_id" => user.ap_id})
+      activities = ActivityPub.fetch_activities([], %{visibility: "public", actor_id: user.ap_id})
 
       assert activities == [public_activity]
 
       activities =
         ActivityPub.fetch_activities([], %{
-          :visibility => ~w[private public],
-          "actor_id" => user.ap_id
+          visibility: ~w[private public],
+          actor_id: user.ap_id
         })
 
       assert activities == [public_activity, private_activity]
@@ -126,8 +124,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activities =
         ActivityPub.fetch_activities([], %{
-          "exclude_visibilities" => "direct",
-          "actor_id" => user.ap_id
+          exclude_visibilities: "direct",
+          actor_id: user.ap_id
         })
 
       assert public_activity in activities
@@ -137,8 +135,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activities =
         ActivityPub.fetch_activities([], %{
-          "exclude_visibilities" => "unlisted",
-          "actor_id" => user.ap_id
+          exclude_visibilities: "unlisted",
+          actor_id: user.ap_id
         })
 
       assert public_activity in activities
@@ -148,8 +146,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activities =
         ActivityPub.fetch_activities([], %{
-          "exclude_visibilities" => "private",
-          "actor_id" => user.ap_id
+          exclude_visibilities: "private",
+          actor_id: user.ap_id
         })
 
       assert public_activity in activities
@@ -159,8 +157,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activities =
         ActivityPub.fetch_activities([], %{
-          "exclude_visibilities" => "public",
-          "actor_id" => user.ap_id
+          exclude_visibilities: "public",
+          actor_id: user.ap_id
         })
 
       refute public_activity in activities
@@ -193,23 +191,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
       {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
 
-      fetch_one = ActivityPub.fetch_activities([], %{"type" => "Create", "tag" => "test"})
+      fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
 
-      fetch_two =
-        ActivityPub.fetch_activities([], %{"type" => "Create", "tag" => ["test", "essais"]})
+      fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["test", "essais"]})
 
       fetch_three =
         ActivityPub.fetch_activities([], %{
-          "type" => "Create",
-          "tag" => ["test", "essais"],
-          "tag_reject" => ["reject"]
+          type: "Create",
+          tag: ["test", "essais"],
+          tag_reject: ["reject"]
         })
 
       fetch_four =
         ActivityPub.fetch_activities([], %{
-          "type" => "Create",
-          "tag" => ["test"],
-          "tag_all" => ["test", "reject"]
+          type: "Create",
+          tag: ["test"],
+          tag_all: ["test", "reject"]
         })
 
       assert fetch_one == [status_one, status_three]
@@ -375,7 +372,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       _listen_activity_2 = insert(:listen)
       _listen_activity_3 = insert(:listen)
 
-      timeline = ActivityPub.fetch_activities([], %{"type" => ["Listen"]})
+      timeline = ActivityPub.fetch_activities([], %{type: ["Listen"]})
 
       assert length(timeline) == 3
     end
@@ -507,7 +504,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, _user_relationship} = User.block(user, %{ap_id: activity_five.data["actor"]})
 
-      activities = ActivityPub.fetch_activities_for_context("2hu", %{"blocking_user" => user})
+      activities = ActivityPub.fetch_activities_for_context("2hu", %{blocking_user: user})
       assert activities == [activity_two, activity]
     end
   end
@@ -520,8 +517,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     booster = insert(:user)
     {:ok, _user_relationship} = User.block(user, %{ap_id: activity_one.data["actor"]})
 
-    activities =
-      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{blocking_user: user, skip_preload: true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -529,8 +525,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, _user_block} = User.unblock(user, %{ap_id: activity_one.data["actor"]})
 
-    activities =
-      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{blocking_user: user, skip_preload: true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -541,16 +536,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Activity.get_by_id(activity_three.id)
 
-    activities =
-      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{blocking_user: user, skip_preload: true})
 
     assert Enum.member?(activities, activity_two)
     refute Enum.member?(activities, activity_three)
     refute Enum.member?(activities, boost_activity)
     assert Enum.member?(activities, activity_one)
 
-    activities =
-      ActivityPub.fetch_activities([], %{"blocking_user" => nil, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{blocking_user: nil, skip_preload: true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -573,7 +566,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, activity_four} = CommonAPI.post(blockee, %{status: "hey! @#{blocker.nickname}"})
 
-    activities = ActivityPub.fetch_activities([], %{"blocking_user" => blocker})
+    activities = ActivityPub.fetch_activities([], %{blocking_user: blocker})
 
     assert Enum.member?(activities, activity_one)
     refute Enum.member?(activities, activity_two)
@@ -595,7 +588,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, activity_three} = CommonAPI.repeat(activity_two.id, friend)
 
     activities =
-      ActivityPub.fetch_activities([], %{"blocking_user" => blocker})
+      ActivityPub.fetch_activities([], %{blocking_user: blocker})
       |> Enum.map(fn act -> act.id end)
 
     assert Enum.member?(activities, activity_one.id)
@@ -611,8 +604,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     user = insert(:user)
     {:ok, user} = User.block_domain(user, domain)
 
-    activities =
-      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{blocking_user: user, skip_preload: true})
 
     refute activity in activities
 
@@ -620,8 +612,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     ActivityPub.follow(user, followed_user)
     {:ok, repeat_activity} = CommonAPI.repeat(activity.id, followed_user)
 
-    activities =
-      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{blocking_user: user, skip_preload: true})
 
     refute repeat_activity in activities
   end
@@ -641,8 +632,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     note = insert(:note, %{data: %{"actor" => domain_user.ap_id}})
     activity = insert(:note_activity, %{note: note})
 
-    activities =
-      ActivityPub.fetch_activities([], %{"blocking_user" => blocker, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{blocking_user: blocker, skip_preload: true})
 
     assert activity in activities
 
@@ -653,8 +643,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     bad_activity = insert(:note_activity, %{note: bad_note})
     {:ok, repeat_activity} = CommonAPI.repeat(bad_activity.id, domain_user)
 
-    activities =
-      ActivityPub.fetch_activities([], %{"blocking_user" => blocker, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{blocking_user: blocker, skip_preload: true})
 
     refute repeat_activity in activities
   end
@@ -669,8 +658,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activity_one_actor = User.get_by_ap_id(activity_one.data["actor"])
     {:ok, _user_relationships} = User.mute(user, activity_one_actor)
 
-    activities =
-      ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{muting_user: user, skip_preload: true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -679,9 +667,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     # Calling with 'with_muted' will deliver muted activities, too.
     activities =
       ActivityPub.fetch_activities([], %{
-        "muting_user" => user,
-        "with_muted" => true,
-        "skip_preload" => true
+        muting_user: user,
+        with_muted: true,
+        skip_preload: true
       })
 
     assert Enum.member?(activities, activity_two)
@@ -690,8 +678,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, _user_mute} = User.unmute(user, activity_one_actor)
 
-    activities =
-      ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{muting_user: user, skip_preload: true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -703,15 +690,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Activity.get_by_id(activity_three.id)
 
-    activities =
-      ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{muting_user: user, skip_preload: true})
 
     assert Enum.member?(activities, activity_two)
     refute Enum.member?(activities, activity_three)
     refute Enum.member?(activities, boost_activity)
     assert Enum.member?(activities, activity_one)
 
-    activities = ActivityPub.fetch_activities([], %{"muting_user" => nil, "skip_preload" => true})
+    activities = ActivityPub.fetch_activities([], %{muting_user: nil, skip_preload: true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -727,7 +713,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, _activity_two} = CommonAPI.add_mute(user, activity_two)
 
-    assert [_activity_one] = ActivityPub.fetch_activities([], %{"muting_user" => user})
+    assert [_activity_one] = ActivityPub.fetch_activities([], %{muting_user: user})
   end
 
   test "returns thread muted activities when with_muted is set" do
@@ -739,7 +725,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, _activity_two} = CommonAPI.add_mute(user, activity_two)
 
     assert [_activity_two, _activity_one] =
-             ActivityPub.fetch_activities([], %{"muting_user" => user, "with_muted" => true})
+             ActivityPub.fetch_activities([], %{muting_user: user, with_muted: true})
   end
 
   test "does include announces on request" do
@@ -761,7 +747,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, expected_activity} = ActivityBuilder.insert(%{"type" => "Create"}, %{:user => user})
     {:ok, _} = ActivityBuilder.insert(%{"type" => "Announce"}, %{:user => user})
 
-    [activity] = ActivityPub.fetch_user_activities(user, nil, %{"exclude_reblogs" => "true"})
+    [activity] = ActivityPub.fetch_user_activities(user, nil, %{exclude_reblogs: true})
 
     assert activity == expected_activity
   end
@@ -804,7 +790,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       expected_activities = ActivityBuilder.insert_list(10)
       since_id = List.last(activities).id
 
-      activities = ActivityPub.fetch_public_activities(%{"since_id" => since_id})
+      activities = ActivityPub.fetch_public_activities(%{since_id: since_id})
 
       assert collect_ids(activities) == collect_ids(expected_activities)
       assert length(activities) == 10
@@ -819,7 +805,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         |> ActivityBuilder.insert_list()
         |> List.first()
 
-      activities = ActivityPub.fetch_public_activities(%{"max_id" => max_id})
+      activities = ActivityPub.fetch_public_activities(%{max_id: max_id})
 
       assert length(activities) == 20
       assert collect_ids(activities) == collect_ids(expected_activities)
@@ -831,8 +817,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       later_activities = ActivityBuilder.insert_list(10)
 
-      activities =
-        ActivityPub.fetch_public_activities(%{"page" => "2", "page_size" => "20"}, :offset)
+      activities = ActivityPub.fetch_public_activities(%{page: "2", page_size: "20"}, :offset)
 
       assert length(activities) == 20
 
@@ -848,7 +833,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, activity} = CommonAPI.repeat(activity.id, booster)
 
-      activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+      activities = ActivityPub.fetch_activities([], %{muting_user: user})
 
       refute Enum.any?(activities, fn %{id: id} -> id == activity.id end)
     end
@@ -862,7 +847,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, activity} = CommonAPI.repeat(activity.id, booster)
 
-      activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+      activities = ActivityPub.fetch_activities([], %{muting_user: user})
 
       assert Enum.any?(activities, fn %{id: id} -> id == activity.id end)
     end
@@ -1066,7 +1051,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert length(activities) == 3
 
       activities =
-        ActivityPub.fetch_activities([user1.ap_id | User.following(user1)], %{"user" => user1})
+        ActivityPub.fetch_activities([user1.ap_id | User.following(user1)], %{user: user1})
         |> Enum.map(fn a -> a.id end)
 
       assert [public_activity.id, private_activity_1.id] == activities
@@ -1115,7 +1100,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     CommonAPI.pin(activity_three.id, user)
     user = refresh_record(user)
 
-    activities = ActivityPub.fetch_user_activities(user, nil, %{"pinned" => "true"})
+    activities = ActivityPub.fetch_user_activities(user, nil, %{pinned: true})
 
     assert 3 = length(activities)
   end
@@ -1226,7 +1211,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activity = Repo.preload(activity, :bookmark)
     activity = %Activity{activity | thread_muted?: !!activity.thread_muted?}
 
-    assert ActivityPub.fetch_activities([], %{"user" => user}) == [activity]
+    assert ActivityPub.fetch_activities([], %{user: user}) == [activity]
   end
 
   def data_uri do
@@ -1400,7 +1385,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert Enum.map(result, & &1.id) == [a1.id, a5.id, a3.id, a4.id]
 
-      result = ActivityPub.fetch_favourites(user, %{"limit" => 2})
+      result = ActivityPub.fetch_favourites(user, %{limit: 2})
       assert Enum.map(result, & &1.id) == [a1.id, a5.id]
     end
   end
@@ -1470,7 +1455,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, _reply} = CommonAPI.post(user, %{status: "yeah", in_reply_to_status_id: activity.id})
 
-    [result] = ActivityPub.fetch_public_activities(%{"exclude_replies" => "true"})
+    [result] = ActivityPub.fetch_public_activities(%{exclude_replies: true})
 
     assert result.id == activity.id
 
@@ -1483,11 +1468,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "public timeline", %{users: %{u1: user}} do
       activities_ids =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("local_only", false)
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("reply_filtering_user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:local_only, false)
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_filtering_user, user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
 
@@ -1504,12 +1489,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     } do
       activities_ids =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("local_only", false)
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("reply_visibility", "following")
-        |> Map.put("reply_filtering_user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:local_only, false)
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_visibility, "following")
+        |> Map.put(:reply_filtering_user, user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
 
@@ -1531,12 +1516,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     } do
       activities_ids =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("local_only", false)
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("reply_visibility", "self")
-        |> Map.put("reply_filtering_user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:local_only, false)
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_visibility, "self")
+        |> Map.put(:reply_filtering_user, user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
 
@@ -1555,11 +1540,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     } do
       params =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("user", user)
-        |> Map.put("reply_filtering_user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:user, user)
+        |> Map.put(:reply_filtering_user, user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
@@ -1593,12 +1578,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     } do
       params =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("user", user)
-        |> Map.put("reply_visibility", "following")
-        |> Map.put("reply_filtering_user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:user, user)
+        |> Map.put(:reply_visibility, "following")
+        |> Map.put(:reply_filtering_user, user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
@@ -1632,12 +1617,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     } do
       params =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("user", user)
-        |> Map.put("reply_visibility", "self")
-        |> Map.put("reply_filtering_user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:user, user)
+        |> Map.put(:reply_visibility, "self")
+        |> Map.put(:reply_filtering_user, user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
@@ -1666,11 +1651,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "public timeline", %{users: %{u1: user}} do
       activities_ids =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("local_only", false)
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:local_only, false)
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:user, user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
 
@@ -1680,13 +1665,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "public timeline with default reply_visibility `following`", %{users: %{u1: user}} do
       activities_ids =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("local_only", false)
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("reply_visibility", "following")
-        |> Map.put("reply_filtering_user", user)
-        |> Map.put("user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:local_only, false)
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_visibility, "following")
+        |> Map.put(:reply_filtering_user, user)
+        |> Map.put(:user, user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
 
@@ -1696,13 +1681,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "public timeline with default reply_visibility `self`", %{users: %{u1: user}} do
       activities_ids =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("local_only", false)
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("reply_visibility", "self")
-        |> Map.put("reply_filtering_user", user)
-        |> Map.put("user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:local_only, false)
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:reply_visibility, "self")
+        |> Map.put(:reply_filtering_user, user)
+        |> Map.put(:user, user)
         |> ActivityPub.fetch_public_activities()
         |> Enum.map(& &1.id)
 
@@ -1712,10 +1697,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "home timeline", %{users: %{u1: user}} do
       params =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:user, user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
@@ -1727,12 +1712,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "home timeline with default reply_visibility `following`", %{users: %{u1: user}} do
       params =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("user", user)
-        |> Map.put("reply_visibility", "following")
-        |> Map.put("reply_filtering_user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:user, user)
+        |> Map.put(:reply_visibility, "following")
+        |> Map.put(:reply_filtering_user, user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)
@@ -1751,12 +1736,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     } do
       params =
         %{}
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("user", user)
-        |> Map.put("reply_visibility", "self")
-        |> Map.put("reply_filtering_user", user)
+        |> Map.put(:type, ["Create", "Announce"])
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:user, user)
+        |> Map.put(:reply_visibility, "self")
+        |> Map.put(:reply_filtering_user, user)
 
       activities_ids =
         ActivityPub.fetch_activities([user.ap_id | User.following(user)], params)

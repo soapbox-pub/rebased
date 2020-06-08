@@ -17,14 +17,6 @@ defmodule Pleroma.Helpers.UriHelper do
     |> URI.to_string()
   end
 
-  def append_param_if_present(%{} = params, param_name, param_value) do
-    if param_value do
-      Map.put(params, param_name, param_value)
-    else
-      params
-    end
-  end
-
   def maybe_add_base("/" <> uri, base), do: Path.join([base, uri])
   def maybe_add_base(uri, _base), do: uri
 end

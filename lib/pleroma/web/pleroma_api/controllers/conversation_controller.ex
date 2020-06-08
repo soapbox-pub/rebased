@@ -42,15 +42,14 @@ defmodule Pleroma.Web.PleromaAPI.ConversationController do
            Participation.get(participation_id, preload: [:conversation]) do
       params =
         params
-        |> Map.new(fn {key, value} -> {to_string(key), value} end)
-        |> Map.put("blocking_user", user)
-        |> Map.put("muting_user", user)
-        |> Map.put("user", user)
+        |> Map.put(:blocking_user, user)
+        |> Map.put(:muting_user, user)
+        |> Map.put(:user, user)
 
       activities =
         participation.conversation.ap_id
         |> ActivityPub.fetch_activities_for_context_query(params)
-        |> Pleroma.Pagination.fetch_paginated(Map.put(params, "total", false))
+        |> Pleroma.Pagination.fetch_paginated(Map.put(params, :total, false))
         |> Enum.reverse()
 
       conn

@@ -163,8 +163,8 @@ defmodule Pleroma.Conversation.Participation do
     |> Enum.map(fn participation ->
       activity_id =
         ActivityPub.fetch_latest_activity_id_for_context(participation.conversation.ap_id, %{
-          "user" => user,
-          "blocking_user" => user
+          user: user,
+          blocking_user: user
         })
 
       %{

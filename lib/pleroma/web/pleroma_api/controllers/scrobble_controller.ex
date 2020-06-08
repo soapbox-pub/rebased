@@ -36,10 +36,7 @@ defmodule Pleroma.Web.PleromaAPI.ScrobbleController do
 
   def index(%{assigns: %{user: reading_user}} = conn, %{id: id} = params) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(id, for: reading_user) do
-      params =
-        params
-        |> Map.new(fn {key, value} -> {to_string(key), value} end)
-        |> Map.put("type", ["Listen"])
+      params = Map.put(params, :type, ["Listen"])
 
       activities = ActivityPub.fetch_user_abstract_activities(user, reading_user, params)
 
