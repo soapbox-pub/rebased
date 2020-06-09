@@ -1138,12 +1138,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.Queries.by_type("Like")
     |> Activity.with_joined_object()
     |> Object.with_joined_activity()
-    |> select([_like, object, activity], %{activity | object: object})
+    |> select([like, object, activity], %{activity | object: object, pagination_id: like.id})
     |> order_by([like, _, _], desc_nulls_last: like.id)
     |> Pagination.fetch_paginated(
       Map.merge(params, %{skip_order: true}),
-      pagination,
-      :object_activity
+      pagination
     )
   end
 
