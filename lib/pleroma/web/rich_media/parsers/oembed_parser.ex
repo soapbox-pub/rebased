@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
   def parse(html, _data) do
     with elements = [_ | _] <- get_discovery_data(html),
-         {:ok, oembed_url} <- get_oembed_url(elements),
+         oembed_url when is_binary(oembed_url) <- get_oembed_url(elements),
          {:ok, oembed_data} <- get_oembed_data(oembed_url) do
       {:ok, oembed_data}
     else
@@ -17,19 +17,13 @@ defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
     html |> Floki.find("link[type='application/json+oembed']")
   end
 
-  defp get_oembed_url(nodes) do
-    {"link", attributes, _children} = nodes |> hd()
-
-    {:ok, Enum.into(attributes, %{})["href"]}
+  defp get_oembed_url([{"link", attributes, _children} | _]) do
+    Enum.find_value(attributes, fn {k, v} -> if k == "href", do: v end)
   end
 
   defp get_oembed_data(url) do
-    {:ok, %Tesla.Env{body: json}} = Pleroma.HTTP.get(url, [], adapter: [pool: :media])
-
-    {:ok, data} = Jason.decode(json)
-
-    data = data |> Map.new(fn {k, v} -> {String.to_atom(k), v} end)
-
-    {:ok, data}
+    with {:ok, %Tesla.Env{body: json}} <- Pleroma.HTTP.get(url, [], adapter: [pool: :media]) do
+      Jason.decode(json)
+    end
   end
 end
