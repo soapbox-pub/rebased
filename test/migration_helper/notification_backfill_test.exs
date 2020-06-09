@@ -2,11 +2,11 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.MigrationHelperTest do
+defmodule Pleroma.MigrationHelper.NotificationBackfillTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
-  alias Pleroma.MigrationHelper
+  alias Pleroma.MigrationHelper.NotificationBackfill
   alias Pleroma.Notification
   alias Pleroma.Repo
   alias Pleroma.Web.CommonAPI
@@ -35,7 +35,7 @@ defmodule Pleroma.MigrationHelperTest do
 
       assert {5, nil} = Repo.update_all(Notification, set: [type: nil])
 
-      MigrationHelper.fill_in_notification_types()
+      NotificationBackfill.fill_in_notification_types()
 
       assert %{type: "mention"} =
                Repo.get_by(Notification, user_id: other_user.id, activity_id: post.id)
