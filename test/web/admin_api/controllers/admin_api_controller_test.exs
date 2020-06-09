@@ -1604,57 +1604,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "relays" do
-    test "POST /relay", %{conn: conn, admin: admin} do
-      conn =
-        post(conn, "/api/pleroma/admin/relay", %{
-          relay_url: "http://mastodon.example.org/users/admin"
-        })
-
-      assert json_response(conn, 200) == "http://mastodon.example.org/users/admin"
-
-      log_entry = Repo.one(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} followed relay: http://mastodon.example.org/users/admin"
-    end
-
-    test "GET /relay", %{conn: conn} do
-      relay_user = Pleroma.Web.ActivityPub.Relay.get_actor()
-
-      ["http://mastodon.example.org/users/admin", "https://mstdn.io/users/mayuutann"]
-      |> Enum.each(fn ap_id ->
-        {:ok, user} = User.get_or_fetch_by_ap_id(ap_id)
-        User.follow(relay_user, user)
-      end)
-
-      conn = get(conn, "/api/pleroma/admin/relay")
-
-      assert json_response(conn, 200)["relays"] -- ["mastodon.example.org", "mstdn.io"] == []
-    end
-
-    test "DELETE /relay", %{conn: conn, admin: admin} do
-      post(conn, "/api/pleroma/admin/relay", %{
-        relay_url: "http://mastodon.example.org/users/admin"
-      })
-
-      conn =
-        delete(conn, "/api/pleroma/admin/relay", %{
-          relay_url: "http://mastodon.example.org/users/admin"
-        })
-
-      assert json_response(conn, 200) == "http://mastodon.example.org/users/admin"
-
-      [log_entry_one, log_entry_two] = Repo.all(ModerationLog)
-
-      assert ModerationLog.get_log_entry_message(log_entry_one) ==
-               "@#{admin.nickname} followed relay: http://mastodon.example.org/users/admin"
-
-      assert ModerationLog.get_log_entry_message(log_entry_two) ==
-               "@#{admin.nickname} unfollowed relay: http://mastodon.example.org/users/admin"
-    end
-  end
-
   describe "instances" do
     test "GET /instances/:instance/statuses", %{conn: conn} do
       user = insert(:user, local: false, nickname: "archaeme@archae.me")
