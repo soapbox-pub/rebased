@@ -60,19 +60,19 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
   test "doesn't just add a title" do
     assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/non-ogp") ==
              {:error,
-              "Found metadata was invalid or incomplete: %{url: \"http://example.com/non-ogp\"}"}
+              "Found metadata was invalid or incomplete: %{\"url\" => \"http://example.com/non-ogp\"}"}
   end
 
   test "parses ogp" do
     assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/ogp") ==
              {:ok,
               %{
-                image: "http://ia.media-imdb.com/images/rock.jpg",
-                title: "The Rock",
-                description:
+                "image" => "http://ia.media-imdb.com/images/rock.jpg",
+                "title" => "The Rock",
+                "description" =>
                   "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
-                type: "video.movie",
-                url: "http://example.com/ogp"
+                "type" => "video.movie",
+                "url" => "http://example.com/ogp"
               }}
   end
 
@@ -80,12 +80,12 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
     assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/ogp-missing-title") ==
              {:ok,
               %{
-                image: "http://ia.media-imdb.com/images/rock.jpg",
-                title: "The Rock (1996)",
-                description:
+                "image" => "http://ia.media-imdb.com/images/rock.jpg",
+                "title" => "The Rock (1996)",
+                "description" =>
                   "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
-                type: "video.movie",
-                url: "http://example.com/ogp-missing-title"
+                "type" => "video.movie",
+                "url" => "http://example.com/ogp-missing-title"
               }}
   end
 
@@ -93,12 +93,12 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
     assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/twitter-card") ==
              {:ok,
               %{
-                card: "summary",
-                site: "@flickr",
-                image: "https://farm6.staticflickr.com/5510/14338202952_93595258ff_z.jpg",
-                title: "Small Island Developing States Photo Submission",
-                description: "View the album on Flickr.",
-                url: "http://example.com/twitter-card"
+                "card" => "summary",
+                "site" => "@flickr",
+                "image" => "https://farm6.staticflickr.com/5510/14338202952_93595258ff_z.jpg",
+                "title" => "Small Island Developing States Photo Submission",
+                "description" => "View the album on Flickr.",
+                "url" => "http://example.com/twitter-card"
               }}
   end
 
@@ -106,27 +106,28 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
     assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/oembed") ==
              {:ok,
               %{
-                author_name: "‮‭‬bees‬",
-                author_url: "https://www.flickr.com/photos/bees/",
-                cache_age: 3600,
-                flickr_type: "photo",
-                height: "768",
-                html:
+                "author_name" => "‮‭‬bees‬",
+                "author_url" => "https://www.flickr.com/photos/bees/",
+                "cache_age" => 3600,
+                "flickr_type" => "photo",
+                "height" => "768",
+                "html" =>
                   "<a data-flickr-embed=\"true\" href=\"https://www.flickr.com/photos/bees/2362225867/\" title=\"Bacon Lollys by ‮‭‬bees‬, on Flickr\"><img src=\"https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_b.jpg\" width=\"1024\" height=\"768\" alt=\"Bacon Lollys\"></a><script async src=\"https://embedr.flickr.com/assets/client-code.js\" charset=\"utf-8\"></script>",
-                license: "All Rights Reserved",
-                license_id: 0,
-                provider_name: "Flickr",
-                provider_url: "https://www.flickr.com/",
-                thumbnail_height: 150,
-                thumbnail_url: "https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_q.jpg",
-                thumbnail_width: 150,
-                title: "Bacon Lollys",
-                type: "photo",
-                url: "http://example.com/oembed",
-                version: "1.0",
-                web_page: "https://www.flickr.com/photos/bees/2362225867/",
-                web_page_short_url: "https://flic.kr/p/4AK2sc",
-                width: "1024"
+                "license" => "All Rights Reserved",
+                "license_id" => 0,
+                "provider_name" => "Flickr",
+                "provider_url" => "https://www.flickr.com/",
+                "thumbnail_height" => 150,
+                "thumbnail_url" =>
+                  "https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_q.jpg",
+                "thumbnail_width" => 150,
+                "title" => "Bacon Lollys",
+                "type" => "photo",
+                "url" => "http://example.com/oembed",
+                "version" => "1.0",
+                "web_page" => "https://www.flickr.com/photos/bees/2362225867/",
+                "web_page_short_url" => "https://flic.kr/p/4AK2sc",
+                "width" => "1024"
               }}
   end
 
