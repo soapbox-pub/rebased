@@ -190,15 +190,7 @@ config :tesla, adapter: Tesla.Adapter.Hackney
 config :pleroma, :http,
   proxy_url: nil,
   send_user_agent: true,
-  user_agent: :default,
-  adapter: [
-    ssl_options: [
-      # Workaround for remote server certificate chain issues
-      partial_chain: &:hackney_connect.partial_chain/1,
-      # We don't support TLS v1.3 yet
-      versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
-    ]
-  ]
+  user_agent: :default
 
 config :pleroma, :instance,
   name: "Pleroma",

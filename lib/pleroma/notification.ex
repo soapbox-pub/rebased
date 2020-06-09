@@ -70,8 +70,9 @@ defmodule Pleroma.Notification do
     |> join(:left, [n, a], object in Object,
       on:
         fragment(
-          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
+          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
           object.data,
+          a.data,
           a.data
         )
     )
@@ -195,7 +196,7 @@ defmodule Pleroma.Notification do
     |> Repo.all()
   end
 
-  def set_read_up_to(%{id: user_id} = _user, id) do
+  def set_read_up_to(%{id: user_id} = user, id) do
     query =
       from(
         n in Notification,
@@ -215,18 +216,8 @@ defmodule Pleroma.Notification do
 
     {_, notification_ids} = Repo.update_all(query, [])
 
-    Notification
+    for_user_query(user)
     |> where([n], n.id in ^notification_ids)
-    |> join(:inner, [n], activity in assoc(n, :activity))
-    |> join(:left, [n, a], object in Object,
-      on:
-        fragment(
-          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
-          object.data,
-          a.data
-        )
-    )
-    |> preload([n, a, o], activity: {a, object: o})
     |> Repo.all()
   end
 

@@ -125,15 +125,8 @@ defmodule Pleroma.Web.MediaProxyTest do
 
     test "uses the configured base_url" do
       base_url = Pleroma.Config.get([:media_proxy, :base_url])
-
-      if base_url do
-        on_exit(fn ->
-          Pleroma.Config.put([:media_proxy, :base_url], base_url)
-        end)
-      end
-
       Pleroma.Config.put([:media_proxy, :base_url], "https://cache.pleroma.social")
-
+      on_exit(fn -> Pleroma.Config.put([:media_proxy, :base_url], base_url) end)
       url = "https://pleroma.soykaf.com/static/logo.png"
       encoded = url(url)
 
@@ -213,8 +206,15 @@ defmodule Pleroma.Web.MediaProxyTest do
     end
 
     test "does not change whitelisted urls" do
+      whitelist = Pleroma.Config.get([:media_proxy, :whitelist])
+      base_url = Pleroma.Config.get([:media_proxy, :base_url])
       Pleroma.Config.put([:media_proxy, :whitelist], ["mycdn.akamai.com"])
       Pleroma.Config.put([:media_proxy, :base_url], "https://cache.pleroma.social")
+
+      on_exit(fn ->
+        Pleroma.Config.put([:media_proxy, :whitelist], whitelist)
+        Pleroma.Config.put([:media_proxy, :base_url], base_url)
+      end)
 
       media_url = "https://mycdn.akamai.com"
 
