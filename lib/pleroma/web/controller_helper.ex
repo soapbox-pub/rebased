@@ -63,7 +63,7 @@ defmodule Pleroma.Web.ControllerHelper do
       conn.params
       |> Map.drop(Map.keys(conn.path_params))
       |> Map.merge(extra_params)
-      |> Map.drop(Pagination.page_keys() -- ["limit", "order"])
+      |> Map.drop(@id_keys)
 
     fields = %{
       "next" => current_url(conn, Map.put(params, :max_id, max_id)),
