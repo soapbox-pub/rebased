@@ -31,25 +31,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   require Logger
   require Pleroma.Constants
 
-  # For Announce activities, we filter the recipients based on following status for any actors
-  # that match actual users.  See issue #164 for more information about why this is necessary.
-  defp get_recipients(%{"type" => "Announce"} = data) do
-    to = Map.get(data, "to", [])
-    cc = Map.get(data, "cc", [])
-    bcc = Map.get(data, "bcc", [])
-    actor = User.get_cached_by_ap_id(data["actor"])
-
-    recipients =
-      Enum.filter(Enum.concat([to, cc, bcc]), fn recipient ->
-        case User.get_cached_by_ap_id(recipient) do
-          nil -> true
-          user -> User.following?(user, actor)
-        end
-      end)
-
-    {recipients, to, cc}
-  end
-
   defp get_recipients(%{"type" => "Create"} = data) do
     to = Map.get(data, "to", [])
     cc = Map.get(data, "cc", [])
@@ -702,6 +683,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp restrict_announce_object_actor(_query, %{announce_filtering_user: _, skip_preload: true}) do
+    raise "Can't use the child object without preloading!"
+  end
+
+  defp restrict_announce_object_actor(query, %{announce_filtering_user: %{ap_id: actor}}) do
+    from(
+      [activity, object] in query,
+      where:
+        fragment(
+          "?->>'type' != ? or ?->>'actor' != ?",
+          activity.data,
+          "Announce",
+          object.data,
+          ^actor
+        )
+    )
+  end
+
+  defp restrict_announce_object_actor(query, _), do: query
+
   defp restrict_since(query, %{since_id: ""}), do: query
 
   defp restrict_since(query, %{since_id: since_id}) do
@@ -1113,6 +1114,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
     |> restrict_instance(opts)
+    |> restrict_announce_object_actor(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
     |> exclude_invisible_actors(opts)

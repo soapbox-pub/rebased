@@ -1643,6 +1643,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert Enum.all?(visible_ids, &(&1 in activities_ids))
     end
+
+    test "filtering out announces where the user is the actor of the announced message" do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+      User.follow(user, other_user)
+
+      {:ok, post} = CommonAPI.post(user, %{status: "yo"})
+      {:ok, other_post} = CommonAPI.post(third_user, %{status: "yo"})
+      {:ok, _announce} = CommonAPI.repeat(post.id, other_user)
+      {:ok, _announce} = CommonAPI.repeat(post.id, third_user)
+      {:ok, announce} = CommonAPI.repeat(other_post.id, other_user)
+
+      params = %{
+        type: ["Announce"],
+        announce_filtering_user: user
+      }
+
+      [result] =
+        [user.ap_id | User.following(user)]
+        |> ActivityPub.fetch_activities(params)
+
+      assert result.id == announce.id
+    end
   end
 
   describe "replies filtering with private messages" do
