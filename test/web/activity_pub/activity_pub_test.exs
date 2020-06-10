@@ -621,7 +621,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert {:ok, activity_three} = ActivityPub.insert(data)
 
     activities =
-      ActivityPub.fetch_activities([], %{"blocking_user" => blocker})
+      ActivityPub.fetch_activities([], %{blocking_user: blocker})
       |> Enum.map(fn act -> act.id end)
 
     assert Enum.member?(activities, activity_one.id)
