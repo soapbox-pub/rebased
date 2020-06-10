@@ -306,6 +306,15 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:authenticated_api)
 
+      post("/chats/by-account-id/:id", ChatController, :create)
+      get("/chats", ChatController, :index)
+      get("/chats/:id", ChatController, :show)
+      get("/chats/:id/messages", ChatController, :messages)
+      post("/chats/:id/messages", ChatController, :post_chat_message)
+      delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
+      post("/chats/:id/read", ChatController, :mark_as_read)
+      post("/chats/:id/messages/:message_id/read", ChatController, :mark_message_as_read)
+
       get("/conversations/:id/statuses", ConversationController, :statuses)
       get("/conversations/:id", ConversationController, :show)
       post("/conversations/read", ConversationController, :mark_as_read)

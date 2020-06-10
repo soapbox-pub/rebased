@@ -112,7 +112,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_poll_votes_if_vote(_create_data), do: :noop
 
+  @object_types ["ChatMessage"]
   @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
+  def persist(%{"type" => type} = object, meta) when type in @object_types do
+    with {:ok, object} <- Object.create(object) do
+      {:ok, object, meta}
+    end
+  end
+
   def persist(object, meta) do
     with local <- Keyword.fetch!(meta, :local),
          {recipients, _, _} <- get_recipients(object),
@@ -344,20 +351,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec follow(User.t(), User.t(), String.t() | nil, boolean()) ::
+  @spec follow(User.t(), User.t(), String.t() | nil, boolean(), keyword()) ::
           {:ok, Activity.t()} | {:error, any()}
-  def follow(follower, followed, activity_id \\ nil, local \\ true) do
+  def follow(follower, followed, activity_id \\ nil, local \\ true, opts \\ []) do
     with {:ok, result} <-
-           Repo.transaction(fn -> do_follow(follower, followed, activity_id, local) end) do
+           Repo.transaction(fn -> do_follow(follower, followed, activity_id, local, opts) end) do
       result
     end
   end
 
-  defp do_follow(follower, followed, activity_id, local) do
+  defp do_follow(follower, followed, activity_id, local, opts) do
+    skip_notify_and_stream = Keyword.get(opts, :skip_notify_and_stream, false)
     data = make_follow_data(follower, followed, activity_id)
 
     with {:ok, activity} <- insert(data, local),
-         _ <- notify_and_stream(activity),
+         _ <- skip_notify_and_stream || notify_and_stream(activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     else
@@ -1000,6 +1008,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp exclude_chat_messages(query, %{include_chat_messages: true}), do: query
+
+  defp exclude_chat_messages(query, _) do
+    if has_named_binding?(query, :object) do
+      from([activity, object: o] in query,
+        where: fragment("not(?->>'type' = ?)", o.data, "ChatMessage")
+      )
+    else
+      query
+    end
+  end
+
   defp exclude_invisible_actors(query, %{invisible_actors: true}), do: query
 
   defp exclude_invisible_actors(query, _opts) do
@@ -1115,6 +1135,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_instance(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
+    |> exclude_chat_messages(opts)
     |> exclude_invisible_actors(opts)
     |> exclude_visibility(opts)
   end

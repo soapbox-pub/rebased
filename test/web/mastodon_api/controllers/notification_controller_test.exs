@@ -54,6 +54,27 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     assert response == expected_response
   end
 
+  test "by default, does not contain pleroma:chat_mention" do
+    %{user: user, conn: conn} = oauth_access(["read:notifications"])
+    other_user = insert(:user)
+
+    {:ok, _activity} = CommonAPI.post_chat_message(other_user, user, "hey")
+
+    result =
+      conn
+      |> get("/api/v1/notifications")
+      |> json_response_and_validate_schema(200)
+
+    assert [] == result
+
+    result =
+      conn
+      |> get("/api/v1/notifications?include_types[]=pleroma:chat_mention")
+      |> json_response_and_validate_schema(200)
+
+    assert [_] = result
+  end
+
   test "getting a single notification" do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)

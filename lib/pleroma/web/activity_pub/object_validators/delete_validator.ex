@@ -46,12 +46,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
     Answer
     Article
     Audio
+    ChatMessage
     Event
     Note
     Page
     Question
-    Video
     Tombstone
+    Video
   }
   def validate_data(cng) do
     cng
