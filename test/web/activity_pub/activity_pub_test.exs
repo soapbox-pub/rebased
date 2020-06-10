@@ -1657,6 +1657,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, announce} = CommonAPI.repeat(other_post.id, other_user)
 
       params = %{
+        type: ["Announce"]
+      }
+
+      results =
+        [user.ap_id | User.following(user)]
+        |> ActivityPub.fetch_activities(params)
+
+      assert length(results) == 3
+
+      params = %{
         type: ["Announce"],
         announce_filtering_user: user
       }
