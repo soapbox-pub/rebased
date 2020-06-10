@@ -133,8 +133,9 @@ their ActivityPub ID.
 An example:
 
 ```elixir
-config :pleroma, :mrf_user_allowlist,
-  "example.org": ["https://example.org/users/admin"]
+config :pleroma, :mrf_user_allowlist, %{
+  "example.org" => ["https://example.org/users/admin"]
+}
 ```
 
 #### :mrf_object_age
