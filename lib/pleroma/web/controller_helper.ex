@@ -57,6 +57,7 @@ defmodule Pleroma.Web.ControllerHelper do
     end
   end
 
+  @id_keys Pagination.page_keys() -- ["limit", "order"]
   defp build_pagination_fields(conn, min_id, max_id, extra_params) do
     params =
       conn.params
