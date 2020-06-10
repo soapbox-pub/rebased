@@ -1623,14 +1623,12 @@ config :pleroma, :config_description, [
   # %{
   #   group: :pleroma,
   #   key: :mrf_user_allowlist,
-  #   type: :group,
+  #   type: :map,
   #   description:
   #     "The keys in this section are the domain names that the policy should apply to." <>
   #       " Each key should be assigned a list of users that should be allowed through by their ActivityPub ID",
-  #   children: [
-  #     ["example.org": ["https://example.org/users/admin"]],
   #     suggestions: [
-  #       ["example.org": ["https://example.org/users/admin"]]
+  #       %{"example.org" => ["https://example.org/users/admin"]}
   #     ]
   #   ]
   # },
