@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ControllerHelper do
     # instead of the `q.id > ^min_id` and `q.id < ^max_id`.
     #  This is because we only have ids present inside of the page, while
     # `min_id`, `since_id` and `max_id` requires to know one outside of it.
-    if Map.take(conn.params, @id_keys) != %{} do
+    if Map.take(conn.params, @id_keys) != [] do
       Map.put(fields, "id", current_url(conn, conn.params))
     else
       fields
