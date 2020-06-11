@@ -114,7 +114,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
       end)
 
     media_proxy_base_url =
-      if Config.get([Pleroma.Upload, :base_url]),
+      if Config.get([:media_proxy, :base_url]),
         do: URI.parse(Config.get([:media_proxy, :base_url])).host
 
     upload_base_url =
