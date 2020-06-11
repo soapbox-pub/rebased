@@ -13,6 +13,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator
@@ -117,6 +118,16 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
+  def validate(%{"type" => "Answer"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> AnswerValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
   def validate(%{"type" => "EmojiReact"} = object, meta) do
     with {:ok, object} <-
            object
@@ -143,9 +154,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   end
 
   def validate(
-        %{"type" => "Create", "object" => %{"type" => "Question"} = object} = create_activity,
+        %{"type" => "Create", "object" => %{"type" => objtype} = object} = create_activity,
         meta
-      ) do
+      )
+      when objtype in ["Question", "Answer"] do
     with {:ok, object_data} <- cast_and_apply(object),
          meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
          {:ok, create_activity} <-
@@ -172,6 +184,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   end
 
   def cast_and_apply(%{"type" => "Question"} = object) do
+    QuestionValidator.cast_and_apply(object)
+  end
+
+  def cast_and_apply(%{"type" => "Answer"} = object) do
     QuestionValidator.cast_and_apply(object)
   end
 

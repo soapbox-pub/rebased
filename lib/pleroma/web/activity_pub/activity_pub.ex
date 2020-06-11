@@ -95,7 +95,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_poll_votes_if_vote(_create_data), do: :noop
 
-  @object_types ["ChatMessage", "Question"]
+  @object_types ["ChatMessage", "Question", "Answer"]
   @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do

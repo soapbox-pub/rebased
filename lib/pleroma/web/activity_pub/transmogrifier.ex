@@ -457,7 +457,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
         options
       )
-      when objtype in ["Article", "Event", "Note", "Video", "Page", "Answer", "Audio"] do
+      when objtype in ["Article", "Event", "Note", "Video", "Page", "Audio"] do
     actor = Containment.get_actor(data)
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
@@ -614,9 +614,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => "Question"} = object} = data,
+        %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
         _options
-      ) do
+      )
+      when objtype in ["Question", "Answer"] do
     data =
       data
       |> Map.put("object", fix_object(object))
