@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parsers.OGP do
+  @deprecated "OGP parser is deprecated. Use TwitterCard instead."
   def parse(html, data) do
     Pleroma.Web.RichMedia.Parsers.MetaTagsParser.parse(
       data,
