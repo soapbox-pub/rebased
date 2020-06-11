@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
+- Chats: Added support for federated chats. For details, see the docs.
 - ActivityPub: Added support for existing AP ids for instances migrated from Mastodon.
 - Instance: Add `background_image` to configuration and `/api/v1/instance`
 - Instance: Extend `/api/v1/instance` with Pleroma-specific information.

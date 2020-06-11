@@ -5,7 +5,9 @@
 defmodule Pleroma.Web.CommonAPITest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Chat
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -22,6 +24,150 @@ defmodule Pleroma.Web.CommonAPITest do
   setup do: clear_config([:instance, :safe_dm_mentions])
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
+
+  describe "posting chat messages" do
+    setup do: clear_config([:instance, :chat_limit])
+
+    test "it posts a chat message without content but with an attachment" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: author.ap_id)
+
+      with_mocks([
+        {
+          Pleroma.Web.Streamer,
+          [],
+          [
+            stream: fn _, _ ->
+              nil
+            end
+          ]
+        },
+        {
+          Pleroma.Web.Push,
+          [],
+          [
+            send: fn _ -> nil end
+          ]
+        }
+      ]) do
+        {:ok, activity} =
+          CommonAPI.post_chat_message(
+            author,
+            recipient,
+            nil,
+            media_id: upload.id
+          )
+
+        notification =
+          Notification.for_user_and_activity(recipient, activity)
+          |> Repo.preload(:activity)
+
+        assert called(Pleroma.Web.Push.send(notification))
+        assert called(Pleroma.Web.Streamer.stream(["user", "user:notification"], notification))
+        assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], :_))
+
+        assert activity
+      end
+    end
+
+    test "it adds html newlines" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "uguu\nuguuu"
+        )
+
+      assert other_user.ap_id not in activity.recipients
+
+      object = Object.normalize(activity, false)
+
+      assert object.data["content"] == "uguu<br/>uguuu"
+    end
+
+    test "it linkifies" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "https://example.org is the site of @#{other_user.nickname} #2hu"
+        )
+
+      assert other_user.ap_id not in activity.recipients
+
+      object = Object.normalize(activity, false)
+
+      assert object.data["content"] ==
+               "<a href=\"https://example.org\" rel=\"ugc\">https://example.org</a> is the site of <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{
+                 other_user.id
+               }\" href=\"#{other_user.ap_id}\" rel=\"ugc\">@<span>#{other_user.nickname}</span></a></span> <a class=\"hashtag\" data-tag=\"2hu\" href=\"http://localhost:4001/tag/2hu\">#2hu</a>"
+    end
+
+    test "it posts a chat message" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "a test message <script>alert('uuu')</script> :firefox:"
+        )
+
+      assert activity.data["type"] == "Create"
+      assert activity.local
+      object = Object.normalize(activity)
+
+      assert object.data["type"] == "ChatMessage"
+      assert object.data["to"] == [recipient.ap_id]
+
+      assert object.data["content"] ==
+               "a test message &lt;script&gt;alert(&#39;uuu&#39;)&lt;/script&gt; :firefox:"
+
+      assert object.data["emoji"] == %{
+               "firefox" => "http://localhost:4001/emoji/Firefox.gif"
+             }
+
+      assert Chat.get(author.id, recipient.ap_id)
+      assert Chat.get(recipient.id, author.ap_id)
+
+      assert :ok == Pleroma.Web.Federator.perform(:publish, activity)
+    end
+
+    test "it reject messages over the local limit" do
+      Pleroma.Config.put([:instance, :chat_limit], 2)
+
+      author = insert(:user)
+      recipient = insert(:user)
+
+      {:error, message} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "123"
+        )
+
+      assert message == :content_too_long
+    end
+  end
 
   describe "unblocking" do
     test "it works even without an existing block activity" do
