@@ -111,6 +111,15 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
                %{"name" => "prone", "url" => "#{Web.base_url()}/tag/prone"},
                %{"name" => "AccidentProne", "url" => "#{Web.base_url()}/tag/AccidentProne"}
              ]
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "https://shpposter.club/users/shpuld"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "shpuld", "url" => "#{Web.base_url()}/tag/shpuld"}
+             ]
     end
 
     test "excludes a blocked users from search results", %{conn: conn} do
