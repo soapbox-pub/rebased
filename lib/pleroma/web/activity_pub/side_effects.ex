@@ -268,9 +268,15 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  def handle_object_creation(%{"type" => "Question"} = object, meta) do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
+      {:ok, object, meta}
+    end
+  end
+
   # Nothing to do
-  def handle_object_creation(object) do
-    {:ok, object}
+  def handle_object_creation(object, meta) do
+    {:ok, object, meta}
   end
 
   defp undo_like(nil, object), do: delete_object(object)

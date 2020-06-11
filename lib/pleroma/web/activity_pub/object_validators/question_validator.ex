@@ -2,17 +2,21 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
+defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   use Ecto.Schema
 
-  alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
+  alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
 
   @primary_key false
+  @derive Jason.Encoder
 
+  # Extends from NoteValidator
   embedded_schema do
-    field(:id, ObjectValidators.ObjectID, primary_key: true)
+    field(:id, Types.ObjectID, primary_key: true)
     field(:to, {:array, :string}, default: [])
     field(:cc, {:array, :string}, default: [])
     field(:bto, {:array, :string}, default: [])
@@ -22,10 +26,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     field(:type, :string)
     field(:content, :string)
     field(:context, :string)
-    field(:actor, ObjectValidators.ObjectID)
-    field(:attributedTo, ObjectValidators.ObjectID)
+    field(:actor, Types.ObjectID)
+    field(:attributedTo, Types.ObjectID)
     field(:summary, :string)
-    field(:published, ObjectValidators.DateTime)
+    field(:published, Types.DateTime)
     # TODO: Write type
     field(:emoji, :map, default: %{})
     field(:sensitive, :boolean, default: false)
@@ -35,13 +39,25 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
     field(:inReplyTo, :string)
-    field(:uri, ObjectValidators.Uri)
+    field(:uri, Types.Uri)
 
     field(:likes, {:array, :string}, default: [])
     field(:announcements, {:array, :string}, default: [])
 
     # see if needed
+    field(:conversation, :string)
     field(:context_id, :string)
+
+    field(:closed, Types.DateTime)
+    field(:voters, {:array, Types.ObjectID}, default: [])
+    embeds_many(:anyOf, QuestionOptionsValidator)
+    embeds_many(:oneOf, QuestionOptionsValidator)
+  end
+
+  def cast_and_apply(data) do
+    data
+    |> cast_data
+    |> apply_action(:insert)
   end
 
   def cast_and_validate(data) do
@@ -52,12 +68,22 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
 
   def cast_data(data) do
     %__MODULE__{}
-    |> cast(data, __schema__(:fields))
+    |> changeset(data)
+  end
+
+  def changeset(struct, data) do
+    struct
+    |> cast(data, __schema__(:fields) -- [:anyOf, :oneOf])
+    |> cast_embed(:anyOf)
+    |> cast_embed(:oneOf)
   end
 
   def validate_data(data_cng) do
     data_cng
-    |> validate_inclusion(:type, ["Note"])
-    |> validate_required([:id, :actor, :to, :cc, :type, :content, :context])
+    |> validate_inclusion(:type, ["Question"])
+    |> validate_required([:id, :actor, :type, :content, :context])
+    |> CommonValidations.validate_any_presence([:cc, :to])
+    |> CommonValidations.validate_actor_presence()
+    |> CommonValidations.validate_any_presence([:oneOf, :anyOf])
   end
 end

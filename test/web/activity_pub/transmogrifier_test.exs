@@ -222,7 +222,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
 
-      object = Object.normalize(activity)
+      object = Object.normalize(activity, false)
 
       assert Enum.all?(object.data["oneOf"], fn choice ->
                choice["name"] in [

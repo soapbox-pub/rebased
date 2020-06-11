@@ -457,7 +457,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
         options
       )
-      when objtype in ["Article", "Event", "Note", "Video", "Page", "Question", "Answer", "Audio"] do
+      when objtype in ["Article", "Event", "Note", "Video", "Page", "Answer", "Audio"] do
     actor = Containment.get_actor(data)
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
@@ -611,6 +611,21 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("type", "EmojiReact")
     |> Map.put("content", @misskey_reactions[reaction] || reaction)
     |> handle_incoming(options)
+  end
+
+  def handle_incoming(
+        %{"type" => "Create", "object" => %{"type" => "Question"} = object} = data,
+        _options
+      ) do
+    data =
+      data
+      |> Map.put("object", fix_object(object))
+      |> fix_addressing()
+
+    with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
+         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+      {:ok, activity}
+    end
   end
 
   def handle_incoming(

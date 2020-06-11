@@ -16,10 +16,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CreateQuestionValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator
 
@@ -105,17 +107,30 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
+  def validate(%{"type" => "Question"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> QuestionValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
   def validate(%{"type" => "EmojiReact"} = object, meta) do
     with {:ok, object} <-
            object
            |> EmojiReactValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object |> Map.from_struct())
+      object = stringify_keys(object)
       {:ok, object, meta}
     end
   end
 
-  def validate(%{"type" => "Create", "object" => object} = create_activity, meta) do
+  def validate(
+        %{"type" => "Create", "object" => %{"type" => "ChatMessage"} = object} = create_activity,
+        meta
+      ) do
     with {:ok, object_data} <- cast_and_apply(object),
          meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
          {:ok, create_activity} <-
@@ -127,12 +142,27 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
+  def validate(
+        %{"type" => "Create", "object" => %{"type" => "Question"} = object} = create_activity,
+        meta
+      ) do
+    with {:ok, object_data} <- cast_and_apply(object),
+         meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
+         {:ok, create_activity} <-
+           create_activity
+           |> CreateQuestionValidator.cast_and_validate(meta)
+           |> Ecto.Changeset.apply_action(:insert) do
+      create_activity = stringify_keys(create_activity)
+      {:ok, create_activity, meta}
+    end
+  end
+
   def validate(%{"type" => "Announce"} = object, meta) do
     with {:ok, object} <-
            object
            |> AnnounceValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object |> Map.from_struct())
+      object = stringify_keys(object)
       {:ok, object, meta}
     end
   end
@@ -141,8 +171,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     ChatMessageValidator.cast_and_apply(object)
   end
 
+  def cast_and_apply(%{"type" => "Question"} = object) do
+    QuestionValidator.cast_and_apply(object)
+  end
+
   def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
 
+  # is_struct/1 isn't present in Elixir 1.8.x
   def stringify_keys(%{__struct__: _} = object) do
     object
     |> Map.from_struct()
