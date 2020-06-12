@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [2.0.7] - 2020-06-13
 
 ### Security
-- Fix potential DoSes exploiting atom leaks in rich media parser/`UserAllowListPolicy` MRF policy
+- Fix potential DoSes exploiting atom leaks in rich media parser and the `UserAllowListPolicy` MRF policy
 
 ### Fixed
 - CSP: not allowing images/media from every host when mediaproxy is disabled
