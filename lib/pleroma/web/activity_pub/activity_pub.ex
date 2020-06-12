@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics
+  alias Pleroma.ActivityExpiration
   alias Pleroma.Config
   alias Pleroma.Constants
   alias Pleroma.Conversation
@@ -146,12 +147,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:containment, :ok} <- {:containment, Containment.contain_child(map)},
          {:ok, map, object} <- insert_full_object(map) do
       {:ok, activity} =
-        Repo.insert(%Activity{
+        %Activity{
           data: map,
           local: local,
           actor: map["actor"],
           recipients: recipients
-        })
+        }
+        |> Repo.insert()
+        |> maybe_create_activity_expiration()
 
       # Splice in the child object if we have one.
       activity = Maps.put_if_present(activity, :object, object)
@@ -188,6 +191,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     stream_out(activity)
     stream_out_participations(participations)
   end
+
+  defp maybe_create_activity_expiration({:ok, %{data: %{"expires_at" => expires_at}} = activity}) do
+    with {:ok, _} <- ActivityExpiration.create(activity, expires_at) do
+      {:ok, activity}
+    end
+  end
+
+  defp maybe_create_activity_expiration(result), do: result
 
   defp create_or_bump_conversation(activity, actor) do
     with {:ok, conversation} <- Conversation.create_or_bump_for(activity),

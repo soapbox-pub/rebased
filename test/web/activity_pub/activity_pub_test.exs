@@ -1986,4 +1986,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
              end) =~ "Follower/Following counter update for #{user.ap_id} failed"
     end
   end
+
+  describe "global activity expiration" do
+    setup do: clear_config([:instance, :rewrite_policy])
+
+    test "creates an activity expiration for local Create activities" do
+      Pleroma.Config.put(
+        [:instance, :rewrite_policy],
+        Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy
+      )
+
+      {:ok, %{id: id_create}} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
+      {:ok, _follow} = ActivityBuilder.insert(%{"type" => "Follow", "context" => "3hu"})
+
+      assert [%{activity_id: ^id_create}] = Pleroma.ActivityExpiration |> Repo.all()
+    end
+  end
 end
