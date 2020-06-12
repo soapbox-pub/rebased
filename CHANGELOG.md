@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add support for filtering replies in public and home timelines
 - Admin API: endpoints for create/update/delete OAuth Apps.
 - Admin API: endpoint for status view.
+- OTP: Add command to reload emoji packs
 </details>
 
 ### Fixed
