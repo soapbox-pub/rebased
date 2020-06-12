@@ -1476,7 +1476,7 @@ config :pleroma, :config_description, [
     key: :mrf_activity_expiration,
     label: "MRF Activity Expiration Policy",
     type: :group,
-    description: "Adds expiration to all local Create activities",
+    description: "Adds expiration to all local Create Note activities",
     children: [
       %{
         key: :days,
