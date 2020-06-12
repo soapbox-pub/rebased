@@ -124,6 +124,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   defp prepare_tags(query, add_joined_tag \\ true) do
     tags =
       query
+      |> preprocess_uri_query()
       |> String.split(~r/[^#\w]+/u, trim: true)
       |> Enum.uniq_by(&String.downcase/1)
 
@@ -144,6 +145,20 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
       |> Enum.uniq_by(&String.downcase/1)
     else
       tags
+    end
+  end
+
+  # If `query` is a URI, returns last component of its path, otherwise returns `query`
+  defp preprocess_uri_query(query) do
+    if query =~ ~r/https?:\/\// do
+      query
+      |> String.trim_trailing("/")
+      |> URI.parse()
+      |> Map.get(:path)
+      |> String.split("/")
+      |> Enum.at(-1)
+    else
+      query
     end
   end
 

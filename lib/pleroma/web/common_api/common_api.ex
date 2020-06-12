@@ -423,19 +423,9 @@ defmodule Pleroma.Web.CommonAPI do
 
   def post(user, %{status: _} = data) do
     with {:ok, draft} <- Pleroma.Web.CommonAPI.ActivityDraft.create(user, data) do
-      draft.changes
-      |> ActivityPub.create(draft.preview?)
-      |> maybe_create_activity_expiration(draft.expires_at)
+      ActivityPub.create(draft.changes, draft.preview?)
     end
   end
-
-  defp maybe_create_activity_expiration({:ok, activity}, %NaiveDateTime{} = expires_at) do
-    with {:ok, _} <- ActivityExpiration.create(activity, expires_at) do
-      {:ok, activity}
-    end
-  end
-
-  defp maybe_create_activity_expiration(result, _), do: result
 
   def pin(id, %{ap_id: user_ap_id} = user) do
     with %Activity{

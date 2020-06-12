@@ -144,6 +144,18 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
+  def run(["reset_mfa", nickname]) do
+    start_pleroma()
+
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname),
+         {:ok, _token} <- Pleroma.MFA.disable(user) do
+      shell_info("Multi-Factor Authentication disabled for #{user.nickname}")
+    else
+      _ ->
+        shell_error("No local user #{nickname}")
+    end
+  end
+
   def run(["deactivate", nickname]) do
     start_pleroma()
 
