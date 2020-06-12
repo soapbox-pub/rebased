@@ -5,42 +5,32 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator do
   use Ecto.Schema
 
-  alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsRepliesValidator
-
   import Ecto.Changeset
 
   @primary_key false
 
   embedded_schema do
     field(:name, :string)
-    embeds_one(:replies, QuestionOptionsRepliesValidator)
+
+    embeds_one :replies, Replies do
+      field(:totalItems, :integer)
+      field(:type, :string)
+    end
+
     field(:type, :string)
   end
 
   def changeset(struct, data) do
     struct
     |> cast(data, [:name, :type])
-    |> cast_embed(:replies)
+    |> cast_embed(:replies, with: &replies_changeset/2)
     |> validate_inclusion(:type, ["Note"])
     |> validate_required([:name, :type])
   end
-end
 
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsRepliesValidator do
-  use Ecto.Schema
-
-  import Ecto.Changeset
-
-  @primary_key false
-
-  embedded_schema do
-    field(:totalItems, :integer)
-    field(:type, :string)
-  end
-
-  def changeset(struct, data) do
+  def replies_changeset(struct, data) do
     struct
-    |> cast(data, __schema__(:fields))
+    |> cast(data, [:totalItems, :type])
     |> validate_inclusion(:type, ["Collection"])
     |> validate_required([:type])
   end
