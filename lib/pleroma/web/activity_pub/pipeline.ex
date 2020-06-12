@@ -17,6 +17,10 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
           {:ok, Activity.t() | Object.t(), keyword()} | {:error, any()}
   def common_pipeline(object, meta) do
     case Repo.transaction(fn -> do_common_pipeline(object, meta) end) do
+      {:ok, {:ok, activity, meta}} ->
+        SideEffects.handle_after_transaction(meta)
+        {:ok, activity, meta}
+
       {:ok, value} ->
         value
 

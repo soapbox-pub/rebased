@@ -359,9 +359,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     with %Activity{} = activity <- Activity.get_by_id(id) do
       activities =
         ActivityPub.fetch_activities_for_context(activity.data["context"], %{
-          "blocking_user" => user,
-          "user" => user,
-          "exclude_id" => activity.id
+          blocking_user: user,
+          user: user,
+          exclude_id: activity.id
         })
 
       render(conn, "context.json", activity: activity, activities: activities, user: user)
@@ -370,11 +370,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc "GET /api/v1/favourites"
   def favourites(%{assigns: %{user: %User{} = user}} = conn, params) do
-    params =
-      params
-      |> Map.new(fn {key, value} -> {to_string(key), value} end)
-      |> Map.take(Pleroma.Pagination.page_keys())
-
     activities = ActivityPub.fetch_favourites(user, params)
 
     conn

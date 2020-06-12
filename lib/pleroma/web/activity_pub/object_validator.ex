@@ -12,6 +12,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
@@ -43,8 +45,20 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   def validate(%{"type" => "Like"} = object, meta) do
     with {:ok, object} <-
-           object |> LikeValidator.cast_and_validate() |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object |> Map.from_struct())
+           object
+           |> LikeValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
+
+  def validate(%{"type" => "ChatMessage"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> ChatMessageValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
       {:ok, object, meta}
     end
   end
@@ -59,6 +73,18 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
+  def validate(%{"type" => "Create", "object" => object} = create_activity, meta) do
+    with {:ok, object_data} <- cast_and_apply(object),
+         meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
+         {:ok, create_activity} <-
+           create_activity
+           |> CreateChatMessageValidator.cast_and_validate(meta)
+           |> Ecto.Changeset.apply_action(:insert) do
+      create_activity = stringify_keys(create_activity)
+      {:ok, create_activity, meta}
+    end
+  end
+
   def validate(%{"type" => "Announce"} = object, meta) do
     with {:ok, object} <-
            object
@@ -69,16 +95,29 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
     end
   end
 
+  def cast_and_apply(%{"type" => "ChatMessage"} = object) do
+    ChatMessageValidator.cast_and_apply(object)
+  end
+
+  def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
+
   def stringify_keys(%{__struct__: _} = object) do
     object
     |> Map.from_struct()
     |> stringify_keys
   end
 
-  def stringify_keys(object) do
+  def stringify_keys(object) when is_map(object) do
     object
-    |> Map.new(fn {key, val} -> {to_string(key), val} end)
+    |> Map.new(fn {key, val} -> {to_string(key), stringify_keys(val)} end)
   end
+
+  def stringify_keys(object) when is_list(object) do
+    object
+    |> Enum.map(&stringify_keys/1)
+  end
+
+  def stringify_keys(object), do: object
 
   def fetch_actor(object) do
     with {:ok, actor} <- Types.ObjectID.cast(object["actor"]) do

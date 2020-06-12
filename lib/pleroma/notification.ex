@@ -30,10 +30,27 @@ defmodule Pleroma.Notification do
 
   schema "notifications" do
     field(:seen, :boolean, default: false)
+    # This is an enum type in the database. If you add a new notification type,
+    # remember to add a migration to add it to the `notifications_type` enum
+    # as well.
+    field(:type, :string)
     belongs_to(:user, User, type: FlakeId.Ecto.CompatType)
     belongs_to(:activity, Activity, type: FlakeId.Ecto.CompatType)
 
     timestamps()
+  end
+
+  def update_notification_type(user, activity) do
+    with %__MODULE__{} = notification <-
+           Repo.get_by(__MODULE__, user_id: user.id, activity_id: activity.id) do
+      type =
+        activity
+        |> type_from_activity()
+
+      notification
+      |> changeset(%{type: type})
+      |> Repo.update()
+    end
   end
 
   @spec unread_notifications_count(User.t()) :: integer()
@@ -44,9 +61,21 @@ defmodule Pleroma.Notification do
     |> Repo.aggregate(:count, :id)
   end
 
+  @notification_types ~w{
+    favourite
+    follow
+    follow_request
+    mention
+    move
+    pleroma:chat_mention
+    pleroma:emoji_reaction
+    reblog
+  }
+
   def changeset(%Notification{} = notification, attrs) do
     notification
-    |> cast(attrs, [:seen])
+    |> cast(attrs, [:seen, :type])
+    |> validate_inclusion(:type, @notification_types)
   end
 
   @spec last_read_query(User.t()) :: Ecto.Queryable.t()
@@ -300,34 +329,83 @@ defmodule Pleroma.Notification do
     end
   end
 
-  def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity) do
-    object = Object.normalize(activity)
+  def create_notifications(activity, options \\ [])
+
+  def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity, options) do
+    object = Object.normalize(activity, false)
 
     if object && object.data["type"] == "Answer" do
       {:ok, []}
     else
-      do_create_notifications(activity)
+      do_create_notifications(activity, options)
     end
   end
 
-  def create_notifications(%Activity{data: %{"type" => type}} = activity)
+  def create_notifications(%Activity{data: %{"type" => type}} = activity, options)
       when type in ["Follow", "Like", "Announce", "Move", "EmojiReact"] do
-    do_create_notifications(activity)
+    do_create_notifications(activity, options)
   end
 
-  def create_notifications(_), do: {:ok, []}
+  def create_notifications(_, _), do: {:ok, []}
 
-  defp do_create_notifications(%Activity{} = activity) do
+  defp do_create_notifications(%Activity{} = activity, options) do
+    do_send = Keyword.get(options, :do_send, true)
+
     {enabled_receivers, disabled_receivers} = get_notified_from_activity(activity)
     potential_receivers = enabled_receivers ++ disabled_receivers
 
     notifications =
       Enum.map(potential_receivers, fn user ->
-        do_send = user in enabled_receivers
+        do_send = do_send && user in enabled_receivers
         create_notification(activity, user, do_send)
       end)
 
     {:ok, notifications}
+  end
+
+  defp type_from_activity(%{data: %{"type" => type}} = activity) do
+    case type do
+      "Follow" ->
+        if Activity.follow_accepted?(activity) do
+          "follow"
+        else
+          "follow_request"
+        end
+
+      "Announce" ->
+        "reblog"
+
+      "Like" ->
+        "favourite"
+
+      "Move" ->
+        "move"
+
+      "EmojiReact" ->
+        "pleroma:emoji_reaction"
+
+      # Compatibility with old reactions
+      "EmojiReaction" ->
+        "pleroma:emoji_reaction"
+
+      "Create" ->
+        activity
+        |> type_from_activity_object()
+
+      t ->
+        raise "No notification type for activity type #{t}"
+    end
+  end
+
+  defp type_from_activity_object(%{data: %{"type" => "Create", "object" => %{}}}), do: "mention"
+
+  defp type_from_activity_object(%{data: %{"type" => "Create"}} = activity) do
+    object = Object.get_by_ap_id(activity.data["object"])
+
+    case object && object.data["type"] do
+      "ChatMessage" -> "pleroma:chat_mention"
+      _ -> "mention"
+    end
   end
 
   # TODO move to sql, too.
@@ -335,7 +413,11 @@ defmodule Pleroma.Notification do
     unless skip?(activity, user) do
       {:ok, %{notification: notification}} =
         Multi.new()
-        |> Multi.insert(:notification, %Notification{user_id: user.id, activity: activity})
+        |> Multi.insert(:notification, %Notification{
+          user_id: user.id,
+          activity: activity,
+          type: type_from_activity(activity)
+        })
         |> Marker.multi_set_last_read_id(user, "notifications")
         |> Repo.transaction()
 
@@ -527,4 +609,12 @@ defmodule Pleroma.Notification do
   end
 
   def skip?(_, _, _), do: false
+
+  def for_user_and_activity(user, activity) do
+    from(n in __MODULE__,
+      where: n.user_id == ^user.id,
+      where: n.activity_id == ^activity.id
+    )
+    |> Repo.one()
+  end
 end

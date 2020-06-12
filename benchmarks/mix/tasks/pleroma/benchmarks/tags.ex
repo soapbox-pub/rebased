@@ -100,14 +100,14 @@ defmodule Mix.Tasks.Pleroma.Benchmarks.Tags do
 
     _activities =
       params
-      |> Map.put("type", "Create")
-      |> Map.put("local_only", local_only)
-      |> Map.put("blocking_user", user)
-      |> Map.put("muting_user", user)
-      |> Map.put("user", user)
-      |> Map.put("tag", tags)
-      |> Map.put("tag_all", tag_all)
-      |> Map.put("tag_reject", tag_reject)
+      |> Map.put(:type, "Create")
+      |> Map.put(:local_only, local_only)
+      |> Map.put(:blocking_user, user)
+      |> Map.put(:muting_user, user)
+      |> Map.put(:user, user)
+      |> Map.put(:tag, tags)
+      |> Map.put(:tag_all, tag_all)
+      |> Map.put(:tag_reject, tag_reject)
       |> Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities()
   end
 end

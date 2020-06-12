@@ -185,6 +185,7 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "mention",
         "poll",
         "pleroma:emoji_reaction",
+        "pleroma:chat_mention",
         "move",
         "follow_request"
       ],

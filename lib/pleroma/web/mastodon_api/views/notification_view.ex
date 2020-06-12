@@ -6,26 +6,28 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
+
+  @parent_types ~w{Like Announce EmojiReact}
 
   def render("index.json", %{notifications: notifications, for: reading_user} = opts) do
     activities = Enum.map(notifications, & &1.activity)
 
     parent_activities =
       activities
-      |> Enum.filter(
-        &(Activity.mastodon_notification_type(&1) in [
-            "favourite",
-            "reblog",
-            "pleroma:emoji_reaction"
-          ])
-      )
+      |> Enum.filter(fn
+        %{data: %{"type" => type}} ->
+          type in @parent_types
+      end)
       |> Enum.map(& &1.data["object"])
       |> Activity.create_by_object_ap_id()
       |> Activity.with_preloaded_object(:left)
@@ -42,7 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         true ->
           move_activities_targets =
             activities
-            |> Enum.filter(&(Activity.mastodon_notification_type(&1) == "move"))
+            |> Enum.filter(&(&1.data["type"] == "Move"))
             |> Enum.map(&User.get_cached_by_ap_id(&1.data["target"]))
 
           actors =
@@ -79,8 +81,6 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       end
     end
 
-    mastodon_type = Activity.mastodon_notification_type(activity)
-
     # Note: :relationships contain user mutes (needed for :muted flag in :status)
     status_render_opts = %{relationships: opts[:relationships]}
 
@@ -91,7 +91,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
            ) do
       response = %{
         id: to_string(notification.id),
-        type: mastodon_type,
+        type: notification.type,
         created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
         account: account,
         pleroma: %{
@@ -99,7 +99,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         }
       }
 
-      case mastodon_type do
+      case notification.type do
         "mention" ->
           put_status(response, activity, reading_user, status_render_opts)
 
@@ -117,6 +117,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
           |> put_status(parent_activity_fn.(), reading_user, status_render_opts)
           |> put_emoji(activity)
 
+        "pleroma:chat_mention" ->
+          put_chat_message(response, activity, reading_user, status_render_opts)
+
         type when type in ["follow", "follow_request"] ->
           response
 
@@ -130,6 +133,17 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
   defp put_emoji(response, activity) do
     Map.put(response, :emoji, activity.data["content"])
+  end
+
+  defp put_chat_message(response, activity, reading_user, opts) do
+    object = Object.normalize(activity)
+    author = User.get_cached_by_ap_id(object.data["actor"])
+    chat = Pleroma.Chat.get(reading_user.id, author.ap_id)
+    cm_ref = MessageReference.for_chat_and_object(chat, object)
+    render_opts = Map.merge(opts, %{for: reading_user, chat_message_reference: cm_ref})
+    chat_message_render = MessageReferenceView.render("show.json", render_opts)
+
+    Map.put(response, :chat_message, chat_message_render)
   end
 
   defp put_status(response, activity, reading_user, opts) do

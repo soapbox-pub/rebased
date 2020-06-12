@@ -6,12 +6,17 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   collection, and so on.
   """
   alias Pleroma.Activity
+  alias Pleroma.Chat
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.Push
+  alias Pleroma.Web.Streamer
 
   def handle(object, meta \\ [])
 
@@ -25,6 +30,24 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     Notification.create_notifications(object)
 
     {:ok, object, meta}
+  end
+
+  # Tasks this handles
+  # - Actually create object
+  # - Rollback if we couldn't create it
+  # - Set up notifications
+  def handle(%{data: %{"type" => "Create"}} = activity, meta) do
+    with {:ok, _object, meta} <- handle_object_creation(meta[:object_data], meta) do
+      {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
+
+      meta =
+        meta
+        |> add_notifications(notifications)
+
+      {:ok, activity, meta}
+    else
+      e -> Repo.rollback(e)
+    end
   end
 
   # Tasks this handles:
@@ -88,6 +111,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
               Object.decrease_replies_count(in_reply_to)
             end
 
+            MessageReference.delete_for_object(deleted_object)
+
             ActivityPub.stream_out(object)
             ActivityPub.stream_out_participations(deleted_object, user)
             :ok
@@ -110,6 +135,39 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Nothing to do
   def handle(object, meta) do
     {:ok, object, meta}
+  end
+
+  def handle_object_creation(%{"type" => "ChatMessage"} = object, meta) do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
+      actor = User.get_cached_by_ap_id(object.data["actor"])
+      recipient = User.get_cached_by_ap_id(hd(object.data["to"]))
+
+      streamables =
+        [[actor, recipient], [recipient, actor]]
+        |> Enum.map(fn [user, other_user] ->
+          if user.local do
+            {:ok, chat} = Chat.bump_or_create(user.id, other_user.ap_id)
+            {:ok, cm_ref} = MessageReference.create(chat, object, user.ap_id != actor.ap_id)
+
+            {
+              ["user", "user:pleroma_chat"],
+              {user, %{cm_ref | chat: chat, object: object}}
+            }
+          end
+        end)
+        |> Enum.filter(& &1)
+
+      meta =
+        meta
+        |> add_streamables(streamables)
+
+      {:ok, object, meta}
+    end
+  end
+
+  # Nothing to do
+  def handle_object_creation(object) do
+    {:ok, object}
   end
 
   def handle_undoing(%{data: %{"type" => "Like"}} = object) do
@@ -148,4 +206,43 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
+
+  defp send_notifications(meta) do
+    Keyword.get(meta, :notifications, [])
+    |> Enum.each(fn notification ->
+      Streamer.stream(["user", "user:notification"], notification)
+      Push.send(notification)
+    end)
+
+    meta
+  end
+
+  defp send_streamables(meta) do
+    Keyword.get(meta, :streamables, [])
+    |> Enum.each(fn {topics, items} ->
+      Streamer.stream(topics, items)
+    end)
+
+    meta
+  end
+
+  defp add_streamables(meta, streamables) do
+    existing = Keyword.get(meta, :streamables, [])
+
+    meta
+    |> Keyword.put(:streamables, streamables ++ existing)
+  end
+
+  defp add_notifications(meta, notifications) do
+    existing = Keyword.get(meta, :notifications, [])
+
+    meta
+    |> Keyword.put(:notifications, notifications ++ existing)
+  end
+
+  def handle_after_transaction(meta) do
+    meta
+    |> send_notifications()
+    |> send_streamables()
+  end
 end

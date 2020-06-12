@@ -24,16 +24,6 @@ defmodule Pleroma.Activity do
 
   @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
-  # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
-  @mastodon_notification_types %{
-    "Create" => "mention",
-    "Follow" => ["follow", "follow_request"],
-    "Announce" => "reblog",
-    "Like" => "favourite",
-    "Move" => "move",
-    "EmojiReact" => "pleroma:emoji_reaction"
-  }
-
   schema "activities" do
     field(:data, :map)
     field(:local, :boolean, default: true)
@@ -299,32 +289,6 @@ defmodule Pleroma.Activity do
   end
 
   def follow_accepted?(_), do: false
-
-  @spec mastodon_notification_type(Activity.t()) :: String.t() | nil
-
-  for {ap_type, type} <- @mastodon_notification_types, not is_list(type) do
-    def mastodon_notification_type(%Activity{data: %{"type" => unquote(ap_type)}}),
-      do: unquote(type)
-  end
-
-  def mastodon_notification_type(%Activity{data: %{"type" => "Follow"}} = activity) do
-    if follow_accepted?(activity) do
-      "follow"
-    else
-      "follow_request"
-    end
-  end
-
-  def mastodon_notification_type(%Activity{}), do: nil
-
-  @spec from_mastodon_notification_type(String.t()) :: String.t() | nil
-  @doc "Converts Mastodon notification type to AR activity type"
-  def from_mastodon_notification_type(type) do
-    with {k, _v} <-
-           Enum.find(@mastodon_notification_types, fn {_k, v} -> type in List.wrap(v) end) do
-      k
-    end
-  end
 
   def all_by_actor_and_id(actor, status_ids \\ [])
   def all_by_actor_and_id(_actor, []), do: []

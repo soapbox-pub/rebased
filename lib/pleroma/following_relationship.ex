@@ -141,6 +141,12 @@ defmodule Pleroma.FollowingRelationship do
     |> where([r], r.state == ^:follow_accept)
   end
 
+  def outgoing_pending_follow_requests_query(%User{} = follower) do
+    __MODULE__
+    |> where([r], r.follower_id == ^follower.id)
+    |> where([r], r.state == ^:follow_pending)
+  end
+
   def following(%User{} = user) do
     following =
       following_query(user)

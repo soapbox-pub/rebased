@@ -33,7 +33,10 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
         {
           Pleroma.Web.ActivityPub.SideEffects,
           [],
-          [handle: fn o, m -> {:ok, o, m} end]
+          [
+            handle: fn o, m -> {:ok, o, m} end,
+            handle_after_transaction: fn m -> m end
+          ]
         },
         {
           Pleroma.Web.Federator,
@@ -71,7 +74,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
         {
           Pleroma.Web.ActivityPub.SideEffects,
           [],
-          [handle: fn o, m -> {:ok, o, m} end]
+          [handle: fn o, m -> {:ok, o, m} end, handle_after_transaction: fn m -> m end]
         },
         {
           Pleroma.Web.Federator,
@@ -110,7 +113,7 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
         {
           Pleroma.Web.ActivityPub.SideEffects,
           [],
-          [handle: fn o, m -> {:ok, o, m} end]
+          [handle: fn o, m -> {:ok, o, m} end, handle_after_transaction: fn m -> m end]
         },
         {
           Pleroma.Web.Federator,

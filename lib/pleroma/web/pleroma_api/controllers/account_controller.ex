@@ -126,10 +126,9 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   def favourites(%{assigns: %{user: for_user, account: user}} = conn, params) do
     params =
       params
-      |> Map.new(fn {key, value} -> {to_string(key), value} end)
-      |> Map.put("type", "Create")
-      |> Map.put("favorited_by", user.ap_id)
-      |> Map.put("blocking_user", for_user)
+      |> Map.put(:type, "Create")
+      |> Map.put(:favorited_by, user.ap_id)
+      |> Map.put(:blocking_user, for_user)
 
     recipients =
       if for_user do

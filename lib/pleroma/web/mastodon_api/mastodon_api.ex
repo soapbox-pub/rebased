@@ -6,7 +6,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   import Ecto.Query
   import Ecto.Changeset
 
-  alias Pleroma.Activity
   alias Pleroma.Notification
   alias Pleroma.Pagination
   alias Pleroma.ScheduledActivity
@@ -82,15 +81,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   end
 
   defp restrict(query, :include_types, %{include_types: mastodon_types = [_ | _]}) do
-    ap_types = convert_and_filter_mastodon_types(mastodon_types)
-
-    where(query, [q, a], fragment("? @> ARRAY[?->>'type']::varchar[]", ^ap_types, a.data))
+    where(query, [n], n.type in ^mastodon_types)
   end
 
   defp restrict(query, :exclude_types, %{exclude_types: mastodon_types = [_ | _]}) do
-    ap_types = convert_and_filter_mastodon_types(mastodon_types)
-
-    where(query, [q, a], not fragment("? @> ARRAY[?->>'type']::varchar[]", ^ap_types, a.data))
+    where(query, [n], n.type not in ^mastodon_types)
   end
 
   defp restrict(query, :account_ap_id, %{account_ap_id: account_ap_id}) do
@@ -98,10 +93,4 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   end
 
   defp restrict(query, _, _), do: query
-
-  defp convert_and_filter_mastodon_types(types) do
-    types
-    |> Enum.map(&Activity.from_mastodon_notification_type/1)
-    |> Enum.filter(& &1)
-  end
 end

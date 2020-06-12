@@ -9,6 +9,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Activity
   alias Pleroma.EarmarkRenderer
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Maps
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
@@ -208,12 +210,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("conversation", context)
   end
 
-  defp add_if_present(map, _key, nil), do: map
-
-  defp add_if_present(map, key, value) do
-    Map.put(map, key, value)
-  end
-
   def fix_attachments(%{"attachment" => attachment} = object) when is_list(attachment) do
     attachments =
       Enum.map(attachment, fn data ->
@@ -226,9 +222,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         media_type =
           cond do
-            is_map(url) && is_binary(url["mediaType"]) -> url["mediaType"]
-            is_binary(data["mediaType"]) -> data["mediaType"]
-            is_binary(data["mimeType"]) -> data["mimeType"]
+            is_map(url) && MIME.valid?(url["mediaType"]) -> url["mediaType"]
+            MIME.valid?(data["mediaType"]) -> data["mediaType"]
+            MIME.valid?(data["mimeType"]) -> data["mimeType"]
             true -> nil
           end
 
@@ -241,13 +237,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         attachment_url =
           %{"href" => href}
-          |> add_if_present("mediaType", media_type)
-          |> add_if_present("type", Map.get(url || %{}, "type"))
+          |> Maps.put_if_present("mediaType", media_type)
+          |> Maps.put_if_present("type", Map.get(url || %{}, "type"))
 
         %{"url" => [attachment_url]}
-        |> add_if_present("mediaType", media_type)
-        |> add_if_present("type", data["type"])
-        |> add_if_present("name", data["name"])
+        |> Maps.put_if_present("mediaType", media_type)
+        |> Maps.put_if_present("type", data["type"])
+        |> Maps.put_if_present("name", data["name"])
       end)
 
     Map.put(object, "attachment", attachments)
@@ -532,7 +528,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            User.get_cached_by_ap_id(Containment.get_actor(%{"actor" => followed})),
          {:ok, %User{} = follower} <-
            User.get_or_fetch_by_ap_id(Containment.get_actor(%{"actor" => follower})),
-         {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
+         {:ok, activity} <-
+           ActivityPub.follow(follower, followed, id, false, skip_notify_and_stream: true) do
       with deny_follow_blocked <- Pleroma.Config.get([:user, :deny_follow_blocked]),
            {_, false} <- {:user_blocked, User.blocks?(followed, follower) && deny_follow_blocked},
            {_, false} <- {:user_locked, User.locked?(followed)},
@@ -575,6 +572,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           :noop
       end
 
+      ActivityPub.notify_and_stream(activity)
       {:ok, activity}
     else
       _e ->
@@ -594,6 +592,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
       User.update_follower_count(followed)
       User.update_following_count(follower)
+
+      Notification.update_notification_type(followed, follow_activity)
 
       ActivityPub.accept(%{
         to: follow_activity.data["to"],
@@ -660,6 +660,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("type", "EmojiReact")
     |> Map.put("content", @misskey_reactions[reaction] || reaction)
     |> handle_incoming(options)
+  end
+
+  def handle_incoming(
+        %{"type" => "Create", "object" => %{"type" => "ChatMessage"}} = data,
+        _options
+      ) do
+    with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
+         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+      {:ok, activity}
+    end
   end
 
   def handle_incoming(%{"type" => type} = data, _options)
@@ -1112,6 +1122,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     attributed_to = object["attributedTo"] || object["actor"]
     Map.put(object, "attributedTo", attributed_to)
   end
+
+  # TODO: Revisit this
+  def prepare_attachments(%{"type" => "ChatMessage"} = object), do: object
 
   def prepare_attachments(object) do
     attachments =

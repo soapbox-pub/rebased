@@ -5,6 +5,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   This module encodes our addressing policies and general shape of our objects.
   """
 
+  alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
@@ -63,6 +64,42 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "to" => to,
        "type" => "Delete"
      }, []}
+  end
+
+  def create(actor, object, recipients) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "actor" => actor.ap_id,
+       "to" => recipients,
+       "object" => object,
+       "type" => "Create",
+       "published" => DateTime.utc_now() |> DateTime.to_iso8601()
+     }, []}
+  end
+
+  def chat_message(actor, recipient, content, opts \\ []) do
+    basic = %{
+      "id" => Utils.generate_object_id(),
+      "actor" => actor.ap_id,
+      "type" => "ChatMessage",
+      "to" => [recipient],
+      "content" => content,
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "emoji" => Emoji.Formatter.get_emoji_map(content)
+    }
+
+    case opts[:attachment] do
+      %Object{data: attachment_data} ->
+        {
+          :ok,
+          Map.put(basic, "attachment", attachment_data),
+          []
+        }
+
+      _ ->
+        {:ok, basic, []}
+    end
   end
 
   @spec tombstone(String.t(), String.t()) :: {:ok, map(), keyword()}
