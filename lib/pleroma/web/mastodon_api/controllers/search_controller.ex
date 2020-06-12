@@ -152,6 +152,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   defp preprocess_uri_query(query) do
     if query =~ ~r/https?:\/\// do
       query
+      |> String.trim_trailing("/")
       |> URI.parse()
       |> Map.get(:path)
       |> String.split("/")
