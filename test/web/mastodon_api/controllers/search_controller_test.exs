@@ -111,6 +111,44 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
                %{"name" => "prone", "url" => "#{Web.base_url()}/tag/prone"},
                %{"name" => "AccidentProne", "url" => "#{Web.base_url()}/tag/AccidentProne"}
              ]
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "https://shpposter.club/users/shpuld"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "shpuld", "url" => "#{Web.base_url()}/tag/shpuld"}
+             ]
+
+      results =
+        conn
+        |> get(
+          "/api/v2/search?#{
+            URI.encode_query(%{
+              q:
+                "https://www.washingtonpost.com/sports/2020/06/10/" <>
+                  "nascar-ban-display-confederate-flag-all-events-properties/"
+            })
+          }"
+        )
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "nascar", "url" => "#{Web.base_url()}/tag/nascar"},
+               %{"name" => "ban", "url" => "#{Web.base_url()}/tag/ban"},
+               %{"name" => "display", "url" => "#{Web.base_url()}/tag/display"},
+               %{"name" => "confederate", "url" => "#{Web.base_url()}/tag/confederate"},
+               %{"name" => "flag", "url" => "#{Web.base_url()}/tag/flag"},
+               %{"name" => "all", "url" => "#{Web.base_url()}/tag/all"},
+               %{"name" => "events", "url" => "#{Web.base_url()}/tag/events"},
+               %{"name" => "properties", "url" => "#{Web.base_url()}/tag/properties"},
+               %{
+                 "name" => "NascarBanDisplayConfederateFlagAllEventsProperties",
+                 "url" =>
+                   "#{Web.base_url()}/tag/NascarBanDisplayConfederateFlagAllEventsProperties"
+               }
+             ]
     end
 
     test "excludes a blocked users from search results", %{conn: conn} do
