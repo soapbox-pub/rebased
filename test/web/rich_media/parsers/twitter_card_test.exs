@@ -19,11 +19,11 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
     assert TwitterCard.parse(html, %{}) ==
              {:ok,
               %{
-                "app:id:googleplay": "com.nytimes.android",
-                "app:name:googleplay": "NYTimes",
-                "app:url:googleplay": "nytimes://reader/id/100000006583622",
-                site: nil,
-                title:
+                "app:id:googleplay" => "com.nytimes.android",
+                "app:name:googleplay" => "NYTimes",
+                "app:url:googleplay" => "nytimes://reader/id/100000006583622",
+                "site" => nil,
+                "title" =>
                   "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database. - The New York Times"
               }}
   end
@@ -36,15 +36,15 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
     assert TwitterCard.parse(html, %{}) ==
              {:ok,
               %{
-                card: "summary_large_image",
-                description:
+                "card" => "summary_large_image",
+                "description" =>
                   "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
-                image:
+                "image" =>
                   "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
-                "image:alt": "",
-                title:
+                "image:alt" => "",
+                "title" =>
                   "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
-                url:
+                "url" =>
                   "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html"
               }}
   end
@@ -57,19 +57,19 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
     assert TwitterCard.parse(html, %{}) ==
              {:ok,
               %{
-                "app:id:googleplay": "com.nytimes.android",
-                "app:name:googleplay": "NYTimes",
-                "app:url:googleplay": "nytimes://reader/id/100000006583622",
-                card: "summary_large_image",
-                description:
+                "app:id:googleplay" => "com.nytimes.android",
+                "app:name:googleplay" => "NYTimes",
+                "app:url:googleplay" => "nytimes://reader/id/100000006583622",
+                "card" => "summary_large_image",
+                "description" =>
                   "With little oversight, the N.Y.P.D. has been using powerful surveillance technology on photos of children and teenagers.",
-                image:
+                "image" =>
                   "https://static01.nyt.com/images/2019/08/01/nyregion/01nypd-juveniles-promo/01nypd-juveniles-promo-videoSixteenByNineJumbo1600.jpg",
-                "image:alt": "",
-                site: nil,
-                title:
+                "image:alt" => "",
+                "site" => nil,
+                "title" =>
                   "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database.",
-                url:
+                "url" =>
                   "https://www.nytimes.com/2019/08/01/nyregion/nypd-facial-recognition-children-teenagers.html"
               }}
   end
@@ -86,11 +86,11 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
     assert TwitterCard.parse(html, %{}) ==
              {:ok,
               %{
-                site: "@atlasobscura",
-                title:
+                "site" => "@atlasobscura",
+                "title" =>
                   "The Missing Grave of Margaret Corbin, Revolutionary War Veteran - Atlas Obscura",
-                card: "summary_large_image",
-                image: image_path
+                "card" => "summary_large_image",
+                "image" => image_path
               }}
   end
 
@@ -102,12 +102,12 @@ defmodule Pleroma.Web.RichMedia.Parsers.TwitterCardTest do
     assert TwitterCard.parse(html, %{}) ==
              {:ok,
               %{
-                site: nil,
-                title:
+                "site" => nil,
+                "title" =>
                   "She Was Arrested at 14. Then Her Photo Went to a Facial Recognition Database. - The New York Times",
-                "app:id:googleplay": "com.nytimes.android",
-                "app:name:googleplay": "NYTimes",
-                "app:url:googleplay": "nytimes://reader/id/100000006583622"
+                "app:id:googleplay" => "com.nytimes.android",
+                "app:name:googleplay" => "NYTimes",
+                "app:url:googleplay" => "nytimes://reader/id/100000006583622"
               }}
   end
 end

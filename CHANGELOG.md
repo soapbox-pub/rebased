@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.7] - 2020-06-13
+
+### Security
+- Fix potential DoSes exploiting atom leaks in rich media parser and the `UserAllowListPolicy` MRF policy
+
+### Fixed
+- CSP: not allowing images/media from every host when mediaproxy is disabled
+- CSP: not adding mediaproxy base url to image/media hosts
+- StaticFE missing the CSS file
+
+### Upgrade notes
+
+1. Restart Pleroma
+
 ## [2.0.6] - 2020-06-09
 
 ### Security

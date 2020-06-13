@@ -75,7 +75,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
         sources = get_proxy_and_attachment_sources()
         {[img_src, sources], [media_src, sources]}
       else
-        {img_src, media_src}
+        {[img_src, " https:"], [media_src, " https:"]}
       end
 
     connect_src = ["connect-src 'self' ", static_url, ?\s, websocket_url]
@@ -113,6 +113,10 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
         add_source(acc, host)
       end)
 
+    media_proxy_base_url =
+      if Config.get([:media_proxy, :base_url]),
+        do: URI.parse(Config.get([:media_proxy, :base_url])).host
+
     upload_base_url =
       if Config.get([Pleroma.Upload, :base_url]),
         do: URI.parse(Config.get([Pleroma.Upload, :base_url])).host
@@ -122,6 +126,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
         do: URI.parse(Config.get([Pleroma.Uploaders.S3, :public_endpoint])).host
 
     []
+    |> add_source(media_proxy_base_url)
     |> add_source(upload_base_url)
     |> add_source(s3_endpoint)
     |> add_source(media_proxy_whitelist)
