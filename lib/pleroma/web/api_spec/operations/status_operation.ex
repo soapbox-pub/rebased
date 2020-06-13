@@ -333,7 +333,8 @@ defmodule Pleroma.Web.ApiSpec.StatusOperation do
     %Operation{
       tags: ["Statuses"],
       summary: "Favourited statuses",
-      description: "Statuses the user has favourited",
+      description:
+        "Statuses the user has favourited. Please note that you have to use the link headers to paginate this. You can not build the query parameters yourself.",
       operationId: "StatusController.favourites",
       parameters: pagination_params(),
       security: [%{"oAuth" => ["read:favourites"]}],
