@@ -23,21 +23,21 @@ defmodule Pleroma.Object.Fetcher do
     Ecto.Changeset.put_change(changeset, :updated_at, updated_at)
   end
 
-  defp maybe_reinject_internal_fields(data, %{data: %{} = old_data}) do
+  defp maybe_reinject_internal_fields(%{data: %{} = old_data}, new_data) do
     internal_fields = Map.take(old_data, Pleroma.Constants.object_internal_fields())
 
-    Map.merge(data, internal_fields)
+    Map.merge(new_data, internal_fields)
   end
 
-  defp maybe_reinject_internal_fields(data, _), do: data
+  defp maybe_reinject_internal_fields(_, new_data), do: new_data
 
   @spec reinject_object(struct(), map()) :: {:ok, Object.t()} | {:error, any()}
-  defp reinject_object(struct, data) do
-    Logger.debug("Reinjecting object #{data["id"]}")
+  defp reinject_object(%Object{} = object, new_data) do
+    Logger.debug("Reinjecting object #{new_data["id"]}")
 
-    with data <- Transmogrifier.fix_object(data),
-         data <- maybe_reinject_internal_fields(data, struct),
-         changeset <- Object.change(struct, %{data: data}),
+    with new_data <- Transmogrifier.fix_object(new_data),
+         data <- maybe_reinject_internal_fields(object, new_data),
+         changeset <- Object.change(object, %{data: data}),
          changeset <- touch_changeset(changeset),
          {:ok, object} <- Repo.insert_or_update(changeset),
          {:ok, object} <- Object.set_cache(object) do
@@ -51,8 +51,8 @@ defmodule Pleroma.Object.Fetcher do
 
   def refetch_object(%Object{data: %{"id" => id}} = object) do
     with {:local, false} <- {:local, Object.local?(object)},
-         {:ok, data} <- fetch_and_contain_remote_object_from_id(id),
-         {:ok, object} <- reinject_object(object, data) do
+         {:ok, new_data} <- fetch_and_contain_remote_object_from_id(id),
+         {:ok, object} <- reinject_object(object, new_data) do
       {:ok, object}
     else
       {:local, true} -> {:ok, object}
