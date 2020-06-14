@@ -28,10 +28,10 @@ defmodule Pleroma.Web.MastodonAPI.PollView do
 
   def render("show.json", %{object: object} = params) do
     case object.data do
-      %{"anyOf" => options} when is_list(options) ->
+      %{"anyOf" => options} when is_list(options) and options != [] ->
         render(__MODULE__, "show.json", Map.merge(params, %{multiple: true, options: options}))
 
-      %{"oneOf" => options} when is_list(options) ->
+      %{"oneOf" => options} when is_list(options) and options != [] ->
         render(__MODULE__, "show.json", Map.merge(params, %{multiple: false, options: options}))
 
       _ ->

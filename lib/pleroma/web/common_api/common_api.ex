@@ -340,8 +340,13 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp get_options_and_max_count(%{data: %{"anyOf" => any_of}}), do: {any_of, Enum.count(any_of)}
-  defp get_options_and_max_count(%{data: %{"oneOf" => one_of}}), do: {one_of, 1}
+  defp get_options_and_max_count(%{data: %{"anyOf" => any_of}})
+       when is_list(any_of) and any_of != [],
+       do: {any_of, Enum.count(any_of)}
+
+  defp get_options_and_max_count(%{data: %{"oneOf" => one_of}})
+       when is_list(one_of) and one_of != [],
+       do: {one_of, 1}
 
   defp normalize_and_validate_choices(choices, object) do
     choices = Enum.map(choices, fn i -> if is_binary(i), do: String.to_integer(i), else: i end)
