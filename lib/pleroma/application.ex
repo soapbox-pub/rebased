@@ -148,7 +148,8 @@ defmodule Pleroma.Application do
       build_cachex("idempotency", expiration: idempotency_expiration(), limit: 2500),
       build_cachex("web_resp", limit: 2500),
       build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
-      build_cachex("failed_proxy_url", limit: 2500)
+      build_cachex("failed_proxy_url", limit: 2500),
+      build_cachex("deleted_urls", default_ttl: :timer.hours(24 * 30), limit: 5_000)
     ]
   end
 

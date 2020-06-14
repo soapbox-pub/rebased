@@ -262,7 +262,7 @@ This section describe PWA manifest instance-specific values. Currently this opti
 
 #### Pleroma.Web.MediaProxy.Invalidation.Script
 
-This strategy allow perform external bash script to purge cache.
+This strategy allow perform external shell script to purge cache.
 Urls of attachments pass to script as arguments.
 
 * `script_path`: path to external script.
@@ -278,8 +278,8 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
 This strategy allow perform custom http request to purge cache.
 
 * `method`: http method. default is `purge`
-* `headers`: http headers. default is empty
-* `options`: request options. default is empty
+* `headers`: http headers.
+* `options`: request options.
 
 Example:
 ```elixir
