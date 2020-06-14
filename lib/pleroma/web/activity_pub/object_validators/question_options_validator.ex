@@ -12,7 +12,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator do
   embedded_schema do
     field(:name, :string)
 
-    embeds_one :replies, Replies do
+    embeds_one :replies, Replies, primary_key: false do
       field(:totalItems, :integer)
       field(:type, :string)
     end

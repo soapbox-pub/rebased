@@ -224,14 +224,33 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       object = Object.normalize(activity, false)
 
-      assert Enum.all?(object.data["oneOf"], fn choice ->
-               choice["name"] in [
-                 "Dunno",
-                 "Everyone knows that!",
-                 "25 char limit is dumb",
-                 "I can't even fit a funny"
-               ]
-             end)
+      assert object.data["closed"] == "2019-05-11T09:03:36Z"
+
+      assert object.data["anyOf"] == []
+
+      assert Enum.sort(object.data["oneOf"]) ==
+               Enum.sort([
+                 %{
+                   "name" => "25 char limit is dumb",
+                   "replies" => %{"totalItems" => 0, "type" => "Collection"},
+                   "type" => "Note"
+                 },
+                 %{
+                   "name" => "Dunno",
+                   "replies" => %{"totalItems" => 0, "type" => "Collection"},
+                   "type" => "Note"
+                 },
+                 %{
+                   "name" => "Everyone knows that!",
+                   "replies" => %{"totalItems" => 1, "type" => "Collection"},
+                   "type" => "Note"
+                 },
+                 %{
+                   "name" => "I can't even fit a funny",
+                   "replies" => %{"totalItems" => 1, "type" => "Collection"},
+                   "type" => "Note"
+                 }
+               ])
     end
 
     test "it works for incoming listens" do
