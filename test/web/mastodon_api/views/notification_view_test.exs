@@ -139,9 +139,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     test_notifications_rendering([notification], followed, [expected])
 
     User.perform(:delete, follower)
-    notification = Notification |> Repo.one() |> Repo.preload(:activity)
-
-    test_notifications_rendering([notification], followed, [])
+    refute Repo.one(Notification)
   end
 
   @tag capture_log: true

@@ -46,6 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
             activities
             |> Enum.filter(&(&1.data["type"] == "Move"))
             |> Enum.map(&User.get_cached_by_ap_id(&1.data["target"]))
+            |> Enum.filter(& &1)
 
           actors =
             activities
@@ -84,50 +85,45 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
     # Note: :relationships contain user mutes (needed for :muted flag in :status)
     status_render_opts = %{relationships: opts[:relationships]}
 
-    with %{id: _} = account <-
-           AccountView.render(
-             "show.json",
-             %{user: actor, for: reading_user}
-           ) do
-      response = %{
-        id: to_string(notification.id),
-        type: notification.type,
-        created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
-        account: account,
-        pleroma: %{
-          is_seen: notification.seen
-        }
+    account =
+      AccountView.render(
+        "show.json",
+        %{user: actor, for: reading_user}
+      )
+
+    response = %{
+      id: to_string(notification.id),
+      type: notification.type,
+      created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
+      account: account,
+      pleroma: %{
+        is_seen: notification.seen
       }
+    }
 
-      case notification.type do
-        "mention" ->
-          put_status(response, activity, reading_user, status_render_opts)
+    case notification.type do
+      "mention" ->
+        put_status(response, activity, reading_user, status_render_opts)
 
-        "favourite" ->
-          put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
+      "favourite" ->
+        put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
-        "reblog" ->
-          put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
+      "reblog" ->
+        put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
-        "move" ->
-          put_target(response, activity, reading_user, %{})
+      "move" ->
+        put_target(response, activity, reading_user, %{})
 
-        "pleroma:emoji_reaction" ->
-          response
-          |> put_status(parent_activity_fn.(), reading_user, status_render_opts)
-          |> put_emoji(activity)
+      "pleroma:emoji_reaction" ->
+        response
+        |> put_status(parent_activity_fn.(), reading_user, status_render_opts)
+        |> put_emoji(activity)
 
-        "pleroma:chat_mention" ->
-          put_chat_message(response, activity, reading_user, status_render_opts)
+      "pleroma:chat_mention" ->
+        put_chat_message(response, activity, reading_user, status_render_opts)
 
-        type when type in ["follow", "follow_request"] ->
-          response
-
-        _ ->
-          nil
-      end
-    else
-      _ -> nil
+      type when type in ["follow", "follow_request"] ->
+        response
     end
   end
 
