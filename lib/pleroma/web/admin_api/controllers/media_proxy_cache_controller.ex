@@ -7,6 +7,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
 
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Web.ApiSpec.Admin, as: Spec
+  alias Pleroma.Web.MediaProxy
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 
@@ -24,15 +25,39 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
 
   defdelegate open_api_operation(action), to: Spec.MediaProxyCacheOperation
 
-  def index(%{assigns: %{user: _}} = conn, _) do
-    render(conn, "index.json", urls: [])
-  end
+  def index(%{assigns: %{user: _}} = conn, params) do
+    cursor =
+      :deleted_urls_cache
+      |> :ets.table([{:traverse, {:select, Cachex.Query.create(true, :key)}}])
+      |> :qlc.cursor()
 
-  def delete(%{assigns: %{user: _}, body_params: %{urls: urls}} = conn, _) do
+    urls =
+      case params.page do
+        1 ->
+          :qlc.next_answers(cursor, params.page_size)
+
+        _ ->
+          :qlc.next_answers(cursor, (params.page - 1) * params.page_size)
+          :qlc.next_answers(cursor, params.page_size)
+      end
+
+    :qlc.delete_cursor(cursor)
+
     render(conn, "index.json", urls: urls)
   end
 
-  def purge(%{assigns: %{user: _}, body_params: %{urls: urls, ban: _ban}} = conn, _) do
+  def delete(%{assigns: %{user: _}, body_params: %{urls: urls}} = conn, _) do
+    MediaProxy.remove_from_deleted_urls(urls)
+    render(conn, "index.json", urls: urls)
+  end
+
+  def purge(%{assigns: %{user: _}, body_params: %{urls: urls, ban: ban}} = conn, _) do
+    MediaProxy.Invalidation.purge(urls)
+
+    if ban do
+      MediaProxy.put_in_deleted_urls(urls)
+    end
+
     render(conn, "index.json", urls: urls)
   end
 end

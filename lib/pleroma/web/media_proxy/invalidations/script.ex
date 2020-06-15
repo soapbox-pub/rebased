@@ -10,7 +10,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Script do
   require Logger
 
   @impl Pleroma.Web.MediaProxy.Invalidation
-  def purge(urls, opts) do
+  def purge(urls, opts \\ %{}) do
     args =
       urls
       |> List.wrap()
