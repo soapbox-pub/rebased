@@ -47,7 +47,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateQuestionValidator do
     |> validate_inclusion(:type, ["Create"])
     |> validate_actor_presence()
     |> validate_any_presence([:to, :cc])
-    |> validate_recipients_match(meta)
     |> validate_actors_match(meta)
     |> validate_object_nonexistence()
   end
@@ -72,22 +71,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateQuestionValidator do
         []
       else
         [{:actor, "Actor doesn't match with object actor"}]
-      end
-    end)
-  end
-
-  def validate_recipients_match(cng, meta) do
-    object_recipients = meta[:object_data]["to"] || []
-
-    cng
-    |> validate_change(:to, fn :to, recipients ->
-      activity_set = MapSet.new(recipients)
-      object_set = MapSet.new(object_recipients)
-
-      if MapSet.equal?(activity_set, object_set) do
-        []
-      else
-        [{:to, "Recipients don't match with object recipients"}]
       end
     end)
   end
