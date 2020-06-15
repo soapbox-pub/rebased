@@ -135,6 +135,16 @@ mix pleroma.user reset_password <nickname>
 ```
 
 
+## Disable Multi Factor Authentication (MFA/2FA) for a user
+```sh tab="OTP"
+ ./bin/pleroma_ctl user reset_mfa <nickname>
+```
+
+```sh tab="From Source"
+mix pleroma.user reset_mfa <nickname>
+```
+
+
 ## Set the value of the given user's settings
 ```sh tab="OTP"
  ./bin/pleroma_ctl user set <nickname> [option ...]

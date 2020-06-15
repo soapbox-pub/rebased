@@ -91,7 +91,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
       html
       |> parse_html()
       |> maybe_parse()
-      |> Map.put(:url, url)
+      |> Map.put("url", url)
       |> clean_parsed_data()
       |> check_parsed_data()
     rescue
@@ -111,8 +111,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
     end)
   end
 
-  defp check_parsed_data(%{title: title} = data)
-       when is_binary(title) and byte_size(title) > 0 do
+  defp check_parsed_data(%{"title" => title} = data)
+       when is_binary(title) and title != "" do
     {:ok, data}
   end
 
@@ -123,11 +123,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
   defp clean_parsed_data(data) do
     data
     |> Enum.reject(fn {key, val} ->
-      with {:ok, _} <- Jason.encode(%{key => val}) do
-        false
-      else
-        _ -> true
-      end
+      not match?({:ok, _}, Jason.encode(%{key => val}))
     end)
     |> Map.new()
   end

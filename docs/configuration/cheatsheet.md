@@ -39,7 +39,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `rewrite_policy`: Message Rewrite Policy, either one or a list. Here are the ones available by default:
     * `Pleroma.Web.ActivityPub.MRF.NoOpPolicy`: Doesn’t modify activities (default).
     * `Pleroma.Web.ActivityPub.MRF.DropPolicy`: Drops all activities. It generally doesn’t makes sense to use in production.
-    * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`: Restrict the visibility of activities from certains instances (See [`:mrf_simple`](#mrf_simple)).
+    * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`: Restrict the visibility of activities from certain instances (See [`:mrf_simple`](#mrf_simple)).
     * `Pleroma.Web.ActivityPub.MRF.TagPolicy`: Applies policies to individual users based on tags, which can be set using pleroma-fe/admin-fe/any other app that supports Pleroma Admin API. For example it allows marking posts from individual users nsfw (sensitive).
     * `Pleroma.Web.ActivityPub.MRF.SubchainPolicy`: Selectively runs other MRF policies when messages match (See [`:mrf_subchain`](#mrf_subchain)).
     * `Pleroma.Web.ActivityPub.MRF.RejectNonPublic`: Drops posts with non-public visibility settings (See [`:mrf_rejectnonpublic`](#mrf_rejectnonpublic)).
@@ -49,7 +49,8 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
-* `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
+    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Adds expiration to all local Create activities (see [`:mrf_activity_expiration`](#mrf_activity_expiration)).
+* `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in [:frontend_configurations](#frontend_configurations) or in ``static/config.json``.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
@@ -137,8 +138,9 @@ their ActivityPub ID.
 An example:
 
 ```elixir
-config :pleroma, :mrf_user_allowlist,
-  "example.org": ["https://example.org/users/admin"]
+config :pleroma, :mrf_user_allowlist, %{
+  "example.org" => ["https://example.org/users/admin"]
+}
 ```
 
 #### :mrf_object_age
@@ -153,6 +155,10 @@ config :pleroma, :mrf_user_allowlist,
 * `hosts`: List of hosts to steal emojis from
 * `rejected_shortcodes`: Regex-list of shortcodes to reject
 * `size_limit`: File size limit (in bytes), checked before an emoji is saved to the disk
+
+#### :mrf_activity_expiration
+
+* `days`: Default global expiration time for all local Create activities (in days)
 
 ### :activitypub
 * `unfollow_blocked`: Whether blocks result in people getting unfollowed

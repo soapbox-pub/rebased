@@ -1473,6 +1473,21 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :mrf_activity_expiration,
+    label: "MRF Activity Expiration Policy",
+    type: :group,
+    description: "Adds expiration to all local Create Note activities",
+    children: [
+      %{
+        key: :days,
+        type: :integer,
+        description: "Default global expiration time for all local Create activities (in days)",
+        suggestions: [90, 365]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :mrf_subchain,
     label: "MRF subchain",
     type: :group,
@@ -1608,14 +1623,12 @@ config :pleroma, :config_description, [
   # %{
   #   group: :pleroma,
   #   key: :mrf_user_allowlist,
-  #   type: :group,
+  #   type: :map,
   #   description:
   #     "The keys in this section are the domain names that the policy should apply to." <>
   #       " Each key should be assigned a list of users that should be allowed through by their ActivityPub ID",
-  #   children: [
-  #     ["example.org": ["https://example.org/users/admin"]],
   #     suggestions: [
-  #       ["example.org": ["https://example.org/users/admin"]]
+  #       %{"example.org" => ["https://example.org/users/admin"]}
   #     ]
   #   ]
   # },

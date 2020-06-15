@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [unreleased]
 
 ### Changed
+- MFR policy to set global expiration for all local Create activities
 <details>
   <summary>API Changes</summary>
 - **Breaking:** Emoji API: changed methods and renamed routes.
@@ -26,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `filename_display_max_length` option to set filename truncate limit, if filename display enabled (0 = no limit).
 - New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
 - Mix task to create trusted OAuth App.
+- Mix task to reset MFA for user accounts
 - Notifications: Added `follow_request` notification type.
 - Added `:reject_deletes` group to SimplePolicy
 - MRF (`EmojiStealPolicy`): New MRF Policy which allows to automatically download emojis from remote instances
@@ -37,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add support for filtering replies in public and home timelines
 - Admin API: endpoints for create/update/delete OAuth Apps.
 - Admin API: endpoint for status view.
+- OTP: Add command to reload emoji packs
 </details>
 
 ### Fixed
@@ -46,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Filtering of push notifications on activities from blocked domains
 - Resolving Peertube accounts with Webfinger
 - `blob:` urls not being allowed by connect-src CSP
+- Mastodon API: fix `GET /api/v1/notifications` not returning the full result set
 
 ## [Unreleased (patch)]
 

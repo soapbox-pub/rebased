@@ -237,6 +237,12 @@ defmodule Mix.Tasks.Pleroma.Emoji do
     end
   end
 
+  def run(["reload"]) do
+    start_pleroma()
+    Pleroma.Emoji.reload()
+    IO.puts("Emoji packs have been reloaded.")
+  end
+
   defp fetch_and_decode(from) do
     with {:ok, json} <- fetch(from) do
       Jason.decode!(json)

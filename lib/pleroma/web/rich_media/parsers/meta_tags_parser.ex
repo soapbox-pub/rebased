@@ -29,19 +29,19 @@ defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
     {_tag, attributes, _children} = html_node
 
     data =
-      Enum.into(attributes, %{}, fn {name, value} ->
+      Map.new(attributes, fn {name, value} ->
         {name, String.trim_leading(value, "#{prefix}:")}
       end)
 
-    %{String.to_atom(data[key_name]) => data[value_name]}
+    %{data[key_name] => data[value_name]}
   end
 
-  defp maybe_put_title(%{title: _} = meta, _), do: meta
+  defp maybe_put_title(%{"title" => _} = meta, _), do: meta
 
   defp maybe_put_title(meta, html) when meta != %{} do
     case get_page_title(html) do
       "" -> meta
-      title -> Map.put_new(meta, :title, title)
+      title -> Map.put_new(meta, "title", title)
     end
   end
 

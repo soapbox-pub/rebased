@@ -313,6 +313,33 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       assert public_activity.id in activity_ids
       refute unlisted_activity.id in activity_ids
     end
+
+    test "doesn't return less than the requested amount of records when the user's reply is liked" do
+      user = insert(:user)
+      %{user: other_user, conn: conn} = oauth_access(["read:notifications"])
+
+      {:ok, mention} =
+        CommonAPI.post(user, %{status: "@#{other_user.nickname}", visibility: "public"})
+
+      {:ok, activity} = CommonAPI.post(user, %{status: ".", visibility: "public"})
+
+      {:ok, reply} =
+        CommonAPI.post(other_user, %{
+          status: ".",
+          visibility: "public",
+          in_reply_to_status_id: activity.id
+        })
+
+      {:ok, _favorite} = CommonAPI.favorite(user, reply.id)
+
+      activity_ids =
+        conn
+        |> get("/api/v1/notifications?exclude_visibilities[]=direct&limit=2")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["status"]["id"])
+
+      assert [reply.id, mention.id] == activity_ids
+    end
   end
 
   test "filters notifications using exclude_types" do

@@ -574,7 +574,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute Enum.member?(activities, activity_four)
   end
 
-  test "doesn't return announce activities concerning blocked users" do
+  test "doesn't return announce activities with blocked users in 'to'" do
     blocker = insert(:user)
     blockee = insert(:user)
     friend = insert(:user)
@@ -586,6 +586,39 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, activity_two} = CommonAPI.post(blockee, %{status: "hey! @#{friend.nickname}"})
 
     {:ok, activity_three} = CommonAPI.repeat(activity_two.id, friend)
+
+    activities =
+      ActivityPub.fetch_activities([], %{blocking_user: blocker})
+      |> Enum.map(fn act -> act.id end)
+
+    assert Enum.member?(activities, activity_one.id)
+    refute Enum.member?(activities, activity_two.id)
+    refute Enum.member?(activities, activity_three.id)
+  end
+
+  test "doesn't return announce activities with blocked users in 'cc'" do
+    blocker = insert(:user)
+    blockee = insert(:user)
+    friend = insert(:user)
+
+    {:ok, _user_relationship} = User.block(blocker, blockee)
+
+    {:ok, activity_one} = CommonAPI.post(friend, %{status: "hey!"})
+
+    {:ok, activity_two} = CommonAPI.post(blockee, %{status: "hey! @#{friend.nickname}"})
+
+    assert object = Pleroma.Object.normalize(activity_two)
+
+    data = %{
+      "actor" => friend.ap_id,
+      "object" => object.data["id"],
+      "context" => object.data["context"],
+      "type" => "Announce",
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [blockee.ap_id]
+    }
+
+    assert {:ok, activity_three} = ActivityPub.insert(data)
 
     activities =
       ActivityPub.fetch_activities([], %{blocking_user: blocker})
@@ -1643,6 +1676,40 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert Enum.all?(visible_ids, &(&1 in activities_ids))
     end
+
+    test "filtering out announces where the user is the actor of the announced message" do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+      User.follow(user, other_user)
+
+      {:ok, post} = CommonAPI.post(user, %{status: "yo"})
+      {:ok, other_post} = CommonAPI.post(third_user, %{status: "yo"})
+      {:ok, _announce} = CommonAPI.repeat(post.id, other_user)
+      {:ok, _announce} = CommonAPI.repeat(post.id, third_user)
+      {:ok, announce} = CommonAPI.repeat(other_post.id, other_user)
+
+      params = %{
+        type: ["Announce"]
+      }
+
+      results =
+        [user.ap_id | User.following(user)]
+        |> ActivityPub.fetch_activities(params)
+
+      assert length(results) == 3
+
+      params = %{
+        type: ["Announce"],
+        announce_filtering_user: user
+      }
+
+      [result] =
+        [user.ap_id | User.following(user)]
+        |> ActivityPub.fetch_activities(params)
+
+      assert result.id == announce.id
+    end
   end
 
   describe "replies filtering with private messages" do
@@ -1984,6 +2051,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       refute capture_log(fn ->
                assert ^user = ActivityPub.maybe_update_follow_information(user)
              end) =~ "Follower/Following counter update for #{user.ap_id} failed"
+    end
+  end
+
+  describe "global activity expiration" do
+    setup do: clear_config([:instance, :rewrite_policy])
+
+    test "creates an activity expiration for local Create activities" do
+      Pleroma.Config.put(
+        [:instance, :rewrite_policy],
+        Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy
+      )
+
+      {:ok, %{id: id_create}} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
+      {:ok, _follow} = ActivityBuilder.insert(%{"type" => "Follow", "context" => "3hu"})
+
+      assert [%{activity_id: ^id_create}] = Pleroma.ActivityExpiration |> Repo.all()
     end
   end
 end
