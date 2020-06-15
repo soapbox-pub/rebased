@@ -2104,9 +2104,7 @@ config :pleroma, :config_description, [
         description:
           "List of Rich Media parsers. Module names are shortened (removed leading `Pleroma.Web.RichMedia.Parsers.` part), but on adding custom module you need to use full name.",
         suggestions: [
-          Pleroma.Web.RichMedia.Parsers.MetaTagsParser,
           Pleroma.Web.RichMedia.Parsers.OEmbed,
-          Pleroma.Web.RichMedia.Parsers.OGP,
           Pleroma.Web.RichMedia.Parsers.TwitterCard
         ]
       },

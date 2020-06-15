@@ -7,9 +7,9 @@ defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
     with elements = [_ | _] <- get_discovery_data(html),
          oembed_url when is_binary(oembed_url) <- get_oembed_url(elements),
          {:ok, oembed_data} <- get_oembed_data(oembed_url) do
-      {:ok, oembed_data}
+      oembed_data
     else
-      _e -> {:error, "No OEmbed data found"}
+      _e -> %{}
     end
   end
 
