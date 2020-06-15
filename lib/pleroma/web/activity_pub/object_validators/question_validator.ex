@@ -71,7 +71,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     |> changeset(data)
   end
 
+  def fix(data) do
+    cond do
+      is_binary(data["closed"]) -> data
+      is_binary(data["endTime"]) -> Map.put(data, "closed", data["endTime"])
+      true -> Map.drop(data, ["closed"])
+    end
+  end
+
   def changeset(struct, data) do
+    data = fix(data)
+
     struct
     |> cast(data, __schema__(:fields) -- [:anyOf, :oneOf])
     |> cast_embed(:anyOf)
