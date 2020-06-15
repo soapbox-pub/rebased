@@ -18,22 +18,11 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
         },
         _job
       ) do
-    hrefs =
-      Enum.flat_map(attachments, fn attachment ->
-        Enum.map(attachment["url"], & &1["href"])
-      end)
-
-    # find all objects for copies of the attachments, name and actor doesn't matter here
-    hrefs
+    attachments
+    |> Enum.flat_map(fn item -> Enum.map(item["url"], & &1["href"]) end)
     |> fetch_objects
     |> prepare_objects(actor, Enum.map(attachments, & &1["name"]))
-    |> Enum.reduce({[], []}, fn {href, %{id: id, count: count}}, {ids, hrefs} ->
-      with 1 <- count do
-        {ids ++ [id], hrefs ++ [href]}
-      else
-        _ -> {ids ++ [id], hrefs}
-      end
-    end)
+    |> filter_objects
     |> do_clean
 
     {:ok, :success}
@@ -73,7 +62,17 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
 
   # we should delete 1 object for any given attachment, but don't delete
   # files if there are more than 1 object for it
-  def prepare_objects(objects, actor, names) do
+  defp filter_objects(objects) do
+    Enum.reduce(objects, {[], []}, fn {href, %{id: id, count: count}}, {ids, hrefs} ->
+      with 1 <- count do
+        {ids ++ [id], hrefs ++ [href]}
+      else
+        _ -> {ids ++ [id], hrefs}
+      end
+    end)
+  end
+
+  defp prepare_objects(objects, actor, names) do
     objects
     |> Enum.reduce(%{}, fn %{
                              id: id,
@@ -98,7 +97,7 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
     end)
   end
 
-  def fetch_objects(hrefs) do
+  defp fetch_objects(hrefs) do
     from(o in Object,
       where:
         fragment(
