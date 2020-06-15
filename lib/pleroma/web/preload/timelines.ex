@@ -30,8 +30,8 @@ defmodule Pleroma.Web.Preload.Providers.Timelines do
   defp get_public_timeline(local_only) do
     activities =
       ActivityPub.fetch_public_activities(%{
-        "type" => ["Create"],
-        "local_only" => local_only
+        type: ["Create"],
+        local_only: local_only
       })
 
     StatusView.render("index.json", activities: activities, for: nil, as: :activity)
