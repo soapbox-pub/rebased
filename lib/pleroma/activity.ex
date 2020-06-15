@@ -31,6 +31,10 @@ defmodule Pleroma.Activity do
     field(:recipients, {:array, :string}, default: [])
     field(:thread_muted?, :boolean, virtual: true)
 
+    # A field that can be used if you need to join some kind of other
+    # id to order / paginate this field by
+    field(:pagination_id, :string, virtual: true)
+
     # This is a fake relation,
     # do not use outside of with_preloaded_user_actor/with_joined_user_actor
     has_one(:user_actor, User, on_delete: :nothing, foreign_key: :id)

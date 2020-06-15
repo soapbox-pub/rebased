@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
 
     allow_list =
       Config.get(
-        [:mrf_user_allowlist, String.to_atom(actor_info.host)],
+        [:mrf_user_allowlist, actor_info.host],
         []
       )
 
