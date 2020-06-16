@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   use Ecto.Schema
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.Transmogrifier, only: [fix_emoji: 1]
@@ -16,12 +16,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   @derive Jason.Encoder
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
-    field(:to, Types.Recipients, default: [])
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
+    field(:to, ObjectValidators.Recipients, default: [])
     field(:type, :string)
-    field(:content, Types.SafeText)
-    field(:actor, Types.ObjectID)
-    field(:published, Types.DateTime)
+    field(:content, ObjectValidators.SafeText)
+    field(:actor, ObjectValidators.ObjectID)
+    field(:published, ObjectValidators.DateTime)
     field(:emoji, :map, default: %{})
 
     embeds_one(:attachment, AttachmentValidator)

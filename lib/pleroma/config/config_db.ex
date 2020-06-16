@@ -23,9 +23,9 @@ defmodule Pleroma.ConfigDB do
   ]
 
   schema "config" do
-    field(:key, Pleroma.Config.Type.Atom)
-    field(:group, Pleroma.Config.Type.Atom)
-    field(:value, Pleroma.Config.Type.BinaryValue)
+    field(:key, Pleroma.EctoType.Config.Atom)
+    field(:group, Pleroma.EctoType.Config.Atom)
+    field(:value, Pleroma.EctoType.Config.BinaryValue)
     field(:db, {:array, :string}, virtual: true, default: [])
 
     timestamps()
