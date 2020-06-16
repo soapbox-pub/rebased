@@ -54,13 +54,13 @@ defmodule Pleroma.ConfigDB do
 
   defp create(params) do
     %ConfigDB{}
-    |> changeset(params, transform?)
+    |> changeset(params)
     |> Repo.insert()
   end
 
   defp update(%ConfigDB{} = config, %{value: value}) do
     config
-    |> changeset(%{value: value}, transform?)
+    |> changeset(%{value: value})
     |> Repo.update()
   end
 

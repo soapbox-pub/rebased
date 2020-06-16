@@ -2055,11 +2055,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "global activity expiration" do
-    setup do: clear_config([:instance, :rewrite_policy])
+    setup do: clear_config([:mrf, :policies])
 
     test "creates an activity expiration for local Create activities" do
       Pleroma.Config.put(
-        [:instance, :rewrite_policy],
+        [:mrf, :policies],
         Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy
       )
 
