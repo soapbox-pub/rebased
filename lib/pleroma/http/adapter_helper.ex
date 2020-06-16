@@ -8,12 +8,8 @@ defmodule Pleroma.HTTP.AdapterHelper do
   """
   @defaults [pool: :federation]
 
-  @type ip_address :: ipv4_address() | ipv6_address()
-  @type ipv4_address :: {0..255, 0..255, 0..255, 0..255}
-  @type ipv6_address ::
-          {0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535}
   @type proxy_type() :: :socks4 | :socks5
-  @type host() :: charlist() | ip_address()
+  @type host() :: charlist() | :inet.ip_address()
 
   alias Pleroma.Config
   alias Pleroma.HTTP.AdapterHelper
@@ -114,7 +110,7 @@ defmodule Pleroma.HTTP.AdapterHelper do
     end
   end
 
-  @spec parse_host(String.t() | atom() | charlist()) :: charlist() | ip_address()
+  @spec parse_host(String.t() | atom() | charlist()) :: charlist() | :inet.ip_address()
   def parse_host(host) when is_list(host), do: host
   def parse_host(host) when is_atom(host), do: to_charlist(host)
 
