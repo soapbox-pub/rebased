@@ -5,6 +5,8 @@
 defmodule Mix.Tasks.Pleroma.ConfigTest do
   use Pleroma.DataCase
 
+  import Pleroma.Factory
+
   alias Pleroma.ConfigDB
   alias Pleroma.Repo
 
@@ -49,24 +51,19 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       refute ConfigDB.get_by_params(%{group: ":pleroma", key: "Pleroma.Repo"})
       refute ConfigDB.get_by_params(%{group: ":postgrex", key: ":json_library"})
 
-      assert ConfigDB.from_binary(config1.value) == [key: "value", key2: [Repo]]
-      assert ConfigDB.from_binary(config2.value) == [key: "value2", key2: ["Activity"]]
-      assert ConfigDB.from_binary(config3.value) == :info
+      assert config1.value == [key: "value", key2: [Repo]]
+      assert config2.value == [key: "value2", key2: ["Activity"]]
+      assert config3.value == :info
     end
 
     test "config table is truncated before migration" do
-      ConfigDB.create(%{
-        group: ":pleroma",
-        key: ":first_setting",
-        value: [key: "value", key2: ["Activity"]]
-      })
-
+      insert(:config, key: :first_setting, value: [key: "value", key2: ["Activity"]])
       assert Repo.aggregate(ConfigDB, :count, :id) == 1
 
       Mix.Tasks.Pleroma.Config.migrate_to_db("test/fixtures/config/temp.secret.exs")
 
       config = ConfigDB.get_by_params(%{group: ":pleroma", key: ":first_setting"})
-      assert ConfigDB.from_binary(config.value) == [key: "value", key2: [Repo]]
+      assert config.value == [key: "value", key2: [Repo]]
     end
   end
 
@@ -82,19 +79,9 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     end
 
     test "settings are migrated to file and deleted from db", %{temp_file: temp_file} do
-      ConfigDB.create(%{
-        group: ":pleroma",
-        key: ":setting_first",
-        value: [key: "value", key2: ["Activity"]]
-      })
-
-      ConfigDB.create(%{
-        group: ":pleroma",
-        key: ":setting_second",
-        value: [key: "value2", key2: [Repo]]
-      })
-
-      ConfigDB.create(%{group: ":quack", key: ":level", value: :info})
+      insert(:config, key: :setting_first, value: [key: "value", key2: ["Activity"]])
+      insert(:config, key: :setting_second, value: [key: "value2", key2: [Repo]])
+      insert(:config, group: :quack, key: :level, value: :info)
 
       Mix.Tasks.Pleroma.Config.run(["migrate_from_db", "--env", "temp", "-d"])
 
@@ -107,9 +94,8 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     end
 
     test "load a settings with large values and pass to file", %{temp_file: temp_file} do
-      ConfigDB.create(%{
-        group: ":pleroma",
-        key: ":instance",
+      insert(:config,
+        key: :instance,
         value: [
           name: "Pleroma",
           email: "example@example.com",
@@ -163,7 +149,6 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
           extended_nickname_format: true,
           multi_factor_authentication: [
             totp: [
-              # digits 6 or 8
               digits: 6,
               period: 30
             ],
@@ -173,7 +158,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
             ]
           ]
         ]
-      })
+      )
 
       Mix.Tasks.Pleroma.Config.run(["migrate_from_db", "--env", "temp", "-d"])
 
