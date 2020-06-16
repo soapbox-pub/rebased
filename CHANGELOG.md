@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [unreleased]
 
 ### Changed
+- In Conversations, return only direct messages as `last_status`
 - MFR policy to set global expiration for all local Create activities
 - OGP rich media parser merged with TwitterCard
 <details>
