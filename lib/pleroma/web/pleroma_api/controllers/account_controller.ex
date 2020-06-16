@@ -19,6 +19,11 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   require Pleroma.Constants
 
   plug(
+    Majic.Plug,
+    [pool: Pleroma.MajicPool] when action in [:update_avatar, :update_background, :update_banner]
+  )
+
+  plug(
     OpenApiSpex.Plug.PutApiSpec,
     [module: Pleroma.Web.ApiSpec] when action == :confirmation_resend
   )
@@ -55,11 +60,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])
   plug(:put_view, Pleroma.Web.MastodonAPI.AccountView)
-
-  plug(
-    Majic.Plug,
-    [pool: Pleroma.MajicPool] when action in [:update_avatar, :update_background, :update_banner]
-  )
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaAccountOperation
 

@@ -11,12 +11,12 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
+  plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:create, :create2])
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(:put_view, Pleroma.Web.MastodonAPI.StatusView)
 
   plug(OAuthScopesPlug, %{scopes: ["read:media"]} when action == :show)
   plug(OAuthScopesPlug, %{scopes: ["write:media"]} when action != :show)
-  plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:create, :create2])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.MediaOperation
 

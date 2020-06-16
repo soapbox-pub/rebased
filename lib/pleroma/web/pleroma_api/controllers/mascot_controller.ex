@@ -9,10 +9,10 @@ defmodule Pleroma.Web.PleromaAPI.MascotController do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
+  plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:update])
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["read:accounts"]} when action == :show)
   plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action != :show)
-  plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:update])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaMascotOperation
 
