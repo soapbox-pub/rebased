@@ -3328,14 +3328,14 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: :gen_magic_pool,
+    key: :majic_pool,
     type: :group,
-    description: "GenMagic/libmagic configuration",
+    description: "Majic/libmagic configuration",
     children: [
       %{
         key: :size,
         type: :integer,
-        description: "Number of gen_magic workers to start.",
+        description: "Number of majic workers to start.",
         suggestions: [2]
       }
     ]

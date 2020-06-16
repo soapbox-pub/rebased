@@ -56,6 +56,11 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])
   plug(:put_view, Pleroma.Web.MastodonAPI.AccountView)
 
+  plug(
+    Majic.Plug,
+    [pool: Pleroma.MajicPool] when action in [:update_avatar, :update_background, :update_banner]
+  )
+
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaAccountOperation
 
   @doc "POST /api/v1/pleroma/accounts/confirmation_resend"

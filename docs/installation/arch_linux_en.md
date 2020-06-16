@@ -27,7 +27,7 @@ sudo pacman -Syu
 * Install some of the above mentioned programs:
 
 ```shell
-sudo pacman -S git base-devel elixir
+sudo pacman -S git base-devel elixir file
 ```
 
 ### Install PostgreSQL

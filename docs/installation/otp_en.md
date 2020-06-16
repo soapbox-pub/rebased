@@ -32,11 +32,11 @@ Other than things bundled in the OTP release Pleroma depends on:
 ```sh tab="Alpine"
 echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
 apk update
-apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot libmagic
+apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot file-dev
 ```
 
 ```sh tab="Debian/Ubuntu"
-apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot libmagic
+apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot libmagic-dev
 ```
 
 ## Setup

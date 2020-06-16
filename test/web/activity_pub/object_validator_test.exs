@@ -58,7 +58,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       user = insert(:user)
 
       file = %Plug.Upload{
-        content_type: "image/jpg",
+        content_type: "image/jpeg",
         path: Path.absname("test/fixtures/image.jpg"),
         filename: "an_image.jpg"
       }

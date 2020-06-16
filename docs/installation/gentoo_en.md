@@ -47,7 +47,7 @@ Gentoo quite pointedly does not come with a cron daemon installed, and as such i
 * Emerge all required the required and suggested software in one go:
 
 ```shell
- # emerge --ask dev-db/postgresql dev-lang/elixir dev-vcs/git www-servers/nginx app-crypt/certbot app-crypt/certbot-nginx
+ # emerge --ask dev-db/postgresql dev-lang/elixir dev-vcs/git www-servers/nginx app-crypt/certbot app-crypt/certbot-nginx sys-apps/file
 ```
 
 If you would not like to install the optional packages, remove them from this line. 

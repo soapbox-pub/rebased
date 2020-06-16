@@ -16,6 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.MediaController do
 
   plug(OAuthScopesPlug, %{scopes: ["read:media"]} when action == :show)
   plug(OAuthScopesPlug, %{scopes: ["write:media"]} when action != :show)
+  plug(Majic.Plug, [pool: Pleroma.MajicPool] when action in [:create, :create2])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.MediaOperation
 

@@ -40,7 +40,7 @@ sudo apk upgrade
 * Install some tools, which are needed later:
 
 ```shell
-sudo apk add git build-base
+sudo apk add git build-base file-dev
 ```
 
 ### Install Elixir and Erlang

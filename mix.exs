@@ -197,7 +197,7 @@ defmodule Pleroma.Mixfile do
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
       {:mox, "~> 0.5", only: :test},
       {:restarter, path: "./restarter"},
-      {:gen_magic, git: "https://github.com/hrefhref/gen_magic", branch: "develop"},
+      {:majic, git: "https://github.com/hrefhref/majic", branch: "develop"},
       {:open_api_spex,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
        ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"}
