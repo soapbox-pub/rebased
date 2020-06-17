@@ -8,7 +8,6 @@ defmodule Pleroma.Config.Loader do
     Pleroma.Web.Endpoint,
     :env,
     :configurable_from_database,
-    :database,
     :swarm
   ]
 
