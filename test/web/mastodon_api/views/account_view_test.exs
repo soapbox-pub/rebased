@@ -33,7 +33,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         bio:
           "<script src=\"invalid-html\"></script><span>valid html</span>. a<br>b<br/>c<br >d<br />f '&<>\"",
         inserted_at: ~N[2017-08-15 15:47:06.597036],
-        emoji: %{"karjalanpiirakka" => "/file.png"}
+        emoji: %{"karjalanpiirakka" => "/file.png"},
+        raw_bio: "valid html. a\nb\nc\nd\nf '&<>\""
       })
 
     expected = %{

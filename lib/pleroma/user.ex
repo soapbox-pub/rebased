@@ -79,6 +79,7 @@ defmodule Pleroma.User do
 
   schema "users" do
     field(:bio, :string)
+    field(:raw_bio, :string)
     field(:email, :string)
     field(:name, :string)
     field(:nickname, :string)
@@ -432,6 +433,7 @@ defmodule Pleroma.User do
       params,
       [
         :bio,
+        :raw_bio,
         :name,
         :emoji,
         :avatar,
@@ -607,7 +609,16 @@ defmodule Pleroma.User do
 
     struct
     |> confirmation_changeset(need_confirmation: need_confirmation?)
-    |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation, :emoji])
+    |> cast(params, [
+      :bio,
+      :raw_bio,
+      :email,
+      :name,
+      :nickname,
+      :password,
+      :password_confirmation,
+      :emoji
+    ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
