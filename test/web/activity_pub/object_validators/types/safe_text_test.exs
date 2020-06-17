@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.SafeTextTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types.SafeText
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.SafeText
 
   test "it lets normal text go through" do
     text = "hey how are you"

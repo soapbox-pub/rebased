@@ -1,4 +1,8 @@
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.DateTime do
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
+defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.DateTime do
   @moduledoc """
   The AP standard defines the date fields in AP as xsd:DateTime. Elixir's
   DateTime can't parse this, but it can parse the related iso8601. This

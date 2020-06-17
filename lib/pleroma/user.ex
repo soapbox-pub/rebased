@@ -14,6 +14,7 @@ defmodule Pleroma.User do
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Delivery
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Emoji
   alias Pleroma.FollowingRelationship
   alias Pleroma.Formatter
@@ -30,7 +31,6 @@ defmodule Pleroma.User do
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
@@ -116,7 +116,7 @@ defmodule Pleroma.User do
     field(:is_admin, :boolean, default: false)
     field(:show_role, :boolean, default: true)
     field(:settings, :map, default: nil)
-    field(:uri, Types.Uri, default: nil)
+    field(:uri, ObjectValidators.Uri, default: nil)
     field(:hide_followers_count, :boolean, default: false)
     field(:hide_follows_count, :boolean, default: false)
     field(:hide_followers, :boolean, default: false)
