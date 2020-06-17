@@ -12,7 +12,6 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
 
   setup do
     on_exit(fn -> Cachex.clear(:deleted_urls_cache) end)
-    :ok
   end
 
   test "it returns 404 when MediaProxy disabled", %{conn: conn} do
