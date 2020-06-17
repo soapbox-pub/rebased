@@ -6,7 +6,6 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.ScriptTest do
 
   setup do
     on_exit(fn -> Cachex.clear(:deleted_urls_cache) end)
-    :ok
   end
 
   test "it logger error when script not found" do
