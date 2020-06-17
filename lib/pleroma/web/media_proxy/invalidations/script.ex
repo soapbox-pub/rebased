@@ -18,7 +18,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Script do
       |> Enum.join(" ")
 
     opts
-    |> Keyword.get(:script_path, nil)
+    |> Keyword.get(:script_path)
     |> do_purge([args])
     |> handle_result(urls)
   end
