@@ -12,7 +12,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   def init([key, uri, opts, client_pid]) do
     with {:ok, conn_pid} <- Gun.Conn.open(uri, opts),
          Process.link(conn_pid) do
-      time = :os.system_time(:second)
+      time = :erlang.monotonic_time()
 
       {_, _} =
         Registry.update_value(@registry, key, fn _ ->
@@ -31,7 +31,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
 
   @impl true
   def handle_cast({:add_client, client_pid, send_pid_back}, %{key: key} = state) do
-    time = :os.system_time(:second)
+    time = :erlang.monotonic_time()
 
     {{conn_pid, _, _, _}, _} =
       Registry.update_value(@registry, key, fn {conn_pid, used_by, crf, last_reference} ->
