@@ -1273,8 +1273,8 @@ Loads json generated from `config/descriptions.exs`.
 
 - Authentication: required
 - Params:
-  - `urls`
-  - `ban`
+  - `urls` (array)
+  - `ban` (boolean)
 
 - Response:
 
