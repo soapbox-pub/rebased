@@ -72,7 +72,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
     end
   end
 
-  describe "DELETE /api/pleroma/admin/media_proxy_caches/delete" do
+  describe "POST /api/pleroma/admin/media_proxy_caches/delete" do
     test "deleted MediaProxy URLs from banned", %{conn: conn} do
       MediaProxy.put_in_deleted_urls([
         "http://localhost:4001/media/a688346.jpg",
