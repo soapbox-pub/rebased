@@ -9,8 +9,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   the system.
   """
 
-  alias Pleroma.Object
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
