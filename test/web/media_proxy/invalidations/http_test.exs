@@ -7,7 +7,6 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.HttpTest do
 
   setup do
     on_exit(fn -> Cachex.clear(:deleted_urls_cache) end)
-    :ok
   end
 
   test "logs hasn't error message when request is valid" do
