@@ -93,7 +93,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
     end
   end
 
-  describe "PURGE /api/pleroma/admin/media_proxy_caches/purge" do
+  describe "POST /api/pleroma/admin/media_proxy_caches/purge" do
     test "perform invalidates cache of MediaProxy", %{conn: conn} do
       urls = [
         "http://example.com/media/a688346.jpg",
