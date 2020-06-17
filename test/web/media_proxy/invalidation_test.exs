@@ -13,7 +13,6 @@ defmodule Pleroma.Web.MediaProxy.InvalidationTest do
 
   setup do
     on_exit(fn -> Cachex.clear(:deleted_urls_cache) end)
-    :ok
   end
 
   describe "Invalidation.Http" do
