@@ -513,22 +513,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user_two = insert(:user)
       insert(:filter, user: user, phrase: "test", hide: true)
 
-      {:ok, %{id: id1, data: %{"context" => context}}} = CommonAPI.post(user, %{"status" => "1"})
+      {:ok, %{id: id1, data: %{"context" => context}}} = CommonAPI.post(user, %{status: "1"})
 
-      {:ok, %{id: id2}} =
-        CommonAPI.post(user_two, %{"status" => "2", "in_reply_to_status_id" => id1})
+      {:ok, %{id: id2}} = CommonAPI.post(user_two, %{status: "2", in_reply_to_status_id: id1})
 
       {:ok, %{id: id3} = user_activity} =
-        CommonAPI.post(user, %{"status" => "3 test?", "in_reply_to_status_id" => id2})
+        CommonAPI.post(user, %{status: "3 test?", in_reply_to_status_id: id2})
 
       {:ok, %{id: id4} = filtered_activity} =
-        CommonAPI.post(user_two, %{"status" => "4 test!", "in_reply_to_status_id" => id3})
+        CommonAPI.post(user_two, %{status: "4 test!", in_reply_to_status_id: id3})
 
-      {:ok, _} = CommonAPI.post(user, %{"status" => "5", "in_reply_to_status_id" => id4})
+      {:ok, _} = CommonAPI.post(user, %{status: "5", in_reply_to_status_id: id4})
 
       activities =
         context
-        |> ActivityPub.fetch_activities_for_context(%{"user" => user})
+        |> ActivityPub.fetch_activities_for_context(%{user: user})
         |> Enum.map(& &1.id)
 
       assert length(activities) == 4
@@ -823,8 +822,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       insert(:filter, user: user_two, phrase: "test", hide: false)
 
       params = %{
-        "type" => ["Create", "Announce"],
-        "user" => user_two
+        type: ["Create", "Announce"],
+        user: user_two
       }
 
       {:ok, %{user: user, user_two: user_two, params: params}}
@@ -834,12 +833,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user: user,
       params: params
     } do
-      {:ok, _} = CommonAPI.post(user, %{"status" => "hey"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "got cofefe?"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "I am not a boomer"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "ok boomers"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "ccofee is not a word"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "this is a test"})
+      {:ok, _} = CommonAPI.post(user, %{status: "hey"})
+      {:ok, _} = CommonAPI.post(user, %{status: "got cofefe?"})
+      {:ok, _} = CommonAPI.post(user, %{status: "I am not a boomer"})
+      {:ok, _} = CommonAPI.post(user, %{status: "ok boomers"})
+      {:ok, _} = CommonAPI.post(user, %{status: "ccofee is not a word"})
+      {:ok, _} = CommonAPI.post(user, %{status: "this is a test"})
 
       activities = ActivityPub.fetch_activities([], params)
 
@@ -847,8 +846,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
 
     test "it does not filter user's own statuses", %{user_two: user_two, params: params} do
-      {:ok, _} = CommonAPI.post(user_two, %{"status" => "Give me some cofe!"})
-      {:ok, _} = CommonAPI.post(user_two, %{"status" => "ok boomer"})
+      {:ok, _} = CommonAPI.post(user_two, %{status: "Give me some cofe!"})
+      {:ok, _} = CommonAPI.post(user_two, %{status: "ok boomer"})
 
       activities = ActivityPub.fetch_activities([], params)
 
@@ -856,11 +855,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
 
     test "it excludes statuses with filter words", %{user: user, params: params} do
-      {:ok, _} = CommonAPI.post(user, %{"status" => "Give me some cofe!"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "ok boomer"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "is it a cOfE?"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "cofe is all I need"})
-      {:ok, _} = CommonAPI.post(user, %{"status" => "— ok BOOMER\n"})
+      {:ok, _} = CommonAPI.post(user, %{status: "Give me some cofe!"})
+      {:ok, _} = CommonAPI.post(user, %{status: "ok boomer"})
+      {:ok, _} = CommonAPI.post(user, %{status: "is it a cOfE?"})
+      {:ok, _} = CommonAPI.post(user, %{status: "cofe is all I need"})
+      {:ok, _} = CommonAPI.post(user, %{status: "— ok BOOMER\n"})
 
       activities = ActivityPub.fetch_activities([], params)
 
@@ -869,13 +868,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     test "it returns all statuses if user does not have any filters" do
       another_user = insert(:user)
-      {:ok, _} = CommonAPI.post(another_user, %{"status" => "got cofe?"})
-      {:ok, _} = CommonAPI.post(another_user, %{"status" => "test!"})
+      {:ok, _} = CommonAPI.post(another_user, %{status: "got cofe?"})
+      {:ok, _} = CommonAPI.post(another_user, %{status: "test!"})
 
       activities =
         ActivityPub.fetch_activities([], %{
-          "type" => ["Create", "Announce"],
-          "user" => another_user
+          type: ["Create", "Announce"],
+          user: another_user
         })
 
       assert Enum.count(activities) == 2
