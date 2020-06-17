@@ -14,7 +14,6 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
 
   setup do
     on_exit(fn -> Cachex.clear(:deleted_urls_cache) end)
-    :ok
   end
 
   setup do
