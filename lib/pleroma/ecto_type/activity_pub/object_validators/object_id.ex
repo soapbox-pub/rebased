@@ -1,4 +1,8 @@
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.ObjectID do
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
+defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.ObjectID do
   use Ecto.Type
 
   def type, do: :string

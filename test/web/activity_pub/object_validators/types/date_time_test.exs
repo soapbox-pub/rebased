@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.DateTimeTest do
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types.DateTime
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.DateTime
   use Pleroma.DataCase
 
   test "it validates an xsd:Datetime" do

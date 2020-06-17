@@ -8,6 +8,7 @@ defmodule Pleroma.Repo do
     adapter: Ecto.Adapters.Postgres,
     migration_timestamps: [type: :naive_datetime_usec]
 
+  import Ecto.Query
   require Logger
 
   defmodule Instrumenter do
@@ -77,6 +78,33 @@ defmodule Pleroma.Repo do
     else
       :ok
     end
+  end
+
+  def chunk_stream(query, chunk_size) do
+    # We don't actually need start and end funcitons of resource streaming,
+    # but it seems to be the only way to not fetch records one-by-one and
+    # have individual records be the elements of the stream, instead of
+    # lists of records
+    Stream.resource(
+      fn -> 0 end,
+      fn
+        last_id ->
+          query
+          |> order_by(asc: :id)
+          |> where([r], r.id > ^last_id)
+          |> limit(^chunk_size)
+          |> all()
+          |> case do
+            [] ->
+              {:halt, last_id}
+
+            records ->
+              last_id = List.last(records).id
+              {records, last_id}
+          end
+      end,
+      fn _ -> :ok end
+    )
   end
 end
 

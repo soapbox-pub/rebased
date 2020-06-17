@@ -18,7 +18,7 @@ defmodule Pleroma.MigrationHelper.NotificationBackfill do
       )
 
     query
-    |> Repo.all()
+    |> Repo.chunk_stream(100)
     |> Enum.each(fn notification ->
       type =
         notification.activity

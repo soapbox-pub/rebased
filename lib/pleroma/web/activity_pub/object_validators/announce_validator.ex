@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
   use Ecto.Schema
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
@@ -19,14 +19,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
     field(:type, :string)
-    field(:object, Types.ObjectID)
-    field(:actor, Types.ObjectID)
+    field(:object, ObjectValidators.ObjectID)
+    field(:actor, ObjectValidators.ObjectID)
     field(:context, :string, autogenerate: {Utils, :generate_context_id, []})
-    field(:to, Types.Recipients, default: [])
-    field(:cc, Types.Recipients, default: [])
-    field(:published, Types.DateTime)
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
+    field(:published, ObjectValidators.DateTime)
   end
 
   def cast_and_validate(data) do

@@ -210,7 +210,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       conversation = Repo.preload(conversation, :participations)
 
       last_activity_id =
-        fetch_latest_activity_id_for_context(conversation.ap_id, %{
+        fetch_latest_direct_activity_id_for_context(conversation.ap_id, %{
           user: user,
           blocking_user: user
         })
@@ -517,11 +517,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Repo.all()
   end
 
-  @spec fetch_latest_activity_id_for_context(String.t(), keyword() | map()) ::
+  @spec fetch_latest_direct_activity_id_for_context(String.t(), keyword() | map()) ::
           FlakeId.Ecto.CompatType.t() | nil
-  def fetch_latest_activity_id_for_context(context, opts \\ %{}) do
+  def fetch_latest_direct_activity_id_for_context(context, opts \\ %{}) do
     context
     |> fetch_activities_for_context_query(Map.merge(%{skip_preload: true}, opts))
+    |> restrict_visibility(%{visibility: "direct"})
     |> limit(1)
     |> select([a], a.id)
     |> Repo.one()

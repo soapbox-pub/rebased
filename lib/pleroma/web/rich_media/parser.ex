@@ -105,8 +105,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
   defp maybe_parse(html) do
     Enum.reduce_while(parsers(), %{}, fn parser, acc ->
       case parser.parse(html, acc) do
-        {:ok, data} -> {:halt, data}
-        {:error, _msg} -> {:cont, acc}
+        data when data != %{} -> {:halt, data}
+        _ -> {:cont, acc}
       end
     end)
   end

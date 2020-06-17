@@ -72,8 +72,7 @@ defmodule Mix.Tasks.Pleroma.Config do
     group
     |> Pleroma.Config.Loader.filter_group(settings)
     |> Enum.each(fn {key, value} ->
-      key = inspect(key)
-      {:ok, _} = ConfigDB.update_or_create(%{group: inspect(group), key: key, value: value})
+      {:ok, _} = ConfigDB.update_or_create(%{group: group, key: key, value: value})
 
       shell_info("Settings for key #{key} migrated.")
     end)
@@ -131,12 +130,9 @@ defmodule Mix.Tasks.Pleroma.Config do
   end
 
   defp write(config, file) do
-    value =
-      config.value
-      |> ConfigDB.from_binary()
-      |> inspect(limit: :infinity)
+    value = inspect(config.value, limit: :infinity)
 
-    IO.write(file, "config #{config.group}, #{config.key}, #{value}\r\n\r\n")
+    IO.write(file, "config #{inspect(config.group)}, #{inspect(config.key)}, #{value}\r\n\r\n")
 
     config
   end
