@@ -1253,7 +1253,7 @@ Loads json generated from `config/descriptions.exs`.
 
 - Authentication: required
 - Params:
-  - `urls`
+  - `urls` (array)
 
 - Response:
 
