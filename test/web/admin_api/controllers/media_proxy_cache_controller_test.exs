@@ -13,7 +13,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
   setup do: clear_config([:media_proxy])
 
   setup do
-    on_exit(fn -> Cachex.clear(:deleted_urls_cache) end)
+    on_exit(fn -> Cachex.clear(:banned_urls_cache) end)
   end
 
   setup do
@@ -34,14 +34,14 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
 
   describe "GET /api/pleroma/admin/media_proxy_caches" do
     test "shows banned MediaProxy URLs", %{conn: conn} do
-      MediaProxy.put_in_deleted_urls([
+      MediaProxy.put_in_banned_urls([
         "http://localhost:4001/media/a688346.jpg",
         "http://localhost:4001/media/fb1f4d.jpg"
       ])
 
-      MediaProxy.put_in_deleted_urls("http://localhost:4001/media/gb1f44.jpg")
-      MediaProxy.put_in_deleted_urls("http://localhost:4001/media/tb13f47.jpg")
-      MediaProxy.put_in_deleted_urls("http://localhost:4001/media/wb1f46.jpg")
+      MediaProxy.put_in_banned_urls("http://localhost:4001/media/gb1f44.jpg")
+      MediaProxy.put_in_banned_urls("http://localhost:4001/media/tb13f47.jpg")
+      MediaProxy.put_in_banned_urls("http://localhost:4001/media/wb1f46.jpg")
 
       response =
         conn
@@ -74,7 +74,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
 
   describe "POST /api/pleroma/admin/media_proxy_caches/delete" do
     test "deleted MediaProxy URLs from banned", %{conn: conn} do
-      MediaProxy.put_in_deleted_urls([
+      MediaProxy.put_in_banned_urls([
         "http://localhost:4001/media/a688346.jpg",
         "http://localhost:4001/media/fb1f4d.jpg"
       ])
@@ -88,8 +88,8 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
         |> json_response_and_validate_schema(200)
 
       assert response["urls"] == ["http://localhost:4001/media/a688346.jpg"]
-      refute MediaProxy.in_deleted_urls("http://localhost:4001/media/a688346.jpg")
-      assert MediaProxy.in_deleted_urls("http://localhost:4001/media/fb1f4d.jpg")
+      refute MediaProxy.in_banned_urls("http://localhost:4001/media/a688346.jpg")
+      assert MediaProxy.in_banned_urls("http://localhost:4001/media/fb1f4d.jpg")
     end
   end
 
@@ -114,8 +114,8 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
 
         assert response["urls"] == urls
 
-        refute MediaProxy.in_deleted_urls("http://example.com/media/a688346.jpg")
-        refute MediaProxy.in_deleted_urls("http://example.com/media/fb1f4d.jpg")
+        refute MediaProxy.in_banned_urls("http://example.com/media/a688346.jpg")
+        refute MediaProxy.in_banned_urls("http://example.com/media/fb1f4d.jpg")
       end
     end
 
@@ -137,8 +137,8 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
 
         assert response["urls"] == urls
 
-        assert MediaProxy.in_deleted_urls("http://example.com/media/a688346.jpg")
-        assert MediaProxy.in_deleted_urls("http://example.com/media/fb1f4d.jpg")
+        assert MediaProxy.in_banned_urls("http://example.com/media/a688346.jpg")
+        assert MediaProxy.in_banned_urls("http://example.com/media/fb1f4d.jpg")
       end
     end
   end

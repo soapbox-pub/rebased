@@ -27,7 +27,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
 
   def index(%{assigns: %{user: _}} = conn, params) do
     cursor =
-      :deleted_urls_cache
+      :banned_urls_cache
       |> :ets.table([{:traverse, {:select, Cachex.Query.create(true, :key)}}])
       |> :qlc.cursor()
 
@@ -47,7 +47,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
   end
 
   def delete(%{assigns: %{user: _}, body_params: %{urls: urls}} = conn, _) do
-    MediaProxy.remove_from_deleted_urls(urls)
+    MediaProxy.remove_from_banned_urls(urls)
     render(conn, "index.json", urls: urls)
   end
 
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
     MediaProxy.Invalidation.purge(urls)
 
     if ban do
-      MediaProxy.put_in_deleted_urls(urls)
+      MediaProxy.put_in_banned_urls(urls)
     end
 
     render(conn, "index.json", urls: urls)

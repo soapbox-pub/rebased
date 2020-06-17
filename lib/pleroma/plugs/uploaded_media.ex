@@ -49,7 +49,7 @@ defmodule Pleroma.Plugs.UploadedMedia do
     with uploader <- Keyword.fetch!(config, :uploader),
          proxy_remote = Keyword.get(config, :proxy_remote, false),
          {:ok, get_method} <- uploader.get_file(file),
-         false <- media_is_deleted(conn, get_method) do
+         false <- media_is_banned(conn, get_method) do
       get_media(conn, get_method, proxy_remote, opts)
     else
       _ ->
@@ -61,13 +61,13 @@ defmodule Pleroma.Plugs.UploadedMedia do
 
   def call(conn, _opts), do: conn
 
-  defp media_is_deleted(%{request_path: path} = _conn, {:static_dir, _}) do
-    MediaProxy.in_deleted_urls(Pleroma.Web.base_url() <> path)
+  defp media_is_banned(%{request_path: path} = _conn, {:static_dir, _}) do
+    MediaProxy.in_banned_urls(Pleroma.Web.base_url() <> path)
   end
 
-  defp media_is_deleted(_, {:url, url}), do: MediaProxy.in_deleted_urls(url)
+  defp media_is_banned(_, {:url, url}), do: MediaProxy.in_banned_urls(url)
 
-  defp media_is_deleted(_, _), do: false
+  defp media_is_banned(_, _), do: false
 
   defp get_media(conn, {:static_dir, directory}, _, opts) do
     static_opts =
