@@ -9,7 +9,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Http do
   require Logger
 
   @impl Pleroma.Web.MediaProxy.Invalidation
-  def purge(urls, opts) do
+  def purge(urls, opts \\ []) do
     method = Keyword.get(opts, :method, :purge)
     headers = Keyword.get(opts, :headers, [])
     options = Keyword.get(opts, :options, [])
