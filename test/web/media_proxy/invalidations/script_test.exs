@@ -5,7 +5,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.ScriptTest do
   import ExUnit.CaptureLog
 
   setup do
-    on_exit(fn -> Cachex.clear(:deleted_urls_cache) end)
+    on_exit(fn -> Cachex.clear(:banned_urls_cache) end)
   end
 
   test "it logger error when script not found" do

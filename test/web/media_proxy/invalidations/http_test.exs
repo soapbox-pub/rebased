@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.HttpTest do
   import Tesla.Mock
 
   setup do
-    on_exit(fn -> Cachex.clear(:deleted_urls_cache) end)
+    on_exit(fn -> Cachex.clear(:banned_urls_cache) end)
   end
 
   test "logs hasn't error message when request is valid" do

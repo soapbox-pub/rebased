@@ -26,7 +26,8 @@ defmodule Pleroma.Web.MediaProxy.Invalidation do
 
   defp do_purge(urls) do
     provider = Config.get([:media_proxy, :invalidation, :provider])
-    provider.purge(urls, Config.get(provider))
+    options = Config.get(provider)
+    provider.purge(urls, options)
   end
 
   def prepare_urls(urls) do
