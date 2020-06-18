@@ -60,10 +60,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
     end
   end
 
-  def show(conn, %{name: name}) do
+  def show(conn, %{name: name, page: page, page_size: page_size}) do
     name = String.trim(name)
 
-    with {:ok, pack} <- Pack.show(name) do
+    with {:ok, pack} <- Pack.show(name: name, page: page, page_size: page_size) do
       json(conn, pack)
     else
       {:error, :not_found} ->

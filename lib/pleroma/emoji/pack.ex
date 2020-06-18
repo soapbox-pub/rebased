@@ -26,10 +26,27 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec show(String.t()) :: {:ok, t()} | {:error, atom()}
-  def show(name) do
+  defp paginate(entities, 1, page_size), do: Enum.take(entities, page_size)
+
+  defp paginate(entities, page, page_size) do
+    entities
+    |> Enum.take(page * page_size)
+    |> Enum.take(-page_size)
+  end
+
+  @spec show(keyword()) :: {:ok, t()} | {:error, atom()}
+  def show(opts) do
+    name = opts[:name]
+
     with :ok <- validate_not_empty([name]),
          {:ok, pack} <- load_pack(name) do
+      shortcodes =
+        pack.files
+        |> Map.keys()
+        |> paginate(opts[:page], opts[:page_size])
+
+      pack = Map.put(pack, :files, Map.take(pack.files, shortcodes))
+
       {:ok, validate_pack(pack)}
     end
   end
@@ -132,17 +149,7 @@ defmodule Pleroma.Emoji.Pack do
           end
         end)
         |> Enum.reject(&is_nil/1)
-
-      packs =
-        case opts[:page] do
-          1 ->
-            Enum.take(packs, opts[:page_size])
-
-          _ ->
-            packs
-            |> Enum.take(opts[:page] * opts[:page_size])
-            |> Enum.take(-opts[:page_size])
-        end
+        |> paginate(opts[:page], opts[:page_size])
         |> Map.new(fn pack -> {pack.name, validate_pack(pack)} end)
 
       {:ok, packs}
@@ -307,7 +314,9 @@ defmodule Pleroma.Emoji.Pack do
     # Otherwise, they'd have to download it from external-src
     pack.pack["share-files"] &&
       Enum.all?(pack.files, fn {_, file} ->
-        File.exists?(Path.join(pack.path, file))
+        pack.path
+        |> Path.join(file)
+        |> File.exists?()
       end)
   end
 

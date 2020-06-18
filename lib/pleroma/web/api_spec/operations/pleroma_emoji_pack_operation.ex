@@ -58,7 +58,21 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
       tags: ["Emoji Packs"],
       summary: "Show emoji pack",
       operationId: "PleromaAPI.EmojiPackController.show",
-      parameters: [name_param()],
+      parameters: [
+        name_param(),
+        Operation.parameter(
+          :page,
+          :query,
+          %Schema{type: :integer, default: 1},
+          "Page"
+        ),
+        Operation.parameter(
+          :page_size,
+          :query,
+          %Schema{type: :integer, default: 50},
+          "Number of statuses to return"
+        )
+      ],
       responses: %{
         200 => Operation.response("Emoji Pack", "application/json", emoji_pack()),
         400 => Operation.response("Bad Request", "application/json", ApiError),

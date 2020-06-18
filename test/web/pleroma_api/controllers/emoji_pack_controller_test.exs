@@ -31,7 +31,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
     resp = conn |> get("/api/pleroma/emoji/packs") |> json_response_and_validate_schema(200)
 
     shared = resp["test_pack"]
-    assert shared["files"] == %{"blank" => "blank.png"}
+    assert shared["files"] == %{"blank" => "blank.png", "blank2" => "blank2.png"}
     assert Map.has_key?(shared["pack"], "download-sha256")
     assert shared["pack"]["can-download"]
     assert shared["pack"]["share-files"]
@@ -354,7 +354,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
         Map.put(
           new_data,
           "fallback-src-sha256",
-          "74409E2674DAA06C072729C6C8426C4CB3B7E0B85ED77792DB7A436E11D76DAF"
+          "1967BB4E42BCC34BCC12D57BE7811D3B7BE52F965BCE45C87BD377B9499CE11D"
         )
 
       assert ctx[:admin_conn]
@@ -420,7 +420,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       assert admin_conn
              |> put_req_header("content-type", "multipart/form-data")
              |> post("/api/pleroma/emoji/packs/test_pack/files", %{
-               shortcode: "blank2",
+               shortcode: "blank3",
                filename: "dir/blank.png",
                file: %Plug.Upload{
                  filename: "blank.png",
@@ -429,7 +429,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              })
              |> json_response_and_validate_schema(200) == %{
                "blank" => "blank.png",
-               "blank2" => "dir/blank.png"
+               "blank2" => "blank2.png",
+               "blank3" => "dir/blank.png"
              }
 
       assert File.exists?("#{@emoji_path}/test_pack/dir/blank.png")
@@ -453,7 +454,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       assert admin_conn
              |> put_req_header("content-type", "multipart/form-data")
              |> post("/api/pleroma/emoji/packs/test_pack/files", %{
-               shortcode: "blank2",
+               shortcode: "blank3",
                filename: "dir/blank.png",
                file: %Plug.Upload{
                  filename: "blank.png",
@@ -462,7 +463,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              })
              |> json_response_and_validate_schema(200) == %{
                "blank" => "blank.png",
-               "blank2" => "dir/blank.png"
+               "blank2" => "blank2.png",
+               "blank3" => "dir/blank.png"
              }
 
       assert File.exists?("#{@emoji_path}/test_pack/dir/blank.png")
@@ -470,14 +472,15 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       assert admin_conn
              |> put_req_header("content-type", "multipart/form-data")
              |> patch("/api/pleroma/emoji/packs/test_pack/files", %{
-               shortcode: "blank2",
-               new_shortcode: "blank3",
+               shortcode: "blank3",
+               new_shortcode: "blank4",
                new_filename: "dir_2/blank_3.png",
                force: true
              })
              |> json_response_and_validate_schema(200) == %{
                "blank" => "blank.png",
-               "blank3" => "dir_2/blank_3.png"
+               "blank2" => "blank2.png",
+               "blank4" => "dir_2/blank_3.png"
              }
 
       assert File.exists?("#{@emoji_path}/test_pack/dir_2/blank_3.png")
@@ -503,7 +506,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       assert admin_conn
              |> put_req_header("content-type", "multipart/form-data")
              |> post("/api/pleroma/emoji/packs/not_loaded/files", %{
-               shortcode: "blank2",
+               shortcode: "blank3",
                filename: "dir/blank.png",
                file: %Plug.Upload{
                  filename: "blank.png",
@@ -557,7 +560,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              })
              |> json_response_and_validate_schema(200) == %{
                "blank" => "blank.png",
-               "blank4" => "dir/blank.png"
+               "blank4" => "dir/blank.png",
+               "blank2" => "blank2.png"
              }
 
       assert File.exists?("#{@emoji_path}/test_pack/dir/blank.png")
@@ -571,7 +575,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              })
              |> json_response_and_validate_schema(200) == %{
                "blank3" => "dir_2/blank_3.png",
-               "blank" => "blank.png"
+               "blank" => "blank.png",
+               "blank2" => "blank2.png"
              }
 
       refute File.exists?("#{@emoji_path}/test_pack/dir/")
@@ -579,7 +584,10 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
       assert admin_conn
              |> delete("/api/pleroma/emoji/packs/test_pack/files?shortcode=blank3")
-             |> json_response_and_validate_schema(200) == %{"blank" => "blank.png"}
+             |> json_response_and_validate_schema(200) == %{
+               "blank" => "blank.png",
+               "blank2" => "blank2.png"
+             }
 
       refute File.exists?("#{@emoji_path}/test_pack/dir_2/")
 
@@ -603,7 +611,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              })
              |> json_response_and_validate_schema(200) == %{
                "blank_url" => "blank_url.png",
-               "blank" => "blank.png"
+               "blank" => "blank.png",
+               "blank2" => "blank2.png"
              }
 
       assert File.exists?("#{@emoji_path}/test_pack/blank_url.png")
@@ -624,15 +633,16 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
              })
              |> json_response_and_validate_schema(200) == %{
                "shortcode" => "shortcode.png",
-               "blank" => "blank.png"
+               "blank" => "blank.png",
+               "blank2" => "blank2.png"
              }
     end
 
     test "remove non existing shortcode in pack.json", %{admin_conn: admin_conn} do
       assert admin_conn
-             |> delete("/api/pleroma/emoji/packs/test_pack/files?shortcode=blank2")
+             |> delete("/api/pleroma/emoji/packs/test_pack/files?shortcode=blank3")
              |> json_response_and_validate_schema(:bad_request) == %{
-               "error" => "Emoji \"blank2\" does not exist"
+               "error" => "Emoji \"blank3\" does not exist"
              }
     end
 
@@ -640,12 +650,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       assert admin_conn
              |> put_req_header("content-type", "multipart/form-data")
              |> patch("/api/pleroma/emoji/packs/test_pack/files", %{
-               shortcode: "blank2",
-               new_shortcode: "blank3",
+               shortcode: "blank3",
+               new_shortcode: "blank4",
                new_filename: "dir_2/blank_3.png"
              })
              |> json_response_and_validate_schema(:bad_request) == %{
-               "error" => "Emoji \"blank2\" does not exist"
+               "error" => "Emoji \"blank3\" does not exist"
              }
     end
 
@@ -768,7 +778,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
   describe "GET /api/pleroma/emoji/packs/:name" do
     test "shows pack.json", %{conn: conn} do
       assert %{
-               "files" => %{"blank" => "blank.png"},
+               "files" => files,
                "pack" => %{
                  "can-download" => true,
                  "description" => "Test description",
@@ -781,6 +791,26 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
                conn
                |> get("/api/pleroma/emoji/packs/test_pack")
                |> json_response_and_validate_schema(200)
+
+      assert files == %{"blank" => "blank.png", "blank2" => "blank2.png"}
+
+      assert %{
+               "files" => files
+             } =
+               conn
+               |> get("/api/pleroma/emoji/packs/test_pack?page_size=1")
+               |> json_response_and_validate_schema(200)
+
+      assert files |> Map.keys() |> length() == 1
+
+      assert %{
+               "files" => files
+             } =
+               conn
+               |> get("/api/pleroma/emoji/packs/test_pack?page_size=1&page=2")
+               |> json_response_and_validate_schema(200)
+
+      assert files |> Map.keys() |> length() == 1
     end
 
     test "non existing pack", %{conn: conn} do
