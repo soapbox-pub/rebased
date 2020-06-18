@@ -4,9 +4,8 @@
 
 # Code based on CreateChatMessageValidator
 # NOTES
-# - Can probably be a generic create validator
 # - doesn't embed, will only get the object id
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateQuestionValidator do
+defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
   use Ecto.Schema
 
   alias Pleroma.Object
@@ -26,29 +25,53 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateQuestionValidator do
     field(:object, Types.ObjectID)
   end
 
+  def cast_data(data) do
+    %__MODULE__{}
+    |> changeset(data)
+  end
+
   def cast_and_apply(data) do
     data
     |> cast_data
     |> apply_action(:insert)
   end
 
-  def cast_data(data) do
-    cast(%__MODULE__{}, data, __schema__(:fields))
+  def cast_and_validate(data, meta \\ []) do
+    data
+    |> cast_data
+    |> validate_data(meta)
   end
 
-  def cast_and_validate(data, meta \\ []) do
-    cast_data(data)
-    |> validate_data(meta)
+  def changeset(struct, data) do
+    struct
+    |> cast(data, __schema__(:fields))
   end
 
   def validate_data(cng, meta \\ []) do
     cng
     |> validate_required([:actor, :type, :object])
     |> validate_inclusion(:type, ["Create"])
-    |> validate_actor_presence()
+    |> validate_actor_is_active()
     |> validate_any_presence([:to, :cc])
     |> validate_actors_match(meta)
     |> validate_object_nonexistence()
+    |> validate_object_containment()
+  end
+
+  def validate_object_containment(cng) do
+    actor = get_field(cng, :actor)
+
+    cng
+    |> validate_change(:object, fn :object, object_id ->
+      %URI{host: object_id_host} = URI.parse(object_id)
+      %URI{host: actor_host} = URI.parse(actor)
+
+      if object_id_host == actor_host do
+        []
+      else
+        [{:object, "The host of the object id doesn't match with the host of the actor"}]
+      end
+    end)
   end
 
   def validate_object_nonexistence(cng) do

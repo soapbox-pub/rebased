@@ -419,6 +419,29 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end)
   end
 
+  # Compatibility wrapper for Mastodon votes
+  defp handle_create(%{"object" => %{"type" => "Answer"}} = data, _user) do
+    handle_incoming(data)
+  end
+
+  defp handle_create(%{"object" => object} = data, user) do
+    %{
+      to: data["to"],
+      object: object,
+      actor: user,
+      context: object["context"],
+      local: false,
+      published: data["published"],
+      additional:
+        Map.take(data, [
+          "cc",
+          "directMessage",
+          "id"
+        ])
+    }
+    |> ActivityPub.create()
+  end
+
   def handle_incoming(data, options \\ [])
 
   # Flag objects are placed ahead of the ID check because Mastodon 2.8 and earlier send them
@@ -461,26 +484,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     actor = Containment.get_actor(data)
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
-         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(actor),
-         data <- Map.put(data, "actor", actor) |> fix_addressing() do
-      object = fix_object(object, options)
+         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(actor) do
+      data =
+        data
+        |> Map.put("object", fix_object(object, options))
+        |> Map.put("actor", actor)
+        |> fix_addressing()
 
-      params = %{
-        to: data["to"],
-        object: object,
-        actor: user,
-        context: object["context"],
-        local: false,
-        published: data["published"],
-        additional:
-          Map.take(data, [
-            "cc",
-            "directMessage",
-            "id"
-          ])
-      }
-
-      with {:ok, created_activity} <- ActivityPub.create(params) do
+      with {:ok, created_activity} <- handle_create(data, user) do
         reply_depth = (options[:depth] || 0) + 1
 
         if Federator.allowed_thread_distance?(reply_depth) do

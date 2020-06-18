@@ -13,22 +13,25 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator do
   @primary_key false
   @derive Jason.Encoder
 
-  # Extends from NoteValidator
   embedded_schema do
     field(:id, Types.ObjectID, primary_key: true)
     field(:to, {:array, :string}, default: [])
     field(:cc, {:array, :string}, default: [])
+
+    # is this actually needed?
     field(:bto, {:array, :string}, default: [])
     field(:bcc, {:array, :string}, default: [])
+
     field(:type, :string)
     field(:name, :string)
     field(:inReplyTo, :string)
     field(:attributedTo, Types.ObjectID)
+    field(:actor, Types.ObjectID)
   end
 
   def cast_and_apply(data) do
     data
-    |> cast_data
+    |> cast_data()
     |> apply_action(:insert)
   end
 

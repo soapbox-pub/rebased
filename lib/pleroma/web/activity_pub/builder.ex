@@ -115,6 +115,21 @@ defmodule Pleroma.Web.ActivityPub.Builder do
     end
   end
 
+  def answer(user, object, name) do
+    {:ok,
+     %{
+       "type" => "Answer",
+       "actor" => user.ap_id,
+       "cc" => [object.data["actor"]],
+       "to" => [],
+       "name" => name,
+       "inReplyTo" => object.data["id"],
+       "context" => object.data["context"],
+       "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+       "id" => Utils.generate_object_id()
+     }, []}
+  end
+
   @spec tombstone(String.t(), String.t()) :: {:ok, map(), keyword()}
   def tombstone(actor, id) do
     {:ok,

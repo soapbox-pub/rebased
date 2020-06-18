@@ -42,6 +42,19 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end)
   end
 
+  def validate_actor_is_active(cng, options \\ []) do
+    field_name = Keyword.get(options, :field_name, :actor)
+
+    cng
+    |> validate_change(field_name, fn field_name, actor ->
+      if %User{deactivated: false} = User.get_cached_by_ap_id(actor) do
+        []
+      else
+        [{field_name, "can't find user (or deactivated)"}]
+      end
+    end)
+  end
+
   def validate_object_presence(cng, options \\ []) do
     field_name = Keyword.get(options, :field_name, :object)
     allowed_types = Keyword.get(options, :allowed_types, false)
@@ -76,5 +89,30 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
       |> validate_object_presence(options)
 
     if actor_cng.valid?, do: actor_cng, else: object_cng
+  end
+
+  def validate_host_match(cng, fields \\ [:id, :actor]) do
+    unique_hosts =
+      fields
+      |> Enum.map(fn field ->
+        %URI{host: host} =
+          cng
+          |> get_field(field)
+          |> URI.parse()
+
+        host
+      end)
+      |> Enum.uniq()
+      |> Enum.count()
+
+    if unique_hosts == 1 do
+      cng
+    else
+      fields
+      |> Enum.reduce(cng, fn field, cng ->
+        cng
+        |> add_error(field, "hosts of #{inspect(fields)} aren't matching")
+      end)
+    end
   end
 end

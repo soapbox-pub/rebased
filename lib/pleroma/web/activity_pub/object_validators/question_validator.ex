@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   use Ecto.Schema
 
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
   alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
@@ -40,12 +41,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     field(:announcement_count, :integer, default: 0)
     field(:inReplyTo, :string)
     field(:uri, Types.Uri)
+    # short identifier for PleromaFE to group statuses by context
+    field(:context_id, :integer)
 
     field(:likes, {:array, :string}, default: [])
     field(:announcements, {:array, :string}, default: [])
-
-    # see if needed
-    field(:context_id, :string)
 
     field(:closed, Types.DateTime)
     field(:voters, {:array, Types.ObjectID}, default: [])
@@ -70,12 +70,29 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     |> changeset(data)
   end
 
-  def fix(data) do
+  defp fix_closed(data) do
     cond do
       is_binary(data["closed"]) -> data
       is_binary(data["endTime"]) -> Map.put(data, "closed", data["endTime"])
       true -> Map.drop(data, ["closed"])
     end
+  end
+
+  # based on Pleroma.Web.ActivityPub.Utils.lazy_put_objects_defaults
+  defp fix_defaults(data) do
+    %{data: %{"id" => context}, id: context_id} = Utils.create_context(data["context"])
+
+    data
+    |> Map.put_new_lazy("id", &Utils.generate_object_id/0)
+    |> Map.put_new_lazy("published", &Utils.make_date/0)
+    |> Map.put_new("context", context)
+    |> Map.put_new("context_id", context_id)
+  end
+
+  defp fix(data) do
+    data
+    |> fix_closed()
+    |> fix_defaults()
   end
 
   def changeset(struct, data) do
@@ -92,7 +109,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     |> validate_inclusion(:type, ["Question"])
     |> validate_required([:id, :actor, :type, :content, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
-    |> CommonValidations.validate_actor_presence()
+    |> CommonValidations.validate_actor_is_active()
     |> CommonValidations.validate_any_presence([:oneOf, :anyOf])
+    |> CommonValidations.validate_host_match()
   end
 end

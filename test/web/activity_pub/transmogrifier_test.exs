@@ -282,7 +282,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert object.data["length"] == 180_000
     end
 
-    test "it rewrites Note votes to Answers and increments vote counters on question activities" do
+    test "it rewrites Note votes to Answer and increments vote counters on Question activities" do
       user = insert(:user)
 
       {:ok, activity} =

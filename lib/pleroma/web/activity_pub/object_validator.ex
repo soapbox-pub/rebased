@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.CreateQuestionValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator
@@ -162,7 +162,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
          meta = Keyword.put(meta, :object_data, object_data |> stringify_keys),
          {:ok, create_activity} <-
            create_activity
-           |> CreateQuestionValidator.cast_and_validate(meta)
+           |> CreateGenericValidator.cast_and_validate(meta)
            |> Ecto.Changeset.apply_action(:insert) do
       create_activity = stringify_keys(create_activity)
       {:ok, create_activity, meta}
@@ -188,7 +188,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   end
 
   def cast_and_apply(%{"type" => "Answer"} = object) do
-    QuestionValidator.cast_and_apply(object)
+    AnswerValidator.cast_and_apply(object)
   end
 
   def cast_and_apply(o), do: {:error, {:validator_not_set, o}}
