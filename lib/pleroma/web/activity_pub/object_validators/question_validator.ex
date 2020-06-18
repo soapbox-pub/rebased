@@ -45,7 +45,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     field(:announcements, {:array, :string}, default: [])
 
     # see if needed
-    field(:conversation, :string)
     field(:context_id, :string)
 
     field(:closed, Types.DateTime)
