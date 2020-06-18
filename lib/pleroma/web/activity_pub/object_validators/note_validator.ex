@@ -41,7 +41,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     field(:announcements, {:array, :string}, default: [])
 
     # see if needed
-    field(:conversation, :string)
     field(:context_id, :string)
   end
 
