@@ -33,6 +33,20 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
       tags: ["Emoji Packs"],
       summary: "Lists local custom emoji packs",
       operationId: "PleromaAPI.EmojiPackController.index",
+      parameters: [
+        Operation.parameter(
+          :page,
+          :query,
+          %Schema{type: :integer, default: 1},
+          "Page"
+        ),
+        Operation.parameter(
+          :page_size,
+          :query,
+          %Schema{type: :integer, default: 50},
+          "Number of statuses to return"
+        )
+      ],
       responses: %{
         200 => emoji_packs_response()
       }

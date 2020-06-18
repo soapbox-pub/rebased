@@ -37,13 +37,13 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
     end
   end
 
-  def index(conn, _params) do
+  def index(conn, params) do
     emoji_path =
       [:instance, :static_dir]
       |> Pleroma.Config.get!()
       |> Path.join("emoji")
 
-    with {:ok, packs} <- Pack.list_local() do
+    with {:ok, packs} <- Pack.list_local(page: params.page, page_size: params.page_size) do
       json(conn, packs)
     else
       {:error, :create_dir, e} ->

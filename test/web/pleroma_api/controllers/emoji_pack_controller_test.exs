@@ -39,6 +39,28 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
     non_shared = resp["test_pack_nonshared"]
     assert non_shared["pack"]["share-files"] == false
     assert non_shared["pack"]["can-download"] == false
+
+    resp =
+      conn
+      |> get("/api/pleroma/emoji/packs?page_size=1")
+      |> json_response_and_validate_schema(200)
+
+    [pack1] = Map.keys(resp)
+
+    resp =
+      conn
+      |> get("/api/pleroma/emoji/packs?page_size=1&page=2")
+      |> json_response_and_validate_schema(200)
+
+    [pack2] = Map.keys(resp)
+
+    resp =
+      conn
+      |> get("/api/pleroma/emoji/packs?page_size=1&page=3")
+      |> json_response_and_validate_schema(200)
+
+    [pack3] = Map.keys(resp)
+    assert [pack1, pack2, pack3] |> Enum.uniq() |> length() == 3
   end
 
   describe "GET /api/pleroma/emoji/packs/remote" do

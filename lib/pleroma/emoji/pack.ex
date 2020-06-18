@@ -16,7 +16,7 @@ defmodule Pleroma.Emoji.Pack do
 
   alias Pleroma.Emoji
 
-  @spec create(String.t()) :: :ok | {:error, File.posix()} | {:error, :empty_values}
+  @spec create(String.t()) :: {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
   def create(name) do
     with :ok <- validate_not_empty([name]),
          dir <- Path.join(emoji_path(), name),
@@ -120,8 +120,8 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec list_local() :: {:ok, map()}
-  def list_local do
+  @spec list_local(keyword()) :: {:ok, map()}
+  def list_local(opts) do
     with {:ok, results} <- list_packs_dir() do
       packs =
         results
@@ -132,6 +132,17 @@ defmodule Pleroma.Emoji.Pack do
           end
         end)
         |> Enum.reject(&is_nil/1)
+
+      packs =
+        case opts[:page] do
+          1 ->
+            Enum.take(packs, opts[:page_size])
+
+          _ ->
+            packs
+            |> Enum.take(opts[:page] * opts[:page_size])
+            |> Enum.take(-opts[:page_size])
+        end
         |> Map.new(fn pack -> {pack.name, validate_pack(pack)} end)
 
       {:ok, packs}
@@ -146,7 +157,7 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec download(String.t(), String.t(), String.t()) :: :ok | {:error, atom()}
+  @spec download(String.t(), String.t(), String.t()) :: {:ok, t()} | {:error, atom()}
   def download(name, url, as) do
     uri = url |> String.trim() |> URI.parse()
 
