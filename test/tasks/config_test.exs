@@ -50,6 +50,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       config3 = ConfigDB.get_by_params(%{group: ":quack", key: ":level"})
       refute ConfigDB.get_by_params(%{group: ":pleroma", key: "Pleroma.Repo"})
       refute ConfigDB.get_by_params(%{group: ":postgrex", key: ":json_library"})
+      refute ConfigDB.get_by_params(%{group: ":pleroma", key: ":database"})
 
       assert config1.value == [key: "value", key2: [Repo]]
       assert config2.value == [key: "value2", key2: ["Activity"]]
