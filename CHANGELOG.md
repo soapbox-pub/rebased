@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 - Mastodon API: Add support for filtering replies in public and home timelines
+- Mastodon API: Support for `bot` field in `/api/v1/accounts/update_credentials`
 - Admin API: endpoints for create/update/delete OAuth Apps.
 - Admin API: endpoint for status view.
 - OTP: Add command to reload emoji packs

@@ -465,6 +465,7 @@ defmodule Pleroma.User do
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
+    |> validate_inclusion(:actor_type, ["Person", "Service"])
     |> put_fields()
     |> put_emoji()
     |> put_change_if_present(:bio, &{:ok, parse_bio(&1, struct)})
