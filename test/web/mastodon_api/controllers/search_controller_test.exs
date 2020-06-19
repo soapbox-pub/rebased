@@ -151,6 +151,22 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
              ]
     end
 
+    test "supports pagination of hashtags search results", %{conn: conn} do
+      results =
+        conn
+        |> get(
+          "/api/v2/search?#{
+            URI.encode_query(%{q: "#some #text #with #hashtags", limit: 2, offset: 1})
+          }"
+        )
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "text", "url" => "#{Web.base_url()}/tag/text"},
+               %{"name" => "with", "url" => "#{Web.base_url()}/tag/with"}
+             ]
+    end
+
     test "excludes a blocked users from search results", %{conn: conn} do
       user = insert(:user)
       user_smith = insert(:user, %{nickname: "Agent", name: "I love 2hu"})

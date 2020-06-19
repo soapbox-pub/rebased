@@ -1561,7 +1561,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     # Using the header for pagination works correctly
     [next, _] = get_resp_header(result, "link") |> hd() |> String.split(", ")
-    [_, max_id] = Regex.run(~r/max_id=(.*)>;/, next)
+    [_, max_id] = Regex.run(~r/max_id=([^&]+)/, next)
 
     assert max_id == third_favorite.id
 
