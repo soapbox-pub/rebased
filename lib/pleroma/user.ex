@@ -758,7 +758,6 @@ defmodule Pleroma.User do
 
         follower
         |> update_following_count()
-        |> set_cache()
     end
   end
 
@@ -787,7 +786,6 @@ defmodule Pleroma.User do
         {:ok, follower} =
           follower
           |> update_following_count()
-          |> set_cache()
 
         {:ok, follower, followed}
 
@@ -1139,35 +1137,25 @@ defmodule Pleroma.User do
     ])
   end
 
+  @spec update_follower_count(User.t()) :: {:ok, User.t()}
   def update_follower_count(%User{} = user) do
     if user.local or !Pleroma.Config.get([:instance, :external_user_synchronization]) do
-      follower_count_query =
-        User.Query.build(%{followers: user, deactivated: false})
-        |> select([u], %{count: count(u.id)})
+      follower_count = FollowingRelationship.follower_count(user)
 
-      User
-      |> where(id: ^user.id)
-      |> join(:inner, [u], s in subquery(follower_count_query))
-      |> update([u, s],
-        set: [follower_count: s.count]
-      )
-      |> select([u], u)
-      |> Repo.update_all([])
-      |> case do
-        {1, [user]} -> set_cache(user)
-        _ -> {:error, user}
-      end
+      user
+      |> follow_information_changeset(%{follower_count: follower_count})
+      |> update_and_set_cache
     else
       {:ok, maybe_fetch_follow_information(user)}
     end
   end
 
-  @spec update_following_count(User.t()) :: User.t()
+  @spec update_following_count(User.t()) :: {:ok, User.t()}
   def update_following_count(%User{local: false} = user) do
     if Pleroma.Config.get([:instance, :external_user_synchronization]) do
-      maybe_fetch_follow_information(user)
+      {:ok, maybe_fetch_follow_information(user)}
     else
-      user
+      {:ok, user}
     end
   end
 
@@ -1176,7 +1164,7 @@ defmodule Pleroma.User do
 
     user
     |> follow_information_changeset(%{following_count: following_count})
-    |> Repo.update!()
+    |> update_and_set_cache()
   end
 
   def set_unread_conversation_count(%User{local: true} = user) do
