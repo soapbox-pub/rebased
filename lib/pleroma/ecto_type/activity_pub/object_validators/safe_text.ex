@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.Types.SafeText do
+defmodule Pleroma.EctoType.ActivityPub.ObjectValidators.SafeText do
   use Ecto.Type
 
   alias Pleroma.HTML

@@ -5,23 +5,20 @@
 defmodule Pleroma.Web.AdminAPI.ConfigView do
   use Pleroma.Web, :view
 
-  def render("index.json", %{configs: configs} = params) do
-    map = %{
-      configs: render_many(configs, __MODULE__, "show.json", as: :config)
-    }
+  alias Pleroma.ConfigDB
 
-    if params[:need_reboot] do
-      Map.put(map, :need_reboot, true)
-    else
-      map
-    end
+  def render("index.json", %{configs: configs} = params) do
+    %{
+      configs: render_many(configs, __MODULE__, "show.json", as: :config),
+      need_reboot: params[:need_reboot]
+    }
   end
 
   def render("show.json", %{config: config}) do
     map = %{
-      key: config.key,
-      group: config.group,
-      value: Pleroma.ConfigDB.from_binary_with_convert(config.value)
+      key: ConfigDB.to_json_types(config.key),
+      group: ConfigDB.to_json_types(config.group),
+      value: ConfigDB.to_json_types(config.value)
     }
 
     if config.db != [] do

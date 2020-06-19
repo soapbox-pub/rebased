@@ -6,8 +6,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
   use Ecto.Schema
 
   alias Pleroma.Activity
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -15,13 +15,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
     field(:type, :string)
-    field(:actor, Types.ObjectID)
-    field(:to, Types.Recipients, default: [])
-    field(:cc, Types.Recipients, default: [])
-    field(:deleted_activity_id, Types.ObjectID)
-    field(:object, Types.ObjectID)
+    field(:actor, ObjectValidators.ObjectID)
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
+    field(:deleted_activity_id, ObjectValidators.ObjectID)
+    field(:object, ObjectValidators.ObjectID)
   end
 
   def cast_data(data) do

@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   alias Pleroma.Activity
   alias Pleroma.EarmarkRenderer
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.FollowingRelationship
   alias Pleroma.Maps
   alias Pleroma.Notification
@@ -18,7 +19,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -725,7 +725,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     else
       {:error, {:validate_object, _}} = e ->
         # Check if we have a create activity for this
-        with {:ok, object_id} <- Types.ObjectID.cast(data["object"]),
+        with {:ok, object_id} <- ObjectValidators.ObjectID.cast(data["object"]),
              %Activity{data: %{"actor" => actor}} <-
                Activity.create_by_object_ap_id(object_id) |> Repo.one(),
              # We have one, insert a tombstone and retry
