@@ -179,7 +179,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         0
       end
 
-    bot = user.actor_type in ["Application", "Service"]
+    bot = user.actor_type == "Service"
 
     emojis =
       Enum.map(user.emoji, fn {shortcode, raw_url} ->
