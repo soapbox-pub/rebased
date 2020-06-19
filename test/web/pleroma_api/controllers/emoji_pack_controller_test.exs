@@ -30,13 +30,14 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
   test "GET /api/pleroma/emoji/packs", %{conn: conn} do
     resp = conn |> get("/api/pleroma/emoji/packs") |> json_response_and_validate_schema(200)
 
-    shared = resp["test_pack"]
+    assert resp["count"] == 3
+    shared = resp["packs"]["test_pack"]
     assert shared["files"] == %{"blank" => "blank.png", "blank2" => "blank2.png"}
     assert Map.has_key?(shared["pack"], "download-sha256")
     assert shared["pack"]["can-download"]
     assert shared["pack"]["share-files"]
 
-    non_shared = resp["test_pack_nonshared"]
+    non_shared = resp["packs"]["test_pack_nonshared"]
     assert non_shared["pack"]["share-files"] == false
     assert non_shared["pack"]["can-download"] == false
 
@@ -45,21 +46,24 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       |> get("/api/pleroma/emoji/packs?page_size=1")
       |> json_response_and_validate_schema(200)
 
-    [pack1] = Map.keys(resp)
+    assert resp["count"] == 3
+    [pack1] = Map.keys(resp["packs"])
 
     resp =
       conn
       |> get("/api/pleroma/emoji/packs?page_size=1&page=2")
       |> json_response_and_validate_schema(200)
 
-    [pack2] = Map.keys(resp)
+    assert resp["count"] == 3
+    [pack2] = Map.keys(resp["packs"])
 
     resp =
       conn
       |> get("/api/pleroma/emoji/packs?page_size=1&page=3")
       |> json_response_and_validate_schema(200)
 
-    [pack3] = Map.keys(resp)
+    assert resp["count"] == 3
+    [pack3] = Map.keys(resp["packs"])
     assert [pack1, pack2, pack3] |> Enum.uniq() |> length() == 3
   end
 
@@ -683,7 +687,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
       assert Jason.decode!(File.read!("#{@emoji_path}/test_created/pack.json")) == %{
                "pack" => %{},
-               "files" => %{}
+               "files" => %{},
+               "files_count" => 0
              }
 
       assert admin_conn
@@ -741,14 +746,14 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
     resp = conn |> get("/api/pleroma/emoji/packs") |> json_response_and_validate_schema(200)
 
-    refute Map.has_key?(resp, "test_pack_for_import")
+    refute Map.has_key?(resp["packs"], "test_pack_for_import")
 
     assert admin_conn
            |> get("/api/pleroma/emoji/packs/import")
            |> json_response_and_validate_schema(200) == ["test_pack_for_import"]
 
     resp = conn |> get("/api/pleroma/emoji/packs") |> json_response_and_validate_schema(200)
-    assert resp["test_pack_for_import"]["files"] == %{"blank" => "blank.png"}
+    assert resp["packs"]["test_pack_for_import"]["files"] == %{"blank" => "blank.png"}
 
     File.rm!("#{@emoji_path}/test_pack_for_import/pack.json")
     refute File.exists?("#{@emoji_path}/test_pack_for_import/pack.json")
@@ -768,7 +773,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
 
     resp = conn |> get("/api/pleroma/emoji/packs") |> json_response_and_validate_schema(200)
 
-    assert resp["test_pack_for_import"]["files"] == %{
+    assert resp["packs"]["test_pack_for_import"]["files"] == %{
              "blank" => "blank.png",
              "blank2" => "blank.png",
              "foo" => "blank.png"
@@ -779,6 +784,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
     test "shows pack.json", %{conn: conn} do
       assert %{
                "files" => files,
+               "files_count" => 2,
                "pack" => %{
                  "can-download" => true,
                  "description" => "Test description",
@@ -795,7 +801,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       assert files == %{"blank" => "blank.png", "blank2" => "blank2.png"}
 
       assert %{
-               "files" => files
+               "files" => files,
+               "files_count" => 2
              } =
                conn
                |> get("/api/pleroma/emoji/packs/test_pack?page_size=1")
@@ -804,7 +811,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       assert files |> Map.keys() |> length() == 1
 
       assert %{
-               "files" => files
+               "files" => files,
+               "files_count" => 2
              } =
                conn
                |> get("/api/pleroma/emoji/packs/test_pack?page_size=1&page=2")

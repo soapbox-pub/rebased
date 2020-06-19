@@ -1,6 +1,7 @@
 defmodule Pleroma.Emoji.Pack do
-  @derive {Jason.Encoder, only: [:files, :pack]}
+  @derive {Jason.Encoder, only: [:files, :pack, :files_count]}
   defstruct files: %{},
+            files_count: 0,
             pack_file: nil,
             path: nil,
             pack: %{},
@@ -8,6 +9,7 @@ defmodule Pleroma.Emoji.Pack do
 
   @type t() :: %__MODULE__{
           files: %{String.t() => Path.t()},
+          files_count: non_neg_integer(),
           pack_file: Path.t(),
           path: Path.t(),
           pack: map(),
@@ -137,10 +139,10 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec list_local(keyword()) :: {:ok, map()}
+  @spec list_local(keyword()) :: {:ok, map(), non_neg_integer()}
   def list_local(opts) do
     with {:ok, results} <- list_packs_dir() do
-      packs =
+      all_packs =
         results
         |> Enum.map(fn name ->
           case load_pack(name) do
@@ -149,10 +151,13 @@ defmodule Pleroma.Emoji.Pack do
           end
         end)
         |> Enum.reject(&is_nil/1)
+
+      packs =
+        all_packs
         |> paginate(opts[:page], opts[:page_size])
         |> Map.new(fn pack -> {pack.name, validate_pack(pack)} end)
 
-      {:ok, packs}
+      {:ok, packs, length(all_packs)}
     end
   end
 
@@ -215,7 +220,12 @@ defmodule Pleroma.Emoji.Pack do
         |> Map.put(:path, Path.dirname(pack_file))
         |> Map.put(:name, name)
 
-      {:ok, pack}
+      files_count =
+        pack.files
+        |> Map.keys()
+        |> length()
+
+      {:ok, Map.put(pack, :files_count, files_count)}
     else
       {:error, :not_found}
     end

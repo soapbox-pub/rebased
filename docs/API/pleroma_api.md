@@ -458,7 +458,17 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params:
   * `page`: page number for packs (default 1)
   * `page_size`: page size for packs (default 50)
-* Response: JSON, "ok" and 200 status and the JSON hashmap of pack name to pack contents
+* Response: `packs` key with JSON hashmap of pack name to pack contents and `count` key for count of packs.
+
+```json
+{
+  "packs": {
+    "pack_name": {...}, // pack contents
+    ...
+  },
+  "count": 0 // packs count
+}
+```
 
 ## `GET /api/pleroma/emoji/packs/:name`
 
@@ -469,7 +479,15 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params:
   * `page`: page number for files (default 1)
   * `page_size`: page size for files (default 50)
-* Response: JSON, pack json with `files` and `pack` keys with 200 status or 404 if the pack does not exist
+* Response: JSON, pack json with `files`, `files_count` and `pack` keys with 200 status or 404 if the pack does not exist.
+
+```json
+{
+  "files": {...},
+  "files_count": 0, // emoji count in pack
+  "pack": {...}
+}
+```
 
 ## `GET /api/pleroma/emoji/packs/:name/archive`
 ### Requests a local pack archive from the instance

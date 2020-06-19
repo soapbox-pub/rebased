@@ -43,8 +43,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
       |> Pleroma.Config.get!()
       |> Path.join("emoji")
 
-    with {:ok, packs} <- Pack.list_local(page: params.page, page_size: params.page_size) do
-      json(conn, packs)
+    with {:ok, packs, count} <- Pack.list_local(page: params.page, page_size: params.page_size) do
+      json(conn, %{packs: packs, count: count})
     else
       {:error, :create_dir, e} ->
         conn
