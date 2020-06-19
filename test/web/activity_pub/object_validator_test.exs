@@ -641,5 +641,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
     test "validates a basic object", %{valid_update: valid_update} do
       assert {:ok, _update, []} = ObjectValidator.validate(valid_update, [])
     end
+
+    test "returns an error if the object can't be updated by the actor", %{
+      valid_update: valid_update
+    } do
+      other_user = insert(:user)
+
+      update =
+        valid_update
+        |> Map.put("actor", other_user.ap_id)
+
+      assert {:error, _cng} = ObjectValidator.validate(update, [])
+    end
   end
 end

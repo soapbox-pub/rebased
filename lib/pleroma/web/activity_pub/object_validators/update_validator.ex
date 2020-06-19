@@ -33,11 +33,27 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator do
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_inclusion(:type, ["Update"])
     |> validate_actor_presence()
+    |> validate_updating_rights()
   end
 
   def cast_and_validate(data) do
     data
     |> cast_data
     |> validate_data
+  end
+
+  # For now we only support updating users, and here the rule is easy:
+  # object id == actor id
+  def validate_updating_rights(cng) do
+    with actor = get_field(cng, :actor),
+         object = get_field(cng, :object),
+         {:ok, object_id} <- ObjectValidators.ObjectID.cast(object),
+         true <- actor == object_id do
+      cng
+    else
+      _e ->
+        cng
+        |> add_error(:object, "Can't be updated by this actor")
+    end
   end
 end
