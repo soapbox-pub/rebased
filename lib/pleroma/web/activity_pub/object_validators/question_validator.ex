@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   use Ecto.Schema
 
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
   alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.Types
@@ -34,8 +35,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     # TODO: Write type
     field(:emoji, :map, default: %{})
     field(:sensitive, :boolean, default: false)
-    # TODO: Write type
-    field(:attachment, {:array, :map}, default: [])
+    embeds_many(:attachment, AttachmentValidator)
     field(:replies_count, :integer, default: 0)
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
@@ -99,7 +99,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     data = fix(data)
 
     struct
-    |> cast(data, __schema__(:fields) -- [:anyOf, :oneOf])
+    |> cast(data, __schema__(:fields) -- [:anyOf, :oneOf, :attachment])
+    |> cast_embed(:attachment)
     |> cast_embed(:anyOf)
     |> cast_embed(:oneOf)
   end
