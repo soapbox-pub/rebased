@@ -19,9 +19,20 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
+
+  def validate(%{"type" => "Update"} = object, meta) do
+    with {:ok, object} <-
+           object
+           |> UpdateValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
 
   def validate(%{"type" => "Undo"} = object, meta) do
     with {:ok, object} <-
