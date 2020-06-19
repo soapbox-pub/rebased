@@ -139,6 +139,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Rollback if we couldn't create it
   # - Increase the user note count
   # - Increase the reply count
+  # - Increase replies count
+  # - Set up ActivityExpiration
   # - Set up notifications
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
     with {:ok, object, meta} <- handle_object_creation(meta[:object_data], meta),

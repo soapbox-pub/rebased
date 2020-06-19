@@ -23,6 +23,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     field(:to, Types.Recipients, default: [])
     field(:cc, Types.Recipients, default: [])
     field(:object, Types.ObjectID)
+    field(:expires_at, Types.DateTime)
   end
 
   def cast_data(data) do
