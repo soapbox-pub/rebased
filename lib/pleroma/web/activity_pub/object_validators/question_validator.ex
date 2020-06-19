@@ -5,11 +5,11 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   use Ecto.Schema
 
-  alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
   alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
+  alias Pleroma.Web.ActivityPub.Utils
 
   import Ecto.Changeset
 
@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
 
   # Extends from NoteValidator
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
     field(:to, {:array, :string}, default: [])
     field(:cc, {:array, :string}, default: [])
     field(:bto, {:array, :string}, default: [])
@@ -28,10 +28,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     field(:type, :string)
     field(:content, :string)
     field(:context, :string)
-    field(:actor, Types.ObjectID)
-    field(:attributedTo, Types.ObjectID)
+    field(:actor, ObjectValidators.ObjectID)
+    field(:attributedTo, ObjectValidators.ObjectID)
     field(:summary, :string)
-    field(:published, Types.DateTime)
+    field(:published, ObjectValidators.DateTime)
     # TODO: Write type
     field(:emoji, :map, default: %{})
     field(:sensitive, :boolean, default: false)
@@ -40,15 +40,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
     field(:inReplyTo, :string)
-    field(:uri, Types.Uri)
+    field(:uri, ObjectValidators.Uri)
     # short identifier for PleromaFE to group statuses by context
     field(:context_id, :integer)
 
     field(:likes, {:array, :string}, default: [])
     field(:announcements, {:array, :string}, default: [])
 
-    field(:closed, Types.DateTime)
-    field(:voters, {:array, Types.ObjectID}, default: [])
+    field(:closed, ObjectValidators.DateTime)
+    field(:voters, {:array, ObjectValidators.ObjectID}, default: [])
     embeds_many(:anyOf, QuestionOptionsValidator)
     embeds_many(:oneOf, QuestionOptionsValidator)
   end

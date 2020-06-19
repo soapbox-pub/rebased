@@ -8,8 +8,8 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
   use Ecto.Schema
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -17,13 +17,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
-    field(:actor, Types.ObjectID)
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
+    field(:actor, ObjectValidators.ObjectID)
     field(:type, :string)
-    field(:to, Types.Recipients, default: [])
-    field(:cc, Types.Recipients, default: [])
-    field(:object, Types.ObjectID)
-    field(:expires_at, Types.DateTime)
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
+    field(:object, ObjectValidators.ObjectID)
+    field(:expires_at, ObjectValidators.DateTime)
   end
 
   def cast_data(data) do

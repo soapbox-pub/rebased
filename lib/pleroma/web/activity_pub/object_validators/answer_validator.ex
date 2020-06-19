@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator do
   use Ecto.Schema
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
 
@@ -14,7 +14,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator do
   @derive Jason.Encoder
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
     field(:to, {:array, :string}, default: [])
     field(:cc, {:array, :string}, default: [])
 
@@ -25,8 +25,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator do
     field(:type, :string)
     field(:name, :string)
     field(:inReplyTo, :string)
-    field(:attributedTo, Types.ObjectID)
-    field(:actor, Types.ObjectID)
+    field(:attributedTo, ObjectValidators.ObjectID)
+    field(:actor, ObjectValidators.ObjectID)
   end
 
   def cast_and_apply(data) do
