@@ -1225,3 +1225,65 @@ Loads json generated from `config/descriptions.exs`.
   - On success: `204`, empty response
   - On failure:
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
+
+## `GET /api/pleroma/admin/media_proxy_caches`
+
+### Get a list of all banned MediaProxy URLs in Cachex
+
+- Authentication: required
+- Params:
+- *optional* `page`: **integer** page number
+- *optional* `page_size`: **integer** number of log entries per page (default is `50`)
+
+- Response:
+
+``` json
+{
+  "urls": [
+    "http://example.com/media/a688346.jpg",
+    "http://example.com/media/fb1f4d.jpg"
+  ]
+}
+
+```
+
+## `POST /api/pleroma/admin/media_proxy_caches/delete`
+
+### Remove a banned MediaProxy URL from Cachex
+
+- Authentication: required
+- Params:
+  - `urls` (array)
+
+- Response:
+
+``` json
+{
+  "urls": [
+    "http://example.com/media/a688346.jpg",
+    "http://example.com/media/fb1f4d.jpg"
+  ]
+}
+
+```
+
+## `POST /api/pleroma/admin/media_proxy_caches/purge`
+
+### Purge a MediaProxy URL
+
+- Authentication: required
+- Params:
+  - `urls` (array)
+  - `ban` (boolean)
+
+- Response:
+
+``` json
+{
+  "urls": [
+    "http://example.com/media/a688346.jpg",
+    "http://example.com/media/fb1f4d.jpg"
+  ]
+}
+
+```

@@ -18,13 +18,19 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
         },
         _job
       ) do
-    hrefs =
-      Enum.flat_map(attachments, fn attachment ->
-        Enum.map(attachment["url"], & &1["href"])
-      end)
+    attachments
+    |> Enum.flat_map(fn item -> Enum.map(item["url"], & &1["href"]) end)
+    |> fetch_objects
+    |> prepare_objects(actor, Enum.map(attachments, & &1["name"]))
+    |> filter_objects
+    |> do_clean
 
-    names = Enum.map(attachments, & &1["name"])
+    {:ok, :success}
+  end
 
+  def perform(%{"op" => "cleanup_attachments", "object" => _object}, _job), do: {:ok, :skip}
+
+  defp do_clean({object_ids, attachment_urls}) do
     uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
 
     prefix =
@@ -39,68 +45,70 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
         "/"
       )
 
-    # find all objects for copies of the attachments, name and actor doesn't matter here
-    object_ids_and_hrefs =
-      from(o in Object,
-        where:
-          fragment(
-            "to_jsonb(array(select jsonb_array_elements((?)#>'{url}') ->> 'href' where jsonb_typeof((?)#>'{url}') = 'array'))::jsonb \\?| (?)",
-            o.data,
-            o.data,
-            ^hrefs
-          )
-      )
-      # The query above can be time consumptive on large instances until we
-      # refactor how uploads are stored
-      |> Repo.all(timeout: :infinity)
-      # we should delete 1 object for any given attachment, but don't delete
-      # files if there are more than 1 object for it
-      |> Enum.reduce(%{}, fn %{
-                               id: id,
-                               data: %{
-                                 "url" => [%{"href" => href}],
-                                 "actor" => obj_actor,
-                                 "name" => name
-                               }
-                             },
-                             acc ->
-        Map.update(acc, href, %{id: id, count: 1}, fn val ->
-          case obj_actor == actor and name in names do
-            true ->
-              # set id of the actor's object that will be deleted
-              %{val | id: id, count: val.count + 1}
+    Enum.each(attachment_urls, fn href ->
+      href
+      |> String.trim_leading("#{base_url}/#{prefix}")
+      |> uploader.delete_file()
+    end)
 
-            false ->
-              # another actor's object, just increase count to not delete file
-              %{val | count: val.count + 1}
-          end
-        end)
-      end)
-      |> Enum.map(fn {href, %{id: id, count: count}} ->
-        # only delete files that have single instance
-        with 1 <- count do
-          href
-          |> String.trim_leading("#{base_url}/#{prefix}")
-          |> uploader.delete_file()
-
-          {id, href}
-        else
-          _ -> {id, nil}
-        end
-      end)
-
-    object_ids = Enum.map(object_ids_and_hrefs, fn {id, _} -> id end)
-
-    from(o in Object, where: o.id in ^object_ids)
-    |> Repo.delete_all()
-
-    object_ids_and_hrefs
-    |> Enum.filter(fn {_, href} -> not is_nil(href) end)
-    |> Enum.map(&elem(&1, 1))
-    |> Pleroma.Web.MediaProxy.Invalidation.purge()
-
-    {:ok, :success}
+    delete_objects(object_ids)
   end
 
-  def perform(%{"op" => "cleanup_attachments", "object" => _object}, _job), do: {:ok, :skip}
+  defp delete_objects([_ | _] = object_ids) do
+    Repo.delete_all(from(o in Object, where: o.id in ^object_ids))
+  end
+
+  defp delete_objects(_), do: :ok
+
+  # we should delete 1 object for any given attachment, but don't delete
+  # files if there are more than 1 object for it
+  defp filter_objects(objects) do
+    Enum.reduce(objects, {[], []}, fn {href, %{id: id, count: count}}, {ids, hrefs} ->
+      with 1 <- count do
+        {ids ++ [id], hrefs ++ [href]}
+      else
+        _ -> {ids ++ [id], hrefs}
+      end
+    end)
+  end
+
+  defp prepare_objects(objects, actor, names) do
+    objects
+    |> Enum.reduce(%{}, fn %{
+                             id: id,
+                             data: %{
+                               "url" => [%{"href" => href}],
+                               "actor" => obj_actor,
+                               "name" => name
+                             }
+                           },
+                           acc ->
+      Map.update(acc, href, %{id: id, count: 1}, fn val ->
+        case obj_actor == actor and name in names do
+          true ->
+            # set id of the actor's object that will be deleted
+            %{val | id: id, count: val.count + 1}
+
+          false ->
+            # another actor's object, just increase count to not delete file
+            %{val | count: val.count + 1}
+        end
+      end)
+    end)
+  end
+
+  defp fetch_objects(hrefs) do
+    from(o in Object,
+      where:
+        fragment(
+          "to_jsonb(array(select jsonb_array_elements((?)#>'{url}') ->> 'href' where jsonb_typeof((?)#>'{url}') = 'array'))::jsonb \\?| (?)",
+          o.data,
+          o.data,
+          ^hrefs
+        )
+    )
+    # The query above can be time consumptive on large instances until we
+    # refactor how uploads are stored
+    |> Repo.all(timeout: :infinity)
+  end
 end
