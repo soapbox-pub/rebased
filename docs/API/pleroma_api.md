@@ -478,7 +478,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Authentication: not required
 * Params:
   * `page`: page number for files (default 1)
-  * `page_size`: page size for files (default 50)
+  * `page_size`: page size for files (default 30)
 * Response: JSON, pack json with `files`, `files_count` and `pack` keys with 200 status or 404 if the pack does not exist.
 
 ```json

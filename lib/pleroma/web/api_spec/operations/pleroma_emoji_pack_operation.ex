@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
         Operation.parameter(
           :page_size,
           :query,
-          %Schema{type: :integer, default: 50},
+          %Schema{type: :integer, default: 30},
           "Number of statuses to return"
         )
       ],
