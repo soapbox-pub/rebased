@@ -400,4 +400,71 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
                |> json_response_and_validate_schema(403)
     end
   end
+
+  describe "Mark account as bot" do
+    setup do: oauth_access(["write:accounts"])
+    setup :request_content_type
+
+    test "changing actor_type to Service makes account a bot", %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{actor_type: "Service"})
+        |> json_response_and_validate_schema(200)
+
+      assert account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Service"
+    end
+
+    test "changing actor_type to Person makes account a human", %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{actor_type: "Person"})
+        |> json_response_and_validate_schema(200)
+
+      refute account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Person"
+    end
+
+    test "changing actor_type to Application causes error", %{conn: conn} do
+      response =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{actor_type: "Application"})
+        |> json_response_and_validate_schema(403)
+
+      assert %{"error" => "Invalid request"} == response
+    end
+
+    test "changing bot field to true changes actor_type to Service", %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{bot: "true"})
+        |> json_response_and_validate_schema(200)
+
+      assert account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Service"
+    end
+
+    test "changing bot field to false changes actor_type to Person", %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{bot: "false"})
+        |> json_response_and_validate_schema(200)
+
+      refute account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Person"
+    end
+
+    test "actor_type field has a higher priority than bot", %{conn: conn} do
+      account =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{
+          actor_type: "Person",
+          bot: "true"
+        })
+        |> json_response_and_validate_schema(200)
+
+      refute account["bot"]
+      assert account["source"]["pleroma"]["actor_type"] == "Person"
+    end
+  end
 end

@@ -177,6 +177,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:pleroma_settings_store, params[:pleroma_settings_store])
       |> Maps.put_if_present(:default_scope, params[:default_scope])
       |> Maps.put_if_present(:default_scope, params["source"]["privacy"])
+      |> Maps.put_if_present(:actor_type, params[:bot], fn bot ->
+        if bot, do: {:ok, "Service"}, else: {:ok, "Person"}
+      end)
       |> Maps.put_if_present(:actor_type, params[:actor_type])
 
     changeset = User.update_changeset(user, user_params)
