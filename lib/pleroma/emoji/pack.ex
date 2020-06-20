@@ -32,8 +32,8 @@ defmodule Pleroma.Emoji.Pack do
 
   defp paginate(entities, page, page_size) do
     entities
-    |> Enum.take(page * page_size)
-    |> Enum.take(-page_size)
+    |> Enum.chunk_every(page_size)
+    |> Enum.at(page - 1)
   end
 
   @spec show(keyword()) :: {:ok, t()} | {:error, atom()}
@@ -470,7 +470,7 @@ defmodule Pleroma.Emoji.Pack do
     # with the API so it should be sufficient
     with {:create_dir, :ok} <- {:create_dir, File.mkdir_p(emoji_path)},
          {:ls, {:ok, results}} <- {:ls, File.ls(emoji_path)} do
-      {:ok, results}
+      {:ok, Enum.sort(results)}
     else
       {:create_dir, {:error, e}} -> {:error, :create_dir, e}
       {:ls, {:error, e}} -> {:error, :ls, e}

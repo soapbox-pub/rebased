@@ -31,6 +31,11 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
     resp = conn |> get("/api/pleroma/emoji/packs") |> json_response_and_validate_schema(200)
 
     assert resp["count"] == 3
+
+    assert resp["packs"]
+           |> Map.keys()
+           |> length() == 3
+
     shared = resp["packs"]["test_pack"]
     assert shared["files"] == %{"blank" => "blank.png", "blank2" => "blank2.png"}
     assert Map.has_key?(shared["pack"], "download-sha256")
@@ -47,7 +52,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       |> json_response_and_validate_schema(200)
 
     assert resp["count"] == 3
-    [pack1] = Map.keys(resp["packs"])
+
+    packs = Map.keys(resp["packs"])
+
+    assert length(packs) == 1
+
+    [pack1] = packs
 
     resp =
       conn
@@ -55,7 +65,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       |> json_response_and_validate_schema(200)
 
     assert resp["count"] == 3
-    [pack2] = Map.keys(resp["packs"])
+    packs = Map.keys(resp["packs"])
+    assert length(packs) == 1
+    [pack2] = packs
 
     resp =
       conn
@@ -63,7 +75,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
       |> json_response_and_validate_schema(200)
 
     assert resp["count"] == 3
-    [pack3] = Map.keys(resp["packs"])
+    packs = Map.keys(resp["packs"])
+    assert length(packs) == 1
+    [pack3] = packs
     assert [pack1, pack2, pack3] |> Enum.uniq() |> length() == 3
   end
 
