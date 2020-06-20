@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.InstanceTest do
+defmodule Mix.Tasks.Pleroma.InstanceTest do
   use ExUnit.Case
 
   setup do
