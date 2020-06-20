@@ -44,7 +44,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
           :page_size,
           :query,
           %Schema{type: :integer, default: 50},
-          "Number of statuses to return"
+          "Number of emoji packs to return"
         )
       ],
       responses: %{
