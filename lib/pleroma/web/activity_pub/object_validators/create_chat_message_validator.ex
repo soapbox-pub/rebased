@@ -7,9 +7,9 @@
 # - doesn't embed, will only get the object id
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
   use Ecto.Schema
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
 
   alias Pleroma.Object
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -17,11 +17,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
-    field(:actor, Types.ObjectID)
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
+    field(:actor, ObjectValidators.ObjectID)
     field(:type, :string)
-    field(:to, Types.Recipients, default: [])
-    field(:object, Types.ObjectID)
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:object, ObjectValidators.ObjectID)
   end
 
   def cast_and_apply(data) do

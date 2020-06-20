@@ -6,9 +6,9 @@ defmodule Pleroma.Config.TransferTaskTest do
   use Pleroma.DataCase
 
   import ExUnit.CaptureLog
+  import Pleroma.Factory
 
   alias Pleroma.Config.TransferTask
-  alias Pleroma.ConfigDB
 
   setup do: clear_config(:configurable_from_database, true)
 
@@ -19,31 +19,11 @@ defmodule Pleroma.Config.TransferTaskTest do
     refute Application.get_env(:postgrex, :test_key)
     initial = Application.get_env(:logger, :level)
 
-    ConfigDB.create(%{
-      group: ":pleroma",
-      key: ":test_key",
-      value: [live: 2, com: 3]
-    })
-
-    ConfigDB.create(%{
-      group: ":idna",
-      key: ":test_key",
-      value: [live: 15, com: 35]
-    })
-
-    ConfigDB.create(%{
-      group: ":quack",
-      key: ":test_key",
-      value: [:test_value1, :test_value2]
-    })
-
-    ConfigDB.create(%{
-      group: ":postgrex",
-      key: ":test_key",
-      value: :value
-    })
-
-    ConfigDB.create(%{group: ":logger", key: ":level", value: :debug})
+    insert(:config, key: :test_key, value: [live: 2, com: 3])
+    insert(:config, group: :idna, key: :test_key, value: [live: 15, com: 35])
+    insert(:config, group: :quack, key: :test_key, value: [:test_value1, :test_value2])
+    insert(:config, group: :postgrex, key: :test_key, value: :value)
+    insert(:config, group: :logger, key: :level, value: :debug)
 
     TransferTask.start_link([])
 
@@ -66,17 +46,8 @@ defmodule Pleroma.Config.TransferTaskTest do
     level = Application.get_env(:quack, :level)
     meta = Application.get_env(:quack, :meta)
 
-    ConfigDB.create(%{
-      group: ":quack",
-      key: ":level",
-      value: :info
-    })
-
-    ConfigDB.create(%{
-      group: ":quack",
-      key: ":meta",
-      value: [:none]
-    })
+    insert(:config, group: :quack, key: :level, value: :info)
+    insert(:config, group: :quack, key: :meta, value: [:none])
 
     TransferTask.start_link([])
 
@@ -95,17 +66,8 @@ defmodule Pleroma.Config.TransferTaskTest do
     clear_config(:emoji)
     clear_config(:assets)
 
-    ConfigDB.create(%{
-      group: ":pleroma",
-      key: ":emoji",
-      value: [groups: [a: 1, b: 2]]
-    })
-
-    ConfigDB.create(%{
-      group: ":pleroma",
-      key: ":assets",
-      value: [mascots: [a: 1, b: 2]]
-    })
+    insert(:config, key: :emoji, value: [groups: [a: 1, b: 2]])
+    insert(:config, key: :assets, value: [mascots: [a: 1, b: 2]])
 
     TransferTask.start_link([])
 
@@ -122,12 +84,7 @@ defmodule Pleroma.Config.TransferTaskTest do
 
     test "don't restart if no reboot time settings were changed" do
       clear_config(:emoji)
-
-      ConfigDB.create(%{
-        group: ":pleroma",
-        key: ":emoji",
-        value: [groups: [a: 1, b: 2]]
-      })
+      insert(:config, key: :emoji, value: [groups: [a: 1, b: 2]])
 
       refute String.contains?(
                capture_log(fn -> TransferTask.start_link([]) end),
@@ -137,25 +94,13 @@ defmodule Pleroma.Config.TransferTaskTest do
 
     test "on reboot time key" do
       clear_config(:chat)
-
-      ConfigDB.create(%{
-        group: ":pleroma",
-        key: ":chat",
-        value: [enabled: false]
-      })
-
+      insert(:config, key: :chat, value: [enabled: false])
       assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
     end
 
     test "on reboot time subkey" do
       clear_config(Pleroma.Captcha)
-
-      ConfigDB.create(%{
-        group: ":pleroma",
-        key: "Pleroma.Captcha",
-        value: [seconds_valid: 60]
-      })
-
+      insert(:config, key: Pleroma.Captcha, value: [seconds_valid: 60])
       assert capture_log(fn -> TransferTask.start_link([]) end) =~ "pleroma restarted"
     end
 
@@ -163,17 +108,8 @@ defmodule Pleroma.Config.TransferTaskTest do
       clear_config(:chat)
       clear_config(Pleroma.Captcha)
 
-      ConfigDB.create(%{
-        group: ":pleroma",
-        key: ":chat",
-        value: [enabled: false]
-      })
-
-      ConfigDB.create(%{
-        group: ":pleroma",
-        key: "Pleroma.Captcha",
-        value: [seconds_valid: 60]
-      })
+      insert(:config, key: :chat, value: [enabled: false])
+      insert(:config, key: Pleroma.Captcha, value: [seconds_valid: 60])
 
       refute String.contains?(
                capture_log(fn -> TransferTask.load_and_update_env([], false) end),

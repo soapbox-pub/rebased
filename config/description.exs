@@ -1651,6 +1651,31 @@ config :pleroma, :config_description, [
         suggestions: ["https://example.com"]
       },
       %{
+        key: :invalidation,
+        type: :keyword,
+        descpiption: "",
+        suggestions: [
+          enabled: true,
+          provider: Pleroma.Web.MediaProxy.Invalidation.Script
+        ],
+        children: [
+          %{
+            key: :enabled,
+            type: :boolean,
+            description: "Enables invalidate media cache"
+          },
+          %{
+            key: :provider,
+            type: :module,
+            description: "Module which will be used to cache purge.",
+            suggestions: [
+              Pleroma.Web.MediaProxy.Invalidation.Script,
+              Pleroma.Web.MediaProxy.Invalidation.Http
+            ]
+          }
+        ]
+      },
+      %{
         key: :proxy_opts,
         type: :keyword,
         description: "Options for Pleroma.ReverseProxy",
@@ -1719,6 +1744,45 @@ config :pleroma, :config_description, [
         type: {:list, :string},
         description: "List of domains to bypass the mediaproxy",
         suggestions: ["example.com"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.MediaProxy.Invalidation.Http,
+    type: :group,
+    description: "HTTP invalidate settings",
+    children: [
+      %{
+        key: :method,
+        type: :atom,
+        description: "HTTP method of request. Default: :purge"
+      },
+      %{
+        key: :headers,
+        type: {:list, :tuple},
+        description: "HTTP headers of request.",
+        suggestions: [{"x-refresh", 1}]
+      },
+      %{
+        key: :options,
+        type: :keyword,
+        description: "Request options.",
+        suggestions: [params: %{ts: "xxx"}]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.MediaProxy.Invalidation.Script,
+    type: :group,
+    description: "Script invalidate settings",
+    children: [
+      %{
+        key: :script_path,
+        type: :string,
+        description: "Path to shell script. Which will run purge cache.",
+        suggestions: ["./installation/nginx-cache-purge.sh.example"]
       }
     ]
   },

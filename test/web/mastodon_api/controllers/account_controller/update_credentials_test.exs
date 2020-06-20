@@ -83,10 +83,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
     test "updates the user's bio", %{conn: conn} do
       user2 = insert(:user)
 
-      conn =
-        patch(conn, "/api/v1/accounts/update_credentials", %{
-          "note" => "I drink #cofe with @#{user2.nickname}\n\nsuya.."
-        })
+      raw_bio = "I drink #cofe with @#{user2.nickname}\n\nsuya.."
+
+      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"note" => raw_bio})
 
       assert user_data = json_response_and_validate_schema(conn, 200)
 
@@ -94,6 +93,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
                ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a class="u-url mention" data-user="#{
                  user2.id
                }" href="#{user2.ap_id}" rel="ugc">@<span>#{user2.nickname}</span></a></span><br/><br/>suya..)
+
+      assert user_data["source"]["note"] == raw_bio
+
+      user = Repo.get(User, user_data["id"])
+
+      assert user.raw_bio == raw_bio
     end
 
     test "updates the user's locking status", %{conn: conn} do

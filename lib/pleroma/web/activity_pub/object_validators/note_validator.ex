@@ -5,14 +5,14 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
   use Ecto.Schema
 
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
 
   import Ecto.Changeset
 
   @primary_key false
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
     field(:to, {:array, :string}, default: [])
     field(:cc, {:array, :string}, default: [])
     field(:bto, {:array, :string}, default: [])
@@ -22,10 +22,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     field(:type, :string)
     field(:content, :string)
     field(:context, :string)
-    field(:actor, Types.ObjectID)
-    field(:attributedTo, Types.ObjectID)
+    field(:actor, ObjectValidators.ObjectID)
+    field(:attributedTo, ObjectValidators.ObjectID)
     field(:summary, :string)
-    field(:published, Types.DateTime)
+    field(:published, ObjectValidators.DateTime)
     # TODO: Write type
     field(:emoji, :map, default: %{})
     field(:sensitive, :boolean, default: false)
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
     field(:inRepyTo, :string)
-    field(:uri, Types.Uri)
+    field(:uri, ObjectValidators.Uri)
 
     field(:likes, {:array, :string}, default: [])
     field(:announcements, {:array, :string}, default: [])
