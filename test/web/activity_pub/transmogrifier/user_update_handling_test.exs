@@ -106,11 +106,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
     Pleroma.Config.put([:instance, :max_remote_account_fields], 2)
 
     update_data =
-      put_in(update_data, ["object", "attachment"], [
+      update_data
+      |> put_in(["object", "attachment"], [
         %{"name" => "foo", "type" => "PropertyValue", "value" => "bar"},
         %{"name" => "foo11", "type" => "PropertyValue", "value" => "bar11"},
         %{"name" => "foo22", "type" => "PropertyValue", "value" => "bar22"}
       ])
+      |> Map.put("id", update_data["id"] <> ".")
 
     {:ok, _} = Transmogrifier.handle_incoming(update_data)
 
@@ -121,7 +123,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UserUpdateHandlingTest do
              %{"name" => "foo1", "value" => "updated"}
            ]
 
-    update_data = put_in(update_data, ["object", "attachment"], [])
+    update_data =
+      update_data
+      |> put_in(["object", "attachment"], [])
+      |> Map.put("id", update_data["id"] <> ".")
 
     {:ok, _} = Transmogrifier.handle_incoming(update_data)
 
