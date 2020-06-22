@@ -321,28 +321,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec update(map()) :: {:ok, Activity.t()} | {:error, any()}
-  def update(%{to: to, cc: cc, actor: actor, object: object} = params) do
-    local = !(params[:local] == false)
-    activity_id = params[:activity_id]
-
-    data =
-      %{
-        "to" => to,
-        "cc" => cc,
-        "type" => "Update",
-        "actor" => actor,
-        "object" => object
-      }
-      |> Maps.put_if_present("id", activity_id)
-
-    with {:ok, activity} <- insert(data, local),
-         _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    end
-  end
-
   @spec follow(User.t(), User.t(), String.t() | nil, boolean(), keyword()) ::
           {:ok, Activity.t()} | {:error, any()}
   def follow(follower, followed, activity_id \\ nil, local \\ true, opts \\ []) do

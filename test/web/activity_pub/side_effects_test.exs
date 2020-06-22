@@ -78,6 +78,15 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       user = User.get_by_id(user.id)
       assert user.name == "new name!"
     end
+
+    test "it uses a given changeset to update", %{user: user, update: update} do
+      changeset = Ecto.Changeset.change(user, %{default_scope: "direct"})
+
+      assert user.default_scope == "public"
+      {:ok, _, _} = SideEffects.handle(update, user_update_changeset: changeset)
+      user = User.get_by_id(user.id)
+      assert user.default_scope == "direct"
+    end
   end
 
   describe "delete objects" do

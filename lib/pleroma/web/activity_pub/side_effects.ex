@@ -21,13 +21,21 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle(object, meta \\ [])
 
   # Tasks this handles:
-  # Update the user
+  # - Update the user
+  #
+  # For a local user, we also get a changeset with the full information, so we
+  # can update non-federating, non-activitypub settings as well.
   def handle(%{data: %{"type" => "Update", "object" => updated_object}} = object, meta) do
-    {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
+    if changeset = Keyword.get(meta, :user_update_changeset) do
+      changeset
+      |> User.update_and_set_cache()
+    else
+      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
 
-    User.get_by_ap_id(updated_object["id"])
-    |> User.remote_user_changeset(new_user_data)
-    |> User.update_and_set_cache()
+      User.get_by_ap_id(updated_object["id"])
+      |> User.remote_user_changeset(new_user_data)
+      |> User.update_and_set_cache()
+    end
 
     {:ok, object, meta}
   end
