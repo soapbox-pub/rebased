@@ -350,9 +350,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert json_response_and_validate_schema(conn, 200) == []
     end
 
-    test "gets an users media", %{conn: conn} do
+    test "gets an users media, excludes reblogs", %{conn: conn} do
       note = insert(:note_activity)
       user = User.get_cached_by_ap_id(note.data["actor"])
+      other_user = insert(:user)
 
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -363,6 +364,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       {:ok, %{id: media_id}} = ActivityPub.upload(file, actor: user.ap_id)
 
       {:ok, %{id: image_post_id}} = CommonAPI.post(user, %{status: "cofe", media_ids: [media_id]})
+
+      {:ok, %{id: media_id}} = ActivityPub.upload(file, actor: other_user.ap_id)
+
+      {:ok, %{id: other_image_post_id}} =
+        CommonAPI.post(other_user, %{status: "cofe2", media_ids: [media_id]})
+
+      {:ok, _announce} = CommonAPI.repeat(other_image_post_id, user)
 
       conn = get(conn, "/api/v1/accounts/#{user.id}/statuses?only_media=true")
 

@@ -834,7 +834,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_media(query, %{only_media: true}) do
     from(
-      [_activity, object] in query,
+      [activity, object] in query,
+      where: fragment("(?)->>'type' = ?", activity.data, "Create"),
       where: fragment("not (?)->'attachment' = (?)", object.data, ^[])
     )
   end
