@@ -111,8 +111,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       action: "delete"
     })
 
-    conn
-    |> json(nicknames)
+    json(conn, nicknames)
   end
 
   def user_follow(%{assigns: %{user: admin}} = conn, %{
@@ -131,8 +130,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       })
     end
 
-    conn
-    |> json("ok")
+    json(conn, "ok")
   end
 
   def user_unfollow(%{assigns: %{user: admin}} = conn, %{
@@ -151,8 +149,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       })
     end
 
-    conn
-    |> json("ok")
+    json(conn, "ok")
   end
 
   def users_create(%{assigns: %{user: admin}} = conn, %{"users" => users}) do
@@ -191,8 +188,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
           action: "create"
         })
 
-        conn
-        |> json(res)
+        json(conn, res)
 
       {:error, id, changeset, _} ->
         res =
@@ -363,8 +359,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     filters
     |> String.split(",")
     |> Enum.filter(&Enum.member?(@filters, &1))
-    |> Enum.map(&String.to_atom(&1))
-    |> Enum.into(%{}, &{&1, true})
+    |> Enum.map(&String.to_atom/1)
+    |> Map.new(&{&1, true})
   end
 
   def right_add_multiple(%{assigns: %{user: admin}} = conn, %{
@@ -568,10 +564,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       {:error, changeset} ->
         errors = Map.new(changeset.errors, fn {key, {error, _}} -> {key, error} end)
 
-        json(conn, %{errors: errors})
+        {:errors, errors}
 
       _ ->
-        json(conn, %{error: "Unable to update user."})
+        {:error, :not_found}
     end
   end
 
@@ -616,7 +612,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def reload_emoji(conn, _params) do
     Pleroma.Emoji.reload()
 
-    conn |> json("ok")
+    json(conn, "ok")
   end
 
   def confirm_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
@@ -630,7 +626,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       action: "confirm_email"
     })
 
-    conn |> json("")
+    json(conn, "")
   end
 
   def resend_confirmation_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
@@ -644,14 +640,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       action: "resend_confirmation_email"
     })
 
-    conn |> json("")
+    json(conn, "")
   end
 
   def stats(conn, _) do
     count = Stats.get_status_visibility_count()
 
-    conn
-    |> json(%{"status_visibility" => count})
+    json(conn, %{"status_visibility" => count})
   end
 
   defp page_params(params) do

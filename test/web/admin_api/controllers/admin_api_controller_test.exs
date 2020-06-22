@@ -1599,14 +1599,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert patch(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials", %{
                "actor_type" => "Application"
              })
-             |> json_response(200) == %{"errors" => %{"actor_type" => "is invalid"}}
+             |> json_response(400) == %{"errors" => %{"actor_type" => "is invalid"}}
     end
 
     test "update non existing user", %{conn: conn} do
       assert patch(conn, "/api/pleroma/admin/users/non-existing/credentials", %{
                "password" => "new_password"
              })
-             |> json_response(200) == %{"error" => "Unable to update user."}
+             |> json_response(404) == %{"error" => "Not found"}
     end
   end
 

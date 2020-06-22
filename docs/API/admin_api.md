@@ -488,34 +488,38 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ### Change the user's email, password, display and settings-related fields
 
-- Params:
-  - `email`
-  - `password`
-  - `name`
-  - `bio`
-  - `avatar`
-  - `locked`
-  - `no_rich_text`
-  - `default_scope`
-  - `banner`
-  - `hide_follows`
-  - `hide_followers`
-  - `hide_followers_count`
-  - `hide_follows_count`
-  - `hide_favorites`
-  - `allow_following_move`
-  - `background`
-  - `show_role`
-  - `skip_thread_containment`
-  - `fields`
-  - `discoverable`
-  - `actor_type`
+* Params:
+  * `email`
+  * `password`
+  * `name`
+  * `bio`
+  * `avatar`
+  * `locked`
+  * `no_rich_text`
+  * `default_scope`
+  * `banner`
+  * `hide_follows`
+  * `hide_followers`
+  * `hide_followers_count`
+  * `hide_follows_count`
+  * `hide_favorites`
+  * `allow_following_move`
+  * `background`
+  * `show_role`
+  * `skip_thread_containment`
+  * `fields`
+  * `discoverable`
+  * `actor_type`
 
-- Response:
+* Responses:
+
+Status: 200
 
 ```json
 {"status": "success"}
 ```
+
+Status: 400
 
 ```json
 {"errors":
@@ -525,8 +529,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
  }
 ```
 
+Status: 404
+
 ```json
-{"error": "Unable to update user."}
+{"error": "Not found"}
 ```
 
 ## `GET /api/pleroma/admin/reports`
