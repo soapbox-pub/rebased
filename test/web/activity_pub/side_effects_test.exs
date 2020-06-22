@@ -64,6 +64,22 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
   end
 
+  describe "update users" do
+    setup do
+      user = insert(:user)
+      {:ok, update_data, []} = Builder.update(user, %{"id" => user.ap_id, "name" => "new name!"})
+      {:ok, update, _meta} = ActivityPub.persist(update_data, local: true)
+
+      %{user: user, update_data: update_data, update: update}
+    end
+
+    test "it updates the user", %{user: user, update: update} do
+      {:ok, _, _} = SideEffects.handle(update)
+      user = User.get_by_id(user.id)
+      assert user.name == "new name!"
+    end
+  end
+
   describe "delete objects" do
     setup do
       user = insert(:user)

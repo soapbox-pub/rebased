@@ -21,6 +21,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle(object, meta \\ [])
 
   # Tasks this handles:
+  # Update the user
+  def handle(%{data: %{"type" => "Update", "object" => updated_object}} = object, meta) do
+    {:ok, new_user_data} = ActivityPub.user_data_from_user_object(updated_object)
+
+    User.get_by_ap_id(updated_object["id"])
+    |> User.remote_user_changeset(new_user_data)
+    |> User.update_and_set_cache()
+
+    {:ok, object, meta}
+  end
+
+  # Tasks this handles:
   # - Add like to object
   # - Set up notification
   def handle(%{data: %{"type" => "Like"}} = object, meta) do
