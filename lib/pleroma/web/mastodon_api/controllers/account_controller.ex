@@ -20,8 +20,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Builder
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
@@ -186,8 +186,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     # We want to update the user through the pipeline, but the ActivityPub
     # update information is not quite enough for this, because this also
     # contains local settings that don't federate and don't even appear
-    # in the Update activity. 
-    # 
+    # in the Update activity.
+    #
     # So we first build the normal local changeset, then apply it to the
     # user data, but don't persist it. With this, we generate the object
     # data for our update activity. We feed this and the changeset as meta
