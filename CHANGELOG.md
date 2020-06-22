@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
+
 - Chats: Added support for federated chats. For details, see the docs.
 - ActivityPub: Added support for existing AP ids for instances migrated from Mastodon.
 - Instance: Add `background_image` to configuration and `/api/v1/instance`
@@ -34,6 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Notifications: Added `follow_request` notification type.
 - Added `:reject_deletes` group to SimplePolicy
 - MRF (`EmojiStealPolicy`): New MRF Policy which allows to automatically download emojis from remote instances
+- Support pagination in emoji packs API (for packs and for files in pack)
+
 <details>
   <summary>API Changes</summary>
 - Mastodon API: Extended `/api/v1/instance`.
