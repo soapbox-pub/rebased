@@ -84,12 +84,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
 
     # Note: :relationships contain user mutes (needed for :muted flag in :status)
     status_render_opts = %{relationships: opts[:relationships]}
-
-    account =
-      AccountView.render(
-        "show.json",
-        %{user: actor, for: reading_user}
-      )
+    account = AccountView.render("show.json", %{user: actor, for: reading_user})
 
     response = %{
       id: to_string(notification.id),
@@ -97,6 +92,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
       account: account,
       pleroma: %{
+        is_muted: User.mutes?(reading_user, actor),
         is_seen: notification.seen
       }
     }
