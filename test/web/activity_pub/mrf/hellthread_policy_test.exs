@@ -8,6 +8,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
 
   import Pleroma.Web.ActivityPub.MRF.HellthreadPolicy
 
+  alias Pleroma.Web.CommonAPI
+
   setup do
     user = insert(:user)
 
@@ -20,13 +22,27 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
         "https://instance.tld/users/user1",
         "https://instance.tld/users/user2",
         "https://instance.tld/users/user3"
-      ]
+      ],
+      "object" => %{
+        "type" => "Note"
+      }
     }
 
     [user: user, message: message]
   end
 
   setup do: clear_config(:mrf_hellthread)
+
+  test "doesn't die on chat messages" do
+    Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 2, reject_threshold: 0})
+
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post_chat_message(user, other_user, "moin")
+
+    assert {:ok, _} = filter(activity.data)
+  end
 
   describe "reject" do
     test "rejects the message if the recipient count is above reject_threshold", %{
