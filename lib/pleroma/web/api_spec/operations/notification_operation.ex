@@ -163,6 +163,13 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
           description:
             "Status that was the object of the notification, e.g. in mentions, reblogs, favourites, or polls.",
           nullable: true
+        },
+        pleroma: %Schema{
+          type: :object,
+          properties: %{
+            is_seen: %Schema{type: :boolean},
+            is_muted: %Schema{type: :boolean}
+          }
         }
       },
       example: %{
@@ -170,7 +177,8 @@ defmodule Pleroma.Web.ApiSpec.NotificationOperation do
         "type" => "mention",
         "created_at" => "2019-11-23T07:49:02.064Z",
         "account" => Account.schema().example,
-        "status" => Status.schema().example
+        "status" => Status.schema().example,
+        "pleroma" => %{"is_seen" => false, "is_muted" => false}
       }
     }
   end
