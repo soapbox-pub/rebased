@@ -80,7 +80,7 @@ defmodule Pleroma.Application do
         [
           Pleroma.Stats,
           Pleroma.JobQueueMonitor,
-          {Oban, Config.get(Oban)}
+          {Oban, oban_config()}
         ] ++
         task_children(@env) ++
         streamer_child(@env) ++
@@ -136,6 +136,18 @@ defmodule Pleroma.Application do
     Pleroma.Web.Endpoint.MetricsExporter.setup()
     Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
     Pleroma.Web.Endpoint.Instrumenter.setup()
+  end
+
+  defp oban_config do
+    config = Config.get(Oban)
+
+    if Code.ensure_loaded?(IEx) and IEx.started?() do
+      config
+      |> Keyword.put(:crontab, false)
+      |> Keyword.put(:queues, false)
+    else
+      config
+    end
   end
 
   defp cachex_children do

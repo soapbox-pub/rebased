@@ -17,7 +17,7 @@ defmodule Pleroma.Workers.ScheduledActivityWorker do
   require Logger
 
   @impl Oban.Worker
-  def perform(%{"activity_id" => activity_id}, _job) do
+  def perform(%Job{args: %{"activity_id" => activity_id}}) do
     if Config.get([ScheduledActivity, :enabled]) do
       case Pleroma.Repo.get(ScheduledActivity, activity_id) do
         %ScheduledActivity{} = scheduled_activity ->

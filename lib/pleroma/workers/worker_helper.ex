@@ -32,6 +32,8 @@ defmodule Pleroma.Workers.WorkerHelper do
         queue: unquote(queue),
         max_attempts: 1
 
+      alias Oban.Job
+
       def enqueue(op, params, worker_args \\ []) do
         params = Map.merge(%{"op" => op}, params)
         queue_atom = String.to_atom(unquote(queue))
@@ -39,7 +41,7 @@ defmodule Pleroma.Workers.WorkerHelper do
 
         unquote(caller_module)
         |> apply(:new, [params, worker_args])
-        |> Pleroma.Repo.insert()
+        |> Oban.insert()
       end
     end
   end
