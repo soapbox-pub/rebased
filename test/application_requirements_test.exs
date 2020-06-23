@@ -7,6 +7,8 @@ defmodule Pleroma.ApplicationRequirementsTest do
   import ExUnit.CaptureLog
   import Mock
 
+  alias Pleroma.Repo
+
   describe "check_rum!" do
     setup_with_mocks([
       {Pleroma.ApplicationRequirements, [:passthrough],
@@ -20,23 +22,19 @@ defmodule Pleroma.ApplicationRequirementsTest do
     test "raises if rum is enabled and detects unapplied rum migrations" do
       Pleroma.Config.put([:database, :rum_enabled], true)
 
-      assert_raise Pleroma.ApplicationRequirements.VerifyError,
-                   "Unapplied RUM Migrations detected",
-                   fn ->
-                     capture_log(&Pleroma.ApplicationRequirements.verify!/0)
-                   end
+      with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> false end]}]) do
+        assert_raise Pleroma.ApplicationRequirements.VerifyError,
+                     "Unapplied RUM Migrations detected",
+                     fn ->
+                       capture_log(&Pleroma.ApplicationRequirements.verify!/0)
+                     end
+      end
     end
 
     test "raises if rum is disabled and detects rum migrations" do
       Pleroma.Config.put([:database, :rum_enabled], false)
 
-      with_mocks([
-        {
-          Pleroma.Repo,
-          [:passthrough],
-          [exists?: fn _, _ -> true end]
-        }
-      ]) do
+      with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> true end]}]) do
         assert_raise Pleroma.ApplicationRequirements.VerifyError,
                      "RUM Migrations detected",
                      fn ->
@@ -48,20 +46,17 @@ defmodule Pleroma.ApplicationRequirementsTest do
     test "doesn't do anything if rum enabled and applied migrations" do
       Pleroma.Config.put([:database, :rum_enabled], true)
 
-      with_mocks([
-        {
-          Pleroma.Repo,
-          [:passthrough],
-          [exists?: fn _, _ -> true end]
-        }
-      ]) do
+      with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> true end]}]) do
         assert Pleroma.ApplicationRequirements.verify!() == :ok
       end
     end
 
     test "doesn't do anything if rum disabled" do
       Pleroma.Config.put([:database, :rum_enabled], false)
-      assert Pleroma.ApplicationRequirements.verify!() == :ok
+
+      with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> false end]}]) do
+        assert Pleroma.ApplicationRequirements.verify!() == :ok
+      end
     end
   end
 
@@ -70,7 +65,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
       {Ecto.Migrator, [],
        [
          with_repo: fn repo, fun -> passthrough([repo, fun]) end,
-         migrations: fn Pleroma.Repo ->
+         migrations: fn Repo ->
            [
              {:up, 20_191_128_153_944, "fix_missing_following_count"},
              {:up, 20_191_203_043_610, "create_report_notes"},
