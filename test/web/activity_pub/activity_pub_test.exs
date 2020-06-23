@@ -1092,52 +1092,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "update" do
-    setup do: clear_config([:instance, :max_pinned_statuses])
-
-    test "it creates an update activity with the new user data" do
-      user = insert(:user)
-      {:ok, user} = User.ensure_keys_present(user)
-      user_data = Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
-
-      {:ok, update} =
-        ActivityPub.update(%{
-          actor: user_data["id"],
-          to: [user.follower_address],
-          cc: [],
-          object: user_data
-        })
-
-      assert update.data["actor"] == user.ap_id
-      assert update.data["to"] == [user.follower_address]
-      assert embedded_object = update.data["object"]
-      assert embedded_object["id"] == user_data["id"]
-      assert embedded_object["type"] == user_data["type"]
-    end
-  end
-
-  test "returned pinned statuses" do
-    Config.put([:instance, :max_pinned_statuses], 3)
-    user = insert(:user)
-
-    {:ok, activity_one} = CommonAPI.post(user, %{status: "HI!!!"})
-    {:ok, activity_two} = CommonAPI.post(user, %{status: "HI!!!"})
-    {:ok, activity_three} = CommonAPI.post(user, %{status: "HI!!!"})
-
-    CommonAPI.pin(activity_one.id, user)
-    user = refresh_record(user)
-
-    CommonAPI.pin(activity_two.id, user)
-    user = refresh_record(user)
-
-    CommonAPI.pin(activity_three.id, user)
-    user = refresh_record(user)
-
-    activities = ActivityPub.fetch_user_activities(user, nil, %{pinned: true})
-
-    assert 3 = length(activities)
-  end
-
   describe "flag/1" do
     setup do
       reporter = insert(:user)

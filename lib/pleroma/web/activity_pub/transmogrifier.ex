@@ -684,35 +684,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Update", "object" => %{"type" => object_type} = object, "actor" => actor_id} =
-          data,
+        %{"type" => "Update"} = data,
         _options
-      )
-      when object_type in [
-             "Person",
-             "Application",
-             "Service",
-             "Organization"
-           ] do
-    with %User{ap_id: ^actor_id} = actor <- User.get_cached_by_ap_id(object["id"]) do
-      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
-
-      actor
-      |> User.remote_user_changeset(new_user_data)
-      |> User.update_and_set_cache()
-
-      ActivityPub.update(%{
-        local: false,
-        to: data["to"] || [],
-        cc: data["cc"] || [],
-        object: object,
-        actor: actor_id,
-        activity_id: data["id"]
-      })
-    else
-      e ->
-        Logger.error(e)
-        :error
+      ) do
+    with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
+         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+      {:ok, activity}
     end
   end
 
