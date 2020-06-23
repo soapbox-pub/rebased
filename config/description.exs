@@ -2157,44 +2157,52 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :auto_linker,
-    key: :opts,
+    group: :pleroma,
+    key: Pleroma.Formatter,
     type: :group,
-    description: "Configuration for the auto_linker library",
+    description:
+      "Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.",
     children: [
       %{
         key: :class,
         type: [:string, false],
-        description: "Specify the class to be added to the generated link. Disable to clear",
+        description: "Specify the class to be added to the generated link. Disable to clear.",
         suggestions: ["auto-linker", false]
       },
       %{
         key: :rel,
         type: [:string, false],
-        description: "Override the rel attribute. Disable to clear",
+        description: "Override the rel attribute. Disable to clear.",
         suggestions: ["ugc", "noopener noreferrer", false]
       },
       %{
         key: :new_window,
         type: :boolean,
-        description: "Link urls will open in new window/tab"
+        description: "Link URLs will open in new window/tab."
       },
       %{
         key: :truncate,
         type: [:integer, false],
         description:
-          "Set to a number to truncate urls longer then the number. Truncated urls will end in `..`",
+          "Set to a number to truncate URLs longer then the number. Truncated URLs will end in `...`",
         suggestions: [15, false]
       },
       %{
         key: :strip_prefix,
         type: :boolean,
-        description: "Strip the scheme prefix"
+        description: "Strip the scheme prefix."
       },
       %{
         key: :extra,
         type: :boolean,
-        description: "Link urls with rarely used schemes (magnet, ipfs, irc, etc.)"
+        description: "Link URLs with rarely used schemes (magnet, ipfs, irc, etc.)"
+      },
+      %{
+        key: :validate_tld,
+        type: [:atom, :boolean],
+        description:
+          "Set to false to disable TLD validation for URLs/emails. Can be set to :no_scheme to validate TLDs only for URLs without a scheme (e.g `example.com` will be validated, but `http://example.loki` won't)",
+        suggestions: [:no_scheme, true]
       }
     ]
   },
