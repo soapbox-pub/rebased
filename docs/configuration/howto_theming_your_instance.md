@@ -60,7 +60,7 @@ Example of `my-awesome-theme.json` where we add the name "My Awesome Theme"
 
 ### Set as default theme
 
-Now we can set the new theme as default in the [Pleroma FE configuration](General-tips-for-customizing-Pleroma-FE.md).
+Now we can set the new theme as default in the [Pleroma FE configuration](../../../frontend/CONFIGURATION).
 
 Example of adding the new theme in the back-end config files
 ```elixir

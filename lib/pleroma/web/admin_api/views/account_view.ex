@@ -76,7 +76,8 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "local" => user.local,
       "roles" => User.roles(user),
       "tags" => user.tags || [],
-      "confirmation_pending" => user.confirmation_pending
+      "confirmation_pending" => user.confirmation_pending,
+      "url" => user.uri || user.ap_id
     }
   end
 

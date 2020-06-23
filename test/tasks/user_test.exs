@@ -4,6 +4,7 @@
 
 defmodule Mix.Tasks.Pleroma.UserTest do
   alias Pleroma.Activity
+  alias Pleroma.MFA
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
@@ -271,6 +272,35 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
 
     test "no user to reset password" do
+      Mix.Tasks.Pleroma.User.run(["reset_password", "nonexistent"])
+
+      assert_received {:mix_shell, :error, [message]}
+      assert message =~ "No local user"
+    end
+  end
+
+  describe "running reset_mfa" do
+    test "disables MFA" do
+      user =
+        insert(:user,
+          multi_factor_authentication_settings: %MFA.Settings{
+            enabled: true,
+            totp: %MFA.Settings.TOTP{secret: "xx", confirmed: true}
+          }
+        )
+
+      Mix.Tasks.Pleroma.User.run(["reset_mfa", user.nickname])
+
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "Multi-Factor Authentication disabled for #{user.nickname}"
+
+      assert %{enabled: false, totp: false} ==
+               user.nickname
+               |> User.get_cached_by_nickname()
+               |> MFA.mfa_settings()
+    end
+
+    test "no user to reset MFA" do
       Mix.Tasks.Pleroma.User.run(["reset_password", "nonexistent"])
 
       assert_received {:mix_shell, :error, [message]}

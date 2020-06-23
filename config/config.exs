@@ -186,6 +186,7 @@ config :pleroma, :instance,
   notify_email: "noreply@example.com",
   description: "Pleroma: An efficient and flexible fediverse server",
   background_image: "/images/city.jpg",
+  instance_thumbnail: "/instance/thumbnail.jpeg",
   limit: 5_000,
   chat_limit: 5_000,
   remote_limit: 100_000,
@@ -209,7 +210,6 @@ config :pleroma, :instance,
     Pleroma.Web.ActivityPub.Publisher
   ],
   allow_relay: true,
-  rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
   quarantined_instances: [],
   managed_config: true,
@@ -220,8 +220,6 @@ config :pleroma, :instance,
     "text/markdown",
     "text/bbcode"
   ],
-  mrf_transparency: true,
-  mrf_transparency_exclusions: [],
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,
   attachment_links: false,
@@ -371,6 +369,8 @@ config :pleroma, :mrf_keyword,
 
 config :pleroma, :mrf_subchain, match_actor: %{}
 
+config :pleroma, :mrf_activity_expiration, days: 365
+
 config :pleroma, :mrf_vocabulary,
   accept: [],
   reject: []
@@ -385,7 +385,6 @@ config :pleroma, :rich_media,
   ignore_tld: ["local", "localdomain", "lan"],
   parsers: [
     Pleroma.Web.RichMedia.Parsers.TwitterCard,
-    Pleroma.Web.RichMedia.Parsers.OGP,
     Pleroma.Web.RichMedia.Parsers.OEmbed
   ],
   ttl_setters: [Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl]
@@ -405,6 +404,13 @@ config :pleroma, :media_proxy,
     ]
   ],
   whitelist: []
+
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
+  method: :purge,
+  headers: [],
+  options: []
+
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script, script_path: nil
 
 config :pleroma, :chat, enabled: true
 
@@ -683,6 +689,11 @@ config :pleroma, :restrict_unauthenticated,
   activities: %{local: false, remote: false}
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
+
+config :pleroma, :mrf,
+  policies: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
+  transparency: true,
+  transparency_exclusions: []
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -57,35 +57,36 @@ defmodule Pleroma.Web.ControllerHelper do
     end
   end
 
+  @id_keys Pagination.page_keys() -- ["limit", "order"]
+  defp build_pagination_fields(conn, min_id, max_id, extra_params) do
+    params =
+      conn.params
+      |> Map.drop(Map.keys(conn.path_params))
+      |> Map.merge(extra_params)
+      |> Map.drop(@id_keys)
+
+    %{
+      "next" => current_url(conn, Map.put(params, :max_id, max_id)),
+      "prev" => current_url(conn, Map.put(params, :min_id, min_id)),
+      "id" => current_url(conn)
+    }
+  end
+
   def get_pagination_fields(conn, activities, extra_params \\ %{}) do
     case List.last(activities) do
-      %{id: max_id} ->
-        params =
-          conn.params
-          |> Map.drop(Map.keys(conn.path_params))
-          |> Map.merge(extra_params)
-          |> Map.drop(Pagination.page_keys() -- ["limit", "order"])
-
-        min_id =
+      %{pagination_id: max_id} when not is_nil(max_id) ->
+        %{pagination_id: min_id} =
           activities
           |> List.first()
-          |> Map.get(:id)
 
-        fields = %{
-          "next" => current_url(conn, Map.put(params, :max_id, max_id)),
-          "prev" => current_url(conn, Map.put(params, :min_id, min_id))
-        }
+        build_pagination_fields(conn, min_id, max_id, extra_params)
 
-        #  Generating an `id` without already present pagination keys would
-        # need a query-restriction with an `q.id >= ^id` or `q.id <= ^id`
-        # instead of the `q.id > ^min_id` and `q.id < ^max_id`.
-        #  This is because we only have ids present inside of the page, while
-        # `min_id`, `since_id` and `max_id` requires to know one outside of it.
-        if Map.take(conn.params, Pagination.page_keys() -- ["limit", "order"]) != [] do
-          Map.put(fields, "id", current_url(conn, conn.params))
-        else
-          fields
-        end
+      %{id: max_id} ->
+        %{id: min_id} =
+          activities
+          |> List.first()
+
+        build_pagination_fields(conn, min_id, max_id, extra_params)
 
       _ ->
         %{}

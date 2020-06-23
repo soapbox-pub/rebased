@@ -209,6 +209,10 @@ defmodule Pleroma.Web.Router do
     post("/oauth_app", OAuthAppController, :create)
     patch("/oauth_app/:id", OAuthAppController, :update)
     delete("/oauth_app/:id", OAuthAppController, :delete)
+
+    get("/media_proxy_caches", MediaProxyCacheController, :index)
+    post("/media_proxy_caches/delete", MediaProxyCacheController, :delete)
+    post("/media_proxy_caches/purge", MediaProxyCacheController, :purge)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -305,6 +309,15 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
     scope [] do
       pipe_through(:authenticated_api)
+
+      post("/chats/by-account-id/:id", ChatController, :create)
+      get("/chats", ChatController, :index)
+      get("/chats/:id", ChatController, :show)
+      get("/chats/:id/messages", ChatController, :messages)
+      post("/chats/:id/messages", ChatController, :post_chat_message)
+      delete("/chats/:id/messages/:message_id", ChatController, :delete_message)
+      post("/chats/:id/read", ChatController, :mark_as_read)
+      post("/chats/:id/messages/:message_id/read", ChatController, :mark_message_as_read)
 
       get("/conversations/:id/statuses", ConversationController, :statuses)
       get("/conversations/:id", ConversationController, :show)
@@ -454,6 +467,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/web", Pleroma.Web do
     pipe_through(:authenticated_api)
 
+    # Backend-obscure settings blob for MastoFE, don't parse/reuse elsewhere
     put("/settings", MastoFEController, :put_settings)
   end
 

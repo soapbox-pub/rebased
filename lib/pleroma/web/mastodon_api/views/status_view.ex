@@ -377,8 +377,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     page_url_data = URI.parse(page_url)
 
     page_url_data =
-      if rich_media[:url] != nil do
-        URI.merge(page_url_data, URI.parse(rich_media[:url]))
+      if is_binary(rich_media["url"]) do
+        URI.merge(page_url_data, URI.parse(rich_media["url"]))
       else
         page_url_data
       end
@@ -386,11 +386,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     page_url = page_url_data |> to_string
 
     image_url =
-      if rich_media[:image] != nil do
-        URI.merge(page_url_data, URI.parse(rich_media[:image]))
+      if is_binary(rich_media["image"]) do
+        URI.merge(page_url_data, URI.parse(rich_media["image"]))
         |> to_string
-      else
-        nil
       end
 
     %{
@@ -399,8 +397,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
       url: page_url,
       image: image_url |> MediaProxy.url(),
-      title: rich_media[:title] || "",
-      description: rich_media[:description] || "",
+      title: rich_media["title"] || "",
+      description: rich_media["description"] || "",
       pleroma: %{
         opengraph: rich_media
       }

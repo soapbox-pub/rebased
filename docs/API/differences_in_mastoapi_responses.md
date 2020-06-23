@@ -230,3 +230,7 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 Has these additional fields under the `pleroma` object:
 
 - `unread_count`: contains number unread notifications
+
+## Streaming
+
+There is an additional `user:pleroma_chat` stream. Incoming chat messages will make the current chat be sent to this `user` stream. The `event` of an incoming chat message is `pleroma:chat_update`. The payload is the updated chat with the incoming chat message in the `last_message` field.

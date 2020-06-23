@@ -48,6 +48,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
       |> Map.put(:blocking_user, user)
       |> Map.put(:muting_user, user)
       |> Map.put(:reply_filtering_user, user)
+      |> Map.put(:announce_filtering_user, user)
       |> Map.put(:user, user)
 
     activities =

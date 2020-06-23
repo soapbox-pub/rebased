@@ -242,3 +242,11 @@ If your instance is up and running, you can create your first user with administ
 ```
 LC_ALL=en_US.UTF-8 MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress> --admin
 ```
+
+#### Further reading
+
+{! backend/installation/further_reading.include !}
+
+## Questions
+
+Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.

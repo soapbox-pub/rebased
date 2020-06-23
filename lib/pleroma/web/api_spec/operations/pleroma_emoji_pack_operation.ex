@@ -33,6 +33,20 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
       tags: ["Emoji Packs"],
       summary: "Lists local custom emoji packs",
       operationId: "PleromaAPI.EmojiPackController.index",
+      parameters: [
+        Operation.parameter(
+          :page,
+          :query,
+          %Schema{type: :integer, default: 1},
+          "Page"
+        ),
+        Operation.parameter(
+          :page_size,
+          :query,
+          %Schema{type: :integer, default: 50},
+          "Number of emoji packs to return"
+        )
+      ],
       responses: %{
         200 => emoji_packs_response()
       }
@@ -44,7 +58,21 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiPackOperation do
       tags: ["Emoji Packs"],
       summary: "Show emoji pack",
       operationId: "PleromaAPI.EmojiPackController.show",
-      parameters: [name_param()],
+      parameters: [
+        name_param(),
+        Operation.parameter(
+          :page,
+          :query,
+          %Schema{type: :integer, default: 1},
+          "Page"
+        ),
+        Operation.parameter(
+          :page_size,
+          :query,
+          %Schema{type: :integer, default: 30},
+          "Number of emoji to return"
+        )
+      ],
       responses: %{
         200 => Operation.response("Emoji Pack", "application/json", emoji_pack()),
         400 => Operation.response("Bad Request", "application/json", ApiError),

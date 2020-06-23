@@ -165,6 +165,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       end)
       |> Maps.put_if_present(:name, params[:display_name])
       |> Maps.put_if_present(:bio, params[:note])
+      |> Maps.put_if_present(:raw_bio, params[:note])
       |> Maps.put_if_present(:avatar, params[:avatar])
       |> Maps.put_if_present(:banner, params[:header])
       |> Maps.put_if_present(:background, params[:pleroma_background_image])
@@ -176,6 +177,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:pleroma_settings_store, params[:pleroma_settings_store])
       |> Maps.put_if_present(:default_scope, params[:default_scope])
       |> Maps.put_if_present(:default_scope, params["source"]["privacy"])
+      |> Maps.put_if_present(:actor_type, params[:bot], fn bot ->
+        if bot, do: {:ok, "Service"}, else: {:ok, "Person"}
+      end)
       |> Maps.put_if_present(:actor_type, params[:actor_type])
 
     changeset = User.update_changeset(user, user_params)
@@ -230,17 +234,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   @doc "GET /api/v1/accounts/:id"
   def show(%{assigns: %{user: for_user}} = conn, %{id: nickname_or_id}) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id, for: for_user),
-         true <- User.visible_for?(user, for_user) do
+         :visible <- User.visible_for(user, for_user) do
       render(conn, "show.json", user: user, for: for_user)
     else
-      _e -> render_error(conn, :not_found, "Can't find user")
+      error -> user_visibility_error(conn, error)
     end
   end
 
   @doc "GET /api/v1/accounts/:id/statuses"
   def statuses(%{assigns: %{user: reading_user}} = conn, params) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(params.id, for: reading_user),
-         true <- User.visible_for?(user, reading_user) do
+         :visible <- User.visible_for(user, reading_user) do
       params =
         params
         |> Map.delete(:tagged)
@@ -257,7 +261,17 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         as: :activity
       )
     else
-      _e -> render_error(conn, :not_found, "Can't find user")
+      error -> user_visibility_error(conn, error)
+    end
+  end
+
+  defp user_visibility_error(conn, error) do
+    case error do
+      :restrict_unauthenticated ->
+        render_error(conn, :unauthorized, "This API requires an authenticated user")
+
+      _ ->
+        render_error(conn, :not_found, "Can't find user")
     end
   end
 

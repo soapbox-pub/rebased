@@ -1571,9 +1571,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert modified_object["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
 
-      assert modified_object["conversation"] ==
-               "tag:shitposter.club,2017-05-05:objectType=thread:nonce=3c16e9c2681f6d26"
-
       assert modified_object["context"] ==
                "tag:shitposter.club,2017-05-05:objectType=thread:nonce=3c16e9c2681f6d26"
     end

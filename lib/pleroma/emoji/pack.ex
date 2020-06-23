@@ -1,6 +1,7 @@
 defmodule Pleroma.Emoji.Pack do
-  @derive {Jason.Encoder, only: [:files, :pack]}
+  @derive {Jason.Encoder, only: [:files, :pack, :files_count]}
   defstruct files: %{},
+            files_count: 0,
             pack_file: nil,
             path: nil,
             pack: %{},
@@ -8,6 +9,7 @@ defmodule Pleroma.Emoji.Pack do
 
   @type t() :: %__MODULE__{
           files: %{String.t() => Path.t()},
+          files_count: non_neg_integer(),
           pack_file: Path.t(),
           path: Path.t(),
           pack: map(),
@@ -16,7 +18,7 @@ defmodule Pleroma.Emoji.Pack do
 
   alias Pleroma.Emoji
 
-  @spec create(String.t()) :: :ok | {:error, File.posix()} | {:error, :empty_values}
+  @spec create(String.t()) :: {:ok, t()} | {:error, File.posix()} | {:error, :empty_values}
   def create(name) do
     with :ok <- validate_not_empty([name]),
          dir <- Path.join(emoji_path(), name),
@@ -26,10 +28,27 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec show(String.t()) :: {:ok, t()} | {:error, atom()}
-  def show(name) do
+  defp paginate(entities, 1, page_size), do: Enum.take(entities, page_size)
+
+  defp paginate(entities, page, page_size) do
+    entities
+    |> Enum.chunk_every(page_size)
+    |> Enum.at(page - 1)
+  end
+
+  @spec show(keyword()) :: {:ok, t()} | {:error, atom()}
+  def show(opts) do
+    name = opts[:name]
+
     with :ok <- validate_not_empty([name]),
          {:ok, pack} <- load_pack(name) do
+      shortcodes =
+        pack.files
+        |> Map.keys()
+        |> paginate(opts[:page], opts[:page_size])
+
+      pack = Map.put(pack, :files, Map.take(pack.files, shortcodes))
+
       {:ok, validate_pack(pack)}
     end
   end
@@ -120,10 +139,10 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec list_local() :: {:ok, map()}
-  def list_local do
+  @spec list_local(keyword()) :: {:ok, map(), non_neg_integer()}
+  def list_local(opts) do
     with {:ok, results} <- list_packs_dir() do
-      packs =
+      all_packs =
         results
         |> Enum.map(fn name ->
           case load_pack(name) do
@@ -132,9 +151,13 @@ defmodule Pleroma.Emoji.Pack do
           end
         end)
         |> Enum.reject(&is_nil/1)
+
+      packs =
+        all_packs
+        |> paginate(opts[:page], opts[:page_size])
         |> Map.new(fn pack -> {pack.name, validate_pack(pack)} end)
 
-      {:ok, packs}
+      {:ok, packs, length(all_packs)}
     end
   end
 
@@ -146,7 +169,7 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec download(String.t(), String.t(), String.t()) :: :ok | {:error, atom()}
+  @spec download(String.t(), String.t(), String.t()) :: {:ok, t()} | {:error, atom()}
   def download(name, url, as) do
     uri = url |> String.trim() |> URI.parse()
 
@@ -197,7 +220,12 @@ defmodule Pleroma.Emoji.Pack do
         |> Map.put(:path, Path.dirname(pack_file))
         |> Map.put(:name, name)
 
-      {:ok, pack}
+      files_count =
+        pack.files
+        |> Map.keys()
+        |> length()
+
+      {:ok, Map.put(pack, :files_count, files_count)}
     else
       {:error, :not_found}
     end
@@ -296,7 +324,9 @@ defmodule Pleroma.Emoji.Pack do
     # Otherwise, they'd have to download it from external-src
     pack.pack["share-files"] &&
       Enum.all?(pack.files, fn {_, file} ->
-        File.exists?(Path.join(pack.path, file))
+        pack.path
+        |> Path.join(file)
+        |> File.exists?()
       end)
   end
 
@@ -440,7 +470,7 @@ defmodule Pleroma.Emoji.Pack do
     # with the API so it should be sufficient
     with {:create_dir, :ok} <- {:create_dir, File.mkdir_p(emoji_path)},
          {:ls, {:ok, results}} <- {:ls, File.ls(emoji_path)} do
-      {:ok, results}
+      {:ok, Enum.sort(results)}
     else
       {:create_dir, {:error, e}} -> {:error, :create_dir, e}
       {:ls, {:error, e}} -> {:error, :ls, e}

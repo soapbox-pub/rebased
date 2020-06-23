@@ -6,6 +6,7 @@ defmodule Pleroma.Web.Streamer do
   require Logger
 
   alias Pleroma.Activity
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
@@ -22,7 +23,7 @@ defmodule Pleroma.Web.Streamer do
   def registry, do: @registry
 
   @public_streams ["public", "public:local", "public:media", "public:local:media"]
-  @user_streams ["user", "user:notification", "direct"]
+  @user_streams ["user", "user:notification", "direct", "user:pleroma_chat"]
 
   @doc "Expands and authorizes a stream, and registers the process for streaming."
   @spec get_topic_and_add_socket(stream :: String.t(), User.t() | nil, Map.t() | nil) ::
@@ -89,29 +90,15 @@ defmodule Pleroma.Web.Streamer do
     if should_env_send?(), do: Registry.unregister(@registry, topic)
   end
 
-  def stream(topics, item) when is_list(topics) do
+  def stream(topics, items) do
     if should_env_send?() do
-      Enum.each(topics, fn t ->
-        spawn(fn -> do_stream(t, item) end)
+      List.wrap(topics)
+      |> Enum.each(fn topic ->
+        List.wrap(items)
+        |> Enum.each(fn item ->
+          spawn(fn -> do_stream(topic, item) end)
+        end)
       end)
-    end
-
-    :ok
-  end
-
-  def stream(topic, items) when is_list(items) do
-    if should_env_send?() do
-      Enum.each(items, fn i ->
-        spawn(fn -> do_stream(topic, i) end)
-      end)
-
-      :ok
-    end
-  end
-
-  def stream(topic, item) do
-    if should_env_send?() do
-      spawn(fn -> do_stream(topic, item) end)
     end
 
     :ok
@@ -196,6 +183,19 @@ defmodule Pleroma.Web.Streamer do
     Registry.dispatch(@registry, "#{topic}:#{item.user_id}", fn list ->
       Enum.each(list, fn {pid, _auth} ->
         send(pid, {:render_with_user, StreamerView, "notification.json", item})
+      end)
+    end)
+  end
+
+  defp do_stream(topic, {user, %MessageReference{} = cm_ref})
+       when topic in ["user", "user:pleroma_chat"] do
+    topic = "#{topic}:#{user.id}"
+
+    text = StreamerView.render("chat_update.json", %{chat_message_reference: cm_ref})
+
+    Registry.dispatch(@registry, topic, fn list ->
+      Enum.each(list, fn {pid, _auth} ->
+        send(pid, {:text, text})
       end)
     end)
   end

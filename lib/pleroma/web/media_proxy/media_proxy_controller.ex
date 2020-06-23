@@ -14,10 +14,11 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     with config <- Pleroma.Config.get([:media_proxy], []),
          true <- Keyword.get(config, :enabled, false),
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),
+         {_, false} <- {:in_banned_urls, MediaProxy.in_banned_urls(url)},
          :ok <- filename_matches(params, conn.request_path, url) do
       ReverseProxy.call(conn, url, Keyword.get(config, :proxy_opts, @default_proxy_opts))
     else
-      false ->
+      error when error in [false, {:in_banned_urls, true}] ->
         send_resp(conn, 404, Plug.Conn.Status.reason_phrase(404))
 
       {:error, :invalid_signature} ->
