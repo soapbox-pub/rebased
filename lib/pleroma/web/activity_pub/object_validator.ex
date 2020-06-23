@@ -24,13 +24,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
 
-  def validate(%{"type" => "Update"} = object, meta) do
-    with {:ok, object} <-
-           object
+  def validate(%{"type" => "Update"} = update_activity, meta) do
+    with {:ok, update_activity} <-
+           update_activity
            |> UpdateValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
-      object = stringify_keys(object)
-      {:ok, object, meta}
+      update_activity = stringify_keys(update_activity)
+      {:ok, update_activity, meta}
     end
   end
 
