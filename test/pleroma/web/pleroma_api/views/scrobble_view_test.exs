@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.PleromaAPI.StatusViewTest do
+defmodule Pleroma.Web.PleromaAPI.ScrobbleViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Web.PleromaAPI.ScrobbleView
