@@ -39,8 +39,35 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
   defp add_scheme_opts(opts, %{scheme: "https"}) do
     opts
     |> Keyword.put(:certificates_verification, true)
-    |> Keyword.put(:tls_opts, log_level: :warning)
+    |> Keyword.put(:tls_opts,
+      log_level: :warning,
+      customize_hostname_check: [match_fun: &ssl_match_fun/2]
+    )
   end
+
+  # ssl_match_fun is adapted from [Mint](https://github.com/elixir-mint/mint)
+  # Copyright 2018 Eric Meadows-Jönsson and Andrea Leopardi
+
+  # Wildcard domain handling for DNS ID entries in the subjectAltName X.509
+  # extension. Note that this is a subset of the wildcard patterns implemented
+  # by OTP when matching against the subject CN attribute, but this is the only
+  # wildcard usage defined by the CA/Browser Forum's Baseline Requirements, and
+  # therefore the only pattern used in commercially issued certificates.
+  defp ssl_match_fun({:dns_id, reference}, {:dNSName, [?*, ?. | presented]}) do
+    case domain_without_host(reference) do
+      '' ->
+        :default
+
+      domain ->
+        :string.casefold(domain) == :string.casefold(presented)
+    end
+  end
+
+  defp ssl_match_fun(_reference, _presented), do: :default
+
+  defp domain_without_host([]), do: []
+  defp domain_without_host([?. | domain]), do: domain
+  defp domain_without_host([_ | more]), do: domain_without_host(more)
 
   @spec get_conn(URI.t(), keyword()) :: {:ok, keyword()} | {:error, atom()}
   def get_conn(uri, opts) do
