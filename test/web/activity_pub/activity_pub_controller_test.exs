@@ -648,11 +648,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "it accepts announces with to as string instead of array", %{conn: conn} do
       user = insert(:user)
 
+      {:ok, post} = CommonAPI.post(user, %{status: "hey"})
+      announcer = insert(:user, local: false)
+
       data = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
-        "actor" => "http://mastodon.example.org/users/admin",
-        "id" => "http://mastodon.example.org/users/admin/statuses/19512778738411822/activity",
-        "object" => "https://mastodon.social/users/emelie/statuses/101849165031453009",
+        "actor" => announcer.ap_id,
+        "id" => "#{announcer.ap_id}/statuses/19512778738411822/activity",
+        "object" => post.data["object"],
         "to" => "https://www.w3.org/ns/activitystreams#Public",
         "cc" => [user.ap_id],
         "type" => "Announce"
@@ -665,7 +668,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{user.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      ObanHelpers.perform_all()
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
       %Activity{} = activity = Activity.get_by_ap_id(data["id"])
       assert "https://www.w3.org/ns/activitystreams#Public" in activity.recipients
     end
