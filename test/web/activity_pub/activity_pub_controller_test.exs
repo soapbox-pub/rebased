@@ -536,6 +536,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert_receive {:mix_shell, :info, ["relay.mastodon.host"]}
     end
 
+    @tag capture_log: true
     test "without valid signature, " <>
            "it only accepts Create activities and requires enabled federation",
          %{conn: conn} do
