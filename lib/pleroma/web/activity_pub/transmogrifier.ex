@@ -240,13 +240,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         if href do
           attachment_url =
-            %{"href" => href}
+            %{
+              "href" => href,
+              "type" => Map.get(url || %{}, "type", "Link")
+            }
             |> Maps.put_if_present("mediaType", media_type)
-            |> Maps.put_if_present("type", Map.get(url || %{}, "type"))
 
-          %{"url" => [attachment_url]}
+          %{
+            "url" => [attachment_url],
+            "type" => data["type"] || "Document"
+          }
           |> Maps.put_if_present("mediaType", media_type)
-          |> Maps.put_if_present("type", data["type"])
           |> Maps.put_if_present("name", data["name"])
         else
           nil

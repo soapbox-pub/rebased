@@ -177,6 +177,13 @@ defmodule Pleroma.Object.FetcherTest do
                  "https://mastodon.example.org/users/userisgone404"
                )
     end
+
+    test "it can fetch pleroma polls with attachments" do
+      {:ok, object} =
+        Fetcher.fetch_object_from_id("https://patch.cx/objects/tesla_mock/poll_attachment")
+
+      assert object
+    end
   end
 
   describe "pruning" do

@@ -620,7 +620,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                    %{
                      "href" =>
                        "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-                     "mediaType" => "video/mp4"
+                     "mediaType" => "video/mp4",
+                     "type" => "Link"
                    }
                  ]
                }
@@ -639,7 +640,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                    %{
                      "href" =>
                        "https://framatube.org/static/webseed/6050732a-8a7a-43d4-a6cd-809525a1d206-1080.mp4",
-                     "mediaType" => "video/mp4"
+                     "mediaType" => "video/mp4",
+                     "type" => "Link"
                    }
                  ]
                }
@@ -1459,8 +1461,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "attachment" => [
                  %{
                    "mediaType" => "video/mp4",
+                   "type" => "Document",
                    "url" => [
-                     %{"href" => "https://peertube.moe/stat-480.mp4", "mediaType" => "video/mp4"}
+                     %{
+                       "href" => "https://peertube.moe/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
                    ]
                  }
                ]
@@ -1477,14 +1484,24 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "attachment" => [
                  %{
                    "mediaType" => "video/mp4",
+                   "type" => "Document",
                    "url" => [
-                     %{"href" => "https://pe.er/stat-480.mp4", "mediaType" => "video/mp4"}
+                     %{
+                       "href" => "https://pe.er/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
                    ]
                  },
                  %{
                    "mediaType" => "video/mp4",
+                   "type" => "Document",
                    "url" => [
-                     %{"href" => "https://pe.er/stat-480.mp4", "mediaType" => "video/mp4"}
+                     %{
+                       "href" => "https://pe.er/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
                    ]
                  }
                ]

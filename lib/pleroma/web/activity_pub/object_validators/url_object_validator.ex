@@ -13,7 +13,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.UrlObjectValidator do
   embedded_schema do
     field(:type, :string)
     field(:href, ObjectValidators.Uri)
-    field(:mediaType, :string)
+    field(:mediaType, :string, default: "application/octet-stream")
   end
 
   def changeset(struct, data) do
