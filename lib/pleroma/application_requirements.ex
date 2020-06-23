@@ -24,7 +24,9 @@ defmodule Pleroma.ApplicationRequirements do
   defp handle_result(:ok), do: :ok
   defp handle_result({:error, message}), do: raise(VerifyError, message: message)
 
-  defp check_migrations_applied!(:ok) do
+  # Checks for pending migrations.
+  #
+  def check_migrations_applied!(:ok) do
     unless Pleroma.Config.get(
              [:i_am_aware_this_may_cause_data_loss, :disable_migration_check],
              false
@@ -58,8 +60,10 @@ defmodule Pleroma.ApplicationRequirements do
     end
   end
 
-  defp check_migrations_applied!(result), do: result
+  def check_migrations_applied!(result), do: result
 
+  # Checks for settings of RUM indexes.
+  #
   defp check_rum!(:ok) do
     {_, res, _} =
       Ecto.Migrator.with_repo(Pleroma.Repo, fn repo ->
