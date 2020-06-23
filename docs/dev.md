@@ -20,4 +20,4 @@ This document contains notes and guidelines for Pleroma developers.
 
 ## Auth-related configuration, OAuth consumer mode etc.
 
-See `Authentication` section of [`docs/configuration/cheatsheet.md`](docs/configuration/cheatsheet.md#authentication).
+See `Authentication` section of [the configuration cheatsheet](configuration/cheatsheet.md#authentication).
