@@ -78,7 +78,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   def federation do
     quarantined = Config.get([:instance, :quarantined_instances], [])
 
-    if Config.get([:instance, :mrf_transparency]) do
+    if Config.get([:mrf, :transparency]) do
       {:ok, data} = MRF.describe()
 
       data

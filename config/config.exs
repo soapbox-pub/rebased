@@ -210,7 +210,6 @@ config :pleroma, :instance,
     Pleroma.Web.ActivityPub.Publisher
   ],
   allow_relay: true,
-  rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
   quarantined_instances: [],
   managed_config: true,
@@ -221,8 +220,6 @@ config :pleroma, :instance,
     "text/markdown",
     "text/bbcode"
   ],
-  mrf_transparency: true,
-  mrf_transparency_exclusions: [],
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,
   attachment_links: false,
@@ -692,6 +689,11 @@ config :pleroma, :restrict_unauthenticated,
   activities: %{local: false, remote: false}
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
+
+config :pleroma, :mrf,
+  policies: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
+  transparency: true,
+  transparency_exclusions: []
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

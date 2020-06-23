@@ -13,7 +13,6 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorkerTest do
 
   setup do
     clear_config([ActivityExpiration, :enabled])
-    clear_config([:instance, :rewrite_policy])
   end
 
   test "deletes an expiration activity" do
@@ -42,10 +41,7 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorkerTest do
   test "works with ActivityExpirationPolicy" do
     Pleroma.Config.put([ActivityExpiration, :enabled], true)
 
-    Pleroma.Config.put(
-      [:instance, :rewrite_policy],
-      Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy
-    )
+    clear_config([:mrf, :policies], Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy)
 
     user = insert(:user)
 

@@ -690,17 +690,6 @@ config :pleroma, :config_description, [
         description: "Enable Pleroma's Relay, which makes it possible to follow a whole instance"
       },
       %{
-        key: :rewrite_policy,
-        type: [:module, {:list, :module}],
-        description:
-          "A list of enabled MRF policies. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
-        suggestions:
-          Generator.list_modules_in_dir(
-            "lib/pleroma/web/activity_pub/mrf",
-            "Elixir.Pleroma.Web.ActivityPub.MRF."
-          )
-      },
-      %{
         key: :public,
         type: :boolean,
         description:
@@ -740,23 +729,6 @@ config :pleroma, :config_description, [
           "text/html",
           "text/markdown",
           "text/bbcode"
-        ]
-      },
-      %{
-        key: :mrf_transparency,
-        label: "MRF transparency",
-        type: :boolean,
-        description:
-          "Make the content of your Message Rewrite Facility settings public (via nodeinfo)"
-      },
-      %{
-        key: :mrf_transparency_exclusions,
-        label: "MRF transparency exclusions",
-        type: {:list, :string},
-        description:
-          "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
-        suggestions: [
-          "exclusion.com"
         ]
       },
       %{
@@ -3387,6 +3359,42 @@ config :pleroma, :config_description, [
         description:
           "Enables strict input validation (useful in development, not recommended in production)",
         suggestions: [false]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :mrf,
+    type: :group,
+    description: "General MRF settings",
+    children: [
+      %{
+        key: :policies,
+        type: [:module, {:list, :module}],
+        description:
+          "A list of MRF policies enabled. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
+        suggestions:
+          Generator.list_modules_in_dir(
+            "lib/pleroma/web/activity_pub/mrf",
+            "Elixir.Pleroma.Web.ActivityPub.MRF."
+          )
+      },
+      %{
+        key: :transparency,
+        label: "MRF transparency",
+        type: :boolean,
+        description:
+          "Make the content of your Message Rewrite Facility settings public (via nodeinfo)"
+      },
+      %{
+        key: :transparency_exclusions,
+        label: "MRF transparency exclusions",
+        type: {:list, :string},
+        description:
+          "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
+        suggestions: [
+          "exclusion.com"
+        ]
       }
     ]
   }
