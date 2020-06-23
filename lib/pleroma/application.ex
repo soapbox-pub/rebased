@@ -39,7 +39,7 @@ defmodule Pleroma.Application do
     Pleroma.HTML.compile_scrubbers()
     Config.DeprecationWarnings.warn()
     Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
-    Pleroma.Repo.check_migrations_applied!()
+    Pleroma.ApplicationRequirements.verify!()
     setup_instrumenters()
     load_custom_modules()
 

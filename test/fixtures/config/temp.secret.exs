@@ -9,3 +9,5 @@ config :quack, level: :info
 config :pleroma, Pleroma.Repo, pool: Ecto.Adapters.SQL.Sandbox
 
 config :postgrex, :json_library, Poison
+
+config :pleroma, :database, rum_enabled: true
