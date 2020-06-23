@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl do
   @behaviour Pleroma.Web.RichMedia.Parser.TTL
 
-  @impl Pleroma.Web.RichMedia.Parser.TTL
+  @impl true
   def ttl(data, _url) do
     image = Map.get(data, :image)
 
