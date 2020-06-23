@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.OStatus.OStatusController do
   use Pleroma.Web, :controller
 
-  alias Fallback.RedirectController
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Plugs.RateLimiter
@@ -13,6 +12,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.Fallback.Fallback.RedirectController
   alias Pleroma.Web.Metadata.PlayerView
   alias Pleroma.Web.Router
 

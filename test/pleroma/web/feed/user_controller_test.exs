@@ -206,7 +206,7 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
         |> response(200)
 
       assert response ==
-               Fallback.RedirectController.redirector_with_meta(
+               Pleroma.Web.Fallback.RedirectController.redirector_with_meta(
                  conn,
                  %{user: user}
                ).resp_body
