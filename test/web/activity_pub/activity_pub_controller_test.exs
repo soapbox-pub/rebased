@@ -665,7 +665,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{user.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
-      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      ObanHelpers.perform_all()
       %Activity{} = activity = Activity.get_by_ap_id(data["id"])
       assert "https://www.w3.org/ns/activitystreams#Public" in activity.recipients
     end
