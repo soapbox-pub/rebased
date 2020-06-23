@@ -209,6 +209,10 @@ defmodule Pleroma.Web.Router do
     post("/oauth_app", OAuthAppController, :create)
     patch("/oauth_app/:id", OAuthAppController, :update)
     delete("/oauth_app/:id", OAuthAppController, :delete)
+
+    get("/media_proxy_caches", MediaProxyCacheController, :index)
+    post("/media_proxy_caches/delete", MediaProxyCacheController, :delete)
+    post("/media_proxy_caches/purge", MediaProxyCacheController, :purge)
   end
 
   scope "/api/pleroma/emoji", Pleroma.Web.PleromaAPI do
@@ -463,6 +467,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/web", Pleroma.Web do
     pipe_through(:authenticated_api)
 
+    # Backend-obscure settings blob for MastoFE, don't parse/reuse elsewhere
     put("/settings", MastoFEController, :put_settings)
   end
 

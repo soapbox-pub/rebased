@@ -49,7 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     expected = %{
       id: to_string(notification.id),
-      pleroma: %{is_seen: false},
+      pleroma: %{is_seen: false, is_muted: false},
       type: "pleroma:chat_mention",
       account: AccountView.render("show.json", %{user: user, for: recipient}),
       chat_message: MessageReferenceView.render("show.json", %{chat_message_reference: cm_ref}),
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     expected = %{
       id: to_string(notification.id),
-      pleroma: %{is_seen: false},
+      pleroma: %{is_seen: false, is_muted: false},
       type: "mention",
       account:
         AccountView.render("show.json", %{
@@ -92,7 +92,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     expected = %{
       id: to_string(notification.id),
-      pleroma: %{is_seen: false},
+      pleroma: %{is_seen: false, is_muted: false},
       type: "favourite",
       account: AccountView.render("show.json", %{user: another_user, for: user}),
       status: StatusView.render("show.json", %{activity: create_activity, for: user}),
@@ -112,7 +112,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     expected = %{
       id: to_string(notification.id),
-      pleroma: %{is_seen: false},
+      pleroma: %{is_seen: false, is_muted: false},
       type: "reblog",
       account: AccountView.render("show.json", %{user: another_user, for: user}),
       status: StatusView.render("show.json", %{activity: reblog_activity, for: user}),
@@ -130,7 +130,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     expected = %{
       id: to_string(notification.id),
-      pleroma: %{is_seen: false},
+      pleroma: %{is_seen: false, is_muted: false},
       type: "follow",
       account: AccountView.render("show.json", %{user: follower, for: followed}),
       created_at: Utils.to_masto_date(notification.inserted_at)
@@ -171,7 +171,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     expected = %{
       id: to_string(notification.id),
-      pleroma: %{is_seen: false},
+      pleroma: %{is_seen: false, is_muted: false},
       type: "move",
       account: AccountView.render("show.json", %{user: old_user, for: follower}),
       target: AccountView.render("show.json", %{user: new_user, for: follower}),
@@ -196,11 +196,33 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     expected = %{
       id: to_string(notification.id),
-      pleroma: %{is_seen: false},
+      pleroma: %{is_seen: false, is_muted: false},
       type: "pleroma:emoji_reaction",
       emoji: "☕",
       account: AccountView.render("show.json", %{user: other_user, for: user}),
       status: StatusView.render("show.json", %{activity: activity, for: user}),
+      created_at: Utils.to_masto_date(notification.inserted_at)
+    }
+
+    test_notifications_rendering([notification], user, [expected])
+  end
+
+  test "muted notification" do
+    user = insert(:user)
+    another_user = insert(:user)
+
+    {:ok, _} = Pleroma.UserRelationship.create_mute(user, another_user)
+    {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
+    {:ok, favorite_activity} = CommonAPI.favorite(another_user, create_activity.id)
+    {:ok, [notification]} = Notification.create_notifications(favorite_activity)
+    create_activity = Activity.get_by_id(create_activity.id)
+
+    expected = %{
+      id: to_string(notification.id),
+      pleroma: %{is_seen: false, is_muted: true},
+      type: "favourite",
+      account: AccountView.render("show.json", %{user: another_user, for: user}),
+      status: StatusView.render("show.json", %{activity: create_activity, for: user}),
       created_at: Utils.to_masto_date(notification.inserted_at)
     }
 

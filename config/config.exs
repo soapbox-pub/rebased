@@ -186,6 +186,7 @@ config :pleroma, :instance,
   notify_email: "noreply@example.com",
   description: "Pleroma: An efficient and flexible fediverse server",
   background_image: "/images/city.jpg",
+  instance_thumbnail: "/instance/thumbnail.jpeg",
   limit: 5_000,
   chat_limit: 5_000,
   remote_limit: 100_000,
@@ -406,6 +407,13 @@ config :pleroma, :media_proxy,
     ]
   ],
   whitelist: []
+
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Http,
+  method: :purge,
+  headers: [],
+  options: []
+
+config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script, script_path: nil
 
 config :pleroma, :chat, enabled: true
 

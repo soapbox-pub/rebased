@@ -10,6 +10,10 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
   setup do: clear_config(:media_proxy)
   setup do: clear_config([Pleroma.Web.Endpoint, :secret_key_base])
 
+  setup do
+    on_exit(fn -> Cachex.clear(:banned_urls_cache) end)
+  end
+
   test "it returns 404 when MediaProxy disabled", %{conn: conn} do
     Config.put([:media_proxy, :enabled], false)
 
@@ -64,6 +68,18 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
     with_mock Pleroma.ReverseProxy,
       call: fn _conn, _url, _opts -> %Plug.Conn{status: :success} end do
       assert %Plug.Conn{status: :success} = get(conn, url)
+    end
+  end
+
+  test "it returns 404 when url contains in banned_urls cache", %{conn: conn} do
+    Config.put([:media_proxy, :enabled], true)
+    Config.put([Pleroma.Web.Endpoint, :secret_key_base], "00000000000")
+    url = Pleroma.Web.MediaProxy.encode_url("https://google.fn/test.png")
+    Pleroma.Web.MediaProxy.put_in_banned_urls("https://google.fn/test.png")
+
+    with_mock Pleroma.ReverseProxy,
+      call: fn _conn, _url, _opts -> %Plug.Conn{status: :success} end do
+      assert %Plug.Conn{status: 404, resp_body: "Not Found"} = get(conn, url)
     end
   end
 end

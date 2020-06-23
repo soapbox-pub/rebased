@@ -64,6 +64,12 @@ defmodule Pleroma.Pagination do
   @spec paginate(Ecto.Query.t(), map(), type(), atom() | nil) :: [Ecto.Schema.t()]
   def paginate(query, options, method \\ :keyset, table_binding \\ nil)
 
+  def paginate(list, options, _method, _table_binding) when is_list(list) do
+    offset = options[:offset] || 0
+    limit = options[:limit] || 0
+    Enum.slice(list, offset, limit)
+  end
+
   def paginate(query, options, :keyset, table_binding) do
     query
     |> restrict(:min_id, options, table_binding)

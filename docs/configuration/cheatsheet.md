@@ -60,7 +60,7 @@ To add configuration to your config file, you can copy it from the base config. 
     older software for theses nicknames.
 * `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
 * `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
-* `no_attachment_links`: Set to true to disable automatically adding attachment link text to statuses.
+* `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
 * `welcome_message`: A message that will be send to a newly registered users as a direct message.
 * `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
@@ -268,7 +268,7 @@ This section describe PWA manifest instance-specific values. Currently this opti
 
 #### Pleroma.Web.MediaProxy.Invalidation.Script
 
-This strategy allow perform external bash script to purge cache.
+This strategy allow perform external shell script to purge cache.
 Urls of attachments pass to script as arguments.
 
 * `script_path`: path to external script.
@@ -284,8 +284,8 @@ config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
 This strategy allow perform custom http request to purge cache.
 
 * `method`: http method. default is `purge`
-* `headers`: http headers. default is empty
-* `options`: request options. default is empty
+* `headers`: http headers.
+* `options`: request options.
 
 Example:
 ```elixir

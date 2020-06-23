@@ -107,21 +107,21 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     )
   end
 
-  defp resource_search(:v2, "hashtags", query, _options) do
+  defp resource_search(:v2, "hashtags", query, options) do
     tags_path = Web.base_url() <> "/tag/"
 
     query
-    |> prepare_tags()
+    |> prepare_tags(options)
     |> Enum.map(fn tag ->
       %{name: tag, url: tags_path <> tag}
     end)
   end
 
-  defp resource_search(:v1, "hashtags", query, _options) do
-    prepare_tags(query)
+  defp resource_search(:v1, "hashtags", query, options) do
+    prepare_tags(query, options)
   end
 
-  defp prepare_tags(query, add_joined_tag \\ true) do
+  defp prepare_tags(query, options) do
     tags =
       query
       |> preprocess_uri_query()
@@ -139,13 +139,20 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
     tags = Enum.map(tags, fn tag -> String.trim_leading(tag, "#") end)
 
-    if Enum.empty?(explicit_tags) && add_joined_tag do
-      tags
-      |> Kernel.++([joined_tag(tags)])
-      |> Enum.uniq_by(&String.downcase/1)
-    else
-      tags
-    end
+    tags =
+      if Enum.empty?(explicit_tags) && !options[:skip_joined_tag] do
+        add_joined_tag(tags)
+      else
+        tags
+      end
+
+    Pleroma.Pagination.paginate(tags, options)
+  end
+
+  defp add_joined_tag(tags) do
+    tags
+    |> Kernel.++([joined_tag(tags)])
+    |> Enum.uniq_by(&String.downcase/1)
   end
 
   # If `query` is a URI, returns last component of its path, otherwise returns `query`

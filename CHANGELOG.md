@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - **Breaking:** Elixir >=1.9 is now required (was >= 1.8)
 - In Conversations, return only direct messages as `last_status`
+- Using the `only_media` filter on timelines will now exclude reblog media
 - MFR policy to set global expiration for all local Create activities
 - OGP rich media parser merged with TwitterCard
 <details>
@@ -19,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
+
 - Chats: Added support for federated chats. For details, see the docs.
 - ActivityPub: Added support for existing AP ids for instances migrated from Mastodon.
 - Instance: Add `background_image` to configuration and `/api/v1/instance`
@@ -34,12 +36,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Notifications: Added `follow_request` notification type.
 - Added `:reject_deletes` group to SimplePolicy
 - MRF (`EmojiStealPolicy`): New MRF Policy which allows to automatically download emojis from remote instances
+- Support pagination in emoji packs API (for packs and for files in pack)
+
 <details>
   <summary>API Changes</summary>
 - Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 - Mastodon API: Add support for filtering replies in public and home timelines
+- Mastodon API: Support for `bot` field in `/api/v1/accounts/update_credentials`
 - Admin API: endpoints for create/update/delete OAuth Apps.
 - Admin API: endpoint for status view.
 - OTP: Add command to reload emoji packs

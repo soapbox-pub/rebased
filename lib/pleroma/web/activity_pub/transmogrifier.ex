@@ -172,8 +172,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         object
         |> Map.put("inReplyTo", replied_object.data["id"])
         |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
-        |> Map.put("conversation", replied_object.data["context"] || object["conversation"])
         |> Map.put("context", replied_object.data["context"] || object["conversation"])
+        |> Map.drop(["conversation"])
       else
         e ->
           Logger.error("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
@@ -207,7 +207,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("context", context)
-    |> Map.put("conversation", context)
+    |> Map.drop(["conversation"])
   end
 
   def fix_attachments(%{"attachment" => attachment} = object) when is_list(attachment) do
@@ -458,7 +458,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         to: data["to"],
         object: object,
         actor: user,
-        context: object["conversation"],
+        context: object["context"],
         local: false,
         published: data["published"],
         additional:

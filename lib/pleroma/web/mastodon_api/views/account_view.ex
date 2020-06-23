@@ -35,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   def render("show.json", %{user: user} = opts) do
-    if User.visible_for?(user, opts[:for]) do
+    if User.visible_for(user, opts[:for]) == :visible do
       do_render("show.json", opts)
     else
       %{}
@@ -179,7 +179,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         0
       end
 
-    bot = user.actor_type in ["Application", "Service"]
+    bot = user.actor_type == "Service"
 
     emojis =
       Enum.map(user.emoji, fn {shortcode, raw_url} ->
