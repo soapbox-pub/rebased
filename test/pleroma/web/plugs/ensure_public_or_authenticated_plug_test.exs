@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Config
-  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.User
 
   setup do: clear_config([:instance, :public])

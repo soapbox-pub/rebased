@@ -10,7 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
 
   alias Pleroma.Config
   alias Pleroma.Pagination
-  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.User

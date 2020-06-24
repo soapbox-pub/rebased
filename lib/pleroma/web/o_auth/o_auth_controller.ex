@@ -33,7 +33,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   plug(:skip_plug, [
     Pleroma.Web.Plugs.OAuthScopesPlug,
-    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+    Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   ])
 
   plug(RateLimiter, [name: :authentication] when action == :create_authorization)

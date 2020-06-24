@@ -8,7 +8,7 @@ defmodule Pleroma.Tests.AuthTestController do
 
   use Pleroma.Web, :controller
 
-  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.User
 

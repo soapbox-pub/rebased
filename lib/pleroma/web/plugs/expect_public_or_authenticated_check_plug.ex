@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.Plugs.ExpectPublicOrAuthenticatedCheckPlug do
   @moduledoc """
-  Marks `Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug` as expected to be executed later in plug
+  Marks `Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug` as expected to be executed later in plug
   chain.
 
   No-op plug which affects `Pleroma.Web` operation (is checked with `PlugHelper.plug_called?/2`).

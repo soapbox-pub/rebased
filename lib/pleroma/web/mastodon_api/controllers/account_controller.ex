@@ -15,7 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     ]
 
   alias Pleroma.Maps
-  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.User

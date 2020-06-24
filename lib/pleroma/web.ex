@@ -21,7 +21,7 @@ defmodule Pleroma.Web do
   """
 
   alias Pleroma.Plugs.EnsureAuthenticatedPlug
-  alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.ExpectAuthenticatedCheckPlug
   alias Pleroma.Web.Plugs.ExpectPublicOrAuthenticatedCheckPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug

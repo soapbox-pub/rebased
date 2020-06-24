@@ -25,7 +25,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
-  plug(:skip_plug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug when action in [:index, :show])
+
+  plug(
+    :skip_plug,
+    Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug when action in [:index, :show]
+  )
 
   @unauthenticated_access %{fallback: :proceed_unauthenticated, scopes: []}
 
