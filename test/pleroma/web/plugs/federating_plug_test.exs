@@ -12,7 +12,7 @@ defmodule Pleroma.Web.Plugs.FederatingPlugTest do
 
     conn =
       build_conn()
-      |> Pleroma.Web.FederatingPlug.call(%{})
+      |> Pleroma.Web.Plugs.FederatingPlug.call(%{})
 
     assert conn.status == 404
     assert conn.halted
@@ -23,7 +23,7 @@ defmodule Pleroma.Web.Plugs.FederatingPlugTest do
 
     conn =
       build_conn()
-      |> Pleroma.Web.FederatingPlug.call(%{})
+      |> Pleroma.Web.Plugs.FederatingPlug.call(%{})
 
     refute conn.status
     refute conn.halted

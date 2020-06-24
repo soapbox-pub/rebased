@@ -23,7 +23,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.FederatingPlug
+  alias Pleroma.Web.Plugs.FederatingPlug
   alias Pleroma.Web.Federator
 
   require Logger
