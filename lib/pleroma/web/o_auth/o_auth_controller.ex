@@ -8,7 +8,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Helpers.UriHelper
   alias Pleroma.Maps
   alias Pleroma.MFA
-  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
@@ -23,6 +22,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
   alias Pleroma.Web.OAuth.Token.Strategy.Revoke, as: RevokeToken
+  alias Pleroma.Web.Plugs.RateLimiter
 
   require Logger
 

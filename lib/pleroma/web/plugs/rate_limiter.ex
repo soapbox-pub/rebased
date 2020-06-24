@@ -67,8 +67,8 @@ defmodule Pleroma.Web.Plugs.RateLimiter do
   import Plug.Conn
 
   alias Pleroma.Config
-  alias Pleroma.Web.Plugs.RateLimiter.LimiterSupervisor
   alias Pleroma.User
+  alias Pleroma.Web.Plugs.RateLimiter.LimiterSupervisor
 
   require Logger
 

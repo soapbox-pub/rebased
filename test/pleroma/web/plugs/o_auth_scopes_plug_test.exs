@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.Plugs.OAuthScopesPlugTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   import Mock
   import Pleroma.Factory

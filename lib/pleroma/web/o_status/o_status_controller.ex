@@ -7,13 +7,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   alias Pleroma.Activity
   alias Pleroma.Object
-  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Fallback.RedirectController
   alias Pleroma.Web.Metadata.PlayerView
+  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Web.Router
 
   plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug,

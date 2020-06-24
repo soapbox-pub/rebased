@@ -5,10 +5,10 @@
 defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
+  alias Pleroma.User
   alias Pleroma.Web.Plugs.AuthenticationPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.PlugHelper
-  alias Pleroma.User
 
   import ExUnit.CaptureLog
   import Pleroma.Factory
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
         "psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
 
       assert capture_log(fn ->
-               refute Pleroma.Plugs.AuthenticationPlug.checkpw("password", hash)
+               refute AuthenticationPlug.checkpw("password", hash)
              end) =~ "[error] Password hash not recognized"
     end
   end

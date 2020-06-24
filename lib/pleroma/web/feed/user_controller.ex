@@ -24,7 +24,7 @@ defmodule Pleroma.Web.Feed.UserController do
       when format in ["json", "activity+json"] do
     with %{halted: false} = conn <-
            Pleroma.Web.Plugs.EnsureAuthenticatedPlug.call(conn,
-             unless_func: &Pleroma.Web.FederatingPlug.federating?/1
+             unless_func: &Pleroma.Web.Plugs.FederatingPlug.federating?/1
            ) do
       ActivityPubController.call(conn, :user)
     end

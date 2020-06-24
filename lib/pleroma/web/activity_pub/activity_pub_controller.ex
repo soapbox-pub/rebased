@@ -9,7 +9,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Delivery
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
-  alias Pleroma.Web.Plugs.EnsureAuthenticatedPlug
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
@@ -23,8 +22,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.Plugs.FederatingPlug
   alias Pleroma.Web.Federator
+  alias Pleroma.Web.Plugs.EnsureAuthenticatedPlug
+  alias Pleroma.Web.Plugs.FederatingPlug
 
   require Logger
 

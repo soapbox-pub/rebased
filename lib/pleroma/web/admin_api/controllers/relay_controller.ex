@@ -6,8 +6,8 @@ defmodule Pleroma.Web.AdminAPI.RelayController do
   use Pleroma.Web, :controller
 
   alias Pleroma.ModerationLog
-  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.ActivityPub.Relay
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
 
   require Logger
 

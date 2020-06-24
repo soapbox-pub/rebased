@@ -6,10 +6,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
 
   alias Pleroma.Notification
-  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
-  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.TwitterAPI.TokenView
 
   require Logger

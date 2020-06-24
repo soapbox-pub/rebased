@@ -7,10 +7,10 @@ defmodule Pleroma.Web.Plugs.LegacyAuthenticationPlugTest do
 
   import Pleroma.Factory
 
+  alias Pleroma.User
   alias Pleroma.Web.Plugs.LegacyAuthenticationPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.PlugHelper
-  alias Pleroma.User
 
   setup do
     user =

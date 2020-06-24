@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.Plugs.EnsureAuthenticatedPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Web.Plugs.EnsureAuthenticatedPlug
   alias Pleroma.User
+  alias Pleroma.Web.Plugs.EnsureAuthenticatedPlug
 
   describe "without :if_func / :unless_func options" do
     test "it halts if user is NOT assigned", %{conn: conn} do

@@ -13,8 +13,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Activity
   alias Pleroma.Bookmark
   alias Pleroma.Object
-  alias Pleroma.Web.Plugs.OAuthScopesPlug
-  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
   alias Pleroma.User
@@ -23,6 +21,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.RateLimiter
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
 

@@ -5,10 +5,10 @@
 defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Web.Plugs.AuthenticationPlug
-  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.Plugs.AuthenticationPlug
+  alias Pleroma.Web.Plugs.RateLimiter
 
   plug(RateLimiter, [name: :authentication] when action in [:user_exists, :check_password])
   plug(RateLimiter, [name: :authentication, params: ["user"]] when action == :check_password)

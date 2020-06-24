@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.MastoFEController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.User
   alias Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Web.Plugs.OAuthScopesPlug
-  alias Pleroma.User
 
   plug(OAuthScopesPlug, %{scopes: ["write:accounts"]} when action == :put_settings)
 
