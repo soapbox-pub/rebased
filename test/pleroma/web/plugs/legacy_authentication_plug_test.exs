@@ -9,7 +9,7 @@ defmodule Pleroma.Web.Plugs.LegacyAuthenticationPlugTest do
 
   alias Pleroma.Plugs.LegacyAuthenticationPlug
   alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Plugs.PlugHelper
+  alias Pleroma.Web.Plugs.PlugHelper
   alias Pleroma.User
 
   setup do

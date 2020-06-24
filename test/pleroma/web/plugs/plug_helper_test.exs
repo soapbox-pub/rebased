@@ -7,7 +7,7 @@ defmodule Pleroma.Web.Plugs.PlugHelperTest do
 
   alias Pleroma.Plugs.ExpectAuthenticatedCheckPlug
   alias Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug
-  alias Pleroma.Plugs.PlugHelper
+  alias Pleroma.Web.Plugs.PlugHelper
 
   import Mock
 

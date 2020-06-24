@@ -7,7 +7,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
 
   alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Plugs.PlugHelper
+  alias Pleroma.Web.Plugs.PlugHelper
   alias Pleroma.User
 
   import ExUnit.CaptureLog
