@@ -16,7 +16,7 @@ This document contains notes and guidelines for Pleroma developers.
 
 ## [HTTP Basic Authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization)
 
-* With HTTP Basic Auth, OAuth scopes check is _not_ performed for any action (since password is provided during the auth, requester is able to obtain a token with full permissions anyways). `Pleroma.Plugs.AuthenticationPlug` and `Pleroma.Plugs.LegacyAuthenticationPlug` both call `Pleroma.Web.Plugs.OAuthScopesPlug.skip_plug(conn)` when password is provided.
+* With HTTP Basic Auth, OAuth scopes check is _not_ performed for any action (since password is provided during the auth, requester is able to obtain a token with full permissions anyways). `Pleroma.Plugs.AuthenticationPlug` and `Pleroma.Web.Plugs.LegacyAuthenticationPlug` both call `Pleroma.Web.Plugs.OAuthScopesPlug.skip_plug(conn)` when password is provided.
 
 ## Auth-related configuration, OAuth consumer mode etc.
 

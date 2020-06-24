@@ -29,7 +29,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Web.Plugs.UserFetcherPlug)
     plug(Pleroma.Web.Plugs.SessionAuthenticationPlug)
-    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
+    plug(Pleroma.Web.Plugs.LegacyAuthenticationPlug)
     plug(Pleroma.Plugs.AuthenticationPlug)
   end
 
