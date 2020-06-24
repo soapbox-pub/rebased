@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.Auth.TOTPAuthenticator do
   alias Pleroma.MFA
   alias Pleroma.MFA.TOTP
-  alias Pleroma.Plugs.AuthenticationPlug
+  alias Pleroma.Web.Plugs.AuthenticationPlug
   alias Pleroma.User
 
   @doc "Verify code or check backup code."

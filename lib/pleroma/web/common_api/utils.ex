@@ -12,7 +12,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
   alias Pleroma.Object
-  alias Pleroma.Plugs.AuthenticationPlug
+  alias Pleroma.Web.Plugs.AuthenticationPlug
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils

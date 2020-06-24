@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Auth.PleromaAuthenticator do
-  alias Pleroma.Plugs.AuthenticationPlug
+  alias Pleroma.Web.Plugs.AuthenticationPlug
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User

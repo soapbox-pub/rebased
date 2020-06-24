@@ -30,7 +30,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Web.Plugs.UserFetcherPlug)
     plug(Pleroma.Web.Plugs.SessionAuthenticationPlug)
     plug(Pleroma.Web.Plugs.LegacyAuthenticationPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Web.Plugs.AuthenticationPlug)
   end
 
   pipeline :after_auth do
