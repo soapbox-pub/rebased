@@ -4,9 +4,12 @@
 
 defmodule Pleroma.ApplicationRequirementsTest do
   use Pleroma.DataCase
+
   import ExUnit.CaptureLog
   import Mock
 
+  alias Pleroma.ApplicationRequirements
+  alias Pleroma.Config
   alias Pleroma.Repo
 
   describe "check_welcome_message_config!/1" do
@@ -70,42 +73,42 @@ defmodule Pleroma.ApplicationRequirementsTest do
     setup do: clear_config([:database, :rum_enabled])
 
     test "raises if rum is enabled and detects unapplied rum migrations" do
-      Pleroma.Config.put([:database, :rum_enabled], true)
+      Config.put([:database, :rum_enabled], true)
 
       with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> false end]}]) do
-        assert_raise Pleroma.ApplicationRequirements.VerifyError,
+        assert_raise ApplicationRequirements.VerifyError,
                      "Unapplied RUM Migrations detected",
                      fn ->
-                       capture_log(&Pleroma.ApplicationRequirements.verify!/0)
+                       capture_log(&ApplicationRequirements.verify!/0)
                      end
       end
     end
 
     test "raises if rum is disabled and detects rum migrations" do
-      Pleroma.Config.put([:database, :rum_enabled], false)
+      Config.put([:database, :rum_enabled], false)
 
       with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> true end]}]) do
-        assert_raise Pleroma.ApplicationRequirements.VerifyError,
+        assert_raise ApplicationRequirements.VerifyError,
                      "RUM Migrations detected",
                      fn ->
-                       capture_log(&Pleroma.ApplicationRequirements.verify!/0)
+                       capture_log(&ApplicationRequirements.verify!/0)
                      end
       end
     end
 
     test "doesn't do anything if rum enabled and applied migrations" do
-      Pleroma.Config.put([:database, :rum_enabled], true)
+      Config.put([:database, :rum_enabled], true)
 
       with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> true end]}]) do
-        assert Pleroma.ApplicationRequirements.verify!() == :ok
+        assert ApplicationRequirements.verify!() == :ok
       end
     end
 
     test "doesn't do anything if rum disabled" do
-      Pleroma.Config.put([:database, :rum_enabled], false)
+      Config.put([:database, :rum_enabled], false)
 
       with_mocks([{Repo, [:passthrough], [exists?: fn _, _ -> false end]}]) do
-        assert Pleroma.ApplicationRequirements.verify!() == :ok
+        assert ApplicationRequirements.verify!() == :ok
       end
     end
   end
@@ -130,17 +133,17 @@ defmodule Pleroma.ApplicationRequirementsTest do
     setup do: clear_config([:i_am_aware_this_may_cause_data_loss, :disable_migration_check])
 
     test "raises if it detects unapplied migrations" do
-      assert_raise Pleroma.ApplicationRequirements.VerifyError,
+      assert_raise ApplicationRequirements.VerifyError,
                    "Unapplied Migrations detected",
                    fn ->
-                     capture_log(&Pleroma.ApplicationRequirements.verify!/0)
+                     capture_log(&ApplicationRequirements.verify!/0)
                    end
     end
 
     test "doesn't do anything if disabled" do
-      Pleroma.Config.put([:i_am_aware_this_may_cause_data_loss, :disable_migration_check], true)
+      Config.put([:i_am_aware_this_may_cause_data_loss, :disable_migration_check], true)
 
-      assert :ok == Pleroma.ApplicationRequirements.verify!()
+      assert :ok == ApplicationRequirements.verify!()
     end
   end
 end
