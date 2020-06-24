@@ -16,6 +16,7 @@ defmodule Pleroma.HTTP do
   require Logger
 
   @type t :: __MODULE__
+  @type method() :: :get | :post | :put | :delete | :head
 
   @doc """
   Performs GET request.
@@ -27,6 +28,9 @@ defmodule Pleroma.HTTP do
   def get(url, headers \\ [], options \\ [])
   def get(nil, _, _), do: nil
   def get(url, headers, options), do: request(:get, url, "", headers, options)
+
+  @spec head(Request.url(), Request.headers(), keyword()) :: {:ok, Env.t()} | {:error, any()}
+  def head(url, headers \\ [], options \\ []), do: request(:head, url, "", headers, options)
 
   @doc """
   Performs POST request.
@@ -42,7 +46,7 @@ defmodule Pleroma.HTTP do
   Builds and performs http request.
 
   # Arguments:
-  `method` - :get, :post, :put, :delete
+  `method` - :get, :post, :put, :delete, :head
   `url` - full url
   `body` - request body
   `headers` - a keyworld list of headers, e.g. `[{"content-type", "text/plain"}]`
@@ -52,7 +56,7 @@ defmodule Pleroma.HTTP do
   `{:ok, %Tesla.Env{}}` or `{:error, error}`
 
   """
-  @spec request(atom(), Request.url(), String.t(), Request.headers(), keyword()) ::
+  @spec request(method(), Request.url(), String.t(), Request.headers(), keyword()) ::
           {:ok, Env.t()} | {:error, any()}
   def request(method, url, body, headers, options) when is_binary(url) do
     uri = URI.parse(url)
