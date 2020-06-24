@@ -8,7 +8,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Helpers.UriHelper
   alias Pleroma.Maps
   alias Pleroma.MFA
-  alias Pleroma.Plugs.RateLimiter
+  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User

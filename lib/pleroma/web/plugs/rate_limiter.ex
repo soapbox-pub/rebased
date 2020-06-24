@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Plugs.RateLimiter do
+defmodule Pleroma.Web.Plugs.RateLimiter do
   @moduledoc """
 
   ## Configuration
@@ -35,8 +35,8 @@ defmodule Pleroma.Plugs.RateLimiter do
 
   AllowedSyntax:
 
-      plug(Pleroma.Plugs.RateLimiter, name: :limiter_name)
-      plug(Pleroma.Plugs.RateLimiter, options)   # :name is a required option
+      plug(Pleroma.Web.Plugs.RateLimiter, name: :limiter_name)
+      plug(Pleroma.Web.Plugs.RateLimiter, options)   # :name is a required option
 
   Allowed options:
 
@@ -46,11 +46,11 @@ defmodule Pleroma.Plugs.RateLimiter do
 
   Inside a controller:
 
-      plug(Pleroma.Plugs.RateLimiter, [name: :one] when action == :one)
-      plug(Pleroma.Plugs.RateLimiter, [name: :two] when action in [:two, :three])
+      plug(Pleroma.Web.Plugs.RateLimiter, [name: :one] when action == :one)
+      plug(Pleroma.Web.Plugs.RateLimiter, [name: :two] when action in [:two, :three])
 
       plug(
-        Pleroma.Plugs.RateLimiter,
+        Pleroma.Web.Plugs.RateLimiter,
         [name: :status_id_action, bucket_name: "status_id_action:fav_unfav", params: ["id"]]
         when action in ~w(fav_status unfav_status)a
       )
@@ -59,7 +59,7 @@ defmodule Pleroma.Plugs.RateLimiter do
 
       pipeline :api do
         ...
-        plug(Pleroma.Plugs.RateLimiter, name: :one)
+        plug(Pleroma.Web.Plugs.RateLimiter, name: :one)
         ...
       end
   """

@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Plugs.AuthenticationPlug
-  alias Pleroma.Plugs.RateLimiter
+  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.User
 

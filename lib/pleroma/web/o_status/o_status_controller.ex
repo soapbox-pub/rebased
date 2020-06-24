@@ -7,7 +7,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   alias Pleroma.Activity
   alias Pleroma.Object
-  alias Pleroma.Plugs.RateLimiter
+  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.Visibility

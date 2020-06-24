@@ -7,7 +7,7 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
 
   alias Phoenix.ConnTest
   alias Pleroma.Config
-  alias Pleroma.Plugs.RateLimiter
+  alias Pleroma.Web.Plugs.RateLimiter
   alias Plug.Conn
 
   import Pleroma.Factory

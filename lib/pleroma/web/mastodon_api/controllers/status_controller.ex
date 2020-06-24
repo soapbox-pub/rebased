@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   alias Pleroma.Bookmark
   alias Pleroma.Object
   alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Plugs.RateLimiter
+  alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
   alias Pleroma.User
