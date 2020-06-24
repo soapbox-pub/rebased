@@ -12,7 +12,7 @@ defmodule Pleroma.Web.Router do
 
   pipeline :oauth do
     plug(:fetch_session)
-    plug(Pleroma.Plugs.OAuthPlug)
+    plug(Pleroma.Web.Plugs.OAuthPlug)
     plug(Pleroma.Web.Plugs.UserEnabledPlug)
   end
 
@@ -25,7 +25,7 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :authenticate do
-    plug(Pleroma.Plugs.OAuthPlug)
+    plug(Pleroma.Web.Plugs.OAuthPlug)
     plug(Pleroma.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Web.Plugs.UserFetcherPlug)
     plug(Pleroma.Web.Plugs.SessionAuthenticationPlug)

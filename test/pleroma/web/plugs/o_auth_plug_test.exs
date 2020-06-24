@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.Plugs.OAuthPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.OAuthPlug
+  alias Pleroma.Web.Plugs.OAuthPlug
   import Pleroma.Factory
 
   @session_opts [
