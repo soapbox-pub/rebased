@@ -12,7 +12,7 @@ defmodule Pleroma.Web.Endpoint do
   plug(Pleroma.Plugs.SetLocalePlug)
   plug(CORSPlug)
   plug(Pleroma.Plugs.HTTPSecurityPlug)
-  plug(Pleroma.Plugs.UploadedMedia)
+  plug(Pleroma.Web.Plugs.UploadedMedia)
 
   @static_cache_control "public, no-cache"
 
