@@ -13,7 +13,7 @@ defmodule Pleroma.Web.Router do
   pipeline :oauth do
     plug(:fetch_session)
     plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.UserEnabledPlug)
+    plug(Pleroma.Web.Plugs.UserEnabledPlug)
   end
 
   pipeline :expect_authentication do
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :after_auth do
-    plug(Pleroma.Plugs.UserEnabledPlug)
+    plug(Pleroma.Web.Plugs.UserEnabledPlug)
     plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end

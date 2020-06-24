@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.Plugs.UserEnabledPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.UserEnabledPlug
+  alias Pleroma.Web.Plugs.UserEnabledPlug
   import Pleroma.Factory
 
   setup do: clear_config([:instance, :account_activation_required])
