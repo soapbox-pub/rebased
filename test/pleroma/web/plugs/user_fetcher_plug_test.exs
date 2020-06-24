@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.Plugs.UserFetcherPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.UserFetcherPlug
+  alias Pleroma.Web.Plugs.UserFetcherPlug
   import Pleroma.Factory
 
   setup do
