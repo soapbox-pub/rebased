@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Plugs.RemoteIpTest do
   use ExUnit.Case
   use Plug.Test
 
-  alias Pleroma.Plugs.RemoteIp
+  alias Pleroma.Web.Plugs.RemoteIp
 
   import Pleroma.Tests.Helpers, only: [clear_config: 2]
 

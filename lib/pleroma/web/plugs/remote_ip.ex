@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Plugs.RemoteIp do
+defmodule Pleroma.Web.Plugs.RemoteIp do
   @moduledoc """
   This is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
   """

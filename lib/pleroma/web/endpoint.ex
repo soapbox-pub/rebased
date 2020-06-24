@@ -122,7 +122,7 @@ defmodule Pleroma.Web.Endpoint do
     extra: extra
   )
 
-  plug(Pleroma.Plugs.RemoteIp)
+  plug(Pleroma.Web.Plugs.RemoteIp)
 
   defmodule Instrumenter do
     use Prometheus.PhoenixInstrumenter

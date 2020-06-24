@@ -416,12 +416,12 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 * ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.
 * ``report_uri``: Adds the specified url to `report-uri` and `report-to` group in CSP header.
 
-### Pleroma.Plugs.RemoteIp
+### Pleroma.Web.Plugs.RemoteIp
 
 !!! warning
     If your instance is not behind at least one reverse proxy, you should not enable this plug.
 
-`Pleroma.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
+`Pleroma.Web.Plugs.RemoteIp` is a shim to call [`RemoteIp`](https://git.pleroma.social/pleroma/remote_ip) but with runtime configuration.
 
 Available options:
 
@@ -434,7 +434,7 @@ Available options:
 ### :rate_limit
 
 !!! note
-   If your instance is behind a reverse proxy ensure [`Pleroma.Plugs.RemoteIp`](#pleroma-plugs-remoteip) is enabled (it is enabled by default).
+   If your instance is behind a reverse proxy ensure [`Pleroma.Web.Plugs.RemoteIp`](#pleroma-plugs-remoteip) is enabled (it is enabled by default).
 
 A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
 

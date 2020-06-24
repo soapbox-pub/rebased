@@ -19,7 +19,7 @@ defmodule Pleroma.Web.Plugs.RateLimiterTest do
 
   describe "config" do
     @limiter_name :test_init
-    setup do: clear_config([Pleroma.Plugs.RemoteIp, :enabled])
+    setup do: clear_config([Pleroma.Web.Plugs.RemoteIp, :enabled])
 
     test "config is required for plug to work" do
       Config.put([:rate_limit, @limiter_name], {1, 1})
