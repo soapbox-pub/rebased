@@ -26,7 +26,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   )
 
   plug(
-    Pleroma.Plugs.SetFormatPlug
+    Pleroma.Web.Plugs.SetFormatPlug
     when action in [:object, :activity, :notice]
   )
 

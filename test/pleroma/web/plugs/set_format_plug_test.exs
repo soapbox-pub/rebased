@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Plugs.SetFormatPlugTest do
   use ExUnit.Case, async: true
   use Plug.Test
 
-  alias Pleroma.Plugs.SetFormatPlug
+  alias Pleroma.Web.Plugs.SetFormatPlug
 
   test "set format from params" do
     conn =

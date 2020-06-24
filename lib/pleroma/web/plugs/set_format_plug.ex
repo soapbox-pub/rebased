@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Plugs.SetFormatPlug do
+defmodule Pleroma.Web.Plugs.SetFormatPlug do
   import Plug.Conn, only: [assign: 3, fetch_query_params: 1]
 
   def init(_), do: nil

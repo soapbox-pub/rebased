@@ -10,7 +10,7 @@ defmodule Pleroma.Web.Feed.UserController do
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.Feed.FeedView
 
-  plug(Pleroma.Plugs.SetFormatPlug when action in [:feed_redirect])
+  plug(Pleroma.Web.Plugs.SetFormatPlug when action in [:feed_redirect])
 
   action_fallback(:errors)
 
