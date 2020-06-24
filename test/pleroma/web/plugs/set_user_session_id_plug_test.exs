@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.Plugs.SetUserSessionIdPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.SetUserSessionIdPlug
+  alias Pleroma.Web.Plugs.SetUserSessionIdPlug
   alias Pleroma.User
 
   setup %{conn: conn} do
