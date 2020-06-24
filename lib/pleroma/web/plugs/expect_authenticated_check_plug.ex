@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Plugs.ExpectAuthenticatedCheckPlug do
+defmodule Pleroma.Web.Plugs.ExpectAuthenticatedCheckPlug do
   @moduledoc """
   Marks `Pleroma.Plugs.EnsureAuthenticatedPlug` as expected to be executed later in plug chain.
 
