@@ -1,3 +1,6 @@
+# Originally taken from
+# https://github.com/VeryBigThings/elixir_common/blob/master/lib/vbt/credo/check/consistency/file_location.ex
+
 defmodule Credo.Check.Consistency.FileLocation do
   @moduledoc false
 
@@ -13,7 +16,15 @@ defmodule Credo.Check.Consistency.FileLocation do
   """
   @explanation [warning: @checkdoc]
 
-  # `use Credo.Check` required that module attributes are already defined, so we need to place these attributes
+  @special_namespaces [
+    "controllers",
+    "views",
+    "operations",
+    "channels"
+  ]
+
+  # `use Credo.Check` required that module attributes are already defined, so we need
+  # to place these attributes
   # before use/alias expressions.
   # credo:disable-for-next-line VBT.Credo.Check.Consistency.ModuleLayout
   use Credo.Check, category: :warning, base_priority: :high
@@ -81,10 +92,30 @@ defmodule Credo.Check.Consistency.FileLocation do
       expected_file_base(parsed_path.root, main_module) <>
         Path.extname(parsed_path.allowed)
 
-    if expected_file == parsed_path.allowed,
-      do: :ok,
-      else: {:error, main_module, expected_file}
+    cond do
+      expected_file == parsed_path.allowed ->
+        :ok
+
+      special_namespaces?(parsed_path.allowed) ->
+        original_path = parsed_path.allowed
+
+        namespace =
+          Enum.find(@special_namespaces, original_path, fn namespace ->
+            String.contains?(original_path, namespace)
+          end)
+
+        allowed = String.replace(original_path, "/" <> namespace, "")
+
+        if expected_file == allowed,
+          do: :ok,
+          else: {:error, main_module, expected_file}
+
+      true ->
+        {:error, main_module, expected_file}
+    end
   end
+
+  defp special_namespaces?(path), do: String.contains?(path, @special_namespaces)
 
   defp parsed_path(relative_path, params) do
     parts = Path.split(relative_path)
