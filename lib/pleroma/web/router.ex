@@ -26,7 +26,7 @@ defmodule Pleroma.Web.Router do
 
   pipeline :authenticate do
     plug(Pleroma.Web.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
+    plug(Pleroma.Web.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Web.Plugs.UserFetcherPlug)
     plug(Pleroma.Web.Plugs.SessionAuthenticationPlug)
     plug(Pleroma.Web.Plugs.LegacyAuthenticationPlug)

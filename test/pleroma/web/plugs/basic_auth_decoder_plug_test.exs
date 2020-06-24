@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.Plugs.BasicAuthDecoderPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.BasicAuthDecoderPlug
+  alias Pleroma.Web.Plugs.BasicAuthDecoderPlug
 
   defp basic_auth_enc(username, password) do
     "Basic " <> Base.encode64("#{username}:#{password}")
