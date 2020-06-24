@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Plugs.IdempotencyPlugTest do
   use ExUnit.Case, async: true
   use Plug.Test
 
-  alias Pleroma.Plugs.IdempotencyPlug
+  alias Pleroma.Web.Plugs.IdempotencyPlug
   alias Plug.Conn
 
   test "returns result from cache" do

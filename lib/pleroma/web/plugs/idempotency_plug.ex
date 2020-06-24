@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Plugs.IdempotencyPlug do
+defmodule Pleroma.Web.Plugs.IdempotencyPlug do
   import Phoenix.Controller, only: [json: 2]
   import Plug.Conn
 

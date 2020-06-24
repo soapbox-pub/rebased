@@ -50,7 +50,7 @@ defmodule Pleroma.Web.Router do
     plug(:expect_public_instance_or_authentication)
     plug(:base_api)
     plug(:after_auth)
-    plug(Pleroma.Plugs.IdempotencyPlug)
+    plug(Pleroma.Web.Plugs.IdempotencyPlug)
   end
 
   pipeline :authenticated_api do
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.Router do
     plug(:base_api)
     plug(:after_auth)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
-    plug(Pleroma.Plugs.IdempotencyPlug)
+    plug(Pleroma.Web.Plugs.IdempotencyPlug)
   end
 
   pipeline :admin_api do
@@ -68,7 +68,7 @@ defmodule Pleroma.Web.Router do
     plug(:after_auth)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
     plug(Pleroma.Web.Plugs.UserIsAdminPlug)
-    plug(Pleroma.Plugs.IdempotencyPlug)
+    plug(Pleroma.Web.Plugs.IdempotencyPlug)
   end
 
   pipeline :mastodon_html do
