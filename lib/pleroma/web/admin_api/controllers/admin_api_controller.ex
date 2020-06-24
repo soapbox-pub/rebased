@@ -643,10 +643,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     json(conn, "")
   end
 
-  def stats(conn, _) do
-    count = Stats.get_status_visibility_count()
+  def stats(conn, params) do
+    counters = Stats.get_status_visibility_count(params["instance"])
 
-    json(conn, %{"status_visibility" => count})
+    json(conn, %{"status_visibility" => counters})
   end
 
   defp page_params(params) do
