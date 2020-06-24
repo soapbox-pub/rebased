@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Plugs.TrailingFormatPlug do
+defmodule Pleroma.Web.Plugs.TrailingFormatPlug do
   @moduledoc "Calls TrailingFormatPlug for specific paths. Ideally we would just do this in the router, but TrailingFormatPlug needs to be called before Plug.Parsers."
 
   @behaviour Plug
