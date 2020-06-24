@@ -75,7 +75,7 @@ defmodule Pleroma.Web.Fallback.RedirectController do
   end
 
   defp index_file_path do
-    Pleroma.Plugs.InstanceStatic.file_path("index.html")
+    Pleroma.Web.Plugs.InstanceStatic.file_path("index.html")
   end
 
   defp build_tags(conn, params) do

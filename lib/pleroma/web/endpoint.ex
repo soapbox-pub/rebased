@@ -19,7 +19,7 @@ defmodule Pleroma.Web.Endpoint do
   # InstanceStatic needs to be before Plug.Static to be able to override shipped-static files
   # If you're adding new paths to `only:` you'll need to configure them in InstanceStatic as well
   # Cache-control headers are duplicated in case we turn off etags in the future
-  plug(Pleroma.Plugs.InstanceStatic,
+  plug(Pleroma.Web.Plugs.InstanceStatic,
     at: "/",
     gzip: true,
     cache_control_for_etags: @static_cache_control,
