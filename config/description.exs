@@ -1996,17 +1996,10 @@ config :pleroma, :config_description, [
     """,
     children: [
       %{
-        key: :verbose,
+        key: :log,
         type: {:dropdown, :atom},
         description: "Logs verbose mode",
         suggestions: [false, :error, :warn, :info, :debug]
-      },
-      %{
-        key: :prune,
-        type: [:atom, :tuple],
-        description:
-          "Non-retryable jobs [pruning settings](https://github.com/sorentwo/oban#pruning)",
-        suggestions: [:disabled, {:maxlen, 1500}, {:maxage, 60 * 60}]
       },
       %{
         key: :queues,
