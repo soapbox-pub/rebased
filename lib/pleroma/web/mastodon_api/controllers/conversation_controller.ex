@@ -8,7 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationController do
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
   alias Pleroma.Conversation.Participation
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
 
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)

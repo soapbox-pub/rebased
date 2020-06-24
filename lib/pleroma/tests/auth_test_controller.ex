@@ -9,7 +9,7 @@ defmodule Pleroma.Tests.AuthTestController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.User
 
   # Serves only with proper OAuth token (:api and :authenticated_api)

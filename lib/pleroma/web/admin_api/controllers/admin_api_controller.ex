@@ -10,7 +10,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Config
   alias Pleroma.MFA
   alias Pleroma.ModerationLog
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Stats
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub

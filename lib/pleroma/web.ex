@@ -24,7 +24,7 @@ defmodule Pleroma.Web do
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.ExpectAuthenticatedCheckPlug
   alias Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.PlugHelper
 
   def controller do

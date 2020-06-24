@@ -11,7 +11,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Object
   alias Pleroma.Pagination
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI

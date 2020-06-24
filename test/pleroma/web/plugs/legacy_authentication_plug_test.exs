@@ -8,7 +8,7 @@ defmodule Pleroma.Web.Plugs.LegacyAuthenticationPlugTest do
   import Pleroma.Factory
 
   alias Pleroma.Plugs.LegacyAuthenticationPlug
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.PlugHelper
   alias Pleroma.User
 

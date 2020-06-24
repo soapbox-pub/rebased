@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Plugs.AuthenticationPlug do
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
 
   import Plug.Conn
@@ -65,7 +64,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
 
       conn
       |> assign(:user, auth_user)
-      |> OAuthScopesPlug.skip_plug()
+      |> Pleroma.Web.Plugs.OAuthScopesPlug.skip_plug()
     else
       conn
     end

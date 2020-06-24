@@ -10,7 +10,6 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
   alias Pleroma.Activity
   alias Pleroma.MFA
   alias Pleroma.Object.Fetcher
-  alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.Auth.Authenticator
   alias Pleroma.Web.Auth.TOTPAuthenticator
@@ -22,7 +21,7 @@ defmodule Pleroma.Web.TwitterAPI.RemoteFollowController do
 
   # Note: follower can submit the form (with password auth) not being signed in (having no token)
   plug(
-    OAuthScopesPlug,
+    Pleroma.Web.Plugs.OAuthScopesPlug,
     %{fallback: :proceed_unauthenticated, scopes: ["follow", "write:follows"]}
     when action in [:do_follow]
   )

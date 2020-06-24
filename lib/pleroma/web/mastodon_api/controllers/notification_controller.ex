@@ -8,7 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
   alias Pleroma.Notification
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.MastodonAPI.MastodonAPI
 
   @oauth_read_actions [:show, :index]

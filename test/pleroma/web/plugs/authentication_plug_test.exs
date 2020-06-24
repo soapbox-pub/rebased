@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Plugs.AuthenticationPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Plugs.AuthenticationPlug
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.PlugHelper
   alias Pleroma.User
 

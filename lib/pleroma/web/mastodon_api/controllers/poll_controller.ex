@@ -9,7 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.PollController do
 
   alias Pleroma.Activity
   alias Pleroma.Object
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
 

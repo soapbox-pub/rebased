@@ -7,7 +7,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
 
   alias Pleroma.Activity
   alias Pleroma.Object
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
 

@@ -31,7 +31,10 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   plug(:fetch_session)
   plug(:fetch_flash)
 
-  plug(:skip_plug, [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug])
+  plug(:skip_plug, [
+    Pleroma.Web.Plugs.OAuthScopesPlug,
+    Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
+  ])
 
   plug(RateLimiter, [name: :authentication] when action == :create_authorization)
 

@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Activity
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.User

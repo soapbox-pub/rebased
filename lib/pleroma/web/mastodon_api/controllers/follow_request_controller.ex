@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.FollowRequestController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 

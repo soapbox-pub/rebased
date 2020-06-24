@@ -9,7 +9,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2]
 
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
-  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
   alias Pleroma.Web.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub

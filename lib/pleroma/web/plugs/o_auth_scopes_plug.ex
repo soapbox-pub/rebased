@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Plugs.OAuthScopesPlug do
+defmodule Pleroma.Web.Plugs.OAuthScopesPlug do
   import Plug.Conn
   import Pleroma.Web.Gettext
 
