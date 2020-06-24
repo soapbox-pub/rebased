@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.Plugs.SessionAuthenticationPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.SessionAuthenticationPlug
   alias Pleroma.User
+  alias Pleroma.Web.Plugs.SessionAuthenticationPlug
 
   setup %{conn: conn} do
     session_opts = [

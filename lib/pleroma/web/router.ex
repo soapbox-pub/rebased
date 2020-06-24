@@ -28,7 +28,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.OAuthPlug)
     plug(Pleroma.Plugs.BasicAuthDecoderPlug)
     plug(Pleroma.Web.Plugs.UserFetcherPlug)
-    plug(Pleroma.Plugs.SessionAuthenticationPlug)
+    plug(Pleroma.Web.Plugs.SessionAuthenticationPlug)
     plug(Pleroma.Plugs.LegacyAuthenticationPlug)
     plug(Pleroma.Plugs.AuthenticationPlug)
   end
