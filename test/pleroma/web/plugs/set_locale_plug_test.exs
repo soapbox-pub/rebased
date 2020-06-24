@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Plugs.SetLocalePlugTest do
   use ExUnit.Case, async: true
   use Plug.Test
 
-  alias Pleroma.Plugs.SetLocalePlug
+  alias Pleroma.Web.Plugs.SetLocalePlug
   alias Plug.Conn
 
   test "default locale is `en`" do

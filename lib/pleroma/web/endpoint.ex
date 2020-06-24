@@ -9,7 +9,7 @@ defmodule Pleroma.Web.Endpoint do
 
   socket("/socket", Pleroma.Web.UserSocket)
 
-  plug(Pleroma.Plugs.SetLocalePlug)
+  plug(Pleroma.Web.Plugs.SetLocalePlug)
   plug(CORSPlug)
   plug(Pleroma.Plugs.HTTPSecurityPlug)
   plug(Pleroma.Web.Plugs.UploadedMedia)

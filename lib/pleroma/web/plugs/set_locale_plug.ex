@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 # NOTE: this module is based on https://github.com/smeevil/set_locale
-defmodule Pleroma.Plugs.SetLocalePlug do
+defmodule Pleroma.Web.Plugs.SetLocalePlug do
   import Plug.Conn, only: [get_req_header: 2, assign: 3]
 
   def init(_), do: nil
