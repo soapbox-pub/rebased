@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Plugs.CacheTest do
   use ExUnit.Case, async: true
   use Plug.Test
 
-  alias Pleroma.Plugs.Cache
+  alias Pleroma.Web.Plugs.Cache
 
   @miss_resp {200,
               [

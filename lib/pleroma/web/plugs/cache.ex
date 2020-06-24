@@ -2,19 +2,19 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Plugs.Cache do
+defmodule Pleroma.Web.Plugs.Cache do
   @moduledoc """
   Caches successful GET responses.
 
   To enable the cache add the plug to a router pipeline or controller:
 
-      plug(Pleroma.Plugs.Cache)
+      plug(Pleroma.Web.Plugs.Cache)
 
   ## Configuration
 
   To configure the plug you need to pass settings as the second argument to the `plug/2` macro:
 
-      plug(Pleroma.Plugs.Cache, [ttl: nil, query_params: true])
+      plug(Pleroma.Web.Plugs.Cache, [ttl: nil, query_params: true])
 
   Available options:
 

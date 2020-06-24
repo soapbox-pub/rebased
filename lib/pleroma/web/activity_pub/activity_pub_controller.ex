@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   )
 
   plug(
-    Pleroma.Plugs.Cache,
+    Pleroma.Web.Plugs.Cache,
     [query_params: false, tracking_fun: &__MODULE__.track_object_fetch/2]
     when action in [:activity, :object]
   )
