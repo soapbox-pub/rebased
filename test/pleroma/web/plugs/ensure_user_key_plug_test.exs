@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.Plugs.EnsureUserKeyPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.EnsureUserKeyPlug
+  alias Pleroma.Web.Plugs.EnsureUserKeyPlug
 
   test "if the conn has a user key set, it does nothing", %{conn: conn} do
     conn =
