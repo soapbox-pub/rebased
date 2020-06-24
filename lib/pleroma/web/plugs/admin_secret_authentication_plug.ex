@@ -2,7 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Plugs.AdminSecretAuthenticationPlug do
+defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlug do
   import Plug.Conn
 
   alias Pleroma.Plugs.OAuthScopesPlug

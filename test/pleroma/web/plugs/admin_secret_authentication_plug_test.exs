@@ -8,10 +8,10 @@ defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlugTest do
   import Mock
   import Pleroma.Factory
 
-  alias Pleroma.Plugs.AdminSecretAuthenticationPlug
-  alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Plugs.PlugHelper
-  alias Pleroma.Plugs.RateLimiter
+  alias Pleroma.Web.Plugs.AdminSecretAuthenticationPlug
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.PlugHelper
+  alias Pleroma.Web.Plugs.RateLimiter
 
   test "does nothing if a user is assigned", %{conn: conn} do
     user = insert(:user)

@@ -64,7 +64,7 @@ defmodule Pleroma.Web.Router do
   pipeline :admin_api do
     plug(:expect_authentication)
     plug(:base_api)
-    plug(Pleroma.Plugs.AdminSecretAuthenticationPlug)
+    plug(Pleroma.Web.Plugs.AdminSecretAuthenticationPlug)
     plug(:after_auth)
     plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug)
     plug(Pleroma.Web.Plugs.UserIsAdminPlug)
