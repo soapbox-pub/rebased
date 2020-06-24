@@ -12,7 +12,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.Fallback.Fallback.RedirectController
+  alias Pleroma.Web.Fallback.RedirectController
   alias Pleroma.Web.Metadata.PlayerView
   alias Pleroma.Web.Router
 
