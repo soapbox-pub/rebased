@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.Plugs.UserIsAdminPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.UserIsAdminPlug
+  alias Pleroma.Web.Plugs.UserIsAdminPlug
   import Pleroma.Factory
 
   test "accepts a user that is an admin" do

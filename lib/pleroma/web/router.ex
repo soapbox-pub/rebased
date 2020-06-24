@@ -67,7 +67,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.AdminSecretAuthenticationPlug)
     plug(:after_auth)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
-    plug(Pleroma.Plugs.UserIsAdminPlug)
+    plug(Pleroma.Web.Plugs.UserIsAdminPlug)
     plug(Pleroma.Plugs.IdempotencyPlug)
   end
 
