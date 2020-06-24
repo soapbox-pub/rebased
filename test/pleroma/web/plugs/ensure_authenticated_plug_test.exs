@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.Plugs.EnsureAuthenticatedPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.EnsureAuthenticatedPlug
+  alias Pleroma.Web.Plugs.EnsureAuthenticatedPlug
   alias Pleroma.User
 
   describe "without :if_func / :unless_func options" do

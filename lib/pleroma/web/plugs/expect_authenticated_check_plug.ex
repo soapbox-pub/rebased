@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.Plugs.ExpectAuthenticatedCheckPlug do
   @moduledoc """
-  Marks `Pleroma.Plugs.EnsureAuthenticatedPlug` as expected to be executed later in plug chain.
+  Marks `Pleroma.Web.Plugs.EnsureAuthenticatedPlug` as expected to be executed later in plug chain.
 
   No-op plug which affects `Pleroma.Web` operation (is checked with `PlugHelper.plug_called?/2`).
   """

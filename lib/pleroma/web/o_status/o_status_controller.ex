@@ -16,7 +16,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.Metadata.PlayerView
   alias Pleroma.Web.Router
 
-  plug(Pleroma.Plugs.EnsureAuthenticatedPlug,
+  plug(Pleroma.Web.Plugs.EnsureAuthenticatedPlug,
     unless_func: &Pleroma.Web.Plugs.FederatingPlug.federating?/1
   )
 
