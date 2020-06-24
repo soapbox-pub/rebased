@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Plugs.PlugHelperTest do
   @moduledoc "Tests for the functionality added via `use Pleroma.Web, :plug`"
 
   alias Pleroma.Plugs.ExpectAuthenticatedCheckPlug
-  alias Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug
+  alias Pleroma.Web.Plugs.ExpectPublicOrAuthenticatedCheckPlug
   alias Pleroma.Web.Plugs.PlugHelper
 
   import Mock

@@ -21,7 +21,7 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :expect_public_instance_or_authentication do
-    plug(Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug)
+    plug(Pleroma.Web.Plugs.ExpectPublicOrAuthenticatedCheckPlug)
   end
 
   pipeline :authenticate do
