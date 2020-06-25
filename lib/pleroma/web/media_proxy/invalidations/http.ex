@@ -9,10 +9,10 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Http do
   require Logger
 
   @impl Pleroma.Web.MediaProxy.Invalidation
-  def purge(urls, opts) do
-    method = Map.get(opts, :method, :purge)
-    headers = Map.get(opts, :headers, [])
-    options = Map.get(opts, :options, [])
+  def purge(urls, opts \\ []) do
+    method = Keyword.get(opts, :method, :purge)
+    headers = Keyword.get(opts, :headers, [])
+    options = Keyword.get(opts, :options, [])
 
     Logger.debug("Running cache purge: #{inspect(urls)}")
 
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.MediaProxy.Invalidation.Http do
       end
     end)
 
-    {:ok, "success"}
+    {:ok, urls}
   end
 
   defp do_purge(method, url, headers, options) do

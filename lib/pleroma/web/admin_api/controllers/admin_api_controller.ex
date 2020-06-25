@@ -7,38 +7,24 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
-  alias Pleroma.Activity
   alias Pleroma.Config
-  alias Pleroma.ConfigDB
   alias Pleroma.MFA
   alias Pleroma.ModerationLog
   alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.ReportNote
   alias Pleroma.Stats
   alias Pleroma.User
-  alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
-  alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.AccountView
-  alias Pleroma.Web.AdminAPI.ConfigView
   alias Pleroma.Web.AdminAPI.ModerationLogView
-  alias Pleroma.Web.AdminAPI.Report
-  alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.AdminAPI.Search
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.MastodonAPI
-  alias Pleroma.Web.MastodonAPI.AppView
-  alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.Router
 
   require Logger
 
-  @descriptions Pleroma.Docs.JSON.compile()
   @users_page_size 50
 
   plug(
@@ -69,30 +55,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          ]
   )
 
-  plug(OAuthScopesPlug, %{scopes: ["read:invites"], admin: true} when action == :invites)
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:invites"], admin: true}
-    when action in [:create_invite_token, :revoke_invite, :email_invite]
-  )
-
   plug(
     OAuthScopesPlug,
     %{scopes: ["write:follows"], admin: true}
-    when action in [:user_follow, :user_unfollow, :relay_follow, :relay_unfollow]
-  )
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["read:reports"], admin: true}
-    when action in [:list_reports, :report_show]
-  )
-
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:reports"], admin: true}
-    when action in [:reports_update, :report_notes_create, :report_notes_delete]
+    when action in [:user_follow, :user_unfollow]
   )
 
   plug(
@@ -105,11 +71,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     OAuthScopesPlug,
     %{scopes: ["read"], admin: true}
     when action in [
-           :config_show,
            :list_log,
            :stats,
-           :relay_list,
-           :config_descriptions,
            :need_reboot
          ]
   )
@@ -119,13 +82,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     %{scopes: ["write"], admin: true}
     when action in [
            :restart,
-           :config_update,
            :resend_confirmation_email,
            :confirm_email,
-           :oauth_app_create,
-           :oauth_app_list,
-           :oauth_app_update,
-           :oauth_app_delete,
            :reload_emoji
          ]
   )
@@ -153,8 +111,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       action: "delete"
     })
 
-    conn
-    |> json(nicknames)
+    json(conn, nicknames)
   end
 
   def user_follow(%{assigns: %{user: admin}} = conn, %{
@@ -173,8 +130,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       })
     end
 
-    conn
-    |> json("ok")
+    json(conn, "ok")
   end
 
   def user_unfollow(%{assigns: %{user: admin}} = conn, %{
@@ -193,8 +149,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       })
     end
 
-    conn
-    |> json("ok")
+    json(conn, "ok")
   end
 
   def users_create(%{assigns: %{user: admin}} = conn, %{"users" => users}) do
@@ -233,8 +188,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
           action: "create"
         })
 
-        conn
-        |> json(res)
+        json(conn, res)
 
       {:error, id, changeset, _} ->
         res =
@@ -268,10 +222,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     activities =
       ActivityPub.fetch_statuses(nil, %{
-        "instance" => instance,
-        "limit" => page_size,
-        "offset" => (page - 1) * page_size,
-        "exclude_reblogs" => !with_reblogs && "true"
+        instance: instance,
+        limit: page_size,
+        offset: (page - 1) * page_size,
+        exclude_reblogs: not with_reblogs
       })
 
     conn
@@ -288,13 +242,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       activities =
         ActivityPub.fetch_user_activities(user, nil, %{
-          "limit" => page_size,
-          "godmode" => godmode,
-          "exclude_reblogs" => !with_reblogs && "true"
+          limit: page_size,
+          godmode: godmode,
+          exclude_reblogs: not with_reblogs
         })
 
       conn
-      |> put_view(MastodonAPI.StatusView)
+      |> put_view(AdminAPI.StatusView)
       |> render("index.json", %{activities: activities, as: :activity})
     else
       _ -> {:error, :not_found}
@@ -405,8 +359,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     filters
     |> String.split(",")
     |> Enum.filter(&Enum.member?(@filters, &1))
-    |> Enum.map(&String.to_atom(&1))
-    |> Enum.into(%{}, &{&1, true})
+    |> Enum.map(&String.to_atom/1)
+    |> Map.new(&{&1, true})
   end
 
   def right_add_multiple(%{assigns: %{user: admin}} = conn, %{
@@ -531,113 +485,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     render_error(conn, :forbidden, "You can't revoke your own admin status.")
   end
 
-  def relay_list(conn, _params) do
-    with {:ok, list} <- Relay.list() do
-      json(conn, %{relays: list})
-    else
-      _ ->
-        conn
-        |> put_status(500)
-    end
-  end
-
-  def relay_follow(%{assigns: %{user: admin}} = conn, %{"relay_url" => target}) do
-    with {:ok, _message} <- Relay.follow(target) do
-      ModerationLog.insert_log(%{
-        action: "relay_follow",
-        actor: admin,
-        target: target
-      })
-
-      json(conn, target)
-    else
-      _ ->
-        conn
-        |> put_status(500)
-        |> json(target)
-    end
-  end
-
-  def relay_unfollow(%{assigns: %{user: admin}} = conn, %{"relay_url" => target}) do
-    with {:ok, _message} <- Relay.unfollow(target) do
-      ModerationLog.insert_log(%{
-        action: "relay_unfollow",
-        actor: admin,
-        target: target
-      })
-
-      json(conn, target)
-    else
-      _ ->
-        conn
-        |> put_status(500)
-        |> json(target)
-    end
-  end
-
-  @doc "Sends registration invite via email"
-  def email_invite(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
-    with {_, false} <- {:registrations_open, Config.get([:instance, :registrations_open])},
-         {_, true} <- {:invites_enabled, Config.get([:instance, :invites_enabled])},
-         {:ok, invite_token} <- UserInviteToken.create_invite(),
-         email <-
-           Pleroma.Emails.UserEmail.user_invitation_email(
-             user,
-             invite_token,
-             email,
-             params["name"]
-           ),
-         {:ok, _} <- Pleroma.Emails.Mailer.deliver(email) do
-      json_response(conn, :no_content, "")
-    else
-      {:registrations_open, _} ->
-        {:error, "To send invites you need to set the `registrations_open` option to false."}
-
-      {:invites_enabled, _} ->
-        {:error, "To send invites you need to set the `invites_enabled` option to true."}
-    end
-  end
-
-  @doc "Create an account registration invite token"
-  def create_invite_token(conn, params) do
-    opts = %{}
-
-    opts =
-      if params["max_use"],
-        do: Map.put(opts, :max_use, params["max_use"]),
-        else: opts
-
-    opts =
-      if params["expires_at"],
-        do: Map.put(opts, :expires_at, params["expires_at"]),
-        else: opts
-
-    {:ok, invite} = UserInviteToken.create_invite(opts)
-
-    json(conn, AccountView.render("invite.json", %{invite: invite}))
-  end
-
-  @doc "Get list of created invites"
-  def invites(conn, _params) do
-    invites = UserInviteToken.list_invites()
-
-    conn
-    |> put_view(AccountView)
-    |> render("invites.json", %{invites: invites})
-  end
-
-  @doc "Revokes invite by token"
-  def revoke_invite(conn, %{"token" => token}) do
-    with {:ok, invite} <- UserInviteToken.find_by_token(token),
-         {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true}) do
-      conn
-      |> put_view(AccountView)
-      |> render("invite.json", %{invite: updated_invite})
-    else
-      nil -> {:error, :not_found}
-    end
-  end
-
   @doc "Get a password reset token (base64 string) for given nickname"
   def get_password_reset(conn, %{"nickname" => nickname}) do
     (%User{local: true} = user) = User.get_cached_by_nickname(nickname)
@@ -693,7 +540,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         %{assigns: %{user: admin}} = conn,
         %{"nickname" => nickname} = params
       ) do
-    with {_, user} <- {:user, User.get_cached_by_nickname(nickname)},
+    with {_, %User{} = user} <- {:user, User.get_cached_by_nickname(nickname)},
          {:ok, _user} <-
            User.update_as_admin(user, params) do
       ModerationLog.insert_log(%{
@@ -715,90 +562,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       json(conn, %{status: "success"})
     else
       {:error, changeset} ->
-        {_, {error, _}} = Enum.at(changeset.errors, 0)
-        json(conn, %{error: "New password #{error}."})
+        errors = Map.new(changeset.errors, fn {key, {error, _}} -> {key, error} end)
+
+        {:errors, errors}
 
       _ ->
-        json(conn, %{error: "Unable to change password."})
-    end
-  end
-
-  def list_reports(conn, params) do
-    {page, page_size} = page_params(params)
-
-    reports = Utils.get_reports(params, page, page_size)
-
-    conn
-    |> put_view(ReportView)
-    |> render("index.json", %{reports: reports})
-  end
-
-  def report_show(conn, %{"id" => id}) do
-    with %Activity{} = report <- Activity.get_by_id(id) do
-      conn
-      |> put_view(ReportView)
-      |> render("show.json", Report.extract_report_info(report))
-    else
-      _ -> {:error, :not_found}
-    end
-  end
-
-  def reports_update(%{assigns: %{user: admin}} = conn, %{"reports" => reports}) do
-    result =
-      reports
-      |> Enum.map(fn report ->
-        with {:ok, activity} <- CommonAPI.update_report_state(report["id"], report["state"]) do
-          ModerationLog.insert_log(%{
-            action: "report_update",
-            actor: admin,
-            subject: activity
-          })
-
-          activity
-        else
-          {:error, message} -> %{id: report["id"], error: message}
-        end
-      end)
-
-    case Enum.any?(result, &Map.has_key?(&1, :error)) do
-      true -> json_response(conn, :bad_request, result)
-      false -> json_response(conn, :no_content, "")
-    end
-  end
-
-  def report_notes_create(%{assigns: %{user: user}} = conn, %{
-        "id" => report_id,
-        "content" => content
-      }) do
-    with {:ok, _} <- ReportNote.create(user.id, report_id, content) do
-      ModerationLog.insert_log(%{
-        action: "report_note",
-        actor: user,
-        subject: Activity.get_by_id(report_id),
-        text: content
-      })
-
-      json_response(conn, :no_content, "")
-    else
-      _ -> json_response(conn, :bad_request, "")
-    end
-  end
-
-  def report_notes_delete(%{assigns: %{user: user}} = conn, %{
-        "id" => note_id,
-        "report_id" => report_id
-      }) do
-    with {:ok, note} <- ReportNote.destroy(note_id) do
-      ModerationLog.insert_log(%{
-        action: "report_note_delete",
-        actor: user,
-        subject: Activity.get_by_id(report_id),
-        text: note.content
-      })
-
-      json_response(conn, :no_content, "")
-    else
-      _ -> json_response(conn, :bad_request, "")
+        {:error, :not_found}
     end
   end
 
@@ -818,105 +587,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> put_view(ModerationLogView)
     |> render("index.json", %{log: log})
-  end
-
-  def config_descriptions(conn, _params) do
-    descriptions = Enum.filter(@descriptions, &whitelisted_config?/1)
-
-    json(conn, descriptions)
-  end
-
-  def config_show(conn, %{"only_db" => true}) do
-    with :ok <- configurable_from_database() do
-      configs = Pleroma.Repo.all(ConfigDB)
-
-      conn
-      |> put_view(ConfigView)
-      |> render("index.json", %{configs: configs})
-    end
-  end
-
-  def config_show(conn, _params) do
-    with :ok <- configurable_from_database() do
-      configs = ConfigDB.get_all_as_keyword()
-
-      merged =
-        Config.Holder.default_config()
-        |> ConfigDB.merge(configs)
-        |> Enum.map(fn {group, values} ->
-          Enum.map(values, fn {key, value} ->
-            db =
-              if configs[group][key] do
-                ConfigDB.get_db_keys(configs[group][key], key)
-              end
-
-            db_value = configs[group][key]
-
-            merged_value =
-              if !is_nil(db_value) and Keyword.keyword?(db_value) and
-                   ConfigDB.sub_key_full_update?(group, key, Keyword.keys(db_value)) do
-                ConfigDB.merge_group(group, key, value, db_value)
-              else
-                value
-              end
-
-            setting = %{
-              group: ConfigDB.convert(group),
-              key: ConfigDB.convert(key),
-              value: ConfigDB.convert(merged_value)
-            }
-
-            if db, do: Map.put(setting, :db, db), else: setting
-          end)
-        end)
-        |> List.flatten()
-
-      json(conn, %{configs: merged, need_reboot: Restarter.Pleroma.need_reboot?()})
-    end
-  end
-
-  def config_update(conn, %{"configs" => configs}) do
-    with :ok <- configurable_from_database() do
-      {_errors, results} =
-        configs
-        |> Enum.filter(&whitelisted_config?/1)
-        |> Enum.map(fn
-          %{"group" => group, "key" => key, "delete" => true} = params ->
-            ConfigDB.delete(%{group: group, key: key, subkeys: params["subkeys"]})
-
-          %{"group" => group, "key" => key, "value" => value} ->
-            ConfigDB.update_or_create(%{group: group, key: key, value: value})
-        end)
-        |> Enum.split_with(fn result -> elem(result, 0) == :error end)
-
-      {deleted, updated} =
-        results
-        |> Enum.map(fn {:ok, config} ->
-          Map.put(config, :db, ConfigDB.get_db_keys(config))
-        end)
-        |> Enum.split_with(fn config ->
-          Ecto.get_meta(config, :state) == :deleted
-        end)
-
-      Config.TransferTask.load_and_update_env(deleted, false)
-
-      if !Restarter.Pleroma.need_reboot?() do
-        changed_reboot_settings? =
-          (updated ++ deleted)
-          |> Enum.any?(fn config ->
-            group = ConfigDB.from_string(config.group)
-            key = ConfigDB.from_string(config.key)
-            value = ConfigDB.from_binary(config.value)
-            Config.TransferTask.pleroma_need_restart?(group, key, value)
-          end)
-
-        if changed_reboot_settings?, do: Restarter.Pleroma.need_reboot()
-      end
-
-      conn
-      |> put_view(ConfigView)
-      |> render("index.json", %{configs: updated, need_reboot: Restarter.Pleroma.need_reboot?()})
-    end
   end
 
   def restart(conn, _params) do
@@ -939,32 +609,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  defp whitelisted_config?(group, key) do
-    if whitelisted_configs = Config.get(:database_config_whitelist) do
-      Enum.any?(whitelisted_configs, fn
-        {whitelisted_group} ->
-          group == inspect(whitelisted_group)
-
-        {whitelisted_group, whitelisted_key} ->
-          group == inspect(whitelisted_group) && key == inspect(whitelisted_key)
-      end)
-    else
-      true
-    end
-  end
-
-  defp whitelisted_config?(%{"group" => group, "key" => key}) do
-    whitelisted_config?(group, key)
-  end
-
-  defp whitelisted_config?(%{:group => group} = config) do
-    whitelisted_config?(group, config[:key])
-  end
-
   def reload_emoji(conn, _params) do
     Pleroma.Emoji.reload()
 
-    conn |> json("ok")
+    json(conn, "ok")
   end
 
   def confirm_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
@@ -978,7 +626,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       action: "confirm_email"
     })
 
-    conn |> json("")
+    json(conn, "")
   end
 
   def resend_confirmation_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
@@ -992,91 +640,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       action: "resend_confirmation_email"
     })
 
-    conn |> json("")
+    json(conn, "")
   end
 
-  def oauth_app_create(conn, params) do
-    params =
-      if params["name"] do
-        Map.put(params, "client_name", params["name"])
-      else
-        params
-      end
+  def stats(conn, params) do
+    counters = Stats.get_status_visibility_count(params["instance"])
 
-    result =
-      case App.create(params) do
-        {:ok, app} ->
-          AppView.render("show.json", %{app: app, admin: true})
-
-        {:error, changeset} ->
-          App.errors(changeset)
-      end
-
-    json(conn, result)
-  end
-
-  def oauth_app_update(conn, params) do
-    params =
-      if params["name"] do
-        Map.put(params, "client_name", params["name"])
-      else
-        params
-      end
-
-    with {:ok, app} <- App.update(params) do
-      json(conn, AppView.render("show.json", %{app: app, admin: true}))
-    else
-      {:error, changeset} ->
-        json(conn, App.errors(changeset))
-
-      nil ->
-        json_response(conn, :bad_request, "")
-    end
-  end
-
-  def oauth_app_list(conn, params) do
-    {page, page_size} = page_params(params)
-
-    search_params = %{
-      client_name: params["name"],
-      client_id: params["client_id"],
-      page: page,
-      page_size: page_size
-    }
-
-    search_params =
-      if Map.has_key?(params, "trusted") do
-        Map.put(search_params, :trusted, params["trusted"])
-      else
-        search_params
-      end
-
-    with {:ok, apps, count} <- App.search(search_params) do
-      json(
-        conn,
-        AppView.render("index.json",
-          apps: apps,
-          count: count,
-          page_size: page_size,
-          admin: true
-        )
-      )
-    end
-  end
-
-  def oauth_app_delete(conn, params) do
-    with {:ok, _app} <- App.destroy(params["id"]) do
-      json_response(conn, :no_content, "")
-    else
-      _ -> json_response(conn, :bad_request, "")
-    end
-  end
-
-  def stats(conn, _) do
-    count = Stats.get_status_visibility_count()
-
-    conn
-    |> json(%{"status_visibility" => count})
+    json(conn, %{"status_visibility" => counters})
   end
 
   defp page_params(params) do

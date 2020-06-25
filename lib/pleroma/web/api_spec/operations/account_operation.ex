@@ -102,6 +102,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       parameters: [%Reference{"$ref": "#/components/parameters/accountIdOrNickname"}],
       responses: %{
         200 => Operation.response("Account", "application/json", Account),
+        401 => Operation.response("Error", "application/json", ApiError),
         404 => Operation.response("Error", "application/json", ApiError)
       }
     }
@@ -142,6 +143,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         ] ++ pagination_params(),
       responses: %{
         200 => Operation.response("Statuses", "application/json", array_of_statuses()),
+        401 => Operation.response("Error", "application/json", ApiError),
         404 => Operation.response("Error", "application/json", ApiError)
       }
     }

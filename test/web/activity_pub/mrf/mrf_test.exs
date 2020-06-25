@@ -60,8 +60,6 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
   end
 
   describe "describe/0" do
-    setup do: clear_config([:instance, :rewrite_policy])
-
     test "it works as expected with noop policy" do
       expected = %{
         mrf_policies: ["NoOpPolicy"],
@@ -72,7 +70,7 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
     end
 
     test "it works as expected with mock policy" do
-      Pleroma.Config.put([:instance, :rewrite_policy], [MRFModuleMock])
+      clear_config([:mrf, :policies], [MRFModuleMock])
 
       expected = %{
         mrf_policies: ["MRFModuleMock"],

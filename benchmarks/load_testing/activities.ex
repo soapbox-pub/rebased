@@ -22,8 +22,21 @@ defmodule Pleroma.LoadTesting.Activities do
   @max_concurrency 10
 
   @visibility ~w(public private direct unlisted)
-  @types ~w(simple emoji mentions hell_thread attachment tag like reblog simple_thread remote)
-  @groups ~w(user friends non_friends)
+  @types [
+    :simple,
+    :emoji,
+    :mentions,
+    :hell_thread,
+    :attachment,
+    :tag,
+    :like,
+    :reblog,
+    :simple_thread
+  ]
+  @groups [:friends_local, :friends_remote, :non_friends_local, :non_friends_local]
+  @remote_groups [:friends_remote, :non_friends_remote]
+  @friends_groups [:friends_local, :friends_remote]
+  @non_friends_groups [:non_friends_local, :non_friends_remote]
 
   @spec generate(User.t(), keyword()) :: :ok
   def generate(user, opts \\ []) do
@@ -34,33 +47,24 @@ defmodule Pleroma.LoadTesting.Activities do
 
     opts = Keyword.merge(@defaults, opts)
 
-    friends =
-      user
-      |> Users.get_users(limit: opts[:friends_used], local: :local, friends?: true)
-      |> Enum.shuffle()
+    users = Users.prepare_users(user, opts)
 
-    non_friends =
-      user
-      |> Users.get_users(limit: opts[:non_friends_used], local: :local, friends?: false)
-      |> Enum.shuffle()
+    {:ok, _} = Agent.start_link(fn -> users[:non_friends_remote] end, name: :non_friends_remote)
 
     task_data =
       for visibility <- @visibility,
           type <- @types,
-          group <- @groups,
+          group <- [:user | @groups],
           do: {visibility, type, group}
 
     IO.puts("Starting generating #{opts[:iterations]} iterations of activities...")
 
-    friends_thread = Enum.take(friends, 5)
-    non_friends_thread = Enum.take(friends, 5)
-
     public_long_thread = fn ->
-      generate_long_thread("public", user, friends_thread, non_friends_thread, opts)
+      generate_long_thread("public", users, opts)
     end
 
     private_long_thread = fn ->
-      generate_long_thread("private", user, friends_thread, non_friends_thread, opts)
+      generate_long_thread("private", users, opts)
     end
 
     iterations = opts[:iterations]
@@ -73,10 +77,10 @@ defmodule Pleroma.LoadTesting.Activities do
             i when i == iterations - 2 ->
               spawn(public_long_thread)
               spawn(private_long_thread)
-              generate_activities(user, friends, non_friends, Enum.shuffle(task_data), opts)
+              generate_activities(users, Enum.shuffle(task_data), opts)
 
             _ ->
-              generate_activities(user, friends, non_friends, Enum.shuffle(task_data), opts)
+              generate_activities(users, Enum.shuffle(task_data), opts)
           end
         )
       end)
@@ -127,16 +131,16 @@ defmodule Pleroma.LoadTesting.Activities do
     end)
   end
 
-  defp generate_long_thread(visibility, user, friends, non_friends, _opts) do
+  defp generate_long_thread(visibility, users, _opts) do
     group =
       if visibility == "public",
-        do: "friends",
-        else: "user"
+        do: :friends_local,
+        else: :user
 
     tasks = get_reply_tasks(visibility, group) |> Stream.cycle() |> Enum.take(50)
 
     {:ok, activity} =
-      CommonAPI.post(user, %{
+      CommonAPI.post(users[:user], %{
         status: "Start of #{visibility} long thread",
         visibility: visibility
       })
@@ -150,31 +154,28 @@ defmodule Pleroma.LoadTesting.Activities do
       Map.put(state, key, activity)
     end)
 
-    acc = {activity.id, ["@" <> user.nickname, "reply to long thread"]}
-    insert_replies_for_long_thread(tasks, visibility, user, friends, non_friends, acc)
+    acc = {activity.id, ["@" <> users[:user].nickname, "reply to long thread"]}
+    insert_replies_for_long_thread(tasks, visibility, users, acc)
     IO.puts("Generating #{visibility} long thread ended\n")
   end
 
-  defp insert_replies_for_long_thread(tasks, visibility, user, friends, non_friends, acc) do
+  defp insert_replies_for_long_thread(tasks, visibility, users, acc) do
     Enum.reduce(tasks, acc, fn
-      "friend", {id, data} ->
-        friend = Enum.random(friends)
-        insert_reply(friend, List.delete(data, "@" <> friend.nickname), id, visibility)
-
-      "non_friend", {id, data} ->
-        non_friend = Enum.random(non_friends)
-        insert_reply(non_friend, List.delete(data, "@" <> non_friend.nickname), id, visibility)
-
-      "user", {id, data} ->
+      :user, {id, data} ->
+        user = users[:user]
         insert_reply(user, List.delete(data, "@" <> user.nickname), id, visibility)
+
+      group, {id, data} ->
+        replier = Enum.random(users[group])
+        insert_reply(replier, List.delete(data, "@" <> replier.nickname), id, visibility)
     end)
   end
 
-  defp generate_activities(user, friends, non_friends, task_data, opts) do
+  defp generate_activities(users, task_data, opts) do
     Task.async_stream(
       task_data,
       fn {visibility, type, group} ->
-        insert_activity(type, visibility, group, user, friends, non_friends, opts)
+        insert_activity(type, visibility, group, users, opts)
       end,
       max_concurrency: @max_concurrency,
       timeout: 30_000
@@ -182,67 +183,104 @@ defmodule Pleroma.LoadTesting.Activities do
     |> Stream.run()
   end
 
-  defp insert_activity("simple", visibility, group, user, friends, non_friends, _opts) do
-    {:ok, _activity} =
+  defp insert_local_activity(visibility, group, users, status) do
+    {:ok, _} =
       group
-      |> get_actor(user, friends, non_friends)
-      |> CommonAPI.post(%{status: "Simple status", visibility: visibility})
+      |> get_actor(users)
+      |> CommonAPI.post(%{status: status, visibility: visibility})
   end
 
-  defp insert_activity("emoji", visibility, group, user, friends, non_friends, _opts) do
-    {:ok, _activity} =
-      group
-      |> get_actor(user, friends, non_friends)
-      |> CommonAPI.post(%{
-        status: "Simple status with emoji :firefox:",
-        visibility: visibility
-      })
+  defp insert_remote_activity(visibility, group, users, status) do
+    actor = get_actor(group, users)
+    {act_data, obj_data} = prepare_activity_data(actor, visibility, users[:user])
+    {activity_data, object_data} = other_data(actor, status)
+
+    activity_data
+    |> Map.merge(act_data)
+    |> Map.put("object", Map.merge(object_data, obj_data))
+    |> Pleroma.Web.ActivityPub.ActivityPub.insert(false)
   end
 
-  defp insert_activity("mentions", visibility, group, user, friends, non_friends, _opts) do
+  defp user_mentions(users) do
     user_mentions =
-      get_random_mentions(friends, Enum.random(0..3)) ++
-        get_random_mentions(non_friends, Enum.random(0..3))
+      Enum.reduce(
+        @groups,
+        [],
+        fn group, acc ->
+          acc ++ get_random_mentions(users[group], Enum.random(0..2))
+        end
+      )
 
-    user_mentions =
-      if Enum.random([true, false]),
-        do: ["@" <> user.nickname | user_mentions],
-        else: user_mentions
-
-    {:ok, _activity} =
-      group
-      |> get_actor(user, friends, non_friends)
-      |> CommonAPI.post(%{
-        status: Enum.join(user_mentions, ", ") <> " simple status with mentions",
-        visibility: visibility
-      })
+    if Enum.random([true, false]),
+      do: ["@" <> users[:user].nickname | user_mentions],
+      else: user_mentions
   end
 
-  defp insert_activity("hell_thread", visibility, group, user, friends, non_friends, _opts) do
-    mentions =
-      with {:ok, nil} <- Cachex.get(:user_cache, "hell_thread_mentions") do
-        cached =
-          ([user | Enum.take(friends, 10)] ++ Enum.take(non_friends, 10))
-          |> Enum.map(&"@#{&1.nickname}")
-          |> Enum.join(", ")
+  defp hell_thread_mentions(users) do
+    with {:ok, nil} <- Cachex.get(:user_cache, "hell_thread_mentions") do
+      cached =
+        @groups
+        |> Enum.reduce([users[:user]], fn group, acc ->
+          acc ++ Enum.take(users[group], 5)
+        end)
+        |> Enum.map(&"@#{&1.nickname}")
+        |> Enum.join(", ")
 
-        Cachex.put(:user_cache, "hell_thread_mentions", cached)
-        cached
-      else
-        {:ok, cached} -> cached
-      end
-
-    {:ok, _activity} =
-      group
-      |> get_actor(user, friends, non_friends)
-      |> CommonAPI.post(%{
-        status: mentions <> " hell thread status",
-        visibility: visibility
-      })
+      Cachex.put(:user_cache, "hell_thread_mentions", cached)
+      cached
+    else
+      {:ok, cached} -> cached
+    end
   end
 
-  defp insert_activity("attachment", visibility, group, user, friends, non_friends, _opts) do
-    actor = get_actor(group, user, friends, non_friends)
+  defp insert_activity(:simple, visibility, group, users, _opts)
+       when group in @remote_groups do
+    insert_remote_activity(visibility, group, users, "Remote status")
+  end
+
+  defp insert_activity(:simple, visibility, group, users, _opts) do
+    insert_local_activity(visibility, group, users, "Simple status")
+  end
+
+  defp insert_activity(:emoji, visibility, group, users, _opts)
+       when group in @remote_groups do
+    insert_remote_activity(visibility, group, users, "Remote status with emoji :firefox:")
+  end
+
+  defp insert_activity(:emoji, visibility, group, users, _opts) do
+    insert_local_activity(visibility, group, users, "Simple status with emoji :firefox:")
+  end
+
+  defp insert_activity(:mentions, visibility, group, users, _opts)
+       when group in @remote_groups do
+    mentions = user_mentions(users)
+
+    status = Enum.join(mentions, ", ") <> " remote status with mentions"
+
+    insert_remote_activity(visibility, group, users, status)
+  end
+
+  defp insert_activity(:mentions, visibility, group, users, _opts) do
+    mentions = user_mentions(users)
+
+    status = Enum.join(mentions, ", ") <> " simple status with mentions"
+    insert_remote_activity(visibility, group, users, status)
+  end
+
+  defp insert_activity(:hell_thread, visibility, group, users, _)
+       when group in @remote_groups do
+    mentions = hell_thread_mentions(users)
+    insert_remote_activity(visibility, group, users, mentions <> " remote hell thread status")
+  end
+
+  defp insert_activity(:hell_thread, visibility, group, users, _opts) do
+    mentions = hell_thread_mentions(users)
+
+    insert_local_activity(visibility, group, users, mentions <> " hell thread status")
+  end
+
+  defp insert_activity(:attachment, visibility, group, users, _opts) do
+    actor = get_actor(group, users)
 
     obj_data = %{
       "actor" => actor.ap_id,
@@ -268,67 +306,54 @@ defmodule Pleroma.LoadTesting.Activities do
       })
   end
 
-  defp insert_activity("tag", visibility, group, user, friends, non_friends, _opts) do
-    {:ok, _activity} =
-      group
-      |> get_actor(user, friends, non_friends)
-      |> CommonAPI.post(%{status: "Status with #tag", visibility: visibility})
+  defp insert_activity(:tag, visibility, group, users, _opts) do
+    insert_local_activity(visibility, group, users, "Status with #tag")
   end
 
-  defp insert_activity("like", visibility, group, user, friends, non_friends, opts) do
-    actor = get_actor(group, user, friends, non_friends)
+  defp insert_activity(:like, visibility, group, users, opts) do
+    actor = get_actor(group, users)
 
     with activity_id when not is_nil(activity_id) <- get_random_create_activity_id(),
          {:ok, _activity} <- CommonAPI.favorite(actor, activity_id) do
       :ok
     else
       {:error, _} ->
-        insert_activity("like", visibility, group, user, friends, non_friends, opts)
+        insert_activity(:like, visibility, group, users, opts)
 
       nil ->
         Process.sleep(15)
-        insert_activity("like", visibility, group, user, friends, non_friends, opts)
+        insert_activity(:like, visibility, group, users, opts)
     end
   end
 
-  defp insert_activity("reblog", visibility, group, user, friends, non_friends, opts) do
-    actor = get_actor(group, user, friends, non_friends)
+  defp insert_activity(:reblog, visibility, group, users, opts) do
+    actor = get_actor(group, users)
 
     with activity_id when not is_nil(activity_id) <- get_random_create_activity_id(),
-         {:ok, _activity, _object} <- CommonAPI.repeat(activity_id, actor) do
+         {:ok, _activity} <- CommonAPI.repeat(activity_id, actor) do
       :ok
     else
       {:error, _} ->
-        insert_activity("reblog", visibility, group, user, friends, non_friends, opts)
+        insert_activity(:reblog, visibility, group, users, opts)
 
       nil ->
         Process.sleep(15)
-        insert_activity("reblog", visibility, group, user, friends, non_friends, opts)
+        insert_activity(:reblog, visibility, group, users, opts)
     end
   end
 
-  defp insert_activity("simple_thread", visibility, group, user, friends, non_friends, _opts)
-       when visibility in ["public", "unlisted", "private"] do
-    actor = get_actor(group, user, friends, non_friends)
-    tasks = get_reply_tasks(visibility, group)
-
-    {:ok, activity} = CommonAPI.post(user, %{status: "Simple status", visibility: visibility})
-
-    acc = {activity.id, ["@" <> actor.nickname, "reply to status"]}
-    insert_replies(tasks, visibility, user, friends, non_friends, acc)
-  end
-
-  defp insert_activity("simple_thread", "direct", group, user, friends, non_friends, _opts) do
-    actor = get_actor(group, user, friends, non_friends)
+  defp insert_activity(:simple_thread, "direct", group, users, _opts) do
+    actor = get_actor(group, users)
     tasks = get_reply_tasks("direct", group)
 
     list =
       case group do
-        "non_friends" ->
-          Enum.take(non_friends, 3)
+        :user ->
+          group = Enum.random(@friends_groups)
+          Enum.take(users[group], 3)
 
         _ ->
-          Enum.take(friends, 3)
+          Enum.take(users[group], 3)
       end
 
     data = Enum.map(list, &("@" <> &1.nickname))
@@ -339,40 +364,30 @@ defmodule Pleroma.LoadTesting.Activities do
         visibility: "direct"
       })
 
-    acc = {activity.id, ["@" <> user.nickname | data] ++ ["reply to status"]}
-    insert_direct_replies(tasks, user, list, acc)
+    acc = {activity.id, ["@" <> users[:user].nickname | data] ++ ["reply to status"]}
+    insert_direct_replies(tasks, users[:user], list, acc)
   end
 
-  defp insert_activity("remote", _, "user", _, _, _, _), do: :ok
+  defp insert_activity(:simple_thread, visibility, group, users, _opts) do
+    actor = get_actor(group, users)
+    tasks = get_reply_tasks(visibility, group)
 
-  defp insert_activity("remote", visibility, group, user, _friends, _non_friends, opts) do
-    remote_friends =
-      Users.get_users(user, limit: opts[:friends_used], local: :external, friends?: true)
+    {:ok, activity} =
+      CommonAPI.post(users[:user], %{status: "Simple status", visibility: visibility})
 
-    remote_non_friends =
-      Users.get_users(user, limit: opts[:non_friends_used], local: :external, friends?: false)
-
-    actor = get_actor(group, user, remote_friends, remote_non_friends)
-
-    {act_data, obj_data} = prepare_activity_data(actor, visibility, user)
-    {activity_data, object_data} = other_data(actor)
-
-    activity_data
-    |> Map.merge(act_data)
-    |> Map.put("object", Map.merge(object_data, obj_data))
-    |> Pleroma.Web.ActivityPub.ActivityPub.insert(false)
+    acc = {activity.id, ["@" <> actor.nickname, "reply to status"]}
+    insert_replies(tasks, visibility, users, acc)
   end
 
-  defp get_actor("user", user, _friends, _non_friends), do: user
-  defp get_actor("friends", _user, friends, _non_friends), do: Enum.random(friends)
-  defp get_actor("non_friends", _user, _friends, non_friends), do: Enum.random(non_friends)
+  defp get_actor(:user, %{user: user}), do: user
+  defp get_actor(group, users), do: Enum.random(users[group])
 
-  defp other_data(actor) do
+  defp other_data(actor, content) do
     %{host: host} = URI.parse(actor.ap_id)
     datetime = DateTime.utc_now()
-    context_id = "http://#{host}:4000/contexts/#{UUID.generate()}"
-    activity_id = "http://#{host}:4000/activities/#{UUID.generate()}"
-    object_id = "http://#{host}:4000/objects/#{UUID.generate()}"
+    context_id = "https://#{host}/contexts/#{UUID.generate()}"
+    activity_id = "https://#{host}/activities/#{UUID.generate()}"
+    object_id = "https://#{host}/objects/#{UUID.generate()}"
 
     activity_data = %{
       "actor" => actor.ap_id,
@@ -389,7 +404,7 @@ defmodule Pleroma.LoadTesting.Activities do
       "attributedTo" => actor.ap_id,
       "bcc" => [],
       "bto" => [],
-      "content" => "Remote post",
+      "content" => content,
       "context" => context_id,
       "conversation" => context_id,
       "emoji" => %{},
@@ -475,50 +490,64 @@ defmodule Pleroma.LoadTesting.Activities do
     {act_data, obj_data}
   end
 
-  defp get_reply_tasks("public", "user"), do: ~w(friend non_friend user)
-  defp get_reply_tasks("public", "friends"), do: ~w(non_friend user friend)
-  defp get_reply_tasks("public", "non_friends"), do: ~w(user friend non_friend)
+  defp get_reply_tasks("public", :user) do
+    [:friends_local, :friends_remote, :non_friends_local, :non_friends_remote, :user]
+  end
 
-  defp get_reply_tasks(visibility, "user") when visibility in ["unlisted", "private"],
-    do: ~w(friend user friend)
+  defp get_reply_tasks("public", group) when group in @friends_groups do
+    [:non_friends_local, :non_friends_remote, :user, :friends_local, :friends_remote]
+  end
 
-  defp get_reply_tasks(visibility, "friends") when visibility in ["unlisted", "private"],
-    do: ~w(user friend user)
+  defp get_reply_tasks("public", group) when group in @non_friends_groups do
+    [:user, :friends_local, :friends_remote, :non_friends_local, :non_friends_remote]
+  end
 
-  defp get_reply_tasks(visibility, "non_friends") when visibility in ["unlisted", "private"],
-    do: []
+  defp get_reply_tasks(visibility, :user) when visibility in ["unlisted", "private"] do
+    [:friends_local, :friends_remote, :user, :friends_local, :friends_remote]
+  end
 
-  defp get_reply_tasks("direct", "user"), do: ~w(friend user friend)
-  defp get_reply_tasks("direct", "friends"), do: ~w(user friend user)
-  defp get_reply_tasks("direct", "non_friends"), do: ~w(user non_friend user)
+  defp get_reply_tasks(visibility, group)
+       when visibility in ["unlisted", "private"] and group in @friends_groups do
+    [:user, :friends_remote, :friends_local, :user]
+  end
 
-  defp insert_replies(tasks, visibility, user, friends, non_friends, acc) do
+  defp get_reply_tasks(visibility, group)
+       when visibility in ["unlisted", "private"] and
+              group in @non_friends_groups,
+       do: []
+
+  defp get_reply_tasks("direct", :user), do: [:friends_local, :user, :friends_remote]
+
+  defp get_reply_tasks("direct", group) when group in @friends_groups,
+    do: [:user, group, :user]
+
+  defp get_reply_tasks("direct", group) when group in @non_friends_groups do
+    [:user, :non_friends_remote, :user, :non_friends_local]
+  end
+
+  defp insert_replies(tasks, visibility, users, acc) do
     Enum.reduce(tasks, acc, fn
-      "friend", {id, data} ->
-        friend = Enum.random(friends)
-        insert_reply(friend, data, id, visibility)
+      :user, {id, data} ->
+        insert_reply(users[:user], data, id, visibility)
 
-      "non_friend", {id, data} ->
-        non_friend = Enum.random(non_friends)
-        insert_reply(non_friend, data, id, visibility)
-
-      "user", {id, data} ->
-        insert_reply(user, data, id, visibility)
+      group, {id, data} ->
+        replier = Enum.random(users[group])
+        insert_reply(replier, data, id, visibility)
     end)
   end
 
   defp insert_direct_replies(tasks, user, list, acc) do
     Enum.reduce(tasks, acc, fn
-      group, {id, data} when group in ["friend", "non_friend"] ->
+      :user, {id, data} ->
+        {reply_id, _} = insert_reply(user, List.delete(data, "@" <> user.nickname), id, "direct")
+        {reply_id, data}
+
+      _, {id, data} ->
         actor = Enum.random(list)
 
         {reply_id, _} =
           insert_reply(actor, List.delete(data, "@" <> actor.nickname), id, "direct")
 
-        {reply_id, data}
-
-      "user", {id, data} ->
-        {reply_id, _} = insert_reply(user, List.delete(data, "@" <> user.nickname), id, "direct")
         {reply_id, data}
     end)
   end

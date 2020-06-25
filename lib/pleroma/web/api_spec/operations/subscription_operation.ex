@@ -141,6 +141,11 @@ defmodule Pleroma.Web.ApiSpec.SubscriptionOperation do
                   allOf: [BooleanLike],
                   nullable: true,
                   description: "Receive poll notifications?"
+                },
+                "pleroma:chat_mention": %Schema{
+                  allOf: [BooleanLike],
+                  nullable: true,
+                  description: "Receive chat notifications?"
                 }
               }
             }

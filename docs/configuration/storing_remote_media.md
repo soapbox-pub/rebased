@@ -33,6 +33,6 @@ as soon as the post is received by your instance.
 Add to your `prod.secret.exs`:
 
 ```
-config :pleroma, :instance,
-  rewrite_policy: [Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy]
+config :pleroma, :mrf,
+  policies: [Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy]
 ```

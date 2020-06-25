@@ -54,6 +54,7 @@ defmodule Pleroma.UploadTest do
                 %{
                   "name" => "image.jpg",
                   "type" => "Document",
+                  "mediaType" => "image/jpeg",
                   "url" => [
                     %{
                       "href" => "http://localhost:4001/media/post-process-file.jpg",

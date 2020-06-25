@@ -200,10 +200,7 @@ sudo -Hu pleroma MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress
 
 #### Further reading
 
-* [Backup your instance](../administration/backup.md)
-* [Hardening your instance](../configuration/hardening.md)
-* [How to activate mediaproxy](../configuration/howto_mediaproxy.md)
-* [Updating your instance](../administration/updating.md)
+{! backend/installation/further_reading.include !}
 
 ## Questions
 

@@ -33,7 +33,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         bio:
           "<script src=\"invalid-html\"></script><span>valid html</span>. a<br>b<br/>c<br >d<br />f '&<>\"",
         inserted_at: ~N[2017-08-15 15:47:06.597036],
-        emoji: %{"karjalanpiirakka" => "/file.png"}
+        emoji: %{"karjalanpiirakka" => "/file.png"},
+        raw_bio: "valid html. a\nb\nc\nd\nf '&<>\""
       })
 
     expected = %{
@@ -54,10 +55,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       header_static: "http://localhost:4001/images/banner.png",
       emojis: [
         %{
-          "static_url" => "/file.png",
-          "url" => "/file.png",
-          "shortcode" => "karjalanpiirakka",
-          "visible_in_picker" => false
+          static_url: "/file.png",
+          url: "/file.png",
+          shortcode: "karjalanpiirakka",
+          visible_in_picker: false
         }
       ],
       fields: [],
@@ -72,6 +73,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         fields: []
       },
       pleroma: %{
+        ap_id: user.ap_id,
         background_image: "https://example.com/images/asuka_hospital.png",
         confirmation_pending: false,
         tags: [],
@@ -147,6 +149,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         fields: []
       },
       pleroma: %{
+        ap_id: user.ap_id,
         background_image: nil,
         confirmation_pending: false,
         tags: [],
@@ -489,5 +492,32 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       assert %{locked: false, follow_requests_count: 1} =
                AccountView.render("show.json", %{user: user, for: user})
     end
+  end
+
+  test "uses mediaproxy urls when it's enabled" do
+    clear_config([:media_proxy, :enabled], true)
+
+    user =
+      insert(:user,
+        avatar: %{"url" => [%{"href" => "https://evil.website/avatar.png"}]},
+        banner: %{"url" => [%{"href" => "https://evil.website/banner.png"}]},
+        emoji: %{"joker_smile" => "https://evil.website/society.png"}
+      )
+
+    AccountView.render("show.json", %{user: user})
+    |> Enum.all?(fn
+      {key, url} when key in [:avatar, :avatar_static, :header, :header_static] ->
+        String.starts_with?(url, Pleroma.Web.base_url())
+
+      {:emojis, emojis} ->
+        Enum.all?(emojis, fn %{url: url, static_url: static_url} ->
+          String.starts_with?(url, Pleroma.Web.base_url()) &&
+            String.starts_with?(static_url, Pleroma.Web.base_url())
+        end)
+
+      _ ->
+        true
+    end)
+    |> assert()
   end
 end

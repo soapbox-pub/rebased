@@ -45,7 +45,7 @@ defmodule Pleroma.User.Query do
             is_admin: boolean(),
             is_moderator: boolean(),
             super_users: boolean(),
-            exclude_service_users: boolean(),
+            invisible: boolean(),
             followers: User.t(),
             friends: User.t(),
             recipients_from_activity: [String.t()],
@@ -89,8 +89,8 @@ defmodule Pleroma.User.Query do
     where(query, [u], ilike(field(u, ^key), ^"%#{value}%"))
   end
 
-  defp compose_query({:exclude_service_users, _}, query) do
-    where(query, [u], not like(u.ap_id, "%/relay") and not like(u.ap_id, "%/internal/fetch"))
+  defp compose_query({:invisible, bool}, query) when is_boolean(bool) do
+    where(query, [u], u.invisible == ^bool)
   end
 
   defp compose_query({key, value}, query)

@@ -536,6 +536,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert_receive {:mix_shell, :info, ["relay.mastodon.host"]}
     end
 
+    @tag capture_log: true
     test "without valid signature, " <>
            "it only accepts Create activities and requires enabled federation",
          %{conn: conn} do
@@ -648,11 +649,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "it accepts announces with to as string instead of array", %{conn: conn} do
       user = insert(:user)
 
+      {:ok, post} = CommonAPI.post(user, %{status: "hey"})
+      announcer = insert(:user, local: false)
+
       data = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
-        "actor" => "http://mastodon.example.org/users/admin",
-        "id" => "http://mastodon.example.org/users/admin/statuses/19512778738411822/activity",
-        "object" => "https://mastodon.social/users/emelie/statuses/101849165031453009",
+        "actor" => announcer.ap_id,
+        "id" => "#{announcer.ap_id}/statuses/19512778738411822/activity",
+        "object" => post.data["object"],
         "to" => "https://www.w3.org/ns/activitystreams#Public",
         "cc" => [user.ap_id],
         "type" => "Announce"
@@ -804,17 +808,63 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "GET /users/:nickname/outbox" do
+    test "it paginates correctly", %{conn: conn} do
+      user = insert(:user)
+      conn = assign(conn, :user, user)
+      outbox_endpoint = user.ap_id <> "/outbox"
+
+      _posts =
+        for i <- 0..25 do
+          {:ok, activity} = CommonAPI.post(user, %{status: "post #{i}"})
+          activity
+        end
+
+      result =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(outbox_endpoint <> "?page=true")
+        |> json_response(200)
+
+      result_ids = Enum.map(result["orderedItems"], fn x -> x["id"] end)
+      assert length(result["orderedItems"]) == 20
+      assert length(result_ids) == 20
+      assert result["next"]
+      assert String.starts_with?(result["next"], outbox_endpoint)
+
+      result_next =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(result["next"])
+        |> json_response(200)
+
+      result_next_ids = Enum.map(result_next["orderedItems"], fn x -> x["id"] end)
+      assert length(result_next["orderedItems"]) == 6
+      assert length(result_next_ids) == 6
+      refute Enum.find(result_next_ids, fn x -> x in result_ids end)
+      refute Enum.find(result_ids, fn x -> x in result_next_ids end)
+      assert String.starts_with?(result["id"], outbox_endpoint)
+
+      result_next_again =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(result_next["id"])
+        |> json_response(200)
+
+      assert result_next == result_next_again
+    end
+
     test "it returns 200 even if there're no activities", %{conn: conn} do
       user = insert(:user)
+      outbox_endpoint = user.ap_id <> "/outbox"
 
       conn =
         conn
         |> assign(:user, user)
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/outbox")
+        |> get(outbox_endpoint)
 
       result = json_response(conn, 200)
-      assert user.ap_id <> "/outbox" == result["id"]
+      assert outbox_endpoint == result["id"]
     end
 
     test "it returns a note activity in a collection", %{conn: conn} do

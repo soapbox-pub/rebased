@@ -6,21 +6,17 @@ defmodule Pleroma.Upload.Filter.MogrifyTest do
   use Pleroma.DataCase
   import Mock
 
-  alias Pleroma.Config
-  alias Pleroma.Upload
   alias Pleroma.Upload.Filter
 
-  setup do: clear_config([Filter.Mogrify, :args])
-
   test "apply mogrify filter" do
-    Config.put([Filter.Mogrify, :args], [{"tint", "40"}])
+    clear_config(Filter.Mogrify, args: [{"tint", "40"}])
 
     File.cp!(
       "test/fixtures/image.jpg",
       "test/fixtures/image_tmp.jpg"
     )
 
-    upload = %Upload{
+    upload = %Pleroma.Upload{
       name: "an… image.jpg",
       content_type: "image/jpg",
       path: Path.absname("test/fixtures/image_tmp.jpg"),

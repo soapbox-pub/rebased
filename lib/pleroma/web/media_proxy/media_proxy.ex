@@ -6,17 +6,50 @@ defmodule Pleroma.Web.MediaProxy do
   alias Pleroma.Config
   alias Pleroma.Upload
   alias Pleroma.Web
+  alias Pleroma.Web.MediaProxy.Invalidation
 
   @base64_opts [padding: false]
+
+  @spec in_banned_urls(String.t()) :: boolean()
+  def in_banned_urls(url), do: elem(Cachex.exists?(:banned_urls_cache, url(url)), 1)
+
+  def remove_from_banned_urls(urls) when is_list(urls) do
+    Cachex.execute!(:banned_urls_cache, fn cache ->
+      Enum.each(Invalidation.prepare_urls(urls), &Cachex.del(cache, &1))
+    end)
+  end
+
+  def remove_from_banned_urls(url) when is_binary(url) do
+    Cachex.del(:banned_urls_cache, url(url))
+  end
+
+  def put_in_banned_urls(urls) when is_list(urls) do
+    Cachex.execute!(:banned_urls_cache, fn cache ->
+      Enum.each(Invalidation.prepare_urls(urls), &Cachex.put(cache, &1, true))
+    end)
+  end
+
+  def put_in_banned_urls(url) when is_binary(url) do
+    Cachex.put(:banned_urls_cache, url(url), true)
+  end
 
   def url(url) when is_nil(url) or url == "", do: nil
   def url("/" <> _ = url), do: url
 
   def url(url) do
-    if disabled?() or local?(url) or whitelisted?(url) do
+    if disabled?() or not url_proxiable?(url) do
       url
     else
       encode_url(url)
+    end
+  end
+
+  @spec url_proxiable?(String.t()) :: boolean()
+  def url_proxiable?(url) do
+    if local?(url) or whitelisted?(url) do
+      false
+    else
+      true
     end
   end
 
