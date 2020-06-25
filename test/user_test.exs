@@ -199,6 +199,16 @@ defmodule Pleroma.UserTest do
     assert [^pending_follower] = User.get_follow_requests(locked)
   end
 
+  test "doesn't return follow requests for deactivated accounts" do
+    locked = insert(:user, locked: true)
+    pending_follower = insert(:user, %{deactivated: true})
+
+    CommonAPI.follow(pending_follower, locked)
+
+    assert true == pending_follower.deactivated
+    assert [] = User.get_follow_requests(locked)
+  end
+
   test "clears follow requests when requester is blocked" do
     followed = insert(:user, locked: true)
     follower = insert(:user)
