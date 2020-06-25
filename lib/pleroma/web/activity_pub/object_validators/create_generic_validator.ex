@@ -87,14 +87,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
   end
 
   def validate_actors_match(cng, meta) do
-    object_actor = meta[:object_data]["actor"]
+    attributed_to = meta[:object_data]["attributedTo"] || meta[:object_data]["actor"]
 
     cng
     |> validate_change(:actor, fn :actor, actor ->
-      if actor == object_actor do
+      if actor == attributed_to do
         []
       else
-        [{:actor, "Actor doesn't match with object actor"}]
+        [{:actor, "Actor doesn't match with object attributedTo"}]
       end
     end)
   end

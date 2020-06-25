@@ -120,6 +120,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
      %{
        "type" => "Answer",
        "actor" => user.ap_id,
+       "attributedTo" => user.ap_id,
        "cc" => [object.data["actor"]],
        "to" => [],
        "name" => name,

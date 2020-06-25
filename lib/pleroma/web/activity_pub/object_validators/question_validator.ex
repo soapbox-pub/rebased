@@ -28,7 +28,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     field(:type, :string)
     field(:content, :string)
     field(:context, :string)
+
+    # TODO: Remove actor on objects
     field(:actor, ObjectValidators.ObjectID)
+
     field(:attributedTo, ObjectValidators.ObjectID)
     field(:summary, :string)
     field(:published, ObjectValidators.DateTime)
@@ -108,8 +111,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   def validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Question"])
-    |> validate_required([:id, :actor, :type, :content, :context])
+    |> validate_required([:id, :actor, :attributedTo, :type, :content, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
+    |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_is_active()
     |> CommonValidations.validate_any_presence([:oneOf, :anyOf])
     |> CommonValidations.validate_host_match()

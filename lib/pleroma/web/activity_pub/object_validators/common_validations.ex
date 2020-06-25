@@ -115,4 +115,22 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
       end)
     end
   end
+
+  def validate_fields_match(cng, fields) do
+    unique_fields =
+      fields
+      |> Enum.map(fn field -> get_field(cng, field) end)
+      |> Enum.uniq()
+      |> Enum.count()
+
+    if unique_fields == 1 do
+      cng
+    else
+      fields
+      |> Enum.reduce(cng, fn field, cng ->
+        cng
+        |> add_error(field, "Fields #{inspect(fields)} aren't matching")
+      end)
+    end
+  end
 end

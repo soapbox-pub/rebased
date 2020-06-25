@@ -26,6 +26,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator do
     field(:name, :string)
     field(:inReplyTo, :string)
     field(:attributedTo, ObjectValidators.ObjectID)
+
+    # TODO: Remove actor on objects
     field(:actor, ObjectValidators.ObjectID)
   end
 
@@ -54,8 +56,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator do
   def validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Answer"])
-    |> validate_required([:id, :inReplyTo, :name])
+    |> validate_required([:id, :inReplyTo, :name, :attributedTo, :actor])
     |> CommonValidations.validate_any_presence([:cc, :to])
-    |> CommonValidations.validate_actor_presence()
+    |> CommonValidations.validate_fields_match([:actor, :attributedTo])
+    |> CommonValidations.validate_actor_is_active()
+    |> CommonValidations.validate_host_match()
   end
 end
