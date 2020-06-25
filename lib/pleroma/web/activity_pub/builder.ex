@@ -138,6 +138,18 @@ defmodule Pleroma.Web.ActivityPub.Builder do
      }, []}
   end
 
+  @spec block(User.t(), User.t()) :: {:ok, map(), keyword()}
+  def block(blocker, blocked) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "type" => "Block",
+       "actor" => blocker.ap_id,
+       "object" => blocked.ap_id,
+       "to" => [blocked.ap_id]
+     }, []}
+  end
+
   @spec announce(User.t(), Object.t(), keyword()) :: {:ok, map(), keyword()}
   def announce(actor, object, options \\ []) do
     public? = Keyword.get(options, :public, false)
