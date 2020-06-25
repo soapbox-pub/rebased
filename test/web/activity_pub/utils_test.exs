@@ -27,16 +27,6 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
     end
   end
 
-  describe "fetch the latest Block" do
-    test "fetches the latest Block activity" do
-      blocker = insert(:user)
-      blocked = insert(:user)
-      {:ok, activity} = ActivityPub.block(blocker, blocked)
-
-      assert activity == Utils.fetch_latest_block(blocker, blocked)
-    end
-  end
-
   describe "determine_explicit_mentions()" do
     test "works with an object that has mentions" do
       object = %{
@@ -344,9 +334,9 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       user1 = insert(:user)
       user2 = insert(:user)
 
-      assert {:ok, %Activity{} = _} = ActivityPub.block(user1, user2)
-      assert {:ok, %Activity{} = _} = ActivityPub.block(user1, user2)
-      assert {:ok, %Activity{} = activity} = ActivityPub.block(user1, user2)
+      assert {:ok, %Activity{} = _} = CommonAPI.block(user1, user2)
+      assert {:ok, %Activity{} = _} = CommonAPI.block(user1, user2)
+      assert {:ok, %Activity{} = activity} = CommonAPI.block(user1, user2)
 
       assert Utils.fetch_latest_block(user1, user2) == activity
     end

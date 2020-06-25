@@ -366,33 +366,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec block(User.t(), User.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t()} | {:error, any()}
-  def block(blocker, blocked, activity_id \\ nil, local \\ true) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_block(blocker, blocked, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_block(blocker, blocked, activity_id, local) do
-    unfollow_blocked = Config.get([:activitypub, :unfollow_blocked])
-
-    if unfollow_blocked and fetch_latest_follow(blocker, blocked) do
-      unfollow(blocker, blocked, nil, local)
-    end
-
-    block_data = make_block_data(blocker, blocked, activity_id)
-
-    with {:ok, activity} <- insert(block_data, local),
-         _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    else
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
   @spec flag(map()) :: {:ok, Activity.t()} | {:error, any()}
   def flag(
         %{
