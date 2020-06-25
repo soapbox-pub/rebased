@@ -979,7 +979,7 @@ config :pleroma, :config_description, [
         key: :instance_thumbnail,
         type: :string,
         description:
-          "The instance thumbnail is the Mastodon landing page image and used by some apps to identify the instance.",
+          "The instance thumbnail can be any image that represents your instance and is used by some apps or services when they display information about your instance.",
         suggestions: ["/instance/thumbnail.jpeg"]
       }
     ]
