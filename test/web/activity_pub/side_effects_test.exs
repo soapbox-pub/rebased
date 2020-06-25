@@ -64,6 +64,31 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
   end
 
+  describe "blocking users" do
+    setup do
+      user = insert(:user)
+      blocked = insert(:user)
+      User.follow(blocked, user)
+      User.follow(user, blocked)
+
+      {:ok, block_data, []} = Builder.block(user, blocked)
+      {:ok, block, _meta} = ActivityPub.persist(block_data, local: true)
+
+      %{user: user, blocked: blocked, block: block}
+    end
+
+    test "it unfollows and blocks", %{user: user, blocked: blocked, block: block} do
+      assert User.following?(user, blocked)
+      assert User.following?(blocked, user)
+
+      {:ok, _, _} = SideEffects.handle(block)
+
+      refute User.following?(user, blocked)
+      refute User.following?(blocked, user)
+      assert User.blocks?(user, blocked)
+    end
+  end
+
   describe "update users" do
     setup do
       user = insert(:user)

@@ -673,7 +673,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(%{"type" => type} = data, _options)
-      when type in ["Like", "EmojiReact", "Announce"] do
+      when type in ~w{Like EmojiReact Announce} do
     with :ok <- ObjectValidator.fetch_actor_and_object(data),
          {:ok, activity, _meta} <-
            Pipeline.common_pipeline(data, local: false) do
@@ -684,9 +684,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Update"} = data,
+        %{"type" => type} = data,
         _options
-      ) do
+      )
+      when type in ~w{Update Block} do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
@@ -760,21 +761,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       activity
       |> Map.put("object", data)
       |> handle_incoming(options)
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data,
-        _options
-      ) do
-    with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
-         {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
-         {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
-      User.unfollow(blocker, blocked)
-      User.block(blocker, blocked)
-      {:ok, activity}
     else
       _e -> :error
     end
