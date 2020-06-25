@@ -15,6 +15,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.TwitterAPI.UtilView
   alias Pleroma.Web.WebFinger
 
   plug(Pleroma.Web.FederatingPlug when action == :remote_subscribe)
@@ -90,17 +91,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def config(%{assigns: %{format: "xml"}} = conn, _params) do
     instance = Pleroma.Config.get(:instance)
-
-    response = """
-    <config>
-    <site>
-    <name>#{Keyword.get(instance, :name)}</name>
-    <site>#{Web.base_url()}</site>
-    <textlimit>#{Keyword.get(instance, :limit)}</textlimit>
-    <closed>#{!Keyword.get(instance, :registrations_open)}</closed>
-    </site>
-    </config>
-    """
+    response = UtilView.status_net_config(instance)
 
     conn
     |> put_resp_content_type("application/xml")

@@ -16,7 +16,7 @@ defmodule Pleroma.Web.RuntimeStaticPlugTest do
 
   test "overrides index" do
     bundled_index = get(build_conn(), "/")
-    assert html_response(bundled_index, 200) == File.read!("priv/static/index.html")
+    refute html_response(bundled_index, 200) == "hello world"
 
     File.write!(@dir <> "/index.html", "hello world")
 
