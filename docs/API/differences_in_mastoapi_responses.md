@@ -234,3 +234,43 @@ Has these additional fields under the `pleroma` object:
 ## Streaming
 
 There is an additional `user:pleroma_chat` stream. Incoming chat messages will make the current chat be sent to this `user` stream. The `event` of an incoming chat message is `pleroma:chat_update`. The payload is the updated chat with the incoming chat message in the `last_message` field.
+
+## Not implemented
+
+Pleroma is generally compatible with the Mastodon 2.7.2 API, but some newer features and non-essential features are omitted. These features usually return an HTTP 200 status code, but with an empty response. While they may be added in the future, they are considered low priority.
+
+### Suggestions
+
+*Added in Mastodon 2.4.3*
+
+- `GET /api/v1/suggestions`: Returns an empty array, `[]`
+
+### Trends
+
+*Added in Mastodon 3.0.0*
+
+- `GET /api/v1/trends`: Returns an empty array, `[]`
+
+### Identity proofs
+
+*Added in Mastodon 2.8.0*
+
+- `GET /api/v1/identity_proofs`: Returns an empty array, `[]`
+
+### Endorsements
+
+*Added in Mastodon 2.5.0*
+
+- `GET /api/v1/endorsements`: Returns an empty array, `[]`
+
+### Profile directory
+
+*Added in Mastodon 3.0.0*
+
+- `GET /api/v1/directory`: Returns HTTP 404
+
+### Featured tags
+
+*Added in Mastodon 3.0.0*
+
+- `GET /api/v1/featured_tags`: Returns HTTP 404
