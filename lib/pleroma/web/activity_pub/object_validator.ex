@@ -31,6 +31,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
            |> BlockValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
       block_activity = stringify_keys(block_activity)
+      outgoing_blocks = Pleroma.Config.get([:activitypub, :outgoing_blocks])
+
+      meta =
+        if !outgoing_blocks do
+          Keyword.put(meta, :do_not_federate, true)
+        else
+          meta
+        end
+
       {:ok, block_activity, meta}
     end
   end
