@@ -697,6 +697,8 @@ config :pleroma, :mrf,
 
 config :tzdata, :http_client, Pleroma.HTTP.Tzdata
 
+config :ex_aws, http_client: Pleroma.HTTP.ExAws
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
