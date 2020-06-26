@@ -9,6 +9,7 @@ defmodule Pleroma.Web.Preload.Providers.StatusNetTest do
   setup do: {:ok, StatusNet.generate_terms(nil)}
 
   test "it renders the info", %{"/api/statusnet/config.json": info} do
-    assert info =~ "<name>Pleroma</name>"
+    assert {:ok, res} = Jason.decode(info)
+    assert res["site"]
   end
 end
