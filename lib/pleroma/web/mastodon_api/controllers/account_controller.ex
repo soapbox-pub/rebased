@@ -385,8 +385,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/block"
   def block(%{assigns: %{user: blocker, account: blocked}} = conn, _params) do
-    with {:ok, _user_block} <- User.block(blocker, blocked),
-         {:ok, _activity} <- ActivityPub.block(blocker, blocked) do
+    with {:ok, _activity} <- CommonAPI.block(blocker, blocked) do
       render(conn, "relationship.json", user: blocker, target: blocked)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
