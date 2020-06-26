@@ -446,13 +446,13 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       properties: %{
         token_type: %Schema{type: :string},
         access_token: %Schema{type: :string},
-        scope: %Schema{type: :array, items: %Schema{type: :string}},
+        scope: %Schema{type: :string},
         created_at: %Schema{type: :integer, format: :"date-time"}
       },
       example: %{
         "access_token" => "i9hAVVzGld86Pl5JtLtizKoXVvtTlSCJvwaugCxvZzk",
         "created_at" => 1_585_918_714,
-        "scope" => ["read", "write", "follow", "push"],
+        "scope" => "read write follow push",
         "token_type" => "Bearer"
       }
     }

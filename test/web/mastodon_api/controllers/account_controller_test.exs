@@ -905,7 +905,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       %{
         "access_token" => token,
         "created_at" => _created_at,
-        "scope" => _scope,
+        "scope" => ^scope,
         "token_type" => "Bearer"
       } = json_response_and_validate_schema(conn, 200)
 
@@ -1067,7 +1067,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{
                "access_token" => access_token,
                "created_at" => _,
-               "scope" => ["read", "write", "follow", "push"],
+               "scope" => "read write follow push",
                "token_type" => "Bearer"
              } = response
 
@@ -1185,7 +1185,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{
                "access_token" => access_token,
                "created_at" => _,
-               "scope" => ["read"],
+               "scope" => "read",
                "token_type" => "Bearer"
              } =
                conn

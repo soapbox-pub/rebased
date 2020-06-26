@@ -104,7 +104,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       json(conn, %{
         token_type: "Bearer",
         access_token: token.token,
-        scope: app.scopes,
+        scope: app.scopes |> Enum.join(" "),
         created_at: Token.Utils.format_created_at(token)
       })
     else
