@@ -58,7 +58,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             type: :object,
             properties: %{
               block_from_strangers: %Schema{type: :boolean},
-              privacy_option: %Schema{type: :boolean}
+              hide_notification_contents: %Schema{type: :boolean}
             }
           },
           relationship: AccountRelationship,
@@ -121,7 +121,7 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
         "tags" => [],
         "notification_settings" => %{
           "block_from_strangers" => false,
-          "privacy_option" => false
+          "hide_notification_contents" => false
         },
         "relationship" => %{
           "blocked_by" => false,

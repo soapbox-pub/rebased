@@ -97,7 +97,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     notification_settings = %{
       block_from_strangers: false,
-      privacy_option: false
+      hide_notification_contents: false
     }
 
     privacy = user.default_scope

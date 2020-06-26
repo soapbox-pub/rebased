@@ -288,7 +288,7 @@ See [Admin-API](admin_api.md)
 * Authentication: required
 * Params:
     * `block_from_strangers`: BOOLEAN field, blocks notifications from accounts you do not follow
-    * `privacy_option`: BOOLEAN field. When set to true, it removes the contents of a message from the push notification.
+    * `hide_notification_contents`: BOOLEAN field. When set to true, it removes the contents of a message from the push notification.
 * Response: JSON. Returns `{"status": "success"}` if the update was successful, otherwise returns `{"error": "error_msg"}`
 
 ## `/api/pleroma/healthcheck`
