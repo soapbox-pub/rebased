@@ -96,9 +96,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     user = insert(:user)
 
     notification_settings = %{
-      from_followers: true,
-      from_following: true,
-      from_strangers: true,
+      block_from_strangers: false,
       privacy_option: false
     }
 

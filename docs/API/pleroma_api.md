@@ -287,9 +287,7 @@ See [Admin-API](admin_api.md)
 * Method `PUT`
 * Authentication: required
 * Params:
-    * `from_followers`: BOOLEAN field, receives notifications from followers
-    * `from_following`: BOOLEAN field, receives notifications from people the user follows
-    * `from_strangers`: BOOLEAN field, receives notifications from people without an established relationship
+    * `block_from_strangers`: BOOLEAN field, blocks notifications from accounts you do not follow
     * `privacy_option`: BOOLEAN field. When set to true, it removes the contents of a message from the push notification.
 * Response: JSON. Returns `{"status": "success"}` if the update was successful, otherwise returns `{"error": "error_msg"}`
 
