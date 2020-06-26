@@ -1383,6 +1383,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf_simple,
+    tab: :mrf,
     label: "MRF simple",
     type: :group,
     description: "Message Rewrite Facility",
@@ -1448,6 +1449,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf_activity_expiration,
+    tab: :mrf,
     label: "MRF Activity Expiration Policy",
     type: :group,
     description: "Adds expiration to all local Create Note activities",
@@ -1463,6 +1465,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf_subchain,
+    tab: :mrf,
     label: "MRF subchain",
     type: :group,
     description:
@@ -1484,6 +1487,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf_rejectnonpublic,
+    tab: :mrf,
     description:
       "MRF RejectNonPublic settings. RejectNonPublic drops posts with non-public visibility settings.",
     label: "MRF reject non public",
@@ -1505,6 +1509,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf_hellthread,
+    tab: :mrf,
     label: "MRF hellthread",
     type: :group,
     description: "Block messages with too much mentions",
@@ -1529,6 +1534,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf_keyword,
+    tab: :mrf,
     label: "MRF keyword",
     type: :group,
     description: "Reject or Word-Replace messages with a keyword or regex",
@@ -1574,6 +1580,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf_vocabulary,
+    tab: :mrf,
     label: "MRF vocabulary",
     type: :group,
     description: "Filter messages which belong to certain activity vocabularies",
@@ -2832,6 +2839,7 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    tab: :mrf,
     key: :mrf_normalize_markup,
     label: "MRF normalize markup",
     description: "MRF NormalizeMarkup settings. Scrub configured hypertext markup.",
@@ -3024,6 +3032,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf_object_age,
+    tab: :mrf,
     type: :group,
     description: "Rejects or delists posts based on their age when received.",
     children: [
@@ -3367,6 +3376,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf,
+    tab: :mrf,
     type: :group,
     description: "General MRF settings",
     children: [
