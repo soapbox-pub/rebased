@@ -183,6 +183,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       card: nil,
       reblog: nil,
       content: HTML.filter_tags(object_data["content"]),
+      text: nil,
       created_at: created_at,
       reblogs_count: 0,
       replies_count: 0,

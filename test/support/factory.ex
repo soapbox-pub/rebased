@@ -67,6 +67,7 @@ defmodule Pleroma.Factory do
     data = %{
       "type" => "Note",
       "content" => text,
+      "source" => text,
       "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
       "actor" => user.ap_id,
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
