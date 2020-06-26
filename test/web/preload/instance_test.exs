@@ -25,7 +25,7 @@ defmodule Pleroma.Web.Preload.Providers.InstanceTest do
            )
   end
 
-  test "it renders the node_info", %{"/nodeinfo/2.0": nodeinfo} do
+  test "it renders the node_info", %{"/nodeinfo/2.0.json": nodeinfo} do
     %{
       metadata: metadata,
       version: "2.0"
