@@ -657,7 +657,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
 
   describe "blocks" do
     setup do
-      user = insert(:user)
+      user = insert(:user, local: false)
       blocked = insert(:user)
 
       {:ok, valid_block, []} = Builder.block(user, blocked)
@@ -679,6 +679,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
         |> Map.put("object", "https://gensokyo.2hu/users/raymoo")
 
       assert {:error, _cng} = ObjectValidator.validate(block, [])
+    end
+
+    test "returns an error if don't accept remote blocks", %{valid_block: valid_block} do
+      clear_config([:activitypub, :unfollow_blocked], false)
+
+      assert {:error, _cng} = ObjectValidator.validate(valid_block, [])
     end
   end
 end
