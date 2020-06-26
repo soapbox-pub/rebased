@@ -6,30 +6,19 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
   alias Pleroma.Config
   alias Pleroma.Stats
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.Federator.Publisher
+  alias Pleroma.Web.MastodonAPI.InstanceView
 
   # returns a nodeinfo 2.0 map, since 2.1 just adds a repository field
   # under software.
   def get_nodeinfo("2.0") do
     stats = Stats.get_stats()
 
-    quarantined = Config.get([:instance, :quarantined_instances], [])
-
     staff_accounts =
       User.all_superusers()
       |> Enum.map(fn u -> u.ap_id end)
 
-    federation_response =
-      if Config.get([:instance, :mrf_transparency]) do
-        {:ok, data} = MRF.describe()
-
-        data
-        |> Map.merge(%{quarantined_instances: quarantined})
-      else
-        %{}
-      end
-      |> Map.put(:enabled, Config.get([:instance, :federating]))
+    federation = InstanceView.federation()
 
     features =
       [
@@ -86,7 +75,7 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
           enabled: false
         },
         staffAccounts: staff_accounts,
-        federation: federation_response,
+        federation: federation,
         pollLimits: Config.get([:instance, :poll_limits]),
         postFormats: Config.get([:instance, :allowed_post_formats]),
         uploadLimits: %{
