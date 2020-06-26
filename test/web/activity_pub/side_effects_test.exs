@@ -87,6 +87,22 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       refute User.following?(blocked, user)
       assert User.blocks?(user, blocked)
     end
+
+    test "it blocks but does not unfollow if the relevant setting is set", %{
+      user: user,
+      blocked: blocked,
+      block: block
+    } do
+      clear_config([:activitypub, :unfollow_blocked], false)
+      assert User.following?(user, blocked)
+      assert User.following?(blocked, user)
+
+      {:ok, _, _} = SideEffects.handle(block)
+
+      refute User.following?(user, blocked)
+      assert User.following?(blocked, user)
+      assert User.blocks?(user, blocked)
+    end
   end
 
   describe "update users" do

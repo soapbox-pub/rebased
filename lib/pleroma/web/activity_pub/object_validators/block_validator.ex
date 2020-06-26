@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator do
   use Ecto.Schema
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
-  alias Pleroma.User
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -33,23 +32,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator do
     |> validate_inclusion(:type, ["Block"])
     |> validate_actor_presence()
     |> validate_actor_presence(field_name: :object)
-    |> validate_block_acceptance()
   end
 
   def cast_and_validate(data) do
     data
     |> cast_data
     |> validate_data
-  end
-
-  def validate_block_acceptance(cng) do
-    actor = get_field(cng, :actor) |> User.get_cached_by_ap_id()
-
-    if actor.local || Pleroma.Config.get([:activitypub, :unfollow_blocked], true) do
-      cng
-    else
-      cng
-      |> add_error(:actor, "Not accepting remote blocks")
-    end
   end
 end

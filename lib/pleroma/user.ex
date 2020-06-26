@@ -1309,7 +1309,8 @@ defmodule Pleroma.User do
 
     unsubscribe(blocked, blocker)
 
-    if following?(blocked, blocker), do: unfollow(blocked, blocker)
+    unfollowing_blocked = Config.get([:activitypub, :unfollow_blocked], true)
+    if unfollowing_blocked && following?(blocked, blocker), do: unfollow(blocked, blocker)
 
     {:ok, blocker} = update_follower_count(blocker)
     {:ok, blocker, _} = Participation.mark_all_as_read(blocker, blocked)

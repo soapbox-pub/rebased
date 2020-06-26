@@ -680,11 +680,5 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
 
       assert {:error, _cng} = ObjectValidator.validate(block, [])
     end
-
-    test "returns an error if don't accept remote blocks", %{valid_block: valid_block} do
-      clear_config([:activitypub, :unfollow_blocked], false)
-
-      assert {:error, _cng} = ObjectValidator.validate(valid_block, [])
-    end
   end
 end
