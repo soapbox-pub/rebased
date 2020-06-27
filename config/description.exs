@@ -1565,6 +1565,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf_mention,
+    tab: :mrf,
     label: "MRF mention",
     type: :group,
     description: "Block messages which mention a user",
@@ -3032,6 +3033,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :mrf_object_age,
+    label: "MRF object age",
     tab: :mrf,
     type: :group,
     description: "Rejects or delists posts based on their age when received.",
@@ -3377,6 +3379,7 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :mrf,
     tab: :mrf,
+    label: "MRF",
     type: :group,
     description: "General MRF settings",
     children: [
