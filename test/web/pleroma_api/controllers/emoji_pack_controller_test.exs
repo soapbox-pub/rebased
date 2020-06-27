@@ -102,7 +102,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
     test "shareable instance", %{admin_conn: admin_conn, conn: conn} do
       resp =
         conn
-        |> get("/api/pleroma/emoji/packs")
+        |> get("/api/pleroma/emoji/packs?page=2&page_size=1")
         |> json_response_and_validate_schema(200)
 
       mock(fn
@@ -112,12 +112,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackControllerTest do
         %{method: :get, url: "https://example.com/nodeinfo/2.1.json"} ->
           json(%{metadata: %{features: ["shareable_emoji_packs"]}})
 
-        %{method: :get, url: "https://example.com/api/pleroma/emoji/packs"} ->
+        %{method: :get, url: "https://example.com/api/pleroma/emoji/packs?page=2&page_size=1"} ->
           json(resp)
       end)
 
       assert admin_conn
-             |> get("/api/pleroma/emoji/packs/remote?url=https://example.com")
+             |> get("/api/pleroma/emoji/packs/remote?url=https://example.com&page=2&page_size=1")
              |> json_response_and_validate_schema(200) == resp
     end
 

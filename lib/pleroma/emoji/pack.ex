@@ -198,13 +198,13 @@ defmodule Pleroma.Emoji.Pack do
     end
   end
 
-  @spec list_remote(String.t()) :: {:ok, map()} | {:error, atom()}
-  def list_remote(url) do
-    uri = url |> String.trim() |> URI.parse()
+  @spec list_remote(keyword()) :: {:ok, map()} | {:error, atom()}
+  def list_remote(opts) do
+    uri = opts[:url] |> String.trim() |> URI.parse()
 
     with :ok <- validate_shareable_packs_available(uri) do
       uri
-      |> URI.merge("/api/pleroma/emoji/packs")
+      |> URI.merge("/api/pleroma/emoji/packs?page=#{opts[:page]}&page_size=#{opts[:page_size]}")
       |> http_get()
     end
   end
