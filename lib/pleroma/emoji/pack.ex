@@ -244,7 +244,8 @@ defmodule Pleroma.Emoji.Pack do
     uri = url |> String.trim() |> URI.parse()
 
     with :ok <- validate_shareable_packs_available(uri),
-         {:ok, remote_pack} <- uri |> URI.merge("/api/pleroma/emoji/packs/#{name}") |> http_get(),
+         {:ok, remote_pack} <-
+           uri |> URI.merge("/api/pleroma/emoji/packs/show?name=#{name}") |> http_get(),
          {:ok, %{sha: sha, url: url} = pack_info} <- fetch_pack_info(remote_pack, uri, name),
          {:ok, archive} <- download_archive(url, sha),
          pack <- copy_as(remote_pack, as || name),
@@ -572,7 +573,7 @@ defmodule Pleroma.Emoji.Pack do
         {:ok,
          %{
            sha: sha,
-           url: URI.merge(uri, "/api/pleroma/emoji/packs/#{name}/archive") |> to_string()
+           url: URI.merge(uri, "/api/pleroma/emoji/packs/archive?name=#{name}") |> to_string()
          }}
 
       %{"fallback-src" => src, "fallback-src-sha256" => sha} when is_binary(src) ->
