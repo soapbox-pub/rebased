@@ -21,8 +21,6 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
 
-  # TODO: Test there's no nil notifications
-
   describe "create_notifications" do
     test "never returns nil" do
       user = insert(:user)
