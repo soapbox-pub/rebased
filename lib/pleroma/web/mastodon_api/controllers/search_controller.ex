@@ -5,14 +5,13 @@
 defmodule Pleroma.Web.MastodonAPI.SearchController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [skip_relationships?: 1]
-
   alias Pleroma.Activity
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
+  alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
 
@@ -34,7 +33,11 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
     conn
     |> put_view(AccountView)
-    |> render("index.json", users: accounts, for: user, as: :user)
+    |> render("index.json",
+      users: accounts,
+      for: user,
+      as: :user
+    )
   end
 
   def search2(conn, params), do: do_search(:v2, conn, params)
@@ -71,13 +74,13 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
 
   defp search_options(params, user) do
     [
-      skip_relationships: skip_relationships?(params),
       resolve: params[:resolve],
       following: params[:following],
       limit: params[:limit],
       offset: params[:offset],
       type: params[:type],
       author: get_author(params),
+      embed_relationships: ControllerHelper.embed_relationships?(params),
       for_user: user
     ]
     |> Enum.filter(&elem(&1, 1))
@@ -90,7 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
       users: accounts,
       for: options[:for_user],
       as: :user,
-      skip_relationships: false
+      embed_relationships: options[:embed_relationships]
     )
   end
 
@@ -100,33 +103,76 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     StatusView.render("index.json",
       activities: statuses,
       for: options[:for_user],
-      as: :activity,
-      skip_relationships: options[:skip_relationships]
+      as: :activity
     )
   end
 
-  defp resource_search(:v2, "hashtags", query, _options) do
+  defp resource_search(:v2, "hashtags", query, options) do
     tags_path = Web.base_url() <> "/tag/"
 
     query
-    |> prepare_tags()
+    |> prepare_tags(options)
     |> Enum.map(fn tag ->
-      tag = String.trim_leading(tag, "#")
       %{name: tag, url: tags_path <> tag}
     end)
   end
 
-  defp resource_search(:v1, "hashtags", query, _options) do
-    query
-    |> prepare_tags()
-    |> Enum.map(fn tag -> String.trim_leading(tag, "#") end)
+  defp resource_search(:v1, "hashtags", query, options) do
+    prepare_tags(query, options)
   end
 
-  defp prepare_tags(query) do
-    query
-    |> String.split()
-    |> Enum.uniq()
-    |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
+  defp prepare_tags(query, options) do
+    tags =
+      query
+      |> preprocess_uri_query()
+      |> String.split(~r/[^#\w]+/u, trim: true)
+      |> Enum.uniq_by(&String.downcase/1)
+
+    explicit_tags = Enum.filter(tags, fn tag -> String.starts_with?(tag, "#") end)
+
+    tags =
+      if Enum.any?(explicit_tags) do
+        explicit_tags
+      else
+        tags
+      end
+
+    tags = Enum.map(tags, fn tag -> String.trim_leading(tag, "#") end)
+
+    tags =
+      if Enum.empty?(explicit_tags) && !options[:skip_joined_tag] do
+        add_joined_tag(tags)
+      else
+        tags
+      end
+
+    Pleroma.Pagination.paginate(tags, options)
+  end
+
+  defp add_joined_tag(tags) do
+    tags
+    |> Kernel.++([joined_tag(tags)])
+    |> Enum.uniq_by(&String.downcase/1)
+  end
+
+  # If `query` is a URI, returns last component of its path, otherwise returns `query`
+  defp preprocess_uri_query(query) do
+    if query =~ ~r/https?:\/\// do
+      query
+      |> String.trim_trailing("/")
+      |> URI.parse()
+      |> Map.get(:path)
+      |> String.split("/")
+      |> Enum.at(-1)
+    else
+      query
+    end
+  end
+
+  defp joined_tag(tags) do
+    tags
+    |> Enum.map(fn tag -> String.capitalize(tag) end)
+    |> Enum.join()
   end
 
   defp with_fallback(f, fallback \\ []) do

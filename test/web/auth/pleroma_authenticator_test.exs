@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Auth.PleromaAuthenticatorTest do
@@ -15,11 +15,16 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticatorTest do
     {:ok, [user: user, name: name, password: password]}
   end
 
-  test "get_user/authorization", %{user: user, name: name, password: password} do
+  test "get_user/authorization", %{name: name, password: password} do
+    name = name <> "1"
+    user = insert(:user, nickname: name, password_hash: Bcrypt.hash_pwd_salt(password))
+
     params = %{"authorization" => %{"name" => name, "password" => password}}
     res = PleromaAuthenticator.get_user(%Plug.Conn{params: params})
 
-    assert {:ok, user} == res
+    assert {:ok, returned_user} = res
+    assert returned_user.id == user.id
+    assert "$pbkdf2" <> _ = returned_user.password_hash
   end
 
   test "get_user/authorization with invalid password", %{name: name} do

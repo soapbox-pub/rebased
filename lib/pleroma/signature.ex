@@ -5,10 +5,10 @@
 defmodule Pleroma.Signature do
   @behaviour HTTPSignatures.Adapter
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Keys
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   def key_id_to_actor_id(key_id) do
     uri =
@@ -24,7 +24,7 @@ defmodule Pleroma.Signature do
 
     maybe_ap_id = URI.to_string(uri)
 
-    case Types.ObjectID.cast(maybe_ap_id) do
+    case ObjectValidators.ObjectID.cast(maybe_ap_id) do
       {:ok, ap_id} ->
         {:ok, ap_id}
 

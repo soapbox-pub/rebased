@@ -36,6 +36,7 @@ defmodule Pleroma.LoadTesting.Fetcher do
     fetch_home_timeline(user)
     fetch_direct_timeline(user)
     fetch_public_timeline(user)
+    fetch_public_timeline(user, :with_blocks)
     fetch_public_timeline(user, :local)
     fetch_public_timeline(user, :tag)
     fetch_notifications(user)
@@ -51,12 +52,12 @@ defmodule Pleroma.LoadTesting.Fetcher do
 
   defp opts_for_home_timeline(user) do
     %{
-      "blocking_user" => user,
-      "count" => "20",
-      "muting_user" => user,
-      "type" => ["Create", "Announce"],
-      "user" => user,
-      "with_muted" => "true"
+      blocking_user: user,
+      count: "20",
+      muting_user: user,
+      type: ["Create", "Announce"],
+      user: user,
+      with_muted: true
     }
   end
 
@@ -69,17 +70,17 @@ defmodule Pleroma.LoadTesting.Fetcher do
       ActivityPub.fetch_activities(recipients, opts) |> Enum.reverse() |> List.last()
 
     second_page_last =
-      ActivityPub.fetch_activities(recipients, Map.put(opts, "max_id", first_page_last.id))
+      ActivityPub.fetch_activities(recipients, Map.put(opts, :max_id, first_page_last.id))
       |> Enum.reverse()
       |> List.last()
 
     third_page_last =
-      ActivityPub.fetch_activities(recipients, Map.put(opts, "max_id", second_page_last.id))
+      ActivityPub.fetch_activities(recipients, Map.put(opts, :max_id, second_page_last.id))
       |> Enum.reverse()
       |> List.last()
 
     forth_page_last =
-      ActivityPub.fetch_activities(recipients, Map.put(opts, "max_id", third_page_last.id))
+      ActivityPub.fetch_activities(recipients, Map.put(opts, :max_id, third_page_last.id))
       |> Enum.reverse()
       |> List.last()
 
@@ -89,19 +90,19 @@ defmodule Pleroma.LoadTesting.Fetcher do
       },
       inputs: %{
         "1 page" => opts,
-        "2 page" => Map.put(opts, "max_id", first_page_last.id),
-        "3 page" => Map.put(opts, "max_id", second_page_last.id),
-        "4 page" => Map.put(opts, "max_id", third_page_last.id),
-        "5 page" => Map.put(opts, "max_id", forth_page_last.id),
-        "1 page only media" => Map.put(opts, "only_media", "true"),
+        "2 page" => Map.put(opts, :max_id, first_page_last.id),
+        "3 page" => Map.put(opts, :max_id, second_page_last.id),
+        "4 page" => Map.put(opts, :max_id, third_page_last.id),
+        "5 page" => Map.put(opts, :max_id, forth_page_last.id),
+        "1 page only media" => Map.put(opts, :only_media, true),
         "2 page only media" =>
-          Map.put(opts, "max_id", first_page_last.id) |> Map.put("only_media", "true"),
+          Map.put(opts, :max_id, first_page_last.id) |> Map.put(:only_media, true),
         "3 page only media" =>
-          Map.put(opts, "max_id", second_page_last.id) |> Map.put("only_media", "true"),
+          Map.put(opts, :max_id, second_page_last.id) |> Map.put(:only_media, true),
         "4 page only media" =>
-          Map.put(opts, "max_id", third_page_last.id) |> Map.put("only_media", "true"),
+          Map.put(opts, :max_id, third_page_last.id) |> Map.put(:only_media, true),
         "5 page only media" =>
-          Map.put(opts, "max_id", forth_page_last.id) |> Map.put("only_media", "true")
+          Map.put(opts, :max_id, forth_page_last.id) |> Map.put(:only_media, true)
       },
       formatters: formatters()
     )
@@ -109,12 +110,12 @@ defmodule Pleroma.LoadTesting.Fetcher do
 
   defp opts_for_direct_timeline(user) do
     %{
-      :visibility => "direct",
-      "blocking_user" => user,
-      "count" => "20",
-      "type" => "Create",
-      "user" => user,
-      "with_muted" => "true"
+      visibility: "direct",
+      blocking_user: user,
+      count: "20",
+      type: "Create",
+      user: user,
+      with_muted: true
     }
   end
 
@@ -129,7 +130,7 @@ defmodule Pleroma.LoadTesting.Fetcher do
       |> Pagination.fetch_paginated(opts)
       |> List.last()
 
-    opts2 = Map.put(opts, "max_id", first_page_last.id)
+    opts2 = Map.put(opts, :max_id, first_page_last.id)
 
     second_page_last =
       recipients
@@ -137,7 +138,7 @@ defmodule Pleroma.LoadTesting.Fetcher do
       |> Pagination.fetch_paginated(opts2)
       |> List.last()
 
-    opts3 = Map.put(opts, "max_id", second_page_last.id)
+    opts3 = Map.put(opts, :max_id, second_page_last.id)
 
     third_page_last =
       recipients
@@ -145,7 +146,7 @@ defmodule Pleroma.LoadTesting.Fetcher do
       |> Pagination.fetch_paginated(opts3)
       |> List.last()
 
-    opts4 = Map.put(opts, "max_id", third_page_last.id)
+    opts4 = Map.put(opts, :max_id, third_page_last.id)
 
     forth_page_last =
       recipients
@@ -164,7 +165,7 @@ defmodule Pleroma.LoadTesting.Fetcher do
         "2 page" => opts2,
         "3 page" => opts3,
         "4 page" => opts4,
-        "5 page" => Map.put(opts4, "max_id", forth_page_last.id)
+        "5 page" => Map.put(opts4, :max_id, forth_page_last.id)
       },
       formatters: formatters()
     )
@@ -172,34 +173,34 @@ defmodule Pleroma.LoadTesting.Fetcher do
 
   defp opts_for_public_timeline(user) do
     %{
-      "type" => ["Create", "Announce"],
-      "local_only" => false,
-      "blocking_user" => user,
-      "muting_user" => user
+      type: ["Create", "Announce"],
+      local_only: false,
+      blocking_user: user,
+      muting_user: user
     }
   end
 
   defp opts_for_public_timeline(user, :local) do
     %{
-      "type" => ["Create", "Announce"],
-      "local_only" => true,
-      "blocking_user" => user,
-      "muting_user" => user
+      type: ["Create", "Announce"],
+      local_only: true,
+      blocking_user: user,
+      muting_user: user
     }
   end
 
   defp opts_for_public_timeline(user, :tag) do
     %{
-      "blocking_user" => user,
-      "count" => "20",
-      "local_only" => nil,
-      "muting_user" => user,
-      "tag" => ["tag"],
-      "tag_all" => [],
-      "tag_reject" => [],
-      "type" => "Create",
-      "user" => user,
-      "with_muted" => "true"
+      blocking_user: user,
+      count: "20",
+      local_only: nil,
+      muting_user: user,
+      tag: ["tag"],
+      tag_all: [],
+      tag_reject: [],
+      type: "Create",
+      user: user,
+      with_muted: true
     }
   end
 
@@ -222,24 +223,72 @@ defmodule Pleroma.LoadTesting.Fetcher do
   end
 
   defp fetch_public_timeline(user, :only_media) do
-    opts = opts_for_public_timeline(user) |> Map.put("only_media", "true")
+    opts = opts_for_public_timeline(user) |> Map.put(:only_media, true)
 
     fetch_public_timeline(opts, "public timeline only media")
+  end
+
+  defp fetch_public_timeline(user, :with_blocks) do
+    opts = opts_for_public_timeline(user)
+
+    remote_non_friends = Agent.get(:non_friends_remote, & &1)
+
+    Benchee.run(%{
+      "public timeline without blocks" => fn ->
+        ActivityPub.fetch_public_activities(opts)
+      end
+    })
+
+    Enum.each(remote_non_friends, fn non_friend ->
+      {:ok, _} = User.block(user, non_friend)
+    end)
+
+    user = User.get_by_id(user.id)
+
+    opts = Map.put(opts, :blocking_user, user)
+
+    Benchee.run(%{
+      "public timeline with user block" => fn ->
+        ActivityPub.fetch_public_activities(opts)
+      end
+    })
+
+    domains =
+      Enum.reduce(remote_non_friends, [], fn non_friend, domains ->
+        {:ok, _user} = User.unblock(user, non_friend)
+        %{host: host} = URI.parse(non_friend.ap_id)
+        [host | domains]
+      end)
+
+    domains = Enum.uniq(domains)
+
+    Enum.each(domains, fn domain ->
+      {:ok, _} = User.block_domain(user, domain)
+    end)
+
+    user = User.get_by_id(user.id)
+    opts = Map.put(opts, :blocking_user, user)
+
+    Benchee.run(%{
+      "public timeline with domain block" => fn ->
+        ActivityPub.fetch_public_activities(opts)
+      end
+    })
   end
 
   defp fetch_public_timeline(opts, title) when is_binary(title) do
     first_page_last = ActivityPub.fetch_public_activities(opts) |> List.last()
 
     second_page_last =
-      ActivityPub.fetch_public_activities(Map.put(opts, "max_id", first_page_last.id))
+      ActivityPub.fetch_public_activities(Map.put(opts, :max_id, first_page_last.id))
       |> List.last()
 
     third_page_last =
-      ActivityPub.fetch_public_activities(Map.put(opts, "max_id", second_page_last.id))
+      ActivityPub.fetch_public_activities(Map.put(opts, :max_id, second_page_last.id))
       |> List.last()
 
     forth_page_last =
-      ActivityPub.fetch_public_activities(Map.put(opts, "max_id", third_page_last.id))
+      ActivityPub.fetch_public_activities(Map.put(opts, :max_id, third_page_last.id))
       |> List.last()
 
     Benchee.run(
@@ -250,17 +299,17 @@ defmodule Pleroma.LoadTesting.Fetcher do
       },
       inputs: %{
         "1 page" => opts,
-        "2 page" => Map.put(opts, "max_id", first_page_last.id),
-        "3 page" => Map.put(opts, "max_id", second_page_last.id),
-        "4 page" => Map.put(opts, "max_id", third_page_last.id),
-        "5 page" => Map.put(opts, "max_id", forth_page_last.id)
+        "2 page" => Map.put(opts, :max_id, first_page_last.id),
+        "3 page" => Map.put(opts, :max_id, second_page_last.id),
+        "4 page" => Map.put(opts, :max_id, third_page_last.id),
+        "5 page" => Map.put(opts, :max_id, forth_page_last.id)
       },
       formatters: formatters()
     )
   end
 
   defp opts_for_notifications do
-    %{"count" => "20", "with_muted" => "true"}
+    %{count: "20", with_muted: true}
   end
 
   defp fetch_notifications(user) do
@@ -269,15 +318,15 @@ defmodule Pleroma.LoadTesting.Fetcher do
     first_page_last = MastodonAPI.get_notifications(user, opts) |> List.last()
 
     second_page_last =
-      MastodonAPI.get_notifications(user, Map.put(opts, "max_id", first_page_last.id))
+      MastodonAPI.get_notifications(user, Map.put(opts, :max_id, first_page_last.id))
       |> List.last()
 
     third_page_last =
-      MastodonAPI.get_notifications(user, Map.put(opts, "max_id", second_page_last.id))
+      MastodonAPI.get_notifications(user, Map.put(opts, :max_id, second_page_last.id))
       |> List.last()
 
     forth_page_last =
-      MastodonAPI.get_notifications(user, Map.put(opts, "max_id", third_page_last.id))
+      MastodonAPI.get_notifications(user, Map.put(opts, :max_id, third_page_last.id))
       |> List.last()
 
     Benchee.run(
@@ -288,10 +337,10 @@ defmodule Pleroma.LoadTesting.Fetcher do
       },
       inputs: %{
         "1 page" => opts,
-        "2 page" => Map.put(opts, "max_id", first_page_last.id),
-        "3 page" => Map.put(opts, "max_id", second_page_last.id),
-        "4 page" => Map.put(opts, "max_id", third_page_last.id),
-        "5 page" => Map.put(opts, "max_id", forth_page_last.id)
+        "2 page" => Map.put(opts, :max_id, first_page_last.id),
+        "3 page" => Map.put(opts, :max_id, second_page_last.id),
+        "4 page" => Map.put(opts, :max_id, third_page_last.id),
+        "5 page" => Map.put(opts, :max_id, forth_page_last.id)
       },
       formatters: formatters()
     )
@@ -301,13 +350,13 @@ defmodule Pleroma.LoadTesting.Fetcher do
     first_page_last = ActivityPub.fetch_favourites(user) |> List.last()
 
     second_page_last =
-      ActivityPub.fetch_favourites(user, %{"max_id" => first_page_last.id}) |> List.last()
+      ActivityPub.fetch_favourites(user, %{:max_id => first_page_last.id}) |> List.last()
 
     third_page_last =
-      ActivityPub.fetch_favourites(user, %{"max_id" => second_page_last.id}) |> List.last()
+      ActivityPub.fetch_favourites(user, %{:max_id => second_page_last.id}) |> List.last()
 
     forth_page_last =
-      ActivityPub.fetch_favourites(user, %{"max_id" => third_page_last.id}) |> List.last()
+      ActivityPub.fetch_favourites(user, %{:max_id => third_page_last.id}) |> List.last()
 
     Benchee.run(
       %{
@@ -317,10 +366,10 @@ defmodule Pleroma.LoadTesting.Fetcher do
       },
       inputs: %{
         "1 page" => %{},
-        "2 page" => %{"max_id" => first_page_last.id},
-        "3 page" => %{"max_id" => second_page_last.id},
-        "4 page" => %{"max_id" => third_page_last.id},
-        "5 page" => %{"max_id" => forth_page_last.id}
+        "2 page" => %{:max_id => first_page_last.id},
+        "3 page" => %{:max_id => second_page_last.id},
+        "4 page" => %{:max_id => third_page_last.id},
+        "5 page" => %{:max_id => forth_page_last.id}
       },
       formatters: formatters()
     )
@@ -328,8 +377,8 @@ defmodule Pleroma.LoadTesting.Fetcher do
 
   defp opts_for_long_thread(user) do
     %{
-      "blocking_user" => user,
-      "user" => user
+      blocking_user: user,
+      user: user
     }
   end
 
@@ -339,9 +388,9 @@ defmodule Pleroma.LoadTesting.Fetcher do
 
     opts = opts_for_long_thread(user)
 
-    private_input = {private.data["context"], Map.put(opts, "exclude_id", private.id)}
+    private_input = {private.data["context"], Map.put(opts, :exclude_id, private.id)}
 
-    public_input = {public.data["context"], Map.put(opts, "exclude_id", public.id)}
+    public_input = {public.data["context"], Map.put(opts, :exclude_id, public.id)}
 
     Benchee.run(
       %{
@@ -387,56 +436,47 @@ defmodule Pleroma.LoadTesting.Fetcher do
 
     favourites = ActivityPub.fetch_favourites(user)
 
-    output_relationships =
-      !!Pleroma.Config.get([:extensions, :output_relationships_in_statuses_by_default])
-
     Benchee.run(
       %{
         "Rendering home timeline" => fn ->
           StatusView.render("index.json", %{
             activities: home_activities,
             for: user,
-            as: :activity,
-            skip_relationships: !output_relationships
+            as: :activity
           })
         end,
         "Rendering direct timeline" => fn ->
           StatusView.render("index.json", %{
             activities: direct_activities,
             for: user,
-            as: :activity,
-            skip_relationships: !output_relationships
+            as: :activity
           })
         end,
         "Rendering public timeline" => fn ->
           StatusView.render("index.json", %{
             activities: public_activities,
             for: user,
-            as: :activity,
-            skip_relationships: !output_relationships
+            as: :activity
           })
         end,
         "Rendering tag timeline" => fn ->
           StatusView.render("index.json", %{
             activities: tag_activities,
             for: user,
-            as: :activity,
-            skip_relationships: !output_relationships
+            as: :activity
           })
         end,
         "Rendering notifications" => fn ->
           Pleroma.Web.MastodonAPI.NotificationView.render("index.json", %{
             notifications: notifications,
-            for: user,
-            skip_relationships: !output_relationships
+            for: user
           })
         end,
         "Rendering favourites timeline" => fn ->
           StatusView.render("index.json", %{
             activities: favourites,
             for: user,
-            as: :activity,
-            skip_relationships: !output_relationships
+            as: :activity
           })
         end
       },
@@ -470,13 +510,13 @@ defmodule Pleroma.LoadTesting.Fetcher do
     public_context =
       ActivityPub.fetch_activities_for_context(
         public.data["context"],
-        Map.put(fetch_opts, "exclude_id", public.id)
+        Map.put(fetch_opts, :exclude_id, public.id)
       )
 
     private_context =
       ActivityPub.fetch_activities_for_context(
         private.data["context"],
-        Map.put(fetch_opts, "exclude_id", private.id)
+        Map.put(fetch_opts, :exclude_id, private.id)
       )
 
     Benchee.run(
@@ -507,14 +547,14 @@ defmodule Pleroma.LoadTesting.Fetcher do
         end,
         "Public timeline with reply filtering - following" => fn ->
           public_params
-          |> Map.put("reply_visibility", "following")
-          |> Map.put("reply_filtering_user", user)
+          |> Map.put(:reply_visibility, "following")
+          |> Map.put(:reply_filtering_user, user)
           |> ActivityPub.fetch_public_activities()
         end,
         "Public timeline with reply filtering - self" => fn ->
           public_params
-          |> Map.put("reply_visibility", "self")
-          |> Map.put("reply_filtering_user", user)
+          |> Map.put(:reply_visibility, "self")
+          |> Map.put(:reply_filtering_user, user)
           |> ActivityPub.fetch_public_activities()
         end
       },
@@ -533,16 +573,16 @@ defmodule Pleroma.LoadTesting.Fetcher do
         "Home timeline with reply filtering - following" => fn ->
           private_params =
             private_params
-            |> Map.put("reply_filtering_user", user)
-            |> Map.put("reply_visibility", "following")
+            |> Map.put(:reply_filtering_user, user)
+            |> Map.put(:reply_visibility, "following")
 
           ActivityPub.fetch_activities(recipients, private_params)
         end,
         "Home timeline with reply filtering - self" => fn ->
           private_params =
             private_params
-            |> Map.put("reply_filtering_user", user)
-            |> Map.put("reply_visibility", "self")
+            |> Map.put(:reply_filtering_user, user)
+            |> Map.put(:reply_visibility, "self")
 
           ActivityPub.fetch_activities(recipients, private_params)
         end

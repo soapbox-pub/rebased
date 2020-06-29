@@ -12,9 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
 
   import Pleroma.Factory
 
-  test "does NOT render account/pleroma/relationship if this is disabled by default" do
-    clear_config([:extensions, :output_relationships_in_statuses_by_default], false)
-
+  test "does NOT render account/pleroma/relationship by default" do
     %{user: user, conn: conn} = oauth_access(["read:notifications"])
     other_user = insert(:user)
 
@@ -54,6 +52,27 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
              json_response_and_validate_schema(conn, 200)
 
     assert response == expected_response
+  end
+
+  test "by default, does not contain pleroma:chat_mention" do
+    %{user: user, conn: conn} = oauth_access(["read:notifications"])
+    other_user = insert(:user)
+
+    {:ok, _activity} = CommonAPI.post_chat_message(other_user, user, "hey")
+
+    result =
+      conn
+      |> get("/api/v1/notifications")
+      |> json_response_and_validate_schema(200)
+
+    assert [] == result
+
+    result =
+      conn
+      |> get("/api/v1/notifications?include_types[]=pleroma:chat_mention")
+      |> json_response_and_validate_schema(200)
+
+    assert [_] = result
   end
 
   test "getting a single notification" do
@@ -282,8 +301,8 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       {:ok, unlisted_activity} =
         CommonAPI.post(other_user, %{status: ".", visibility: "unlisted"})
 
-      {:ok, _, _} = CommonAPI.repeat(public_activity.id, user)
-      {:ok, _, _} = CommonAPI.repeat(unlisted_activity.id, user)
+      {:ok, _} = CommonAPI.repeat(public_activity.id, user)
+      {:ok, _} = CommonAPI.repeat(unlisted_activity.id, user)
 
       activity_ids =
         conn
@@ -294,6 +313,33 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
       assert public_activity.id in activity_ids
       refute unlisted_activity.id in activity_ids
     end
+
+    test "doesn't return less than the requested amount of records when the user's reply is liked" do
+      user = insert(:user)
+      %{user: other_user, conn: conn} = oauth_access(["read:notifications"])
+
+      {:ok, mention} =
+        CommonAPI.post(user, %{status: "@#{other_user.nickname}", visibility: "public"})
+
+      {:ok, activity} = CommonAPI.post(user, %{status: ".", visibility: "public"})
+
+      {:ok, reply} =
+        CommonAPI.post(other_user, %{
+          status: ".",
+          visibility: "public",
+          in_reply_to_status_id: activity.id
+        })
+
+      {:ok, _favorite} = CommonAPI.favorite(user, reply.id)
+
+      activity_ids =
+        conn
+        |> get("/api/v1/notifications?exclude_visibilities[]=direct&limit=2")
+        |> json_response_and_validate_schema(200)
+        |> Enum.map(& &1["status"]["id"])
+
+      assert [reply.id, mention.id] == activity_ids
+    end
   end
 
   test "filters notifications using exclude_types" do
@@ -303,7 +349,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     {:ok, mention_activity} = CommonAPI.post(other_user, %{status: "hey @#{user.nickname}"})
     {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
     {:ok, favorite_activity} = CommonAPI.favorite(other_user, create_activity.id)
-    {:ok, reblog_activity, _} = CommonAPI.repeat(create_activity.id, other_user)
+    {:ok, reblog_activity} = CommonAPI.repeat(create_activity.id, other_user)
     {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
 
     mention_notification_id = get_notification_id_by_activity(mention_activity)
@@ -341,7 +387,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationControllerTest do
     {:ok, mention_activity} = CommonAPI.post(other_user, %{status: "hey @#{user.nickname}"})
     {:ok, create_activity} = CommonAPI.post(user, %{status: "hey"})
     {:ok, favorite_activity} = CommonAPI.favorite(other_user, create_activity.id)
-    {:ok, reblog_activity, _} = CommonAPI.repeat(create_activity.id, other_user)
+    {:ok, reblog_activity} = CommonAPI.repeat(create_activity.id, other_user)
     {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
 
     mention_notification_id = get_notification_id_by_activity(mention_activity)

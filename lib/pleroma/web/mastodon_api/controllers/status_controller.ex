@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [try_render: 3, add_link_headers: 2, skip_relationships?: 1]
+    only: [try_render: 3, add_link_headers: 2]
 
   require Ecto.Query
 
@@ -84,13 +84,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   plug(
     RateLimiter,
-    [name: :status_id_action, bucket_name: "status_id_action:reblog_unreblog", params: ["id"]]
+    [name: :status_id_action, bucket_name: "status_id_action:reblog_unreblog", params: [:id]]
     when action in ~w(reblog unreblog)a
   )
 
   plug(
     RateLimiter,
-    [name: :status_id_action, bucket_name: "status_id_action:fav_unfav", params: ["id"]]
+    [name: :status_id_action, bucket_name: "status_id_action:fav_unfav", params: [:id]]
     when action in ~w(favourite unfavourite)a
   )
 
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   `ids` query param is required
   """
-  def index(%{assigns: %{user: user}} = conn, %{ids: ids} = params) do
+  def index(%{assigns: %{user: user}} = conn, %{ids: ids} = _params) do
     limit = 100
 
     activities =
@@ -117,8 +117,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     render(conn, "index.json",
       activities: activities,
       for: user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 
@@ -211,7 +210,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc "POST /api/v1/statuses/:id/reblog"
   def reblog(%{assigns: %{user: user}, body_params: params} = conn, %{id: ap_id_or_id}) do
-    with {:ok, announce, _activity} <- CommonAPI.repeat(ap_id_or_id, user, params),
+    with {:ok, announce} <- CommonAPI.repeat(ap_id_or_id, user, params),
          %Activity{} = announce <- Activity.normalize(announce.data) do
       try_render(conn, "show.json", %{activity: announce, for: user, as: :activity})
     end
@@ -360,9 +359,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     with %Activity{} = activity <- Activity.get_by_id(id) do
       activities =
         ActivityPub.fetch_activities_for_context(activity.data["context"], %{
-          "blocking_user" => user,
-          "user" => user,
-          "exclude_id" => activity.id
+          blocking_user: user,
+          user: user,
+          exclude_id: activity.id
         })
 
       render(conn, "context.json", activity: activity, activities: activities, user: user)
@@ -371,11 +370,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
 
   @doc "GET /api/v1/favourites"
   def favourites(%{assigns: %{user: %User{} = user}} = conn, params) do
-    params =
-      params
-      |> Map.new(fn {key, value} -> {to_string(key), value} end)
-      |> Map.take(Pleroma.Pagination.page_keys())
-
     activities = ActivityPub.fetch_favourites(user, params)
 
     conn
@@ -383,8 +377,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     |> render("index.json",
       activities: activities,
       for: user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 
@@ -406,8 +399,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
     |> render("index.json",
       activities: activities,
       for: user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 end

@@ -6,7 +6,9 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
   use Pleroma.Web, :view
 
   alias Pleroma.User
+  alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.MediaProxy
 
   def render("index.json", %{users: users, count: count, page_size: page_size}) do
@@ -74,25 +76,8 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "local" => user.local,
       "roles" => User.roles(user),
       "tags" => user.tags || [],
-      "confirmation_pending" => user.confirmation_pending
-    }
-  end
-
-  def render("invite.json", %{invite: invite}) do
-    %{
-      "id" => invite.id,
-      "token" => invite.token,
-      "used" => invite.used,
-      "expires_at" => invite.expires_at,
-      "uses" => invite.uses,
-      "max_use" => invite.max_use,
-      "invite_type" => invite.invite_type
-    }
-  end
-
-  def render("invites.json", %{invites: invites}) do
-    %{
-      invites: render_many(invites, AccountView, "invite.json", as: :invite)
+      "confirmation_pending" => user.confirmation_pending,
+      "url" => user.uri || user.ap_id
     }
   end
 
@@ -118,6 +103,13 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       }
     }
   end
+
+  def merge_account_views(%User{} = user) do
+    MastodonAPI.AccountView.render("show.json", %{user: user})
+    |> Map.merge(AdminAPI.AccountView.render("show.json", %{user: user}))
+  end
+
+  def merge_account_views(_), do: %{}
 
   defp parse_error([]), do: ""
 

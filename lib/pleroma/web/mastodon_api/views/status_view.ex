@@ -21,7 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
-  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1]
+  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
 
   # TODO: Add cached version.
   defp get_replied_to_activities([]), do: %{}
@@ -107,9 +107,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
             |> Enum.map(&get_user(&1.data["actor"], false))
             |> Enum.filter(& &1)
 
-          UserRelationship.view_relationships_option(reading_user, actors,
-            source_mutes_only: opts[:skip_relationships]
-          )
+          UserRelationship.view_relationships_option(reading_user, actors, subset: :source_mutes)
       end
 
     opts =
@@ -162,9 +160,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       account:
         AccountView.render("show.json", %{
           user: user,
-          for: opts[:for],
-          relationships: opts[:relationships],
-          skip_relationships: opts[:skip_relationships]
+          for: opts[:for]
         }),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -330,9 +326,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       account:
         AccountView.render("show.json", %{
           user: user,
-          for: opts[:for],
-          relationships: opts[:relationships],
-          skip_relationships: opts[:skip_relationships]
+          for: opts[:for]
         }),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
@@ -370,7 +364,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         expires_at: expires_at,
         direct_conversation_id: direct_conversation_id,
         thread_muted: thread_muted?,
-        emoji_reactions: emoji_reactions
+        emoji_reactions: emoji_reactions,
+        parent_visible: visible_for_user?(reply_to, opts[:for])
       }
     }
   end
@@ -383,8 +378,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     page_url_data = URI.parse(page_url)
 
     page_url_data =
-      if rich_media[:url] != nil do
-        URI.merge(page_url_data, URI.parse(rich_media[:url]))
+      if is_binary(rich_media["url"]) do
+        URI.merge(page_url_data, URI.parse(rich_media["url"]))
       else
         page_url_data
       end
@@ -392,11 +387,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     page_url = page_url_data |> to_string
 
     image_url =
-      if rich_media[:image] != nil do
-        URI.merge(page_url_data, URI.parse(rich_media[:image]))
+      if is_binary(rich_media["image"]) do
+        URI.merge(page_url_data, URI.parse(rich_media["image"]))
         |> to_string
-      else
-        nil
       end
 
     %{
@@ -405,8 +398,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
       url: page_url,
       image: image_url |> MediaProxy.url(),
-      title: rich_media[:title] || "",
-      description: rich_media[:description] || "",
+      title: rich_media["title"] || "",
+      description: rich_media["description"] || "",
       pleroma: %{
         opengraph: rich_media
       }
@@ -440,27 +433,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       description: attachment["name"],
       pleroma: %{mime_type: media_type}
     }
-  end
-
-  def render("listen.json", %{activity: %Activity{data: %{"type" => "Listen"}} = activity} = opts) do
-    object = Object.normalize(activity)
-
-    user = get_user(activity.data["actor"])
-    created_at = Utils.to_masto_date(activity.data["published"])
-
-    %{
-      id: activity.id,
-      account: AccountView.render("show.json", %{user: user, for: opts[:for]}),
-      created_at: created_at,
-      title: object.data["title"] |> HTML.strip_tags(),
-      artist: object.data["artist"] |> HTML.strip_tags(),
-      album: object.data["album"] |> HTML.strip_tags(),
-      length: object.data["length"]
-    }
-  end
-
-  def render("listens.json", opts) do
-    safe_render_many(opts.activities, StatusView, "listen.json", opts)
   end
 
   def render("context.json", %{activity: activity, activities: activities, user: user}) do

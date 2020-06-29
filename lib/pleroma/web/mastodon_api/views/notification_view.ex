@@ -6,26 +6,28 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
+  alias Pleroma.Chat.MessageReference
   alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.PleromaAPI.Chat.MessageReferenceView
+
+  @parent_types ~w{Like Announce EmojiReact}
 
   def render("index.json", %{notifications: notifications, for: reading_user} = opts) do
     activities = Enum.map(notifications, & &1.activity)
 
     parent_activities =
       activities
-      |> Enum.filter(
-        &(Activity.mastodon_notification_type(&1) in [
-            "favourite",
-            "reblog",
-            "pleroma:emoji_reaction"
-          ])
-      )
+      |> Enum.filter(fn
+        %{data: %{"type" => type}} ->
+          type in @parent_types
+      end)
       |> Enum.map(& &1.data["object"])
       |> Activity.create_by_object_ap_id()
       |> Activity.with_preloaded_object(:left)
@@ -42,8 +44,9 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
         true ->
           move_activities_targets =
             activities
-            |> Enum.filter(&(Activity.mastodon_notification_type(&1) == "move"))
+            |> Enum.filter(&(&1.data["type"] == "Move"))
             |> Enum.map(&User.get_cached_by_ap_id(&1.data["target"]))
+            |> Enum.filter(& &1)
 
           actors =
             activities
@@ -51,9 +54,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
             |> Enum.filter(& &1)
             |> Kernel.++(move_activities_targets)
 
-          UserRelationship.view_relationships_option(reading_user, actors,
-            source_mutes_only: opts[:skip_relationships]
-          )
+          UserRelationship.view_relationships_option(reading_user, actors, subset: :source_mutes)
       end
 
     opts =
@@ -81,60 +82,60 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
       end
     end
 
-    mastodon_type = Activity.mastodon_notification_type(activity)
+    # Note: :relationships contain user mutes (needed for :muted flag in :status)
+    status_render_opts = %{relationships: opts[:relationships]}
+    account = AccountView.render("show.json", %{user: actor, for: reading_user})
 
-    render_opts = %{
-      relationships: opts[:relationships],
-      skip_relationships: opts[:skip_relationships]
+    response = %{
+      id: to_string(notification.id),
+      type: notification.type,
+      created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
+      account: account,
+      pleroma: %{
+        is_muted: User.mutes?(reading_user, actor),
+        is_seen: notification.seen
+      }
     }
 
-    with %{id: _} = account <-
-           AccountView.render(
-             "show.json",
-             Map.merge(render_opts, %{user: actor, for: reading_user})
-           ) do
-      response = %{
-        id: to_string(notification.id),
-        type: mastodon_type,
-        created_at: CommonAPI.Utils.to_masto_date(notification.inserted_at),
-        account: account,
-        pleroma: %{
-          is_seen: notification.seen
-        }
-      }
+    case notification.type do
+      "mention" ->
+        put_status(response, activity, reading_user, status_render_opts)
 
-      case mastodon_type do
-        "mention" ->
-          put_status(response, activity, reading_user, render_opts)
+      "favourite" ->
+        put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
-        "favourite" ->
-          put_status(response, parent_activity_fn.(), reading_user, render_opts)
+      "reblog" ->
+        put_status(response, parent_activity_fn.(), reading_user, status_render_opts)
 
-        "reblog" ->
-          put_status(response, parent_activity_fn.(), reading_user, render_opts)
+      "move" ->
+        put_target(response, activity, reading_user, %{})
 
-        "move" ->
-          # Note: :skip_relationships option being applied to _account_ rendering (here)
-          put_target(response, activity, reading_user, render_opts)
+      "pleroma:emoji_reaction" ->
+        response
+        |> put_status(parent_activity_fn.(), reading_user, status_render_opts)
+        |> put_emoji(activity)
 
-        "pleroma:emoji_reaction" ->
-          response
-          |> put_status(parent_activity_fn.(), reading_user, render_opts)
-          |> put_emoji(activity)
+      "pleroma:chat_mention" ->
+        put_chat_message(response, activity, reading_user, status_render_opts)
 
-        type when type in ["follow", "follow_request"] ->
-          response
-
-        _ ->
-          nil
-      end
-    else
-      _ -> nil
+      type when type in ["follow", "follow_request"] ->
+        response
     end
   end
 
   defp put_emoji(response, activity) do
     Map.put(response, :emoji, activity.data["content"])
+  end
+
+  defp put_chat_message(response, activity, reading_user, opts) do
+    object = Object.normalize(activity)
+    author = User.get_cached_by_ap_id(object.data["actor"])
+    chat = Pleroma.Chat.get(reading_user.id, author.ap_id)
+    cm_ref = MessageReference.for_chat_and_object(chat, object)
+    render_opts = Map.merge(opts, %{for: reading_user, chat_message_reference: cm_ref})
+    chat_message_render = MessageReferenceView.render("show.json", render_opts)
+
+    Map.put(response, :chat_message, chat_message_render)
   end
 
   defp put_status(response, activity, reading_user, opts) do

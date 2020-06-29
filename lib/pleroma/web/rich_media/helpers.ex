@@ -9,7 +9,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
 
-  @spec validate_page_url(any()) :: :ok | :error
+  @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
     validate_tld = Application.get_env(:auto_linker, :opts)[:validate_tld]
 
@@ -18,8 +18,8 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     |> parse_uri(page_url)
   end
 
-  defp validate_page_url(%URI{host: host, scheme: scheme, authority: authority})
-       when scheme == "https" and not is_nil(authority) do
+  defp validate_page_url(%URI{host: host, scheme: "https", authority: authority})
+       when is_binary(authority) do
     cond do
       host in Config.get([:rich_media, :ignore_hosts], []) ->
         :error

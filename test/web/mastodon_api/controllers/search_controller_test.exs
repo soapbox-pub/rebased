@@ -71,8 +71,100 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         get(conn, "/api/v2/search?q=天子")
         |> json_response_and_validate_schema(200)
 
+      assert results["hashtags"] == [
+               %{"name" => "天子", "url" => "#{Web.base_url()}/tag/天子"}
+             ]
+
       [status] = results["statuses"]
       assert status["id"] == to_string(activity.id)
+    end
+
+    test "constructs hashtags from search query", %{conn: conn} do
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "some text with #explicit #hashtags"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "explicit", "url" => "#{Web.base_url()}/tag/explicit"},
+               %{"name" => "hashtags", "url" => "#{Web.base_url()}/tag/hashtags"}
+             ]
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "john doe JOHN DOE"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "john", "url" => "#{Web.base_url()}/tag/john"},
+               %{"name" => "doe", "url" => "#{Web.base_url()}/tag/doe"},
+               %{"name" => "JohnDoe", "url" => "#{Web.base_url()}/tag/JohnDoe"}
+             ]
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "accident-prone"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "accident", "url" => "#{Web.base_url()}/tag/accident"},
+               %{"name" => "prone", "url" => "#{Web.base_url()}/tag/prone"},
+               %{"name" => "AccidentProne", "url" => "#{Web.base_url()}/tag/AccidentProne"}
+             ]
+
+      results =
+        conn
+        |> get("/api/v2/search?#{URI.encode_query(%{q: "https://shpposter.club/users/shpuld"})}")
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "shpuld", "url" => "#{Web.base_url()}/tag/shpuld"}
+             ]
+
+      results =
+        conn
+        |> get(
+          "/api/v2/search?#{
+            URI.encode_query(%{
+              q:
+                "https://www.washingtonpost.com/sports/2020/06/10/" <>
+                  "nascar-ban-display-confederate-flag-all-events-properties/"
+            })
+          }"
+        )
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "nascar", "url" => "#{Web.base_url()}/tag/nascar"},
+               %{"name" => "ban", "url" => "#{Web.base_url()}/tag/ban"},
+               %{"name" => "display", "url" => "#{Web.base_url()}/tag/display"},
+               %{"name" => "confederate", "url" => "#{Web.base_url()}/tag/confederate"},
+               %{"name" => "flag", "url" => "#{Web.base_url()}/tag/flag"},
+               %{"name" => "all", "url" => "#{Web.base_url()}/tag/all"},
+               %{"name" => "events", "url" => "#{Web.base_url()}/tag/events"},
+               %{"name" => "properties", "url" => "#{Web.base_url()}/tag/properties"},
+               %{
+                 "name" => "NascarBanDisplayConfederateFlagAllEventsProperties",
+                 "url" =>
+                   "#{Web.base_url()}/tag/NascarBanDisplayConfederateFlagAllEventsProperties"
+               }
+             ]
+    end
+
+    test "supports pagination of hashtags search results", %{conn: conn} do
+      results =
+        conn
+        |> get(
+          "/api/v2/search?#{
+            URI.encode_query(%{q: "#some #text #with #hashtags", limit: 2, offset: 1})
+          }"
+        )
+        |> json_response_and_validate_schema(200)
+
+      assert results["hashtags"] == [
+               %{"name" => "text", "url" => "#{Web.base_url()}/tag/text"},
+               %{"name" => "with", "url" => "#{Web.base_url()}/tag/with"}
+             ]
     end
 
     test "excludes a blocked users from search results", %{conn: conn} do
@@ -179,7 +271,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       [account | _] = results["accounts"]
       assert account["id"] == to_string(user_three.id)
 
-      assert results["hashtags"] == []
+      assert results["hashtags"] == ["2hu"]
 
       [status] = results["statuses"]
       assert status["id"] == to_string(activity.id)

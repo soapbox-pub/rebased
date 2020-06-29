@@ -119,6 +119,11 @@ config :pleroma, :config_description, [
             ]
           }
         ]
+      },
+      %{
+        key: :filename_display_max_length,
+        type: :integer,
+        description: "Set max length of a filename to display. 0 = no limit. Default: 30"
       }
     ]
   },
@@ -680,29 +685,9 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        key: :federation_publisher_modules,
-        type: {:list, :module},
-        description:
-          "List of modules for federation publishing. Module names are shortened (removed leading `Pleroma.Web.` part), but on adding custom module you need to use full name.",
-        suggestions: [
-          Pleroma.Web.ActivityPub.Publisher
-        ]
-      },
-      %{
         key: :allow_relay,
         type: :boolean,
         description: "Enable Pleroma's Relay, which makes it possible to follow a whole instance"
-      },
-      %{
-        key: :rewrite_policy,
-        type: [:module, {:list, :module}],
-        description:
-          "A list of enabled MRF policies. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
-        suggestions:
-          Generator.list_modules_in_dir(
-            "lib/pleroma/web/activity_pub/mrf",
-            "Elixir.Pleroma.Web.ActivityPub.MRF."
-          )
       },
       %{
         key: :public,
@@ -744,23 +729,6 @@ config :pleroma, :config_description, [
           "text/html",
           "text/markdown",
           "text/bbcode"
-        ]
-      },
-      %{
-        key: :mrf_transparency,
-        label: "MRF transparency",
-        type: :boolean,
-        description:
-          "Make the content of your Message Rewrite Facility settings public (via nodeinfo)"
-      },
-      %{
-        key: :mrf_transparency_exclusions,
-        label: "MRF transparency exclusions",
-        type: {:list, :string},
-        description:
-          "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
-        suggestions: [
-          "exclusion.com"
         ]
       },
       %{
@@ -978,6 +946,13 @@ config :pleroma, :config_description, [
             ]
           }
         ]
+      },
+      %{
+        key: :instance_thumbnail,
+        type: :string,
+        description:
+          "The instance thumbnail can be any image that represents your instance and is used by some apps or services when they display information about your instance.",
+        suggestions: ["/instance/thumbnail.jpeg"]
       }
     ]
   },
@@ -1121,11 +1096,12 @@ config :pleroma, :config_description, [
             logoMask: true,
             minimalScopesMode: false,
             noAttachmentLinks: false,
-            nsfwCensorImage: "",
+            nsfwCensorImage: "/static/img/nsfw.74818f9.png",
             postContentType: "text/plain",
             redirectRootLogin: "/main/friends",
             redirectRootNoLogin: "/main/all",
             scopeCopy: true,
+            sidebarRight: false,
             showFeaturesPanel: true,
             showInstanceSpecificPanel: false,
             subjectLineBehavior: "email",
@@ -1234,7 +1210,7 @@ config :pleroma, :config_description, [
             type: :string,
             description:
               "URL of the image to use for hiding NSFW media attachments in the timeline.",
-            suggestions: ["/static/img/nsfw.png"]
+            suggestions: ["/static/img/nsfw.74818f9.png"]
           },
           %{
             key: :postContentType,
@@ -1264,6 +1240,12 @@ config :pleroma, :config_description, [
             label: "Scope copy",
             type: :boolean,
             description: "Copy the scope (private/unlisted/public) in replies to posts by default"
+          },
+          %{
+            key: :sidebarRight,
+            label: "Sidebar on Right",
+            type: :boolean,
+            description: "Change alignment of sidebar and panels to the right."
           },
           %{
             key: :showFeaturesPanel,
@@ -1348,6 +1330,12 @@ config :pleroma, :config_description, [
         suggestions: [
           :pleroma_fox_tan
         ]
+      },
+      %{
+        key: :default_user_avatar,
+        type: :string,
+        description: "URL of the default user avatar.",
+        suggestions: ["/images/avi.png"]
       }
     ]
   },
@@ -1452,6 +1440,21 @@ config :pleroma, :config_description, [
         type: {:list, :string},
         description: "List of instances to reject deletions from",
         suggestions: ["example.com", "*.example.com"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :mrf_activity_expiration,
+    label: "MRF Activity Expiration Policy",
+    type: :group,
+    description: "Adds expiration to all local Create Note activities",
+    children: [
+      %{
+        key: :days,
+        type: :integer,
+        description: "Default global expiration time for all local Create activities (in days)",
+        suggestions: [90, 365]
       }
     ]
   },
@@ -1592,14 +1595,12 @@ config :pleroma, :config_description, [
   # %{
   #   group: :pleroma,
   #   key: :mrf_user_allowlist,
-  #   type: :group,
+  #   type: :map,
   #   description:
   #     "The keys in this section are the domain names that the policy should apply to." <>
   #       " Each key should be assigned a list of users that should be allowed through by their ActivityPub ID",
-  #   children: [
-  #     ["example.org": ["https://example.org/users/admin"]],
   #     suggestions: [
-  #       ["example.org": ["https://example.org/users/admin"]]
+  #       %{"example.org" => ["https://example.org/users/admin"]}
   #     ]
   #   ]
   # },
@@ -1620,6 +1621,31 @@ config :pleroma, :config_description, [
         description:
           "The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.",
         suggestions: ["https://example.com"]
+      },
+      %{
+        key: :invalidation,
+        type: :keyword,
+        descpiption: "",
+        suggestions: [
+          enabled: true,
+          provider: Pleroma.Web.MediaProxy.Invalidation.Script
+        ],
+        children: [
+          %{
+            key: :enabled,
+            type: :boolean,
+            description: "Enables invalidate media cache"
+          },
+          %{
+            key: :provider,
+            type: :module,
+            description: "Module which will be used to cache purge.",
+            suggestions: [
+              Pleroma.Web.MediaProxy.Invalidation.Script,
+              Pleroma.Web.MediaProxy.Invalidation.Http
+            ]
+          }
+        ]
       },
       %{
         key: :proxy_opts,
@@ -1690,6 +1716,45 @@ config :pleroma, :config_description, [
         type: {:list, :string},
         description: "List of domains to bypass the mediaproxy",
         suggestions: ["example.com"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.MediaProxy.Invalidation.Http,
+    type: :group,
+    description: "HTTP invalidate settings",
+    children: [
+      %{
+        key: :method,
+        type: :atom,
+        description: "HTTP method of request. Default: :purge"
+      },
+      %{
+        key: :headers,
+        type: {:list, :tuple},
+        description: "HTTP headers of request.",
+        suggestions: [{"x-refresh", 1}]
+      },
+      %{
+        key: :options,
+        type: :keyword,
+        description: "Request options.",
+        suggestions: [params: %{ts: "xxx"}]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.MediaProxy.Invalidation.Script,
+    type: :group,
+    description: "Script invalidate settings",
+    children: [
+      %{
+        key: :script_path,
+        type: :string,
+        description: "Path to shell script. Which will run purge cache.",
+        suggestions: ["./installation/nginx-cache-purge.sh.example"]
       }
     ]
   },
@@ -1903,12 +1968,6 @@ config :pleroma, :config_description, [
     """,
     children: [
       %{
-        key: :repo,
-        type: :module,
-        description: "Application's Ecto repo",
-        suggestions: [Pleroma.Repo]
-      },
-      %{
         key: :verbose,
         type: {:dropdown, :atom},
         description: "Logs verbose mode",
@@ -2081,9 +2140,7 @@ config :pleroma, :config_description, [
         description:
           "List of Rich Media parsers. Module names are shortened (removed leading `Pleroma.Web.RichMedia.Parsers.` part), but on adding custom module you need to use full name.",
         suggestions: [
-          Pleroma.Web.RichMedia.Parsers.MetaTagsParser,
           Pleroma.Web.RichMedia.Parsers.OEmbed,
-          Pleroma.Web.RichMedia.Parsers.OGP,
           Pleroma.Web.RichMedia.Parsers.TwitterCard
         ]
       },
@@ -2679,18 +2736,6 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean
-      }
-    ]
-  },
-  %{
-    group: :http_signatures,
-    type: :group,
-    description: "HTTP Signatures settings",
-    children: [
-      %{
-        key: :adapter,
-        type: :module,
-        suggestions: [Pleroma.Signature]
       }
     ]
   },
@@ -3314,6 +3359,42 @@ config :pleroma, :config_description, [
         description:
           "Enables strict input validation (useful in development, not recommended in production)",
         suggestions: [false]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :mrf,
+    type: :group,
+    description: "General MRF settings",
+    children: [
+      %{
+        key: :policies,
+        type: [:module, {:list, :module}],
+        description:
+          "A list of MRF policies enabled. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
+        suggestions:
+          Generator.list_modules_in_dir(
+            "lib/pleroma/web/activity_pub/mrf",
+            "Elixir.Pleroma.Web.ActivityPub.MRF."
+          )
+      },
+      %{
+        key: :transparency,
+        label: "MRF transparency",
+        type: :boolean,
+        description:
+          "Make the content of your Message Rewrite Facility settings public (via nodeinfo)"
+      },
+      %{
+        key: :transparency_exclusions,
+        label: "MRF transparency exclusions",
+        type: {:list, :string},
+        description:
+          "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
+        suggestions: [
+          "exclusion.com"
+        ]
       }
     ]
   }

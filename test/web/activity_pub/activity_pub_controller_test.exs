@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  import Pleroma.Factory
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Delivery
@@ -14,12 +13,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Object
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Endpoint
   alias Pleroma.Workers.ReceiverWorker
+
+  import Pleroma.Factory
+
+  require Pleroma.Constants
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -165,6 +170,60 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         )
 
       ensure_federating_or_authenticated(conn, "/users/#{user.nickname}.json", user)
+    end
+  end
+
+  describe "mastodon compatibility routes" do
+    test "it returns a json representation of the object with accept application/json", %{
+      conn: conn
+    } do
+      {:ok, object} =
+        %{
+          "type" => "Note",
+          "content" => "hey",
+          "id" => Endpoint.url() <> "/users/raymoo/statuses/999999999",
+          "actor" => Endpoint.url() <> "/users/raymoo",
+          "to" => [Pleroma.Constants.as_public()]
+        }
+        |> Object.create()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/users/raymoo/statuses/999999999")
+
+      assert json_response(conn, 200) == ObjectView.render("object.json", %{object: object})
+    end
+
+    test "it returns a json representation of the activity with accept application/json", %{
+      conn: conn
+    } do
+      {:ok, object} =
+        %{
+          "type" => "Note",
+          "content" => "hey",
+          "id" => Endpoint.url() <> "/users/raymoo/statuses/999999999",
+          "actor" => Endpoint.url() <> "/users/raymoo",
+          "to" => [Pleroma.Constants.as_public()]
+        }
+        |> Object.create()
+
+      {:ok, activity, _} =
+        %{
+          "id" => object.data["id"] <> "/activity",
+          "type" => "Create",
+          "object" => object.data["id"],
+          "actor" => object.data["actor"],
+          "to" => object.data["to"]
+        }
+        |> ActivityPub.persist(local: true)
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/users/raymoo/statuses/999999999/activity")
+
+      assert json_response(conn, 200) == ObjectView.render("object.json", %{object: activity})
     end
   end
 
@@ -392,6 +451,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Activity.get_by_ap_id(data["id"])
     end
 
+    @tag capture_log: true
+    test "it inserts an incoming activity into the database" <>
+           "even if we can't fetch the user but have it in our db",
+         %{conn: conn} do
+      user =
+        insert(:user,
+          ap_id: "https://mastodon.example.org/users/raymoo",
+          ap_enabled: true,
+          local: false,
+          last_refreshed_at: nil
+        )
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", user.ap_id)
+        |> put_in(["object", "attridbutedTo"], user.ap_id)
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+
+      ObanHelpers.perform(all_enqueued(worker: ReceiverWorker))
+      assert Activity.get_by_ap_id(data["id"])
+    end
+
     test "it clears `unreachable` federation status of the sender", %{conn: conn} do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
@@ -447,6 +536,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert_receive {:mix_shell, :info, ["relay.mastodon.host"]}
     end
 
+    @tag capture_log: true
     test "without valid signature, " <>
            "it only accepts Create activities and requires enabled federation",
          %{conn: conn} do
@@ -559,11 +649,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "it accepts announces with to as string instead of array", %{conn: conn} do
       user = insert(:user)
 
+      {:ok, post} = CommonAPI.post(user, %{status: "hey"})
+      announcer = insert(:user, local: false)
+
       data = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
-        "actor" => "http://mastodon.example.org/users/admin",
-        "id" => "http://mastodon.example.org/users/admin/statuses/19512778738411822/activity",
-        "object" => "https://mastodon.social/users/emelie/statuses/101849165031453009",
+        "actor" => announcer.ap_id,
+        "id" => "#{announcer.ap_id}/statuses/19512778738411822/activity",
+        "object" => post.data["object"],
         "to" => "https://www.w3.org/ns/activitystreams#Public",
         "cc" => [user.ap_id],
         "type" => "Announce"
@@ -715,17 +808,63 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "GET /users/:nickname/outbox" do
+    test "it paginates correctly", %{conn: conn} do
+      user = insert(:user)
+      conn = assign(conn, :user, user)
+      outbox_endpoint = user.ap_id <> "/outbox"
+
+      _posts =
+        for i <- 0..25 do
+          {:ok, activity} = CommonAPI.post(user, %{status: "post #{i}"})
+          activity
+        end
+
+      result =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(outbox_endpoint <> "?page=true")
+        |> json_response(200)
+
+      result_ids = Enum.map(result["orderedItems"], fn x -> x["id"] end)
+      assert length(result["orderedItems"]) == 20
+      assert length(result_ids) == 20
+      assert result["next"]
+      assert String.starts_with?(result["next"], outbox_endpoint)
+
+      result_next =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(result["next"])
+        |> json_response(200)
+
+      result_next_ids = Enum.map(result_next["orderedItems"], fn x -> x["id"] end)
+      assert length(result_next["orderedItems"]) == 6
+      assert length(result_next_ids) == 6
+      refute Enum.find(result_next_ids, fn x -> x in result_ids end)
+      refute Enum.find(result_ids, fn x -> x in result_next_ids end)
+      assert String.starts_with?(result["id"], outbox_endpoint)
+
+      result_next_again =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get(result_next["id"])
+        |> json_response(200)
+
+      assert result_next == result_next_again
+    end
+
     test "it returns 200 even if there're no activities", %{conn: conn} do
       user = insert(:user)
+      outbox_endpoint = user.ap_id <> "/outbox"
 
       conn =
         conn
         |> assign(:user, user)
         |> put_req_header("accept", "application/activity+json")
-        |> get("/users/#{user.nickname}/outbox")
+        |> get(outbox_endpoint)
 
       result = json_response(conn, 200)
-      assert user.ap_id <> "/outbox" == result["id"]
+      assert outbox_endpoint == result["id"]
     end
 
     test "it returns a note activity in a collection", %{conn: conn} do

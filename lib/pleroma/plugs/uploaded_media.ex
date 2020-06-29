@@ -10,6 +10,8 @@ defmodule Pleroma.Plugs.UploadedMedia do
   import Pleroma.Web.Gettext
   require Logger
 
+  alias Pleroma.Web.MediaProxy
+
   @behaviour Plug
   # no slashes
   @path "media"
@@ -35,8 +37,7 @@ defmodule Pleroma.Plugs.UploadedMedia do
         %{query_params: %{"name" => name}} = conn ->
           name = String.replace(name, "\"", "\\\"")
 
-          conn
-          |> put_resp_header("content-disposition", "filename=\"#{name}\"")
+          put_resp_header(conn, "content-disposition", "filename=\"#{name}\"")
 
         conn ->
           conn
@@ -47,7 +48,8 @@ defmodule Pleroma.Plugs.UploadedMedia do
 
     with uploader <- Keyword.fetch!(config, :uploader),
          proxy_remote = Keyword.get(config, :proxy_remote, false),
-         {:ok, get_method} <- uploader.get_file(file) do
+         {:ok, get_method} <- uploader.get_file(file),
+         false <- media_is_banned(conn, get_method) do
       get_media(conn, get_method, proxy_remote, opts)
     else
       _ ->
@@ -58,6 +60,14 @@ defmodule Pleroma.Plugs.UploadedMedia do
   end
 
   def call(conn, _opts), do: conn
+
+  defp media_is_banned(%{request_path: path} = _conn, {:static_dir, _}) do
+    MediaProxy.in_banned_urls(Pleroma.Web.base_url() <> path)
+  end
+
+  defp media_is_banned(_, {:url, url}), do: MediaProxy.in_banned_urls(url)
+
+  defp media_is_banned(_, _), do: false
 
   defp get_media(conn, {:static_dir, directory}, _, opts) do
     static_opts =

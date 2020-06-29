@@ -102,7 +102,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def get_to_and_cc(_user, mentioned_users, inReplyTo, "direct", _) do
-    if inReplyTo do
+    # If the OP is a DM already, add the implicit actor.
+    if inReplyTo && Visibility.is_direct?(inReplyTo) do
       {Enum.uniq([inReplyTo.data["actor"] | mentioned_users]), []}
     else
       {mentioned_users, []}
@@ -395,10 +396,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def to_masto_date(_), do: ""
 
   defp shortname(name) do
-    if String.length(name) < 30 do
-      name
+    with max_length when max_length > 0 <-
+           Config.get([Pleroma.Upload, :filename_display_max_length], 30),
+         true <- String.length(name) > max_length do
+      String.slice(name, 0..max_length) <> "…"
     else
-      String.slice(name, 0..30) <> "…"
+      _ -> name
     end
   end
 
@@ -426,7 +429,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         %Activity{data: %{"to" => _to, "type" => type} = data} = activity
       )
       when type == "Create" do
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, false)
 
     object_data =
       cond do
@@ -467,6 +470,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         |> Enum.map(& &1.ap_id)
 
       recipients ++ subscriber_ids
+    else
+      _e -> recipients
     end
   end
 
@@ -478,6 +483,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       |> User.get_followers()
       |> Enum.map(& &1.ap_id)
       |> Enum.concat(recipients)
+    else
+      _e -> recipients
     end
   end
 

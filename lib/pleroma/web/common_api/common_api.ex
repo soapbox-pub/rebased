@@ -7,6 +7,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Formatter
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.ThreadMute
@@ -23,6 +24,60 @@ defmodule Pleroma.Web.CommonAPI do
 
   require Pleroma.Constants
   require Logger
+
+  def block(blocker, blocked) do
+    with {:ok, block_data, _} <- Builder.block(blocker, blocked),
+         {:ok, block, _} <- Pipeline.common_pipeline(block_data, local: true) do
+      {:ok, block}
+    end
+  end
+
+  def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
+    with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
+         :ok <- validate_chat_content_length(content, !!maybe_attachment),
+         {_, {:ok, chat_message_data, _meta}} <-
+           {:build_object,
+            Builder.chat_message(
+              user,
+              recipient.ap_id,
+              content |> format_chat_content,
+              attachment: maybe_attachment
+            )},
+         {_, {:ok, create_activity_data, _meta}} <-
+           {:build_create_activity, Builder.create(user, chat_message_data, [recipient.ap_id])},
+         {_, {:ok, %Activity{} = activity, _meta}} <-
+           {:common_pipeline,
+            Pipeline.common_pipeline(create_activity_data,
+              local: true
+            )} do
+      {:ok, activity}
+    end
+  end
+
+  defp format_chat_content(nil), do: nil
+
+  defp format_chat_content(content) do
+    {text, _, _} =
+      content
+      |> Formatter.html_escape("text/plain")
+      |> Formatter.linkify()
+      |> (fn {text, mentions, tags} ->
+            {String.replace(text, ~r/\r?\n/, "<br>"), mentions, tags}
+          end).()
+
+    text
+  end
+
+  defp validate_chat_content_length(_, true), do: :ok
+  defp validate_chat_content_length(nil, false), do: {:error, :no_content}
+
+  defp validate_chat_content_length(content, _) do
+    if String.length(content) <= Pleroma.Config.get([:instance, :chat_limit]) do
+      :ok
+    else
+      {:error, :content_too_long}
+    end
+  end
 
   def unblock(blocker, blocked) do
     with {_, %Activity{} = block} <- {:fetch_block, Utils.fetch_latest_block(blocker, blocked)},
@@ -73,6 +128,7 @@ defmodule Pleroma.Web.CommonAPI do
              object: follow_activity.data["id"],
              type: "Accept"
            }) do
+      Notification.update_notification_type(followed, follow_activity)
       {:ok, follower}
     end
   end
@@ -127,18 +183,19 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def repeat(id, user, params \\ %{}) do
-    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id) do
-      object = Object.normalize(activity)
-      announce_activity = Utils.get_existing_announce(user.ap_id, object)
-      public = public_announce?(object, params)
-
-      if announce_activity do
-        {:ok, announce_activity, object}
-      else
-        ActivityPub.announce(user, object, nil, true, public)
-      end
+    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
+         object = %Object{} <- Object.normalize(activity, false),
+         {_, nil} <- {:existing_announce, Utils.get_existing_announce(user.ap_id, object)},
+         public = public_announce?(object, params),
+         {:ok, announce, _} <- Builder.announce(user, object, public: public),
+         {:ok, activity, _} <- Pipeline.common_pipeline(announce, local: true) do
+      {:ok, activity}
     else
-      _ -> {:error, :not_found}
+      {:existing_announce, %Activity{} = announce} ->
+        {:ok, announce}
+
+      _ ->
+        {:error, :not_found}
     end
   end
 
@@ -347,11 +404,14 @@ defmodule Pleroma.Web.CommonAPI do
     |> check_expiry_date()
   end
 
-  def listen(user, %{"title" => _} = data) do
-    with visibility <- data["visibility"] || "public",
-         {to, cc} <- get_to_and_cc(user, [], nil, visibility, nil),
+  def listen(user, data) do
+    visibility = Map.get(data, :visibility, "public")
+
+    with {to, cc} <- get_to_and_cc(user, [], nil, visibility, nil),
          listen_data <-
-           Map.take(data, ["album", "artist", "title", "length"])
+           data
+           |> Map.take([:album, :artist, :title, :length])
+           |> Map.new(fn {key, value} -> {to_string(key), value} end)
            |> Map.put("type", "Audio")
            |> Map.put("to", to)
            |> Map.put("cc", cc)
@@ -370,19 +430,9 @@ defmodule Pleroma.Web.CommonAPI do
 
   def post(user, %{status: _} = data) do
     with {:ok, draft} <- Pleroma.Web.CommonAPI.ActivityDraft.create(user, data) do
-      draft.changes
-      |> ActivityPub.create(draft.preview?)
-      |> maybe_create_activity_expiration(draft.expires_at)
+      ActivityPub.create(draft.changes, draft.preview?)
     end
   end
-
-  defp maybe_create_activity_expiration({:ok, activity}, %NaiveDateTime{} = expires_at) do
-    with {:ok, _} <- ActivityExpiration.create(activity, expires_at) do
-      {:ok, activity}
-    end
-  end
-
-  defp maybe_create_activity_expiration(result, _), do: result
 
   def pin(id, %{ap_id: user_ap_id} = user) do
     with %Activity{
@@ -423,11 +473,12 @@ defmodule Pleroma.Web.CommonAPI do
     {:ok, activity}
   end
 
-  def thread_muted?(%{id: nil} = _user, _activity), do: false
-
-  def thread_muted?(user, activity) do
-    ThreadMute.exists?(user.id, activity.data["context"])
+  def thread_muted?(%User{id: user_id}, %{data: %{"context" => context}})
+      when is_binary("context") do
+    ThreadMute.exists?(user_id, context)
   end
+
+  def thread_muted?(_, _), do: false
 
   def report(user, data) do
     with {:ok, account} <- get_reported_account(data.account_id),

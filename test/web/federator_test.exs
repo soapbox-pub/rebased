@@ -23,7 +23,7 @@ defmodule Pleroma.Web.FederatorTest do
 
   setup_all do: clear_config([:instance, :federating], true)
   setup do: clear_config([:instance, :allow_relay])
-  setup do: clear_config([:instance, :rewrite_policy])
+  setup do: clear_config([:mrf, :policies])
   setup do: clear_config([:mrf_keyword])
 
   describe "Publish an activity" do
@@ -158,7 +158,7 @@ defmodule Pleroma.Web.FederatorTest do
       Pleroma.Config.put([:mrf_keyword, :reject], ["lain"])
 
       Pleroma.Config.put(
-        [:instance, :rewrite_policy],
+        [:mrf, :policies],
         Pleroma.Web.ActivityPub.MRF.KeywordPolicy
       )
 

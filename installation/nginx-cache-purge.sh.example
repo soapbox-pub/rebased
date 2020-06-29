@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# A simple shell script to delete a media from the Nginx cache.
+
+SCRIPTNAME=${0##*/}
+
+# NGINX cache directory
+CACHE_DIRECTORY="/tmp/pleroma-media-cache"
+
+## Return the files where the items are cached.
+## $1 - the filename, can be a pattern .
+## $2 - the cache directory.
+## $3 - (optional) the number of parallel processes to run for grep.
+get_cache_files() {
+    local max_parallel=${3-16}
+    find $2 -maxdepth 2 -type d | xargs -P $max_parallel -n 1 grep -E -Rl "^KEY:.*$1" | sort -u
+}
+
+## Removes an item from the given cache zone.
+## $1 - the filename, can be a pattern .
+## $2 - the cache directory.
+purge_item() {
+  for f in $(get_cache_files $1 $2); do
+      echo "found file: $f"
+      [ -f $f ] || continue
+      echo "Deleting $f from $2."
+      rm $f
+  done
+} # purge_item
+
+purge() {
+  for url in "$@"
+  do
+    echo "$SCRIPTNAME delete \`$url\` from cache ($CACHE_DIRECTORY)"
+    purge_item $url $CACHE_DIRECTORY
+  done
+
+}
+
+purge $@

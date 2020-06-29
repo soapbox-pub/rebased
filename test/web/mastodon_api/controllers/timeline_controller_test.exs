@@ -20,12 +20,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "home" do
     setup do: oauth_access(["read:statuses"])
 
-    test "does NOT render account/pleroma/relationship if this is disabled by default", %{
+    test "does NOT embed account/pleroma/relationship in statuses", %{
       user: user,
       conn: conn
     } do
-      clear_config([:extensions, :output_relationships_in_statuses_by_default], false)
-
       other_user = insert(:user)
 
       {:ok, _} = CommonAPI.post(other_user, %{status: "hi @#{user.nickname}"})
@@ -39,72 +37,6 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       assert Enum.all?(response, fn n ->
                get_in(n, ["account", "pleroma", "relationship"]) == %{}
              end)
-    end
-
-    test "the home timeline", %{user: user, conn: conn} do
-      uri = "/api/v1/timelines/home?with_relationships=1"
-
-      following = insert(:user, nickname: "followed")
-      third_user = insert(:user, nickname: "repeated")
-
-      {:ok, _activity} = CommonAPI.post(following, %{status: "post"})
-      {:ok, activity} = CommonAPI.post(third_user, %{status: "repeated post"})
-      {:ok, _, _} = CommonAPI.repeat(activity.id, following)
-
-      ret_conn = get(conn, uri)
-
-      assert Enum.empty?(json_response_and_validate_schema(ret_conn, :ok))
-
-      {:ok, _user} = User.follow(user, following)
-
-      ret_conn = get(conn, uri)
-
-      assert [
-               %{
-                 "reblog" => %{
-                   "content" => "repeated post",
-                   "account" => %{
-                     "pleroma" => %{
-                       "relationship" => %{"following" => false, "followed_by" => false}
-                     }
-                   }
-                 },
-                 "account" => %{"pleroma" => %{"relationship" => %{"following" => true}}}
-               },
-               %{
-                 "content" => "post",
-                 "account" => %{
-                   "acct" => "followed",
-                   "pleroma" => %{"relationship" => %{"following" => true}}
-                 }
-               }
-             ] = json_response_and_validate_schema(ret_conn, :ok)
-
-      {:ok, _user} = User.follow(third_user, user)
-
-      ret_conn = get(conn, uri)
-
-      assert [
-               %{
-                 "reblog" => %{
-                   "content" => "repeated post",
-                   "account" => %{
-                     "acct" => "repeated",
-                     "pleroma" => %{
-                       "relationship" => %{"following" => false, "followed_by" => true}
-                     }
-                   }
-                 },
-                 "account" => %{"pleroma" => %{"relationship" => %{"following" => true}}}
-               },
-               %{
-                 "content" => "post",
-                 "account" => %{
-                   "acct" => "followed",
-                   "pleroma" => %{"relationship" => %{"following" => true}}
-                 }
-               }
-             ] = json_response_and_validate_schema(ret_conn, :ok)
     end
 
     test "the home timeline when the direct messages are excluded", %{user: user, conn: conn} do
@@ -128,9 +60,9 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
   describe "public" do
     @tag capture_log: true
     test "the public timeline", %{conn: conn} do
-      following = insert(:user)
+      user = insert(:user)
 
-      {:ok, _activity} = CommonAPI.post(following, %{status: "test"})
+      {:ok, activity} = CommonAPI.post(user, %{status: "test"})
 
       _activity = insert(:note_activity, local: false)
 
@@ -145,6 +77,13 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       conn = get(build_conn(), "/api/v1/timelines/public?local=1")
 
       assert [%{"content" => "test"}] = json_response_and_validate_schema(conn, :ok)
+
+      # does not contain repeats
+      {:ok, _} = CommonAPI.repeat(activity.id, user)
+
+      conn = get(build_conn(), "/api/v1/timelines/public?local=true")
+
+      assert [_] = json_response_and_validate_schema(conn, :ok)
     end
 
     test "the public timeline includes only public statuses for an authenticated user" do
@@ -157,6 +96,49 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
 
       res_conn = get(conn, "/api/v1/timelines/public")
       assert length(json_response_and_validate_schema(res_conn, 200)) == 1
+    end
+
+    test "doesn't return replies if follower is posting with blocked user" do
+      %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
+      [blockee, friend] = insert_list(2, :user)
+      {:ok, blocker} = User.follow(blocker, friend)
+      {:ok, _} = User.block(blocker, blockee)
+
+      conn = assign(conn, :user, blocker)
+
+      {:ok, %{id: activity_id} = activity} = CommonAPI.post(friend, %{status: "hey!"})
+
+      {:ok, reply_from_blockee} =
+        CommonAPI.post(blockee, %{status: "heya", in_reply_to_status_id: activity})
+
+      {:ok, _reply_from_friend} =
+        CommonAPI.post(friend, %{status: "status", in_reply_to_status_id: reply_from_blockee})
+
+      res_conn = get(conn, "/api/v1/timelines/public")
+      [%{"id" => ^activity_id}] = json_response_and_validate_schema(res_conn, 200)
+    end
+
+    test "doesn't return replies if follow is posting with users from blocked domain" do
+      %{conn: conn, user: blocker} = oauth_access(["read:statuses"])
+      friend = insert(:user)
+      blockee = insert(:user, ap_id: "https://example.com/users/blocked")
+      {:ok, blocker} = User.follow(blocker, friend)
+      {:ok, blocker} = User.block_domain(blocker, "example.com")
+
+      conn = assign(conn, :user, blocker)
+
+      {:ok, %{id: activity_id} = activity} = CommonAPI.post(friend, %{status: "hey!"})
+
+      {:ok, reply_from_blockee} =
+        CommonAPI.post(blockee, %{status: "heya", in_reply_to_status_id: activity})
+
+      {:ok, _reply_from_friend} =
+        CommonAPI.post(friend, %{status: "status", in_reply_to_status_id: reply_from_blockee})
+
+      res_conn = get(conn, "/api/v1/timelines/public")
+
+      activities = json_response_and_validate_schema(res_conn, 200)
+      [%{"id" => ^activity_id}] = activities
     end
   end
 

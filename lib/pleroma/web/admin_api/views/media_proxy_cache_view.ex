@@ -1,0 +1,11 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
+defmodule Pleroma.Web.AdminAPI.MediaProxyCacheView do
+  use Pleroma.Web, :view
+
+  def render("index.json", %{urls: urls}) do
+    %{urls: urls}
+  end
+end

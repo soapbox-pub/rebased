@@ -213,34 +213,24 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     |> Map.merge(Utils.make_json_ld_header())
   end
 
-  def render("activity_collection_page.json", %{activities: activities, iri: iri}) do
-    # this is sorted chronologically, so first activity is the newest (max)
-    {max_id, min_id, collection} =
-      if length(activities) > 0 do
-        {
-          Enum.at(activities, 0).id,
-          Enum.at(Enum.reverse(activities), 0).id,
-          Enum.map(activities, fn act ->
-            {:ok, data} = Transmogrifier.prepare_outgoing(act.data)
-            data
-          end)
-        }
-      else
-        {
-          0,
-          0,
-          []
-        }
-      end
+  def render("activity_collection_page.json", %{
+        activities: activities,
+        iri: iri,
+        pagination: pagination
+      }) do
+    collection =
+      Enum.map(activities, fn activity ->
+        {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
+        data
+      end)
 
     %{
-      "id" => "#{iri}?max_id=#{max_id}&page=true",
       "type" => "OrderedCollectionPage",
       "partOf" => iri,
-      "orderedItems" => collection,
-      "next" => "#{iri}?max_id=#{min_id}&page=true"
+      "orderedItems" => collection
     }
     |> Map.merge(Utils.make_json_ld_header())
+    |> Map.merge(pagination)
   end
 
   defp maybe_put_total_items(map, false, _total), do: map

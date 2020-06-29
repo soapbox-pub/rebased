@@ -5,7 +5,7 @@ defmodule Pleroma.Mixfile do
     [
       app: :pleroma,
       version: version("2.0.50"),
-      elixir: "~> 1.8",
+      elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       elixirc_options: [warnings_as_errors: warnings_as_errors(Mix.env())],
@@ -117,7 +117,7 @@ defmodule Pleroma.Mixfile do
   defp deps do
     [
       {:phoenix, "~> 1.4.8"},
-      {:tzdata, "~> 0.5.21"},
+      {:tzdata, "~> 1.0.3"},
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
@@ -155,7 +155,7 @@ defmodule Pleroma.Mixfile do
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:mock, "~> 0.3.3", only: :test},
       {:crypt,
-       git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
+       git: "https://github.com/msantos/crypt", ref: "f63a705f92c26955977ee62a313012e309a4d77a"},
       {:cors_plug, "~> 1.5"},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
@@ -230,32 +230,37 @@ defmodule Pleroma.Mixfile do
   defp version(version) do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
-    # Pre-release version, denoted from patch version with a hyphen
-    {tag, tag_err} =
-      System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true)
-
-    {describe, describe_err} = System.cmd("git", ["describe", "--tags", "--abbrev=8"])
-    {commit_hash, commit_hash_err} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+    {_cmdgit, cmdgit_err} = System.cmd("sh", ["-c", "command -v git"])
 
     git_pre_release =
-      cond do
-        tag_err == 0 and describe_err == 0 ->
-          describe
-          |> String.trim()
-          |> String.replace(String.trim(tag), "")
-          |> String.trim_leading("-")
-          |> String.trim()
+      if cmdgit_err == 0 do
+        {tag, tag_err} =
+          System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true)
 
-        commit_hash_err == 0 ->
-          "0-g" <> String.trim(commit_hash)
+        {describe, describe_err} = System.cmd("git", ["describe", "--tags", "--abbrev=8"])
+        {commit_hash, commit_hash_err} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
 
-        true ->
-          ""
+        # Pre-release version, denoted from patch version with a hyphen
+        cond do
+          tag_err == 0 and describe_err == 0 ->
+            describe
+            |> String.trim()
+            |> String.replace(String.trim(tag), "")
+            |> String.trim_leading("-")
+            |> String.trim()
+
+          commit_hash_err == 0 ->
+            "0-g" <> String.trim(commit_hash)
+
+          true ->
+            nil
+        end
       end
 
     # Branch name as pre-release version component, denoted with a dot
     branch_name =
-      with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
+      with 0 <- cmdgit_err,
+           {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
            branch_name <- String.trim(branch_name),
            branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
            true <-
@@ -269,7 +274,7 @@ defmodule Pleroma.Mixfile do
 
         branch_name
       else
-        _ -> "stable"
+        _ -> ""
       end
 
     build_name =

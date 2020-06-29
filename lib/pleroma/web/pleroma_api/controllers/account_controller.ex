@@ -6,7 +6,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   use Pleroma.Web, :controller
 
   import Pleroma.Web.ControllerHelper,
-    only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2, skip_relationships?: 1]
+    only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2]
 
   alias Ecto.Changeset
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
@@ -126,10 +126,9 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   def favourites(%{assigns: %{user: for_user, account: user}} = conn, params) do
     params =
       params
-      |> Map.new(fn {key, value} -> {to_string(key), value} end)
-      |> Map.put("type", "Create")
-      |> Map.put("favorited_by", user.ap_id)
-      |> Map.put("blocking_user", for_user)
+      |> Map.put(:type, "Create")
+      |> Map.put(:favorited_by, user.ap_id)
+      |> Map.put(:blocking_user, for_user)
 
     recipients =
       if for_user do
@@ -149,8 +148,7 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     |> render("index.json",
       activities: activities,
       for: for_user,
-      as: :activity,
-      skip_relationships: skip_relationships?(params)
+      as: :activity
     )
   end
 

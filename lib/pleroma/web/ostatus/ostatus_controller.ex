@@ -32,13 +32,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   action_fallback(:errors)
 
-  def object(%{assigns: %{format: format}} = conn, %{"uuid" => _uuid})
+  def object(%{assigns: %{format: format}} = conn, _params)
       when format in ["json", "activity+json"] do
     ActivityPubController.call(conn, :object)
   end
 
-  def object(%{assigns: %{format: format}} = conn, %{"uuid" => uuid}) do
-    with id <- o_status_url(conn, :object, uuid),
+  def object(%{assigns: %{format: format}} = conn, _params) do
+    with id <- Endpoint.url() <> conn.request_path,
          {_, %Activity{} = activity} <-
            {:activity, Activity.get_create_by_object_ap_id_with_object(id)},
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
@@ -54,13 +54,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
-  def activity(%{assigns: %{format: format}} = conn, %{"uuid" => _uuid})
+  def activity(%{assigns: %{format: format}} = conn, _params)
       when format in ["json", "activity+json"] do
     ActivityPubController.call(conn, :activity)
   end
 
-  def activity(%{assigns: %{format: format}} = conn, %{"uuid" => uuid}) do
-    with id <- o_status_url(conn, :activity, uuid),
+  def activity(%{assigns: %{format: format}} = conn, _params) do
+    with id <- Endpoint.url() <> conn.request_path,
          {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
       case format do

@@ -226,7 +226,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         expires_at: nil,
         direct_conversation_id: nil,
         thread_muted: false,
-        emoji_reactions: []
+        emoji_reactions: [],
+        parent_visible: false
       }
     }
 
@@ -442,7 +443,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
     activity = insert(:note_activity)
 
-    {:ok, reblog, _} = CommonAPI.repeat(activity.id, user)
+    {:ok, reblog} = CommonAPI.repeat(activity.id, user)
 
     represented = StatusView.render("show.json", %{for: user, activity: reblog})
 
@@ -576,7 +577,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     end
   end
 
-  test "embeds a relationship in the account" do
+  test "does not embed a relationship in the account" do
     user = insert(:user)
     other_user = insert(:user)
 
@@ -587,13 +588,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     result = StatusView.render("show.json", %{activity: activity, for: other_user})
 
-    assert result[:account][:pleroma][:relationship] ==
-             AccountView.render("relationship.json", %{user: other_user, target: user})
-
+    assert result[:account][:pleroma][:relationship] == %{}
     assert_schema(result, "Status", Pleroma.Web.ApiSpec.spec())
   end
 
-  test "embeds a relationship in the account in reposts" do
+  test "does not embed a relationship in the account in reposts" do
     user = insert(:user)
     other_user = insert(:user)
 
@@ -602,16 +601,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         status: "˙˙ɐʎns"
       })
 
-    {:ok, activity, _object} = CommonAPI.repeat(activity.id, other_user)
+    {:ok, activity} = CommonAPI.repeat(activity.id, other_user)
 
     result = StatusView.render("show.json", %{activity: activity, for: user})
 
-    assert result[:account][:pleroma][:relationship] ==
-             AccountView.render("relationship.json", %{user: user, target: other_user})
-
-    assert result[:reblog][:account][:pleroma][:relationship] ==
-             AccountView.render("relationship.json", %{user: user, target: user})
-
+    assert result[:account][:pleroma][:relationship] == %{}
+    assert result[:reblog][:account][:pleroma][:relationship] == %{}
     assert_schema(result, "Status", Pleroma.Web.ApiSpec.spec())
   end
 
@@ -627,13 +622,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert status.visibility == "list"
   end
 
-  test "successfully renders a Listen activity (pleroma extension)" do
-    listen_activity = insert(:listen)
+  test "has a field for parent visibility" do
+    user = insert(:user)
+    poster = insert(:user)
 
-    status = StatusView.render("listen.json", activity: listen_activity)
+    {:ok, invisible} = CommonAPI.post(poster, %{status: "hey", visibility: "private"})
 
-    assert status.length == listen_activity.data["object"]["length"]
-    assert status.title == listen_activity.data["object"]["title"]
-    assert_schema(status, "Status", Pleroma.Web.ApiSpec.spec())
+    {:ok, visible} =
+      CommonAPI.post(poster, %{status: "hey", visibility: "private", in_reply_to_id: invisible.id})
+
+    status = StatusView.render("show.json", activity: visible, for: user)
+    refute status.pleroma.parent_visible
+
+    status = StatusView.render("show.json", activity: visible, for: poster)
+    assert status.pleroma.parent_visible
   end
 end

@@ -62,7 +62,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "spoiler_text" => "2hu",
-          "sensitive" => "false"
+          "sensitive" => "0"
         })
 
       {:ok, ttl} = Cachex.ttl(:idempotency_cache, idempotency_key)
@@ -81,7 +81,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "spoiler_text" => "2hu",
-          "sensitive" => "false"
+          "sensitive" => 0
         })
 
       assert %{"id" => second_id} = json_response(conn_two, 200)
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "spoiler_text" => "2hu",
-          "sensitive" => "false"
+          "sensitive" => "False"
         })
 
       assert %{"id" => third_id} = json_response_and_validate_schema(conn_three, 200)
@@ -878,8 +878,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       user3 = insert(:user)
       {:ok, _} = CommonAPI.favorite(user2, activity.id)
       {:ok, _bookmark} = Pleroma.Bookmark.create(user2.id, activity.id)
-      {:ok, reblog_activity1, _object} = CommonAPI.repeat(activity.id, user1)
-      {:ok, _, _object} = CommonAPI.repeat(activity.id, user2)
+      {:ok, reblog_activity1} = CommonAPI.repeat(activity.id, user1)
+      {:ok, _} = CommonAPI.repeat(activity.id, user2)
 
       conn_res =
         build_conn()
@@ -917,7 +917,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "unreblogs and returns the unreblogged status", %{user: user, conn: conn} do
       activity = insert(:note_activity)
 
-      {:ok, _, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, _} = CommonAPI.repeat(activity.id, user)
 
       conn =
         conn
@@ -1176,7 +1176,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   end
 
   test "bookmarks" do
-    bookmarks_uri = "/api/v1/bookmarks?with_relationships=true"
+    bookmarks_uri = "/api/v1/bookmarks"
 
     %{conn: conn} = oauth_access(["write:bookmarks", "read:bookmarks"])
     author = insert(:user)
@@ -1427,7 +1427,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "returns users who have reblogged the status", %{conn: conn, activity: activity} do
       other_user = insert(:user)
-      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
+      {:ok, _} = CommonAPI.repeat(activity.id, other_user)
 
       response =
         conn
@@ -1458,7 +1458,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       other_user = insert(:user)
       {:ok, _user_relationship} = User.block(user, other_user)
 
-      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
+      {:ok, _} = CommonAPI.repeat(activity.id, other_user)
 
       response =
         conn
@@ -1469,12 +1469,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "does not return users who have reblogged the status privately", %{
-      conn: conn,
-      activity: activity
+      conn: conn
     } do
       other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(other_user, %{status: "my secret post"})
 
-      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user, %{visibility: "private"})
+      {:ok, _} = CommonAPI.repeat(activity.id, other_user, %{visibility: "private"})
 
       response =
         conn
@@ -1486,7 +1486,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     test "does not fail on an unauthenticated request", %{activity: activity} do
       other_user = insert(:user)
-      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
+      {:ok, _} = CommonAPI.repeat(activity.id, other_user)
 
       response =
         build_conn()
@@ -1541,14 +1541,49 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
            } = response
   end
 
+  test "favorites paginate correctly" do
+    %{user: user, conn: conn} = oauth_access(["read:favourites"])
+    other_user = insert(:user)
+    {:ok, first_post} = CommonAPI.post(other_user, %{status: "bla"})
+    {:ok, second_post} = CommonAPI.post(other_user, %{status: "bla"})
+    {:ok, third_post} = CommonAPI.post(other_user, %{status: "bla"})
+
+    {:ok, _first_favorite} = CommonAPI.favorite(user, third_post.id)
+    {:ok, _second_favorite} = CommonAPI.favorite(user, first_post.id)
+    {:ok, third_favorite} = CommonAPI.favorite(user, second_post.id)
+
+    result =
+      conn
+      |> get("/api/v1/favourites?limit=1")
+
+    assert [%{"id" => post_id}] = json_response_and_validate_schema(result, 200)
+    assert post_id == second_post.id
+
+    # Using the header for pagination works correctly
+    [next, _] = get_resp_header(result, "link") |> hd() |> String.split(", ")
+    [_, max_id] = Regex.run(~r/max_id=([^&]+)/, next)
+
+    assert max_id == third_favorite.id
+
+    result =
+      conn
+      |> get("/api/v1/favourites?max_id=#{max_id}")
+
+    assert [%{"id" => first_post_id}, %{"id" => third_post_id}] =
+             json_response_and_validate_schema(result, 200)
+
+    assert first_post_id == first_post.id
+    assert third_post_id == third_post.id
+  end
+
   test "returns the favorites of a user" do
     %{user: user, conn: conn} = oauth_access(["read:favourites"])
     other_user = insert(:user)
 
     {:ok, _} = CommonAPI.post(other_user, %{status: "bla"})
-    {:ok, activity} = CommonAPI.post(other_user, %{status: "traps are happy"})
+    {:ok, activity} = CommonAPI.post(other_user, %{status: "trees are happy"})
 
-    {:ok, _} = CommonAPI.favorite(user, activity.id)
+    {:ok, last_like} = CommonAPI.favorite(user, activity.id)
 
     first_conn = get(conn, "/api/v1/favourites")
 
@@ -1566,9 +1601,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
     {:ok, _} = CommonAPI.favorite(user, second_activity.id)
 
-    last_like = status["id"]
-
-    second_conn = get(conn, "/api/v1/favourites?since_id=#{last_like}")
+    second_conn = get(conn, "/api/v1/favourites?since_id=#{last_like.id}")
 
     assert [second_status] = json_response_and_validate_schema(second_conn, 200)
     assert second_status["id"] == to_string(second_activity.id)

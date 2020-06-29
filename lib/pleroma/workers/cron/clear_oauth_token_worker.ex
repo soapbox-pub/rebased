@@ -16,6 +16,8 @@ defmodule Pleroma.Workers.Cron.ClearOauthTokenWorker do
   def perform(_opts, _job) do
     if Config.get([:oauth2, :clean_expired_tokens], false) do
       Token.delete_expired_tokens()
+    else
+      :ok
     end
   end
 end

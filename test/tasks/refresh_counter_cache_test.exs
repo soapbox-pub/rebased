@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Pleroma.RefreshCounterCacheTest do
 
     assert capture_io(fn -> Mix.Tasks.Pleroma.RefreshCounterCache.run([]) end) =~ "Done\n"
 
-    assert %{direct: 3, private: 4, public: 1, unlisted: 2} =
+    assert %{"direct" => 3, "private" => 4, "public" => 1, "unlisted" => 2} =
              Pleroma.Stats.get_status_visibility_count()
   end
 end

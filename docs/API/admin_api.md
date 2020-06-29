@@ -488,30 +488,52 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ### Change the user's email, password, display and settings-related fields
 
-- Params:
-  - `email`
-  - `password`
-  - `name`
-  - `bio`
-  - `avatar`
-  - `locked`
-  - `no_rich_text`
-  - `default_scope`
-  - `banner`
-  - `hide_follows`
-  - `hide_followers`
-  - `hide_followers_count`
-  - `hide_follows_count`
-  - `hide_favorites`
-  - `allow_following_move`
-  - `background`
-  - `show_role`
-  - `skip_thread_containment`
-  - `fields`
-  - `discoverable`
-  - `actor_type`
+* Params:
+  * `email`
+  * `password`
+  * `name`
+  * `bio`
+  * `avatar`
+  * `locked`
+  * `no_rich_text`
+  * `default_scope`
+  * `banner`
+  * `hide_follows`
+  * `hide_followers`
+  * `hide_followers_count`
+  * `hide_follows_count`
+  * `hide_favorites`
+  * `allow_following_move`
+  * `background`
+  * `show_role`
+  * `skip_thread_containment`
+  * `fields`
+  * `discoverable`
+  * `actor_type`
 
-- Response: none (code `200`)
+* Responses:
+
+Status: 200
+
+```json
+{"status": "success"}
+```
+
+Status: 400
+
+```json
+{"errors":
+  {"actor_type": "is invalid"},
+  {"email": "has invalid format"},
+  ...
+ }
+```
+
+Status: 404
+
+```json
+{"error": "Not found"}
+```
 
 ## `GET /api/pleroma/admin/reports`
 
@@ -531,7 +553,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ```json
 {
-  "totalReports" : 1,
+  "total" : 1,
   "reports": [
     {
       "account": {
@@ -752,7 +774,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
   - On success: `204`, empty response
 
-## `POST /api/pleroma/admin/reports/:report_id/notes/:id`
+## `DELETE /api/pleroma/admin/reports/:report_id/notes/:id`
 
 ### Delete report note
 
@@ -1096,6 +1118,10 @@ Loads json generated from `config/descriptions.exs`.
 
 ### Stats
 
+- Query Params:
+  - *optional* `instance`: **string** instance hostname (without protocol) to get stats for
+- Example: `https://mypleroma.org/api/pleroma/admin/stats?instance=lain.com`
+
 - Response:
 
 ```json
@@ -1209,3 +1235,65 @@ Loads json generated from `config/descriptions.exs`.
   - On success: `204`, empty response
   - On failure:
     - 400 Bad Request `"Invalid parameters"` when `status` is missing
+
+## `GET /api/pleroma/admin/media_proxy_caches`
+
+### Get a list of all banned MediaProxy URLs in Cachex
+
+- Authentication: required
+- Params:
+- *optional* `page`: **integer** page number
+- *optional* `page_size`: **integer** number of log entries per page (default is `50`)
+
+- Response:
+
+``` json
+{
+  "urls": [
+    "http://example.com/media/a688346.jpg",
+    "http://example.com/media/fb1f4d.jpg"
+  ]
+}
+
+```
+
+## `POST /api/pleroma/admin/media_proxy_caches/delete`
+
+### Remove a banned MediaProxy URL from Cachex
+
+- Authentication: required
+- Params:
+  - `urls` (array)
+
+- Response:
+
+``` json
+{
+  "urls": [
+    "http://example.com/media/a688346.jpg",
+    "http://example.com/media/fb1f4d.jpg"
+  ]
+}
+
+```
+
+## `POST /api/pleroma/admin/media_proxy_caches/purge`
+
+### Purge a MediaProxy URL
+
+- Authentication: required
+- Params:
+  - `urls` (array)
+  - `ban` (boolean)
+
+- Response:
+
+``` json
+{
+  "urls": [
+    "http://example.com/media/a688346.jpg",
+    "http://example.com/media/fb1f4d.jpg"
+  ]
+}
+
+```

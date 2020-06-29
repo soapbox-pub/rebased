@@ -14,6 +14,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.TwitterAPI.UtilView
   alias Pleroma.Web.WebFinger
 
   plug(Pleroma.Web.FederatingPlug when action == :remote_subscribe)

@@ -23,7 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
         streaming_api: Pleroma.Web.Endpoint.websocket_url()
       },
       stats: Pleroma.Stats.get_stats(),
-      thumbnail: Pleroma.Web.base_url() <> "/instance/thumbnail.jpeg",
+      thumbnail: Keyword.get(instance, :instance_thumbnail),
       languages: ["en"],
       registrations: Keyword.get(instance, :registrations_open),
       # Extra (not present in Mastodon):
@@ -33,6 +33,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       avatar_upload_limit: Keyword.get(instance, :avatar_upload_limit),
       background_upload_limit: Keyword.get(instance, :background_upload_limit),
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
+      background_image: Keyword.get(instance, :background_image),
       pleroma: %{
         metadata: %{
           features: features(),
@@ -68,7 +69,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       if Config.get([:instance, :safe_dm_mentions]) do
         "safe_dm_mentions"
       end,
-      "pleroma_emoji_reactions"
+      "pleroma_emoji_reactions",
+      "pleroma_chat_messages"
     ]
     |> Enum.filter(& &1)
   end
@@ -76,7 +78,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
   def federation do
     quarantined = Config.get([:instance, :quarantined_instances], [])
 
-    if Config.get([:instance, :mrf_transparency]) do
+    if Config.get([:mrf, :transparency]) do
       {:ok, data} = MRF.describe()
 
       data

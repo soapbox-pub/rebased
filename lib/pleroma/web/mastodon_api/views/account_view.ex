@@ -15,13 +15,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   def render("index.json", %{users: users} = opts) do
     reading_user = opts[:for]
 
-    # Note: :skip_relationships option is currently intentionally not supported for accounts
     relationships_opt =
       cond do
         Map.has_key?(opts, :relationships) ->
           opts[:relationships]
 
-        is_nil(reading_user) ->
+        is_nil(reading_user) || !opts[:embed_relationships] ->
           UserRelationship.view_relationships_option(nil, [])
 
         true ->
@@ -36,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   def render("show.json", %{user: user} = opts) do
-    if User.visible_for?(user, opts[:for]) do
+    if User.visible_for(user, opts[:for]) == :visible do
       do_render("show.json", opts)
     else
       %{}
@@ -180,27 +179,29 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         0
       end
 
-    bot = user.actor_type in ["Application", "Service"]
+    bot = user.actor_type == "Service"
 
     emojis =
-      Enum.map(user.emoji, fn {shortcode, url} ->
+      Enum.map(user.emoji, fn {shortcode, raw_url} ->
+        url = MediaProxy.url(raw_url)
+
         %{
-          "shortcode" => shortcode,
-          "url" => url,
-          "static_url" => url,
-          "visible_in_picker" => false
+          shortcode: shortcode,
+          url: url,
+          static_url: url,
+          visible_in_picker: false
         }
       end)
 
     relationship =
-      if opts[:skip_relationships] do
-        %{}
-      else
+      if opts[:embed_relationships] do
         render("relationship.json", %{
           user: opts[:for],
           target: user,
           relationships: opts[:relationships]
         })
+      else
+        %{}
       end
 
     %{
@@ -223,7 +224,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       fields: user.fields,
       bot: bot,
       source: %{
-        note: prepare_user_bio(user),
+        note: user.raw_bio || "",
         sensitive: false,
         fields: user.raw_fields,
         pleroma: %{
@@ -234,6 +235,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
       # Pleroma extension
       pleroma: %{
+        ap_id: user.ap_id,
         confirmation_pending: user.confirmation_pending,
         tags: user.tags,
         hide_followers_count: user.hide_followers_count,
@@ -257,17 +259,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_unread_conversation_count(user, opts[:for])
     |> maybe_put_unread_notification_count(user, opts[:for])
   end
-
-  defp prepare_user_bio(%User{bio: ""}), do: ""
-
-  defp prepare_user_bio(%User{bio: bio}) when is_binary(bio) do
-    bio
-    |> String.replace(~r(<br */?>), "\n")
-    |> Pleroma.HTML.strip_tags()
-    |> HtmlEntities.decode()
-  end
-
-  defp prepare_user_bio(_), do: ""
 
   defp username_from_nickname(string) when is_binary(string) do
     hd(String.split(string, "@"))

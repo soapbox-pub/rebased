@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.NotificationController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2, skip_relationships?: 1]
+  import Pleroma.Web.ControllerHelper, only: [add_link_headers: 2]
 
   alias Pleroma.Notification
   alias Pleroma.Plugs.OAuthScopesPlug
@@ -42,16 +42,27 @@ defmodule Pleroma.Web.MastodonAPI.NotificationController do
     end
   end
 
+  @default_notification_types ~w{
+    mention
+    follow
+    follow_request
+    reblog
+    favourite
+    move
+    pleroma:emoji_reaction
+  }
   def index(%{assigns: %{user: user}} = conn, params) do
-    params = Map.new(params, fn {k, v} -> {to_string(k), v} end)
+    params =
+      Map.new(params, fn {k, v} -> {to_string(k), v} end)
+      |> Map.put_new("include_types", @default_notification_types)
+
     notifications = MastodonAPI.get_notifications(user, params)
 
     conn
     |> add_link_headers(notifications)
     |> render("index.json",
       notifications: notifications,
-      for: user,
-      skip_relationships: skip_relationships?(params)
+      for: user
     )
   end
 
