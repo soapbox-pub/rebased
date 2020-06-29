@@ -27,8 +27,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.OAuthView
+  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)

@@ -6,8 +6,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Helpers.UriHelper
-  alias Pleroma.MFA
   alias Pleroma.Maps
+  alias Pleroma.MFA
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Registration
   alias Pleroma.Repo
@@ -17,8 +17,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.MFAController
-  alias Pleroma.Web.OAuth.OAuthView
   alias Pleroma.Web.OAuth.MFAView
+  alias Pleroma.Web.OAuth.OAuthView
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
