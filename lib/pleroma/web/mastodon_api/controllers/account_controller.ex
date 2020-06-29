@@ -28,6 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.OAuth.OAuthView
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
@@ -101,12 +102,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
          :ok <- TwitterAPI.validate_captcha(app, params),
          {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
          {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
-      json(conn, %{
-        token_type: "Bearer",
-        access_token: token.token,
-        scope: app.scopes |> Enum.join(" "),
-        created_at: Token.Utils.format_created_at(token)
-      })
+      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
     else
       {:error, error} -> json_response(conn, :bad_request, %{error: error})
     end
