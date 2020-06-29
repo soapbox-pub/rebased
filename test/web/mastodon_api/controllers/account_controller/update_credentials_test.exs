@@ -216,10 +216,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
         filename: "an_image.jpg"
       }
 
-      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
+      res =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
 
-      assert user_response = json_response_and_validate_schema(conn, 200)
+      assert user_response = json_response_and_validate_schema(res, 200)
       assert user_response["avatar"] != User.avatar_url(user)
+
+      # Also removes it
+      res =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{"avatar" => nil})
+
+      assert user_response = json_response_and_validate_schema(res, 200)
+      assert user_response["avatar"] == User.avatar_url(user)
     end
 
     test "updates the user's banner", %{user: user, conn: conn} do
@@ -229,10 +239,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
         filename: "an_image.jpg"
       }
 
-      conn = patch(conn, "/api/v1/accounts/update_credentials", %{"header" => new_header})
+      res =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{"header" => new_header})
 
-      assert user_response = json_response_and_validate_schema(conn, 200)
+      assert user_response = json_response_and_validate_schema(res, 200)
       assert user_response["header"] != User.banner_url(user)
+
+      # Also removes it
+
+      res =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{"header" => nil})
+
+      assert user_response = json_response_and_validate_schema(res, 200)
+      assert user_response["header"] == User.banner_url(user)
     end
 
     test "updates the user's background", %{conn: conn} do
@@ -242,13 +263,25 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
         filename: "an_image.jpg"
       }
 
-      conn =
-        patch(conn, "/api/v1/accounts/update_credentials", %{
+      res =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{
           "pleroma_background_image" => new_header
         })
 
-      assert user_response = json_response_and_validate_schema(conn, 200)
+      assert user_response = json_response_and_validate_schema(res, 200)
       assert user_response["pleroma"]["background_image"]
+
+      # Also removes it
+
+      res =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{
+          "pleroma_background_image" => nil
+        })
+
+      assert user_response = json_response_and_validate_schema(res, 200)
+      refute user_response["pleroma"]["background_image"]
     end
 
     test "requires 'write:accounts' permission" do
