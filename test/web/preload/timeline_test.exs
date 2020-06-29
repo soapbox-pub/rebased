@@ -9,7 +9,7 @@ defmodule Pleroma.Web.Preload.Providers.TimelineTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Preload.Providers.Timelines
 
-  @public_url :"/api/v1/timelines/public"
+  @public_url "/api/v1/timelines/public"
 
   describe "unauthenticated timeliness when restricted" do
     setup do

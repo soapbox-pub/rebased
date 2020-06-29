@@ -7,7 +7,7 @@ defmodule Pleroma.Web.Preload.Providers.StatusNet do
   alias Pleroma.Web.TwitterAPI.UtilController
 
   @behaviour Provider
-  @config_url :"/api/statusnet/config.json"
+  @config_url "/api/statusnet/config.json"
 
   @impl Provider
   def generate_terms(_params) do

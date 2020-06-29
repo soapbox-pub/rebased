@@ -8,9 +8,9 @@ defmodule Pleroma.Web.Preload.Providers.Instance do
   alias Pleroma.Web.Preload.Providers.Provider
 
   @behaviour Provider
-  @instance_url :"/api/v1/instance"
-  @panel_url :"/instance/panel.html"
-  @nodeinfo_url :"/nodeinfo/2.0.json"
+  @instance_url "/api/v1/instance"
+  @panel_url "/instance/panel.html"
+  @nodeinfo_url "/nodeinfo/2.0.json"
 
   @impl Provider
   def generate_terms(_params) do

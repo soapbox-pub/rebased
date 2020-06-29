@@ -8,7 +8,7 @@ defmodule Pleroma.Web.Preload.Providers.User do
   alias Pleroma.Web.Preload.Providers.Provider
 
   @behaviour Provider
-  @account_url_base :"/api/v1/accounts"
+  @account_url_base "/api/v1/accounts"
 
   @impl Provider
   def generate_terms(%{user: user}) do
@@ -19,7 +19,7 @@ defmodule Pleroma.Web.Preload.Providers.User do
 
   def build_accounts_tag(acc, %User{} = user) do
     account_data = AccountView.render("show.json", %{user: user, for: user})
-    Map.put(acc, :"#{@account_url_base}/#{user.id}", account_data)
+    Map.put(acc, "#{@account_url_base}/#{user.id}", account_data)
   end
 
   def build_accounts_tag(acc, _), do: acc

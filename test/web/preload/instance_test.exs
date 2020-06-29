@@ -8,7 +8,7 @@ defmodule Pleroma.Web.Preload.Providers.InstanceTest do
 
   setup do: {:ok, Instance.generate_terms(nil)}
 
-  test "it renders the info", %{"/api/v1/instance": info} do
+  test "it renders the info", %{"/api/v1/instance" => info} do
     assert %{
              description: description,
              email: "admin@example.com",
@@ -18,14 +18,14 @@ defmodule Pleroma.Web.Preload.Providers.InstanceTest do
     assert String.equivalent?(description, "Pleroma: An efficient and flexible fediverse server")
   end
 
-  test "it renders the panel", %{"/instance/panel.html": panel} do
+  test "it renders the panel", %{"/instance/panel.html" => panel} do
     assert String.contains?(
              panel,
              "<p>Welcome to <a href=\"https://pleroma.social\" target=\"_blank\">Pleroma!</a></p>"
            )
   end
 
-  test "it renders the node_info", %{"/nodeinfo/2.0.json": nodeinfo} do
+  test "it renders the node_info", %{"/nodeinfo/2.0.json" => nodeinfo} do
     %{
       metadata: metadata,
       version: "2.0"

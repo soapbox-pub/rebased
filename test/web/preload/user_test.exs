@@ -26,7 +26,7 @@ defmodule Pleroma.Web.Preload.Providers.UserTest do
     end
 
     test "account is rendered", %{terms: terms, user: user} do
-      account = terms[:"/api/v1/accounts/#{user.id}"]
+      account = terms["/api/v1/accounts/#{user.id}"]
       assert %{acct: user, username: user} = account
     end
   end
