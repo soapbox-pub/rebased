@@ -517,9 +517,6 @@ defmodule Pleroma.Web.Router do
     pipe_through(:config)
 
     get("/pleroma/frontend_configurations", TwitterAPI.UtilController, :frontend_configurations)
-
-    # Deprecated
-    get("/statusnet/config", TwitterAPI.UtilController, :config)
   end
 
   scope "/api", Pleroma.Web do
