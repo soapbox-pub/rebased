@@ -367,6 +367,7 @@ defmodule Pleroma.Notification do
         do_send = do_send && user in enabled_receivers
         create_notification(activity, user, do_send)
       end)
+      |> Enum.reject(&is_nil/1)
 
     {:ok, notifications}
   end
