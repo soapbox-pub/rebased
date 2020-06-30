@@ -25,6 +25,17 @@ defmodule Pleroma.Web.Preload.Providers.InstanceTest do
            )
   end
 
+  test "it works with overrides" do
+    clear_config([:instance, :static_dir], "test/fixtures/preload_static")
+
+    %{"/instance/panel.html": panel} = Instance.generate_terms(nil)
+
+    assert String.contains?(
+             panel,
+             "HEY!"
+           )
+  end
+
   test "it renders the node_info", %{"/nodeinfo/2.0": nodeinfo} do
     %{
       metadata: metadata,
