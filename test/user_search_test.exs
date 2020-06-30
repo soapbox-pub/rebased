@@ -17,12 +17,19 @@ defmodule Pleroma.UserSearchTest do
   describe "User.search" do
     setup do: clear_config([:instance, :limit_to_local_content])
 
-    test "excluded invisible users from results" do
+    test "excludes invisible users from results" do
       user = insert(:user, %{nickname: "john t1000"})
       insert(:user, %{invisible: true, nickname: "john t800"})
 
       [found_user] = User.search("john")
       assert found_user.id == user.id
+    end
+
+    test "excludes bots from results" do
+      insert(:user, actor_type: "Service", nickname: "bot1")
+      insert(:user, actor_type: "Application", nickname: "bot2")
+
+      assert [] = User.search("bot")
     end
 
     test "accepts limit parameter" do
