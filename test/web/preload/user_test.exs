@@ -9,13 +9,11 @@ defmodule Pleroma.Web.Preload.Providers.UserTest do
 
   describe "returns empty when user doesn't exist" do
     test "nil user specified" do
-      refute User.generate_terms(%{user: nil})
-             |> Map.has_key?("/api/v1/accounts")
+      assert User.generate_terms(%{user: nil}) == %{}
     end
 
     test "missing user specified" do
-      refute User.generate_terms(%{user: :not_a_user})
-             |> Map.has_key?("/api/v1/accounts")
+      assert User.generate_terms(%{user: :not_a_user}) == %{}
     end
   end
 
@@ -23,11 +21,13 @@ defmodule Pleroma.Web.Preload.Providers.UserTest do
     setup do
       user = insert(:user)
 
-      {:ok, User.generate_terms(%{user: user})}
+      terms = User.generate_terms(%{user: user})
+      %{terms: terms, user: user}
     end
 
-    test "account is rendered", %{"/api/v1/accounts": accounts} do
-      assert %{acct: user, username: user} = accounts
+    test "account is rendered", %{terms: terms, user: user} do
+      account = terms["/api/v1/accounts/#{user.id}"]
+      assert %{acct: user, username: user} = account
     end
   end
 end

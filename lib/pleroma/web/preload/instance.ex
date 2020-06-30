@@ -3,14 +3,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Preload.Providers.Instance do
+  alias Pleroma.Plugs.InstanceStatic
   alias Pleroma.Web.MastodonAPI.InstanceView
   alias Pleroma.Web.Nodeinfo.Nodeinfo
   alias Pleroma.Web.Preload.Providers.Provider
 
   @behaviour Provider
-  @instance_url :"/api/v1/instance"
-  @panel_url :"/instance/panel.html"
-  @nodeinfo_url :"/nodeinfo/2.0"
+  @instance_url "/api/v1/instance"
+  @panel_url "/instance/panel.html"
+  @nodeinfo_url "/nodeinfo/2.0.json"
 
   @impl Provider
   def generate_terms(_params) do
@@ -27,7 +28,7 @@ defmodule Pleroma.Web.Preload.Providers.Instance do
   end
 
   defp build_panel_tag(acc) do
-    instance_path = Path.join(:code.priv_dir(:pleroma), "static/instance/panel.html")
+    instance_path = InstanceStatic.file_path(@panel_url |> to_string())
 
     if File.exists?(instance_path) do
       panel_data = File.read!(instance_path)
