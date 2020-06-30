@@ -88,11 +88,17 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
       max_running = Keyword.get(opts, :size, 50)
       max_waiting = Keyword.get(opts, :max_waiting, 10)
 
-      :ok =
+      result =
         ConcurrentLimiter.new(:"#{@prefix}.#{name}", max_running, max_waiting,
           wait: wait,
           max_retries: retries
         )
+
+      case result do
+        :ok -> :ok
+        {:error, :existing} -> :ok
+        e -> raise e
+      end
     end)
 
     :ok
