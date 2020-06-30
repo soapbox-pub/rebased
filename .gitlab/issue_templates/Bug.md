@@ -14,7 +14,7 @@
 * Pleroma version (could be found in the "Version" tab of settings in Pleroma-FE): 
 * Elixir version (`elixir -v` for from source installations, N/A for OTP):
 * Operating system:
-* PostgreSQL version (`postgres -V`):
+* PostgreSQL version (`psql -V`):
 
 
 ### Bug description
