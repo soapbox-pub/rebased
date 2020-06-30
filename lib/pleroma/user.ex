@@ -115,7 +115,7 @@ defmodule Pleroma.User do
     field(:is_moderator, :boolean, default: false)
     field(:is_admin, :boolean, default: false)
     field(:show_role, :boolean, default: true)
-    field(:settings, :map, default: nil)
+    field(:mastofe_settings, :map, default: nil)
     field(:uri, ObjectValidators.Uri, default: nil)
     field(:hide_followers_count, :boolean, default: false)
     field(:hide_follows_count, :boolean, default: false)
@@ -2118,8 +2118,8 @@ defmodule Pleroma.User do
 
   def mastodon_settings_update(user, settings) do
     user
-    |> cast(%{settings: settings}, [:settings])
-    |> validate_required([:settings])
+    |> cast(%{mastofe_settings: settings}, [:mastofe_settings])
+    |> validate_required([:mastofe_settings])
     |> update_and_set_cache()
   end
 
