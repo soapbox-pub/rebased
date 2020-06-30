@@ -16,8 +16,6 @@ defmodule Pleroma.Web.Push.Impl do
   require Logger
   import Ecto.Query
 
-  defdelegate mastodon_notification_type(activity), to: Activity
-
   @types ["Create", "Follow", "Announce", "Like", "Move"]
 
   @doc "Performs sending notifications for user subscriptions"
@@ -31,10 +29,10 @@ defmodule Pleroma.Web.Push.Impl do
       when activity_type in @types do
     actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
 
-    mastodon_type = mastodon_notification_type(notification.activity)
+    mastodon_type = notification.type
     gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
     avatar_url = User.avatar_url(actor)
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, false)
     user = User.get_cached_by_id(user_id)
     direct_conversation_id = Activity.direct_conversation_id(activity, user)
 
@@ -116,7 +114,7 @@ defmodule Pleroma.Web.Push.Impl do
   end
 
   def build_content(notification, actor, object, mastodon_type) do
-    mastodon_type = mastodon_type || mastodon_notification_type(notification.activity)
+    mastodon_type = mastodon_type || notification.type
 
     %{
       title: format_title(notification, mastodon_type),
@@ -125,6 +123,13 @@ defmodule Pleroma.Web.Push.Impl do
   end
 
   def format_body(activity, actor, object, mastodon_type \\ nil)
+
+  def format_body(_activity, actor, %{data: %{"type" => "ChatMessage", "content" => content}}, _) do
+    case content do
+      nil -> "@#{actor.nickname}: (Attachment)"
+      content -> "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
+    end
+  end
 
   def format_body(
         %{activity: %{data: %{"type" => "Create"}}},
@@ -151,7 +156,7 @@ defmodule Pleroma.Web.Push.Impl do
         mastodon_type
       )
       when type in ["Follow", "Like"] do
-    mastodon_type = mastodon_type || mastodon_notification_type(notification.activity)
+    mastodon_type = mastodon_type || notification.type
 
     case mastodon_type do
       "follow" -> "@#{actor.nickname} has followed you"
@@ -166,15 +171,14 @@ defmodule Pleroma.Web.Push.Impl do
     "New Direct Message"
   end
 
-  def format_title(%{activity: activity}, mastodon_type) do
-    mastodon_type = mastodon_type || mastodon_notification_type(activity)
-
-    case mastodon_type do
+  def format_title(%{type: type}, mastodon_type) do
+    case mastodon_type || type do
       "mention" -> "New Mention"
       "follow" -> "New Follower"
       "follow_request" -> "New Follow Request"
       "reblog" -> "New Repeat"
       "favourite" -> "New Favorite"
+      "pleroma:chat_mention" -> "New Chat Message"
       type -> "New #{String.capitalize(type || "event")}"
     end
   end

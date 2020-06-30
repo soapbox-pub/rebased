@@ -49,7 +49,7 @@ defmodule Pleroma.Web.MastoFEController do
     |> render("manifest.json")
   end
 
-  @doc "PUT /api/web/settings"
+  @doc "PUT /api/web/settings: Backend-obscure settings blob for MastoFE, don't parse/reuse elsewhere"
   def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
     with {:ok, _} <- User.mastodon_settings_update(user, settings) do
       json(conn, %{})

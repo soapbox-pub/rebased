@@ -1,0 +1,115 @@
+body {
+  background-color: #282c37;
+  font-family: sans-serif;
+  color: white;
+  margin: 0;
+  padding: 1em;
+  padding-bottom: 0;
+}
+
+.avatar {
+  cursor: pointer;
+}
+
+.avatar img {
+  float: left;
+  border-radius: 4px;
+  margin-right: 4px;
+}
+
+.activity-content {
+  padding-top: 1em;
+}
+
+.attachment {
+  margin-top: 1em;
+}
+
+.attachment img {
+  max-width: 100%;
+}
+
+.date a {
+  text-decoration: none;
+}
+
+.date a:hover {
+  text-decoration: underline;
+}
+
+.date a,
+.counts {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.counts dt,
+.counts dd {
+  float: left;
+  margin-left: 1em;
+}
+
+a {
+  color: white;
+}
+
+.h-card {
+  min-height: 48px;
+  margin-bottom: 8px;
+}
+
+.h-card a {
+  text-decoration: none;
+}
+
+.h-card a:hover {
+  text-decoration: underline;
+}
+
+.display-name {
+  padding-top: 4px;
+  display: block;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  color: white;
+}
+
+/* keep emoji from being hilariously huge */
+.display-name img {
+  max-height: 1em;
+}
+
+.display-name .nickname {
+  padding-top: 4px;
+  display: block;
+}
+
+.nickname:hover {
+  text-decoration: none;
+}
+
+.pull-right {
+  float: right;
+}
+
+.collapse {
+  margin: 0;
+  width: auto;
+}
+
+a.button {
+  box-sizing: border-box;
+  display: inline-block;
+  color: white;
+  background-color: #419bdd;
+  border-radius: 4px;
+  border: none;
+  padding: 10px;
+  font-weight: 500;
+  font-size: 0.9em;
+}
+
+a.button:hover {
+  text-decoration: none;
+  background-color: #61a6d9;
+}

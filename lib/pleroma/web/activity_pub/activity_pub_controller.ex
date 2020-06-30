@@ -21,6 +21,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.FederatingPlug
   alias Pleroma.Web.Federator
@@ -230,27 +231,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       when page? in [true, "true"] do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {:ok, user} <- User.ensure_keys_present(user) do
-      activities =
-        if params["max_id"] do
-          ActivityPub.fetch_user_activities(user, for_user, %{
-            "max_id" => params["max_id"],
-            # This is a hack because postgres generates inefficient queries when filtering by
-            # 'Answer', poll votes will be hidden by the visibility filter in this case anyway
-            "include_poll_votes" => true,
-            "limit" => 10
-          })
-        else
-          ActivityPub.fetch_user_activities(user, for_user, %{
-            "limit" => 10,
-            "include_poll_votes" => true
-          })
-        end
+      # "include_poll_votes" is a hack because postgres generates inefficient
+      # queries when filtering by 'Answer', poll votes will be hidden by the
+      # visibility filter in this case anyway
+      params =
+        params
+        |> Map.drop(["nickname", "page"])
+        |> Map.put("include_poll_votes", true)
+        |> Map.new(fn {k, v} -> {String.to_existing_atom(k), v} end)
+
+      activities = ActivityPub.fetch_user_activities(user, for_user, params)
 
       conn
       |> put_resp_content_type("application/activity+json")
       |> put_view(UserView)
       |> render("activity_collection_page.json", %{
         activities: activities,
+        pagination: ControllerHelper.get_pagination_fields(conn, activities),
         iri: "#{user.ap_id}/outbox"
       })
     end
@@ -353,21 +350,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         %{"nickname" => nickname, "page" => page?} = params
       )
       when page? in [true, "true"] do
+    params =
+      params
+      |> Map.drop(["nickname", "page"])
+      |> Map.put("blocking_user", user)
+      |> Map.put("user", user)
+      |> Map.new(fn {k, v} -> {String.to_existing_atom(k), v} end)
+
     activities =
-      if params["max_id"] do
-        ActivityPub.fetch_activities([user.ap_id | User.following(user)], %{
-          "max_id" => params["max_id"],
-          "limit" => 10
-        })
-      else
-        ActivityPub.fetch_activities([user.ap_id | User.following(user)], %{"limit" => 10})
-      end
+      [user.ap_id | User.following(user)]
+      |> ActivityPub.fetch_activities(params)
+      |> Enum.reverse()
 
     conn
     |> put_resp_content_type("application/activity+json")
     |> put_view(UserView)
     |> render("activity_collection_page.json", %{
       activities: activities,
+      pagination: ControllerHelper.get_pagination_fields(conn, activities),
       iri: "#{user.ap_id}/inbox"
     })
   end
@@ -514,7 +514,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     {new_user, for_user}
   end
 
-  # TODO: Add support for "object" field
   @doc """
   Endpoint based on <https://www.w3.org/wiki/SocialCG/ActivityPub/MediaUpload>
 
@@ -525,6 +524,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   Response:
   - HTTP Code: 201 Created
   - HTTP Body: ActivityPub object to be inserted into another's `attachment` field
+
+  Note: Will not point to a URL with a `Location` header because no standalone Activity has been created.
   """
   def upload_media(%{assigns: %{user: %User{} = user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-

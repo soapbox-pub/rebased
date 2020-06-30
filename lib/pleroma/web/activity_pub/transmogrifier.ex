@@ -8,7 +8,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   alias Pleroma.Activity
   alias Pleroma.EarmarkRenderer
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.FollowingRelationship
+  alias Pleroma.Maps
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
@@ -16,7 +19,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.ObjectValidator
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -170,8 +172,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         object
         |> Map.put("inReplyTo", replied_object.data["id"])
         |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
-        |> Map.put("conversation", replied_object.data["context"] || object["conversation"])
         |> Map.put("context", replied_object.data["context"] || object["conversation"])
+        |> Map.drop(["conversation"])
       else
         e ->
           Logger.error("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
@@ -205,13 +207,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("context", context)
-    |> Map.put("conversation", context)
-  end
-
-  defp add_if_present(map, _key, nil), do: map
-
-  defp add_if_present(map, key, value) do
-    Map.put(map, key, value)
+    |> Map.drop(["conversation"])
   end
 
   def fix_attachments(%{"attachment" => attachment} = object) when is_list(attachment) do
@@ -226,9 +222,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         media_type =
           cond do
-            is_map(url) && is_binary(url["mediaType"]) -> url["mediaType"]
-            is_binary(data["mediaType"]) -> data["mediaType"]
-            is_binary(data["mimeType"]) -> data["mimeType"]
+            is_map(url) && MIME.valid?(url["mediaType"]) -> url["mediaType"]
+            MIME.valid?(data["mediaType"]) -> data["mediaType"]
+            MIME.valid?(data["mimeType"]) -> data["mimeType"]
             true -> nil
           end
 
@@ -241,13 +237,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         attachment_url =
           %{"href" => href}
-          |> add_if_present("mediaType", media_type)
-          |> add_if_present("type", Map.get(url || %{}, "type"))
+          |> Maps.put_if_present("mediaType", media_type)
+          |> Maps.put_if_present("type", Map.get(url || %{}, "type"))
 
         %{"url" => [attachment_url]}
-        |> add_if_present("mediaType", media_type)
-        |> add_if_present("type", data["type"])
-        |> add_if_present("name", data["name"])
+        |> Maps.put_if_present("mediaType", media_type)
+        |> Maps.put_if_present("type", data["type"])
+        |> Maps.put_if_present("name", data["name"])
       end)
 
     Map.put(object, "attachment", attachments)
@@ -462,7 +458,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         to: data["to"],
         object: object,
         actor: user,
-        context: object["conversation"],
+        context: object["context"],
         local: false,
         published: data["published"],
         additional:
@@ -532,7 +528,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            User.get_cached_by_ap_id(Containment.get_actor(%{"actor" => followed})),
          {:ok, %User{} = follower} <-
            User.get_or_fetch_by_ap_id(Containment.get_actor(%{"actor" => follower})),
-         {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
+         {:ok, activity} <-
+           ActivityPub.follow(follower, followed, id, false, skip_notify_and_stream: true) do
       with deny_follow_blocked <- Pleroma.Config.get([:user, :deny_follow_blocked]),
            {_, false} <- {:user_blocked, User.blocks?(followed, follower) && deny_follow_blocked},
            {_, false} <- {:user_locked, User.locked?(followed)},
@@ -575,6 +572,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           :noop
       end
 
+      ActivityPub.notify_and_stream(activity)
       {:ok, activity}
     else
       _e ->
@@ -594,6 +592,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
       User.update_follower_count(followed)
       User.update_following_count(follower)
+
+      Notification.update_notification_type(followed, follow_activity)
 
       ActivityPub.accept(%{
         to: follow_activity.data["to"],
@@ -662,8 +662,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> handle_incoming(options)
   end
 
+  def handle_incoming(
+        %{"type" => "Create", "object" => %{"type" => "ChatMessage"}} = data,
+        _options
+      ) do
+    with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
+         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+      {:ok, activity}
+    end
+  end
+
   def handle_incoming(%{"type" => type} = data, _options)
-      when type in ["Like", "EmojiReact", "Announce"] do
+      when type in ~w{Like EmojiReact Announce} do
     with :ok <- ObjectValidator.fetch_actor_and_object(data),
          {:ok, activity, _meta} <-
            Pipeline.common_pipeline(data, local: false) do
@@ -674,35 +684,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Update", "object" => %{"type" => object_type} = object, "actor" => actor_id} =
-          data,
+        %{"type" => type} = data,
         _options
       )
-      when object_type in [
-             "Person",
-             "Application",
-             "Service",
-             "Organization"
-           ] do
-    with %User{ap_id: ^actor_id} = actor <- User.get_cached_by_ap_id(object["id"]) do
-      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
-
-      actor
-      |> User.remote_user_changeset(new_user_data)
-      |> User.update_and_set_cache()
-
-      ActivityPub.update(%{
-        local: false,
-        to: data["to"] || [],
-        cc: data["cc"] || [],
-        object: object,
-        actor: actor_id,
-        activity_id: data["id"]
-      })
-    else
-      e ->
-        Logger.error(e)
-        :error
+      when type in ~w{Update Block} do
+    with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
+         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+      {:ok, activity}
     end
   end
 
@@ -715,7 +703,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     else
       {:error, {:validate_object, _}} = e ->
         # Check if we have a create activity for this
-        with {:ok, object_id} <- Types.ObjectID.cast(data["object"]),
+        with {:ok, object_id} <- ObjectValidators.ObjectID.cast(data["object"]),
              %Activity{data: %{"actor" => actor}} <-
                Activity.create_by_object_ap_id(object_id) |> Repo.one(),
              # We have one, insert a tombstone and retry
@@ -773,21 +761,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       activity
       |> Map.put("object", data)
       |> handle_incoming(options)
-    else
-      _e -> :error
-    end
-  end
-
-  def handle_incoming(
-        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data,
-        _options
-      ) do
-    with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
-         {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
-         {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
-      User.unfollow(blocker, blocked)
-      User.block(blocker, blocked)
-      {:ok, activity}
     else
       _e -> :error
     end
@@ -1112,6 +1085,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     attributed_to = object["attributedTo"] || object["actor"]
     Map.put(object, "attributedTo", attributed_to)
   end
+
+  # TODO: Revisit this
+  def prepare_attachments(%{"type" => "ChatMessage"} = object), do: object
 
   def prepare_attachments(object) do
     attachments =

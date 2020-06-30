@@ -45,10 +45,6 @@ defmodule Pleroma.Web.MastodonAPI.AppView do
   defp with_vapid_key(data) do
     vapid_key = Application.get_env(:web_push_encryption, :vapid_details, [])[:public_key]
 
-    if vapid_key do
-      Map.put(data, "vapid_key", vapid_key)
-    else
-      data
-    end
+    Pleroma.Maps.put_if_present(data, "vapid_key", vapid_key)
   end
 end

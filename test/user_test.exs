@@ -199,6 +199,16 @@ defmodule Pleroma.UserTest do
     assert [^pending_follower] = User.get_follow_requests(locked)
   end
 
+  test "doesn't return follow requests for deactivated accounts" do
+    locked = insert(:user, locked: true)
+    pending_follower = insert(:user, %{deactivated: true})
+
+    CommonAPI.follow(pending_follower, locked)
+
+    assert true == pending_follower.deactivated
+    assert [] = User.get_follow_requests(locked)
+  end
+
   test "clears follow requests when requester is blocked" do
     followed = insert(:user, locked: true)
     follower = insert(:user)
@@ -1122,7 +1132,7 @@ defmodule Pleroma.UserTest do
 
       assert [%{activity | thread_muted?: CommonAPI.thread_muted?(user2, activity)}] ==
                ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
-                 "user" => user2
+                 user: user2
                })
 
       {:ok, _user} = User.deactivate(user)
@@ -1132,7 +1142,7 @@ defmodule Pleroma.UserTest do
 
       assert [] ==
                ActivityPub.fetch_activities([user2.ap_id | User.following(user2)], %{
-                 "user" => user2
+                 user: user2
                })
     end
   end
@@ -1159,6 +1169,9 @@ defmodule Pleroma.UserTest do
       follower = insert(:user)
       {:ok, follower} = User.follow(follower, user)
 
+      locked_user = insert(:user, name: "locked", locked: true)
+      {:ok, _} = User.follow(user, locked_user, :follow_pending)
+
       object = insert(:note, user: user)
       activity = insert(:note_activity, user: user, note: object)
 
@@ -1176,6 +1189,8 @@ defmodule Pleroma.UserTest do
 
       refute User.following?(follower, user)
       assert %{deactivated: true} = User.get_by_id(user.id)
+
+      assert [] == User.get_follow_requests(locked_user)
 
       user_activities =
         user.ap_id
@@ -1337,11 +1352,11 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  describe "visible_for?/2" do
+  describe "visible_for/2" do
     test "returns true when the account is itself" do
       user = insert(:user, local: true)
 
-      assert User.visible_for?(user, user)
+      assert User.visible_for(user, user) == :visible
     end
 
     test "returns false when the account is unauthenticated and auth is required" do
@@ -1350,14 +1365,14 @@ defmodule Pleroma.UserTest do
       user = insert(:user, local: true, confirmation_pending: true)
       other_user = insert(:user, local: true)
 
-      refute User.visible_for?(user, other_user)
+      refute User.visible_for(user, other_user) == :visible
     end
 
     test "returns true when the account is unauthenticated and auth is not required" do
       user = insert(:user, local: true, confirmation_pending: true)
       other_user = insert(:user, local: true)
 
-      assert User.visible_for?(user, other_user)
+      assert User.visible_for(user, other_user) == :visible
     end
 
     test "returns true when the account is unauthenticated and being viewed by a privileged account (auth required)" do
@@ -1366,7 +1381,7 @@ defmodule Pleroma.UserTest do
       user = insert(:user, local: true, confirmation_pending: true)
       other_user = insert(:user, local: true, is_admin: true)
 
-      assert User.visible_for?(user, other_user)
+      assert User.visible_for(user, other_user) == :visible
     end
   end
 
@@ -1802,7 +1817,7 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
     assert User.avatar_url(user) =~ "/images/avi.png"
 
-    Pleroma.Config.put([:assets, :default_user_avatar], "avatar.png")
+    clear_config([:assets, :default_user_avatar], "avatar.png")
 
     user = User.get_cached_by_nickname_or_id(user.nickname)
     assert User.avatar_url(user) =~ "avatar.png"

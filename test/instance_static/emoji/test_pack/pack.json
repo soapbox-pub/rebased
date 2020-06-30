@@ -1,6 +1,7 @@
 {
     "files": {
-        "blank": "blank.png"
+        "blank": "blank.png",
+        "blank2": "blank2.png"
     },
     "pack": {
         "description": "Test description",

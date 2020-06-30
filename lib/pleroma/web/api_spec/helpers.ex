@@ -40,6 +40,12 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
         "Return the newest items newer than this ID"
       ),
       Operation.parameter(
+        :offset,
+        :query,
+        %Schema{type: :integer, default: 0},
+        "Return items past this number of items"
+      ),
+      Operation.parameter(
         :limit,
         :query,
         %Schema{type: :integer, default: 20},

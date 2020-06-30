@@ -196,3 +196,11 @@ incorrect timestamps. You should have ntpd running.
 ## Instances running NetBSD
 
 * <https://catgirl.science>
+
+#### Further reading
+
+{! backend/installation/further_reading.include !}
+
+## Questions
+
+Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.

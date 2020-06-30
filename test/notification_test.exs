@@ -10,6 +10,7 @@ defmodule Pleroma.NotificationTest do
 
   alias Pleroma.FollowingRelationship
   alias Pleroma.Notification
+  alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -21,6 +22,16 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.Streamer
 
   describe "create_notifications" do
+    test "never returns nil" do
+      user = insert(:user)
+      other_user = insert(:user, %{invisible: true})
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "yeah"})
+      {:ok, activity} = CommonAPI.react_with_emoji(activity.id, other_user, "☕")
+
+      refute {:ok, [nil]} == Notification.create_notifications(activity)
+    end
+
     test "creates a notification for an emoji reaction" do
       user = insert(:user)
       other_user = insert(:user)
@@ -31,6 +42,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, [notification]} = Notification.create_notifications(activity)
 
       assert notification.user_id == user.id
+      assert notification.type == "pleroma:emoji_reaction"
     end
 
     test "notifies someone when they are directly addressed" do
@@ -48,6 +60,7 @@ defmodule Pleroma.NotificationTest do
       notified_ids = Enum.sort([notification.user_id, other_notification.user_id])
       assert notified_ids == [other_user.id, third_user.id]
       assert notification.activity_id == activity.id
+      assert notification.type == "mention"
       assert other_notification.activity_id == activity.id
 
       assert [%Pleroma.Marker{unread_count: 2}] =
@@ -303,6 +316,14 @@ defmodule Pleroma.NotificationTest do
 
       assert {:ok, []} == Notification.create_notifications(status)
     end
+
+    test "it disables notifications from people who are invisible" do
+      author = insert(:user, invisible: true)
+      user = insert(:user)
+
+      {:ok, status} = CommonAPI.post(author, %{status: "hey @#{user.nickname}"})
+      refute Notification.create_notification(status, user)
+    end
   end
 
   describe "follow / follow_request notifications" do
@@ -335,9 +356,12 @@ defmodule Pleroma.NotificationTest do
       # After request is accepted, the same notification is rendered with type "follow":
       assert {:ok, _} = CommonAPI.accept_follow_request(user, followed_user)
 
-      notification_id = notification.id
-      assert [%{id: ^notification_id}] = Notification.for_user(followed_user)
-      assert %{type: "follow"} = NotificationView.render("show.json", render_opts)
+      notification =
+        Repo.get(Notification, notification.id)
+        |> Repo.preload(:activity)
+
+      assert %{type: "follow"} =
+               NotificationView.render("show.json", notification: notification, for: followed_user)
     end
 
     test "it doesn't create a notification for follow-unfollow-follow chains" do

@@ -29,11 +29,11 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
   def index(%{assigns: %{user: _admin}} = conn, params) do
     activities =
       ActivityPub.fetch_statuses(nil, %{
-        "godmode" => params.godmode,
-        "local_only" => params.local_only,
-        "limit" => params.page_size,
-        "offset" => (params.page - 1) * params.page_size,
-        "exclude_reblogs" => not params.with_reblogs
+        godmode: params.godmode,
+        local_only: params.local_only,
+        limit: params.page_size,
+        offset: (params.page - 1) * params.page_size,
+        exclude_reblogs: not params.with_reblogs
       })
 
     render(conn, "index.json", activities: activities, as: :activity)
@@ -41,9 +41,7 @@ defmodule Pleroma.Web.AdminAPI.StatusController do
 
   def show(conn, %{id: id}) do
     with %Activity{} = activity <- Activity.get_by_id(id) do
-      conn
-      |> put_view(MastodonAPI.StatusView)
-      |> render("show.json", %{activity: activity})
+      render(conn, "show.json", %{activity: activity})
     else
       nil -> {:error, :not_found}
     end
