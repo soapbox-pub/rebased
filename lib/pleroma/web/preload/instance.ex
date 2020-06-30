@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Preload.Providers.Instance do
+  alias Pleroma.Plugs.InstanceStatic
   alias Pleroma.Web.MastodonAPI.InstanceView
   alias Pleroma.Web.Nodeinfo.Nodeinfo
   alias Pleroma.Web.Preload.Providers.Provider
-  alias Pleroma.Plugs.InstanceStatic
 
   @behaviour Provider
   @instance_url "/api/v1/instance"
