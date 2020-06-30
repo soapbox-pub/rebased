@@ -25,6 +25,13 @@ defmodule Pleroma.Web.CommonAPI do
   require Pleroma.Constants
   require Logger
 
+  def block(blocker, blocked) do
+    with {:ok, block_data, _} <- Builder.block(blocker, blocked),
+         {:ok, block, _} <- Pipeline.common_pipeline(block_data, local: true) do
+      {:ok, block}
+    end
+  end
+
   def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
     with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
          :ok <- validate_chat_content_length(content, !!maybe_attachment),

@@ -780,7 +780,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       assert %{"id" => _id, "muting" => true, "muting_notifications" => true} =
                conn
-               |> put_req_header("content-type", "application/json")
                |> post("/api/v1/accounts/#{other_user.id}/mute")
                |> json_response_and_validate_schema(200)
 

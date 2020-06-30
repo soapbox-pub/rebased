@@ -992,54 +992,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "blocking" do
-    test "reverts block activity on error" do
-      [blocker, blocked] = insert_list(2, :user)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.block(blocker, blocked)
-      end
-
-      assert Repo.aggregate(Activity, :count, :id) == 0
-      assert Repo.aggregate(Object, :count, :id) == 0
-    end
-
-    test "creates a block activity" do
-      clear_config([:instance, :federating], true)
-      blocker = insert(:user)
-      blocked = insert(:user)
-
-      with_mock Pleroma.Web.Federator,
-        publish: fn _ -> nil end do
-        {:ok, activity} = ActivityPub.block(blocker, blocked)
-
-        assert activity.data["type"] == "Block"
-        assert activity.data["actor"] == blocker.ap_id
-        assert activity.data["object"] == blocked.ap_id
-
-        assert called(Pleroma.Web.Federator.publish(activity))
-      end
-    end
-
-    test "works with outgoing blocks disabled, but doesn't federate" do
-      clear_config([:instance, :federating], true)
-      clear_config([:activitypub, :outgoing_blocks], false)
-      blocker = insert(:user)
-      blocked = insert(:user)
-
-      with_mock Pleroma.Web.Federator,
-        publish: fn _ -> nil end do
-        {:ok, activity} = ActivityPub.block(blocker, blocked)
-
-        assert activity.data["type"] == "Block"
-        assert activity.data["actor"] == blocker.ap_id
-        assert activity.data["object"] == blocked.ap_id
-
-        refute called(Pleroma.Web.Federator.publish(:_))
-      end
-    end
-  end
-
   describe "timeline post-processing" do
     test "it filters broken threads" do
       user1 = insert(:user)

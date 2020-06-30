@@ -27,6 +27,7 @@ Has these additional fields under the `pleroma` object:
 - `expires_at`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
 - `thread_muted`: true if the thread the post belongs to is muted
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
+- `parent_visible`: If the parent of this post is visible to the user or not.
 
 ## Media Attachments
 
@@ -51,11 +52,14 @@ The `id` parameter can also be the `nickname` of the user. This only works in th
 
 Has these additional fields under the `pleroma` object:
 
+- `ap_id`: nullable URL string, ActivityPub id of the user
+- `background_image`: nullable URL string, background image of the user
 - `tags`: Lists an array of tags for the user
-- `relationship{}`: Includes fields as documented for Mastodon API https://docs.joinmastodon.org/entities/relationship/
+- `relationship` (object): Includes fields as documented for Mastodon API https://docs.joinmastodon.org/entities/relationship/
 - `is_moderator`: boolean, nullable,  true if user is a moderator
 - `is_admin`: boolean, nullable, true if user is an admin
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
+- `hide_favorites`: boolean, true when the user has hiding favorites enabled
 - `hide_followers`: boolean, true when the user has follower hiding enabled
 - `hide_follows`: boolean, true when the user has follow hiding enabled
 - `hide_followers_count`: boolean, true when the user has follower stat hiding enabled
@@ -66,6 +70,7 @@ Has these additional fields under the `pleroma` object:
 - `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
 - `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
+- `notification_settings`: object, can be absent. See `/api/pleroma/notification_settings` for the parameters/keys returned.
 
 ### Source
 

@@ -21,7 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
-  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1]
+  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
 
   # TODO: Add cached version.
   defp get_replied_to_activities([]), do: %{}
@@ -364,7 +364,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         expires_at: expires_at,
         direct_conversation_id: direct_conversation_id,
         thread_muted: thread_muted?,
-        emoji_reactions: emoji_reactions
+        emoji_reactions: emoji_reactions,
+        parent_visible: visible_for_user?(reply_to, opts[:for])
       }
     }
   end

@@ -184,6 +184,10 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Status do
           thread_muted: %Schema{
             type: :boolean,
             description: "`true` if the thread the post belongs to is muted"
+          },
+          parent_visible: %Schema{
+            type: :boolean,
+            description: "`true` if the parent post is visible to the user"
           }
         }
       },

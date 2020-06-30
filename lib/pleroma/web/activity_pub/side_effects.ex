@@ -21,6 +21,21 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle(object, meta \\ [])
 
   # Tasks this handles:
+  # - Unfollow and block
+  def handle(
+        %{data: %{"type" => "Block", "object" => blocked_user, "actor" => blocking_user}} =
+          object,
+        meta
+      ) do
+    with %User{} = blocker <- User.get_cached_by_ap_id(blocking_user),
+         %User{} = blocked <- User.get_cached_by_ap_id(blocked_user) do
+      User.block(blocker, blocked)
+    end
+
+    {:ok, object, meta}
+  end
+
+  # Tasks this handles:
   # - Update the user
   #
   # For a local user, we also get a changeset with the full information, so we
