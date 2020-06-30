@@ -55,6 +55,10 @@ defmodule Pleroma.HTTP.Middleware.FollowRedirects do
         release_conn(opts)
         {:error, {__MODULE__, :too_many_redirects}}
 
+      {:error, _} = e ->
+        release_conn(opts)
+        e
+
       other ->
         unless opts[:body_as] == :chunks do
           release_conn(opts)
