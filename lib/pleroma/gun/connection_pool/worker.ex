@@ -12,7 +12,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   def init([key, uri, opts, client_pid]) do
     with {:ok, conn_pid} <- Gun.Conn.open(uri, opts),
          Process.link(conn_pid) do
-      time = :erlang.monotonic_time()
+      time = :erlang.monotonic_time(:millisecond)
 
       {_, _} =
         Registry.update_value(@registry, key, fn _ ->
@@ -31,7 +31,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
 
   @impl true
   def handle_cast({:add_client, client_pid, send_pid_back}, %{key: key} = state) do
-    time = :erlang.monotonic_time()
+    time = :erlang.monotonic_time(:millisecond)
 
     {{conn_pid, _, _, _}, _} =
       Registry.update_value(@registry, key, fn {conn_pid, used_by, crf, last_reference} ->
@@ -116,6 +116,6 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
 
   # LRFU policy: https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.55.1478
   defp crf(time_delta, prev_crf) do
-    1 + :math.pow(0.5, time_delta / 100) * prev_crf
+    1 + :math.pow(0.5, 0.0001 * time_delta) * prev_crf
   end
 end
