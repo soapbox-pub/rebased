@@ -1535,8 +1535,7 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :mrf_rejectnonpublic,
     tab: :mrf,
-    description:
-      "RejectNonPublic drops posts with non-public visibility settings.",
+    description: "RejectNonPublic drops posts with non-public visibility settings.",
     label: "MRF Reject Non Public",
     type: :group,
     children: [
@@ -3108,7 +3107,8 @@ config :pleroma, :config_description, [
     label: "MRF Object Age",
     tab: :mrf,
     type: :group,
-    description: "Rejects or delists posts based on their timestamp deviance from your server's clock.",
+    description:
+      "Rejects or delists posts based on their timestamp deviance from your server's clock.",
     children: [
       %{
         key: :threshold,
