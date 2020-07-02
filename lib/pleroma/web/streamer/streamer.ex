@@ -116,6 +116,7 @@ defmodule Pleroma.Web.Streamer do
          true <-
            Enum.all?([blocked_ap_ids, muted_ap_ids], &(item.actor not in &1)),
          true <- item.data["type"] != "Announce" || item.actor not in reblog_muted_ap_ids,
+         true <- !(item.data["type"] == "Announce" && parent.data["actor"] == user.ap_id),
          true <- Enum.all?([blocked_ap_ids, muted_ap_ids], &(parent.data["actor"] not in &1)),
          true <- MapSet.disjoint?(recipients, recipient_blocks),
          %{host: item_host} <- URI.parse(item.actor),
