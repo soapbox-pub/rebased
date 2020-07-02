@@ -80,6 +80,13 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   end
 
   def create(actor, object, recipients) do
+    context =
+      if is_map(object) do
+        object["context"]
+      else
+        nil
+      end
+
     {:ok,
      %{
        "id" => Utils.generate_activity_id(),
@@ -88,7 +95,8 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "object" => object,
        "type" => "Create",
        "published" => DateTime.utc_now() |> DateTime.to_iso8601()
-     }, []}
+     }
+     |> Pleroma.Maps.put_if_present("context", context), []}
   end
 
   def chat_message(actor, recipient, content, opts \\ []) do

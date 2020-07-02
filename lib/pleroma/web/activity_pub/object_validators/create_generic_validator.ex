@@ -24,6 +24,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     field(:cc, ObjectValidators.Recipients, default: [])
     field(:object, ObjectValidators.ObjectID)
     field(:expires_at, ObjectValidators.DateTime)
+
+    # Should be moved to object, done for CommonAPI.Utils.make_context
+    field(:context, :string)
   end
 
   def cast_data(data) do
@@ -55,6 +58,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     |> validate_actor_is_active()
     |> validate_any_presence([:to, :cc])
     |> validate_actors_match(meta)
+    |> validate_context_match(meta)
     |> validate_object_nonexistence()
     |> validate_object_containment()
   end
@@ -98,4 +102,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
       end
     end)
   end
+
+  def validate_context_match(cng, %{object_data: %{"context" => object_context}}) do
+    cng
+    |> validate_change(:context, fn :context, context ->
+      if context == object_context do
+        []
+      else
+        [{:context, "context field not matching between Create and object (#{object_context})"}]
+      end
+    end)
+  end
+
+  def validate_context_match(cng, _), do: cng
 end

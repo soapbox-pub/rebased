@@ -8,6 +8,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.CommonAPI
+
+  import Pleroma.Factory
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -22,6 +25,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
     object = Object.normalize(activity, false)
 
     assert object.data["closed"] == "2019-05-11T09:03:36Z"
+
+    assert object.data["context"] == activity.data["context"]
 
     assert object.data["context"] ==
              "tag:mastodon.sdf.org,2019-05-10:objectId=15095122:objectType=Conversation"
@@ -53,6 +58,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
                  "type" => "Note"
                }
              ])
+
+    user = insert(:user)
+
+    {:ok, reply_activity} = CommonAPI.post(user, %{status: "hewwo", in_reply_to_id: activity.id})
+
+    reply_object = Object.normalize(reply_activity, false)
+
+    assert reply_object.data["context"] == object.data["context"]
+    assert reply_object.data["context_id"] == object.data["context_id"]
   end
 
   test "Mastodon Question activity with HTML tags in plaintext" do

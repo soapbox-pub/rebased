@@ -643,6 +643,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> Map.put("object", fix_object(object))
       |> fix_addressing()
 
+    data = Map.put_new(data, "context", data["object"]["context"])
+
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
