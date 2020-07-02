@@ -115,7 +115,7 @@ defmodule Pleroma.User do
     field(:is_moderator, :boolean, default: false)
     field(:is_admin, :boolean, default: false)
     field(:show_role, :boolean, default: true)
-    field(:settings, :map, default: nil)
+    field(:mastofe_settings, :map, default: nil)
     field(:uri, ObjectValidators.Uri, default: nil)
     field(:hide_followers_count, :boolean, default: false)
     field(:hide_follows_count, :boolean, default: false)
@@ -1309,7 +1309,8 @@ defmodule Pleroma.User do
 
     unsubscribe(blocked, blocker)
 
-    if following?(blocked, blocker), do: unfollow(blocked, blocker)
+    unfollowing_blocked = Config.get([:activitypub, :unfollow_blocked], true)
+    if unfollowing_blocked && following?(blocked, blocker), do: unfollow(blocked, blocker)
 
     {:ok, blocker} = update_follower_count(blocker)
     {:ok, blocker, _} = Participation.mark_all_as_read(blocker, blocked)
@@ -1527,8 +1528,7 @@ defmodule Pleroma.User do
       blocked_identifiers,
       fn blocked_identifier ->
         with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
-             {:ok, _user_block} <- block(blocker, blocked),
-             {:ok, _} <- ActivityPub.block(blocker, blocked) do
+             {:ok, _block} <- CommonAPI.block(blocker, blocked) do
           blocked
         else
           err ->
@@ -2118,8 +2118,8 @@ defmodule Pleroma.User do
 
   def mastodon_settings_update(user, settings) do
     user
-    |> cast(%{settings: settings}, [:settings])
-    |> validate_required([:settings])
+    |> cast(%{mastofe_settings: settings}, [:mastofe_settings])
+    |> validate_required([:mastofe_settings])
     |> update_and_set_cache()
   end
 

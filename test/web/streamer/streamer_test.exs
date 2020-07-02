@@ -116,6 +116,18 @@ defmodule Pleroma.Web.StreamerTest do
       refute Streamer.filtered_by_user?(user, announce)
     end
 
+    test "it does not stream announces of the user's own posts in the 'user' stream", %{
+      user: user
+    } do
+      Streamer.get_topic_and_add_socket("user", user)
+
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{status: "hey"})
+      {:ok, announce} = CommonAPI.repeat(activity.id, other_user)
+
+      assert Streamer.filtered_by_user?(user, announce)
+    end
+
     test "it streams boosts of mastodon user in the 'user' stream", %{user: user} do
       Streamer.get_topic_and_add_socket("user", user)
 

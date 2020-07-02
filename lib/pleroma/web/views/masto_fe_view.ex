@@ -86,7 +86,7 @@ defmodule Pleroma.Web.MastoFEView do
           "video\/mp4"
         ]
       },
-      settings: user.settings || @default_settings,
+      settings: user.mastofe_settings || @default_settings,
       push_subscription: nil,
       accounts: %{user.id => render(AccountView, "show.json", user: user, for: user)},
       custom_emojis: render(CustomEmojiView, "index.json", custom_emojis: custom_emojis),
