@@ -13,6 +13,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
@@ -97,7 +98,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     if !User.is_internal_user?(user) do
       Notification.create_notifications(object)
-      ActivityPub.stream_out(object)
+
+      object
+      |> Topics.get_activity_topics()
+      |> Streamer.stream(object)
     end
 
     {:ok, object, meta}
