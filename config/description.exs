@@ -1391,11 +1391,49 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
+    key: :mrf,
+    tab: :mrf,
+    label: "MRF",
+    type: :group,
+    description: "General MRF settings",
+    children: [
+      %{
+        key: :policies,
+        type: [:module, {:list, :module}],
+        description:
+          "A list of MRF policies enabled. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
+        suggestions:
+          Generator.list_modules_in_dir(
+            "lib/pleroma/web/activity_pub/mrf",
+            "Elixir.Pleroma.Web.ActivityPub.MRF."
+          )
+      },
+      %{
+        key: :transparency,
+        label: "MRF transparency",
+        type: :boolean,
+        description:
+          "Make the content of your Message Rewrite Facility settings public (via nodeinfo)"
+      },
+      %{
+        key: :transparency_exclusions,
+        label: "MRF transparency exclusions",
+        type: {:list, :string},
+        description:
+          "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
+        suggestions: [
+          "exclusion.com"
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
     key: :mrf_simple,
     tab: :mrf,
     label: "MRF Simple",
     type: :group,
-    description: "Message Rewrite Facility",
+    description: "Simple ingress policies",
     children: [
       %{
         key: :media_removal,
@@ -1414,7 +1452,7 @@ config :pleroma, :config_description, [
         key: :federated_timeline_removal,
         type: {:list, :string},
         description:
-          "List of instances to remove from Federated (aka The Whole Known Network) Timeline",
+          "List of instances to remove from the Federated (aka The Whole Known Network) Timeline",
         suggestions: ["example.com", "*.example.com"]
       },
       %{
@@ -1461,12 +1499,12 @@ config :pleroma, :config_description, [
     tab: :mrf,
     label: "MRF Activity Expiration Policy",
     type: :group,
-    description: "Adds expiration to all local Create Note activities",
+    description: "Adds automatic expiration to all local activities",
     children: [
       %{
         key: :days,
         type: :integer,
-        description: "Default global expiration time for all local Create activities (in days)",
+        description: "Default global expiration time for all local activities (in days)",
         suggestions: [90, 365]
       }
     ]
@@ -1498,7 +1536,7 @@ config :pleroma, :config_description, [
     key: :mrf_rejectnonpublic,
     tab: :mrf,
     description:
-      "MRF RejectNonPublic settings. RejectNonPublic drops posts with non-public visibility settings.",
+      "RejectNonPublic drops posts with non-public visibility settings.",
     label: "MRF Reject Non Public",
     type: :group,
     children: [
@@ -1521,14 +1559,14 @@ config :pleroma, :config_description, [
     tab: :mrf,
     label: "MRF Hellthread",
     type: :group,
-    description: "Block messages with too much mentions",
+    description: "Block messages with excessive user mentions",
     children: [
       %{
         key: :delist_threshold,
         type: :integer,
         description:
-          "Number of mentioned users after which the message gets delisted (the message can still be seen, " <>
-            " but it will not show up in public timelines and mentioned users won't get notifications about it). Set to 0 to disable.",
+          "Number of mentioned users after which the message gets removed from timelines and" <>
+            "disables notifications. Set to 0 to disable.",
         suggestions: [10]
       },
       %{
@@ -1577,7 +1615,7 @@ config :pleroma, :config_description, [
     tab: :mrf,
     label: "MRF Mention",
     type: :group,
-    description: "Block messages which mention a user",
+    description: "Block messages which mention a specific user",
     children: [
       %{
         key: :actors,
@@ -3070,7 +3108,7 @@ config :pleroma, :config_description, [
     label: "MRF Object Age",
     tab: :mrf,
     type: :group,
-    description: "Rejects or delists posts based on their age when received.",
+    description: "Rejects or delists posts based on their timestamp deviance from your server's clock.",
     children: [
       %{
         key: :threshold,
@@ -3083,7 +3121,7 @@ config :pleroma, :config_description, [
         type: {:list, :atom},
         description:
           "A list of actions to apply to the post. `:delist` removes the post from public timelines; " <>
-            "`:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines; " <>
+            "`:strip_followers` removes followers from the ActivityPub recipient list ensuring they won't be delivered to home timelines; " <>
             "`:reject` rejects the message entirely",
         suggestions: [:delist, :strip_followers, :reject]
       }
@@ -3406,44 +3444,6 @@ config :pleroma, :config_description, [
         description:
           "Enables strict input validation (useful in development, not recommended in production)",
         suggestions: [false]
-      }
-    ]
-  },
-  %{
-    group: :pleroma,
-    key: :mrf,
-    tab: :mrf,
-    label: "MRF",
-    type: :group,
-    description: "General MRF settings",
-    children: [
-      %{
-        key: :policies,
-        type: [:module, {:list, :module}],
-        description:
-          "A list of MRF policies enabled. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
-        suggestions:
-          Generator.list_modules_in_dir(
-            "lib/pleroma/web/activity_pub/mrf",
-            "Elixir.Pleroma.Web.ActivityPub.MRF."
-          )
-      },
-      %{
-        key: :transparency,
-        label: "MRF transparency",
-        type: :boolean,
-        description:
-          "Make the content of your Message Rewrite Facility settings public (via nodeinfo)"
-      },
-      %{
-        key: :transparency_exclusions,
-        label: "MRF transparency exclusions",
-        type: {:list, :string},
-        description:
-          "Exclude specific instance names from MRF transparency. The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.",
-        suggestions: [
-          "exclusion.com"
-        ]
       }
     ]
   }
