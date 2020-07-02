@@ -93,10 +93,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
 
   def fields_limits do
     %{
-      maxFields: Config.get([:instance, :max_account_fields]),
-      maxRemoteFields: Config.get([:instance, :max_remote_account_fields]),
-      nameLength: Config.get([:instance, :account_field_name_length]),
-      valueLength: Config.get([:instance, :account_field_value_length])
+      max_fields: Config.get([:instance, :max_account_fields]),
+      max_remote_fields: Config.get([:instance, :max_remote_account_fields]),
+      name_length: Config.get([:instance, :account_field_name_length]),
+      value_length: Config.get([:instance, :account_field_value_length])
     }
   end
 end
