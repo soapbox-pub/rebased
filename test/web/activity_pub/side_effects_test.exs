@@ -589,10 +589,29 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
     end
 
     test "it streams out the announce", %{announce: announce} do
-      with_mock Pleroma.Web.ActivityPub.ActivityPub, [:passthrough], stream_out: fn _ -> nil end do
+      with_mocks([
+        {
+          Pleroma.Web.Streamer,
+          [],
+          [
+            stream: fn _, _ -> nil end
+          ]
+        },
+        {
+          Pleroma.Web.Push,
+          [],
+          [
+            send: fn _ -> nil end
+          ]
+        }
+      ]) do
         {:ok, announce, _} = SideEffects.handle(announce)
 
-        assert called(Pleroma.Web.ActivityPub.ActivityPub.stream_out(announce))
+        assert called(
+                 Pleroma.Web.Streamer.stream(["user", "list", "public", "public:local"], announce)
+               )
+
+        assert called(Pleroma.Web.Push.send(:_))
       end
     end
   end

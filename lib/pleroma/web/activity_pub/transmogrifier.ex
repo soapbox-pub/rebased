@@ -446,12 +446,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       when objtype in ["Article", "Event", "Note", "Video", "Page", "Question", "Answer", "Audio"] do
     actor = Containment.get_actor(data)
 
-    data =
-      Map.put(data, "actor", actor)
-      |> fix_addressing
-
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
-         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(data["actor"]) do
+         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(actor),
+         data <- Map.put(data, "actor", actor) |> fix_addressing() do
       object = fix_object(object, options)
 
       params = %{
