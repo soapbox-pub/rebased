@@ -35,8 +35,10 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "background_image" => _
            } = result
 
+    assert result["pleroma"]["metadata"]["account_activation_required"] != nil
     assert result["pleroma"]["metadata"]["features"]
     assert result["pleroma"]["metadata"]["federation"]
+    assert result["pleroma"]["metadata"]["fields_limits"]
     assert result["pleroma"]["vapid_public_key"]
 
     assert email == from_config_email
