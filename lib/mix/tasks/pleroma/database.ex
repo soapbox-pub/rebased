@@ -4,6 +4,7 @@
 
 defmodule Mix.Tasks.Pleroma.Database do
   alias Pleroma.Conversation
+  alias Pleroma.Maintenance
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -34,13 +35,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     )
 
     if Keyword.get(options, :vacuum) do
-      Logger.info("Runnning VACUUM FULL")
-
-      Repo.query!(
-        "vacuum full;",
-        [],
-        timeout: :infinity
-      )
+      Maintenance.vacuum("full")
     end
   end
 
@@ -94,13 +89,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> Repo.delete_all(timeout: :infinity)
 
     if Keyword.get(options, :vacuum) do
-      Logger.info("Runnning VACUUM FULL")
-
-      Repo.query!(
-        "vacuum full;",
-        [],
-        timeout: :infinity
-      )
+      Maintenance.vacuum("full")
     end
   end
 
@@ -134,5 +123,11 @@ defmodule Mix.Tasks.Pleroma.Database do
       |> Repo.update_all([], timeout: :infinity)
     end)
     |> Stream.run()
+  end
+
+  def run(["vacuum", args]) do
+    start_pleroma()
+
+    Maintenance.vacuum(args)
   end
 end

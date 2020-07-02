@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.Pipeline do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -16,6 +17,10 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
           {:ok, Activity.t() | Object.t(), keyword()} | {:error, any()}
   def common_pipeline(object, meta) do
     case Repo.transaction(fn -> do_common_pipeline(object, meta) end) do
+      {:ok, {:ok, activity, meta}} ->
+        SideEffects.handle_after_transaction(meta)
+        {:ok, activity, meta}
+
       {:ok, value} ->
         value
 
@@ -44,7 +49,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
 
   defp maybe_federate(%Activity{} = activity, meta) do
     with {:ok, local} <- Keyword.fetch(meta, :local) do
-      do_not_federate = meta[:do_not_federate]
+      do_not_federate = meta[:do_not_federate] || !Config.get([:instance, :federating])
 
       if !do_not_federate && local do
         Federator.publish(activity)

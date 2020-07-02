@@ -109,7 +109,7 @@ defmodule Pleroma.HTML do
       result =
         content
         |> Floki.parse_fragment!()
-        |> Floki.filter_out("a.mention,a.hashtag,a[rel~=\"tag\"]")
+        |> Floki.filter_out("a.mention,a.hashtag,a.attachment,a[rel~=\"tag\"]")
         |> Floki.attribute("a", "href")
         |> Enum.at(0)
 

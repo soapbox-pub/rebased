@@ -226,7 +226,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         expires_at: nil,
         direct_conversation_id: nil,
         thread_muted: false,
-        emoji_reactions: []
+        emoji_reactions: [],
+        parent_visible: false
       }
     }
 
@@ -442,7 +443,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
     activity = insert(:note_activity)
 
-    {:ok, reblog, _} = CommonAPI.repeat(activity.id, user)
+    {:ok, reblog} = CommonAPI.repeat(activity.id, user)
 
     represented = StatusView.render("show.json", %{for: user, activity: reblog})
 
@@ -600,7 +601,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         status: "˙˙ɐʎns"
       })
 
-    {:ok, activity, _object} = CommonAPI.repeat(activity.id, other_user)
+    {:ok, activity} = CommonAPI.repeat(activity.id, other_user)
 
     result = StatusView.render("show.json", %{activity: activity, for: user})
 
@@ -619,5 +620,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: activity)
 
     assert status.visibility == "list"
+  end
+
+  test "has a field for parent visibility" do
+    user = insert(:user)
+    poster = insert(:user)
+
+    {:ok, invisible} = CommonAPI.post(poster, %{status: "hey", visibility: "private"})
+
+    {:ok, visible} =
+      CommonAPI.post(poster, %{status: "hey", visibility: "private", in_reply_to_id: invisible.id})
+
+    status = StatusView.render("show.json", activity: visible, for: user)
+    refute status.pleroma.parent_visible
+
+    status = StatusView.render("show.json", activity: visible, for: poster)
+    assert status.pleroma.parent_visible
   end
 end

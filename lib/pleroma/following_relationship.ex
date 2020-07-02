@@ -124,6 +124,7 @@ defmodule Pleroma.FollowingRelationship do
     |> join(:inner, [r], f in assoc(r, :follower))
     |> where([r], r.state == ^:follow_pending)
     |> where([r], r.following_id == ^id)
+    |> where([r, f], f.deactivated != true)
     |> select([r, f], f)
     |> Repo.all()
   end
@@ -139,6 +140,12 @@ defmodule Pleroma.FollowingRelationship do
     |> join(:inner, [r], u in User, on: r.following_id == u.id)
     |> where([r], r.follower_id == ^user.id)
     |> where([r], r.state == ^:follow_accept)
+  end
+
+  def outgoing_pending_follow_requests_query(%User{} = follower) do
+    __MODULE__
+    |> where([r], r.follower_id == ^follower.id)
+    |> where([r], r.state == ^:follow_pending)
   end
 
   def following(%User{} = user) do

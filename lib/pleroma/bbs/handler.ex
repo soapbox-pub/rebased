@@ -92,10 +92,10 @@ defmodule Pleroma.BBS.Handler do
 
     params =
       %{}
-      |> Map.put("type", ["Create"])
-      |> Map.put("blocking_user", user)
-      |> Map.put("muting_user", user)
-      |> Map.put("user", user)
+      |> Map.put(:type, ["Create"])
+      |> Map.put(:blocking_user, user)
+      |> Map.put(:muting_user, user)
+      |> Map.put(:user, user)
 
     activities =
       [user.ap_id | Pleroma.User.following(user)]

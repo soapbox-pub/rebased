@@ -6,7 +6,6 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
-  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
@@ -95,21 +94,21 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
       end)
 
       assert capture_log(fn ->
-               assert Relay.publish(activity) == {:error, nil}
-             end) =~ "[error] error: nil"
+               assert Relay.publish(activity) == {:error, false}
+             end) =~ "[error] error: false"
     end
 
     test_with_mock "returns announce activity and publish to federate",
                    Pleroma.Web.Federator,
                    [:passthrough],
                    [] do
-      Pleroma.Config.put([:instance, :federating], true)
+      clear_config([:instance, :federating], true)
       service_actor = Relay.get_actor()
       note = insert(:note_activity)
-      assert {:ok, %Activity{} = activity, %Object{} = obj} = Relay.publish(note)
+      assert {:ok, %Activity{} = activity} = Relay.publish(note)
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
-      assert activity.data["object"] == obj.data["id"]
+      assert activity.data["to"] == [service_actor.follower_address]
       assert called(Pleroma.Web.Federator.publish(activity))
     end
 
@@ -117,13 +116,12 @@ defmodule Pleroma.Web.ActivityPub.RelayTest do
                    Pleroma.Web.Federator,
                    [:passthrough],
                    [] do
-      Pleroma.Config.put([:instance, :federating], false)
+      clear_config([:instance, :federating], false)
       service_actor = Relay.get_actor()
       note = insert(:note_activity)
-      assert {:ok, %Activity{} = activity, %Object{} = obj} = Relay.publish(note)
+      assert {:ok, %Activity{} = activity} = Relay.publish(note)
       assert activity.data["type"] == "Announce"
       assert activity.data["actor"] == service_actor.ap_id
-      assert activity.data["object"] == obj.data["id"]
       refute called(Pleroma.Web.Federator.publish(activity))
     end
   end

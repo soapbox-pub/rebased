@@ -21,7 +21,7 @@ defmodule Pleroma.PaginationTest do
       id = Enum.at(notes, 2).id |> Integer.to_string()
 
       %{total: total, items: paginated} =
-        Pagination.fetch_paginated(Object, %{"min_id" => id, "total" => true})
+        Pagination.fetch_paginated(Object, %{min_id: id, total: true})
 
       assert length(paginated) == 2
       assert total == 5
@@ -31,7 +31,7 @@ defmodule Pleroma.PaginationTest do
       id = Enum.at(notes, 2).id |> Integer.to_string()
 
       %{total: total, items: paginated} =
-        Pagination.fetch_paginated(Object, %{"since_id" => id, "total" => true})
+        Pagination.fetch_paginated(Object, %{since_id: id, total: true})
 
       assert length(paginated) == 2
       assert total == 5
@@ -41,7 +41,7 @@ defmodule Pleroma.PaginationTest do
       id = Enum.at(notes, 1).id |> Integer.to_string()
 
       %{total: total, items: paginated} =
-        Pagination.fetch_paginated(Object, %{"max_id" => id, "total" => true})
+        Pagination.fetch_paginated(Object, %{max_id: id, total: true})
 
       assert length(paginated) == 1
       assert total == 5
@@ -50,7 +50,7 @@ defmodule Pleroma.PaginationTest do
     test "paginates by min_id & limit", %{notes: notes} do
       id = Enum.at(notes, 2).id |> Integer.to_string()
 
-      paginated = Pagination.fetch_paginated(Object, %{"min_id" => id, "limit" => 1})
+      paginated = Pagination.fetch_paginated(Object, %{min_id: id, limit: 1})
 
       assert length(paginated) == 1
     end
@@ -64,13 +64,13 @@ defmodule Pleroma.PaginationTest do
     end
 
     test "paginates by limit" do
-      paginated = Pagination.fetch_paginated(Object, %{"limit" => 2}, :offset)
+      paginated = Pagination.fetch_paginated(Object, %{limit: 2}, :offset)
 
       assert length(paginated) == 2
     end
 
     test "paginates by limit & offset" do
-      paginated = Pagination.fetch_paginated(Object, %{"limit" => 2, "offset" => 4}, :offset)
+      paginated = Pagination.fetch_paginated(Object, %{limit: 2, offset: 4}, :offset)
 
       assert length(paginated) == 1
     end

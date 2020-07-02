@@ -358,7 +358,7 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
     * `recipients`: A list of ids of users that should receive posts to this conversation. This will replace the current list of recipients, so submit the full list. The owner of owner of the conversation will always be part of the set of recipients, though.
 * Response: JSON, statuses (200 - healthy, 503 unhealthy)
 
-## `GET /api/v1/pleroma/conversations/read`
+## `POST /api/v1/pleroma/conversations/read`
 ### Marks all user's conversations as read.
 * Method `POST`
 * Authentication: required
@@ -450,18 +450,44 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Response: JSON, list with updated files for updated pack (hashmap -> shortcode => filename) with status 200, either error status with error message.
 
 ## `GET /api/pleroma/emoji/packs`
+
 ### Lists local custom emoji packs
+
 * Method `GET`
 * Authentication: not required
-* Params: None
-* Response: JSON, "ok" and 200 status and the JSON hashmap of pack name to pack contents
+* Params:
+  * `page`: page number for packs (default 1)
+  * `page_size`: page size for packs (default 50)
+* Response: `packs` key with JSON hashmap of pack name to pack contents and `count` key for count of packs.
+
+```json
+{
+  "packs": {
+    "pack_name": {...}, // pack contents
+    ...
+  },
+  "count": 0 // packs count
+}
+```
 
 ## `GET /api/pleroma/emoji/packs/:name`
+
 ### Get pack.json for the pack
+
 * Method `GET`
 * Authentication: not required
-* Params: None
-* Response: JSON, pack json with `files` and `pack` keys with 200 status or 404 if the pack does not exist
+* Params:
+  * `page`: page number for files (default 1)
+  * `page_size`: page size for files (default 30)
+* Response: JSON, pack json with `files`, `files_count` and `pack` keys with 200 status or 404 if the pack does not exist.
+
+```json
+{
+  "files": {...},
+  "files_count": 0, // emoji count in pack
+  "pack": {...}
+}
+```
 
 ## `GET /api/pleroma/emoji/packs/:name/archive`
 ### Requests a local pack archive from the instance
@@ -536,7 +562,7 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
 ```
 
 ## `GET /api/v1/pleroma/statuses/:id/reactions/:emoji`
-### Get an object of emoji to account mappings with accounts that reacted to the post for a specific emoji`
+### Get an object of emoji to account mappings with accounts that reacted to the post for a specific emoji
 * Method: `GET`
 * Authentication: optional
 * Params: None

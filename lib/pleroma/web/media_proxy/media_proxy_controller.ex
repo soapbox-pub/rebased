@@ -12,12 +12,16 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
 
   def remote(conn, %{"sig" => sig64, "url" => url64}) do
     with {_, true} <- {:enabled, MediaProxy.enabled?()},
+         {_, false} <- {:in_banned_urls, MediaProxy.in_banned_urls(url)},
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),
          :ok <- MediaProxy.verify_request_path_and_url(conn, url) do
       proxy_opts = Config.get([:media_proxy, :proxy_opts], [])
       ReverseProxy.call(conn, url, proxy_opts)
     else
       {:enabled, false} ->
+        send_resp(conn, 404, Plug.Conn.Status.reason_phrase(404))
+
+      {:in_banned_urls, true} ->
         send_resp(conn, 404, Plug.Conn.Status.reason_phrase(404))
 
       {:error, :invalid_signature} ->

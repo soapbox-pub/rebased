@@ -5,18 +5,11 @@
 defmodule Pleroma.Web.RichMedia.Parsers.TwitterCard do
   alias Pleroma.Web.RichMedia.Parsers.MetaTagsParser
 
-  @spec parse(String.t(), map()) :: {:ok, map()} | {:error, String.t()}
+  @spec parse(list(), map()) :: map()
   def parse(html, data) do
     data
-    |> parse_name_attrs(html)
-    |> parse_property_attrs(html)
-  end
-
-  defp parse_name_attrs(data, html) do
-    MetaTagsParser.parse(html, data, "twitter", %{}, "name")
-  end
-
-  defp parse_property_attrs({_, data}, html) do
-    MetaTagsParser.parse(html, data, "twitter", "No twitter card metadata found", "property")
+    |> MetaTagsParser.parse(html, "og", "property")
+    |> MetaTagsParser.parse(html, "twitter", "name")
+    |> MetaTagsParser.parse(html, "twitter", "property")
   end
 end

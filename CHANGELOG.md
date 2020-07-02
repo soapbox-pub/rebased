@@ -6,33 +6,61 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [unreleased]
 
 ### Changed
+- **Breaking:** Elixir >=1.9 is now required (was >= 1.8)
+- In Conversations, return only direct messages as `last_status`
+- Using the `only_media` filter on timelines will now exclude reblog media
+- MFR policy to set global expiration for all local Create activities
+- OGP rich media parser merged with TwitterCard
+- Configuration: `:instance, rewrite_policy` moved to `:mrf, policies`, `:instance, :mrf_transparency` moved to `:mrf, :transparency`, `:instance, :mrf_transparency_exclusions` moved to `:mrf, :transparency_exclusions`. Old config namespace is deprecated.
+
 <details>
   <summary>API Changes</summary>
+
 - **Breaking:** Emoji API: changed methods and renamed routes.
+- Streaming: Repeats of a user's posts will no longer be pushed to the user's stream.
+</details>
+
+<details>
+  <summary>Admin API Changes</summary>
+
+- Status visibility stats: now can return stats per instance.
+
+- Mix task to refresh counter cache (`mix pleroma.refresh_counter_cache`)
 </details>
 
 ### Removed
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
+
+- Chats: Added support for federated chats. For details, see the docs.
+- ActivityPub: Added support for existing AP ids for instances migrated from Mastodon.
 - Instance: Add `background_image` to configuration and `/api/v1/instance`
 - Instance: Extend `/api/v1/instance` with Pleroma-specific information.
 - NodeInfo: `pleroma:api/v1/notifications:include_types_filter` to the `features` list.
 - NodeInfo: `pleroma_emoji_reactions` to the `features` list.
 - Configuration: `:restrict_unauthenticated` setting, restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
 - Configuration: Add `:database_config_whitelist` setting to whitelist settings which can be configured from AdminFE.
+- Configuration: `filename_display_max_length` option to set filename truncate limit, if filename display enabled (0 = no limit).
 - New HTTP adapter [gun](https://github.com/ninenines/gun). Gun adapter requires minimum OTP version of 22.2 otherwise Pleroma won’t start. For hackney OTP update is not required.
 - Mix task to create trusted OAuth App.
+- Mix task to reset MFA for user accounts
 - Notifications: Added `follow_request` notification type.
 - Added `:reject_deletes` group to SimplePolicy
+- MRF (`EmojiStealPolicy`): New MRF Policy which allows to automatically download emojis from remote instances
+- Support pagination in emoji packs API (for packs and for files in pack)
+
 <details>
   <summary>API Changes</summary>
+- Mastodon API: Add pleroma.parents_visible field to statuses.
 - Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
 - Mastodon API: Add support for filtering replies in public and home timelines
+- Mastodon API: Support for `bot` field in `/api/v1/accounts/update_credentials`
 - Admin API: endpoints for create/update/delete OAuth Apps.
 - Admin API: endpoint for status view.
+- OTP: Add command to reload emoji packs
 </details>
 
 ### Fixed
@@ -41,12 +69,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix follower/blocks import when nicknames starts with @
 - Filtering of push notifications on activities from blocked domains
 - Resolving Peertube accounts with Webfinger
+- `blob:` urls not being allowed by connect-src CSP
+- Mastodon API: fix `GET /api/v1/notifications` not returning the full result set
 
 ## [Unreleased (patch)]
 
 ### Fixed
 - Healthcheck reporting the number of memory currently used, rather than allocated in total
-- `InsertSkeletonsForDeletedUsers` failing on some instances 
+- `InsertSkeletonsForDeletedUsers` failing on some instances
 
 ## [2.0.3] - 2020-05-02
 
@@ -79,6 +109,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 2. Run database migrations (inside Pleroma directory):
   - OTP: `./bin/pleroma_ctl migrate`
   - From Source: `mix ecto.migrate`
+3. Reset status visibility counters (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl refresh_counter_cache`
+  - From Source: `mix pleroma.refresh_counter_cache`
 
 
 ## [2.0.2] - 2020-04-08

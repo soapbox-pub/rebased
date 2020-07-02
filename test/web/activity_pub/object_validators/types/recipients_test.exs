@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.ObjectValidators.Types.RecipientsTest do
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types.Recipients
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators.Recipients
   use Pleroma.DataCase
 
   test "it asserts that all elements of the list are object ids" do

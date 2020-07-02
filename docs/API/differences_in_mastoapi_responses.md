@@ -6,10 +6,6 @@ A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma
 
 Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mastodon's ids they are lexically sortable strings
 
-## Attachment cap
-
-Some apps operate under the assumption that no more than 4 attachments can be returned or uploaded. Pleroma however does not enforce any limits on attachment count neither when returning the status object nor when posting.
-
 ## Timelines
 
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
@@ -31,12 +27,21 @@ Has these additional fields under the `pleroma` object:
 - `expires_at`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
 - `thread_muted`: true if the thread the post belongs to is muted
 - `emoji_reactions`: A list with emoji / reaction maps. The format is `{name: "☕", count: 1, me: true}`. Contains no information about the reacting users, for that use the `/statuses/:id/reactions` endpoint.
+- `parent_visible`: If the parent of this post is visible to the user or not.
 
-## Attachments
+## Media Attachments
 
 Has these additional fields under the `pleroma` object:
 
 - `mime_type`: mime type of the attachment.
+
+### Attachment cap
+
+Some apps operate under the assumption that no more than 4 attachments can be returned or uploaded. Pleroma however does not enforce any limits on attachment count neither when returning the status object nor when posting.
+
+### Limitations
+
+Pleroma does not process remote images and therefore cannot include fields such as `meta` and `blurhash`. It does not support focal points or aspect ratios. The frontend is expected to handle it.
 
 ## Accounts
 
@@ -47,11 +52,14 @@ The `id` parameter can also be the `nickname` of the user. This only works in th
 
 Has these additional fields under the `pleroma` object:
 
+- `ap_id`: nullable URL string, ActivityPub id of the user
+- `background_image`: nullable URL string, background image of the user
 - `tags`: Lists an array of tags for the user
-- `relationship{}`: Includes fields as documented for Mastodon API https://docs.joinmastodon.org/entities/relationship/
+- `relationship` (object): Includes fields as documented for Mastodon API https://docs.joinmastodon.org/entities/relationship/
 - `is_moderator`: boolean, nullable,  true if user is a moderator
 - `is_admin`: boolean, nullable, true if user is an admin
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
+- `hide_favorites`: boolean, true when the user has hiding favorites enabled
 - `hide_followers`: boolean, true when the user has follower hiding enabled
 - `hide_follows`: boolean, true when the user has follow hiding enabled
 - `hide_followers_count`: boolean, true when the user has follower stat hiding enabled
@@ -62,6 +70,7 @@ Has these additional fields under the `pleroma` object:
 - `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
 - `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
+- `notification_settings`: object, can be absent. See `/api/pleroma/notification_settings` for the parameters/keys returned.
 
 ### Source
 
@@ -226,3 +235,47 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 Has these additional fields under the `pleroma` object:
 
 - `unread_count`: contains number unread notifications
+
+## Streaming
+
+There is an additional `user:pleroma_chat` stream. Incoming chat messages will make the current chat be sent to this `user` stream. The `event` of an incoming chat message is `pleroma:chat_update`. The payload is the updated chat with the incoming chat message in the `last_message` field.
+
+## Not implemented
+
+Pleroma is generally compatible with the Mastodon 2.7.2 API, but some newer features and non-essential features are omitted. These features usually return an HTTP 200 status code, but with an empty response. While they may be added in the future, they are considered low priority.
+
+### Suggestions
+
+*Added in Mastodon 2.4.3*
+
+- `GET /api/v1/suggestions`: Returns an empty array, `[]`
+
+### Trends
+
+*Added in Mastodon 3.0.0*
+
+- `GET /api/v1/trends`: Returns an empty array, `[]`
+
+### Identity proofs
+
+*Added in Mastodon 2.8.0*
+
+- `GET /api/v1/identity_proofs`: Returns an empty array, `[]`
+
+### Endorsements
+
+*Added in Mastodon 2.5.0*
+
+- `GET /api/v1/endorsements`: Returns an empty array, `[]`
+
+### Profile directory
+
+*Added in Mastodon 3.0.0*
+
+- `GET /api/v1/directory`: Returns HTTP 404
+
+### Featured tags
+
+*Added in Mastodon 3.0.0*
+
+- `GET /api/v1/featured_tags`: Returns HTTP 404

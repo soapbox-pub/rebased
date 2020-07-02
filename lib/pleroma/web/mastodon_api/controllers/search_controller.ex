@@ -107,28 +107,72 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     )
   end
 
-  defp resource_search(:v2, "hashtags", query, _options) do
+  defp resource_search(:v2, "hashtags", query, options) do
     tags_path = Web.base_url() <> "/tag/"
 
     query
-    |> prepare_tags()
+    |> prepare_tags(options)
     |> Enum.map(fn tag ->
-      tag = String.trim_leading(tag, "#")
       %{name: tag, url: tags_path <> tag}
     end)
   end
 
-  defp resource_search(:v1, "hashtags", query, _options) do
-    query
-    |> prepare_tags()
-    |> Enum.map(fn tag -> String.trim_leading(tag, "#") end)
+  defp resource_search(:v1, "hashtags", query, options) do
+    prepare_tags(query, options)
   end
 
-  defp prepare_tags(query) do
-    query
-    |> String.split()
-    |> Enum.uniq()
-    |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
+  defp prepare_tags(query, options) do
+    tags =
+      query
+      |> preprocess_uri_query()
+      |> String.split(~r/[^#\w]+/u, trim: true)
+      |> Enum.uniq_by(&String.downcase/1)
+
+    explicit_tags = Enum.filter(tags, fn tag -> String.starts_with?(tag, "#") end)
+
+    tags =
+      if Enum.any?(explicit_tags) do
+        explicit_tags
+      else
+        tags
+      end
+
+    tags = Enum.map(tags, fn tag -> String.trim_leading(tag, "#") end)
+
+    tags =
+      if Enum.empty?(explicit_tags) && !options[:skip_joined_tag] do
+        add_joined_tag(tags)
+      else
+        tags
+      end
+
+    Pleroma.Pagination.paginate(tags, options)
+  end
+
+  defp add_joined_tag(tags) do
+    tags
+    |> Kernel.++([joined_tag(tags)])
+    |> Enum.uniq_by(&String.downcase/1)
+  end
+
+  # If `query` is a URI, returns last component of its path, otherwise returns `query`
+  defp preprocess_uri_query(query) do
+    if query =~ ~r/https?:\/\// do
+      query
+      |> String.trim_trailing("/")
+      |> URI.parse()
+      |> Map.get(:path)
+      |> String.split("/")
+      |> Enum.at(-1)
+    else
+      query
+    end
+  end
+
+  defp joined_tag(tags) do
+    tags
+    |> Enum.map(fn tag -> String.capitalize(tag) end)
+    |> Enum.join()
   end
 
   defp with_fallback(f, fallback \\ []) do

@@ -5,7 +5,9 @@
 defmodule Pleroma.Web.CommonAPITest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Chat
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -22,6 +24,196 @@ defmodule Pleroma.Web.CommonAPITest do
   setup do: clear_config([:instance, :safe_dm_mentions])
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
+
+  describe "blocking" do
+    setup do
+      blocker = insert(:user)
+      blocked = insert(:user)
+      User.follow(blocker, blocked)
+      User.follow(blocked, blocker)
+      %{blocker: blocker, blocked: blocked}
+    end
+
+    test "it blocks and federates", %{blocker: blocker, blocked: blocked} do
+      clear_config([:instance, :federating], true)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        assert {:ok, block} = CommonAPI.block(blocker, blocked)
+
+        assert block.local
+        assert User.blocks?(blocker, blocked)
+        refute User.following?(blocker, blocked)
+        refute User.following?(blocked, blocker)
+
+        assert called(Pleroma.Web.Federator.publish(block))
+      end
+    end
+
+    test "it blocks and does not federate if outgoing blocks are disabled", %{
+      blocker: blocker,
+      blocked: blocked
+    } do
+      clear_config([:instance, :federating], true)
+      clear_config([:activitypub, :outgoing_blocks], false)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        assert {:ok, block} = CommonAPI.block(blocker, blocked)
+
+        assert block.local
+        assert User.blocks?(blocker, blocked)
+        refute User.following?(blocker, blocked)
+        refute User.following?(blocked, blocker)
+
+        refute called(Pleroma.Web.Federator.publish(block))
+      end
+    end
+  end
+
+  describe "posting chat messages" do
+    setup do: clear_config([:instance, :chat_limit])
+
+    test "it posts a chat message without content but with an attachment" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: author.ap_id)
+
+      with_mocks([
+        {
+          Pleroma.Web.Streamer,
+          [],
+          [
+            stream: fn _, _ ->
+              nil
+            end
+          ]
+        },
+        {
+          Pleroma.Web.Push,
+          [],
+          [
+            send: fn _ -> nil end
+          ]
+        }
+      ]) do
+        {:ok, activity} =
+          CommonAPI.post_chat_message(
+            author,
+            recipient,
+            nil,
+            media_id: upload.id
+          )
+
+        notification =
+          Notification.for_user_and_activity(recipient, activity)
+          |> Repo.preload(:activity)
+
+        assert called(Pleroma.Web.Push.send(notification))
+        assert called(Pleroma.Web.Streamer.stream(["user", "user:notification"], notification))
+        assert called(Pleroma.Web.Streamer.stream(["user", "user:pleroma_chat"], :_))
+
+        assert activity
+      end
+    end
+
+    test "it adds html newlines" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "uguu\nuguuu"
+        )
+
+      assert other_user.ap_id not in activity.recipients
+
+      object = Object.normalize(activity, false)
+
+      assert object.data["content"] == "uguu<br/>uguuu"
+    end
+
+    test "it linkifies" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "https://example.org is the site of @#{other_user.nickname} #2hu"
+        )
+
+      assert other_user.ap_id not in activity.recipients
+
+      object = Object.normalize(activity, false)
+
+      assert object.data["content"] ==
+               "<a href=\"https://example.org\" rel=\"ugc\">https://example.org</a> is the site of <span class=\"h-card\"><a class=\"u-url mention\" data-user=\"#{
+                 other_user.id
+               }\" href=\"#{other_user.ap_id}\" rel=\"ugc\">@<span>#{other_user.nickname}</span></a></span> <a class=\"hashtag\" data-tag=\"2hu\" href=\"http://localhost:4001/tag/2hu\">#2hu</a>"
+    end
+
+    test "it posts a chat message" do
+      author = insert(:user)
+      recipient = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "a test message <script>alert('uuu')</script> :firefox:"
+        )
+
+      assert activity.data["type"] == "Create"
+      assert activity.local
+      object = Object.normalize(activity)
+
+      assert object.data["type"] == "ChatMessage"
+      assert object.data["to"] == [recipient.ap_id]
+
+      assert object.data["content"] ==
+               "a test message &lt;script&gt;alert(&#39;uuu&#39;)&lt;/script&gt; :firefox:"
+
+      assert object.data["emoji"] == %{
+               "firefox" => "http://localhost:4001/emoji/Firefox.gif"
+             }
+
+      assert Chat.get(author.id, recipient.ap_id)
+      assert Chat.get(recipient.id, author.ap_id)
+
+      assert :ok == Pleroma.Web.Federator.perform(:publish, activity)
+    end
+
+    test "it reject messages over the local limit" do
+      Pleroma.Config.put([:instance, :chat_limit], 2)
+
+      author = insert(:user)
+      recipient = insert(:user)
+
+      {:error, message} =
+        CommonAPI.post_chat_message(
+          author,
+          recipient,
+          "123"
+        )
+
+      assert message == :content_too_long
+    end
+  end
 
   describe "unblocking" do
     test "it works even without an existing block activity" do
@@ -41,6 +233,8 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, post} = CommonAPI.post(user, %{status: "namu amida butsu"})
 
+      clear_config([:instance, :federating], true)
+
       Object.normalize(post, false)
       |> Object.prune()
 
@@ -58,6 +252,8 @@ defmodule Pleroma.Web.CommonAPITest do
       user = insert(:user)
 
       {:ok, post} = CommonAPI.post(user, %{status: "namu amida butsu"})
+
+      clear_config([:instance, :federating], true)
 
       with_mock Pleroma.Web.Federator,
         publish: fn _ -> nil end do
@@ -335,6 +531,32 @@ defmodule Pleroma.Web.CommonAPITest do
       end)
     end
 
+    test "replying with a direct message will NOT auto-add the author of the reply to the recipient list" do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+
+      {:ok, post} = CommonAPI.post(user, %{status: "I'm stupid"})
+
+      {:ok, open_answer} =
+        CommonAPI.post(other_user, %{status: "No ur smart", in_reply_to_status_id: post.id})
+
+      # The OP is implicitly added
+      assert user.ap_id in open_answer.recipients
+
+      {:ok, secret_answer} =
+        CommonAPI.post(other_user, %{
+          status: "lol, that guy really is stupid, right, @#{third_user.nickname}?",
+          in_reply_to_status_id: post.id,
+          visibility: "direct"
+        })
+
+      assert third_user.ap_id in secret_answer.recipients
+
+      # The OP is not added
+      refute user.ap_id in secret_answer.recipients
+    end
+
     test "it allows to address a list" do
       user = insert(:user)
       {:ok, list} = Pleroma.List.create("foo", user)
@@ -416,7 +638,8 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
 
-      {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, user)
+      {:ok, %Activity{} = announce_activity} = CommonAPI.repeat(activity.id, user)
+      assert Visibility.is_public?(announce_activity)
     end
 
     test "can't repeat a repeat" do
@@ -424,9 +647,9 @@ defmodule Pleroma.Web.CommonAPITest do
       other_user = insert(:user)
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
 
-      {:ok, %Activity{} = announce, _} = CommonAPI.repeat(activity.id, other_user)
+      {:ok, %Activity{} = announce} = CommonAPI.repeat(activity.id, other_user)
 
-      refute match?({:ok, %Activity{}, _}, CommonAPI.repeat(announce.id, user))
+      refute match?({:ok, %Activity{}}, CommonAPI.repeat(announce.id, user))
     end
 
     test "repeating a status privately" do
@@ -435,10 +658,11 @@ defmodule Pleroma.Web.CommonAPITest do
 
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
 
-      {:ok, %Activity{} = announce_activity, _} =
+      {:ok, %Activity{} = announce_activity} =
         CommonAPI.repeat(activity.id, user, %{visibility: "private"})
 
       assert Visibility.is_private?(announce_activity)
+      refute Visibility.visible_for_user?(announce_activity, nil)
     end
 
     test "favoriting a status" do
@@ -458,8 +682,8 @@ defmodule Pleroma.Web.CommonAPITest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
-      {:ok, %Activity{} = announce, object} = CommonAPI.repeat(activity.id, user)
-      {:ok, ^announce, ^object} = CommonAPI.repeat(activity.id, user)
+      {:ok, %Activity{} = announce} = CommonAPI.repeat(activity.id, user)
+      {:ok, ^announce} = CommonAPI.repeat(activity.id, user)
     end
 
     test "favoriting a status twice returns ok, but without the like activity" do

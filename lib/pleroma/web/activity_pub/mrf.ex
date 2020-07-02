@@ -8,18 +8,15 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   def filter(policies, %{} = object) do
     policies
     |> Enum.reduce({:ok, object}, fn
-      policy, {:ok, object} ->
-        policy.filter(object)
-
-      _, error ->
-        error
+      policy, {:ok, object} -> policy.filter(object)
+      _, error -> error
     end)
   end
 
   def filter(%{} = object), do: get_policies() |> filter(object)
 
   def get_policies do
-    Pleroma.Config.get([:instance, :rewrite_policy], []) |> get_policies()
+    Pleroma.Config.get([:mrf, :policies], []) |> get_policies()
   end
 
   defp get_policies(policy) when is_atom(policy), do: [policy]
@@ -54,7 +51,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
       get_policies()
       |> Enum.map(fn policy -> to_string(policy) |> String.split(".") |> List.last() end)
 
-    exclusions = Pleroma.Config.get([:instance, :mrf_transparency_exclusions])
+    exclusions = Pleroma.Config.get([:mrf, :transparency_exclusions])
 
     base =
       %{

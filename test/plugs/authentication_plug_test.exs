@@ -68,6 +68,7 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
     assert "$pbkdf2" <> _ = user.password_hash
   end
 
+  @tag :skip_on_mac
   test "with a crypt hash, it updates to a pkbdf2 hash", %{conn: conn} do
     user =
       insert(:user,

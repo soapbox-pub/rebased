@@ -63,7 +63,7 @@ apt install postgresql-11-rum
 ```
 
 #### (Optional) Performance configuration
-For optimal performance, you may use [PGTune](https://pgtune.leopard.in.ua), don't forget to restart postgresql after editing the configuration
+It is encouraged to check [Optimizing your PostgreSQL performance](../configuration/postgresql.md) document, for tips on PostgreSQL tuning.
 
 ```sh tab="Alpine"
 rc-service postgresql restart
@@ -270,10 +270,7 @@ This will create an account withe the username of 'joeuser' with the email addre
 
 ## Further reading
 
-* [Backup your instance](../administration/backup.md)
-* [Hardening your instance](../configuration/hardening.md)
-* [How to activate mediaproxy](../configuration/howto_mediaproxy.md)
-* [Updating your instance](../administration/updating.md)
+{! backend/installation/further_reading.include !}
 
 ## Questions
 

@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   use Ecto.Schema
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -14,10 +14,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
     field(:type, :string)
-    field(:object, Types.ObjectID)
-    field(:actor, Types.ObjectID)
+    field(:object, ObjectValidators.ObjectID)
+    field(:actor, ObjectValidators.ObjectID)
     field(:context, :string)
     field(:content, :string)
     field(:to, {:array, :string}, default: [])

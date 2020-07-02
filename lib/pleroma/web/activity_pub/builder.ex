@@ -5,10 +5,14 @@ defmodule Pleroma.Web.ActivityPub.Builder do
   This module encodes our addressing policies and general shape of our objects.
   """
 
+  alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+
+  require Pleroma.Constants
 
   @spec emoji_react(User.t(), Object.t(), String.t()) :: {:ok, map(), keyword()}
   def emoji_react(actor, object, emoji) do
@@ -62,6 +66,42 @@ defmodule Pleroma.Web.ActivityPub.Builder do
      }, []}
   end
 
+  def create(actor, object, recipients) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "actor" => actor.ap_id,
+       "to" => recipients,
+       "object" => object,
+       "type" => "Create",
+       "published" => DateTime.utc_now() |> DateTime.to_iso8601()
+     }, []}
+  end
+
+  def chat_message(actor, recipient, content, opts \\ []) do
+    basic = %{
+      "id" => Utils.generate_object_id(),
+      "actor" => actor.ap_id,
+      "type" => "ChatMessage",
+      "to" => [recipient],
+      "content" => content,
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "emoji" => Emoji.Formatter.get_emoji_map(content)
+    }
+
+    case opts[:attachment] do
+      %Object{data: attachment_data} ->
+        {
+          :ok,
+          Map.put(basic, "attachment", attachment_data),
+          []
+        }
+
+      _ ->
+        {:ok, basic, []}
+    end
+  end
+
   @spec tombstone(String.t(), String.t()) :: {:ok, map(), keyword()}
   def tombstone(actor, id) do
     {:ok,
@@ -81,6 +121,61 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
       {:ok, data, meta}
     end
+  end
+
+  # Retricted to user updates for now, always public
+  @spec update(User.t(), Object.t()) :: {:ok, map(), keyword()}
+  def update(actor, object) do
+    to = [Pleroma.Constants.as_public(), actor.follower_address]
+
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "type" => "Update",
+       "actor" => actor.ap_id,
+       "object" => object,
+       "to" => to
+     }, []}
+  end
+
+  @spec block(User.t(), User.t()) :: {:ok, map(), keyword()}
+  def block(blocker, blocked) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "type" => "Block",
+       "actor" => blocker.ap_id,
+       "object" => blocked.ap_id,
+       "to" => [blocked.ap_id]
+     }, []}
+  end
+
+  @spec announce(User.t(), Object.t(), keyword()) :: {:ok, map(), keyword()}
+  def announce(actor, object, options \\ []) do
+    public? = Keyword.get(options, :public, false)
+
+    to =
+      cond do
+        actor.ap_id == Relay.relay_ap_id() ->
+          [actor.follower_address]
+
+        public? ->
+          [actor.follower_address, object.data["actor"], Pleroma.Constants.as_public()]
+
+        true ->
+          [actor.follower_address, object.data["actor"]]
+      end
+
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "actor" => actor.ap_id,
+       "object" => object.data["id"],
+       "to" => to,
+       "context" => object.data["context"],
+       "type" => "Announce",
+       "published" => Utils.make_date()
+     }, []}
   end
 
   @spec object_action(User.t(), Object.t()) :: {:ok, map(), keyword()}

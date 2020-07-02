@@ -111,8 +111,14 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
       %User{} = user ->
         meta = Metadata.build_tags(%{user: user})
 
+        params =
+          params
+          |> Map.take(@page_keys)
+          |> Map.new(fn {k, v} -> {String.to_existing_atom(k), v} end)
+
         timeline =
-          ActivityPub.fetch_user_activities(user, nil, Map.take(params, @page_keys))
+          user
+          |> ActivityPub.fetch_user_activities(nil, params)
           |> Enum.map(&represent/1)
 
         prev_page_id =

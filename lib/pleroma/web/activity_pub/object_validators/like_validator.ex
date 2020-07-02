@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
   use Ecto.Schema
 
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
-  alias Pleroma.Web.ActivityPub.ObjectValidators.Types
   alias Pleroma.Web.ActivityPub.Utils
 
   import Ecto.Changeset
@@ -15,13 +15,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
   @primary_key false
 
   embedded_schema do
-    field(:id, Types.ObjectID, primary_key: true)
+    field(:id, ObjectValidators.ObjectID, primary_key: true)
     field(:type, :string)
-    field(:object, Types.ObjectID)
-    field(:actor, Types.ObjectID)
+    field(:object, ObjectValidators.ObjectID)
+    field(:actor, ObjectValidators.ObjectID)
     field(:context, :string)
-    field(:to, Types.Recipients, default: [])
-    field(:cc, Types.Recipients, default: [])
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
   end
 
   def cast_and_validate(data) do
@@ -67,7 +67,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator do
 
     with {[], []} <- {to, cc},
          %Object{data: %{"actor" => actor}} <- Object.get_cached_by_ap_id(object),
-         {:ok, actor} <- Types.ObjectID.cast(actor) do
+         {:ok, actor} <- ObjectValidators.ObjectID.cast(actor) do
       cng
       |> put_change(:to, [actor])
     else

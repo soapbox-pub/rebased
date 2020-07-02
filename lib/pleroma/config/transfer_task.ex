@@ -28,10 +28,6 @@ defmodule Pleroma.Config.TransferTask do
     {:pleroma, Pleroma.Captcha, [:seconds_valid]},
     {:pleroma, Pleroma.Upload, [:proxy_remote]},
     {:pleroma, :instance, [:upload_limit]},
-    {:pleroma, :email_notifications, [:digest]},
-    {:pleroma, :oauth2, [:clean_expired_tokens]},
-    {:pleroma, Pleroma.ActivityExpiration, [:enabled]},
-    {:pleroma, Pleroma.ScheduledActivity, [:enabled]},
     {:pleroma, :gopher, [:enabled]}
   ]
 
@@ -48,7 +44,7 @@ defmodule Pleroma.Config.TransferTask do
 
       {logger, other} =
         (Repo.all(ConfigDB) ++ deleted_settings)
-        |> Enum.map(&transform_and_merge/1)
+        |> Enum.map(&merge_with_default/1)
         |> Enum.split_with(fn {group, _, _, _} -> group in [:logger, :quack] end)
 
       logger
@@ -92,11 +88,7 @@ defmodule Pleroma.Config.TransferTask do
     end
   end
 
-  defp transform_and_merge(%{group: group, key: key, value: value} = setting) do
-    group = ConfigDB.from_string(group)
-    key = ConfigDB.from_string(key)
-    value = ConfigDB.from_binary(value)
-
+  defp merge_with_default(%{group: group, key: key, value: value} = setting) do
     default = Config.Holder.default_config(group, key)
 
     merged =
