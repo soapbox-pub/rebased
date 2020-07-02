@@ -55,6 +55,41 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
              ])
   end
 
+  test "Mastodon Question activity with HTML tags in plaintext" do
+    options = [
+      %{
+        "type" => "Note",
+        "name" => "<input type=\"date\">",
+        "replies" => %{"totalItems" => 0, "type" => "Collection"}
+      },
+      %{
+        "type" => "Note",
+        "name" => "<input type=\"date\"/>",
+        "replies" => %{"totalItems" => 0, "type" => "Collection"}
+      },
+      %{
+        "type" => "Note",
+        "name" => "<input type=\"date\" />",
+        "replies" => %{"totalItems" => 1, "type" => "Collection"}
+      },
+      %{
+        "type" => "Note",
+        "name" => "<input type=\"date\"></input>",
+        "replies" => %{"totalItems" => 1, "type" => "Collection"}
+      }
+    ]
+
+    data =
+      File.read!("test/fixtures/mastodon-question-activity.json")
+      |> Poison.decode!()
+      |> Kernel.put_in(["object", "oneOf"], options)
+
+    {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
+    object = Object.normalize(activity, false)
+
+    assert Enum.sort(object.data["oneOf"]) == Enum.sort(options)
+  end
+
   test "returns an error if received a second time" do
     data = File.read!("test/fixtures/mastodon-question-activity.json") |> Poison.decode!()
 
