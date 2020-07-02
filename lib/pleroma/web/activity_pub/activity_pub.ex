@@ -927,16 +927,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
-  defp restrict_instance(query, %{instance: instance}) do
-    users =
-      from(
-        u in User,
-        select: u.ap_id,
-        where: fragment("? LIKE ?", u.nickname, ^"%@#{instance}")
-      )
-      |> Repo.all()
-
-    from(activity in query, where: activity.actor in ^users)
+  defp restrict_instance(query, %{instance: instance}) when is_binary(instance) do
+    from(activity in query, where: ilike(activity.actor, ^"%://#{instance}/%"))
   end
 
   defp restrict_instance(query, _), do: query

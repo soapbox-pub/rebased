@@ -140,6 +140,18 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       activities = json_response_and_validate_schema(res_conn, 200)
       [%{"id" => ^activity_id}] = activities
     end
+
+    test "can be filtered by instance", %{conn: conn} do
+      user = insert(:user, ap_id: "https://lain.com/users/lain")
+      insert(:note_activity, local: false)
+      insert(:note_activity, local: false)
+
+      {:ok, _} = CommonAPI.post(user, %{status: "test"})
+
+      conn = get(conn, "/api/v1/timelines/public?instance=lain.com")
+
+      assert length(json_response_and_validate_schema(conn, :ok)) == 1
+    end
   end
 
   defp local_and_remote_activities do
