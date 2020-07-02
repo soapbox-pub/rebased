@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   <summary>API Changes</summary>
 
 - **Breaking:** Emoji API: changed methods and renamed routes.
+- Streaming: Repeats of a user's posts will no longer be pushed to the user's stream.
 </details>
 
 <details>
