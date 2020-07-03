@@ -25,11 +25,13 @@ defmodule Pleroma.UserSearchTest do
       assert found_user.id == user.id
     end
 
-    test "excludes bots from results" do
-      insert(:user, actor_type: "Service", nickname: "bot1")
-      insert(:user, actor_type: "Application", nickname: "bot2")
+    test "excludes service actors from results" do
+      insert(:user, actor_type: "Application", nickname: "user1")
+      service = insert(:user, actor_type: "Service", nickname: "user2")
+      person = insert(:user, actor_type: "Person", nickname: "user3")
 
-      assert [] = User.search("bot")
+      assert [found_user1, found_user2] = User.search("user")
+      assert [found_user1.id, found_user2.id] -- [service.id, person.id] == []
     end
 
     test "accepts limit parameter" do

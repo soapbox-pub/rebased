@@ -52,7 +52,7 @@ defmodule Pleroma.User.Search do
     |> base_query(following)
     |> filter_blocked_user(for_user)
     |> filter_invisible_users()
-    |> filter_bots()
+    |> filter_internal_users()
     |> filter_blocked_domains(for_user)
     |> fts_search(query_string)
     |> trigram_rank(query_string)
@@ -110,8 +110,8 @@ defmodule Pleroma.User.Search do
     from(q in query, where: q.invisible == false)
   end
 
-  defp filter_bots(query) do
-    from(q in query, where: q.actor_type not in ["Application", "Service"])
+  defp filter_internal_users(query) do
+    from(q in query, where: q.actor_type != "Application")
   end
 
   defp filter_blocked_user(query, %User{} = blocker) do
