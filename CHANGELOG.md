@@ -73,6 +73,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Resolving Peertube accounts with Webfinger
 - `blob:` urls not being allowed by connect-src CSP
 - Mastodon API: fix `GET /api/v1/notifications` not returning the full result set
+- Fix CSP policy generation to include remote Captcha services
 
 ## [Unreleased (patch)]
 
