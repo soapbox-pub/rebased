@@ -486,6 +486,15 @@ defmodule Pleroma.UserTest do
     }
     setup do: clear_config([:instance, :account_activation_required], true)
 
+    test "it sets the 'accepts_chat_messages' set to true" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.accepts_chat_messages
+    end
+
     test "it creates unconfirmed user" do
       changeset = User.register_changeset(%User{}, @full_user_data)
       assert changeset.valid?
