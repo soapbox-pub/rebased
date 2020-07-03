@@ -186,6 +186,7 @@ defmodule Pleroma.Web.CommonAPI.ActivityDraft do
         draft.poll
       )
       |> Map.put("emoji", emoji)
+      |> Map.put("source", draft.status)
 
     %__MODULE__{draft | object: object}
   end
