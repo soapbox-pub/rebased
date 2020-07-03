@@ -81,6 +81,15 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
     fields = Enum.map(user.fields, &Map.put(&1, "type", "PropertyValue"))
 
+    chat_message_acceptance =
+      if is_boolean(user.accepts_chat_messages) do
+        %{
+          "acceptsChatMessages" => user.accepts_chat_messages
+        }
+      else
+        %{}
+      end
+
     %{
       "id" => user.ap_id,
       "type" => user.actor_type,
@@ -103,6 +112,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "tag" => emoji_tags,
       "discoverable" => user.discoverable
     }
+    |> Map.merge(chat_message_acceptance)
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))
     |> Map.merge(Utils.make_json_ld_header())
