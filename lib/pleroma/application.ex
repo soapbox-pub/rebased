@@ -162,7 +162,8 @@ defmodule Pleroma.Application do
   defp seconds_valid_interval,
     do: :timer.seconds(Config.get!([Pleroma.Captcha, :seconds_valid]))
 
-  defp build_cachex(type, opts),
+  @spec build_cachex(String.t(), keyword()) :: map()
+  def build_cachex(type, opts),
     do: %{
       id: String.to_atom("cachex_" <> type),
       start: {Cachex, :start_link, [String.to_atom(type <> "_cache"), opts]},

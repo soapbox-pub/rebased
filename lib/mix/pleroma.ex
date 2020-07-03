@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Pleroma do
+  @apps [:restarter, :ecto, :ecto_sql, :postgrex, :db_connection, :cachex]
+  @cachex_childs ["object", "user"]
   @doc "Common functions to be reused in mix tasks"
   def start_pleroma do
     Application.put_env(:phoenix, :serve_endpoints, false, persistent: true)
@@ -11,7 +13,23 @@ defmodule Mix.Pleroma do
       Application.put_env(:logger, :console, level: :debug)
     end
 
-    {:ok, _} = Application.ensure_all_started(:pleroma)
+    apps =
+      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Gun do
+        [:gun | @apps]
+      else
+        [:hackney | @apps]
+      end
+
+    Enum.each(apps, &Application.ensure_all_started/1)
+
+    childs = [Pleroma.Repo, Pleroma.Config.TransferTask, Pleroma.Web.Endpoint]
+
+    cachex_childs = Enum.map(@cachex_childs, &Pleroma.Application.build_cachex(&1, []))
+
+    Supervisor.start_link(childs ++ cachex_childs,
+      strategy: :one_for_one,
+      name: Pleroma.Supervisor
+    )
 
     if Pleroma.Config.get(:env) not in [:test, :benchmark] do
       pleroma_rebooted?()

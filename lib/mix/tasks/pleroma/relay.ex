@@ -12,6 +12,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
 
   def run(["follow", target]) do
     start_pleroma()
+    Application.ensure_all_started(:flake_id)
 
     with {:ok, _activity} <- Relay.follow(target) do
       # put this task to sleep to allow the genserver to push out the messages
@@ -23,6 +24,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
 
   def run(["unfollow", target]) do
     start_pleroma()
+    Application.ensure_all_started(:flake_id)
 
     with {:ok, _activity} <- Relay.unfollow(target) do
       # put this task to sleep to allow the genserver to push out the messages
@@ -34,6 +36,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
 
   def run(["list"]) do
     start_pleroma()
+    Application.ensure_all_started(:flake_id)
 
     with {:ok, list} <- Relay.list(true) do
       list |> Enum.each(&shell_info(&1))
