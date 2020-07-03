@@ -186,6 +186,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `pleroma_background_image` - sets the background image of the user.
 - `discoverable` - if true, discovery of this account in search results and other services is allowed.
 - `actor_type` - the type of this account.
+- `accepts_chat_messages` - if false, this account will reject all chat messages.
 
 ### Pleroma Settings Store
 
