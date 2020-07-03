@@ -71,6 +71,7 @@ Has these additional fields under the `pleroma` object:
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
 - `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
 - `notification_settings`: object, can be absent. See `/api/pleroma/notification_settings` for the parameters/keys returned.
+- `accepts_chat_messages`: boolean, but can be null if we don't have that information about a user
 
 ### Source
 
