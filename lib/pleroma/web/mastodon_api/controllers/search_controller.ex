@@ -44,6 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   def search(conn, params), do: do_search(:v1, conn, params)
 
   defp do_search(version, %{assigns: %{user: user}} = conn, %{q: query} = params) do
+    query = String.trim(query)
     options = search_options(params, user)
     timeout = Keyword.get(Repo.config(), :timeout, 15_000)
     default_values = %{"statuses" => [], "accounts" => [], "hashtags" => []}
