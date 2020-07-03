@@ -483,7 +483,8 @@ defmodule Pleroma.User do
         :pleroma_settings_store,
         :discoverable,
         :actor_type,
-        :also_known_as
+        :also_known_as,
+        :accepts_chat_messages
       ]
     )
     |> unique_constraint(:nickname)
