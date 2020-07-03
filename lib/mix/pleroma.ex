@@ -22,7 +22,11 @@ defmodule Mix.Pleroma do
 
     Enum.each(apps, &Application.ensure_all_started/1)
 
-    childs = [Pleroma.Repo, Pleroma.Config.TransferTask, Pleroma.Web.Endpoint]
+    childs = [
+      Pleroma.Repo,
+      {Pleroma.Config.TransferTask, false},
+      Pleroma.Web.Endpoint
+    ]
 
     cachex_childs = Enum.map(@cachex_childs, &Pleroma.Application.build_cachex(&1, []))
 
