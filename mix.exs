@@ -117,7 +117,7 @@ defmodule Pleroma.Mixfile do
   defp deps do
     [
       {:phoenix, "~> 1.4.8"},
-      {:tzdata, "~> 0.5.21"},
+      {:tzdata, "~> 1.0.3"},
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
@@ -159,7 +159,10 @@ defmodule Pleroma.Mixfile do
       {:cors_plug, "~> 1.5"},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
-      {:swoosh, "~> 0.23.2"},
+      {:swoosh,
+       git: "https://github.com/swoosh/swoosh",
+       ref: "c96e0ca8a00d8f211ec1f042a4626b09f249caa5",
+       override: true},
       {:phoenix_swoosh, "~> 0.2"},
       {:gen_smtp, "~> 0.13"},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},

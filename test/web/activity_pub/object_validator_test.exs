@@ -622,4 +622,63 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidatorTest do
       assert {:actor, {"can not announce this object publicly", []}} in cng.errors
     end
   end
+
+  describe "updates" do
+    setup do
+      user = insert(:user)
+
+      object = %{
+        "id" => user.ap_id,
+        "name" => "A new name",
+        "summary" => "A new bio"
+      }
+
+      {:ok, valid_update, []} = Builder.update(user, object)
+
+      %{user: user, valid_update: valid_update}
+    end
+
+    test "validates a basic object", %{valid_update: valid_update} do
+      assert {:ok, _update, []} = ObjectValidator.validate(valid_update, [])
+    end
+
+    test "returns an error if the object can't be updated by the actor", %{
+      valid_update: valid_update
+    } do
+      other_user = insert(:user)
+
+      update =
+        valid_update
+        |> Map.put("actor", other_user.ap_id)
+
+      assert {:error, _cng} = ObjectValidator.validate(update, [])
+    end
+  end
+
+  describe "blocks" do
+    setup do
+      user = insert(:user, local: false)
+      blocked = insert(:user)
+
+      {:ok, valid_block, []} = Builder.block(user, blocked)
+
+      %{user: user, valid_block: valid_block}
+    end
+
+    test "validates a basic object", %{
+      valid_block: valid_block
+    } do
+      assert {:ok, _block, []} = ObjectValidator.validate(valid_block, [])
+    end
+
+    test "returns an error if we don't know the blocked user", %{
+      valid_block: valid_block
+    } do
+      block =
+        valid_block
+        |> Map.put("object", "https://gensokyo.2hu/users/raymoo")
+
+      assert {:error, _cng} = ObjectValidator.validate(block, [])
+    end
+  end
 end

@@ -67,10 +67,10 @@ defmodule Pleroma.Web.NodeInfoTest do
   end
 
   test "returns fieldsLimits field", %{conn: conn} do
-    Config.put([:instance, :max_account_fields], 10)
-    Config.put([:instance, :max_remote_account_fields], 15)
-    Config.put([:instance, :account_field_name_length], 255)
-    Config.put([:instance, :account_field_value_length], 2048)
+    clear_config([:instance, :max_account_fields], 10)
+    clear_config([:instance, :max_remote_account_fields], 15)
+    clear_config([:instance, :account_field_name_length], 255)
+    clear_config([:instance, :account_field_value_length], 2048)
 
     response =
       conn
@@ -84,8 +84,7 @@ defmodule Pleroma.Web.NodeInfoTest do
   end
 
   test "it returns the safe_dm_mentions feature if enabled", %{conn: conn} do
-    option = Config.get([:instance, :safe_dm_mentions])
-    Config.put([:instance, :safe_dm_mentions], true)
+    clear_config([:instance, :safe_dm_mentions], true)
 
     response =
       conn
@@ -102,8 +101,6 @@ defmodule Pleroma.Web.NodeInfoTest do
       |> json_response(:ok)
 
     refute "safe_dm_mentions" in response["metadata"]["features"]
-
-    Config.put([:instance, :safe_dm_mentions], option)
   end
 
   describe "`metadata/federation/enabled`" do
@@ -156,14 +153,11 @@ defmodule Pleroma.Web.NodeInfoTest do
   end
 
   test "it shows MRF transparency data if enabled", %{conn: conn} do
-    config = Config.get([:instance, :rewrite_policy])
-    Config.put([:instance, :rewrite_policy], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
-
-    option = Config.get([:instance, :mrf_transparency])
-    Config.put([:instance, :mrf_transparency], true)
+    clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
+    clear_config([:mrf, :transparency], true)
 
     simple_config = %{"reject" => ["example.com"]}
-    Config.put(:mrf_simple, simple_config)
+    clear_config(:mrf_simple, simple_config)
 
     response =
       conn
@@ -171,26 +165,17 @@ defmodule Pleroma.Web.NodeInfoTest do
       |> json_response(:ok)
 
     assert response["metadata"]["federation"]["mrf_simple"] == simple_config
-
-    Config.put([:instance, :rewrite_policy], config)
-    Config.put([:instance, :mrf_transparency], option)
-    Config.put(:mrf_simple, %{})
   end
 
   test "it performs exclusions from MRF transparency data if configured", %{conn: conn} do
-    config = Config.get([:instance, :rewrite_policy])
-    Config.put([:instance, :rewrite_policy], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
-
-    option = Config.get([:instance, :mrf_transparency])
-    Config.put([:instance, :mrf_transparency], true)
-
-    exclusions = Config.get([:instance, :mrf_transparency_exclusions])
-    Config.put([:instance, :mrf_transparency_exclusions], ["other.site"])
+    clear_config([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.SimplePolicy])
+    clear_config([:mrf, :transparency], true)
+    clear_config([:mrf, :transparency_exclusions], ["other.site"])
 
     simple_config = %{"reject" => ["example.com", "other.site"]}
-    expected_config = %{"reject" => ["example.com"]}
+    clear_config(:mrf_simple, simple_config)
 
-    Config.put(:mrf_simple, simple_config)
+    expected_config = %{"reject" => ["example.com"]}
 
     response =
       conn
@@ -199,10 +184,5 @@ defmodule Pleroma.Web.NodeInfoTest do
 
     assert response["metadata"]["federation"]["mrf_simple"] == expected_config
     assert response["metadata"]["federation"]["exclusions"] == true
-
-    Config.put([:instance, :rewrite_policy], config)
-    Config.put([:instance, :mrf_transparency], option)
-    Config.put([:instance, :mrf_transparency_exclusions], exclusions)
-    Config.put(:mrf_simple, %{})
   end
 end

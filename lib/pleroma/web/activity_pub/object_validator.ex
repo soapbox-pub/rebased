@@ -13,15 +13,46 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CreateChatMessageValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.LikeValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.UndoValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.UpdateValidator
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
+
+  def validate(%{"type" => "Block"} = block_activity, meta) do
+    with {:ok, block_activity} <-
+           block_activity
+           |> BlockValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      block_activity = stringify_keys(block_activity)
+      outgoing_blocks = Pleroma.Config.get([:activitypub, :outgoing_blocks])
+
+      meta =
+        if !outgoing_blocks do
+          Keyword.put(meta, :do_not_federate, true)
+        else
+          meta
+        end
+
+      {:ok, block_activity, meta}
+    end
+  end
+
+  def validate(%{"type" => "Update"} = update_activity, meta) do
+    with {:ok, update_activity} <-
+           update_activity
+           |> UpdateValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      update_activity = stringify_keys(update_activity)
+      {:ok, update_activity, meta}
+    end
+  end
 
   def validate(%{"type" => "Undo"} = object, meta) do
     with {:ok, object} <-

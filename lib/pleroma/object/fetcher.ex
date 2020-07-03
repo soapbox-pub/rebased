@@ -83,8 +83,8 @@ defmodule Pleroma.Object.Fetcher do
       {:transmogrifier, {:error, {:reject, nil}}} ->
         {:reject, nil}
 
-      {:transmogrifier, _} ->
-        {:error, "Transmogrifier failure."}
+      {:transmogrifier, _} = e ->
+        {:error, e}
 
       {:object, data, nil} ->
         reinject_object(%Object{}, data)

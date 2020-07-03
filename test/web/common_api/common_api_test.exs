@@ -25,6 +25,52 @@ defmodule Pleroma.Web.CommonAPITest do
   setup do: clear_config([:instance, :limit])
   setup do: clear_config([:instance, :max_pinned_statuses])
 
+  describe "blocking" do
+    setup do
+      blocker = insert(:user)
+      blocked = insert(:user)
+      User.follow(blocker, blocked)
+      User.follow(blocked, blocker)
+      %{blocker: blocker, blocked: blocked}
+    end
+
+    test "it blocks and federates", %{blocker: blocker, blocked: blocked} do
+      clear_config([:instance, :federating], true)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        assert {:ok, block} = CommonAPI.block(blocker, blocked)
+
+        assert block.local
+        assert User.blocks?(blocker, blocked)
+        refute User.following?(blocker, blocked)
+        refute User.following?(blocked, blocker)
+
+        assert called(Pleroma.Web.Federator.publish(block))
+      end
+    end
+
+    test "it blocks and does not federate if outgoing blocks are disabled", %{
+      blocker: blocker,
+      blocked: blocked
+    } do
+      clear_config([:instance, :federating], true)
+      clear_config([:activitypub, :outgoing_blocks], false)
+
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        assert {:ok, block} = CommonAPI.block(blocker, blocked)
+
+        assert block.local
+        assert User.blocks?(blocker, blocked)
+        refute User.following?(blocker, blocked)
+        refute User.following?(blocked, blocker)
+
+        refute called(Pleroma.Web.Federator.publish(block))
+      end
+    end
+  end
+
   describe "posting chat messages" do
     setup do: clear_config([:instance, :chat_limit])
 
@@ -445,6 +491,7 @@ defmodule Pleroma.Web.CommonAPITest do
       object = Object.normalize(activity)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
+      assert object.data["source"] == post
     end
 
     test "it filters out obviously bad tags when accepting a post as Markdown" do
@@ -461,6 +508,7 @@ defmodule Pleroma.Web.CommonAPITest do
       object = Object.normalize(activity)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert(&#39;xss&#39;)"
+      assert object.data["source"] == post
     end
 
     test "it does not allow replies to direct messages that are not direct messages themselves" do

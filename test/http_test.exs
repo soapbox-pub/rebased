@@ -17,6 +17,9 @@ defmodule Pleroma.HTTPTest do
       } ->
         json(%{"my" => "data"})
 
+      %{method: :head, url: "http://example.com/hello"} ->
+        %Tesla.Env{status: 200, body: ""}
+
       %{method: :get, url: "http://example.com/hello"} ->
         %Tesla.Env{status: 200, body: "hello"}
 
@@ -25,6 +28,12 @@ defmodule Pleroma.HTTPTest do
     end)
 
     :ok
+  end
+
+  describe "head/1" do
+    test "returns successfully result" do
+      assert HTTP.head("http://example.com/hello") == {:ok, %Tesla.Env{status: 200, body: ""}}
+    end
   end
 
   describe "get/1" do

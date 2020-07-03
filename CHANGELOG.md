@@ -11,9 +11,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Using the `only_media` filter on timelines will now exclude reblog media
 - MFR policy to set global expiration for all local Create activities
 - OGP rich media parser merged with TwitterCard
+- Configuration: `:instance, rewrite_policy` moved to `:mrf, policies`, `:instance, :mrf_transparency` moved to `:mrf, :transparency`, `:instance, :mrf_transparency_exclusions` moved to `:mrf, :transparency_exclusions`. Old config namespace is deprecated.
+
 <details>
   <summary>API Changes</summary>
+
 - **Breaking:** Emoji API: changed methods and renamed routes.
+- Streaming: Repeats of a user's posts will no longer be pushed to the user's stream.
+- Mastodon API: Added `pleroma.metadata.fields_limits` to /api/v1/instance
+- Mastodon API: On deletion, returns the original post text.
+</details>
+
+<details>
+  <summary>Admin API Changes</summary>
+
+- Status visibility stats: now can return stats per instance.
+
+- Mix task to refresh counter cache (`mix pleroma.refresh_counter_cache`)
 </details>
 
 ### Removed
@@ -40,6 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 <details>
   <summary>API Changes</summary>
+- Mastodon API: Add pleroma.parents_visible field to statuses.
 - Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
@@ -96,6 +111,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 2. Run database migrations (inside Pleroma directory):
   - OTP: `./bin/pleroma_ctl migrate`
   - From Source: `mix ecto.migrate`
+3. Reset status visibility counters (inside Pleroma directory):
+  - OTP: `./bin/pleroma_ctl refresh_counter_cache`
+  - From Source: `mix pleroma.refresh_counter_cache`
 
 
 ## [2.0.2] - 2020-04-08
