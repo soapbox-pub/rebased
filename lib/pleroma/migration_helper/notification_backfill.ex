@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.MigrationHelper.NotificationBackfill do
-  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -25,9 +24,18 @@ defmodule Pleroma.MigrationHelper.NotificationBackfill do
         |> type_from_activity()
 
       notification
-      |> Notification.changeset(%{type: type})
+      |> Ecto.Changeset.change(%{type: type})
       |> Repo.update()
     end)
+  end
+
+  defp get_by_ap_id(ap_id) do
+    q =
+      from(u in User,
+        select: u.id
+      )
+
+    Repo.get_by(q, ap_id: ap_id)
   end
 
   # This is copied over from Notifications to keep this stable.
@@ -35,8 +43,8 @@ defmodule Pleroma.MigrationHelper.NotificationBackfill do
     case type do
       "Follow" ->
         accepted_function = fn activity ->
-          with %User{} = follower <- User.get_by_ap_id(activity.data["actor"]),
-               %User{} = followed <- User.get_by_ap_id(activity.data["object"]) do
+          with %User{} = follower <- get_by_ap_id(activity.data["actor"]),
+               %User{} = followed <- get_by_ap_id(activity.data["object"]) do
             Pleroma.FollowingRelationship.following?(follower, followed)
           end
         end

@@ -40,7 +40,7 @@ defmodule Pleroma.Web.ApiSpec.CastAndValidate do
           |> List.first()
 
         _ ->
-          nil
+          "application/json"
       end
 
     private_data = Map.put(private_data, :operation_id, operation_id)

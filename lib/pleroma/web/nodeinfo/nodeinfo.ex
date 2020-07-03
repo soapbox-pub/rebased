@@ -19,35 +19,7 @@ defmodule Pleroma.Web.Nodeinfo.Nodeinfo do
       |> Enum.map(fn u -> u.ap_id end)
 
     federation = InstanceView.federation()
-
-    features =
-      [
-        "pleroma_api",
-        "mastodon_api",
-        "mastodon_api_streaming",
-        "polls",
-        "pleroma_explicit_addressing",
-        "shareable_emoji_packs",
-        "multifetch",
-        "pleroma:api/v1/notifications:include_types_filter",
-        if Config.get([:media_proxy, :enabled]) do
-          "media_proxy"
-        end,
-        if Config.get([:gopher, :enabled]) do
-          "gopher"
-        end,
-        if Config.get([:chat, :enabled]) do
-          "chat"
-        end,
-        if Config.get([:instance, :allow_relay]) do
-          "relay"
-        end,
-        if Config.get([:instance, :safe_dm_mentions]) do
-          "safe_dm_mentions"
-        end,
-        "pleroma_emoji_reactions"
-      ]
-      |> Enum.filter(& &1)
+    features = InstanceView.features()
 
     %{
       version: "2.0",

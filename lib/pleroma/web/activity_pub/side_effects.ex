@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   collection, and so on.
   """
   alias Pleroma.Activity
+  alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.Notification
@@ -19,6 +20,21 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.Streamer
 
   def handle(object, meta \\ [])
+
+  # Tasks this handles:
+  # - Unfollow and block
+  def handle(
+        %{data: %{"type" => "Block", "object" => blocked_user, "actor" => blocking_user}} =
+          object,
+        meta
+      ) do
+    with %User{} = blocker <- User.get_cached_by_ap_id(blocking_user),
+         %User{} = blocked <- User.get_cached_by_ap_id(blocked_user) do
+      User.block(blocker, blocked)
+    end
+
+    {:ok, object, meta}
+  end
 
   # Tasks this handles:
   # - Update the user
@@ -82,7 +98,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
 
     if !User.is_internal_user?(user) do
       Notification.create_notifications(object)
-      ActivityPub.stream_out(object)
+
+      object
+      |> Topics.get_activity_topics()
+      |> Streamer.stream(object)
     end
 
     {:ok, object, meta}
