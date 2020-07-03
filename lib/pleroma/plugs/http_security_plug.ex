@@ -69,10 +69,11 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     img_src = "img-src 'self' data: blob:"
     media_src = "media-src 'self'"
 
+    # Strict multimedia CSP enforcement only when MediaProxy is enabled
     {img_src, media_src} =
       if Config.get([:media_proxy, :enabled]) &&
            !Config.get([:media_proxy, :proxy_opts, :redirect_on_failure]) do
-        sources = get_proxy_and_attachment_sources()
+        sources = build_csp_multimedia_source_list()
         {[img_src, sources], [media_src, sources]}
       else
         {[img_src, " https:"], [media_src, " https:"]}
@@ -107,7 +108,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     |> :erlang.iolist_to_binary()
   end
 
-  defp get_proxy_and_attachment_sources do
+  defp build_csp_multimedia_source_list do
     media_proxy_whitelist =
       Enum.reduce(Config.get([:media_proxy, :whitelist]), [], fn host, acc ->
         add_source(acc, host)
