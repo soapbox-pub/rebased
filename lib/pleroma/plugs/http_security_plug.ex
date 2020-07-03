@@ -125,11 +125,19 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
       if Config.get([Pleroma.Upload, :uploader]) == Pleroma.Uploaders.S3,
         do: URI.parse(Config.get([Pleroma.Uploaders.S3, :public_endpoint])).host
 
+    captcha_method = Config.get([Pleroma.Captcha, :method])
+
+    captcha_endpoint =
+      if Config.get([Pleroma.Captcha, :enabled]) &&
+           captcha_method != "Pleroma.Captcha.Native",
+         do: Config.get([captcha_method, :endpoint])
+
     []
     |> add_source(media_proxy_base_url)
     |> add_source(upload_base_url)
     |> add_source(s3_endpoint)
     |> add_source(media_proxy_whitelist)
+    |> add_source(captcha_endpoint)
   end
 
   defp add_source(iodata, nil), do: iodata
