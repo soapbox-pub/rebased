@@ -437,7 +437,8 @@ defmodule Pleroma.User do
         :discoverable,
         :invisible,
         :actor_type,
-        :also_known_as
+        :also_known_as,
+        :accepts_chat_messages
       ]
     )
     |> validate_required([:name, :ap_id])
