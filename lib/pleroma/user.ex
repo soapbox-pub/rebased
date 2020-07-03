@@ -138,7 +138,7 @@ defmodule Pleroma.User do
     field(:also_known_as, {:array, :string}, default: [])
     field(:inbox, :string)
     field(:shared_inbox, :string)
-    field(:accepts_chat_messages, :boolean, default: false)
+    field(:accepts_chat_messages, :boolean, default: nil)
 
     embeds_one(
       :notification_settings,
