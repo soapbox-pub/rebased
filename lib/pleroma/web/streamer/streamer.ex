@@ -104,7 +104,9 @@ defmodule Pleroma.Web.Streamer do
     :ok
   end
 
-  def filtered_by_user?(%User{} = user, %Activity{} = item) do
+  def filtered_by_user?(user, item, streamed_type \\ :activity)
+
+  def filtered_by_user?(%User{} = user, %Activity{} = item, streamed_type) do
     %{block: blocked_ap_ids, mute: muted_ap_ids, reblog_mute: reblog_muted_ap_ids} =
       User.outgoing_relationships_ap_ids(user, [:block, :mute, :reblog_mute])
 
@@ -116,7 +118,9 @@ defmodule Pleroma.Web.Streamer do
          true <-
            Enum.all?([blocked_ap_ids, muted_ap_ids], &(item.actor not in &1)),
          true <- item.data["type"] != "Announce" || item.actor not in reblog_muted_ap_ids,
-         true <- !(item.data["type"] == "Announce" && parent.data["actor"] == user.ap_id),
+         true <-
+           !(streamed_type == :activity && item.data["type"] == "Announce" &&
+               parent.data["actor"] == user.ap_id),
          true <- Enum.all?([blocked_ap_ids, muted_ap_ids], &(parent.data["actor"] not in &1)),
          true <- MapSet.disjoint?(recipients, recipient_blocks),
          %{host: item_host} <- URI.parse(item.actor),
@@ -131,8 +135,8 @@ defmodule Pleroma.Web.Streamer do
     end
   end
 
-  def filtered_by_user?(%User{} = user, %Notification{activity: activity}) do
-    filtered_by_user?(user, activity)
+  def filtered_by_user?(%User{} = user, %Notification{activity: activity}, _) do
+    filtered_by_user?(user, activity, :notification)
   end
 
   defp do_stream("direct", item) do
