@@ -116,22 +116,22 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
 
     media_proxy_base_url =
       if Config.get([:media_proxy, :base_url]),
-        do: URI.parse(Config.get([:media_proxy, :base_url])).host
+        do: build_csp_param(Config.get([:media_proxy, :base_url]))
 
     upload_base_url =
       if Config.get([Pleroma.Upload, :base_url]),
-        do: URI.parse(Config.get([Pleroma.Upload, :base_url])).host
+        do: build_csp_param(Config.get([Pleroma.Upload, :base_url]))
 
     s3_endpoint =
       if Config.get([Pleroma.Upload, :uploader]) == Pleroma.Uploaders.S3,
-        do: URI.parse(Config.get([Pleroma.Uploaders.S3, :public_endpoint])).host
+        do: build_csp_param(Config.get([Pleroma.Uploaders.S3, :public_endpoint]))
 
     captcha_method = Config.get([Pleroma.Captcha, :method])
 
     captcha_endpoint =
       if Config.get([Pleroma.Captcha, :enabled]) &&
            captcha_method != "Pleroma.Captcha.Native",
-         do: Config.get([captcha_method, :endpoint])
+         do: build_csp_param(Config.get([captcha_method, :endpoint]))
 
     []
     |> add_source(media_proxy_base_url)
@@ -147,6 +147,14 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
   defp add_csp_param(csp_iodata, nil), do: csp_iodata
 
   defp add_csp_param(csp_iodata, param), do: [[param, ?;] | csp_iodata]
+
+  defp build_csp_param(url) when is_binary(url) do
+    %{host: host, scheme: scheme} = URI.parse(url)
+
+    if scheme do
+      scheme <> "://" <> host
+    end
+  end
 
   def warn_if_disabled do
     unless Config.get([:http_security, :enabled]) do
