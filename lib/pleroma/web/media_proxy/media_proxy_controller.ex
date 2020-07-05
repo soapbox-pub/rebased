@@ -12,8 +12,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
 
   def remote(conn, %{"sig" => sig64, "url" => url64}) do
     with {_, true} <- {:enabled, MediaProxy.enabled?()},
-         {_, false} <- {:in_banned_urls, MediaProxy.in_banned_urls(url)},
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),
+         {_, false} <- {:in_banned_urls, MediaProxy.in_banned_urls(url)},
          :ok <- MediaProxy.verify_request_path_and_url(conn, url) do
       proxy_opts = Config.get([:media_proxy, :proxy_opts], [])
       ReverseProxy.call(conn, url, proxy_opts)
