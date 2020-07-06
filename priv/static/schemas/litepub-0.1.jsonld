@@ -13,7 +13,7 @@
             },
             "discoverable": "toot:discoverable",
             "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
-            "acceptsChatMessages": "litepub:acceptsChatMessages",
+            "capabilities": "litepub:capabilities",
             "ostatus": "http://ostatus.org#",
             "schema": "http://schema.org#",
             "toot": "http://joinmastodon.org/ns#",

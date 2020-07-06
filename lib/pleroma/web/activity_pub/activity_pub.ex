@@ -1224,7 +1224,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
     locked = data["manuallyApprovesFollowers"] || false
-    accepts_chat_messages = data["acceptsChatMessages"]
+    capabilities = data["capabilities"] || %{}
+    accepts_chat_messages = capabilities["acceptsChatMessages"]
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
