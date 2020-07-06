@@ -145,7 +145,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     %{host: host, scheme: scheme} = URI.parse(url)
 
     if scheme do
-      scheme <> "://" <> host
+      [scheme, "://", host]
     end
   end
 
