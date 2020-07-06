@@ -652,8 +652,7 @@ config :pleroma, :connections_pool,
   connection_acquisition_retries: 5,
   max_connections: 250,
   max_idle_time: 30_000,
-  retry: 1,
-  retry_timeout: 1000,
+  retry: 0,
   await_up_timeout: 5_000
 
 config :pleroma, :pools,
