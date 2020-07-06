@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 <details>
   <summary>API Changes</summary>
 
+- **Breaking:** Image description length is limited now.
 - **Breaking:** Emoji API: changed methods and renamed routes.
 - Streaming: Repeats of a user's posts will no longer be pushed to the user's stream.
 - Mastodon API: Added `pleroma.metadata.fields_limits` to /api/v1/instance
