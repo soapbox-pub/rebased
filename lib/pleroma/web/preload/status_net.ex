@@ -4,10 +4,10 @@
 
 defmodule Pleroma.Web.Preload.Providers.StatusNet do
   alias Pleroma.Web.Preload.Providers.Provider
-  alias Pleroma.Web.TwitterAPI.UtilView
+  alias Pleroma.Web.TwitterAPI.UtilController
 
   @behaviour Provider
-  @config_url :"/api/statusnet/config.json"
+  @config_url "/api/statusnet/config.json"
 
   @impl Provider
   def generate_terms(_params) do
@@ -16,9 +16,10 @@ defmodule Pleroma.Web.Preload.Providers.StatusNet do
   end
 
   defp build_config_tag(acc) do
-    instance = Pleroma.Config.get(:instance)
-    info_data = UtilView.status_net_config(instance)
+    resp =
+      Plug.Test.conn(:get, @config_url |> to_string())
+      |> UtilController.config(nil)
 
-    Map.put(acc, @config_url, info_data)
+    Map.put(acc, @config_url, resp.resp_body)
   end
 end

@@ -366,33 +366,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec block(User.t(), User.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t()} | {:error, any()}
-  def block(blocker, blocked, activity_id \\ nil, local \\ true) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_block(blocker, blocked, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_block(blocker, blocked, activity_id, local) do
-    unfollow_blocked = Config.get([:activitypub, :unfollow_blocked])
-
-    if unfollow_blocked and fetch_latest_follow(blocker, blocked) do
-      unfollow(blocker, blocked, nil, local)
-    end
-
-    block_data = make_block_data(blocker, blocked, activity_id)
-
-    with {:ok, activity} <- insert(block_data, local),
-         _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    else
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
   @spec flag(map()) :: {:ok, Activity.t()} | {:error, any()}
   def flag(
         %{
@@ -1398,6 +1371,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def maybe_handle_clashing_nickname(nickname) do
+    with %User{} = old_user <- User.get_by_nickname(nickname) do
+      Logger.info("Found an old user for #{nickname}, ap id is #{old_user.ap_id}, renaming.")
+
+      old_user
+      |> User.remote_user_changeset(%{nickname: "#{old_user.id}.#{old_user.nickname}"})
+      |> User.update_and_set_cache()
+    end
+  end
+
   def make_user_from_ap_id(ap_id) do
     user = User.get_cached_by_ap_id(ap_id)
 
@@ -1410,6 +1393,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           |> User.remote_user_changeset(data)
           |> User.update_and_set_cache()
         else
+          maybe_handle_clashing_nickname(data[:nickname])
+
           data
           |> User.remote_user_changeset()
           |> Repo.insert()

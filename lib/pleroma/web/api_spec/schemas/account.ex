@@ -40,20 +40,53 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
       pleroma: %Schema{
         type: :object,
         properties: %{
-          allow_following_move: %Schema{type: :boolean},
-          background_image: %Schema{type: :string, nullable: true},
+          allow_following_move: %Schema{
+            type: :boolean,
+            description: "whether the user allows automatically follow moved following accounts"
+          },
+          background_image: %Schema{type: :string, nullable: true, format: :uri},
           chat_token: %Schema{type: :string},
-          confirmation_pending: %Schema{type: :boolean},
+          confirmation_pending: %Schema{
+            type: :boolean,
+            description:
+              "whether the user account is waiting on email confirmation to be activated"
+          },
           hide_favorites: %Schema{type: :boolean},
-          hide_followers_count: %Schema{type: :boolean},
-          hide_followers: %Schema{type: :boolean},
-          hide_follows_count: %Schema{type: :boolean},
-          hide_follows: %Schema{type: :boolean},
-          is_admin: %Schema{type: :boolean},
-          is_moderator: %Schema{type: :boolean},
+          hide_followers_count: %Schema{
+            type: :boolean,
+            description: "whether the user has follower stat hiding enabled"
+          },
+          hide_followers: %Schema{
+            type: :boolean,
+            description: "whether the user has follower hiding enabled"
+          },
+          hide_follows_count: %Schema{
+            type: :boolean,
+            description: "whether the user has follow stat hiding enabled"
+          },
+          hide_follows: %Schema{
+            type: :boolean,
+            description: "whether the user has follow hiding enabled"
+          },
+          is_admin: %Schema{
+            type: :boolean,
+            description: "whether the user is an admin of the local instance"
+          },
+          is_moderator: %Schema{
+            type: :boolean,
+            description: "whether the user is a moderator of the local instance"
+          },
           skip_thread_containment: %Schema{type: :boolean},
-          tags: %Schema{type: :array, items: %Schema{type: :string}},
-          unread_conversation_count: %Schema{type: :integer},
+          tags: %Schema{
+            type: :array,
+            items: %Schema{type: :string},
+            description:
+              "List of tags being used for things like extra roles or moderation(ie. marking all media as nsfw all)."
+          },
+          unread_conversation_count: %Schema{
+            type: :integer,
+            description: "The count of unread conversations. Only returned to the account owner."
+          },
           notification_settings: %Schema{
             type: :object,
             properties: %{
@@ -66,7 +99,9 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
           },
           relationship: AccountRelationship,
           settings_store: %Schema{
-            type: :object
+            type: :object,
+            description:
+              "A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`"
           }
         }
       },
@@ -74,16 +109,32 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
         type: :object,
         properties: %{
           fields: %Schema{type: :array, items: AccountField},
-          note: %Schema{type: :string},
+          note: %Schema{
+            type: :string,
+            description:
+              "Plaintext version of the bio without formatting applied by the backend, used for editing the bio."
+          },
           privacy: VisibilityScope,
           sensitive: %Schema{type: :boolean},
           pleroma: %Schema{
             type: :object,
             properties: %{
               actor_type: ActorType,
-              discoverable: %Schema{type: :boolean},
-              no_rich_text: %Schema{type: :boolean},
-              show_role: %Schema{type: :boolean}
+              discoverable: %Schema{
+                type: :boolean,
+                description:
+                  "whether the user allows discovery of the account in search results and other services."
+              },
+              no_rich_text: %Schema{
+                type: :boolean,
+                description:
+                  "whether the HTML tags for rich-text formatting are stripped from all statuses requested from the API."
+              },
+              show_role: %Schema{
+                type: :boolean,
+                description:
+                  "whether the user wants their role (e.g admin, moderator) to be shown"
+              }
             }
           }
         }

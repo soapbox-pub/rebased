@@ -183,6 +183,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       card: nil,
       reblog: nil,
       content: HTML.filter_tags(object_data["content"]),
+      text: nil,
       created_at: created_at,
       reblogs_count: 0,
       replies_count: 0,
@@ -226,7 +227,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         expires_at: nil,
         direct_conversation_id: nil,
         thread_muted: false,
-        emoji_reactions: []
+        emoji_reactions: [],
+        parent_visible: false
       }
     }
 
@@ -619,5 +621,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: activity)
 
     assert status.visibility == "list"
+  end
+
+  test "has a field for parent visibility" do
+    user = insert(:user)
+    poster = insert(:user)
+
+    {:ok, invisible} = CommonAPI.post(poster, %{status: "hey", visibility: "private"})
+
+    {:ok, visible} =
+      CommonAPI.post(poster, %{status: "hey", visibility: "private", in_reply_to_id: invisible.id})
+
+    status = StatusView.render("show.json", activity: visible, for: user)
+    refute status.pleroma.parent_visible
+
+    status = StatusView.render("show.json", activity: visible, for: poster)
+    assert status.pleroma.parent_visible
   end
 end

@@ -8,7 +8,7 @@ defmodule Pleroma.Web.Preload.Providers.Timelines do
   alias Pleroma.Web.Preload.Providers.Provider
 
   @behaviour Provider
-  @public_url :"/api/v1/timelines/public"
+  @public_url "/api/v1/timelines/public"
 
   @impl Provider
   def generate_terms(params) do
