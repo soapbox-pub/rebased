@@ -21,12 +21,6 @@ defmodule Pleroma.Plugs.StaticFEPlug do
   defp enabled?, do: Pleroma.Config.get([:static_fe, :enabled], false)
 
   defp requires_html?(conn) do
-    case get_req_header(conn, "accept") do
-      [accept | _] ->
-        !String.contains?(accept, "json") && String.contains?(accept, "text/html")
-
-      _ ->
-        false
-    end
+    Phoenix.Controller.get_format(conn) == "html"
   end
 end
