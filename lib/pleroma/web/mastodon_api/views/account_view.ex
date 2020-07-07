@@ -209,8 +209,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       |> Map.get(:ap_id, "")
       |> URI.parse()
       |> URI.merge("/")
-      |> to_string()
-      |> Pleroma.Instances.get_cached_favicon()
+      |> Pleroma.Instances.Instance.get_or_update_favicon()
       |> MediaProxy.url()
 
     %{

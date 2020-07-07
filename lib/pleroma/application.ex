@@ -150,7 +150,6 @@ defmodule Pleroma.Application do
       build_cachex("emoji_packs", expiration: emoji_packs_expiration(), limit: 10),
       build_cachex("failed_proxy_url", limit: 2500),
       build_cachex("banned_urls", default_ttl: :timer.hours(24 * 30), limit: 5_000)
-      build_cachex("instances", default_ttl: 25_000, ttl_interval: 1000, limit: 2500)
     ]
   end
 
