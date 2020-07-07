@@ -659,22 +659,44 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
           "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
         )
 
-      attachment = %{
-        "type" => "Link",
-        "mediaType" => "video/mp4",
-        "url" => [
-          %{
-            "href" =>
-              "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-            "mediaType" => "video/mp4"
-          }
-        ]
-      }
-
       assert object.data["url"] ==
                "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
 
-      assert object.data["attachment"] == [attachment]
+      assert object.data["attachment"] == [
+               %{
+                 "type" => "Link",
+                 "mediaType" => "video/mp4",
+                 "url" => [
+                   %{
+                     "href" =>
+                       "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
+                     "mediaType" => "video/mp4"
+                   }
+                 ]
+               }
+             ]
+
+      {:ok, object} =
+        Fetcher.fetch_object_from_id(
+          "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
+        )
+
+      assert object.data["attachment"] == [
+               %{
+                 "type" => "Link",
+                 "mediaType" => "video/mp4",
+                 "url" => [
+                   %{
+                     "href" =>
+                       "https://framatube.org/static/webseed/6050732a-8a7a-43d4-a6cd-809525a1d206-1080.mp4",
+                     "mediaType" => "video/mp4"
+                   }
+                 ]
+               }
+             ]
+
+      assert object.data["url"] ==
+               "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
     end
 
     test "it accepts Flag activities" do
