@@ -220,6 +220,8 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 `GET /api/v1/instance` has additional fields
 
 - `max_toot_chars`: The maximum characters per post
+- `chat_limit`: The maximum characters per chat message
+- `description_limit`: The maximum characters per image description
 - `poll_limits`: The limits of polls
 - `upload_limit`: The maximum upload file size
 - `avatar_upload_limit`: The same for avatars

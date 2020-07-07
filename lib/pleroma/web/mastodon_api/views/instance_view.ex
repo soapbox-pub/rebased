@@ -34,6 +34,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       background_upload_limit: Keyword.get(instance, :background_upload_limit),
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
       background_image: Keyword.get(instance, :background_image),
+      chat_limit: Keyword.get(instance, :chat_limit),
+      description_limit: Keyword.get(instance, :description_limit),
       pleroma: %{
         metadata: %{
           account_activation_required: Keyword.get(instance, :account_activation_required),
