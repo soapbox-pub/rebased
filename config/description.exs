@@ -498,6 +498,7 @@ config :pleroma, :config_description, [
           "dat",
           "dweb",
           "gopher",
+          "hyper",
           "ipfs",
           "ipns",
           "irc",
