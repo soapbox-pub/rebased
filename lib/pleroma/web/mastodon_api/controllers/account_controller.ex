@@ -148,6 +148,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Enum.filter(fn {_, value} -> not is_nil(value) end)
       |> Enum.into(%{})
 
+    # We use an empty string as a special value to reset
+    # avatars, banners, backgrounds
+    user_image_value = fn
+      "" -> {:ok, nil}
+      value -> {:ok, value}
+    end
+
     user_params =
       [
         :no_rich_text,
@@ -168,9 +175,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:name, params[:display_name])
       |> Maps.put_if_present(:bio, params[:note])
       |> Maps.put_if_present(:raw_bio, params[:note])
-      |> Maps.put_if_present(:avatar, params[:avatar])
-      |> Maps.put_if_present(:banner, params[:header])
-      |> Maps.put_if_present(:background, params[:pleroma_background_image])
+      |> Maps.put_if_present(:avatar, params[:avatar], user_image_value)
+      |> Maps.put_if_present(:banner, params[:header], user_image_value)
+      |> Maps.put_if_present(:background, params[:pleroma_background_image], user_image_value)
       |> Maps.put_if_present(
         :raw_fields,
         params[:fields_attributes],
