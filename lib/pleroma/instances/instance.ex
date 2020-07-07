@@ -127,30 +127,23 @@ defmodule Pleroma.Instances.Instance do
     existing_record = Repo.get_by(Instance, %{host: host})
     now = NaiveDateTime.utc_now()
 
-    if existing_record && existing_record.favicon &&
+    if existing_record && existing_record.favicon_updated_at &&
          NaiveDateTime.diff(now, existing_record.favicon_updated_at) < 86_400 do
       existing_record.favicon
     else
       favicon = scrape_favicon(instance_uri)
 
-      cond do
-        is_binary(favicon) && existing_record ->
-          existing_record
-          |> changeset(%{favicon: favicon, favicon_updated_at: now})
-          |> Repo.update()
-
-          favicon
-
-        is_binary(favicon) ->
-          %Instance{}
-          |> changeset(%{host: host, favicon: favicon, favicon_updated_at: now})
-          |> Repo.insert()
-
-          favicon
-
-        true ->
-          nil
+      if existing_record do
+        existing_record
+        |> changeset(%{favicon: favicon, favicon_updated_at: now})
+        |> Repo.update()
+      else
+        %Instance{}
+        |> changeset(%{host: host, favicon: favicon, favicon_updated_at: now})
+        |> Repo.insert()
       end
+
+      favicon
     end
   end
 
