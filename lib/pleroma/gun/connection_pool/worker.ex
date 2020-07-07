@@ -9,7 +9,12 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   end
 
   @impl true
-  def init([key, uri, opts, client_pid]) do
+  def init([_key, _uri, _opts, _client_pid] = opts) do
+    {:ok, nil, {:continue, {:connect, opts}}}
+  end
+
+  @impl true
+  def handle_continue({:connect, [key, uri, opts, client_pid]}, _) do
     with {:ok, conn_pid} <- Gun.Conn.open(uri, opts),
          Process.link(conn_pid) do
       time = :erlang.monotonic_time(:millisecond)
@@ -21,7 +26,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
 
       send(client_pid, {:conn_pid, conn_pid})
 
-      {:ok,
+      {:noreply,
        %{key: key, timer: nil, client_monitors: %{client_pid => Process.monitor(client_pid)}},
        :hibernate}
     else
