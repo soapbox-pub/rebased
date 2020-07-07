@@ -971,11 +971,11 @@ config :pleroma, :database_config_whitelist, [
 
 ### :restrict_unauthenticated
 
-Restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
+Restrict access for unauthenticated users to timelines (public and federated), user profiles and statuses.
 
 * `timelines`: public and federated timelines
   * `local`: public timeline
-  * `federated`
+  * `federated`: federated timeline (includes public timeline)
 * `profiles`: user profiles
   * `local`
   * `remote`
@@ -983,6 +983,7 @@ Restrict access for unauthenticated users to timelines (public and federate), us
   * `local`
   * `remote`
 
+Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practical sense if `restrict_unauthenticated/timelines/federated` is set to `false` (since local public activities will still be delivered to unauthenticated users as part of federated timeline). 
 
 ## Pleroma.Web.ApiSpec.CastAndValidate
 

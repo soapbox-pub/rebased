@@ -88,21 +88,23 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     )
   end
 
-  # GET /api/v1/timelines/public
-  def public(%{assigns: %{user: user}} = conn, params) do
-    local_only = params[:local]
-
-    cfg_key =
+  defp restrict_unauthenticated?(local_only) do
+    config_key =
       if local_only do
         :local
       else
         :federated
       end
 
-    restrict? = Pleroma.Config.get([:restrict_unauthenticated, :timelines, cfg_key])
+    Pleroma.Config.get([:restrict_unauthenticated, :timelines, config_key])
+  end
 
-    if restrict? and is_nil(user) do
-      render_error(conn, :unauthorized, "authorization required for timeline view")
+  # GET /api/v1/timelines/public
+  def public(%{assigns: %{user: user}} = conn, params) do
+    local_only = params[:local]
+
+    if is_nil(user) and restrict_unauthenticated?(local_only) do
+      fail_on_bad_auth(conn)
     else
       activities =
         params
@@ -121,6 +123,10 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
         as: :activity
       )
     end
+  end
+
+  defp fail_on_bad_auth(conn) do
+    render_error(conn, :unauthorized, "authorization required for timeline view")
   end
 
   defp hashtag_fetching(params, user, local_only) do
@@ -157,15 +163,20 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   # GET /api/v1/timelines/tag/:tag
   def hashtag(%{assigns: %{user: user}} = conn, params) do
     local_only = params[:local]
-    activities = hashtag_fetching(params, user, local_only)
 
-    conn
-    |> add_link_headers(activities, %{"local" => local_only})
-    |> render("index.json",
-      activities: activities,
-      for: user,
-      as: :activity
-    )
+    if is_nil(user) and restrict_unauthenticated?(local_only) do
+      fail_on_bad_auth(conn)
+    else
+      activities = hashtag_fetching(params, user, local_only)
+
+      conn
+      |> add_link_headers(activities, %{"local" => local_only})
+      |> render("index.json",
+        activities: activities,
+        for: user,
+        as: :activity
+      )
+    end
   end
 
   # GET /api/v1/timelines/list/:list_id
