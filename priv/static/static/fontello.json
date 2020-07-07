@@ -387,6 +387,18 @@
       "css": "bookmark-empty",
       "code": 61591,
       "src": "fontawesome"
+    },
+    {
+      "uid": "9ea0a737ccc45d6c510dcbae56058849",
+      "css": "music",
+      "code": 59432,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "1b5a5d7b7e3c71437f5a26befdd045ed",
+      "css": "doc",
+      "code": 59433,
+      "src": "fontawesome"
     }
   ]
 }
