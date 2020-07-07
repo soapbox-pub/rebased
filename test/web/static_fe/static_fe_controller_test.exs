@@ -87,6 +87,20 @@ defmodule Pleroma.Web.StaticFE.StaticFEControllerTest do
       assert html =~ "testing a thing!"
     end
 
+    test "redirects to json if requested", %{conn: conn, user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{status: "testing a thing!"})
+
+      conn =
+        conn
+        |> put_req_header(
+          "accept",
+          "Accept: application/activity+json, application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", text/html"
+        )
+        |> get("/notice/#{activity.id}")
+
+      assert redirected_to(conn, 302) =~ activity.data["object"]
+    end
+
     test "filters HTML tags", %{conn: conn} do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{status: "<script>alert('xss')</script>"})
