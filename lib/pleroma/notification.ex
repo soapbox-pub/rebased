@@ -497,6 +497,10 @@ defmodule Pleroma.Notification do
     end
   end
 
+  def get_potential_receiver_ap_ids(%{data: %{"type" => "Follow", "object" => object_id}}) do
+    [object_id]
+  end
+
   def get_potential_receiver_ap_ids(activity) do
     []
     |> Utils.maybe_notify_to_recipients(activity)
