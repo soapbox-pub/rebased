@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
   alias OpenApiSpex.Operation
-  alias OpenApiSpex.Schema
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationship
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
@@ -36,48 +35,6 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
       ],
       responses: %{
         204 => no_content_response()
-      }
-    }
-  end
-
-  def update_avatar_operation do
-    %Operation{
-      tags: ["Accounts"],
-      summary: "Set/clear user avatar image",
-      operationId: "PleromaAPI.AccountController.update_avatar",
-      requestBody:
-        request_body("Parameters", update_avatar_or_background_request(), required: true),
-      security: [%{"oAuth" => ["write:accounts"]}],
-      responses: %{
-        200 => update_response(),
-        403 => Operation.response("Forbidden", "application/json", ApiError)
-      }
-    }
-  end
-
-  def update_banner_operation do
-    %Operation{
-      tags: ["Accounts"],
-      summary: "Set/clear user banner image",
-      operationId: "PleromaAPI.AccountController.update_banner",
-      requestBody: request_body("Parameters", update_banner_request(), required: true),
-      security: [%{"oAuth" => ["write:accounts"]}],
-      responses: %{
-        200 => update_response()
-      }
-    }
-  end
-
-  def update_background_operation do
-    %Operation{
-      tags: ["Accounts"],
-      summary: "Set/clear user background image",
-      operationId: "PleromaAPI.AccountController.update_background",
-      security: [%{"oAuth" => ["write:accounts"]}],
-      requestBody:
-        request_body("Parameters", update_avatar_or_background_request(), required: true),
-      responses: %{
-        200 => update_response()
       }
     }
   end
@@ -135,53 +92,5 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
       example: "9umDrYheeY451cQnEe",
       required: true
     )
-  end
-
-  defp update_avatar_or_background_request do
-    %Schema{
-      title: "PleromaAccountUpdateAvatarOrBackgroundRequest",
-      type: :object,
-      properties: %{
-        img: %Schema{
-          nullable: true,
-          type: :string,
-          format: :binary,
-          description: "Image encoded using `multipart/form-data` or an empty string to clear"
-        }
-      }
-    }
-  end
-
-  defp update_banner_request do
-    %Schema{
-      title: "PleromaAccountUpdateBannerRequest",
-      type: :object,
-      properties: %{
-        banner: %Schema{
-          type: :string,
-          nullable: true,
-          format: :binary,
-          description: "Image encoded using `multipart/form-data` or an empty string to clear"
-        }
-      }
-    }
-  end
-
-  defp update_response do
-    Operation.response("PleromaAccountUpdateResponse", "application/json", %Schema{
-      type: :object,
-      properties: %{
-        url: %Schema{
-          type: :string,
-          format: :uri,
-          nullable: true,
-          description: "Image URL"
-        }
-      },
-      example: %{
-        "url" =>
-          "https://cofe.party/media/9d0add56-bcb6-4c0f-8225-cbbd0b6dd773/13eadb6972c9ccd3f4ffa3b8196f0e0d38b4d2f27594457c52e52946c054cd9a.gif"
-      }
-    })
   end
 end

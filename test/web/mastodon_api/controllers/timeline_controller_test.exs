@@ -418,4 +418,78 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       assert [status_none] == json_response_and_validate_schema(all_test, :ok)
     end
   end
+
+  describe "hashtag timeline handling of :restrict_unauthenticated setting" do
+    setup do
+      user = insert(:user)
+      {:ok, activity1} = CommonAPI.post(user, %{status: "test #tag1"})
+      {:ok, _activity2} = CommonAPI.post(user, %{status: "test #tag1"})
+
+      activity1
+      |> Ecto.Changeset.change(%{local: false})
+      |> Pleroma.Repo.update()
+
+      base_uri = "/api/v1/timelines/tag/tag1"
+      error_response = %{"error" => "authorization required for timeline view"}
+
+      %{base_uri: base_uri, error_response: error_response}
+    end
+
+    defp ensure_authenticated_access(base_uri) do
+      %{conn: auth_conn} = oauth_access(["read:statuses"])
+
+      res_conn = get(auth_conn, "#{base_uri}?local=true")
+      assert length(json_response(res_conn, 200)) == 1
+
+      res_conn = get(auth_conn, "#{base_uri}?local=false")
+      assert length(json_response(res_conn, 200)) == 2
+    end
+
+    test "with `%{local: true, federated: true}`, returns 403 for unauthenticated users", %{
+      conn: conn,
+      base_uri: base_uri,
+      error_response: error_response
+    } do
+      clear_config([:restrict_unauthenticated, :timelines, :local], true)
+      clear_config([:restrict_unauthenticated, :timelines, :federated], true)
+
+      for local <- [true, false] do
+        res_conn = get(conn, "#{base_uri}?local=#{local}")
+
+        assert json_response(res_conn, :unauthorized) == error_response
+      end
+
+      ensure_authenticated_access(base_uri)
+    end
+
+    test "with `%{local: false, federated: true}`, forbids unauthenticated access to federated timeline",
+         %{conn: conn, base_uri: base_uri, error_response: error_response} do
+      clear_config([:restrict_unauthenticated, :timelines, :local], false)
+      clear_config([:restrict_unauthenticated, :timelines, :federated], true)
+
+      res_conn = get(conn, "#{base_uri}?local=true")
+      assert length(json_response(res_conn, 200)) == 1
+
+      res_conn = get(conn, "#{base_uri}?local=false")
+      assert json_response(res_conn, :unauthorized) == error_response
+
+      ensure_authenticated_access(base_uri)
+    end
+
+    test "with `%{local: true, federated: false}`, forbids unauthenticated access to public timeline" <>
+           "(but not to local public activities which are delivered as part of federated timeline)",
+         %{conn: conn, base_uri: base_uri, error_response: error_response} do
+      clear_config([:restrict_unauthenticated, :timelines, :local], true)
+      clear_config([:restrict_unauthenticated, :timelines, :federated], false)
+
+      res_conn = get(conn, "#{base_uri}?local=true")
+      assert json_response(res_conn, :unauthorized) == error_response
+
+      # Note: local activities get delivered as part of federated timeline
+      res_conn = get(conn, "#{base_uri}?local=false")
+      assert length(json_response(res_conn, 200)) == 2
+
+      ensure_authenticated_access(base_uri)
+    end
+  end
 end

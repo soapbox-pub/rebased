@@ -1,0 +1,1 @@
+{"version":3,"sources":["webpack:///./src/hocs/with_subscription/with_subscription.scss"],"names":[],"mappings":"AAAA;AACA;AACA;AACA;AACA;AACA;AACA,C","file":"static/css/2.0778a6a864a1307a6c41.css","sourcesContent":[".with-subscription-loading {\n  padding: 10px;\n  text-align: center;\n}\n.with-subscription-loading .error {\n  font-size: 14px;\n}"],"sourceRoot":""}

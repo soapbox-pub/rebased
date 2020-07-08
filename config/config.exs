@@ -97,6 +97,7 @@ config :pleroma, :uri_schemes,
     "dat",
     "dweb",
     "gopher",
+    "hyper",
     "ipfs",
     "ipns",
     "irc",
@@ -437,8 +438,7 @@ config :pleroma, Pleroma.Web.Metadata,
 
 config :pleroma, Pleroma.Web.Preload,
   providers: [
-    Pleroma.Web.Preload.Providers.Instance,
-    Pleroma.Web.Preload.Providers.StatusNet
+    Pleroma.Web.Preload.Providers.Instance
   ]
 
 config :pleroma, :http_security,

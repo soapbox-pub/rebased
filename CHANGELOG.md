@@ -16,11 +16,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 <details>
   <summary>API Changes</summary>
 
+- **Breaking:** Pleroma API: The routes to update avatar, banner and background have been removed.
 - **Breaking:** Image description length is limited now.
 - **Breaking:** Emoji API: changed methods and renamed routes.
+- MastodonAPI: Allow removal of avatar, banner and background.
 - Streaming: Repeats of a user's posts will no longer be pushed to the user's stream.
 - Mastodon API: Added `pleroma.metadata.fields_limits` to /api/v1/instance
 - Mastodon API: On deletion, returns the original post text.
+- Mastodon API: Add `pleroma.unread_count` to the Marker entity.
 </details>
 
 <details>
@@ -59,8 +62,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
-- Mastodon API: Add support for filtering replies in public and home timelines
-- Mastodon API: Support for `bot` field in `/api/v1/accounts/update_credentials`
+- Mastodon API: Add support for filtering replies in public and home timelines.
+- Mastodon API: Support for `bot` field in `/api/v1/accounts/update_credentials`.
+- Mastodon API: Support irreversible property for filters.
 - Admin API: endpoints for create/update/delete OAuth Apps.
 - Admin API: endpoint for status view.
 - OTP: Add command to reload emoji packs
@@ -74,6 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Resolving Peertube accounts with Webfinger
 - `blob:` urls not being allowed by connect-src CSP
 - Mastodon API: fix `GET /api/v1/notifications` not returning the full result set
+- Rich Media Previews for Twitter links
 
 ## [Unreleased (patch)]
 
@@ -215,7 +220,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `pleroma.thread_muted` to the Status entity
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
 - Mastodon API, streaming: Add `pleroma.direct_conversation_id` to the `conversation` stream event payload.
-- Mastodon API: Add `pleroma.unread_count` to the Marker entity
 - Admin API: Render whole status in grouped reports
 - Mastodon API: User timelines will now respect blocks, unless you are getting the user timeline of somebody you blocked (which would be empty otherwise).
 - Mastodon API: Favoriting / Repeating a post multiple times will now return the identical response every time. Before, executing that action twice would return an error ("already favorited") on the second try.
