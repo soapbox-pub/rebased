@@ -19,6 +19,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator do
     field(:to, ObjectValidators.Recipients, default: [])
     field(:cc, ObjectValidators.Recipients, default: [])
     field(:object, ObjectValidators.ObjectID)
+    field(:state, :string, default: "pending")
   end
 
   def cast_data(data) do
@@ -30,6 +31,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.FollowValidator do
     cng
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_inclusion(:type, ["Follow"])
+    |> validate_inclusion(:state, ~w{pending reject accept})
     |> validate_actor_presence()
     |> validate_actor_presence(field_name: :object)
   end
