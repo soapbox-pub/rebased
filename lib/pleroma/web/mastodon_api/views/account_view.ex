@@ -205,12 +205,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       end
 
     favicon =
-      user
-      |> Map.get(:ap_id, "")
-      |> URI.parse()
-      |> URI.merge("/")
-      |> Pleroma.Instances.Instance.get_or_update_favicon()
-      |> MediaProxy.url()
+      if Pleroma.Config.get([:instances_favicons, :enabled]) do
+        user
+        |> Map.get(:ap_id, "")
+        |> URI.parse()
+        |> URI.merge("/")
+        |> Pleroma.Instances.Instance.get_or_update_favicon()
+        |> MediaProxy.url()
+      else
+        nil
+      end
 
     %{
       id: to_string(user.id),
