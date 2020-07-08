@@ -203,14 +203,23 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       security: [%{"oAuth" => ["follow", "write:follows"]}],
       description: "Follow the given account",
       parameters: [
-        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
-        Operation.parameter(
-          :reblogs,
-          :query,
-          BooleanLike,
-          "Receive this account's reblogs in home timeline? Defaults to true."
-        )
+        %Reference{"$ref": "#/components/parameters/accountIdOrNickname"}
       ],
+      requestBody:
+        request_body(
+          "Parameters",
+          %Schema{
+            type: :object,
+            properties: %{
+              reblogs: %Schema{
+                type: :boolean,
+                description: "Receive this account's reblogs in home timeline? Defaults to true.",
+                default: true
+              }
+            }
+          },
+          required: false
+        ),
       responses: %{
         200 => Operation.response("Relationship", "application/json", AccountRelationship),
         400 => Operation.response("Error", "application/json", ApiError),
