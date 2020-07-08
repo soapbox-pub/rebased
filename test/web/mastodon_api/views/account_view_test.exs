@@ -372,6 +372,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       user = insert(:user, hide_followers: true, hide_follows: true)
       other_user = insert(:user)
       {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
+
+      assert User.following?(user, other_user)
+      assert Pleroma.FollowingRelationship.follower_count(other_user) == 1
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
       assert %{

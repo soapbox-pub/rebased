@@ -44,6 +44,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       if followed.local && !followed.locked do
         Utils.update_follow_state_for_all(object, "accept")
         FollowingRelationship.update(follower, followed, :follow_accept)
+        User.update_follower_count(followed)
+        User.update_following_count(follower)
 
         %{
           to: [following_user],
@@ -78,7 +80,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       meta
       |> add_notifications(notifications)
 
-    {:ok, object, meta}
+    updated_object = Activity.get_by_ap_id(follow_id)
+
+    {:ok, updated_object, meta}
   end
 
   # Tasks this handles:
