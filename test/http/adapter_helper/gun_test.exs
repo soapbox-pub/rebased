@@ -21,7 +21,6 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
 
       opts = Gun.options([receive_conn: false], uri)
       assert opts[:certificates_verification]
-      assert opts[:tls_opts][:log_level] == :warning
     end
 
     test "https ipv4 with default port" do
@@ -29,7 +28,6 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
 
       opts = Gun.options([receive_conn: false], uri)
       assert opts[:certificates_verification]
-      assert opts[:tls_opts][:log_level] == :warning
     end
 
     test "https ipv6 with default port" do
@@ -37,7 +35,6 @@ defmodule Pleroma.HTTP.AdapterHelper.GunTest do
 
       opts = Gun.options([receive_conn: false], uri)
       assert opts[:certificates_verification]
-      assert opts[:tls_opts][:log_level] == :warning
     end
 
     test "https url with non standart port" do
