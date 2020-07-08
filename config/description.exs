@@ -1791,15 +1791,20 @@ config :pleroma, :config_description, [
       },
       %{
         key: :headers,
-        type: {:list, :tuple},
-        description: "HTTP headers of request.",
+        type: {:keyword, :string},
+        description: "HTTP headers of request",
         suggestions: [{"x-refresh", 1}]
       },
       %{
         key: :options,
         type: :keyword,
-        description: "Request options.",
-        suggestions: [params: %{ts: "xxx"}]
+        description: "Request options",
+        children: [
+          %{
+            key: :params,
+            type: {:keyword, :string}
+          }
+        ]
       }
     ]
   },
