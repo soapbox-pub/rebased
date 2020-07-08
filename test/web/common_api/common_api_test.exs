@@ -934,6 +934,15 @@ defmodule Pleroma.Web.CommonAPITest do
     end
   end
 
+  describe "follow/2" do
+    test "directly follows a non-locked local user" do
+      [follower, followed] = insert_pair(:user)
+      {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
+
+      assert User.following?(follower, followed)
+    end
+  end
+
   describe "unfollow/2" do
     test "also unsubscribes a user" do
       [follower, followed] = insert_pair(:user)
@@ -998,9 +1007,9 @@ defmodule Pleroma.Web.CommonAPITest do
       follower = insert(:user)
       follower_two = insert(:user)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, user)
-      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
-      {:ok, follow_activity_three} = ActivityPub.follow(follower_two, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_three} = CommonAPI.follow(follower_two, user)
 
       assert follow_activity.data["state"] == "pending"
       assert follow_activity_two.data["state"] == "pending"
@@ -1018,9 +1027,9 @@ defmodule Pleroma.Web.CommonAPITest do
       follower = insert(:user)
       follower_two = insert(:user)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, user)
-      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
-      {:ok, follow_activity_three} = ActivityPub.follow(follower_two, user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_two} = CommonAPI.follow(follower, user)
+      {:ok, _, _, follow_activity_three} = CommonAPI.follow(follower_two, user)
 
       assert follow_activity.data["state"] == "pending"
       assert follow_activity_two.data["state"] == "pending"
