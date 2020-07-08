@@ -498,6 +498,7 @@ config :pleroma, :config_description, [
           "dat",
           "dweb",
           "gopher",
+          "hyper",
           "ipfs",
           "ipns",
           "irc",
@@ -699,8 +700,9 @@ config :pleroma, :config_description, [
         key: :public,
         type: :boolean,
         description:
-          "Makes the client API in authentificated mode-only except for user-profiles." <>
-            " Useful for disabling the Local Timeline and The Whole Known Network."
+          "Makes the client API in authenticated mode-only except for user-profiles." <>
+            " Useful for disabling the Local Timeline and The Whole Known Network. " <>
+            " Note: when setting to `false`, please also check `:restrict_unauthenticated` setting."
       },
       %{
         key: :quarantined_instances,

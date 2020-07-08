@@ -324,6 +324,44 @@ defmodule Pleroma.NotificationTest do
       {:ok, status} = CommonAPI.post(author, %{status: "hey @#{user.nickname}"})
       refute Notification.create_notification(status, user)
     end
+
+    test "it doesn't create notifications if content matches with an irreversible filter" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      User.subscribe(subscriber, user)
+      insert(:filter, user: subscriber, phrase: "cofe", hide: true)
+
+      {:ok, status} = CommonAPI.post(user, %{status: "got cofe?"})
+
+      assert {:ok, []} == Notification.create_notifications(status)
+    end
+
+    test "it creates notifications if content matches with a not irreversible filter" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      User.subscribe(subscriber, user)
+      insert(:filter, user: subscriber, phrase: "cofe", hide: false)
+
+      {:ok, status} = CommonAPI.post(user, %{status: "got cofe?"})
+      {:ok, [notification]} = Notification.create_notifications(status)
+
+      assert notification
+    end
+
+    test "it creates notifications when someone likes user's status with a filtered word" do
+      user = insert(:user)
+      other_user = insert(:user)
+      insert(:filter, user: user, phrase: "tesla", hide: true)
+
+      {:ok, activity_one} = CommonAPI.post(user, %{status: "wow tesla"})
+      {:ok, activity_two} = CommonAPI.favorite(other_user, activity_one.id)
+
+      {:ok, [notification]} = Notification.create_notifications(activity_two)
+
+      assert notification
+    end
   end
 
   describe "follow / follow_request notifications" do
@@ -990,8 +1028,13 @@ defmodule Pleroma.NotificationTest do
   end
 
   describe "for_user" do
-    test "it returns notifications for muted user without notifications" do
+    setup do
       user = insert(:user)
+
+      {:ok, %{user: user}}
+    end
+
+    test "it returns notifications for muted user without notifications", %{user: user} do
       muted = insert(:user)
       {:ok, _user_relationships} = User.mute(user, muted, false)
 
@@ -1002,8 +1045,7 @@ defmodule Pleroma.NotificationTest do
       assert notification.activity.object
     end
 
-    test "it doesn't return notifications for muted user with notifications" do
-      user = insert(:user)
+    test "it doesn't return notifications for muted user with notifications", %{user: user} do
       muted = insert(:user)
       {:ok, _user_relationships} = User.mute(user, muted)
 
@@ -1012,8 +1054,7 @@ defmodule Pleroma.NotificationTest do
       assert Notification.for_user(user) == []
     end
 
-    test "it doesn't return notifications for blocked user" do
-      user = insert(:user)
+    test "it doesn't return notifications for blocked user", %{user: user} do
       blocked = insert(:user)
       {:ok, _user_relationship} = User.block(user, blocked)
 
@@ -1022,8 +1063,7 @@ defmodule Pleroma.NotificationTest do
       assert Notification.for_user(user) == []
     end
 
-    test "it doesn't return notifications for domain-blocked non-followed user" do
-      user = insert(:user)
+    test "it doesn't return notifications for domain-blocked non-followed user", %{user: user} do
       blocked = insert(:user, ap_id: "http://some-domain.com")
       {:ok, user} = User.block_domain(user, "some-domain.com")
 
@@ -1044,8 +1084,7 @@ defmodule Pleroma.NotificationTest do
       assert length(Notification.for_user(user)) == 1
     end
 
-    test "it doesn't return notifications for muted thread" do
-      user = insert(:user)
+    test "it doesn't return notifications for muted thread", %{user: user} do
       another_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(another_user, %{status: "hey @#{user.nickname}"})
@@ -1054,8 +1093,7 @@ defmodule Pleroma.NotificationTest do
       assert Notification.for_user(user) == []
     end
 
-    test "it returns notifications from a muted user when with_muted is set" do
-      user = insert(:user)
+    test "it returns notifications from a muted user when with_muted is set", %{user: user} do
       muted = insert(:user)
       {:ok, _user_relationships} = User.mute(user, muted)
 
@@ -1064,8 +1102,9 @@ defmodule Pleroma.NotificationTest do
       assert length(Notification.for_user(user, %{with_muted: true})) == 1
     end
 
-    test "it doesn't return notifications from a blocked user when with_muted is set" do
-      user = insert(:user)
+    test "it doesn't return notifications from a blocked user when with_muted is set", %{
+      user: user
+    } do
       blocked = insert(:user)
       {:ok, _user_relationship} = User.block(user, blocked)
 
@@ -1075,8 +1114,8 @@ defmodule Pleroma.NotificationTest do
     end
 
     test "when with_muted is set, " <>
-           "it doesn't return notifications from a domain-blocked non-followed user" do
-      user = insert(:user)
+           "it doesn't return notifications from a domain-blocked non-followed user",
+         %{user: user} do
       blocked = insert(:user, ap_id: "http://some-domain.com")
       {:ok, user} = User.block_domain(user, "some-domain.com")
 
@@ -1085,14 +1124,41 @@ defmodule Pleroma.NotificationTest do
       assert Enum.empty?(Notification.for_user(user, %{with_muted: true}))
     end
 
-    test "it returns notifications from muted threads when with_muted is set" do
-      user = insert(:user)
+    test "it returns notifications from muted threads when with_muted is set", %{user: user} do
       another_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(another_user, %{status: "hey @#{user.nickname}"})
 
       {:ok, _} = Pleroma.ThreadMute.add_mute(user.id, activity.data["context"])
       assert length(Notification.for_user(user, %{with_muted: true})) == 1
+    end
+
+    test "it doesn't return notifications about mentions with filtered word", %{user: user} do
+      insert(:filter, user: user, phrase: "cofe", hide: true)
+      another_user = insert(:user)
+
+      {:ok, _activity} = CommonAPI.post(another_user, %{status: "@#{user.nickname} got cofe?"})
+
+      assert Enum.empty?(Notification.for_user(user))
+    end
+
+    test "it returns notifications about mentions with not hidden filtered word", %{user: user} do
+      insert(:filter, user: user, phrase: "test", hide: false)
+      another_user = insert(:user)
+
+      {:ok, _} = CommonAPI.post(another_user, %{status: "@#{user.nickname} test"})
+
+      assert length(Notification.for_user(user)) == 1
+    end
+
+    test "it returns notifications about favorites with filtered word", %{user: user} do
+      insert(:filter, user: user, phrase: "cofe", hide: true)
+      another_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{status: "Give me my cofe!"})
+      {:ok, _} = CommonAPI.favorite(another_user, activity.id)
+
+      assert length(Notification.for_user(user)) == 1
     end
   end
 end

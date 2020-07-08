@@ -233,18 +233,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
             is_map(url) && is_binary(url["href"]) -> url["href"]
             is_binary(data["url"]) -> data["url"]
             is_binary(data["href"]) -> data["href"]
+            true -> nil
           end
 
-        attachment_url =
-          %{"href" => href}
-          |> Maps.put_if_present("mediaType", media_type)
-          |> Maps.put_if_present("type", Map.get(url || %{}, "type"))
+        if href do
+          attachment_url =
+            %{"href" => href}
+            |> Maps.put_if_present("mediaType", media_type)
+            |> Maps.put_if_present("type", Map.get(url || %{}, "type"))
 
-        %{"url" => [attachment_url]}
-        |> Maps.put_if_present("mediaType", media_type)
-        |> Maps.put_if_present("type", data["type"])
-        |> Maps.put_if_present("name", data["name"])
+          %{"url" => [attachment_url]}
+          |> Maps.put_if_present("mediaType", media_type)
+          |> Maps.put_if_present("type", data["type"])
+          |> Maps.put_if_present("name", data["name"])
+        else
+          nil
+        end
       end)
+      |> Enum.filter(& &1)
 
     Map.put(object, "attachment", attachments)
   end
@@ -263,12 +269,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_url(%{"type" => object_type, "url" => url} = object)
       when object_type in ["Video", "Audio"] and is_list(url) do
-    first_element = Enum.at(url, 0)
+    attachment =
+      Enum.find(url, fn x ->
+        media_type = x["mediaType"] || x["mimeType"] || ""
 
-    link_element = Enum.find(url, fn x -> is_map(x) and x["mimeType"] == "text/html" end)
+        is_map(x) and String.starts_with?(media_type, ["audio/", "video/"])
+      end)
+
+    link_element =
+      Enum.find(url, fn x -> is_map(x) and (x["mediaType"] || x["mimeType"]) == "text/html" end)
 
     object
-    |> Map.put("attachment", [first_element])
+    |> Map.put("attachment", [attachment])
     |> Map.put("url", link_element["href"])
   end
 

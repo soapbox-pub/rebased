@@ -32,7 +32,9 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "avatar_upload_limit" => _,
              "background_upload_limit" => _,
              "banner_upload_limit" => _,
-             "background_image" => _
+             "background_image" => _,
+             "chat_limit" => _,
+             "description_limit" => _
            } = result
 
     assert result["pleroma"]["metadata"]["account_activation_required"] != nil

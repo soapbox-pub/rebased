@@ -277,7 +277,9 @@
       "cGreen": "#008000",
       "cOrange": "#808000",
       "highlight": "--accent",
-      "selectedPost": "--bg,-10"
+      "selectedPost": "--bg,-10",
+      "selectedMenu": "--accent",
+      "selectedMenuPopover": "--accent"
     },
     "radii": {
       "btn": "0",

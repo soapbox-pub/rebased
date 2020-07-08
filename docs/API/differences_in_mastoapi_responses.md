@@ -182,9 +182,11 @@ Additional parameters can be added to the JSON body/Form data:
 - `pleroma_settings_store` - Opaque user settings to be saved on the backend.
 - `skip_thread_containment` - if true, skip filtering out broken threads
 - `allow_following_move` - if true, allows automatically follow moved following accounts
-- `pleroma_background_image` - sets the background image of the user.
+- `pleroma_background_image` - sets the background image of the user. Can be set to "" (an empty string) to reset.
 - `discoverable` - if true, discovery of this account in search results and other services is allowed.
 - `actor_type` - the type of this account.
+
+All images (avatar, banner and background) can be reset to the default by sending an empty string ("") instead of a file.
 
 ### Pleroma Settings Store
 
@@ -220,6 +222,8 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 `GET /api/v1/instance` has additional fields
 
 - `max_toot_chars`: The maximum characters per post
+- `chat_limit`: The maximum characters per chat message
+- `description_limit`: The maximum characters per image description
 - `poll_limits`: The limits of polls
 - `upload_limit`: The maximum upload file size
 - `avatar_upload_limit`: The same for avatars

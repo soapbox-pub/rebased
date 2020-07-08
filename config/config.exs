@@ -97,6 +97,7 @@ config :pleroma, :uri_schemes,
     "dat",
     "dweb",
     "gopher",
+    "hyper",
     "ipfs",
     "ipns",
     "irc",
@@ -188,6 +189,7 @@ config :pleroma, :instance,
   background_image: "/images/city.jpg",
   instance_thumbnail: "/instance/thumbnail.jpeg",
   limit: 5_000,
+  description_limit: 5_000,
   chat_limit: 5_000,
   remote_limit: 100_000,
   upload_limit: 16_000_000,
@@ -436,8 +438,7 @@ config :pleroma, Pleroma.Web.Metadata,
 
 config :pleroma, Pleroma.Web.Preload,
   providers: [
-    Pleroma.Web.Preload.Providers.Instance,
-    Pleroma.Web.Preload.Providers.StatusNet
+    Pleroma.Web.Preload.Providers.Instance
   ]
 
 config :pleroma, :http_security,
