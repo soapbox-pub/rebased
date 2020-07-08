@@ -28,9 +28,8 @@ defmodule Pleroma.Gun.Conn do
       cacertfile: CAStore.file_path(),
       depth: 20,
       reuse_sessions: false,
-      verify_fun:
-        {&:ssl_verify_hostname.verify_fun/3,
-         [check_hostname: Pleroma.HTTP.AdapterHelper.format_host(host)]}
+      log_level: :warning,
+      customize_hostname_check: [match_fun: :public_key.pkix_verify_hostname_match_fun(:https)]
     ]
 
     tls_opts =
