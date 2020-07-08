@@ -22,7 +22,7 @@ defmodule Pleroma.Gun.Conn do
 
   defp maybe_add_tls_opts(opts, %URI{scheme: "http"}), do: opts
 
-  defp maybe_add_tls_opts(opts, %URI{scheme: "https", host: host}) do
+  defp maybe_add_tls_opts(opts, %URI{scheme: "https"}) do
     tls_opts = [
       verify: :verify_peer,
       cacertfile: CAStore.file_path(),
