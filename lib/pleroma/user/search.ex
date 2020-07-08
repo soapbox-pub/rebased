@@ -88,15 +88,21 @@ defmodule Pleroma.User.Search do
     |> Enum.join(" | ")
   end
 
+  # Considers nickname match, localized nickname match, name match; preferences nickname match
   defp trigram_rank(query, query_string) do
     from(
       u in query,
       select_merge: %{
         search_rank:
           fragment(
-            "similarity(?, trim(? || ' ' || coalesce(?, '')))",
+            "similarity(?, ?) + \
+              similarity(?, regexp_replace(?, '@.+', '')) + \
+              similarity(?, trim(coalesce(?, '')))",
             ^query_string,
             u.nickname,
+            ^query_string,
+            u.nickname,
+            ^query_string,
             u.name
           )
       }
