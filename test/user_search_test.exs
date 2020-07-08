@@ -72,15 +72,11 @@ defmodule Pleroma.UserSearchTest do
       end)
     end
 
-    test "is not [yet] capable of matching by non-leading fragments (e.g. by domain)" do
-      user1 = insert(:user, %{nickname: "iamthedude"})
-      insert(:user, %{nickname: "arandom@dude.com"})
+    test "matches by leading fragment of user domain" do
+      user = insert(:user, %{nickname: "arandom@dude.com"})
+      insert(:user, %{nickname: "iamthedude"})
 
-      assert [] == User.search("dude")
-
-      # Matching by leading fragment works, though
-      user1_id = user1.id
-      assert ^user1_id = User.search("iam") |> List.first() |> Map.get(:id)
+      assert [user.id] == User.search("dud") |> Enum.map(& &1.id)
     end
 
     test "ranks full nickname match higher than full name match" do
