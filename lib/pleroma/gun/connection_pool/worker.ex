@@ -30,7 +30,8 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
        %{key: key, timer: nil, client_monitors: %{client_pid => Process.monitor(client_pid)}},
        :hibernate}
     else
-      err -> {:stop, err}
+      err ->
+        {:stop, err, nil}
     end
   end
 

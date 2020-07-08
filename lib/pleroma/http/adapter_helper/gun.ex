@@ -14,7 +14,7 @@ defmodule Pleroma.HTTP.AdapterHelper.Gun do
     connect_timeout: 5_000,
     domain_lookup_timeout: 5_000,
     tls_handshake_timeout: 5_000,
-    retry: 1,
+    retry: 0,
     retry_timeout: 1000,
     await_up_timeout: 5_000
   ]
