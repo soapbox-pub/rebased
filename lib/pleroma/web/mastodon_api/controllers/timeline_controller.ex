@@ -88,15 +88,12 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
     )
   end
 
-  defp restrict_unauthenticated?(local_only) do
-    config_key =
-      if local_only do
-        :local
-      else
-        :federated
-      end
+  defp restrict_unauthenticated?(_local_only = true) do
+    Pleroma.Config.get([:restrict_unauthenticated, :timelines, :local])
+  end
 
-    Pleroma.Config.get([:restrict_unauthenticated, :timelines, config_key])
+  defp restrict_unauthenticated?(_) do
+    Pleroma.Config.get([:restrict_unauthenticated, :timelines, :federated])
   end
 
   # GET /api/v1/timelines/public
