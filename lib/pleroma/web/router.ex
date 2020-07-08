@@ -328,10 +328,6 @@ defmodule Pleroma.Web.Router do
       delete("/statuses/:id/reactions/:emoji", EmojiReactionController, :delete)
       post("/notifications/read", NotificationController, :mark_as_read)
 
-      patch("/accounts/update_avatar", AccountController, :update_avatar)
-      patch("/accounts/update_banner", AccountController, :update_banner)
-      patch("/accounts/update_background", AccountController, :update_background)
-
       get("/mascot", MascotController, :show)
       put("/mascot", MascotController, :update)
 
