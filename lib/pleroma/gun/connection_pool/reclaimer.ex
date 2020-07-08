@@ -3,7 +3,7 @@ defmodule Pleroma.Gun.ConnectionPool.Reclaimer do
 
   @registry Pleroma.Gun.ConnectionPool
 
-  def start_monitor() do
+  def start_monitor do
     pid =
       case :gen_server.start(__MODULE__, [], name: {:via, Registry, {@registry, "reclaimer"}}) do
         {:ok, pid} ->
