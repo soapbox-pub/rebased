@@ -55,6 +55,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added `:reject_deletes` group to SimplePolicy
 - MRF (`EmojiStealPolicy`): New MRF Policy which allows to automatically download emojis from remote instances
 - Support pagination in emoji packs API (for packs and for files in pack)
+- Support for viewing instances favicons next to posts and accounts
 
 <details>
   <summary>API Changes</summary>
@@ -65,6 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add support for filtering replies in public and home timelines.
 - Mastodon API: Support for `bot` field in `/api/v1/accounts/update_credentials`.
 - Mastodon API: Support irreversible property for filters.
+- Mastodon API: Add pleroma.favicon field to accounts.
 - Admin API: endpoints for create/update/delete OAuth Apps.
 - Admin API: endpoint for status view.
 - OTP: Add command to reload emoji packs
