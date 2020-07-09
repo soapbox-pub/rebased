@@ -183,7 +183,6 @@ img.emoji {
 }
 
 .display-name img.emoji {
-  width: 16px;
-  height: 16px;
+  width: 1em;
 }
 
