@@ -98,7 +98,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   @impl true
   def describe do
     mrf_object_age =
-      Pleroma.Config.get(:mrf_object_age)
+      Config.get(:mrf_object_age)
       |> Enum.into(%{})
 
     {:ok, %{mrf_object_age: mrf_object_age}}
