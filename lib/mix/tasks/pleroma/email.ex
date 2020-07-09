@@ -7,7 +7,6 @@ defmodule Mix.Tasks.Pleroma.Email do
 
   def run(["test" | args]) do
     Mix.Pleroma.start_pleroma()
-    Application.ensure_all_started(:swoosh)
 
     {options, [], []} =
       OptionParser.parse(

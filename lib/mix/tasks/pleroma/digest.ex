@@ -7,8 +7,6 @@ defmodule Mix.Tasks.Pleroma.Digest do
 
   def run(["test", nickname | opts]) do
     Mix.Pleroma.start_pleroma()
-    Application.ensure_all_started(:timex)
-    Application.ensure_all_started(:swoosh)
 
     user = Pleroma.User.get_by_nickname(nickname)
 

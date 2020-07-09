@@ -3,8 +3,18 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Pleroma do
-  @apps [:restarter, :ecto, :ecto_sql, :postgrex, :db_connection, :cachex]
-  @cachex_childs ["object", "user"]
+  @apps [
+    :restarter,
+    :ecto,
+    :ecto_sql,
+    :postgrex,
+    :db_connection,
+    :cachex,
+    :flake_id,
+    :swoosh,
+    :timex
+  ]
+  @cachex_children ["object", "user"]
   @doc "Common functions to be reused in mix tasks"
   def start_pleroma do
     Pleroma.Config.Holder.save_default()
@@ -23,15 +33,15 @@ defmodule Mix.Pleroma do
 
     Enum.each(apps, &Application.ensure_all_started/1)
 
-    childs = [
+    children = [
       Pleroma.Repo,
       {Pleroma.Config.TransferTask, false},
       Pleroma.Web.Endpoint
     ]
 
-    cachex_childs = Enum.map(@cachex_childs, &Pleroma.Application.build_cachex(&1, []))
+    cachex_children = Enum.map(@cachex_children, &Pleroma.Application.build_cachex(&1, []))
 
-    Supervisor.start_link(childs ++ cachex_childs,
+    Supervisor.start_link(children ++ cachex_children,
       strategy: :one_for_one,
       name: Pleroma.Supervisor
     )
