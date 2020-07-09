@@ -80,6 +80,7 @@ header a:hover, .h-card a:hover {
 /* keep emoji from being hilariously huge */
 .display-name img {
     max-height: 1em;
+    max-width: 1em;
 }
 
 .display-name .nickname {
