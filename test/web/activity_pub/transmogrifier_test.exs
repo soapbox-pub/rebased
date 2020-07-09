@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Object.Fetcher
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
@@ -452,7 +451,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, follower} = User.follow(follower, followed)
       assert User.following?(follower, followed) == true
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -482,7 +481,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = insert(:user)
       followed = insert(:user, locked: true)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -504,7 +503,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = insert(:user)
       followed = insert(:user, locked: true)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -569,7 +568,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       followed = insert(:user, locked: true)
 
       {:ok, follower} = User.follow(follower, followed)
-      {:ok, _follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, followed)
 
       assert User.following?(follower, followed) == true
 
@@ -595,7 +594,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       followed = insert(:user, locked: true)
 
       {:ok, follower} = User.follow(follower, followed)
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       assert User.following?(follower, followed) == true
 

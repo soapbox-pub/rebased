@@ -1543,7 +1543,7 @@ defmodule Pleroma.User do
       fn followed_identifier ->
         with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
              {:ok, follower} <- maybe_direct_follow(follower, followed),
-             {:ok, _} <- ActivityPub.follow(follower, followed) do
+             {:ok, _, _, _} <- CommonAPI.follow(follower, followed) do
           followed
         else
           err ->
