@@ -124,16 +124,9 @@ defmodule Mix.Tasks.Pleroma.UserTest do
           Keyword.put(meta, :local, true)
         )
 
-      like_obj = Pleroma.Object.get_by_ap_id(like_activity.data["object"])
-
-      data =
-        Map.merge(like_activity.data, %{"object" => "tag:gnusocial.cc,2019-01-09:noticeId=210716"})
-
-      like_activity
-      |> Ecto.Changeset.change(data: data)
-      |> Repo.update()
-
-      Repo.delete(like_obj)
+      like_activity.data["object"]
+      |> Pleroma.Object.get_by_ap_id()
+      |> Repo.delete()
 
       clear_config([:instance, :federating], true)
 
