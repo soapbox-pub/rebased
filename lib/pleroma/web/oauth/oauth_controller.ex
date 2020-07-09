@@ -17,6 +17,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.MFAController
+  alias Pleroma.Web.OAuth.MFAView
+  alias Pleroma.Web.OAuth.OAuthView
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
@@ -233,9 +235,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
          {:ok, %{user: user} = token} <- Token.get_by_refresh_token(app, token),
          {:ok, token} <- RefreshToken.grant(token) do
-      response_attrs = %{created_at: Token.Utils.format_created_at(token)}
-
-      json(conn, Token.Response.build(user, token, response_attrs))
+      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
     else
       _error -> render_invalid_credentials_error(conn)
     end
@@ -247,9 +247,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:ok, auth} <- Authorization.get_by_token(app, fixed_token),
          %User{} = user <- User.get_cached_by_id(auth.user_id),
          {:ok, token} <- Token.exchange_token(app, auth) do
-      response_attrs = %{created_at: Token.Utils.format_created_at(token)}
-
-      json(conn, Token.Response.build(user, token, response_attrs))
+      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
     else
       error ->
         handle_token_exchange_error(conn, error)
@@ -267,7 +265,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:mfa_required, _, _, false} <- {:mfa_required, user, auth, MFA.require?(user)},
          {:ok, token} <- Token.exchange_token(app, auth) do
-      json(conn, Token.Response.build(user, token))
+      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
     else
       error ->
         handle_token_exchange_error(conn, error)
@@ -290,7 +288,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
          {:ok, auth} <- Authorization.create_authorization(app, %User{}),
          {:ok, token} <- Token.exchange_token(app, auth) do
-      json(conn, Token.Response.build_for_client_credentials(token))
+      json(conn, OAuthView.render("token.json", %{token: token}))
     else
       _error ->
         handle_token_exchange_error(conn, :invalid_credentails)
@@ -548,7 +546,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   defp build_and_response_mfa_token(user, auth) do
     with {:ok, token} <- MFA.Token.create_token(user, auth) do
-      Token.Response.build_for_mfa_token(user, token)
+      MFAView.render("mfa_response.json", %{token: token, user: user})
     end
   end
 
