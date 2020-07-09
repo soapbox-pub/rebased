@@ -353,7 +353,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     {:error, "Can not follow yourself"}
   end
 
-  def follow(%{assigns: %{user: follower, account: followed}} = conn, params) do
+  def follow(%{body_params: params, assigns: %{user: follower, account: followed}} = conn, _) do
     with {:ok, follower} <- MastodonAPI.follow(follower, followed, params) do
       render(conn, "relationship.json", user: follower, target: followed)
     else
