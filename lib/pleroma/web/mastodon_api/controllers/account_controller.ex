@@ -27,6 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.OAuth.OAuthView
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
@@ -101,12 +102,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
          :ok <- TwitterAPI.validate_captcha(app, params),
          {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
          {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
-      json(conn, %{
-        token_type: "Bearer",
-        access_token: token.token,
-        scope: app.scopes,
-        created_at: Token.Utils.format_created_at(token)
-      })
+      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
     else
       {:error, error} -> json_response(conn, :bad_request, %{error: error})
     end
@@ -148,6 +144,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Enum.filter(fn {_, value} -> not is_nil(value) end)
       |> Enum.into(%{})
 
+    # We use an empty string as a special value to reset
+    # avatars, banners, backgrounds
+    user_image_value = fn
+      "" -> {:ok, nil}
+      value -> {:ok, value}
+    end
+
     user_params =
       [
         :no_rich_text,
@@ -168,9 +171,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:name, params[:display_name])
       |> Maps.put_if_present(:bio, params[:note])
       |> Maps.put_if_present(:raw_bio, params[:note])
-      |> Maps.put_if_present(:avatar, params[:avatar])
-      |> Maps.put_if_present(:banner, params[:header])
-      |> Maps.put_if_present(:background, params[:pleroma_background_image])
+      |> Maps.put_if_present(:avatar, params[:avatar], user_image_value)
+      |> Maps.put_if_present(:banner, params[:header], user_image_value)
+      |> Maps.put_if_present(:background, params[:pleroma_background_image], user_image_value)
       |> Maps.put_if_present(
         :raw_fields,
         params[:fields_attributes],
@@ -346,7 +349,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     {:error, "Can not follow yourself"}
   end
 
-  def follow(%{assigns: %{user: follower, account: followed}} = conn, params) do
+  def follow(%{body_params: params, assigns: %{user: follower, account: followed}} = conn, _) do
     with {:ok, follower} <- MastodonAPI.follow(follower, followed, params) do
       render(conn, "relationship.json", user: follower, target: followed)
     else

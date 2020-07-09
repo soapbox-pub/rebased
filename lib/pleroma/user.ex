@@ -89,7 +89,7 @@ defmodule Pleroma.User do
     field(:keys, :string)
     field(:public_key, :string)
     field(:ap_id, :string)
-    field(:avatar, :map)
+    field(:avatar, :map, default: %{})
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
     field(:following_address, :string)
@@ -539,14 +539,11 @@ defmodule Pleroma.User do
   end
 
   defp put_change_if_present(changeset, map_field, value_function) do
-    if value = get_change(changeset, map_field) do
-      with {:ok, new_value} <- value_function.(value) do
-        put_change(changeset, map_field, new_value)
-      else
-        _ -> changeset
-      end
+    with {:ok, value} <- fetch_change(changeset, map_field),
+         {:ok, new_value} <- value_function.(value) do
+      put_change(changeset, map_field, new_value)
     else
-      changeset
+      _ -> changeset
     end
   end
 
@@ -1546,7 +1543,7 @@ defmodule Pleroma.User do
       fn followed_identifier ->
         with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
              {:ok, follower} <- maybe_direct_follow(follower, followed),
-             {:ok, _} <- ActivityPub.follow(follower, followed) do
+             {:ok, _, _, _} <- CommonAPI.follow(follower, followed) do
           followed
         else
           err ->

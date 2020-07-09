@@ -110,7 +110,23 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
     test "a remote user's create activity is deleted when the object has been pruned" do
       user = insert(:user)
+      user2 = insert(:user)
+
       {:ok, post} = CommonAPI.post(user, %{status: "uguu"})
+      {:ok, post2} = CommonAPI.post(user2, %{status: "test"})
+      obj = Object.normalize(post2)
+
+      {:ok, like_object, meta} = Pleroma.Web.ActivityPub.Builder.like(user, obj)
+
+      {:ok, like_activity, _meta} =
+        Pleroma.Web.ActivityPub.Pipeline.common_pipeline(
+          like_object,
+          Keyword.put(meta, :local, true)
+        )
+
+      like_activity.data["object"]
+      |> Pleroma.Object.get_by_ap_id()
+      |> Repo.delete()
 
       clear_config([:instance, :federating], true)
 
@@ -127,6 +143,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
         assert %{deactivated: true} = User.get_by_nickname(user.nickname)
 
         assert called(Pleroma.Web.Federator.publish(:_))
+        refute Pleroma.Repo.get(Pleroma.Activity, like_activity.id)
       end
 
       refute Activity.get_by_id(post.id)

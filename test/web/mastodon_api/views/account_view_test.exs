@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.UserRelationship
   alias Pleroma.Web.CommonAPI
@@ -17,6 +18,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
+
+  setup do: clear_config([:instances_favicons, :enabled])
 
   test "Represent a user account" do
     background_image = %{
@@ -75,6 +78,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       pleroma: %{
         ap_id: user.ap_id,
         background_image: "https://example.com/images/asuka_hospital.png",
+        favicon:
+          "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png",
         confirmation_pending: false,
         tags: [],
         is_admin: false,
@@ -90,6 +95,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     }
 
     assert expected == AccountView.render("show.json", %{user: user})
+  end
+
+  test "Favicon is nil when :instances_favicons is disabled" do
+    user = insert(:user)
+
+    Config.put([:instances_favicons, :enabled], true)
+
+    assert %{
+             pleroma: %{
+               favicon:
+                 "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png"
+             }
+           } = AccountView.render("show.json", %{user: user})
+
+    Config.put([:instances_favicons, :enabled], false)
+
+    assert %{pleroma: %{favicon: nil}} = AccountView.render("show.json", %{user: user})
   end
 
   test "Represent the user account for the account owner" do
@@ -152,6 +174,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       pleroma: %{
         ap_id: user.ap_id,
         background_image: nil,
+        favicon:
+          "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png",
         confirmation_pending: false,
         tags: [],
         is_admin: false,
@@ -372,6 +396,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       user = insert(:user, hide_followers: true, hide_follows: true)
       other_user = insert(:user)
       {:ok, user, other_user, _activity} = CommonAPI.follow(user, other_user)
+
+      assert User.following?(user, other_user)
+      assert Pleroma.FollowingRelationship.follower_count(other_user) == 1
       {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
 
       assert %{

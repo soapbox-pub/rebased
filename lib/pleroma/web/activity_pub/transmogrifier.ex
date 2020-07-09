@@ -233,18 +233,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
             is_map(url) && is_binary(url["href"]) -> url["href"]
             is_binary(data["url"]) -> data["url"]
             is_binary(data["href"]) -> data["href"]
+            true -> nil
           end
 
-        attachment_url =
-          %{"href" => href}
-          |> Maps.put_if_present("mediaType", media_type)
-          |> Maps.put_if_present("type", Map.get(url || %{}, "type"))
+        if href do
+          attachment_url =
+            %{"href" => href}
+            |> Maps.put_if_present("mediaType", media_type)
+            |> Maps.put_if_present("type", Map.get(url || %{}, "type"))
 
-        %{"url" => [attachment_url]}
-        |> Maps.put_if_present("mediaType", media_type)
-        |> Maps.put_if_present("type", data["type"])
-        |> Maps.put_if_present("name", data["name"])
+          %{"url" => [attachment_url]}
+          |> Maps.put_if_present("mediaType", media_type)
+          |> Maps.put_if_present("type", data["type"])
+          |> Maps.put_if_present("name", data["name"])
+        else
+          nil
+        end
       end)
+      |> Enum.filter(& &1)
 
     Map.put(object, "attachment", attachments)
   end
@@ -263,12 +269,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_url(%{"type" => object_type, "url" => url} = object)
       when object_type in ["Video", "Audio"] and is_list(url) do
-    first_element = Enum.at(url, 0)
+    attachment =
+      Enum.find(url, fn x ->
+        media_type = x["mediaType"] || x["mimeType"] || ""
 
-    link_element = Enum.find(url, fn x -> is_map(x) and x["mimeType"] == "text/html" end)
+        is_map(x) and String.starts_with?(media_type, ["audio/", "video/"])
+      end)
+
+    link_element =
+      Enum.find(url, fn x -> is_map(x) and (x["mediaType"] || x["mimeType"]) == "text/html" end)
 
     object
-    |> Map.put("attachment", [first_element])
+    |> Map.put("attachment", [attachment])
     |> Map.put("url", link_element["href"])
   end
 
@@ -518,66 +530,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Follow", "object" => followed, "actor" => follower, "id" => id} = data,
-        _options
-      ) do
-    with %User{local: true} = followed <-
-           User.get_cached_by_ap_id(Containment.get_actor(%{"actor" => followed})),
-         {:ok, %User{} = follower} <-
-           User.get_or_fetch_by_ap_id(Containment.get_actor(%{"actor" => follower})),
-         {:ok, activity} <-
-           ActivityPub.follow(follower, followed, id, false, skip_notify_and_stream: true) do
-      with deny_follow_blocked <- Pleroma.Config.get([:user, :deny_follow_blocked]),
-           {_, false} <- {:user_blocked, User.blocks?(followed, follower) && deny_follow_blocked},
-           {_, false} <- {:user_locked, User.locked?(followed)},
-           {_, {:ok, follower}} <- {:follow, User.follow(follower, followed)},
-           {_, {:ok, _}} <-
-             {:follow_state_update, Utils.update_follow_state_for_all(activity, "accept")},
-           {:ok, _relationship} <-
-             FollowingRelationship.update(follower, followed, :follow_accept) do
-        ActivityPub.accept(%{
-          to: [follower.ap_id],
-          actor: followed,
-          object: data,
-          local: true
-        })
-      else
-        {:user_blocked, true} ->
-          {:ok, _} = Utils.update_follow_state_for_all(activity, "reject")
-          {:ok, _relationship} = FollowingRelationship.update(follower, followed, :follow_reject)
-
-          ActivityPub.reject(%{
-            to: [follower.ap_id],
-            actor: followed,
-            object: data,
-            local: true
-          })
-
-        {:follow, {:error, _}} ->
-          {:ok, _} = Utils.update_follow_state_for_all(activity, "reject")
-          {:ok, _relationship} = FollowingRelationship.update(follower, followed, :follow_reject)
-
-          ActivityPub.reject(%{
-            to: [follower.ap_id],
-            actor: followed,
-            object: data,
-            local: true
-          })
-
-        {:user_locked, true} ->
-          {:ok, _relationship} = FollowingRelationship.update(follower, followed, :follow_pending)
-          :noop
-      end
-
-      ActivityPub.notify_and_stream(activity)
-      {:ok, activity}
-    else
-      _e ->
-        :error
-    end
-  end
-
-  def handle_incoming(
         %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => id} = data,
         _options
       ) do
@@ -684,7 +636,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => type} = data,
         _options
       )
-      when type in ~w{Update Block} do
+      when type in ~w{Update Block Follow} do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}

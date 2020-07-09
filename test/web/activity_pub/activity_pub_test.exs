@@ -507,6 +507,33 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activities = ActivityPub.fetch_activities_for_context("2hu", %{blocking_user: user})
       assert activities == [activity_two, activity]
     end
+
+    test "doesn't return activities with filtered words" do
+      user = insert(:user)
+      user_two = insert(:user)
+      insert(:filter, user: user, phrase: "test", hide: true)
+
+      {:ok, %{id: id1, data: %{"context" => context}}} = CommonAPI.post(user, %{status: "1"})
+
+      {:ok, %{id: id2}} = CommonAPI.post(user_two, %{status: "2", in_reply_to_status_id: id1})
+
+      {:ok, %{id: id3} = user_activity} =
+        CommonAPI.post(user, %{status: "3 test?", in_reply_to_status_id: id2})
+
+      {:ok, %{id: id4} = filtered_activity} =
+        CommonAPI.post(user_two, %{status: "4 test!", in_reply_to_status_id: id3})
+
+      {:ok, _} = CommonAPI.post(user, %{status: "5", in_reply_to_status_id: id4})
+
+      activities =
+        context
+        |> ActivityPub.fetch_activities_for_context(%{user: user})
+        |> Enum.map(& &1.id)
+
+      assert length(activities) == 4
+      assert user_activity.id in activities
+      refute filtered_activity.id in activities
+    end
   end
 
   test "doesn't return blocked activities" do
@@ -642,7 +669,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute activity in activities
 
     followed_user = insert(:user)
-    ActivityPub.follow(user, followed_user)
+    CommonAPI.follow(user, followed_user)
     {:ok, repeat_activity} = CommonAPI.repeat(activity.id, followed_user)
 
     activities = ActivityPub.fetch_activities([], %{blocking_user: user, skip_preload: true})
@@ -785,6 +812,75 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert activity == expected_activity
   end
 
+  describe "irreversible filters" do
+    setup do
+      user = insert(:user)
+      user_two = insert(:user)
+
+      insert(:filter, user: user_two, phrase: "cofe", hide: true)
+      insert(:filter, user: user_two, phrase: "ok boomer", hide: true)
+      insert(:filter, user: user_two, phrase: "test", hide: false)
+
+      params = %{
+        type: ["Create", "Announce"],
+        user: user_two
+      }
+
+      {:ok, %{user: user, user_two: user_two, params: params}}
+    end
+
+    test "it returns statuses if they don't contain exact filter words", %{
+      user: user,
+      params: params
+    } do
+      {:ok, _} = CommonAPI.post(user, %{status: "hey"})
+      {:ok, _} = CommonAPI.post(user, %{status: "got cofefe?"})
+      {:ok, _} = CommonAPI.post(user, %{status: "I am not a boomer"})
+      {:ok, _} = CommonAPI.post(user, %{status: "ok boomers"})
+      {:ok, _} = CommonAPI.post(user, %{status: "ccofee is not a word"})
+      {:ok, _} = CommonAPI.post(user, %{status: "this is a test"})
+
+      activities = ActivityPub.fetch_activities([], params)
+
+      assert Enum.count(activities) == 6
+    end
+
+    test "it does not filter user's own statuses", %{user_two: user_two, params: params} do
+      {:ok, _} = CommonAPI.post(user_two, %{status: "Give me some cofe!"})
+      {:ok, _} = CommonAPI.post(user_two, %{status: "ok boomer"})
+
+      activities = ActivityPub.fetch_activities([], params)
+
+      assert Enum.count(activities) == 2
+    end
+
+    test "it excludes statuses with filter words", %{user: user, params: params} do
+      {:ok, _} = CommonAPI.post(user, %{status: "Give me some cofe!"})
+      {:ok, _} = CommonAPI.post(user, %{status: "ok boomer"})
+      {:ok, _} = CommonAPI.post(user, %{status: "is it a cOfE?"})
+      {:ok, _} = CommonAPI.post(user, %{status: "cofe is all I need"})
+      {:ok, _} = CommonAPI.post(user, %{status: "— ok BOOMER\n"})
+
+      activities = ActivityPub.fetch_activities([], params)
+
+      assert Enum.empty?(activities)
+    end
+
+    test "it returns all statuses if user does not have any filters" do
+      another_user = insert(:user)
+      {:ok, _} = CommonAPI.post(another_user, %{status: "got cofe?"})
+      {:ok, _} = CommonAPI.post(another_user, %{status: "test!"})
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          type: ["Create", "Announce"],
+          user: another_user
+        })
+
+      assert Enum.count(activities) == 2
+    end
+  end
+
   describe "public fetch activities" do
     test "doesn't retrieve unlisted activities" do
       user = insert(:user)
@@ -917,24 +1013,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "following / unfollowing" do
-    test "it reverts follow activity" do
-      follower = insert(:user)
-      followed = insert(:user)
-
-      with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
-        assert {:error, :reverted} = ActivityPub.follow(follower, followed)
-      end
-
-      assert Repo.aggregate(Activity, :count, :id) == 0
-      assert Repo.aggregate(Object, :count, :id) == 0
-    end
-
+  describe "unfollowing" do
     test "it reverts unfollow activity" do
       follower = insert(:user)
       followed = insert(:user)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       with_mock(Utils, [:passthrough], maybe_federate: fn _ -> {:error, :reverted} end) do
         assert {:error, :reverted} = ActivityPub.unfollow(follower, followed)
@@ -947,21 +1031,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["object"] == followed.ap_id
     end
 
-    test "creates a follow activity" do
-      follower = insert(:user)
-      followed = insert(:user)
-
-      {:ok, activity} = ActivityPub.follow(follower, followed)
-      assert activity.data["type"] == "Follow"
-      assert activity.data["actor"] == follower.ap_id
-      assert activity.data["object"] == followed.ap_id
-    end
-
     test "creates an undo activity for the last follow" do
       follower = insert(:user)
       followed = insert(:user)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
       {:ok, activity} = ActivityPub.unfollow(follower, followed)
 
       assert activity.data["type"] == "Undo"
@@ -978,7 +1052,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       follower = insert(:user)
       followed = insert(:user, %{locked: true})
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
       {:ok, activity} = ActivityPub.unfollow(follower, followed)
 
       assert activity.data["type"] == "Undo"
