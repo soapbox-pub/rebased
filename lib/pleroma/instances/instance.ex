@@ -17,6 +17,8 @@ defmodule Pleroma.Instances.Instance do
   schema "instances" do
     field(:host, :string)
     field(:unreachable_since, :naive_datetime_usec)
+    field(:favicon, :string)
+    field(:favicon_updated_at, :naive_datetime)
 
     timestamps()
   end
@@ -25,7 +27,7 @@ defmodule Pleroma.Instances.Instance do
 
   def changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:host, :unreachable_since])
+    |> cast(params, [:host, :unreachable_since, :favicon, :favicon_updated_at])
     |> validate_required([:host])
     |> unique_constraint(:host)
   end
@@ -120,4 +122,48 @@ defmodule Pleroma.Instances.Instance do
   end
 
   defp parse_datetime(datetime), do: datetime
+
+  def get_or_update_favicon(%URI{host: host} = instance_uri) do
+    existing_record = Repo.get_by(Instance, %{host: host})
+    now = NaiveDateTime.utc_now()
+
+    if existing_record && existing_record.favicon_updated_at &&
+         NaiveDateTime.diff(now, existing_record.favicon_updated_at) < 86_400 do
+      existing_record.favicon
+    else
+      favicon = scrape_favicon(instance_uri)
+
+      if existing_record do
+        existing_record
+        |> changeset(%{favicon: favicon, favicon_updated_at: now})
+        |> Repo.update()
+      else
+        %Instance{}
+        |> changeset(%{host: host, favicon: favicon, favicon_updated_at: now})
+        |> Repo.insert()
+      end
+
+      favicon
+    end
+  end
+
+  defp scrape_favicon(%URI{} = instance_uri) do
+    try do
+      with {:ok, %Tesla.Env{body: html}} <-
+             Pleroma.HTTP.get(to_string(instance_uri), [{:Accept, "text/html"}]),
+           favicon_rel <-
+             html
+             |> Floki.parse_document!()
+             |> Floki.attribute("link[rel=icon]", "href")
+             |> List.first(),
+           favicon <- URI.merge(instance_uri, favicon_rel) |> to_string(),
+           true <- is_binary(favicon) do
+        favicon
+      else
+        _ -> nil
+      end
+    rescue
+      _ -> nil
+    end
+  end
 end

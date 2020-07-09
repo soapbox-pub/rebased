@@ -988,3 +988,9 @@ Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practi
 ## Pleroma.Web.ApiSpec.CastAndValidate
 
 * `:strict` a boolean, enables strict input validation (useful in development, not recommended in production). Defaults to `false`.
+
+## :instances_favicons
+
+Control favicons for instances.
+
+* `enabled`: Allow/disallow displaying and getting instances favicons
