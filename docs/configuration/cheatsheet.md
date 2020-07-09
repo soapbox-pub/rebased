@@ -155,7 +155,7 @@ config :pleroma, :mrf_user_allowlist, %{
   * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
   * `:reject` rejects the message entirely
 
-#### mrf_steal_emoji
+#### :mrf_steal_emoji
 * `hosts`: List of hosts to steal emojis from
 * `rejected_shortcodes`: Regex-list of shortcodes to reject
 * `size_limit`: File size limit (in bytes), checked before an emoji is saved to the disk
