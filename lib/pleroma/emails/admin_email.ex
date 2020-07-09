@@ -10,7 +10,7 @@ defmodule Pleroma.Emails.AdminEmail do
   alias Pleroma.Config
   alias Pleroma.Web.Router.Helpers
 
-  defp instance_config, do: Pleroma.Config.get(:instance)
+  defp instance_config, do: Config.get(:instance)
   defp instance_name, do: instance_config()[:name]
 
   defp instance_notify_email do

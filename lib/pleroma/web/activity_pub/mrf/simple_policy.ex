@@ -155,7 +155,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     %{host: actor_host} = URI.parse(actor)
 
     reject_deletes =
-      Pleroma.Config.get([:mrf_simple, :reject_deletes])
+      Config.get([:mrf_simple, :reject_deletes])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(reject_deletes, actor_host) do

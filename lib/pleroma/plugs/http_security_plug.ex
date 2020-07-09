@@ -82,14 +82,14 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
 
     connect_src =
-      if Pleroma.Config.get(:env) == :dev do
+      if Config.get(:env) == :dev do
         [connect_src, " http://localhost:3035/"]
       else
         connect_src
       end
 
     script_src =
-      if Pleroma.Config.get(:env) == :dev do
+      if Config.get(:env) == :dev do
         "script-src 'self' 'unsafe-eval'"
       else
         "script-src 'self'"
