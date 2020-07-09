@@ -15,6 +15,8 @@ defmodule Mix.Tasks.Pleroma.User do
   @moduledoc File.read!("docs/administration/CLI_tasks/user.md")
 
   def run(["new", nickname, email | rest]) do
+    Application.ensure_all_started(:flake_id)
+
     {options, [], []} =
       OptionParser.parse(
         rest,
@@ -97,6 +99,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
   def run(["rm", nickname]) do
     start_pleroma()
+    Application.ensure_all_started(:flake_id)
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname),
          {:ok, delete_data, _} <- Builder.delete(user, user.ap_id),
@@ -232,7 +235,7 @@ defmodule Mix.Tasks.Pleroma.User do
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       user = user |> User.tag(tags)
 
-      shell_info("Tags of #{user.nickname}: #{inspect(tags)}")
+      shell_info("Tags of #{user.nickname}: #{inspect(user.tags)}")
     else
       _ ->
         shell_error("Could not change user tags for #{nickname}")
@@ -245,7 +248,7 @@ defmodule Mix.Tasks.Pleroma.User do
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       user = user |> User.untag(tags)
 
-      shell_info("Tags of #{user.nickname}: #{inspect(tags)}")
+      shell_info("Tags of #{user.nickname}: #{inspect(user.tags)}")
     else
       _ ->
         shell_error("Could not change user tags for #{nickname}")
@@ -328,6 +331,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
   def run(["delete_activities", nickname]) do
     start_pleroma()
+    Application.ensure_all_started(:flake_id)
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       User.delete_user_activities(user)
