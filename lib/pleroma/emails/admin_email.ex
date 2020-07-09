@@ -72,6 +72,8 @@ defmodule Pleroma.Emails.AdminEmail do
     <p>Reported Account: <a href="#{user_url(account)}">#{account.nickname}</a></p>
     #{comment_html}
     #{statuses_html}
+    <p>
+    <a href="#{Pleroma.Web.base_url()}/pleroma/admin/#/reports/index">View Reports in AdminFE</a>
     """
 
     new()
