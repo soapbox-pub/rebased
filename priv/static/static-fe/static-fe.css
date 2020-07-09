@@ -181,3 +181,9 @@ img.emoji {
   padding: 0;
   vertical-align: middle;
 }
+
+.display-name img.emoji {
+  width: 16px;
+  height: 16px;
+}
+
