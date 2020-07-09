@@ -209,12 +209,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object}
   end
 
-  def handle_undoing(%{data: %{"type" => "Like"}} = object) do
-    with %Object{} = liked_object <- Object.get_by_ap_id(object.data["object"]),
-         {:ok, _} <- Utils.remove_like_from_object(object, liked_object),
-         {:ok, _} <- Repo.delete(object) do
-      :ok
+  defp undo_like(nil, object), do: delete_object(object)
+
+  defp undo_like(%Object{} = liked_object, object) do
+    with {:ok, _} <- Utils.remove_like_from_object(object, liked_object) do
+      delete_object(object)
     end
+  end
+
+  def handle_undoing(%{data: %{"type" => "Like"}} = object) do
+    object.data["object"]
+    |> Object.get_by_ap_id()
+    |> undo_like(object)
   end
 
   def handle_undoing(%{data: %{"type" => "EmojiReact"}} = object) do
@@ -245,6 +251,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
+
+  @spec delete_object(Object.t()) :: :ok | {:error, Ecto.Changeset.t()}
+  defp delete_object(object) do
+    with {:ok, _} <- Repo.delete(object), do: :ok
+  end
 
   defp send_notifications(meta) do
     Keyword.get(meta, :notifications, [])
