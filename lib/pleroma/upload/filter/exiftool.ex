@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Upload.Filter.Exiftool do
+  @moduledoc """
+  Strips GPS related EXIF tags and overwrites the file in place.
+  Also strips or replaces filesystem metadata e.g., timestamps.
+  """
   @behaviour Pleroma.Upload.Filter
 
   @type conversion :: action :: String.t() | {action :: String.t(), opts :: String.t()}
