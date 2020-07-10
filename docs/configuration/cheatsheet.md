@@ -476,7 +476,6 @@ For each pool, the options are:
 * `:timeout` - timeout while `gun` will wait for response
 * `:max_overflow` - additional workers if pool is under load
 
-
 ## Captcha
 
 ### Pleroma.Captcha
@@ -494,7 +493,7 @@ A built-in captcha provider. Enabled by default.
 #### Pleroma.Captcha.Kocaptcha
 
 Kocaptcha is a very simple captcha service with a single API endpoint,
-the source code is here: https://github.com/koto-bank/kocaptcha. The default endpoint
+the source code is here: [kocaptcha](https://github.com/koto-bank/kocaptcha). The default endpoint
 `https://captcha.kotobank.ch` is hosted by the developer.
 
 * `endpoint`: the Kocaptcha endpoint to use.
@@ -502,6 +501,7 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 ## Uploads
 
 ### Pleroma.Upload
+
 * `uploader`: Which one of the [uploaders](#uploaders) to use.
 * `filters`: List of [upload filters](#upload-filters) to use.
 * `link_name`: When enabled Pleroma will add a `name` parameter to the url of the upload, for example `https://instance.tld/media/corndog.png?name=corndog.png`. This is needed to provide the correct filename in Content-Disposition headers when using filters like `Pleroma.Upload.Filter.Dedupe`
@@ -514,10 +514,15 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
     `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 ### Uploaders
+
 #### Pleroma.Uploaders.Local
+
 * `uploads`: Which directory to store the user-uploads in, relative to pleroma’s working directory.
 
 #### Pleroma.Uploaders.S3
+
+Don't forget to configure [Ex AWS S3](#ex-aws-s3-settings)
+
 * `bucket`: S3 bucket name.
 * `bucket_namespace`: S3 bucket namespace.
 * `public_endpoint`: S3 endpoint that the user finally accesses(ex. "https://s3.dualstack.ap-northeast-1.amazonaws.com")
@@ -526,6 +531,20 @@ For example, when using CDN to S3 virtual host format, set "".
 At this time, write CNAME to CDN in public_endpoint.
 * `streaming_enabled`: Enable streaming uploads, when enabled the file will be sent to the server in chunks as it's being read. This may be unsupported by some providers, try disabling this if you have upload problems.
 
+#### Ex AWS S3 settings
+
+* `access_key_id`: Access key ID
+* `secret_access_key`: Secret access key
+* `host`: S3 host
+
+Example:
+
+```elixir
+config :ex_aws, :s3,
+  access_key_id: "xxxxxxxxxx",
+  secret_access_key: "yyyyyyyyyy",
+  host: "s3.eu-central-1.amazonaws.com"
+```
 
 ### Upload filters
 
@@ -983,7 +1002,7 @@ Restrict access for unauthenticated users to timelines (public and federated), u
   * `local`
   * `remote`
 
-Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practical sense if `restrict_unauthenticated/timelines/federated` is set to `false` (since local public activities will still be delivered to unauthenticated users as part of federated timeline). 
+Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practical sense if `restrict_unauthenticated/timelines/federated` is set to `false` (since local public activities will still be delivered to unauthenticated users as part of federated timeline).
 
 ## Pleroma.Web.ApiSpec.CastAndValidate
 
