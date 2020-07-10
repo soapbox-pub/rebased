@@ -708,7 +708,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       followed = insert(:user)
       other_user = insert(:user)
 
-      ret_conn = post(conn, "/api/v1/accounts/#{followed.id}/follow?reblogs=false")
+      ret_conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: false})
 
       assert %{"showing_reblogs" => false} = json_response_and_validate_schema(ret_conn, 200)
 
@@ -722,10 +725,40 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
 
       assert %{"showing_reblogs" => true} =
                conn
-               |> post("/api/v1/accounts/#{followed.id}/follow?reblogs=true")
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: true})
                |> json_response_and_validate_schema(200)
 
       assert [%{"id" => ^reblog_id}] =
+               conn
+               |> get("/api/v1/timelines/home")
+               |> json_response(200)
+    end
+
+    test "following with reblogs" do
+      %{conn: conn} = oauth_access(["follow", "read:statuses"])
+      followed = insert(:user)
+      other_user = insert(:user)
+
+      ret_conn = post(conn, "/api/v1/accounts/#{followed.id}/follow")
+
+      assert %{"showing_reblogs" => true} = json_response_and_validate_schema(ret_conn, 200)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{status: "hey"})
+      {:ok, %{id: reblog_id}} = CommonAPI.repeat(activity.id, followed)
+
+      assert [%{"id" => ^reblog_id}] =
+               conn
+               |> get("/api/v1/timelines/home")
+               |> json_response(200)
+
+      assert %{"showing_reblogs" => false} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("/api/v1/accounts/#{followed.id}/follow", %{reblogs: false})
+               |> json_response_and_validate_schema(200)
+
+      assert [] ==
                conn
                |> get("/api/v1/timelines/home")
                |> json_response(200)
@@ -904,7 +937,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       %{
         "access_token" => token,
         "created_at" => _created_at,
-        "scope" => _scope,
+        "scope" => ^scope,
         "token_type" => "Bearer"
       } = json_response_and_validate_schema(conn, 200)
 
@@ -1066,7 +1099,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{
                "access_token" => access_token,
                "created_at" => _,
-               "scope" => ["read", "write", "follow", "push"],
+               "scope" => "read write follow push",
                "token_type" => "Bearer"
              } = response
 
@@ -1184,7 +1217,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert %{
                "access_token" => access_token,
                "created_at" => _,
-               "scope" => ["read"],
+               "scope" => "read",
                "token_type" => "Bearer"
              } =
                conn

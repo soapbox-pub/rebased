@@ -5,4 +5,13 @@
 defmodule Pleroma.Web.OAuth.MFAView do
   use Pleroma.Web, :view
   import Phoenix.HTML.Form
+  alias Pleroma.MFA
+
+  def render("mfa_response.json", %{token: token, user: user}) do
+    %{
+      error: "mfa_required",
+      mfa_token: token.token,
+      supported_challenge_types: MFA.supported_methods(user)
+    }
+  end
 end

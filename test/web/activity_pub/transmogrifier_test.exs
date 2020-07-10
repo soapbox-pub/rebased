@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Object.Fetcher
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
@@ -452,7 +451,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, follower} = User.follow(follower, followed)
       assert User.following?(follower, followed) == true
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -482,7 +481,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = insert(:user)
       followed = insert(:user, locked: true)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -504,7 +503,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = insert(:user)
       followed = insert(:user, locked: true)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -569,7 +568,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       followed = insert(:user, locked: true)
 
       {:ok, follower} = User.follow(follower, followed)
-      {:ok, _follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, followed)
 
       assert User.following?(follower, followed) == true
 
@@ -595,7 +594,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       followed = insert(:user, locked: true)
 
       {:ok, follower} = User.follow(follower, followed)
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       assert User.following?(follower, followed) == true
 
@@ -659,22 +658,44 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
           "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
         )
 
-      attachment = %{
-        "type" => "Link",
-        "mediaType" => "video/mp4",
-        "url" => [
-          %{
-            "href" =>
-              "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-            "mediaType" => "video/mp4"
-          }
-        ]
-      }
-
       assert object.data["url"] ==
                "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
 
-      assert object.data["attachment"] == [attachment]
+      assert object.data["attachment"] == [
+               %{
+                 "type" => "Link",
+                 "mediaType" => "video/mp4",
+                 "url" => [
+                   %{
+                     "href" =>
+                       "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
+                     "mediaType" => "video/mp4"
+                   }
+                 ]
+               }
+             ]
+
+      {:ok, object} =
+        Fetcher.fetch_object_from_id(
+          "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
+        )
+
+      assert object.data["attachment"] == [
+               %{
+                 "type" => "Link",
+                 "mediaType" => "video/mp4",
+                 "url" => [
+                   %{
+                     "href" =>
+                       "https://framatube.org/static/webseed/6050732a-8a7a-43d4-a6cd-809525a1d206-1080.mp4",
+                     "mediaType" => "video/mp4"
+                   }
+                 ]
+               }
+             ]
+
+      assert object.data["url"] ==
+               "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
     end
 
     test "it accepts Flag activities" do

@@ -10,7 +10,7 @@ defmodule Pleroma.Emails.AdminEmail do
   alias Pleroma.Config
   alias Pleroma.Web.Router.Helpers
 
-  defp instance_config, do: Pleroma.Config.get(:instance)
+  defp instance_config, do: Config.get(:instance)
   defp instance_name, do: instance_config()[:name]
 
   defp instance_notify_email do
@@ -72,6 +72,8 @@ defmodule Pleroma.Emails.AdminEmail do
     <p>Reported Account: <a href="#{user_url(account)}">#{account.nickname}</a></p>
     #{comment_html}
     #{statuses_html}
+    <p>
+    <a href="#{Pleroma.Web.base_url()}/pleroma/admin/#/reports/index">View Reports in AdminFE</a>
     """
 
     new()

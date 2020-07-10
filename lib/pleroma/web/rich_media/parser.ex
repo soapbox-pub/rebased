@@ -86,7 +86,10 @@ defmodule Pleroma.Web.RichMedia.Parser do
       end
 
     try do
-      {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: opts)
+      rich_media_agent = Pleroma.Application.user_agent() <> "; Bot"
+
+      {:ok, %Tesla.Env{body: html}} =
+        Pleroma.HTTP.get(url, [{"user-agent", rich_media_agent}], adapter: opts)
 
       html
       |> parse_html()

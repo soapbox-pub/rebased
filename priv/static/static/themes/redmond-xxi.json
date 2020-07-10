@@ -259,7 +259,9 @@
       "cGreen": "#669966",
       "cOrange": "#cc6633",
       "highlight": "--accent",
-      "selectedPost": "--bg,-10"
+      "selectedPost": "--bg,-10",
+      "selectedMenu": "--accent",
+      "selectedMenuPopover": "--accent"
     },
     "radii": {
       "btn": "0",

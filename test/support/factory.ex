@@ -428,4 +428,12 @@ defmodule Pleroma.Factory do
       user: build(:user)
     }
   end
+
+  def filter_factory do
+    %Pleroma.Filter{
+      user: build(:user),
+      filter_id: sequence(:filter_id, & &1),
+      phrase: "cofe"
+    }
+  end
 end

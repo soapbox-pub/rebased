@@ -103,7 +103,13 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             description:
               "A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`"
           },
-          accepts_chat_messages: %Schema{type: :boolean, nullable: true}
+          accepts_chat_messages: %Schema{type: :boolean, nullable: true},
+          favicon: %Schema{
+            type: :string,
+            format: :uri,
+            nullable: true,
+            description: "Favicon image of the user's instance"
+          }
         }
       },
       source: %Schema{

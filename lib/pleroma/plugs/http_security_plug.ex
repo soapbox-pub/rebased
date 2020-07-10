@@ -69,10 +69,11 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     img_src = "img-src 'self' data: blob:"
     media_src = "media-src 'self'"
 
+    # Strict multimedia CSP enforcement only when MediaProxy is enabled
     {img_src, media_src} =
       if Config.get([:media_proxy, :enabled]) &&
            !Config.get([:media_proxy, :proxy_opts, :redirect_on_failure]) do
-        sources = get_proxy_and_attachment_sources()
+        sources = build_csp_multimedia_source_list()
         {[img_src, sources], [media_src, sources]}
       else
         {[img_src, " https:"], [media_src, " https:"]}
@@ -81,14 +82,14 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     connect_src = ["connect-src 'self' blob: ", static_url, ?\s, websocket_url]
 
     connect_src =
-      if Pleroma.Config.get(:env) == :dev do
+      if Config.get(:env) == :dev do
         [connect_src, " http://localhost:3035/"]
       else
         connect_src
       end
 
     script_src =
-      if Pleroma.Config.get(:env) == :dev do
+      if Config.get(:env) == :dev do
         "script-src 'self' 'unsafe-eval'"
       else
         "script-src 'self'"
@@ -107,29 +108,28 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     |> :erlang.iolist_to_binary()
   end
 
-  defp get_proxy_and_attachment_sources do
+  defp build_csp_multimedia_source_list do
     media_proxy_whitelist =
       Enum.reduce(Config.get([:media_proxy, :whitelist]), [], fn host, acc ->
         add_source(acc, host)
       end)
 
-    media_proxy_base_url =
-      if Config.get([:media_proxy, :base_url]),
-        do: URI.parse(Config.get([:media_proxy, :base_url])).host
+    media_proxy_base_url = build_csp_param(Config.get([:media_proxy, :base_url]))
 
-    upload_base_url =
-      if Config.get([Pleroma.Upload, :base_url]),
-        do: URI.parse(Config.get([Pleroma.Upload, :base_url])).host
+    upload_base_url = build_csp_param(Config.get([Pleroma.Upload, :base_url]))
 
-    s3_endpoint =
-      if Config.get([Pleroma.Upload, :uploader]) == Pleroma.Uploaders.S3,
-        do: URI.parse(Config.get([Pleroma.Uploaders.S3, :public_endpoint])).host
+    s3_endpoint = build_csp_param(Config.get([Pleroma.Uploaders.S3, :public_endpoint]))
+
+    captcha_method = Config.get([Pleroma.Captcha, :method])
+
+    captcha_endpoint = build_csp_param(Config.get([captcha_method, :endpoint]))
 
     []
     |> add_source(media_proxy_base_url)
     |> add_source(upload_base_url)
     |> add_source(s3_endpoint)
     |> add_source(media_proxy_whitelist)
+    |> add_source(captcha_endpoint)
   end
 
   defp add_source(iodata, nil), do: iodata
@@ -138,6 +138,16 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
   defp add_csp_param(csp_iodata, nil), do: csp_iodata
 
   defp add_csp_param(csp_iodata, param), do: [[param, ?;] | csp_iodata]
+
+  defp build_csp_param(nil), do: nil
+
+  defp build_csp_param(url) when is_binary(url) do
+    %{host: host, scheme: scheme} = URI.parse(url)
+
+    if scheme do
+      [scheme, "://", host]
+    end
+  end
 
   def warn_if_disabled do
     unless Config.get([:http_security, :enabled]) do
