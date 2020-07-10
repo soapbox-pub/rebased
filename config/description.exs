@@ -1601,7 +1601,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :replace,
-        type: [{:tuple, :string, :string}, {:tuple, :regex, :string}],
+        type: {:keyword, :string, :regex},
         description:
           "A list of tuples containing {pattern, replacement}. Each pattern can be a string or a regular expression.",
         suggestions: [{"foo", "bar"}, {~r/foo/iu, "bar"}]
