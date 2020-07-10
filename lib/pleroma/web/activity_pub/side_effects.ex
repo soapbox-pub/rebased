@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Activity.Ir.Topics
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
+  alias Pleroma.FollowingRelationship
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -20,6 +21,69 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.Streamer
 
   def handle(object, meta \\ [])
+
+  # Tasks this handle
+  # - Follows if possible
+  # - Sends a notification
+  # - Generates accept or reject if appropriate
+  def handle(
+        %{
+          data: %{
+            "id" => follow_id,
+            "type" => "Follow",
+            "object" => followed_user,
+            "actor" => following_user
+          }
+        } = object,
+        meta
+      ) do
+    with %User{} = follower <- User.get_cached_by_ap_id(following_user),
+         %User{} = followed <- User.get_cached_by_ap_id(followed_user),
+         {_, {:ok, _}, _, _} <-
+           {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
+      if followed.local && !followed.locked do
+        Utils.update_follow_state_for_all(object, "accept")
+        FollowingRelationship.update(follower, followed, :follow_accept)
+        User.update_follower_count(followed)
+        User.update_following_count(follower)
+
+        %{
+          to: [following_user],
+          actor: followed,
+          object: follow_id,
+          local: true
+        }
+        |> ActivityPub.accept()
+      end
+    else
+      {:following, {:error, _}, follower, followed} ->
+        Utils.update_follow_state_for_all(object, "reject")
+        FollowingRelationship.update(follower, followed, :follow_reject)
+
+        if followed.local do
+          %{
+            to: [follower.ap_id],
+            actor: followed,
+            object: follow_id,
+            local: true
+          }
+          |> ActivityPub.reject()
+        end
+
+      _ ->
+        nil
+    end
+
+    {:ok, notifications} = Notification.create_notifications(object, do_send: false)
+
+    meta =
+      meta
+      |> add_notifications(notifications)
+
+    updated_object = Activity.get_by_ap_id(follow_id)
+
+    {:ok, updated_object, meta}
+  end
 
   # Tasks this handles:
   # - Unfollow and block
@@ -209,12 +273,18 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object}
   end
 
-  def handle_undoing(%{data: %{"type" => "Like"}} = object) do
-    with %Object{} = liked_object <- Object.get_by_ap_id(object.data["object"]),
-         {:ok, _} <- Utils.remove_like_from_object(object, liked_object),
-         {:ok, _} <- Repo.delete(object) do
-      :ok
+  defp undo_like(nil, object), do: delete_object(object)
+
+  defp undo_like(%Object{} = liked_object, object) do
+    with {:ok, _} <- Utils.remove_like_from_object(object, liked_object) do
+      delete_object(object)
     end
+  end
+
+  def handle_undoing(%{data: %{"type" => "Like"}} = object) do
+    object.data["object"]
+    |> Object.get_by_ap_id()
+    |> undo_like(object)
   end
 
   def handle_undoing(%{data: %{"type" => "EmojiReact"}} = object) do
@@ -245,6 +315,11 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   end
 
   def handle_undoing(object), do: {:error, ["don't know how to handle", object]}
+
+  @spec delete_object(Object.t()) :: :ok | {:error, Ecto.Changeset.t()}
+  defp delete_object(object) do
+    with {:ok, _} <- Repo.delete(object), do: :ok
+  end
 
   defp send_notifications(meta) do
     Keyword.get(meta, :notifications, [])

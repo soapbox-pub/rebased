@@ -314,7 +314,7 @@ defmodule Pleroma.ReverseProxyTest do
     test "not atachment", %{conn: conn} do
       disposition_headers_mock([
         {"content-type", "image/gif"},
-        {"content-length", 0}
+        {"content-length", "0"}
       ])
 
       conn = ReverseProxy.call(conn, "/disposition")
@@ -325,7 +325,7 @@ defmodule Pleroma.ReverseProxyTest do
     test "with content-disposition header", %{conn: conn} do
       disposition_headers_mock([
         {"content-disposition", "attachment; filename=\"filename.jpg\""},
-        {"content-length", 0}
+        {"content-length", "0"}
       ])
 
       conn = ReverseProxy.call(conn, "/disposition")

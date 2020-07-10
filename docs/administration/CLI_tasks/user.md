@@ -57,11 +57,11 @@ mix pleroma.user invites
 
 ## Revoke invite
 ```sh tab="OTP"
- ./bin/pleroma_ctl user revoke_invite <token_or_id>
+ ./bin/pleroma_ctl user revoke_invite <token>
 ```
 
 ```sh tab="From Source"
-mix pleroma.user revoke_invite <token_or_id>
+mix pleroma.user revoke_invite <token>
 ```
 
 

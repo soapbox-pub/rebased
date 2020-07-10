@@ -18,6 +18,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `notify_email`: Email used for notifications.
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
+* `discription_limit`: The character limit for image descriptions.
 * `chat_limit`: Character limit of the instance chat messages.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner).
@@ -36,7 +37,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance.
-* `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
+* `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. See also: `restrict_unauthenticated`.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in [:frontend_configurations](#frontend_configurations) or in ``static/config.json``.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
@@ -154,7 +155,7 @@ config :pleroma, :mrf_user_allowlist, %{
   * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
   * `:reject` rejects the message entirely
 
-#### mrf_steal_emoji
+#### :mrf_steal_emoji
 * `hosts`: List of hosts to steal emojis from
 * `rejected_shortcodes`: Regex-list of shortcodes to reject
 * `size_limit`: File size limit (in bytes), checked before an emoji is saved to the disk
@@ -970,11 +971,11 @@ config :pleroma, :database_config_whitelist, [
 
 ### :restrict_unauthenticated
 
-Restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
+Restrict access for unauthenticated users to timelines (public and federated), user profiles and statuses.
 
 * `timelines`: public and federated timelines
   * `local`: public timeline
-  * `federated`
+  * `federated`: federated timeline (includes public timeline)
 * `profiles`: user profiles
   * `local`
   * `remote`
@@ -982,7 +983,14 @@ Restrict access for unauthenticated users to timelines (public and federate), us
   * `local`
   * `remote`
 
+Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practical sense if `restrict_unauthenticated/timelines/federated` is set to `false` (since local public activities will still be delivered to unauthenticated users as part of federated timeline). 
 
 ## Pleroma.Web.ApiSpec.CastAndValidate
 
 * `:strict` a boolean, enables strict input validation (useful in development, not recommended in production). Defaults to `false`.
+
+## :instances_favicons
+
+Control favicons for instances.
+
+* `enabled`: Allow/disallow displaying and getting instances favicons
