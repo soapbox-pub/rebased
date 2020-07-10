@@ -47,5 +47,5 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
 
   @impl true
   def describe,
-    do: {:ok, %{mrf_rejectnonpublic: Pleroma.Config.get(:mrf_rejectnonpublic) |> Enum.into(%{})}}
+    do: {:ok, %{mrf_rejectnonpublic: Config.get(:mrf_rejectnonpublic) |> Enum.into(%{})}}
 end

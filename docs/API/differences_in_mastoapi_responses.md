@@ -71,6 +71,7 @@ Has these additional fields under the `pleroma` object:
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
 - `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
 - `notification_settings`: object, can be absent. See `/api/pleroma/notification_settings` for the parameters/keys returned.
+- `favicon`: nullable URL string, Favicon image of the user's instance
 
 ### Source
 

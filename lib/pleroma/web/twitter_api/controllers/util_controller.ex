@@ -83,7 +83,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def frontend_configurations(conn, _params) do
     config =
-      Pleroma.Config.get(:frontend_configurations, %{})
+      Config.get(:frontend_configurations, %{})
       |> Enum.into(%{})
 
     json(conn, config)

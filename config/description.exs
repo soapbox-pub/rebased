@@ -3448,5 +3448,18 @@ config :pleroma, :config_description, [
         suggestions: [false]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: :instances_favicons,
+    type: :group,
+    description: "Control favicons for instances",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description: "Allow/disallow displaying and getting instances favicons"
+      }
+    ]
   }
 ]

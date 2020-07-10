@@ -102,6 +102,12 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             type: :object,
             description:
               "A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`"
+          },
+          favicon: %Schema{
+            type: :string,
+            format: :uri,
+            nullable: true,
+            description: "Favicon image of the user's instance"
           }
         }
       },

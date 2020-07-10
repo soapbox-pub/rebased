@@ -111,6 +111,8 @@ config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
 
+config :pleroma, :instances_favicons, enabled: true
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else

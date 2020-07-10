@@ -481,17 +481,17 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       moot = insert(:user, nickname: "moot")
       kawen = insert(:user, nickname: "kawen", name: "fediverse expert moon")
 
-      {:ok, user} = User.follow(user, kawen)
+      {:ok, user} = User.follow(user, moon)
 
       assert [moon.id, kawen.id] == User.Search.search("moon") |> Enum.map(& &1.id)
-      res = User.search("moo") |> Enum.map(& &1.id)
-      assert moon.id in res
-      assert moot.id in res
-      assert kawen.id in res
-      assert [moon.id, kawen.id] == User.Search.search("moon fediverse") |> Enum.map(& &1.id)
 
-      assert [kawen.id, moon.id] ==
-               User.Search.search("moon fediverse", for_user: user) |> Enum.map(& &1.id)
+      res = User.search("moo") |> Enum.map(& &1.id)
+      assert Enum.sort([moon.id, moot.id, kawen.id]) == Enum.sort(res)
+
+      assert [kawen.id, moon.id] == User.Search.search("expert fediverse") |> Enum.map(& &1.id)
+
+      assert [moon.id, kawen.id] ==
+               User.Search.search("expert fediverse", for_user: user) |> Enum.map(& &1.id)
     end
   end
 
