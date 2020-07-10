@@ -8,8 +8,8 @@ defmodule Pleroma.ReverseProxy do
                       ~w(if-unmodified-since if-none-match) ++ @range_headers
   @resp_cache_headers ~w(etag date last-modified)
   @keep_resp_headers @resp_cache_headers ++
-                       ~w(content-length content-type content-disposition content-encoding content-range) ++
-                       ~w(accept-ranges vary)
+                       ~w(content-length content-type content-disposition content-encoding) ++
+                       ~w(content-range accept-ranges vary)
   @default_cache_control_header "public, max-age=1209600"
   @valid_resp_codes [200, 206, 304]
   @max_read_duration :timer.seconds(30)
