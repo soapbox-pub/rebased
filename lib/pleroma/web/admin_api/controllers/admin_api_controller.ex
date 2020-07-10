@@ -206,8 +206,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def user_show(conn, %{"nickname" => nickname}) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
+  def user_show(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
       conn
       |> put_view(AccountView)
       |> render("show.json", %{user: user})
@@ -233,11 +233,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> render("index.json", %{activities: activities, as: :activity})
   end
 
-  def list_user_statuses(conn, %{"nickname" => nickname} = params) do
+  def list_user_statuses(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname} = params) do
     with_reblogs = params["with_reblogs"] == "true" || params["with_reblogs"] == true
     godmode = params["godmode"] == "true" || params["godmode"] == true
 
-    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
       {_, page_size} = page_params(params)
 
       activities =
@@ -526,7 +526,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   @doc "Show a given user's credentials"
   def show_user_credentials(%{assigns: %{user: admin}} = conn, %{"nickname" => nickname}) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname, for: admin) do
       conn
       |> put_view(AccountView)
       |> render("credentials.json", %{user: user, for: admin})

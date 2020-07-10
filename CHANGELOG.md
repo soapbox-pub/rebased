@@ -81,6 +81,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `blob:` urls not being allowed by connect-src CSP
 - Mastodon API: fix `GET /api/v1/notifications` not returning the full result set
 - Rich Media Previews for Twitter links
+- Admin API: fix `GET /api/pleroma/admin/users/:nickname/credentials` returning 404 when getting the credentials of a remote user while `:instance, :limit_to_local_content` is set to `:unauthenticated`
 - Fix CSP policy generation to include remote Captcha services
 
 ## [Unreleased (patch)]
