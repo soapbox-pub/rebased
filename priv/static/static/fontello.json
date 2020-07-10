@@ -399,6 +399,12 @@
       "css": "doc",
       "code": 59433,
       "src": "fontawesome"
+    },
+    {
+      "uid": "98d9c83c1ee7c2c25af784b518c522c5",
+      "css": "block",
+      "code": 59434,
+      "src": "fontawesome"
     }
   ]
 }
