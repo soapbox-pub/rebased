@@ -57,6 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF (`EmojiStealPolicy`): New MRF Policy which allows to automatically download emojis from remote instances
 - Support pagination in emoji packs API (for packs and for files in pack)
 - Support for viewing instances favicons next to posts and accounts
+- Added Pleroma.Upload.Filter.Exiftool as an alternate EXIF stripping mechanism targeting GPS/location metadata.
 
 <details>
   <summary>API Changes</summary>

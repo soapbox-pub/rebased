@@ -5,6 +5,7 @@
 /*.ez
 /test/uploads
 /.elixir_ls
+/test/fixtures/DSCN0010_tmp.jpg
 /test/fixtures/test_tmp.txt
 /test/fixtures/image_tmp.jpg
 /test/tmp/
