@@ -97,7 +97,7 @@ defmodule Pleroma.Cluster do
     silence_logger_warnings(fn ->
       node_configs
       |> Enum.map(&Task.async(fn -> start_slave(&1) end))
-      |> Enum.map(&Task.await(&1, 60_000))
+      |> Enum.map(&Task.await(&1, 90_000))
     end)
   end
 
