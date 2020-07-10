@@ -3,12 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxy do
+  @range_headers ~w(range if-range)
   @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since) ++
-                      ~w(if-unmodified-since if-none-match if-range range)
+                      ~w(if-unmodified-since if-none-match) ++ @range_headers
   @resp_cache_headers ~w(etag date last-modified)
   @keep_resp_headers @resp_cache_headers ++
-                       ~w(content-type content-disposition content-encoding content-range) ++
-                       ~w(accept-ranges vary)
+                       ~w(content-length content-type content-disposition content-encoding) ++
+                       ~w(content-range accept-ranges vary)
   @default_cache_control_header "public, max-age=1209600"
   @valid_resp_codes [200, 206, 304]
   @max_read_duration :timer.seconds(30)
@@ -170,6 +171,8 @@ defmodule Pleroma.ReverseProxy do
   end
 
   defp response(conn, client, url, status, headers, opts) do
+    Logger.debug("#{__MODULE__} #{status} #{url} #{inspect(headers)}")
+
     result =
       conn
       |> put_resp_headers(build_resp_headers(headers, opts))
@@ -220,7 +223,9 @@ defmodule Pleroma.ReverseProxy do
     end
   end
 
-  defp head_response(conn, _url, code, headers, opts) do
+  defp head_response(conn, url, code, headers, opts) do
+    Logger.debug("#{__MODULE__} #{code} #{url} #{inspect(headers)}")
+
     conn
     |> put_resp_headers(build_resp_headers(headers, opts))
     |> send_resp(code, "")
@@ -262,20 +267,33 @@ defmodule Pleroma.ReverseProxy do
     headers
     |> downcase_headers()
     |> Enum.filter(fn {k, _} -> k in @keep_req_headers end)
-    |> (fn headers ->
-          headers = headers ++ Keyword.get(opts, :req_headers, [])
+    |> build_req_range_or_encoding_header(opts)
+    |> build_req_user_agent_header(opts)
+    |> Keyword.merge(Keyword.get(opts, :req_headers, []))
+  end
 
-          if Keyword.get(opts, :keep_user_agent, false) do
-            List.keystore(
-              headers,
-              "user-agent",
-              0,
-              {"user-agent", Pleroma.Application.user_agent()}
-            )
-          else
-            headers
-          end
-        end).()
+  # Disable content-encoding if any @range_headers are requested (see #1823).
+  defp build_req_range_or_encoding_header(headers, _opts) do
+    range? = Enum.any?(headers, fn {header, _} -> Enum.member?(@range_headers, header) end)
+
+    if range? && List.keymember?(headers, "accept-encoding", 0) do
+      List.keydelete(headers, "accept-encoding", 0)
+    else
+      headers
+    end
+  end
+
+  defp build_req_user_agent_header(headers, opts) do
+    if Keyword.get(opts, :keep_user_agent, false) do
+      List.keystore(
+        headers,
+        "user-agent",
+        0,
+        {"user-agent", Pleroma.Application.user_agent()}
+      )
+    else
+      headers
+    end
   end
 
   defp build_resp_headers(headers, opts) do
@@ -283,7 +301,7 @@ defmodule Pleroma.ReverseProxy do
     |> Enum.filter(fn {k, _} -> k in @keep_resp_headers end)
     |> build_resp_cache_headers(opts)
     |> build_resp_content_disposition_header(opts)
-    |> (fn headers -> headers ++ Keyword.get(opts, :resp_headers, []) end).()
+    |> Keyword.merge(Keyword.get(opts, :resp_headers, []))
   end
 
   defp build_resp_cache_headers(headers, _opts) do
