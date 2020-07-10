@@ -9,9 +9,6 @@ defmodule Pleroma.Upload.Filter.Exiftool do
   """
   @behaviour Pleroma.Upload.Filter
 
-  @type conversion :: action :: String.t() | {action :: String.t(), opts :: String.t()}
-  @type conversions :: conversion() | [conversion()]
-
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
     System.cmd("exiftool", ["-overwrite_original", "-gps:all=", file], parallelism: true)
     :ok
