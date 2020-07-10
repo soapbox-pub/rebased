@@ -2579,8 +2579,7 @@ config :pleroma, :config_description, [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Enables new users admin digest email when `true`",
-        suggestions: [false]
+        description: "Enables new users admin digest email when `true`"
       }
     ]
   },
@@ -3444,8 +3443,7 @@ config :pleroma, :config_description, [
         key: :strict,
         type: :boolean,
         description:
-          "Enables strict input validation (useful in development, not recommended in production)",
-        suggestions: [false]
+          "Enables strict input validation (useful in development, not recommended in production)"
       }
     ]
   },
@@ -3459,6 +3457,32 @@ config :pleroma, :config_description, [
         key: :enabled,
         type: :boolean,
         description: "Allow/disallow displaying and getting instances favicons"
+      }
+    ]
+  },
+  %{
+    group: :ex_aws,
+    key: :s3,
+    type: :group,
+    descriptions: "S3 service related settings",
+    children: [
+      %{
+        key: :access_key_id,
+        type: :string,
+        description: "S3 access key ID",
+        suggestions: ["AKIAQ8UKHTGIYN7DMWWJ"]
+      },
+      %{
+        key: :secret_access_key,
+        type: :string,
+        description: "Secret access key",
+        suggestions: ["JFGt+fgH1UQ7vLUQjpW+WvjTdV/UNzVxcwn7DkaeFKtBS5LvoXvIiME4NQBsT6ZZ"]
+      },
+      %{
+        key: :host,
+        type: :string,
+        description: "S3 host",
+        suggestions: ["s3.eu-central-1.amazonaws.com"]
       }
     ]
   }
