@@ -2056,4 +2056,46 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert [%{activity_id: ^id_create}] = Pleroma.ActivityExpiration |> Repo.all()
     end
   end
+
+  describe "handling of clashing nicknames" do
+    test "renames an existing user with a clashing nickname and a different ap id" do
+      orig_user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: "http://mastodon.example.org/users/harinezumigari"
+        )
+
+      %{
+        nickname: orig_user.nickname,
+        ap_id: orig_user.ap_id <> "part_2"
+      }
+      |> ActivityPub.maybe_handle_clashing_nickname()
+
+      user = User.get_by_id(orig_user.id)
+
+      assert user.nickname == "#{orig_user.id}.admin@mastodon.example.org"
+    end
+
+    test "does nothing with a clashing nickname and the same ap id" do
+      orig_user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: "http://mastodon.example.org/users/harinezumigari"
+        )
+
+      %{
+        nickname: orig_user.nickname,
+        ap_id: orig_user.ap_id
+      }
+      |> ActivityPub.maybe_handle_clashing_nickname()
+
+      user = User.get_by_id(orig_user.id)
+
+      assert user.nickname == orig_user.nickname
+    end
+  end
 end
