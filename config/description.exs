@@ -2527,7 +2527,7 @@ config :pleroma, :config_description, [
       %{
         key: :styling,
         type: :map,
-        description: "a map with color settings for email templates.",
+        description: "A map with color settings for email templates.",
         suggestions: [
           %{
             link_color: "#d8a070",
@@ -2633,7 +2633,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :groups,
-        type: {:keyword, :string, {:list, :string}},
+        type: {:keyword, {:list, :string}},
         description:
           "Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the group name" <>
             " and the value is the location or array of locations. * can be used as a wildcard.",
