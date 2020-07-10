@@ -35,7 +35,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
   end
 
   test "it sends digest emails", %{user2: user2} do
-    Pleroma.Workers.Cron.DigestEmailsWorker.perform(:opts, :pid)
+    Pleroma.Workers.Cron.DigestEmailsWorker.perform(%Oban.Job{})
     # Performing job(s) enqueued at previous step
     ObanHelpers.perform_all()
 
@@ -47,7 +47,7 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorkerTest do
   test "it doesn't fail when a user has no email", %{user2: user2} do
     {:ok, _} = user2 |> Ecto.Changeset.change(%{email: nil}) |> Pleroma.Repo.update()
 
-    Pleroma.Workers.Cron.DigestEmailsWorker.perform(:opts, :pid)
+    Pleroma.Workers.Cron.DigestEmailsWorker.perform(%Oban.Job{})
     # Performing job(s) enqueued at previous step
     ObanHelpers.perform_all()
   end

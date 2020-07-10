@@ -11,13 +11,12 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
   use Pleroma.Workers.WorkerHelper, queue: "attachments_cleanup"
 
   @impl Oban.Worker
-  def perform(
-        %{
+  def perform(%Job{
+        args: %{
           "op" => "cleanup_attachments",
           "object" => %{"data" => %{"attachment" => [_ | _] = attachments, "actor" => actor}}
-        },
-        _job
-      ) do
+        }
+      }) do
     attachments
     |> Enum.flat_map(fn item -> Enum.map(item["url"], & &1["href"]) end)
     |> fetch_objects
@@ -28,7 +27,7 @@ defmodule Pleroma.Workers.AttachmentsCleanupWorker do
     {:ok, :success}
   end
 
-  def perform(%{"op" => "cleanup_attachments", "object" => _object}, _job), do: {:ok, :skip}
+  def perform(%Job{args: %{"op" => "cleanup_attachments", "object" => _object}}), do: {:ok, :skip}
 
   defp do_clean({object_ids, attachment_urls}) do
     uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])

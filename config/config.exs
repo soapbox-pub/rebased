@@ -498,8 +498,7 @@ config :pleroma, Pleroma.User,
 
 config :pleroma, Oban,
   repo: Pleroma.Repo,
-  verbose: false,
-  prune: {:maxlen, 1500},
+  log: false,
   queues: [
     activity_expiration: 10,
     federator_incoming: 50,

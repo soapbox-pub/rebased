@@ -8,7 +8,7 @@ defmodule Pleroma.Workers.TransmogrifierWorker do
   use Pleroma.Workers.WorkerHelper, queue: "transmogrifier"
 
   @impl Oban.Worker
-  def perform(%{"op" => "user_upgrade", "user_id" => user_id}, _job) do
+  def perform(%Job{args: %{"op" => "user_upgrade", "user_id" => user_id}}) do
     user = User.get_cached_by_id(user_id)
     Pleroma.Web.ActivityPub.Transmogrifier.perform(:user_upgrade, user)
   end
