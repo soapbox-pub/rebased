@@ -184,36 +184,43 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert User.invisible?(user)
     end
 
-    test "it fetches the appropriate tag-restricted posts" do
-      user = insert(:user)
+    test "it returns a user that accepts chat messages" do
+      user_id = "http://mastodon.example.org/users/admin"
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
 
-      {:ok, status_one} = CommonAPI.post(user, %{status: ". #test"})
-      {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
-      {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
-
-      fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
-
-      fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["test", "essais"]})
-
-      fetch_three =
-        ActivityPub.fetch_activities([], %{
-          type: "Create",
-          tag: ["test", "essais"],
-          tag_reject: ["reject"]
-        })
-
-      fetch_four =
-        ActivityPub.fetch_activities([], %{
-          type: "Create",
-          tag: ["test"],
-          tag_all: ["test", "reject"]
-        })
-
-      assert fetch_one == [status_one, status_three]
-      assert fetch_two == [status_one, status_two, status_three]
-      assert fetch_three == [status_one, status_two]
-      assert fetch_four == [status_three]
+      assert user.accepts_chat_messages
     end
+  end
+
+  test "it fetches the appropriate tag-restricted posts" do
+    user = insert(:user)
+
+    {:ok, status_one} = CommonAPI.post(user, %{status: ". #test"})
+    {:ok, status_two} = CommonAPI.post(user, %{status: ". #essais"})
+    {:ok, status_three} = CommonAPI.post(user, %{status: ". #test #reject"})
+
+    fetch_one = ActivityPub.fetch_activities([], %{type: "Create", tag: "test"})
+
+    fetch_two = ActivityPub.fetch_activities([], %{type: "Create", tag: ["test", "essais"]})
+
+    fetch_three =
+      ActivityPub.fetch_activities([], %{
+        type: "Create",
+        tag: ["test", "essais"],
+        tag_reject: ["reject"]
+      })
+
+    fetch_four =
+      ActivityPub.fetch_activities([], %{
+        type: "Create",
+        tag: ["test"],
+        tag_all: ["test", "reject"]
+      })
+
+    assert fetch_one == [status_one, status_three]
+    assert fetch_two == [status_one, status_two, status_three]
+    assert fetch_three == [status_one, status_two]
+    assert fetch_four == [status_three]
   end
 
   describe "insertion" do

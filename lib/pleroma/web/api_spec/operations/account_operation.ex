@@ -61,7 +61,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
       description: "Update the user's display and preferences.",
       operationId: "AccountController.update_credentials",
       security: [%{"oAuth" => ["write:accounts"]}],
-      requestBody: request_body("Parameters", update_creadentials_request(), required: true),
+      requestBody: request_body("Parameters", update_credentials_request(), required: true),
       responses: %{
         200 => Operation.response("Account", "application/json", Account),
         403 => Operation.response("Error", "application/json", ApiError)
@@ -474,7 +474,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  defp update_creadentials_request do
+  defp update_credentials_request do
     %Schema{
       title: "AccountUpdateCredentialsRequest",
       description: "POST body for creating an account",
@@ -507,6 +507,11 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
           allOf: [BooleanLike],
           nullable: true,
           description: "Whether manual approval of follow requests is required."
+        },
+        accepts_chat_messages: %Schema{
+          allOf: [BooleanLike],
+          nullable: true,
+          description: "Whether the user accepts receiving chat messages."
         },
         fields_attributes: %Schema{
           nullable: true,

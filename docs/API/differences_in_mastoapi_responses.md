@@ -71,6 +71,7 @@ Has these additional fields under the `pleroma` object:
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
 - `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
 - `notification_settings`: object, can be absent. See `/api/pleroma/notification_settings` for the parameters/keys returned.
+- `accepts_chat_messages`: boolean, but can be null if we don't have that information about a user
 - `favicon`: nullable URL string, Favicon image of the user's instance
 
 ### Source
@@ -186,6 +187,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `pleroma_background_image` - sets the background image of the user. Can be set to "" (an empty string) to reset.
 - `discoverable` - if true, discovery of this account in search results and other services is allowed.
 - `actor_type` - the type of this account.
+- `accepts_chat_messages` - if false, this account will reject all chat messages.
 
 All images (avatar, banner and background) can be reset to the default by sending an empty string ("") instead of a file.
 

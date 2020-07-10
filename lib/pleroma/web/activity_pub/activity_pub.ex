@@ -1226,6 +1226,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
     locked = data["manuallyApprovesFollowers"] || false
+    capabilities = data["capabilities"] || %{}
+    accepts_chat_messages = capabilities["acceptsChatMessages"]
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
@@ -1264,7 +1266,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       also_known_as: Map.get(data, "alsoKnownAs", []),
       public_key: public_key,
       inbox: data["inbox"],
-      shared_inbox: shared_inbox
+      shared_inbox: shared_inbox,
+      accepts_chat_messages: accepts_chat_messages
     }
 
     # nickname can be nil because of virtual actors

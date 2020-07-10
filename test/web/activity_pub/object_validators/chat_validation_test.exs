@@ -161,6 +161,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatValidationTest do
       refute match?({:ok, _object, _meta}, ObjectValidator.validate(valid_chat_message, []))
     end
 
+    test "does not validate if the recipient is not accepting chat messages", %{
+      valid_chat_message: valid_chat_message,
+      recipient: recipient
+    } do
+      recipient
+      |> Ecto.Changeset.change(%{accepts_chat_messages: false})
+      |> Pleroma.Repo.update!()
+
+      refute match?({:ok, _object, _meta}, ObjectValidator.validate(valid_chat_message, []))
+    end
+
     test "does not validate if the actor or the recipient is not in our system", %{
       valid_chat_message: valid_chat_message
     } do

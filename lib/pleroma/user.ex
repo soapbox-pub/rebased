@@ -138,6 +138,7 @@ defmodule Pleroma.User do
     field(:also_known_as, {:array, :string}, default: [])
     field(:inbox, :string)
     field(:shared_inbox, :string)
+    field(:accepts_chat_messages, :boolean, default: nil)
 
     embeds_one(
       :notification_settings,
@@ -436,7 +437,8 @@ defmodule Pleroma.User do
         :discoverable,
         :invisible,
         :actor_type,
-        :also_known_as
+        :also_known_as,
+        :accepts_chat_messages
       ]
     )
     |> validate_required([:name, :ap_id])
@@ -481,7 +483,8 @@ defmodule Pleroma.User do
         :pleroma_settings_store,
         :discoverable,
         :actor_type,
-        :also_known_as
+        :also_known_as,
+        :accepts_chat_messages
       ]
     )
     |> unique_constraint(:nickname)
@@ -620,6 +623,7 @@ defmodule Pleroma.User do
   def register_changeset(struct, params \\ %{}, opts \\ []) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
+    params = Map.put_new(params, :accepts_chat_messages, true)
 
     need_confirmation? =
       if is_nil(opts[:need_confirmation]) do
@@ -638,7 +642,8 @@ defmodule Pleroma.User do
       :nickname,
       :password,
       :password_confirmation,
-      :emoji
+      :emoji,
+      :accepts_chat_messages
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)

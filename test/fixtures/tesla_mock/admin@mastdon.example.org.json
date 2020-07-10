@@ -26,6 +26,9 @@
   "summary": "\u003cp\u003e\u003c/p\u003e",
   "url": "http://mastodon.example.org/@admin",
   "manuallyApprovesFollowers": false,
+  "capabilities": {
+    "acceptsChatMessages": true
+  },
   "publicKey": {
     "id": "http://mastodon.example.org/users/admin#main-key",
     "owner": "http://mastodon.example.org/users/admin",
