@@ -9,8 +9,15 @@ defmodule Pleroma.Upload.Filter.Exiftool do
   """
   @behaviour Pleroma.Upload.Filter
 
+  require Logger
+
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
-    System.cmd("exiftool", ["-overwrite_original", "-gps:all=", file], parallelism: true)
+    if Pleroma.Utils.command_available?("exiftool") do
+      System.cmd("exiftool", ["-overwrite_original", "-gps:all=", file], parallelism: true)
+    else
+      Logger.warn("exiftool is not available, filter #{__MODULE__} skipped")
+    end
+
     :ok
   end
 

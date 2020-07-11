@@ -234,10 +234,10 @@ defmodule Pleroma.Mixfile do
   defp version(version) do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
-    {_cmdgit, cmdgit_err} = System.cmd("sh", ["-c", "command -v git"])
+    git_available? = Pleroma.Utils.command_available?("git")
 
     git_pre_release =
-      if cmdgit_err == 0 do
+      if git_available? do
         {tag, tag_err} =
           System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true)
 
@@ -263,7 +263,7 @@ defmodule Pleroma.Mixfile do
 
     # Branch name as pre-release version component, denoted with a dot
     branch_name =
-      with 0 <- cmdgit_err,
+      with true <- git_available?,
            {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
            branch_name <- String.trim(branch_name),
            branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
