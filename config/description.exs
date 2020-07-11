@@ -1587,14 +1587,14 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :reject,
-        type: [:string, :regex],
+        type: [:string],
         description:
           "A list of patterns which result in message being rejected. Each pattern can be a string or a regular expression.",
         suggestions: ["foo", ~r/foo/iu]
       },
       %{
         key: :federated_timeline_removal,
-        type: [:string, :regex],
+        type: [:string],
         description:
           "A list of patterns which result in message being removed from federated timelines (a.k.a unlisted). Each pattern can be a string or a regular expression.",
         suggestions: ["foo", ~r/foo/iu]
