@@ -9,10 +9,14 @@ defmodule Pleroma.Upload.Filter.Mogrify do
   @type conversions :: conversion() | [conversion()]
 
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
-    filters = Pleroma.Config.get!([__MODULE__, :args])
+    if Pleroma.Utils.command_available?("mogrify") do
+      filters = Pleroma.Config.get!([__MODULE__, :args])
 
-    do_filter(file, filters)
-    :ok
+      do_filter(file, filters)
+      :ok
+    else
+      {:error, "mogrify command not found"}
+    end
   end
 
   def filter(_), do: :ok

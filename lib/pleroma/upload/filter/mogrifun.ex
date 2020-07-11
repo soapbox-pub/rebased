@@ -35,9 +35,12 @@ defmodule Pleroma.Upload.Filter.Mogrifun do
   ]
 
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
-    Filter.Mogrify.do_filter(file, [Enum.random(@filters)])
-
-    :ok
+    if Pleroma.Utils.command_available?("mogrify") do
+      Filter.Mogrify.do_filter(file, [Enum.random(@filters)])
+      :ok
+    else
+      {:error, "mogrify command not found"}
+    end
   end
 
   def filter(_), do: :ok
