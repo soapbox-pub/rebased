@@ -16,6 +16,7 @@ defmodule Pleroma.ApplicationRequirements do
   @spec verify!() :: :ok | VerifyError.t()
   def verify! do
     :ok
+    |> check_confirmation_accounts!
     |> check_migrations_applied!()
     |> check_rum!()
     |> handle_result()
@@ -23,6 +24,23 @@ defmodule Pleroma.ApplicationRequirements do
 
   defp handle_result(:ok), do: :ok
   defp handle_result({:error, message}), do: raise(VerifyError, message: message)
+
+  # Checks account confirmation email
+  #
+  def check_confirmation_accounts!(:ok) do
+    if Pleroma.Config.get([:instance, :account_activation_required]) &&
+         not Pleroma.Config.get([Pleroma.Emails.Mailer, :enabled]) do
+      Logger.error(
+        "To use confirmation an user account need to enable and setting mailer.\nIf you want to start Pleroma anyway, set\nconfig :pleroma, :instance, account_activation_required: false\nOtherwise setup and enable mailer."
+      )
+
+      {:error, "Confirmation account: Mailer is disabled"}
+    else
+      :ok
+    end
+  end
+
+  def check_confirmation_accounts!(result), do: result
 
   # Checks for pending migrations.
   #
