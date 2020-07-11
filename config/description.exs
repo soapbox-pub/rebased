@@ -1521,7 +1521,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :match_actor,
-        type: :map,
+        type: {:map, {:list, :string}},
         description: "Matches a series of regular expressions against the actor field",
         suggestions: [
           %{
@@ -1601,7 +1601,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :replace,
-        type: {:keyword, :string, :regex},
+        type: {:list, :tuple},
         description:
           "A list of tuples containing {pattern, replacement}. Each pattern can be a string or a regular expression.",
         suggestions: [{"foo", "bar"}, {~r/foo/iu, "bar"}]
@@ -1802,7 +1802,7 @@ config :pleroma, :config_description, [
         children: [
           %{
             key: :params,
-            type: {:keyword, :string}
+            type: {:map, :string}
           }
         ]
       }
