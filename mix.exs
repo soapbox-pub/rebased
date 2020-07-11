@@ -234,7 +234,7 @@ defmodule Pleroma.Mixfile do
   defp version(version) do
     identifier_filter = ~r/[^0-9a-z\-]+/i
 
-    git_available? = Pleroma.Utils.command_available?("git")
+    git_available? = match?({_output, 0}, System.cmd("sh", ["-c", "command -v git"]))
 
     git_pre_release =
       if git_available? do
