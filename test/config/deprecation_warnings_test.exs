@@ -54,4 +54,12 @@ defmodule Pleroma.Config.DeprecationWarningsTest do
     assert Pleroma.Config.get(new_group2) == 2
     assert Pleroma.Config.get(new_group3) == 3
   end
+
+  test "check_media_proxy_whitelist_config/0" do
+    clear_config([:media_proxy, :whitelist], ["https://example.com", "example2.com"])
+
+    assert capture_log(fn ->
+             Pleroma.Config.DeprecationWarnings.check_media_proxy_whitelist_config()
+           end) =~ "Your config is using old format (only domain) for MediaProxy whitelist option"
+  end
 end
