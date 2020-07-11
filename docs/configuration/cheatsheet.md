@@ -548,20 +548,26 @@ config :ex_aws, :s3,
 
 ### Upload filters
 
-#### Pleroma.Upload.Filter.Mogrify
-
-* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"implode", "1"}]`.
-
-#### Pleroma.Upload.Filter.Dedupe
-
-No specific configuration.
-
 #### Pleroma.Upload.Filter.AnonymizeFilename
 
 This filter replaces the filename (not the path) of an upload. For complete obfuscation, add
 `Pleroma.Upload.Filter.Dedupe` before AnonymizeFilename.
 
 * `text`: Text to replace filenames in links. If empty, `{random}.extension` will be used. You can get the original filename extension by using `{extension}`, for example `custom-file-name.{extension}`.
+
+#### Pleroma.Upload.Filter.Dedupe
+
+No specific configuration.
+
+#### Pleroma.Upload.Filter.Exiftool
+
+This filter only strips the GPS and location metadata with Exiftool leaving color profiles and attributes intact.
+
+No specific configuration.
+
+#### Pleroma.Upload.Filter.Mogrify
+
+* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"implode", "1"}]`.
 
 ## Email
 

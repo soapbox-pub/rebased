@@ -58,6 +58,7 @@ unit-testing:
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
+    - apt-get update && apt-get install -y libimage-exiftool-perl
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
@@ -89,6 +90,7 @@ unit-testing-rum:
     <<: *global_variables
     RUM_ENABLED: "true"
   script:
+    - apt-get update && apt-get install -y libimage-exiftool-perl
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
