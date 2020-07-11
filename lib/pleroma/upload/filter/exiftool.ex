@@ -14,11 +14,10 @@ defmodule Pleroma.Upload.Filter.Exiftool do
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
     if Pleroma.Utils.command_available?("exiftool") do
       System.cmd("exiftool", ["-overwrite_original", "-gps:all=", file], parallelism: true)
+      :ok
     else
-      Logger.warn("exiftool is not available, filter #{__MODULE__} skipped")
+      {:error, "exiftool command not found"}
     end
-
-    :ok
   end
 
   def filter(_), do: :ok
