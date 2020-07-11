@@ -1069,6 +1069,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :webhook_url,
+        label: "Webhook URL",
         type: :string,
         description: "Configure the Slack incoming webhook",
         suggestions: ["https://hooks.slack.com/services/YOUR-KEY-HERE"]
@@ -1587,14 +1588,14 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :reject,
-        type: [:string],
+        type: {:list, :string},
         description:
           "A list of patterns which result in message being rejected. Each pattern can be a string or a regular expression.",
         suggestions: ["foo", ~r/foo/iu]
       },
       %{
         key: :federated_timeline_removal,
-        type: [:string],
+        type: {:list, :string},
         description:
           "A list of patterns which result in message being removed from federated timelines (a.k.a unlisted). Each pattern can be a string or a regular expression.",
         suggestions: ["foo", ~r/foo/iu]
