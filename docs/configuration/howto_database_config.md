@@ -120,7 +120,7 @@ pleroma_dev=# select * from config;
 ----+-----------+------------------------------------------------------------+---------------------+---------------------+----------
   1 | :instance | \x836c0000000168026400046e616d656d00000007426c65726f6d616a | 2020-07-12 15:33:29 | 2020-07-12 15:33:29 | :pleroma
 (1 row)
-pleroma_dev=# delete from config where key = ':instance';
+pleroma_dev=# delete from config where key = ':instance' and group = ':pleroma';
 DELETE 1
 ```
 
