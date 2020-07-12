@@ -83,7 +83,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp migrate_from_db(opts) do
     if Pleroma.Config.get([:configurable_from_database]) do
-      env = Mix.env()
+      env = opts[:env] || Mix.env()
 
       config_path =
         if Pleroma.Config.get(:release) do
