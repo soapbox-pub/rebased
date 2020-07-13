@@ -23,18 +23,14 @@ config :pleroma, :config_description, [
         key: :uploader,
         type: :module,
         description: "Module which will be used for uploads",
-        suggestions: [Pleroma.Uploaders.Local, Pleroma.Uploaders.S3]
+        suggestions: {:list_behaviour_implementations, Pleroma.Uploaders.Uploader}
       },
       %{
         key: :filters,
         type: {:list, :module},
         description:
           "List of filter modules for uploads. Module names are shortened (removed leading `Pleroma.Upload.Filter.` part), but on adding custom module you need to use full name.",
-        suggestions:
-          Generator.list_modules_in_dir(
-            "lib/pleroma/upload/filter",
-            "Elixir.Pleroma.Upload.Filter."
-          )
+        suggestions: {:list_behaviour_implementations, Pleroma.Upload.Filter}
       },
       %{
         key: :link_name,
@@ -1405,11 +1401,7 @@ config :pleroma, :config_description, [
         type: [:module, {:list, :module}],
         description:
           "A list of MRF policies enabled. Module names are shortened (removed leading `Pleroma.Web.ActivityPub.MRF.` part), but on adding custom module you need to use full name.",
-        suggestions:
-          Generator.list_modules_in_dir(
-            "lib/pleroma/web/activity_pub/mrf",
-            "Elixir.Pleroma.Web.ActivityPub.MRF."
-          )
+        suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF}
       },
       %{
         key: :transparency,

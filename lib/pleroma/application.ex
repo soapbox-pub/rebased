@@ -42,6 +42,7 @@ defmodule Pleroma.Application do
     Pleroma.ApplicationRequirements.verify!()
     setup_instrumenters()
     load_custom_modules()
+    Pleroma.Docs.JSON.compile()
 
     adapter = Application.get_env(:tesla, :adapter)
 

@@ -13,21 +13,13 @@ defmodule Pleroma.Docs.GeneratorTest do
           key: :uploader,
           type: :module,
           description: "",
-          suggestions:
-            Generator.list_modules_in_dir(
-              "lib/pleroma/upload/filter",
-              "Elixir.Pleroma.Upload.Filter."
-            )
+          suggestions: {:list_behaviour_implementations, Pleroma.Upload.Filter}
         },
         %{
           key: :filters,
           type: {:list, :module},
           description: "",
-          suggestions:
-            Generator.list_modules_in_dir(
-              "lib/pleroma/web/activity_pub/mrf",
-              "Elixir.Pleroma.Web.ActivityPub.MRF."
-            )
+          suggestions: {:list_behaviour_implementations, Pleroma.Web.ActivityPub.MRF}
         },
         %{
           key: Pleroma.Upload,
