@@ -666,6 +666,11 @@ config :pleroma, :config_description, [
         description: "Require users to confirm their emails before signing in"
       },
       %{
+        key: :account_approval_required,
+        type: :boolean,
+        description: "Require users to be manually approved by an admin before signing in"
+      },
+      %{
         key: :federating,
         type: :boolean,
         description: "Enable federation with other instances"

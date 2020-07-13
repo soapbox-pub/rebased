@@ -39,6 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       pleroma: %{
         metadata: %{
           account_activation_required: Keyword.get(instance, :account_activation_required),
+          account_approval_required: Keyword.get(instance, :account_approval_required),
           features: features(),
           federation: federation(),
           fields_limits: fields_limits()
