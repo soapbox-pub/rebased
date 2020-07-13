@@ -44,15 +44,17 @@ defmodule Pleroma.HTTP.AdapterHelper do
   @spec options(URI.t(), keyword()) :: keyword()
   def options(%URI{} = uri, opts \\ []) do
     @defaults
-    |> pool_timeout()
+    |> put_timeout()
     |> Keyword.merge(opts)
     |> adapter_helper().options(uri)
   end
 
-  defp pool_timeout(opts) do
+  # For Hackney, this is the time a connection can stay idle in the pool.
+  # For Gun, this is the timeout to receive a message from Gun.
+  defp put_timeout(opts) do
     {config_key, default} =
       if adapter() == Tesla.Adapter.Gun do
-        {:pools, Config.get([:pools, :default, :timeout])}
+        {:pools, Config.get([:pools, :default, :timeout], 5_000)}
       else
         {:hackney_pools, 10_000}
       end
