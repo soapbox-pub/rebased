@@ -530,11 +530,21 @@ defmodule Pleroma.User do
   end
 
   defp put_emoji(changeset) do
-    bio = get_change(changeset, :bio)
-    name = get_change(changeset, :name)
+    emojified_fields = [:bio, :name, :raw_fields]
 
-    if bio || name do
-      emoji = Map.merge(Emoji.Formatter.get_emoji_map(bio), Emoji.Formatter.get_emoji_map(name))
+    if Enum.any?(changeset.changes, fn {k, _} -> k in emojified_fields end) do
+      bio = Emoji.Formatter.get_emoji_map(get_field(changeset, :bio))
+      name = Emoji.Formatter.get_emoji_map(get_field(changeset, :name))
+
+      emoji = Map.merge(bio, name)
+
+      emoji =
+        changeset
+        |> get_field(:raw_fields)
+        |> Enum.reduce(emoji, fn x, acc ->
+          Map.merge(acc, Emoji.Formatter.get_emoji_map(x["name"] <> x["value"]))
+        end)
+
       put_change(changeset, :emoji, emoji)
     else
       changeset
