@@ -79,8 +79,8 @@ config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
 
 config :pleroma, Oban,
   queues: false,
-  prune: :disabled,
-  crontab: false
+  crontab: false,
+  plugins: false
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 2,
@@ -110,6 +110,8 @@ config :pleroma, Pleroma.Emails.NewUsersDigestEmail, enabled: true
 config :pleroma, Pleroma.Plugs.RemoteIp, enabled: false
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: true
+
+config :pleroma, :instances_favicons, enabled: true
 
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"

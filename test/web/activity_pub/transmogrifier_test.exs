@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Object.Fetcher
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
@@ -445,56 +444,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert [^pending_follower] = User.get_follow_requests(user)
     end
 
-    test "it works for incoming blocks" do
-      user = insert(:user)
-
-      data =
-        File.read!("test/fixtures/mastodon-block-activity.json")
-        |> Poison.decode!()
-        |> Map.put("object", user.ap_id)
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["type"] == "Block"
-      assert data["object"] == user.ap_id
-      assert data["actor"] == "http://mastodon.example.org/users/admin"
-
-      blocker = User.get_cached_by_ap_id(data["actor"])
-
-      assert User.blocks?(blocker, user)
-    end
-
-    test "incoming blocks successfully tear down any follow relationship" do
-      blocker = insert(:user)
-      blocked = insert(:user)
-
-      data =
-        File.read!("test/fixtures/mastodon-block-activity.json")
-        |> Poison.decode!()
-        |> Map.put("object", blocked.ap_id)
-        |> Map.put("actor", blocker.ap_id)
-
-      {:ok, blocker} = User.follow(blocker, blocked)
-      {:ok, blocked} = User.follow(blocked, blocker)
-
-      assert User.following?(blocker, blocked)
-      assert User.following?(blocked, blocker)
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["type"] == "Block"
-      assert data["object"] == blocked.ap_id
-      assert data["actor"] == blocker.ap_id
-
-      blocker = User.get_cached_by_ap_id(data["actor"])
-      blocked = User.get_cached_by_ap_id(data["object"])
-
-      assert User.blocks?(blocker, blocked)
-
-      refute User.following?(blocker, blocked)
-      refute User.following?(blocked, blocker)
-    end
-
     test "it works for incoming accepts which were pre-accepted" do
       follower = insert(:user)
       followed = insert(:user)
@@ -502,7 +451,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, follower} = User.follow(follower, followed)
       assert User.following?(follower, followed) == true
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -532,7 +481,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = insert(:user)
       followed = insert(:user, locked: true)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -554,7 +503,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = insert(:user)
       followed = insert(:user, locked: true)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -619,7 +568,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       followed = insert(:user, locked: true)
 
       {:ok, follower} = User.follow(follower, followed)
-      {:ok, _follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, followed)
 
       assert User.following?(follower, followed) == true
 
@@ -645,7 +594,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       followed = insert(:user, locked: true)
 
       {:ok, follower} = User.follow(follower, followed)
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       assert User.following?(follower, followed) == true
 
@@ -709,22 +658,44 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
           "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
         )
 
-      attachment = %{
-        "type" => "Link",
-        "mediaType" => "video/mp4",
-        "url" => [
-          %{
-            "href" =>
-              "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-            "mediaType" => "video/mp4"
-          }
-        ]
-      }
-
       assert object.data["url"] ==
                "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
 
-      assert object.data["attachment"] == [attachment]
+      assert object.data["attachment"] == [
+               %{
+                 "type" => "Link",
+                 "mediaType" => "video/mp4",
+                 "url" => [
+                   %{
+                     "href" =>
+                       "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
+                     "mediaType" => "video/mp4"
+                   }
+                 ]
+               }
+             ]
+
+      {:ok, object} =
+        Fetcher.fetch_object_from_id(
+          "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
+        )
+
+      assert object.data["attachment"] == [
+               %{
+                 "type" => "Link",
+                 "mediaType" => "video/mp4",
+                 "url" => [
+                   %{
+                     "href" =>
+                       "https://framatube.org/static/webseed/6050732a-8a7a-43d4-a6cd-809525a1d206-1080.mp4",
+                     "mediaType" => "video/mp4"
+                   }
+                 ]
+               }
+             ]
+
+      assert object.data["url"] ==
+               "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
     end
 
     test "it accepts Flag activities" do

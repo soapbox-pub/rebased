@@ -14,7 +14,6 @@
   "logoMargin": ".1em",
   "logoMask": true,
   "minimalScopesMode": false,
-  "noAttachmentLinks": false,
   "nsfwCensorImage": "",
   "postContentType": "text/plain",
   "redirectRootLogin": "/main/friends",
@@ -22,6 +21,7 @@
   "scopeCopy": true,
   "showFeaturesPanel": true,
   "showInstanceSpecificPanel": false,
+  "sidebarRight": false,
   "subjectLineBehavior": "email",
   "theme": "pleroma-dark",
   "webPushNotifications": false

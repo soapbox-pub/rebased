@@ -97,6 +97,7 @@ config :pleroma, :uri_schemes,
     "dat",
     "dweb",
     "gopher",
+    "hyper",
     "ipfs",
     "ipns",
     "irc",
@@ -188,6 +189,7 @@ config :pleroma, :instance,
   background_image: "/images/city.jpg",
   instance_thumbnail: "/instance/thumbnail.jpeg",
   limit: 5_000,
+  description_limit: 5_000,
   chat_limit: 5_000,
   remote_limit: 100_000,
   upload_limit: 16_000_000,
@@ -436,10 +438,7 @@ config :pleroma, Pleroma.Web.Metadata,
 
 config :pleroma, Pleroma.Web.Preload,
   providers: [
-    Pleroma.Web.Preload.Providers.Instance,
-    Pleroma.Web.Preload.Providers.User,
-    Pleroma.Web.Preload.Providers.Timelines,
-    Pleroma.Web.Preload.Providers.StatusNet
+    Pleroma.Web.Preload.Providers.Instance
   ]
 
 config :pleroma, :http_security,
@@ -499,8 +498,7 @@ config :pleroma, Pleroma.User,
 
 config :pleroma, Oban,
   repo: Pleroma.Repo,
-  verbose: false,
-  prune: {:maxlen, 1500},
+  log: false,
   queues: [
     activity_expiration: 10,
     federator_incoming: 50,
@@ -706,6 +704,8 @@ config :pleroma, :mrf,
 config :tzdata, :http_client, Pleroma.HTTP.Tzdata
 
 config :ex_aws, http_client: Pleroma.HTTP.ExAws
+
+config :pleroma, :instances_favicons, enabled: false
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

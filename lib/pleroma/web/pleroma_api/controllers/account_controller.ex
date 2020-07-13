@@ -8,7 +8,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   import Pleroma.Web.ControllerHelper,
     only: [json_response: 3, add_link_headers: 2, assign_account_by_id: 2]
 
-  alias Ecto.Changeset
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
   alias Pleroma.Plugs.RateLimiter
@@ -37,17 +36,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
 
   plug(
     OAuthScopesPlug,
-    %{scopes: ["write:accounts"]}
-    # Note: the following actions are not permission-secured in Mastodon:
-    when action in [
-           :update_avatar,
-           :update_banner,
-           :update_background
-         ]
-  )
-
-  plug(
-    OAuthScopesPlug,
     %{scopes: ["read:favourites"], fallback: :proceed_unauthenticated} when action == :favourites
   )
 
@@ -65,56 +53,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     with %User{} = user <- User.get_by_nickname_or_email(nickname_or_email),
          {:ok, _} <- User.try_send_confirmation_email(user) do
       json_response(conn, :no_content, "")
-    end
-  end
-
-  @doc "PATCH /api/v1/pleroma/accounts/update_avatar"
-  def update_avatar(%{assigns: %{user: user}, body_params: %{img: ""}} = conn, _) do
-    {:ok, _user} =
-      user
-      |> Changeset.change(%{avatar: nil})
-      |> User.update_and_set_cache()
-
-    json(conn, %{url: nil})
-  end
-
-  def update_avatar(%{assigns: %{user: user}, body_params: params} = conn, _params) do
-    {:ok, %{data: data}} = ActivityPub.upload(params, type: :avatar)
-    {:ok, _user} = user |> Changeset.change(%{avatar: data}) |> User.update_and_set_cache()
-    %{"url" => [%{"href" => href} | _]} = data
-
-    json(conn, %{url: href})
-  end
-
-  @doc "PATCH /api/v1/pleroma/accounts/update_banner"
-  def update_banner(%{assigns: %{user: user}, body_params: %{banner: ""}} = conn, _) do
-    with {:ok, _user} <- User.update_banner(user, %{}) do
-      json(conn, %{url: nil})
-    end
-  end
-
-  def update_banner(%{assigns: %{user: user}, body_params: params} = conn, _) do
-    with {:ok, object} <- ActivityPub.upload(%{img: params[:banner]}, type: :banner),
-         {:ok, _user} <- User.update_banner(user, object.data) do
-      %{"url" => [%{"href" => href} | _]} = object.data
-
-      json(conn, %{url: href})
-    end
-  end
-
-  @doc "PATCH /api/v1/pleroma/accounts/update_background"
-  def update_background(%{assigns: %{user: user}, body_params: %{img: ""}} = conn, _) do
-    with {:ok, _user} <- User.update_background(user, %{}) do
-      json(conn, %{url: nil})
-    end
-  end
-
-  def update_background(%{assigns: %{user: user}, body_params: params} = conn, _) do
-    with {:ok, object} <- ActivityPub.upload(params, type: :background),
-         {:ok, _user} <- User.update_background(user, object.data) do
-      %{"url" => [%{"href" => href} | _]} = object.data
-
-      json(conn, %{url: href})
     end
   end
 

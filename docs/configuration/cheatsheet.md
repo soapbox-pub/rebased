@@ -18,6 +18,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `notify_email`: Email used for notifications.
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``.
 * `limit`: Posts character limit (CW/Subject included in the counter).
+* `discription_limit`: The character limit for image descriptions.
 * `chat_limit`: Character limit of the instance chat messages.
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner).
@@ -36,7 +37,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance.
-* `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
+* `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. See also: `restrict_unauthenticated`.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in [:frontend_configurations](#frontend_configurations) or in ``static/config.json``.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
@@ -154,7 +155,7 @@ config :pleroma, :mrf_user_allowlist, %{
   * `:strip_followers` removes followers from the ActivityPub recipient list, ensuring they won't be delivered to home timelines
   * `:reject` rejects the message entirely
 
-#### mrf_steal_emoji
+#### :mrf_steal_emoji
 * `hosts`: List of hosts to steal emojis from
 * `rejected_shortcodes`: Regex-list of shortcodes to reject
 * `size_limit`: File size limit (in bytes), checked before an emoji is saved to the disk
@@ -475,7 +476,6 @@ For each pool, the options are:
 * `:timeout` - timeout while `gun` will wait for response
 * `:max_overflow` - additional workers if pool is under load
 
-
 ## Captcha
 
 ### Pleroma.Captcha
@@ -493,7 +493,7 @@ A built-in captcha provider. Enabled by default.
 #### Pleroma.Captcha.Kocaptcha
 
 Kocaptcha is a very simple captcha service with a single API endpoint,
-the source code is here: https://github.com/koto-bank/kocaptcha. The default endpoint
+the source code is here: [kocaptcha](https://github.com/koto-bank/kocaptcha). The default endpoint
 `https://captcha.kotobank.ch` is hosted by the developer.
 
 * `endpoint`: the Kocaptcha endpoint to use.
@@ -501,6 +501,7 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 ## Uploads
 
 ### Pleroma.Upload
+
 * `uploader`: Which one of the [uploaders](#uploaders) to use.
 * `filters`: List of [upload filters](#upload-filters) to use.
 * `link_name`: When enabled Pleroma will add a `name` parameter to the url of the upload, for example `https://instance.tld/media/corndog.png?name=corndog.png`. This is needed to provide the correct filename in Content-Disposition headers when using filters like `Pleroma.Upload.Filter.Dedupe`
@@ -513,10 +514,15 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
     `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 ### Uploaders
+
 #### Pleroma.Uploaders.Local
+
 * `uploads`: Which directory to store the user-uploads in, relative to pleroma’s working directory.
 
 #### Pleroma.Uploaders.S3
+
+Don't forget to configure [Ex AWS S3](#ex-aws-s3-settings)
+
 * `bucket`: S3 bucket name.
 * `bucket_namespace`: S3 bucket namespace.
 * `public_endpoint`: S3 endpoint that the user finally accesses(ex. "https://s3.dualstack.ap-northeast-1.amazonaws.com")
@@ -525,16 +531,22 @@ For example, when using CDN to S3 virtual host format, set "".
 At this time, write CNAME to CDN in public_endpoint.
 * `streaming_enabled`: Enable streaming uploads, when enabled the file will be sent to the server in chunks as it's being read. This may be unsupported by some providers, try disabling this if you have upload problems.
 
+#### Ex AWS S3 settings
+
+* `access_key_id`: Access key ID
+* `secret_access_key`: Secret access key
+* `host`: S3 host
+
+Example:
+
+```elixir
+config :ex_aws, :s3,
+  access_key_id: "xxxxxxxxxx",
+  secret_access_key: "yyyyyyyyyy",
+  host: "s3.eu-central-1.amazonaws.com"
+```
 
 ### Upload filters
-
-#### Pleroma.Upload.Filter.Mogrify
-
-* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"implode", "1"}]`.
-
-#### Pleroma.Upload.Filter.Dedupe
-
-No specific configuration.
 
 #### Pleroma.Upload.Filter.AnonymizeFilename
 
@@ -542,6 +554,20 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 `Pleroma.Upload.Filter.Dedupe` before AnonymizeFilename.
 
 * `text`: Text to replace filenames in links. If empty, `{random}.extension` will be used. You can get the original filename extension by using `{extension}`, for example `custom-file-name.{extension}`.
+
+#### Pleroma.Upload.Filter.Dedupe
+
+No specific configuration.
+
+#### Pleroma.Upload.Filter.Exiftool
+
+This filter only strips the GPS and location metadata with Exiftool leaving color profiles and attributes intact.
+
+No specific configuration.
+
+#### Pleroma.Upload.Filter.Mogrify
+
+* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"implode", "1"}]`.
 
 ## Email
 
@@ -970,11 +996,11 @@ config :pleroma, :database_config_whitelist, [
 
 ### :restrict_unauthenticated
 
-Restrict access for unauthenticated users to timelines (public and federate), user profiles and statuses.
+Restrict access for unauthenticated users to timelines (public and federated), user profiles and statuses.
 
 * `timelines`: public and federated timelines
   * `local`: public timeline
-  * `federated`
+  * `federated`: federated timeline (includes public timeline)
 * `profiles`: user profiles
   * `local`
   * `remote`
@@ -982,7 +1008,14 @@ Restrict access for unauthenticated users to timelines (public and federate), us
   * `local`
   * `remote`
 
+Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practical sense if `restrict_unauthenticated/timelines/federated` is set to `false` (since local public activities will still be delivered to unauthenticated users as part of federated timeline).
 
 ## Pleroma.Web.ApiSpec.CastAndValidate
 
 * `:strict` a boolean, enables strict input validation (useful in development, not recommended in production). Defaults to `false`.
+
+## :instances_favicons
+
+Control favicons for instances.
+
+* `enabled`: Allow/disallow displaying and getting instances favicons

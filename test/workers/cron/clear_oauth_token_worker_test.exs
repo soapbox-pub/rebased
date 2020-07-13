@@ -16,7 +16,7 @@ defmodule Pleroma.Workers.Cron.ClearOauthTokenWorkerTest do
     )
 
     Pleroma.Config.put([:oauth2, :clean_expired_tokens], true)
-    ClearOauthTokenWorker.perform(:opts, :job)
+    ClearOauthTokenWorker.perform(%Oban.Job{})
     assert Pleroma.Repo.all(Pleroma.Web.OAuth.Token) == []
   end
 end

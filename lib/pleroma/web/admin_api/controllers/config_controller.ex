@@ -9,8 +9,6 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
   alias Pleroma.ConfigDB
   alias Pleroma.Plugs.OAuthScopesPlug
 
-  @descriptions Pleroma.Docs.JSON.compile()
-
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
   plug(OAuthScopesPlug, %{scopes: ["write"], admin: true} when action == :update)
 
@@ -25,7 +23,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigController do
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.Admin.ConfigOperation
 
   def descriptions(conn, _params) do
-    descriptions = Enum.filter(@descriptions, &whitelisted_config?/1)
+    descriptions = Enum.filter(Pleroma.Docs.JSON.compiled_descriptions(), &whitelisted_config?/1)
 
     json(conn, descriptions)
   end

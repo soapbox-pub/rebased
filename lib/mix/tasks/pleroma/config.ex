@@ -83,7 +83,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp migrate_from_db(opts) do
     if Pleroma.Config.get([:configurable_from_database]) do
-      env = opts[:env] || "prod"
+      env = opts[:env] || Pleroma.Config.get(:env)
 
       config_path =
         if Pleroma.Config.get(:release) do
@@ -105,6 +105,10 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       :ok = File.close(file)
       System.cmd("mix", ["format", config_path])
+
+      shell_info(
+        "Database configuration settings have been exported to config/#{env}.exported_from_db.secret.exs"
+      )
     else
       migration_error()
     end
@@ -112,7 +116,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
   defp migration_error do
     shell_error(
-      "Migration is not allowed in config. You can change this behavior by setting `configurable_from_database` to true."
+      "Migration is not allowed in config. You can change this behavior by setting `config :pleroma, configurable_from_database: true`"
     )
   end
 

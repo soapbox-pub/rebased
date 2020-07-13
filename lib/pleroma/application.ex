@@ -35,13 +35,14 @@ defmodule Pleroma.Application do
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
-    Pleroma.Config.Holder.save_default()
+    Config.Holder.save_default()
     Pleroma.HTML.compile_scrubbers()
     Config.DeprecationWarnings.warn()
     Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
     Pleroma.ApplicationRequirements.verify!()
     setup_instrumenters()
     load_custom_modules()
+    Pleroma.Docs.JSON.compile()
 
     adapter = Application.get_env(:tesla, :adapter)
 
@@ -162,7 +163,8 @@ defmodule Pleroma.Application do
   defp seconds_valid_interval,
     do: :timer.seconds(Config.get!([Pleroma.Captcha, :seconds_valid]))
 
-  defp build_cachex(type, opts),
+  @spec build_cachex(String.t(), keyword()) :: map()
+  def build_cachex(type, opts),
     do: %{
       id: String.to_atom("cachex_" <> type),
       start: {Cachex, :start_link, [String.to_atom(type <> "_cache"), opts]},

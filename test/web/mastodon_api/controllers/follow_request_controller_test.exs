@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
 
@@ -20,7 +20,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
     test "/api/v1/follow_requests works", %{user: user, conn: conn} do
       other_user = insert(:user)
 
-      {:ok, _activity} = ActivityPub.follow(other_user, user)
+      {:ok, _, _, _activity} = CommonAPI.follow(other_user, user)
       {:ok, other_user} = User.follow(other_user, user, :follow_pending)
 
       assert User.following?(other_user, user) == false
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
     test "/api/v1/follow_requests/:id/authorize works", %{user: user, conn: conn} do
       other_user = insert(:user)
 
-      {:ok, _activity} = ActivityPub.follow(other_user, user)
+      {:ok, _, _, _activity} = CommonAPI.follow(other_user, user)
       {:ok, other_user} = User.follow(other_user, user, :follow_pending)
 
       user = User.get_cached_by_id(user.id)
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.MastodonAPI.FollowRequestControllerTest do
     test "/api/v1/follow_requests/:id/reject works", %{user: user, conn: conn} do
       other_user = insert(:user)
 
-      {:ok, _activity} = ActivityPub.follow(other_user, user)
+      {:ok, _, _, _activity} = CommonAPI.follow(other_user, user)
 
       user = User.get_cached_by_id(user.id)
 

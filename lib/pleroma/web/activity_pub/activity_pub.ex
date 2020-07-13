@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Constants
   alias Pleroma.Conversation
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Filter
   alias Pleroma.Maps
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -321,28 +322,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec follow(User.t(), User.t(), String.t() | nil, boolean(), keyword()) ::
-          {:ok, Activity.t()} | {:error, any()}
-  def follow(follower, followed, activity_id \\ nil, local \\ true, opts \\ []) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_follow(follower, followed, activity_id, local, opts) end) do
-      result
-    end
-  end
-
-  defp do_follow(follower, followed, activity_id, local, opts) do
-    skip_notify_and_stream = Keyword.get(opts, :skip_notify_and_stream, false)
-    data = make_follow_data(follower, followed, activity_id)
-
-    with {:ok, activity} <- insert(data, local),
-         _ <- skip_notify_and_stream || notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    else
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
   @spec unfollow(User.t(), User.t(), String.t() | nil, boolean()) ::
           {:ok, Activity.t()} | nil | {:error, any()}
   def unfollow(follower, followed, activity_id \\ nil, local \\ true) do
@@ -362,33 +341,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       {:ok, activity}
     else
       nil -> nil
-      {:error, error} -> Repo.rollback(error)
-    end
-  end
-
-  @spec block(User.t(), User.t(), String.t() | nil, boolean()) ::
-          {:ok, Activity.t()} | {:error, any()}
-  def block(blocker, blocked, activity_id \\ nil, local \\ true) do
-    with {:ok, result} <-
-           Repo.transaction(fn -> do_block(blocker, blocked, activity_id, local) end) do
-      result
-    end
-  end
-
-  defp do_block(blocker, blocked, activity_id, local) do
-    unfollow_blocked = Config.get([:activitypub, :unfollow_blocked])
-
-    if unfollow_blocked and fetch_latest_follow(blocker, blocked) do
-      unfollow(blocker, blocked, nil, local)
-    end
-
-    block_data = make_block_data(blocker, blocked, activity_id)
-
-    with {:ok, activity} <- insert(block_data, local),
-         _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    else
       {:error, error} -> Repo.rollback(error)
     end
   end
@@ -473,6 +425,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_set_thread_muted_field(opts)
     |> restrict_blocked(opts)
     |> restrict_recipients(recipients, opts[:user])
+    |> restrict_filtered(opts)
     |> where(
       [activity],
       fragment(
@@ -988,6 +941,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_instance(query, _), do: query
 
+  defp restrict_filtered(query, %{user: %User{} = user}) do
+    case Filter.compose_regex(user) do
+      nil ->
+        query
+
+      regex ->
+        from([activity, object] in query,
+          where:
+            fragment("not(?->>'content' ~* ?)", object.data, ^regex) or
+              activity.actor == ^user.ap_id
+        )
+    end
+  end
+
+  defp restrict_filtered(query, %{blocking_user: %User{} = user}) do
+    restrict_filtered(query, %{user: user})
+  end
+
+  defp restrict_filtered(query, _), do: query
+
   defp exclude_poll_votes(query, %{include_poll_votes: true}), do: query
 
   defp exclude_poll_votes(query, _) do
@@ -1118,6 +1091,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_favorited_by(opts)
     |> restrict_blocked(restrict_blocked_opts)
     |> restrict_muted(restrict_muted_opts)
+    |> restrict_filtered(opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
     |> restrict_thread_visibility(opts, config)
@@ -1126,6 +1100,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_muted_reblogs(restrict_muted_reblogs_opts)
     |> restrict_instance(opts)
     |> restrict_announce_object_actor(opts)
+    |> restrict_filtered(opts)
     |> Activity.restrict_deactivated_users()
     |> exclude_poll_votes(opts)
     |> exclude_chat_messages(opts)
@@ -1251,6 +1226,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
     locked = data["manuallyApprovesFollowers"] || false
+    capabilities = data["capabilities"] || %{}
+    accepts_chat_messages = capabilities["acceptsChatMessages"]
     data = Transmogrifier.maybe_fix_user_object(data)
     discoverable = data["discoverable"] || false
     invisible = data["invisible"] || false
@@ -1289,7 +1266,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       also_known_as: Map.get(data, "alsoKnownAs", []),
       public_key: public_key,
       inbox: data["inbox"],
-      shared_inbox: shared_inbox
+      shared_inbox: shared_inbox,
+      accepts_chat_messages: accepts_chat_messages
     }
 
     # nickname can be nil because of virtual actors
@@ -1398,6 +1376,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def maybe_handle_clashing_nickname(data) do
+    nickname = data[:nickname]
+
+    with %User{} = old_user <- User.get_by_nickname(nickname),
+         {_, false} <- {:ap_id_comparison, data[:ap_id] == old_user.ap_id} do
+      Logger.info(
+        "Found an old user for #{nickname}, the old ap id is #{old_user.ap_id}, new one is #{
+          data[:ap_id]
+        }, renaming."
+      )
+
+      old_user
+      |> User.remote_user_changeset(%{nickname: "#{old_user.id}.#{old_user.nickname}"})
+      |> User.update_and_set_cache()
+    else
+      {:ap_id_comparison, true} ->
+        Logger.info(
+          "Found an old user for #{nickname}, but the ap id #{data[:ap_id]} is the same as the new user. Race condition? Not changing anything."
+        )
+
+      _ ->
+        nil
+    end
+  end
+
   def make_user_from_ap_id(ap_id) do
     user = User.get_cached_by_ap_id(ap_id)
 
@@ -1410,6 +1413,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           |> User.remote_user_changeset(data)
           |> User.update_and_set_cache()
         else
+          maybe_handle_clashing_nickname(data)
+
           data
           |> User.remote_user_changeset()
           |> Repo.insert()

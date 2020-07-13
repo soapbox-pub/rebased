@@ -44,7 +44,7 @@ defmodule Pleroma.ActivityExpirationTest do
         %{activity_id: activity.id, scheduled_at: naive_datetime}
       )
 
-    Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker.perform(:ops, :pid)
+    Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker.perform(%Oban.Job{})
 
     refute Pleroma.Repo.get(Pleroma.Activity, activity.id)
     refute Pleroma.Repo.get(Pleroma.ActivityExpiration, expiration.id)

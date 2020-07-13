@@ -160,7 +160,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
         |> Poison.decode!()
         |> Map.put("object", user.ap_id)
 
-      with_mock Pleroma.User, [:passthrough], follow: fn _, _ -> {:error, :testing} end do
+      with_mock Pleroma.User, [:passthrough], follow: fn _, _, _ -> {:error, :testing} end do
         {:ok, %Activity{data: %{"id" => id}}} = Transmogrifier.handle_incoming(data)
 
         %Activity{} = activity = Activity.get_by_ap_id(id)

@@ -10,7 +10,7 @@ defmodule Pleroma.Workers.Cron.StatsWorker do
   use Oban.Worker, queue: "background"
 
   @impl Oban.Worker
-  def perform(_opts, _job) do
+  def perform(_job) do
     Pleroma.Stats.do_collect()
   end
 end
