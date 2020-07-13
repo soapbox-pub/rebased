@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       accepts == [] -> {:ok, object}
       actor_host == Config.get([Pleroma.Web.Endpoint, :url, :host]) -> {:ok, object}
       MRF.subdomain_match?(accepts, actor_host) -> {:ok, object}
-      true -> {:reject, nil}
+      true -> {:reject, "[SimplePolicy] host not in accept list"}
     end
   end
 
@@ -31,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(rejects, actor_host) do
-      {:reject, nil}
+      {:reject, "[SimplePolicy] host in reject list"}
     else
       {:ok, object}
     end
@@ -114,7 +114,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(report_removal, actor_host) do
-      {:reject, nil}
+      {:reject, "[SimplePolicy] host in report_removal list"}
     else
       {:ok, object}
     end
@@ -159,7 +159,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(reject_deletes, actor_host) do
-      {:reject, nil}
+      {:reject, "[SimplePolicy] host in reject_deletes list"}
     else
       {:ok, object}
     end
@@ -177,7 +177,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_report_removal(actor_info, object) do
       {:ok, object}
     else
-      _e -> {:reject, nil}
+      {:reject, nil} -> {:reject, "[SimplePolicy]"}
+      {:reject, _} = e -> e
+      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 
@@ -191,7 +193,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_banner_removal(actor_info, object) do
       {:ok, object}
     else
-      _e -> {:reject, nil}
+      {:reject, nil} -> {:reject, "[SimplePolicy]"}
+      {:reject, _} = e -> e
+      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 

@@ -134,12 +134,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
     if user.local == true do
       {:ok, message}
     else
-      {:reject, nil}
+      {:reject,
+       "[TagPolicy] Follow from #{actor} tagged with mrf_tag:disable-remote-subscription"}
     end
   end
 
-  defp process_tag("mrf_tag:disable-any-subscription", %{"type" => "Follow"}),
-    do: {:reject, nil}
+  defp process_tag("mrf_tag:disable-any-subscription", %{"type" => "Follow", "actor" => actor}),
+    do: {:reject, "[TagPolicy] Follow from #{actor} tagged with mrf_tag:disable-any-subscription"}
 
   defp process_tag(_, message), do: {:ok, message}
 

@@ -12,8 +12,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicy do
     reject_actors = Pleroma.Config.get([:mrf_mention, :actors], [])
     recipients = (message["to"] || []) ++ (message["cc"] || [])
 
-    if Enum.any?(recipients, fn recipient -> Enum.member?(reject_actors, recipient) end) do
-      {:reject, nil}
+    if rejected_mention =
+         Enum.find(recipients, fn recipient -> Enum.member?(reject_actors, recipient) end) do
+      {:reject, "[MentionPolicy] Rejected for mention of #{rejected_mention}"}
     else
       {:ok, message}
     end

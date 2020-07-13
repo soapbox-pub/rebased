@@ -25,7 +25,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
         }
       }
 
-      assert {:reject, nil} == KeywordPolicy.filter(message)
+      assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} =
+               KeywordPolicy.filter(message)
     end
 
     test "rejects if string matches in summary" do
@@ -39,7 +40,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
         }
       }
 
-      assert {:reject, nil} == KeywordPolicy.filter(message)
+      assert {:reject, "[KeywordPolicy] Matches with rejected keyword"} =
+               KeywordPolicy.filter(message)
     end
 
     test "rejects if regex matches in content" do
@@ -55,7 +57,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
                    }
                  }
 
-                 {:reject, nil} == KeywordPolicy.filter(message)
+                 {:reject, "[KeywordPolicy] Matches with rejected keyword"} ==
+                   KeywordPolicy.filter(message)
                end)
     end
 
@@ -72,7 +75,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
                    }
                  }
 
-                 {:reject, nil} == KeywordPolicy.filter(message)
+                 {:reject, "[KeywordPolicy] Matches with rejected keyword"} ==
+                   KeywordPolicy.filter(message)
                end)
     end
   end
