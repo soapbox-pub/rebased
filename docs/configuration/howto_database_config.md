@@ -13,9 +13,21 @@ The configuration of Pleroma has traditionally been managed with a config file, 
 
 2. Run the mix task to migrate to the database. You'll receive some debugging output and a few messages informing you of what happened.
 
+  **Source:**
+  
   ```
   $ mix pleroma.config migrate_to_db
+  ```
   
+  or
+  
+  **OTP:**
+  
+  ```
+  $ ./bin/pleroma_ctl config migrate_to_db
+  ```
+
+  ```  
   10:04:34.155 [debug] QUERY OK source="config" db=1.6ms decode=2.0ms queue=33.5ms idle=0.0ms
 SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 []
 Migrating settings from file: /home/pleroma/config/dev.secret.exs
@@ -82,9 +94,21 @@ config :pleroma, configurable_from_database: true
 
 2. Run the mix task to migrate back from the database. You'll receive some debugging output and a few messages informing you of what happened.
 
+  **Source:**
+  
   ```
   $ mix pleroma.config migrate_from_db
+  ```
+  
+  or
+  
+  **OTP:**
+  
+  ```
+  $ ./bin/pleroma_ctl config migrate_from_db
+  ```
 
+  ```
   10:26:30.593 [debug] QUERY OK source="config" db=9.8ms decode=1.2ms queue=26.0ms idle=0.0ms
 SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 []
 
