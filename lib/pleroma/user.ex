@@ -634,8 +634,16 @@ defmodule Pleroma.User do
         opts[:need_confirmation]
       end
 
+    need_approval? =
+      if is_nil(opts[:need_approval]) do
+        Config.get([:instance, :account_approval_required])
+      else
+        opts[:need_approval]
+      end
+
     struct
     |> confirmation_changeset(need_confirmation: need_confirmation?)
+    |> approval_changeset(need_approval: need_approval?)
     |> cast(params, [
       :bio,
       :raw_bio,
@@ -2143,6 +2151,12 @@ defmodule Pleroma.User do
       end
 
     cast(user, params, [:confirmation_pending, :confirmation_token])
+  end
+
+  @spec approval_changeset(User.t(), keyword()) :: Changeset.t()
+  def approval_changeset(user, need_approval: need_approval?) do
+    params = if need_approval?, do: %{approval_pending: true}, else: %{approval_pending: false}
+    cast(user, params, [:approval_pending])
   end
 
   def add_pinnned_activity(user, %Pleroma.Activity{id: id}) do

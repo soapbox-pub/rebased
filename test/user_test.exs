@@ -516,6 +516,27 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "user registration, with :account_approval_required" do
+    @full_user_data %{
+      bio: "A guy",
+      name: "my name",
+      nickname: "nick",
+      password: "test",
+      password_confirmation: "test",
+      email: "email@example.com"
+    }
+    setup do: clear_config([:instance, :account_approval_required], true)
+
+    test "it creates unapproved user" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.approval_pending
+    end
+  end
+
   describe "get_or_fetch/1" do
     test "gets an existing user by nickname" do
       user = insert(:user)
