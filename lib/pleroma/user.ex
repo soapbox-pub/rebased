@@ -106,6 +106,7 @@ defmodule Pleroma.User do
     field(:locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
     field(:password_reset_pending, :boolean, default: false)
+    field(:approval_pending, :boolean, default: false)
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:domain_blocks, {:array, :string}, default: [])
@@ -262,6 +263,7 @@ defmodule Pleroma.User do
   @spec account_status(User.t()) :: account_status()
   def account_status(%User{deactivated: true}), do: :deactivated
   def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
+  def account_status(%User{approval_pending: true}), do: :approval_pending
 
   def account_status(%User{confirmation_pending: true}) do
     if Config.get([:instance, :account_activation_required]) do

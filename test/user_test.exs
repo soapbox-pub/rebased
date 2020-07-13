@@ -1342,6 +1342,11 @@ defmodule Pleroma.UserTest do
       user = insert(:user, local: true, confirmation_pending: false, deactivated: true)
       assert User.account_status(user) == :deactivated
     end
+
+    test "returns :approval_pending for unapproved user" do
+      user = insert(:user, local: true, confirmation_pending: false, approval_pending: true)
+      assert User.account_status(user) == :approval_pending
+    end
   end
 
   describe "superuser?/1" do
