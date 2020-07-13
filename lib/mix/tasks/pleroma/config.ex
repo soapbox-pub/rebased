@@ -105,7 +105,10 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       :ok = File.close(file)
       System.cmd("mix", ["format", config_path])
-      shell_info("Database configuration settings have been exported to config/#{env}.exported_from_db.secret.exs")
+
+      shell_info(
+        "Database configuration settings have been exported to config/#{env}.exported_from_db.secret.exs"
+      )
     else
       migration_error()
     end
