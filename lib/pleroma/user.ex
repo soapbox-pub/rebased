@@ -107,6 +107,7 @@ defmodule Pleroma.User do
     field(:confirmation_pending, :boolean, default: false)
     field(:password_reset_pending, :boolean, default: false)
     field(:approval_pending, :boolean, default: false)
+    field(:registration_reason, :string, default: nil)
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:domain_blocks, {:array, :string}, default: [])
@@ -653,7 +654,8 @@ defmodule Pleroma.User do
       :password,
       :password_confirmation,
       :emoji,
-      :accepts_chat_messages
+      :accepts_chat_messages,
+      :registration_reason
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
