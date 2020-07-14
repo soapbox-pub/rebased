@@ -1202,6 +1202,31 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "approve" do
+    test "approves a user" do
+      user = insert(:user, approval_pending: true)
+      assert true == user.approval_pending
+      {:ok, user} = User.approve(user)
+      assert false == user.approval_pending
+    end
+
+    test "approves a list of users" do
+      unapproved_users = [
+        insert(:user, approval_pending: true),
+        insert(:user, approval_pending: true),
+        insert(:user, approval_pending: true)
+      ]
+
+      {:ok, users} = User.approve(unapproved_users)
+
+      assert Enum.count(users) == 3
+
+      Enum.each(users, fn user ->
+        assert false == user.approval_pending
+      end)
+    end
+  end
+
   describe "delete" do
     setup do
       {:ok, user} = insert(:user) |> User.set_cache()

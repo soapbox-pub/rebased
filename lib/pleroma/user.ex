@@ -1471,6 +1471,19 @@ defmodule Pleroma.User do
     end
   end
 
+  def approve(users) when is_list(users) do
+    Repo.transaction(fn ->
+      Enum.map(users, fn user ->
+        with {:ok, user} <- approve(user), do: user
+      end)
+    end)
+  end
+
+  def approve(%User{} = user) do
+    change(user, approval_pending: false)
+    |> update_and_set_cache()
+  end
+
   def update_notification_settings(%User{} = user, settings) do
     user
     |> cast(%{notification_settings: settings}, [])

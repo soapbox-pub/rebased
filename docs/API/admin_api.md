@@ -246,6 +246,24 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
+## `PATCH /api/pleroma/admin/users/approve`
+
+### Approve user
+
+- Params:
+  - `nicknames`: nicknames array
+- Response:
+
+```json
+{
+  users: [
+    {
+      // user object
+    }
+  ]
+}
+```
+
 ## `GET /api/pleroma/admin/users/:nickname_or_id`
 
 ### Retrive the details of a user

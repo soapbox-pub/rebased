@@ -1257,6 +1257,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              "@#{admin.nickname} deactivated users: @#{user_one.nickname}, @#{user_two.nickname}"
   end
 
+  test "PATCH /api/pleroma/admin/users/approve", %{admin: admin, conn: conn} do
+    user_one = insert(:user, approval_pending: true)
+    user_two = insert(:user, approval_pending: true)
+
+    conn =
+      patch(
+        conn,
+        "/api/pleroma/admin/users/approve",
+        %{nicknames: [user_one.nickname, user_two.nickname]}
+      )
+
+    response = json_response(conn, 200)
+    assert Enum.map(response["users"], & &1["approval_pending"]) == [false, false]
+
+    log_entry = Repo.one(ModerationLog)
+
+    assert ModerationLog.get_log_entry_message(log_entry) ==
+             "@#{admin.nickname} approved users: @#{user_one.nickname}, @#{user_two.nickname}"
+  end
+
   test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation", %{admin: admin, conn: conn} do
     user = insert(:user)
 
