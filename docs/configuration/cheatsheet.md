@@ -629,8 +629,7 @@ Email notifications settings.
 Configuration options described in [Oban readme](https://github.com/sorentwo/oban#usage):
 
 * `repo` - app's Ecto repo (`Pleroma.Repo`)
-* `verbose` - logs verbosity
-* `prune` - non-retryable jobs [pruning settings](https://github.com/sorentwo/oban#pruning) (`:disabled` / `{:maxlen, value}` / `{:maxage, value}`)
+* `log` - logs verbosity
 * `queues` - job queues (see below)
 * `crontab` - periodic jobs, see [`Oban.Cron`](#obancron)
 
