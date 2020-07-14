@@ -34,7 +34,8 @@ defmodule Pleroma.ApplicationRequirements do
         "Account activation enabled, but no Mailer settings enabled.\nPlease set config :pleroma, :instance, account_activation_required: false\nOtherwise setup and enable Mailer."
       )
 
-      {:error, "Account activation enabled, but Mailer is disabled. Cannot send confirmation emails."}
+      {:error,
+       "Account activation enabled, but Mailer is disabled. Cannot send confirmation emails."}
     else
       :ok
     end

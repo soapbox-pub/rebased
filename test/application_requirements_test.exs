@@ -26,7 +26,7 @@ defmodule Pleroma.ApplicationRequirementsTest do
       Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], false)
 
       assert_raise Pleroma.ApplicationRequirements.VerifyError,
-                   "Confirmation account: Mailer is disabled",
+                   "Account activation enabled, but Mailer is disabled. Cannot send confirmation emails.",
                    fn ->
                      capture_log(&Pleroma.ApplicationRequirements.verify!/0)
                    end
