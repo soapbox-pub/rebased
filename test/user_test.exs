@@ -1390,7 +1390,10 @@ defmodule Pleroma.UserTest do
     end
 
     test "returns :approval_pending for unapproved user" do
-      user = insert(:user, local: true, confirmation_pending: false, approval_pending: true)
+      user = insert(:user, local: true, approval_pending: true)
+      assert User.account_status(user) == :approval_pending
+
+      user = insert(:user, local: true, confirmation_pending: true, approval_pending: true)
       assert User.account_status(user) == :approval_pending
     end
   end
