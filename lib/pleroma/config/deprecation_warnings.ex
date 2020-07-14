@@ -54,6 +54,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     check_hellthread_threshold()
     mrf_user_allowlist()
     check_old_mrf_config()
+    check_media_proxy_whitelist_config()
   end
 
   def check_old_mrf_config do
@@ -65,7 +66,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     move_namespace_and_warn(@mrf_config_map, warning_preface)
   end
 
-  @spec move_namespace_and_warn([config_map()], String.t()) :: :ok
+  @spec move_namespace_and_warn([config_map()], String.t()) :: :ok | nil
   def move_namespace_and_warn(config_map, warning_preface) do
     warning =
       Enum.reduce(config_map, "", fn
@@ -82,6 +83,18 @@ defmodule Pleroma.Config.DeprecationWarnings do
 
     if warning != "" do
       Logger.warn(warning_preface <> warning)
+    end
+  end
+
+  @spec check_media_proxy_whitelist_config() :: :ok | nil
+  def check_media_proxy_whitelist_config do
+    whitelist = Config.get([:media_proxy, :whitelist])
+
+    if Enum.any?(whitelist, &(not String.starts_with?(&1, "http"))) do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using old format (only domain) for MediaProxy whitelist option. Setting should work for now, but you are advised to change format to scheme with port to prevent possible issues later.
+      """)
     end
   end
 end
