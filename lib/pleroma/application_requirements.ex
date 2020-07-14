@@ -31,10 +31,10 @@ defmodule Pleroma.ApplicationRequirements do
     if Pleroma.Config.get([:instance, :account_activation_required]) &&
          not Pleroma.Config.get([Pleroma.Emails.Mailer, :enabled]) do
       Logger.error(
-        "To use confirmation an user account need to enable and setting mailer.\nIf you want to start Pleroma anyway, set\nconfig :pleroma, :instance, account_activation_required: false\nOtherwise setup and enable mailer."
+        "Account activation enabled, but no Mailer settings enabled.\nPlease set config :pleroma, :instance, account_activation_required: false\nOtherwise setup and enable Mailer."
       )
 
-      {:error, "Confirmation account: Mailer is disabled"}
+      {:error, "Account activation enabled, but Mailer is disabled. Cannot send confirmation emails."}
     else
       :ok
     end
