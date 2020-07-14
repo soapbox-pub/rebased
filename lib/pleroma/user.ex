@@ -42,7 +42,12 @@ defmodule Pleroma.User do
   require Logger
 
   @type t :: %__MODULE__{}
-  @type account_status :: :active | :deactivated | :password_reset_pending | :confirmation_pending
+  @type account_status ::
+          :active
+          | :deactivated
+          | :password_reset_pending
+          | :confirmation_pending
+          | :approval_pending
   @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
