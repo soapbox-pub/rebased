@@ -20,6 +20,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
       summary: "Get a list of generated invites",
       operationId: "AdminAPI.InviteController.index",
       security: [%{"oAuth" => ["read:invites"]}],
+      parameters: admin_api_params(),
       responses: %{
         200 =>
           Operation.response("Invites", "application/json", %Schema{
@@ -51,6 +52,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
       summary: "Create an account registration invite token",
       operationId: "AdminAPI.InviteController.create",
       security: [%{"oAuth" => ["write:invites"]}],
+      parameters: admin_api_params(),
       requestBody:
         request_body("Parameters", %Schema{
           type: :object,
@@ -71,6 +73,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
       summary: "Revoke invite by token",
       operationId: "AdminAPI.InviteController.revoke",
       security: [%{"oAuth" => ["write:invites"]}],
+      parameters: admin_api_params(),
       requestBody:
         request_body(
           "Parameters",
@@ -97,6 +100,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.InviteOperation do
       summary: "Sends registration invite via email",
       operationId: "AdminAPI.InviteController.email",
       security: [%{"oAuth" => ["write:invites"]}],
+      parameters: admin_api_params(),
       requestBody:
         request_body(
           "Parameters",

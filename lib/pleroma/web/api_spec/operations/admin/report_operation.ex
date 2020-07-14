@@ -48,6 +48,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
           %Schema{type: :integer, default: 50},
           "Number number of log entries per page"
         )
+        | admin_api_params()
       ],
       responses: %{
         200 =>
@@ -71,7 +72,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
       tags: ["Admin", "Reports"],
       summary: "Get an individual report",
       operationId: "AdminAPI.ReportController.show",
-      parameters: [id_param()],
+      parameters: [id_param() | admin_api_params()],
       security: [%{"oAuth" => ["read:reports"]}],
       responses: %{
         200 => Operation.response("Report", "application/json", report()),
@@ -86,6 +87,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
       summary: "Change the state of one or multiple reports",
       operationId: "AdminAPI.ReportController.update",
       security: [%{"oAuth" => ["write:reports"]}],
+      parameters: admin_api_params(),
       requestBody: request_body("Parameters", update_request(), required: true),
       responses: %{
         204 => no_content_response(),
@@ -100,7 +102,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
       tags: ["Admin", "Reports"],
       summary: "Create report note",
       operationId: "AdminAPI.ReportController.notes_create",
-      parameters: [id_param()],
+      parameters: [id_param() | admin_api_params()],
       requestBody:
         request_body("Parameters", %Schema{
           type: :object,
@@ -124,6 +126,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.ReportOperation do
       parameters: [
         Operation.parameter(:report_id, :path, :string, "Report ID"),
         Operation.parameter(:id, :path, :string, "Note ID")
+        | admin_api_params()
       ],
       security: [%{"oAuth" => ["write:reports"]}],
       responses: %{
