@@ -47,6 +47,8 @@ Configuration options:
       "tags": array,
       "avatar": string,
       "display_name": string,
+      "confirmation_pending": bool,
+      "approval_pending": bool,
       "registration_reason": string,
     },
     ...
