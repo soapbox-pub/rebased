@@ -35,6 +35,10 @@ defmodule Pleroma.Application do
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
+    # Scrubbers are compiled at runtime and therefore will cause a conflict
+    # every time the application is restarted, so we disable module
+    # conflicts at runtime
+    Code.compiler_options(ignore_module_conflict: true)
     Config.Holder.save_default()
     Pleroma.HTML.compile_scrubbers()
     Config.DeprecationWarnings.warn()
@@ -42,6 +46,7 @@ defmodule Pleroma.Application do
     Pleroma.ApplicationRequirements.verify!()
     setup_instrumenters()
     load_custom_modules()
+    Pleroma.Docs.JSON.compile()
 
     adapter = Application.get_env(:tesla, :adapter)
 

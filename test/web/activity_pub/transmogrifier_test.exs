@@ -774,6 +774,29 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert [user.follower_address] == activity.data["to"]
     end
 
+    test "it correctly processes messages with weirdness in address fields" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => [nil, user.follower_address],
+        "cc" => ["https://www.w3.org/ns/activitystreams#Public", ["¿"]],
+        "type" => "Create",
+        "object" => %{
+          "content" => "…",
+          "type" => "Note",
+          "attributedTo" => user.ap_id,
+          "inReplyTo" => nil
+        },
+        "actor" => user.ap_id
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["cc"]
+      assert [user.follower_address] == activity.data["to"]
+    end
+
     test "it accepts Move activities" do
       old_user = insert(:user)
       new_user = insert(:user)

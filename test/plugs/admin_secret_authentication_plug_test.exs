@@ -4,9 +4,14 @@
 
 defmodule Pleroma.Plugs.AdminSecretAuthenticationPlugTest do
   use Pleroma.Web.ConnCase, async: true
+
+  import Mock
   import Pleroma.Factory
 
   alias Pleroma.Plugs.AdminSecretAuthenticationPlug
+  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Plugs.PlugHelper
+  alias Pleroma.Plugs.RateLimiter
 
   test "does nothing if a user is assigned", %{conn: conn} do
     user = insert(:user)
@@ -25,6 +30,10 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlugTest do
   describe "when secret set it assigns an admin user" do
     setup do: clear_config([:admin_token])
 
+    setup_with_mocks([{RateLimiter, [:passthrough], []}]) do
+      :ok
+    end
+
     test "with `admin_token` query parameter", %{conn: conn} do
       Pleroma.Config.put(:admin_token, "password123")
 
@@ -33,12 +42,14 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlugTest do
         |> AdminSecretAuthenticationPlug.call(%{})
 
       refute conn.assigns[:user]
+      assert called(RateLimiter.call(conn, name: :authentication))
 
       conn =
         %{conn | params: %{"admin_token" => "password123"}}
         |> AdminSecretAuthenticationPlug.call(%{})
 
       assert conn.assigns[:user].is_admin
+      assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
     end
 
     test "with `x-admin-token` HTTP header", %{conn: conn} do
@@ -50,6 +61,7 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlugTest do
         |> AdminSecretAuthenticationPlug.call(%{})
 
       refute conn.assigns[:user]
+      assert called(RateLimiter.call(conn, name: :authentication))
 
       conn =
         conn
@@ -57,6 +69,7 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlugTest do
         |> AdminSecretAuthenticationPlug.call(%{})
 
       assert conn.assigns[:user].is_admin
+      assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
     end
   end
 end
