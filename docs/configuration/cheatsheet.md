@@ -815,6 +815,8 @@ or
 curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/pleroma/admin/users/invites"
 ```
 
+Warning: it's discouraged to use this feature because of the associated security risk: static / rarely changed instance-wide token is much weaker compared to email-password pair of a real admin user; consider using HTTP Basic Auth or OAuth-based authentication instead.
+
 ### :auth
 
 * `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator.
