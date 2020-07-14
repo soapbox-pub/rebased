@@ -46,7 +46,8 @@ Configuration options:
       "local": bool,
       "tags": array,
       "avatar": string,
-      "display_name": string
+      "display_name": string,
+      "registration_reason": string,
     },
     ...
   ]
