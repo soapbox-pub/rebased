@@ -19,6 +19,7 @@ Configuration options:
     - `local`: only local users
     - `external`: only external users
     - `active`: only active users
+    - `need_approval`: only unapproved users
     - `deactivated`: only deactivated users
     - `is_admin`: users with admin role
     - `is_moderator`: users with moderator role

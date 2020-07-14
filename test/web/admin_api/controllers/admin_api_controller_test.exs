@@ -991,6 +991,44 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
     end
 
+    test "only unapproved users", %{conn: conn} do
+      user =
+        insert(:user,
+          nickname: "sadboy",
+          approval_pending: true,
+          registration_reason: "Plz let me in!"
+        )
+
+      insert(:user, nickname: "happyboy", approval_pending: false)
+
+      conn = get(conn, "/api/pleroma/admin/users?filters=need_approval")
+
+      users =
+        [
+          %{
+            "deactivated" => user.deactivated,
+            "id" => user.id,
+            "nickname" => user.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => true,
+            "tags" => [],
+            "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user.name || user.nickname),
+            "confirmation_pending" => false,
+            "approval_pending" => true,
+            "url" => user.ap_id,
+            "registration_reason" => "Plz let me in!"
+          }
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
+      assert json_response(conn, 200) == %{
+               "count" => 1,
+               "page_size" => 50,
+               "users" => users
+             }
+    end
+
     test "load only admins", %{conn: conn, admin: admin} do
       second_admin = insert(:user, is_admin: true)
       insert(:user)

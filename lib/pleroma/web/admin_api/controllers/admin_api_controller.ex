@@ -350,7 +350,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  @filters ~w(local external active deactivated is_admin is_moderator)
+  @filters ~w(local external active deactivated need_approval is_admin is_moderator)
 
   @spec maybe_parse_filters(String.t()) :: %{required(String.t()) => true} | %{}
   defp maybe_parse_filters(filters) when is_nil(filters) or filters == "", do: %{}
