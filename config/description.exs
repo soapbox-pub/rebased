@@ -2008,14 +2008,14 @@ config :pleroma, :config_description, [
     label: "Pleroma Admin Token",
     type: :group,
     description:
-      "Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the `admin_token` parameter (risky; use HTTP Basic Auth or OAuth-based authentication if possible)",
+      "Allows setting a token that can be used to authenticate requests with admin privileges without a normal user account token. Append the `admin_token` parameter to requests to utilize it. (Please reconsider using HTTP Basic Auth or OAuth-based authentication if possible)",
     children: [
       %{
         key: :admin_token,
         type: :string,
         description: "Admin token",
         suggestions: [
-          "We recommend NOT setting the value do to increased security risk; if set, use a secure random long string or UUID (and change it as often as possible)"
+          "Please use a high entropy string or UUID"
         ]
       }
     ]
