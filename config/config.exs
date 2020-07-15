@@ -172,7 +172,7 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :tesla, adapter: Tesla.Adapter.Hackney
+config :tesla, adapter: Tesla.Adapter.Gun
 
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
@@ -648,32 +648,30 @@ config :pleroma, Pleroma.Repo,
   prepare: :unnamed
 
 config :pleroma, :connections_pool,
-  checkin_timeout: 250,
+  reclaim_multiplier: 0.1,
+  connection_acquisition_wait: 250,
+  connection_acquisition_retries: 5,
   max_connections: 250,
-  retry: 1,
-  retry_timeout: 1000,
+  max_idle_time: 30_000,
+  retry: 0,
   await_up_timeout: 5_000
 
 config :pleroma, :pools,
   federation: [
     size: 50,
-    max_overflow: 10,
-    timeout: 150_000
+    max_waiting: 10
   ],
   media: [
     size: 50,
-    max_overflow: 10,
-    timeout: 150_000
+    max_waiting: 10
   ],
   upload: [
     size: 25,
-    max_overflow: 5,
-    timeout: 300_000
+    max_waiting: 5
   ],
   default: [
     size: 10,
-    max_overflow: 2,
-    timeout: 10_000
+    max_waiting: 2
   ]
 
 config :pleroma, :hackney_pools,

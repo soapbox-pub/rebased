@@ -3161,10 +3161,18 @@ config :pleroma, :config_description, [
     description: "Advanced settings for `gun` connections pool",
     children: [
       %{
-        key: :checkin_timeout,
+        key: :connection_acquisition_wait,
         type: :integer,
-        description: "Timeout to checkin connection from pool. Default: 250ms.",
+        description:
+          "Timeout to acquire a connection from pool.The total max time is this value multiplied by the number of retries. Default: 250ms.",
         suggestions: [250]
+      },
+      %{
+        key: :connection_acquisition_retries,
+        type: :integer,
+        description:
+          "Number of attempts to acquire the connection from the pool if it is overloaded. Default: 5",
+        suggestions: [5]
       },
       %{
         key: :max_connections,
@@ -3173,24 +3181,17 @@ config :pleroma, :config_description, [
         suggestions: [250]
       },
       %{
-        key: :retry,
-        type: :integer,
-        description:
-          "Number of retries, while `gun` will try to reconnect if connection goes down. Default: 1.",
-        suggestions: [1]
-      },
-      %{
-        key: :retry_timeout,
-        type: :integer,
-        description:
-          "Time between retries when `gun` will try to reconnect in milliseconds. Default: 1000ms.",
-        suggestions: [1000]
-      },
-      %{
         key: :await_up_timeout,
         type: :integer,
         description: "Timeout while `gun` will wait until connection is up. Default: 5000ms.",
         suggestions: [5000]
+      },
+      %{
+        key: :reclaim_multiplier,
+        type: :integer,
+        description:
+          "Multiplier for the number of idle connection to be reclaimed if the pool is full. For example if the pool maxes out at 250 connections and this setting is set to 0.3, the pool will reclaim at most 75 idle connections if it's overloaded. Default: 0.1",
+        suggestions: [0.1]
       }
     ]
   },
@@ -3199,108 +3200,29 @@ config :pleroma, :config_description, [
     key: :pools,
     type: :group,
     description: "Advanced settings for `gun` workers pools",
-    children: [
-      %{
-        key: :federation,
-        type: :keyword,
-        description: "Settings for federation pool.",
-        children: [
-          %{
-            key: :size,
-            type: :integer,
-            description: "Number workers in the pool.",
-            suggestions: [50]
-          },
-          %{
-            key: :max_overflow,
-            type: :integer,
-            description: "Number of additional workers if pool is under load.",
-            suggestions: [10]
-          },
-          %{
-            key: :timeout,
-            type: :integer,
-            description: "Timeout while `gun` will wait for response.",
-            suggestions: [150_000]
-          }
-        ]
-      },
-      %{
-        key: :media,
-        type: :keyword,
-        description: "Settings for media pool.",
-        children: [
-          %{
-            key: :size,
-            type: :integer,
-            description: "Number workers in the pool.",
-            suggestions: [50]
-          },
-          %{
-            key: :max_overflow,
-            type: :integer,
-            description: "Number of additional workers if pool is under load.",
-            suggestions: [10]
-          },
-          %{
-            key: :timeout,
-            type: :integer,
-            description: "Timeout while `gun` will wait for response.",
-            suggestions: [150_000]
-          }
-        ]
-      },
-      %{
-        key: :upload,
-        type: :keyword,
-        description: "Settings for upload pool.",
-        children: [
-          %{
-            key: :size,
-            type: :integer,
-            description: "Number workers in the pool.",
-            suggestions: [25]
-          },
-          %{
-            key: :max_overflow,
-            type: :integer,
-            description: "Number of additional workers if pool is under load.",
-            suggestions: [5]
-          },
-          %{
-            key: :timeout,
-            type: :integer,
-            description: "Timeout while `gun` will wait for response.",
-            suggestions: [300_000]
-          }
-        ]
-      },
-      %{
-        key: :default,
-        type: :keyword,
-        description: "Settings for default pool.",
-        children: [
-          %{
-            key: :size,
-            type: :integer,
-            description: "Number workers in the pool.",
-            suggestions: [10]
-          },
-          %{
-            key: :max_overflow,
-            type: :integer,
-            description: "Number of additional workers if pool is under load.",
-            suggestions: [2]
-          },
-          %{
-            key: :timeout,
-            type: :integer,
-            description: "Timeout while `gun` will wait for response.",
-            suggestions: [10_000]
-          }
-        ]
-      }
-    ]
+    children:
+      Enum.map([:federation, :media, :upload, :default], fn pool_name ->
+        %{
+          key: pool_name,
+          type: :keyword,
+          description: "Settings for #{pool_name} pool.",
+          children: [
+            %{
+              key: :size,
+              type: :integer,
+              description: "Maximum number of concurrent requests in the pool.",
+              suggestions: [50]
+            },
+            %{
+              key: :max_waiting,
+              type: :integer,
+              description:
+                "Maximum number of requests waiting for other requests to finish. After this number is reached, the pool will start returning errrors when a new request is made",
+              suggestions: [10]
+            }
+          ]
+        }
+      end)
   },
   %{
     group: :pleroma,
