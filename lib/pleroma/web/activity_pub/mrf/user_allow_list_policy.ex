@@ -14,7 +14,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
     if actor in allow_list do
       {:ok, object}
     else
-      {:reject, nil}
+      {:reject, "[UserAllowListPolicy] #{actor} not in the list"}
     end
   end
 

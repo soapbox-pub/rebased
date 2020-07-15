@@ -25,6 +25,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Added `pleroma.metadata.fields_limits` to /api/v1/instance
 - Mastodon API: On deletion, returns the original post text.
 - Mastodon API: Add `pleroma.unread_count` to the Marker entity.
+- **Breaking:** Notification Settings API for suppressing notifications
+  has been simplified down to `block_from_strangers`.
+- **Breaking:** Notification Settings API option for hiding push notification
+  contents has been renamed to `hide_notification_contents`
 </details>
 
 <details>

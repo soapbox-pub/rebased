@@ -50,7 +50,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
     } do
       Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 2})
 
-      {:reject, nil} = filter(message)
+      assert {:reject, "[HellthreadPolicy] 3 recipients is over the limit of 2"} ==
+               filter(message)
     end
 
     test "does not reject the message if the recipient count is below reject_threshold", %{

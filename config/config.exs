@@ -512,6 +512,7 @@ config :pleroma, Oban,
     attachments_cleanup: 5,
     new_users_digest: 1
   ],
+  plugins: [Oban.Plugins.Pruner],
   crontab: [
     {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
     {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
