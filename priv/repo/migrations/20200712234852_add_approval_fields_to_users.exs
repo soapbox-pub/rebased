@@ -1,9 +1,10 @@
-defmodule Pleroma.Repo.Migrations.AddApprovalPendingToUsers do
+defmodule Pleroma.Repo.Migrations.AddApprovalFieldsToUsers do
   use Ecto.Migration
 
   def change do
     alter table(:users) do
       add(:approval_pending, :boolean)
+      add(:registration_reason, :string)
     end
   end
 end
