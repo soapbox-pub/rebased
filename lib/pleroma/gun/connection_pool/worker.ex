@@ -31,7 +31,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
        :hibernate}
     else
       err ->
-        {:stop, err, nil}
+        {:stop, {:shutdown, err}, nil}
     end
   end
 

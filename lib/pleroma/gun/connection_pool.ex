@@ -53,7 +53,10 @@ defmodule Pleroma.Gun.ConnectionPool do
         {:ok, pid}
 
       {:DOWN, ^ref, :process, ^worker_pid, reason} ->
-        {:error, reason}
+        case reason do
+          {:shutdown, error} -> error
+          _ -> {:error, reason}
+        end
     end
   end
 
