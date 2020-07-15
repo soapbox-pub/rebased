@@ -1,5 +1,5 @@
 defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
-  @doc "Supervisor for pool workers. Does not do anything except enforce max connection limit"
+  @moduledoc "Supervisor for pool workers. Does not do anything except enforce max connection limit"
 
   use DynamicSupervisor
 
@@ -35,7 +35,6 @@ defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
         pid =
           spawn(fn ->
             {:ok, _pid} = Registry.register(@registry, @enforcer_key, nil)
-
             max_connections = Pleroma.Config.get([:connections_pool, :max_connections])
 
             reclaim_max =

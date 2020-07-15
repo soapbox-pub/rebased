@@ -4,20 +4,19 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
 
   @registry Pleroma.Gun.ConnectionPool
 
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts)
+  def start_link([key | _] = opts) do
+    GenServer.start_link(__MODULE__, opts, name: {:via, Registry, {@registry, key}})
   end
 
   @impl true
-  def init([uri, key, opts, client_pid]) do
-    time = :os.system_time(:second)
-    # Register before opening connection to prevent race conditions
-    with {:ok, _owner} <- Registry.register(@registry, key, {nil, [client_pid], 1, time}),
-         {:ok, conn_pid} <- Gun.Conn.open(uri, opts),
+  def init([key, uri, opts, client_pid]) do
+    with {:ok, conn_pid} <- Gun.Conn.open(uri, opts),
          Process.link(conn_pid) do
+      time = :os.system_time(:second)
+
       {_, _} =
-        Registry.update_value(@registry, key, fn {_, used_by, crf, last_reference} ->
-          {conn_pid, used_by, crf, last_reference}
+        Registry.update_value(@registry, key, fn _ ->
+          {conn_pid, [client_pid], 1, time}
         end)
 
       send(client_pid, {:conn_pid, conn_pid})

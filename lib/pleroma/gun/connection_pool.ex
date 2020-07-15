@@ -15,7 +15,7 @@ defmodule Pleroma.Gun.ConnectionPool do
 
     case Registry.lookup(@registry, key) do
       # The key has already been registered, but connection is not up yet
-      [{worker_pid, {nil, _used_by, _crf, _last_reference}}] ->
+      [{worker_pid, nil}] ->
         get_gun_pid_from_worker(worker_pid)
 
       [{worker_pid, {gun_pid, _used_by, _crf, _last_reference}}] ->
@@ -26,13 +26,13 @@ defmodule Pleroma.Gun.ConnectionPool do
         # :gun.set_owner fails in :connected state for whatevever reason,
         # so we open the connection in the process directly and send it's pid back
         # We trust gun to handle timeouts by itself
-        case WorkerSupervisor.start_worker([uri, key, opts, self()]) do
+        case WorkerSupervisor.start_worker([key, uri, opts, self()]) do
           {:ok, _worker_pid} ->
             receive do
               {:conn_pid, pid} -> {:ok, pid}
             end
 
-          {:error, {:error, {:already_registered, worker_pid}}} ->
+          {:error, {:already_started, worker_pid}} ->
             get_gun_pid_from_worker(worker_pid)
 
           err ->
@@ -56,6 +56,8 @@ defmodule Pleroma.Gun.ConnectionPool do
   end
 
   def release_conn(conn_pid) do
+    # :ets.fun2ms(fn {_, {worker_pid, {gun_pid, _, _, _}}} when gun_pid == conn_pid ->
+    #    worker_pid end)
     query_result =
       Registry.select(@registry, [
         {{:_, :"$1", {:"$2", :_, :_, :_}}, [{:==, :"$2", conn_pid}], [:"$1"]}
