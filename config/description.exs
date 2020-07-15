@@ -1768,8 +1768,8 @@ config :pleroma, :config_description, [
       %{
         key: :whitelist,
         type: {:list, :string},
-        description: "List of domains to bypass the mediaproxy",
-        suggestions: ["example.com"]
+        description: "List of hosts with scheme to bypass the mediaproxy",
+        suggestions: ["http://example.com"]
       }
     ]
   },
@@ -2008,13 +2008,15 @@ config :pleroma, :config_description, [
     label: "Pleroma Admin Token",
     type: :group,
     description:
-      "Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the `admin_token` parameter",
+      "Allows setting a token that can be used to authenticate requests with admin privileges without a normal user account token. Append the `admin_token` parameter to requests to utilize it. (Please reconsider using HTTP Basic Auth or OAuth-based authentication if possible)",
     children: [
       %{
         key: :admin_token,
         type: :string,
         description: "Admin token",
-        suggestions: ["We recommend a secure random string or UUID"]
+        suggestions: [
+          "Please use a high entropy string or UUID"
+        ]
       }
     ]
   },

@@ -22,6 +22,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   setup do: clear_config([:instance, :federating])
   setup do: clear_config([:instance, :allow_relay])
   setup do: clear_config([:rich_media, :enabled])
+  setup do: clear_config([:mrf, :policies])
+  setup do: clear_config([:mrf_keyword, :reject])
 
   describe "posting statuses" do
     setup do: oauth_access(["write:statuses"])
@@ -154,6 +156,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                  "status" => "oolong",
                  "expires_in" => expires_in
                })
+               |> json_response_and_validate_schema(422)
+    end
+
+    test "Get MRF reason when posting a status is rejected by one", %{conn: conn} do
+      Pleroma.Config.put([:mrf_keyword, :reject], ["GNO"])
+      Pleroma.Config.put([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+
+      assert %{"error" => "[KeywordPolicy] Matches with rejected keyword"} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("api/v1/statuses", %{"status" => "GNO/Linux"})
                |> json_response_and_validate_schema(422)
     end
 

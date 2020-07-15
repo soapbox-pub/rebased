@@ -172,6 +172,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusController do
         with_direct_conversation_id: true
       )
     else
+      {:error, {:reject, message}} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: message})
+
       {:error, message} ->
         conn
         |> put_status(:unprocessable_entity)

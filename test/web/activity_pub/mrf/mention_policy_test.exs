@@ -76,7 +76,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
         "to" => ["https://example.com/blocked"]
       }
 
-      assert MentionPolicy.filter(message) == {:reject, nil}
+      assert MentionPolicy.filter(message) ==
+               {:reject, "[MentionPolicy] Rejected for mention of https://example.com/blocked"}
     end
 
     test "cc" do
@@ -88,7 +89,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.MentionPolicyTest do
         "cc" => ["https://example.com/blocked"]
       }
 
-      assert MentionPolicy.filter(message) == {:reject, nil}
+      assert MentionPolicy.filter(message) ==
+               {:reject, "[MentionPolicy] Rejected for mention of https://example.com/blocked"}
     end
   end
 end

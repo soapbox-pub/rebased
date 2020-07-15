@@ -252,6 +252,7 @@ This section describe PWA manifest instance-specific values. Currently this opti
 * `background_color`: Describe the background color of the app. (Example: `"#191b22"`, `"aliceblue"`).
 
 ## :emoji
+
 * `shortcode_globs`: Location of custom emoji files. `*` can be used as a wildcard. Example `["/emoji/custom/**/*.png"]`
 * `pack_extensions`: A list of file extensions for emojis, when no emoji.txt for a pack is present. Example `[".png", ".gif"]`
 * `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
@@ -260,13 +261,14 @@ This section describe PWA manifest instance-specific values. Currently this opti
   memory for this amount of seconds multiplied by the number of files.
 
 ## :media_proxy
+
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
 * `proxy_opts`: All options defined in `Pleroma.ReverseProxy` documentation, defaults to `[max_body_length: (25*1_048_576)]`.
-* `whitelist`: List of domains to bypass the mediaproxy
+* `whitelist`: List of hosts with scheme to bypass the mediaproxy (e.g. `https://example.com`)
 * `invalidation`: options for remove media from cache after delete object:
-    * `enabled`: Enables purge cache
-    * `provider`: Which one of  the [purge cache strategy](#purge-cache-strategy) to use.
+  * `enabled`: Enables purge cache
+  * `provider`: Which one of  the [purge cache strategy](#purge-cache-strategy) to use.
 
 ### Purge cache strategy
 
@@ -278,6 +280,7 @@ Urls of attachments pass to script as arguments.
 * `script_path`: path to external script.
 
 Example:
+
 ```elixir
 config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
   script_path: "./installation/nginx-cache-purge.example"
@@ -629,8 +632,7 @@ Email notifications settings.
 Configuration options described in [Oban readme](https://github.com/sorentwo/oban#usage):
 
 * `repo` - app's Ecto repo (`Pleroma.Repo`)
-* `verbose` - logs verbosity
-* `prune` - non-retryable jobs [pruning settings](https://github.com/sorentwo/oban#pruning) (`:disabled` / `{:maxlen, value}` / `{:maxage, value}`)
+* `log` - logs verbosity
 * `queues` - job queues (see below)
 * `crontab` - periodic jobs, see [`Oban.Cron`](#obancron)
 
@@ -814,6 +816,8 @@ or
 ```shell
 curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/pleroma/admin/users/invites"
 ```
+
+Warning: it's discouraged to use this feature because of the associated security risk: static / rarely changed instance-wide token is much weaker compared to email-password pair of a real admin user; consider using HTTP Basic Auth or OAuth-based authentication instead.
 
 ### :auth
 

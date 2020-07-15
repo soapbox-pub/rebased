@@ -566,9 +566,9 @@ msgstr "Nieoczekiwany błąd podczas zmieniania pliku w paczce."
 msgid "Unexpected error occurred while updating pack metadata."
 msgstr "Nieoczekiwany błąd podczas zmieniania metadanych paczki."
 
-#: lib/pleroma/plugs/user_is_admin_plug.ex:40
+#: lib/pleroma/plugs/user_is_admin_plug.ex:21
 #, elixir-format
-msgid "User is not an admin or OAuth admin scope is not granted."
+msgid "User is not an admin."
 msgstr ""
 
 #: lib/pleroma/web/mastodon_api/controllers/subscription_controller.ex:61

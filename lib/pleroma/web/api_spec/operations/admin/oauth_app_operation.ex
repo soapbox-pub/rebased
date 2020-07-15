@@ -36,6 +36,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.OAuthAppOperation do
           %Schema{type: :integer, default: 50},
           "Number of apps to return"
         )
+        | admin_api_params()
       ],
       responses: %{
         200 =>
@@ -72,6 +73,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.OAuthAppOperation do
       summary: "Create OAuth App",
       operationId: "AdminAPI.OAuthAppController.create",
       requestBody: request_body("Parameters", create_request()),
+      parameters: admin_api_params(),
       security: [%{"oAuth" => ["write"]}],
       responses: %{
         200 => Operation.response("App", "application/json", oauth_app()),
@@ -85,7 +87,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.OAuthAppOperation do
       tags: ["Admin", "oAuth Apps"],
       summary: "Update OAuth App",
       operationId: "AdminAPI.OAuthAppController.update",
-      parameters: [id_param()],
+      parameters: [id_param() | admin_api_params()],
       security: [%{"oAuth" => ["write"]}],
       requestBody: request_body("Parameters", update_request()),
       responses: %{
@@ -103,7 +105,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.OAuthAppOperation do
       tags: ["Admin", "oAuth Apps"],
       summary: "Delete OAuth App",
       operationId: "AdminAPI.OAuthAppController.delete",
-      parameters: [id_param()],
+      parameters: [id_param() | admin_api_params()],
       security: [%{"oAuth" => ["write"]}],
       responses: %{
         204 => no_content_response(),

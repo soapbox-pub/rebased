@@ -152,6 +152,14 @@ defmodule Pleroma.Web.AdminAPI.ConfigControllerTest do
       assert emoji_val[:groups] == [a: 1, b: 2]
       assert assets_val[:mascots] == [a: 1, b: 2]
     end
+
+    test "with valid `admin_token` query parameter, skips OAuth scopes check" do
+      clear_config([:admin_token], "password123")
+
+      build_conn()
+      |> get("/api/pleroma/admin/config?admin_token=password123")
+      |> json_response_and_validate_schema(200)
+    end
   end
 
   test "POST /api/pleroma/admin/config error", %{conn: conn} do

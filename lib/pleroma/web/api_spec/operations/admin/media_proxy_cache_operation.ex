@@ -33,6 +33,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
           %Schema{type: :integer, default: 50},
           "Number of statuses to return"
         )
+        | admin_api_params()
       ],
       responses: %{
         200 => success_response()
@@ -46,6 +47,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
       summary: "Remove a banned MediaProxy URL from Cachex",
       operationId: "AdminAPI.MediaProxyCacheController.delete",
       security: [%{"oAuth" => ["write:media_proxy_caches"]}],
+      parameters: admin_api_params(),
       requestBody:
         request_body(
           "Parameters",
@@ -71,6 +73,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
       summary: "Purge and optionally ban a MediaProxy URL",
       operationId: "AdminAPI.MediaProxyCacheController.purge",
       security: [%{"oAuth" => ["write:media_proxy_caches"]}],
+      parameters: admin_api_params(),
       requestBody:
         request_body(
           "Parameters",
