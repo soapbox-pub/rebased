@@ -18,8 +18,12 @@ defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
     case DynamicSupervisor.start_child(__MODULE__, {Pleroma.Gun.ConnectionPool.Worker, opts}) do
       {:error, :max_children} ->
         case free_pool() do
-          :ok -> start_worker(opts)
-          :error -> {:error, :pool_full}
+          :ok ->
+            start_worker(opts)
+
+          :error ->
+            :telemetry.execute([:pleroma, :connection_pool, :provision_failure], %{opts: opts})
+            {:error, :pool_full}
         end
 
       res ->
@@ -44,6 +48,14 @@ defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
               |> round
               |> max(1)
 
+            :telemetry.execute([:pleroma, :connection_pool, :reclaim, :start], %{}, %{
+              max_connections: max_connections,
+              reclaim_max: reclaim_max
+            })
+
+            # :ets.fun2ms(
+            # fn {_, {worker_pid, {_, used_by, crf, last_reference}}} when used_by == [] ->
+            #   {worker_pid, crf, last_reference} end)
             unused_conns =
               Registry.select(
                 @registry,
@@ -55,17 +67,35 @@ defmodule Pleroma.Gun.ConnectionPool.WorkerSupervisor do
 
             case unused_conns do
               [] ->
+                :telemetry.execute(
+                  [:pleroma, :connection_pool, :reclaim, :stop],
+                  %{reclaimed_count: 0},
+                  %{
+                    max_connections: max_connections
+                  }
+                )
+
                 exit(:no_unused_conns)
 
               unused_conns ->
-                unused_conns
-                |> Enum.sort(fn {_pid1, crf1, last_reference1}, {_pid2, crf2, last_reference2} ->
-                  crf1 <= crf2 and last_reference1 <= last_reference2
-                end)
-                |> Enum.take(reclaim_max)
+                reclaimed =
+                  unused_conns
+                  |> Enum.sort(fn {_pid1, crf1, last_reference1},
+                                  {_pid2, crf2, last_reference2} ->
+                    crf1 <= crf2 and last_reference1 <= last_reference2
+                  end)
+                  |> Enum.take(reclaim_max)
+
+                reclaimed
                 |> Enum.each(fn {pid, _, _} ->
                   DynamicSupervisor.terminate_child(__MODULE__, pid)
                 end)
+
+                :telemetry.execute(
+                  [:pleroma, :connection_pool, :reclaim, :stop],
+                  %{reclaimed_count: Enum.count(reclaimed)},
+                  %{max_connections: max_connections}
+                )
             end
           end)
 
