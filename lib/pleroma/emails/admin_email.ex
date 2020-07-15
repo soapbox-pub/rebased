@@ -82,4 +82,18 @@ defmodule Pleroma.Emails.AdminEmail do
     |> subject("#{instance_name()} Report")
     |> html_body(html_body)
   end
+
+  def new_unapproved_registration(to, account) do
+    html_body = """
+    <p>New account for review: <a href="#{user_url(account)}">@#{account.nickname}</a></p>
+    <blockquote>#{account.registration_reason}</blockquote>
+    <a href="#{Pleroma.Web.base_url()}/pleroma/admin">Visit AdminFE</a>
+    """
+
+    new()
+    |> to({to.name, to.email})
+    |> from({instance_name(), instance_notify_email()})
+    |> subject("New account up for review on #{instance_name()} (@#{account.nickname})")
+    |> html_body(html_body)
+  end
 end
