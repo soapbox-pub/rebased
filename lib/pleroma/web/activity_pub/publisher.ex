@@ -49,7 +49,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   """
   def publish_one(%{inbox: inbox, json: json, actor: %User{} = actor, id: id} = params) do
     Logger.debug("Federating #{id} to #{inbox}")
-    %{host: host, path: path} = URI.parse(inbox)
+
+    uri = URI.parse(inbox)
 
     digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
 
@@ -57,8 +58,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
     signature =
       Pleroma.Signature.sign(actor, %{
-        "(request-target)": "post #{path}",
-        host: host,
+        "(request-target)": "post #{uri.path}",
+        host: signature_host(uri),
         "content-length": byte_size(json),
         digest: digest,
         date: date
@@ -76,8 +77,9 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
                  {"digest", digest}
                ]
              ) do
-      if !Map.has_key?(params, :unreachable_since) || params[:unreachable_since],
-        do: Instances.set_reachable(inbox)
+      if not Map.has_key?(params, :unreachable_since) || params[:unreachable_since] do
+        Instances.set_reachable(inbox)
+      end
 
       result
     else
@@ -94,6 +96,14 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     |> Map.delete(:actor_id)
     |> Map.put(:actor, actor)
     |> publish_one()
+  end
+
+  defp signature_host(%URI{port: port, scheme: scheme, host: host}) do
+    if port == URI.default_port(scheme) do
+      host
+    else
+      "#{host}:#{port}"
+    end
   end
 
   defp should_federate?(inbox, public) do
