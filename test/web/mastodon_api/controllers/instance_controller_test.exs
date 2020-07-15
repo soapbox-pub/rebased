@@ -27,6 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "thumbnail" => _,
              "languages" => _,
              "registrations" => _,
+             "approval_required" => _,
              "poll_limits" => _,
              "upload_limit" => _,
              "avatar_upload_limit" => _,
@@ -38,7 +39,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
            } = result
 
     assert result["pleroma"]["metadata"]["account_activation_required"] != nil
-    assert result["pleroma"]["metadata"]["account_approval_required"] != nil
     assert result["pleroma"]["metadata"]["features"]
     assert result["pleroma"]["metadata"]["federation"]
     assert result["pleroma"]["metadata"]["fields_limits"]

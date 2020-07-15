@@ -26,6 +26,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       thumbnail: Keyword.get(instance, :instance_thumbnail),
       languages: ["en"],
       registrations: Keyword.get(instance, :registrations_open),
+      approval_required: Keyword.get(instance, :account_approval_required),
       # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit),
       poll_limits: Keyword.get(instance, :poll_limits),
@@ -39,7 +40,6 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       pleroma: %{
         metadata: %{
           account_activation_required: Keyword.get(instance, :account_activation_required),
-          account_approval_required: Keyword.get(instance, :account_approval_required),
           features: features(),
           federation: federation(),
           fields_limits: fields_limits()
