@@ -124,7 +124,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       report_message = build_report_message()
       local_message = build_local_message()
 
-      assert SimplePolicy.filter(report_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(report_message)
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
 
@@ -133,7 +133,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       report_message = build_report_message()
       local_message = build_local_message()
 
-      assert SimplePolicy.filter(report_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(report_message)
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
   end
@@ -241,7 +241,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       remote_message = build_remote_message()
 
-      assert SimplePolicy.filter(remote_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(remote_message)
     end
 
     test "activity matches with wildcard domain" do
@@ -249,7 +249,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       remote_message = build_remote_message()
 
-      assert SimplePolicy.filter(remote_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(remote_message)
     end
 
     test "actor has a matching host" do
@@ -257,7 +257,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       remote_user = build_remote_user()
 
-      assert SimplePolicy.filter(remote_user) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(remote_user)
     end
   end
 
@@ -279,7 +279,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       remote_message = build_remote_message()
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
-      assert SimplePolicy.filter(remote_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(remote_message)
     end
 
     test "activity has a matching host" do
@@ -429,7 +429,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
     test "it rejects the deletion" do
       deletion_message = build_remote_deletion_message()
 
-      assert SimplePolicy.filter(deletion_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(deletion_message)
     end
   end
 
@@ -439,7 +439,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
     test "it rejects the deletion" do
       deletion_message = build_remote_deletion_message()
 
-      assert SimplePolicy.filter(deletion_message) == {:reject, nil}
+      assert {:reject, _} = SimplePolicy.filter(deletion_message)
     end
   end
 

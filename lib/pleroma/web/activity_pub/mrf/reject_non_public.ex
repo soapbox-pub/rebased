@@ -38,7 +38,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
         {:ok, object}
 
       true ->
-        {:reject, nil}
+        {:reject, "[RejectNonPublic] visibility: #{visibility}"}
     end
   end
 

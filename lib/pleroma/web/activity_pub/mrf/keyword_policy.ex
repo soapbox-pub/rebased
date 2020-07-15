@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     if Enum.any?(Pleroma.Config.get([:mrf_keyword, :reject]), fn pattern ->
          string_matches?(content, pattern) or string_matches?(summary, pattern)
        end) do
-      {:reject, nil}
+      {:reject, "[KeywordPolicy] Matches with rejected keyword"}
     else
       {:ok, message}
     end
@@ -89,8 +89,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
          {:ok, message} <- check_replace(message) do
       {:ok, message}
     else
-      _e ->
-        {:reject, nil}
+      {:reject, nil} -> {:reject, "[KeywordPolicy] "}
+      {:reject, _} = e -> e
+      _e -> {:reject, "[KeywordPolicy] "}
     end
   end
 
