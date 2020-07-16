@@ -38,7 +38,7 @@ defmodule Mix.Tasks.Pleroma.ReleaseEnv do
         get_option(
           options,
           :force,
-          "Environment file is exist. Do you want overwritten the #{env_path} file? (y/n)",
+          "Environment file already exists. Do you want to overwrite the #{env_path} file? (y/n)",
           "n"
         ) === "y"
       else
