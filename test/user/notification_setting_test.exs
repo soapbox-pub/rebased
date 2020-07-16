@@ -8,11 +8,11 @@ defmodule Pleroma.User.NotificationSettingTest do
   alias Pleroma.User.NotificationSetting
 
   describe "changeset/2" do
-    test "sets valid privacy option" do
+    test "sets option to hide notification contents" do
       changeset =
         NotificationSetting.changeset(
           %NotificationSetting{},
-          %{"privacy_option" => true}
+          %{"hide_notification_contents" => true}
         )
 
       assert %Ecto.Changeset{valid?: true} = changeset

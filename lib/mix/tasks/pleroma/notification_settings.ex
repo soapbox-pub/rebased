@@ -3,8 +3,8 @@ defmodule Mix.Tasks.Pleroma.NotificationSettings do
   @moduledoc """
   Example:
 
-  > mix pleroma.notification_settings --privacy-option=false --nickname-users="parallel588"  # set false only for parallel588 user
-  > mix pleroma.notification_settings --privacy-option=true # set true for all users
+  > mix pleroma.notification_settings --hide-notification-contents=false --nickname-users="parallel588"  # set false only for parallel588 user
+  > mix pleroma.notification_settings --hide-notification-contents=true # set true for all users
 
   """
 
@@ -19,16 +19,16 @@ defmodule Mix.Tasks.Pleroma.NotificationSettings do
       OptionParser.parse(
         args,
         strict: [
-          privacy_option: :boolean,
+          hide_notification_contents: :boolean,
           email_users: :string,
           nickname_users: :string
         ]
       )
 
-    privacy_option = Keyword.get(options, :privacy_option)
+    hide_notification_contents = Keyword.get(options, :hide_notification_contents)
 
-    if not is_nil(privacy_option) do
-      privacy_option
+    if not is_nil(hide_notification_contents) do
+      hide_notification_contents
       |> build_query(options)
       |> Pleroma.Repo.update_all([])
     end
@@ -36,15 +36,15 @@ defmodule Mix.Tasks.Pleroma.NotificationSettings do
     shell_info("Done")
   end
 
-  defp build_query(privacy_option, options) do
+  defp build_query(hide_notification_contents, options) do
     query =
       from(u in Pleroma.User,
         update: [
           set: [
             notification_settings:
               fragment(
-                "jsonb_set(notification_settings, '{privacy_option}', ?)",
-                ^privacy_option
+                "jsonb_set(notification_settings, '{hide_notification_contents}', ?)",
+                ^hide_notification_contents
               )
           ]
         ]

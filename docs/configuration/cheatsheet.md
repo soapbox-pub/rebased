@@ -252,6 +252,7 @@ This section describe PWA manifest instance-specific values. Currently this opti
 * `background_color`: Describe the background color of the app. (Example: `"#191b22"`, `"aliceblue"`).
 
 ## :emoji
+
 * `shortcode_globs`: Location of custom emoji files. `*` can be used as a wildcard. Example `["/emoji/custom/**/*.png"]`
 * `pack_extensions`: A list of file extensions for emojis, when no emoji.txt for a pack is present. Example `[".png", ".gif"]`
 * `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
@@ -260,13 +261,14 @@ This section describe PWA manifest instance-specific values. Currently this opti
   memory for this amount of seconds multiplied by the number of files.
 
 ## :media_proxy
+
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
 * `proxy_opts`: All options defined in `Pleroma.ReverseProxy` documentation, defaults to `[max_body_length: (25*1_048_576)]`.
-* `whitelist`: List of domains to bypass the mediaproxy
+* `whitelist`: List of hosts with scheme to bypass the mediaproxy (e.g. `https://example.com`)
 * `invalidation`: options for remove media from cache after delete object:
-    * `enabled`: Enables purge cache
-    * `provider`: Which one of  the [purge cache strategy](#purge-cache-strategy) to use.
+  * `enabled`: Enables purge cache
+  * `provider`: Which one of  the [purge cache strategy](#purge-cache-strategy) to use.
 
 ### Purge cache strategy
 
@@ -278,6 +280,7 @@ Urls of attachments pass to script as arguments.
 * `script_path`: path to external script.
 
 Example:
+
 ```elixir
 config :pleroma, Pleroma.Web.MediaProxy.Invalidation.Script,
   script_path: "./installation/nginx-cache-purge.example"
@@ -445,36 +448,32 @@ For each pool, the options are:
 
 *For `gun` adapter*
 
-Advanced settings for connections pool. Pool with opened connections. These connections can be reused in worker pools.
+Settings for HTTP connection pool.
 
-For big instances it's recommended to increase `config :pleroma, :connections_pool, max_connections: 500` up to 500-1000.
-It will increase memory usage, but federation would work faster.
-
-* `:checkin_timeout` - timeout to checkin connection from pool. Default: 250ms.
-* `:max_connections` - maximum number of connections in the pool. Default: 250 connections.
-* `:retry` - number of retries, while `gun` will try to reconnect if connection goes down. Default: 1.
-* `:retry_timeout` - time between retries when `gun` will try to reconnect in milliseconds. Default: 1000ms.
-* `:await_up_timeout` - timeout while `gun` will wait until connection is up. Default: 5000ms.
+* `:connection_acquisition_wait` - Timeout to acquire a connection from pool.The total max time is this value multiplied by the number of retries.
+* `connection_acquisition_retries` - Number of attempts to acquire the connection from the pool if it is overloaded. Each attempt is timed `:connection_acquisition_wait` apart.
+* `:max_connections` - Maximum number of connections in the pool.
+* `:await_up_timeout` - Timeout to connect to the host.
+* `:reclaim_multiplier` - Multiplied by `:max_connections` this will be the maximum number of idle connections that will be reclaimed in case the pool is overloaded.
 
 ### :pools
 
 *For `gun` adapter*
 
-Advanced settings for workers pools.
+Settings for request pools. These pools are limited on top of `:connections_pool`.
 
 There are four pools used:
 
-* `:federation` for the federation jobs.
-  You may want this pool max_connections to be at least equal to the number of federator jobs + retry queue jobs.
-* `:media` for rich media, media proxy
-* `:upload` for uploaded media (if using a remote uploader and `proxy_remote: true`)
-* `:default` for other requests
+* `:federation` for the federation jobs. You may want this pool's max_connections to be at least equal to the number of federator jobs + retry queue jobs.
+* `:media` - for rich media, media proxy.
+* `:upload` - for proxying media when a remote uploader is used and `proxy_remote: true`.
+* `:default` - for other requests.
 
 For each pool, the options are:
 
-* `:size` - how much workers the pool can hold
+* `:size` - limit to how much requests can be concurrently executed.
 * `:timeout` - timeout while `gun` will wait for response
-* `:max_overflow` - additional workers if pool is under load
+* `:max_waiting` - limit to how much requests can be waiting for others to finish, after this is reached, subsequent requests will be dropped.
 
 ## Captcha
 
@@ -629,8 +628,7 @@ Email notifications settings.
 Configuration options described in [Oban readme](https://github.com/sorentwo/oban#usage):
 
 * `repo` - app's Ecto repo (`Pleroma.Repo`)
-* `verbose` - logs verbosity
-* `prune` - non-retryable jobs [pruning settings](https://github.com/sorentwo/oban#pruning) (`:disabled` / `{:maxlen, value}` / `{:maxage, value}`)
+* `log` - logs verbosity
 * `queues` - job queues (see below)
 * `crontab` - periodic jobs, see [`Oban.Cron`](#obancron)
 
@@ -814,6 +812,8 @@ or
 ```shell
 curl -H "X-Admin-Token: somerandomtoken" "http://localhost:4000/api/pleroma/admin/users/invites"
 ```
+
+Warning: it's discouraged to use this feature because of the associated security risk: static / rarely changed instance-wide token is much weaker compared to email-password pair of a real admin user; consider using HTTP Basic Auth or OAuth-based authentication instead.
 
 ### :auth
 

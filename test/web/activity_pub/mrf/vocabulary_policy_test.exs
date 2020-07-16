@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
         }
       }
 
-      {:reject, nil} = VocabularyPolicy.filter(message)
+      {:reject, _} = VocabularyPolicy.filter(message)
     end
 
     test "it does not accept disallowed parent types" do
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
         }
       }
 
-      {:reject, nil} = VocabularyPolicy.filter(message)
+      {:reject, _} = VocabularyPolicy.filter(message)
     end
   end
 
@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
         "object" => "whatever"
       }
 
-      {:reject, nil} = VocabularyPolicy.filter(message)
+      {:reject, _} = VocabularyPolicy.filter(message)
     end
 
     test "it rejects based on child object type" do
@@ -89,7 +89,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicyTest do
         }
       }
 
-      {:reject, nil} = VocabularyPolicy.filter(message)
+      {:reject, _} = VocabularyPolicy.filter(message)
     end
 
     test "it passes through objects that aren't disallowed" do
