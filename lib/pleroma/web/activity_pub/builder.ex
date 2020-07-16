@@ -14,6 +14,19 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   require Pleroma.Constants
 
+  @spec follow(User.t(), User.t()) :: {:ok, map(), keyword()}
+  def follow(follower, followed) do
+    data = %{
+      "id" => Utils.generate_activity_id(),
+      "actor" => follower.ap_id,
+      "type" => "Follow",
+      "object" => followed.ap_id,
+      "to" => [followed.ap_id]
+    }
+
+    {:ok, data, []}
+  end
+
   @spec emoji_react(User.t(), Object.t(), String.t()) :: {:ok, map(), keyword()}
   def emoji_react(actor, object, emoji) do
     with {:ok, data, meta} <- object_action(actor, object) do
@@ -135,6 +148,18 @@ defmodule Pleroma.Web.ActivityPub.Builder do
        "actor" => actor.ap_id,
        "object" => object,
        "to" => to
+     }, []}
+  end
+
+  @spec block(User.t(), User.t()) :: {:ok, map(), keyword()}
+  def block(blocker, blocked) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "type" => "Block",
+       "actor" => blocker.ap_id,
+       "object" => blocked.ap_id,
+       "to" => [blocked.ap_id]
      }, []}
   end
 

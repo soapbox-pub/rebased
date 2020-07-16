@@ -104,7 +104,7 @@ defmodule Pleroma.Web.Push.Impl do
 
   def build_content(
         %{
-          user: %{notification_settings: %{privacy_option: true}}
+          user: %{notification_settings: %{hide_notification_contents: true}}
         } = notification,
         _actor,
         _object,

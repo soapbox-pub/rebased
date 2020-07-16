@@ -486,6 +486,15 @@ defmodule Pleroma.UserTest do
     }
     setup do: clear_config([:instance, :account_activation_required], true)
 
+    test "it sets the 'accepts_chat_messages' set to true" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.accepts_chat_messages
+    end
+
     test "it creates unconfirmed user" do
       changeset = User.register_changeset(%User{}, @full_user_data)
       assert changeset.valid?
@@ -595,6 +604,31 @@ defmodule Pleroma.UserTest do
       assert user.inbox
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
+    end
+
+    test "if nicknames clash, the old user gets a prefix with the old id to the nickname" do
+      a_week_ago = NaiveDateTime.add(NaiveDateTime.utc_now(), -604_800)
+
+      orig_user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: "http://mastodon.example.org/users/harinezumigari",
+          last_refreshed_at: a_week_ago
+        )
+
+      assert orig_user.last_refreshed_at == a_week_ago
+
+      {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
+
+      assert user.inbox
+
+      refute user.id == orig_user.id
+
+      orig_user = User.get_by_id(orig_user.id)
+
+      assert orig_user.nickname == "#{orig_user.id}.admin@mastodon.example.org"
     end
 
     @tag capture_log: true

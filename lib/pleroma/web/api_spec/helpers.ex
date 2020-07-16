@@ -29,6 +29,10 @@ defmodule Pleroma.Web.ApiSpec.Helpers do
     }
   end
 
+  def admin_api_params do
+    [Operation.parameter(:admin_token, :query, :string, "Allows authorization via admin token.")]
+  end
+
   def pagination_params do
     [
       Operation.parameter(:max_id, :query, :string, "Return items older than this ID"),

@@ -34,10 +34,14 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       background_upload_limit: Keyword.get(instance, :background_upload_limit),
       banner_upload_limit: Keyword.get(instance, :banner_upload_limit),
       background_image: Keyword.get(instance, :background_image),
+      chat_limit: Keyword.get(instance, :chat_limit),
+      description_limit: Keyword.get(instance, :description_limit),
       pleroma: %{
         metadata: %{
+          account_activation_required: Keyword.get(instance, :account_activation_required),
           features: features(),
-          federation: federation()
+          federation: federation(),
+          fields_limits: fields_limits()
         },
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
       }
@@ -87,5 +91,14 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
       %{}
     end
     |> Map.put(:enabled, Config.get([:instance, :federating]))
+  end
+
+  def fields_limits do
+    %{
+      max_fields: Config.get([:instance, :max_account_fields]),
+      max_remote_fields: Config.get([:instance, :max_remote_account_fields]),
+      name_length: Config.get([:instance, :account_field_name_length]),
+      value_length: Config.get([:instance, :account_field_value_length])
+    }
   end
 end

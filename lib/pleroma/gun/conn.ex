@@ -3,85 +3,33 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Gun.Conn do
-  @moduledoc """
-  Struct for gun connection data
-  """
   alias Pleroma.Gun
-  alias Pleroma.Pool.Connections
 
   require Logger
 
-  @type gun_state :: :up | :down
-  @type conn_state :: :active | :idle
-
-  @type t :: %__MODULE__{
-          conn: pid(),
-          gun_state: gun_state(),
-          conn_state: conn_state(),
-          used_by: [pid()],
-          last_reference: pos_integer(),
-          crf: float(),
-          retries: pos_integer()
-        }
-
-  defstruct conn: nil,
-            gun_state: :open,
-            conn_state: :init,
-            used_by: [],
-            last_reference: 0,
-            crf: 1,
-            retries: 0
-
-  @spec open(String.t() | URI.t(), atom(), keyword()) :: :ok | nil
-  def open(url, name, opts \\ [])
-  def open(url, name, opts) when is_binary(url), do: open(URI.parse(url), name, opts)
-
-  def open(%URI{} = uri, name, opts) do
+  def open(%URI{} = uri, opts) do
     pool_opts = Pleroma.Config.get([:connections_pool], [])
 
     opts =
       opts
       |> Enum.into(%{})
-      |> Map.put_new(:retry, pool_opts[:retry] || 1)
-      |> Map.put_new(:retry_timeout, pool_opts[:retry_timeout] || 1000)
       |> Map.put_new(:await_up_timeout, pool_opts[:await_up_timeout] || 5_000)
+      |> Map.put_new(:supervise, false)
       |> maybe_add_tls_opts(uri)
 
-    key = "#{uri.scheme}:#{uri.host}:#{uri.port}"
-
-    max_connections = pool_opts[:max_connections] || 250
-
-    conn_pid =
-      if Connections.count(name) < max_connections do
-        do_open(uri, opts)
-      else
-        close_least_used_and_do_open(name, uri, opts)
-      end
-
-    if is_pid(conn_pid) do
-      conn = %Pleroma.Gun.Conn{
-        conn: conn_pid,
-        gun_state: :up,
-        conn_state: :active,
-        last_reference: :os.system_time(:second)
-      }
-
-      :ok = Gun.set_owner(conn_pid, Process.whereis(name))
-      Connections.add_conn(name, key, conn)
-    end
+    do_open(uri, opts)
   end
 
   defp maybe_add_tls_opts(opts, %URI{scheme: "http"}), do: opts
 
-  defp maybe_add_tls_opts(opts, %URI{scheme: "https", host: host}) do
+  defp maybe_add_tls_opts(opts, %URI{scheme: "https"}) do
     tls_opts = [
       verify: :verify_peer,
       cacertfile: CAStore.file_path(),
       depth: 20,
       reuse_sessions: false,
-      verify_fun:
-        {&:ssl_verify_hostname.verify_fun/3,
-         [check_hostname: Pleroma.HTTP.Connection.format_host(host)]}
+      log_level: :warning,
+      customize_hostname_check: [match_fun: :public_key.pkix_verify_hostname_match_fun(:https)]
     ]
 
     tls_opts =
@@ -105,7 +53,7 @@ defmodule Pleroma.Gun.Conn do
          {:ok, _} <- Gun.await_up(conn, opts[:await_up_timeout]),
          stream <- Gun.connect(conn, connect_opts),
          {:response, :fin, 200, _} <- Gun.await(conn, stream) do
-      conn
+      {:ok, conn}
     else
       error ->
         Logger.warn(
@@ -141,7 +89,7 @@ defmodule Pleroma.Gun.Conn do
 
     with {:ok, conn} <- Gun.open(proxy_host, proxy_port, opts),
          {:ok, _} <- Gun.await_up(conn, opts[:await_up_timeout]) do
-      conn
+      {:ok, conn}
     else
       error ->
         Logger.warn(
@@ -155,11 +103,11 @@ defmodule Pleroma.Gun.Conn do
   end
 
   defp do_open(%URI{host: host, port: port} = uri, opts) do
-    host = Pleroma.HTTP.Connection.parse_host(host)
+    host = Pleroma.HTTP.AdapterHelper.parse_host(host)
 
     with {:ok, conn} <- Gun.open(host, port, opts),
          {:ok, _} <- Gun.await_up(conn, opts[:await_up_timeout]) do
-      conn
+      {:ok, conn}
     else
       error ->
         Logger.warn(
@@ -171,7 +119,7 @@ defmodule Pleroma.Gun.Conn do
   end
 
   defp destination_opts(%URI{host: host, port: port}) do
-    host = Pleroma.HTTP.Connection.parse_host(host)
+    host = Pleroma.HTTP.AdapterHelper.parse_host(host)
     %{host: host, port: port}
   end
 
@@ -180,17 +128,6 @@ defmodule Pleroma.Gun.Conn do
   end
 
   defp add_http2_opts(opts, _, _), do: opts
-
-  defp close_least_used_and_do_open(name, uri, opts) do
-    with [{key, conn} | _conns] <- Connections.get_unused_conns(name),
-         :ok <- Gun.close(conn.conn) do
-      Connections.remove_conn(name, key)
-
-      do_open(uri, opts)
-    else
-      [] -> {:error, :pool_overflowed}
-    end
-  end
 
   def compose_uri_log(%URI{scheme: scheme, host: host, path: path}) do
     "#{scheme}://#{host}#{path}"

@@ -31,8 +31,8 @@ defmodule Pleroma.Config.TransferTask do
     {:pleroma, :gopher, [:enabled]}
   ]
 
-  def start_link(_) do
-    load_and_update_env()
+  def start_link(restart_pleroma? \\ true) do
+    load_and_update_env([], restart_pleroma?)
     if Config.get(:env) == :test, do: Ecto.Adapters.SQL.Sandbox.checkin(Repo)
     :ignore
   end

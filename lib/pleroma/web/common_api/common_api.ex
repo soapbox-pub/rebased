@@ -25,6 +25,13 @@ defmodule Pleroma.Web.CommonAPI do
   require Pleroma.Constants
   require Logger
 
+  def block(blocker, blocked) do
+    with {:ok, block_data, _} <- Builder.block(blocker, blocked),
+         {:ok, block, _} <- Pipeline.common_pipeline(block_data, local: true) do
+      {:ok, block}
+    end
+  end
+
   def post_chat_message(%User{} = user, %User{} = recipient, content, opts \\ []) do
     with maybe_attachment <- opts[:media_id] && Object.get_by_id(opts[:media_id]),
          :ok <- validate_chat_content_length(content, !!maybe_attachment),
@@ -94,10 +101,14 @@ defmodule Pleroma.Web.CommonAPI do
   def follow(follower, followed) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
 
-    with {:ok, follower} <- User.maybe_direct_follow(follower, followed),
-         {:ok, activity} <- ActivityPub.follow(follower, followed),
+    with {:ok, follow_data, _} <- Builder.follow(follower, followed),
+         {:ok, activity, _} <- Pipeline.common_pipeline(follow_data, local: true),
          {:ok, follower, followed} <- User.wait_and_refresh(timeout, follower, followed) do
-      {:ok, follower, followed, activity}
+      if activity.data["state"] == "reject" do
+        {:error, :rejected}
+      else
+        {:ok, follower, followed, activity}
+      end
     end
   end
 

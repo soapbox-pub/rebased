@@ -93,12 +93,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
   - If both users are in our system
   - If at least one of the users in this ChatMessage is a local user
   - If the recipient is not blocking the actor
+  - If the recipient is explicitly not accepting chat messages
   """
   def validate_local_concern(cng) do
     with actor_ap <- get_field(cng, :actor),
          {_, %User{} = actor} <- {:find_actor, User.get_cached_by_ap_id(actor_ap)},
          {_, %User{} = recipient} <-
            {:find_recipient, User.get_cached_by_ap_id(get_field(cng, :to) |> hd())},
+         {_, false} <- {:not_accepting_chats?, recipient.accepts_chat_messages == false},
          {_, false} <- {:blocking_actor?, User.blocks?(recipient, actor)},
          {_, true} <- {:local?, Enum.any?([actor, recipient], & &1.local)} do
       cng
@@ -106,6 +108,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
       {:blocking_actor?, true} ->
         cng
         |> add_error(:actor, "actor is blocked by recipient")
+
+      {:not_accepting_chats?, true} ->
+        cng
+        |> add_error(:to, "recipient does not accept chat messages")
 
       {:local?, false} ->
         cng

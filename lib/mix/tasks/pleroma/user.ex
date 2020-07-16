@@ -232,7 +232,7 @@ defmodule Mix.Tasks.Pleroma.User do
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       user = user |> User.tag(tags)
 
-      shell_info("Tags of #{user.nickname}: #{inspect(tags)}")
+      shell_info("Tags of #{user.nickname}: #{inspect(user.tags)}")
     else
       _ ->
         shell_error("Could not change user tags for #{nickname}")
@@ -245,7 +245,7 @@ defmodule Mix.Tasks.Pleroma.User do
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       user = user |> User.untag(tags)
 
-      shell_info("Tags of #{user.nickname}: #{inspect(tags)}")
+      shell_info("Tags of #{user.nickname}: #{inspect(user.tags)}")
     else
       _ ->
         shell_error("Could not change user tags for #{nickname}")

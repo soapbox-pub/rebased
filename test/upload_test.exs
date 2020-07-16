@@ -107,6 +107,19 @@ defmodule Pleroma.UploadTest do
   describe "Storing a file with the Local uploader" do
     setup [:ensure_local_uploader]
 
+    test "does not allow descriptions longer than the post limit" do
+      clear_config([:instance, :description_limit], 2)
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
+        filename: "image.jpg"
+      }
+
+      {:error, :description_too_long} = Upload.store(file, description: "123")
+    end
+
     test "returns a media url" do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 

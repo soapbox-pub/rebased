@@ -67,6 +67,7 @@ defmodule Pleroma.Factory do
     data = %{
       "type" => "Note",
       "content" => text,
+      "source" => text,
       "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
       "actor" => user.ap_id,
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
@@ -425,6 +426,14 @@ defmodule Pleroma.Factory do
       authorization: build(:oauth_authorization),
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10),
       user: build(:user)
+    }
+  end
+
+  def filter_factory do
+    %Pleroma.Filter{
+      user: build(:user),
+      filter_id: sequence(:filter_id, & &1),
+      phrase: "cofe"
     }
   end
 end

@@ -8,17 +8,17 @@ defmodule Pleroma.Workers.PublisherWorker do
 
   use Pleroma.Workers.WorkerHelper, queue: "federator_outgoing"
 
-  def backoff(attempt) when is_integer(attempt) do
+  def backoff(%Job{attempt: attempt}) when is_integer(attempt) do
     Pleroma.Workers.WorkerHelper.sidekiq_backoff(attempt, 5)
   end
 
   @impl Oban.Worker
-  def perform(%{"op" => "publish", "activity_id" => activity_id}, _job) do
+  def perform(%Job{args: %{"op" => "publish", "activity_id" => activity_id}}) do
     activity = Activity.get_by_id(activity_id)
     Federator.perform(:publish, activity)
   end
 
-  def perform(%{"op" => "publish_one", "module" => module_name, "params" => params}, _job) do
+  def perform(%Job{args: %{"op" => "publish_one", "module" => module_name, "params" => params}}) do
     params = Map.new(params, fn {k, v} -> {String.to_atom(k), v} end)
     Federator.perform(:publish_one, String.to_atom(module_name), params)
   end

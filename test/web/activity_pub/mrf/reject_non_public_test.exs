@@ -64,7 +64,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
       }
 
       Pleroma.Config.put([:mrf_rejectnonpublic, :allow_followersonly], false)
-      assert {:reject, nil} = RejectNonPublic.filter(message)
+      assert {:reject, _} = RejectNonPublic.filter(message)
     end
   end
 
@@ -94,7 +94,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublicTest do
       }
 
       Pleroma.Config.put([:mrf_rejectnonpublic, :allow_direct], false)
-      assert {:reject, nil} = RejectNonPublic.filter(message)
+      assert {:reject, _} = RejectNonPublic.filter(message)
     end
   end
 end

@@ -143,7 +143,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def make_poll_data(%{poll: %{options: options, expires_in: expires_in}} = data)
       when is_list(options) do
-    limits = Pleroma.Config.get([:instance, :poll_limits])
+    limits = Config.get([:instance, :poll_limits])
 
     with :ok <- validate_poll_expiration(expires_in, limits),
          :ok <- validate_poll_options_amount(options, limits),
@@ -502,7 +502,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def make_report_content_html(nil), do: {:ok, {nil, [], []}}
 
   def make_report_content_html(comment) do
-    max_size = Pleroma.Config.get([:instance, :max_report_comment_size], 1000)
+    max_size = Config.get([:instance, :max_report_comment_size], 1000)
 
     if String.length(comment) <= max_size do
       {:ok, format_input(comment, "text/plain")}
@@ -564,7 +564,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def validate_character_limit(full_payload, _attachments) do
-    limit = Pleroma.Config.get([:instance, :limit])
+    limit = Config.get([:instance, :limit])
     length = String.length(full_payload)
 
     if length <= limit do
