@@ -56,7 +56,7 @@ defmodule Mix.Tasks.Pleroma.ReleaseEnv do
           shell_info("\nThe file generated: #{env_path}.\n")
 
           shell_info("""
-          WARNING: before start pleroma app please to made the file read-only and non-modifiable.
+          WARNING: before start pleroma app please make sure to make the file read-only and non-modifiable.
             Example:
               chmod 0444 #{file_path}
               chattr +i #{file_path}
