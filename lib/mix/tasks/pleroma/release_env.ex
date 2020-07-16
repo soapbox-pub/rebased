@@ -23,14 +23,15 @@ defmodule Mix.Tasks.Pleroma.ReleaseEnv do
         ]
       )
 
-    env_path =
+    file_path =
       get_option(
         options,
         :path,
         "Environment file path",
-        "config/pleroma.env"
+        "./config/pleroma.env"
       )
-      |> Path.expand()
+
+    env_path = Path.expand(file_path)
 
     proceed? =
       if File.exists?(env_path) do
@@ -45,13 +46,24 @@ defmodule Mix.Tasks.Pleroma.ReleaseEnv do
       end
 
     if proceed? do
-      do_generate(env_path)
+      case do_generate(env_path) do
+        {:error, reason} ->
+          shell_error(
+            File.Error.message(%{action: "write to file", reason: reason, path: env_path})
+          )
 
-      shell_info(
-        "The file generated: #{env_path}.\nTo use the enviroment file need to add the line ';EnvironmentFile=#{
-          env_path
-        }' in service file (/installation/pleroma.service)."
-      )
+        _ ->
+          shell_info("\nThe file generated: #{env_path}.\n")
+
+          shell_info("""
+          WARNING: before start pleroma app please to made the file read-only and non-modifiable.
+            Example:
+              chmod 0444 #{file_path}
+              chattr +i #{file_path}
+          """)
+      end
+    else
+      shell_info("\nThe file is exist. #{env_path}.\n")
     end
   end
 
@@ -59,6 +71,6 @@ defmodule Mix.Tasks.Pleroma.ReleaseEnv do
     content = "RELEASE_COOKIE=#{Base.encode32(:crypto.strong_rand_bytes(32))}"
 
     File.mkdir_p!(Path.dirname(path))
-    File.write!(path, content)
+    File.write(path, content)
   end
 end
