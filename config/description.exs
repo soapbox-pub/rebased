@@ -2238,13 +2238,13 @@ config :pleroma, :config_description, [
       %{
         key: :new_window,
         type: :boolean,
-        description: "Link URLs will open in new window/tab."
+        description: "Link URLs will open in a new window/tab."
       },
       %{
         key: :truncate,
         type: [:integer, false],
         description:
-          "Set to a number to truncate URLs longer then the number. Truncated URLs will end in `...`",
+          "Set to a number to truncate URLs longer than the number. Truncated URLs will end in `...`",
         suggestions: [15, false]
       },
       %{
