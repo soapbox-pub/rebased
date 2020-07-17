@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   has been simplified down to `block_from_strangers`.
 - **Breaking:** Notification Settings API option for hiding push notification
   contents has been renamed to `hide_notification_contents`
+- Mastodon API: Added `pleroma.metadata.post_formats` to /api/v1/instance
 </details>
 
 <details>
