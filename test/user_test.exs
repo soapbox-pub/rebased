@@ -1314,6 +1314,17 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  test "delete/1 when approval is pending deletes the user" do
+    user = insert(:user, approval_pending: true)
+    {:ok, user: user}
+
+    {:ok, job} = User.delete(user)
+    {:ok, _} = ObanHelpers.perform(job)
+
+    refute User.get_cached_by_id(user.id)
+    refute User.get_by_id(user.id)
+  end
+
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end

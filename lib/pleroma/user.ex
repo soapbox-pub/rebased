@@ -1525,12 +1525,13 @@ defmodule Pleroma.User do
   defp delete_or_deactivate(%User{local: true} = user) do
     status = account_status(user)
 
-    if status == :confirmation_pending do
-      delete_and_invalidate_cache(user)
-    else
-      user
-      |> change(%{deactivated: true, email: nil})
-      |> update_and_set_cache()
+    case status do
+      :confirmation_pending -> delete_and_invalidate_cache(user)
+      :approval_pending -> delete_and_invalidate_cache(user)
+      _ ->
+        user
+        |> change(%{deactivated: true, email: nil})
+        |> update_and_set_cache()
     end
   end
 
