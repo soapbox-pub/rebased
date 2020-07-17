@@ -7,6 +7,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   alias Pleroma.Emails.Mailer
   alias Pleroma.Emails.UserEmail
+  alias Pleroma.HTML
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserInviteToken
@@ -19,7 +20,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       |> Map.put(:nickname, params[:username])
       |> Map.put(:name, Map.get(params, :fullname, params[:username]))
       |> Map.put(:password_confirmation, params[:password])
-      |> Map.put(:registration_reason, params[:reason])
+      |> Map.put(:registration_reason, HTML.strip_tags(params[:reason]))
 
     if Pleroma.Config.get([:instance, :registrations_open]) do
       create_user(params, opts)
