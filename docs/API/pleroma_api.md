@@ -570,3 +570,23 @@ Emoji reactions work a lot like favourites do. They make it possible to react to
   {"name": "😀", "count": 2, "me": true, "accounts": [{"id" => "xyz.."...}, {"id" => "zyx..."}]}
 ]
 ```
+
+# Account aliases
+
+Set and delete ActivityPub aliases for follower move.
+
+## `POST /api/v1/pleroma/accounts/ap_aliases`
+### Add account aliases
+* Method: `POST`
+* Authentication: required
+* Params:
+  * `aliases`: array of ActivityPub IDs to add
+* Response: JSON, the user's account
+
+## `DELETE /api/v1/pleroma/accounts/ap_aliases`
+### Delete account aliases
+* Method: `DELETE`
+* Authentication: required
+* Params:
+  * `aliases`: array of ActivityPub IDs to delete
+* Response: JSON, the user's account

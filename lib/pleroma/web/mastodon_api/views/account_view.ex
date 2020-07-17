@@ -248,6 +248,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       # Pleroma extension
       pleroma: %{
         ap_id: user.ap_id,
+        ap_aliases: user.ap_aliases,
         confirmation_pending: user.confirmation_pending,
         tags: user.tags,
         hide_followers_count: user.hide_followers_count,

@@ -89,6 +89,7 @@ defmodule Pleroma.User do
     field(:keys, :string)
     field(:public_key, :string)
     field(:ap_id, :string)
+    field(:ap_aliases, {:array, :string}, default: [])
     field(:avatar, :map, default: %{})
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
@@ -2267,5 +2268,28 @@ defmodule Pleroma.User do
     user
     |> Map.put(:bio, HTML.filter_tags(user.bio, filter))
     |> Map.put(:fields, fields)
+  end
+
+  def add_aliases(%User{} = user, aliases) when is_list(aliases) do
+    alias_set =
+      (user.ap_aliases ++ aliases)
+      |> MapSet.new()
+      |> MapSet.to_list()
+
+    user
+    |> change(%{ap_aliases: alias_set})
+    |> Repo.update()
+  end
+
+  def delete_aliases(%User{} = user, aliases) when is_list(aliases) do
+    alias_set =
+      user.ap_aliases
+      |> MapSet.new()
+      |> MapSet.difference(MapSet.new(aliases))
+      |> MapSet.to_list()
+
+    user
+    |> change(%{ap_aliases: alias_set})
+    |> Repo.update()
   end
 end

@@ -58,12 +58,19 @@ defmodule Pleroma.Web.WebFinger do
     ] ++ Publisher.gather_webfinger_links(user)
   end
 
+  defp gather_aliases(%User{} = user) do
+    user.ap_aliases
+    |> MapSet.new()
+    |> MapSet.put(user.ap_id)
+    |> MapSet.to_list()
+  end
+
   def represent_user(user, "JSON") do
     {:ok, user} = User.ensure_keys_present(user)
 
     %{
       "subject" => "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}",
-      "aliases" => [user.ap_id],
+      "aliases" => gather_aliases(user),
       "links" => gather_links(user)
     }
   end

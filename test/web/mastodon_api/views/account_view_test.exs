@@ -37,7 +37,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
           "<script src=\"invalid-html\"></script><span>valid html</span>. a<br>b<br/>c<br >d<br />f '&<>\"",
         inserted_at: ~N[2017-08-15 15:47:06.597036],
         emoji: %{"karjalanpiirakka" => "/file.png"},
-        raw_bio: "valid html. a\nb\nc\nd\nf '&<>\""
+        raw_bio: "valid html. a\nb\nc\nd\nf '&<>\"",
+        ap_aliases: ["https://shitposter.zone/users/shp"]
       })
 
     expected = %{
@@ -77,6 +78,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       },
       pleroma: %{
         ap_id: user.ap_id,
+        ap_aliases: ["https://shitposter.zone/users/shp"],
         background_image: "https://example.com/images/asuka_hospital.png",
         favicon:
           "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png",
@@ -171,6 +173,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       },
       pleroma: %{
         ap_id: user.ap_id,
+        ap_aliases: [],
         background_image: nil,
         favicon:
           "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png",
