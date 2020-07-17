@@ -159,6 +159,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         "Accounts which follow the given account, if network is not hidden by the account owner.",
       parameters: [
         %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        Operation.parameter(:id, :query, :string, "ID of the resource owner"),
         with_relationships_param() | pagination_params()
       ],
       responses: %{
@@ -177,6 +178,7 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
         "Accounts which the given account is following, if network is not hidden by the account owner.",
       parameters: [
         %Reference{"$ref": "#/components/parameters/accountIdOrNickname"},
+        Operation.parameter(:id, :query, :string, "ID of the resource owner"),
         with_relationships_param() | pagination_params()
       ],
       responses: %{200 => Operation.response("Accounts", "application/json", array_of_accounts())}
