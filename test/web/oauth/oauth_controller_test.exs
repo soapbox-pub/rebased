@@ -998,8 +998,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
              }
     end
 
-    test "rejects token exchange for valid credentials belonging to an unapproved user and approval is required" do
-      Pleroma.Config.put([:instance, :account_approval_required], true)
+    test "rejects token exchange for valid credentials belonging to an unapproved user" do
       password = "testpassword"
 
       user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password), approval_pending: true)
