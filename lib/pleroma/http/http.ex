@@ -69,7 +69,8 @@ defmodule Pleroma.HTTP do
         request = build_request(method, headers, options, url, body, params)
 
         adapter = Application.get_env(:tesla, :adapter)
-        client = Tesla.client([Pleroma.HTTP.Middleware.FollowRedirects], adapter)
+
+        client = Tesla.client(adapter_middlewares(adapter), adapter)
 
         maybe_limit(
           fn ->
@@ -107,4 +108,10 @@ defmodule Pleroma.HTTP do
   defp maybe_limit(fun, _, _) do
     fun.()
   end
+
+  defp adapter_middlewares(Tesla.Adapter.Gun) do
+    [Pleroma.HTTP.Middleware.FollowRedirects]
+  end
+
+  defp adapter_middlewares(_), do: []
 end
