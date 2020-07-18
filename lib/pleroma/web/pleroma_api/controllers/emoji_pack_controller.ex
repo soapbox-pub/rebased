@@ -22,7 +22,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
   )
 
   @skip_plugs [Pleroma.Plugs.OAuthScopesPlug, Pleroma.Plugs.ExpectPublicOrAuthenticatedCheckPlug]
-  plug(:skip_plug, @skip_plugs when action in [:archive, :show, :list])
+  plug(:skip_plug, @skip_plugs when action in [:index, :show, :archive])
 
   defdelegate open_api_operation(action), to: Pleroma.Web.ApiSpec.PleromaEmojiPackOperation
 
