@@ -47,6 +47,8 @@ defmodule Pleroma.User do
 
   # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+  # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
+  @url_regex ~r/https?:\/\/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)/
 
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
   @extended_local_nickname_regex ~r/^[a-zA-Z\d_-]+$/
@@ -2278,6 +2280,7 @@ defmodule Pleroma.User do
 
     user
     |> change(%{ap_aliases: alias_set})
+    |> validate_ap_aliases()
     |> Repo.update()
   end
 
@@ -2290,6 +2293,16 @@ defmodule Pleroma.User do
 
     user
     |> change(%{ap_aliases: alias_set})
+    |> validate_ap_aliases()
     |> Repo.update()
+  end
+
+  defp validate_ap_aliases(changeset) do
+    validate_change(changeset, :ap_aliases, fn :ap_aliases, ap_aliases ->
+      case Enum.all?(ap_aliases, fn a -> Regex.match?(@url_regex, a) end) do
+        true -> []
+        false -> [ap_aliases: "Invalid ap_id format. Must be a URL."]
+      end
+    end)
   end
 end

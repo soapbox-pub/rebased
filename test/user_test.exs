@@ -1876,6 +1876,13 @@ defmodule Pleroma.UserTest do
            ]
   end
 
+  test "add_aliases/2 with invalid alias" do
+    user = insert(:user)
+    {:error, _} = User.add_aliases(user, ["invalid_alias"])
+    {:error, _} = User.add_aliases(user, ["http://still_invalid"])
+    {:error, _} = User.add_aliases(user, ["http://validalias.com/users/dude", "invalid_alias"])
+  end
+
   test "delete_aliases/2" do
     user =
       insert(:user,
