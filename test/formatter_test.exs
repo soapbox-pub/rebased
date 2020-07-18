@@ -265,6 +265,26 @@ defmodule Pleroma.FormatterTest do
 
       assert {^expected, [], []} = Formatter.linkify(text)
     end
+
+    test "it correctly parses angry face D:< with mention" do
+      lain =
+        insert(:user, %{
+          nickname: "lain@lain.com",
+          ap_id: "https://lain.com/users/lain",
+          id: "9qrWmR0cKniB0YU0TA"
+        })
+
+      text = "@lain@lain.com D:<"
+
+      expected_text =
+        ~S(<span class="h-card"><a class="u-url mention" data-user="9qrWmR0cKniB0YU0TA" href="https://lain.com/users/lain" rel="ugc">@<span>lain</span></a></span> D:<)
+
+      expected_mentions = [
+        {"@lain@lain.com", lain}
+      ]
+
+      assert {^expected_text, ^expected_mentions, []} = Formatter.linkify(text)
+    end
   end
 
   describe ".parse_tags" do
