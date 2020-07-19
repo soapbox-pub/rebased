@@ -108,7 +108,7 @@ defmodule Pleroma.Emoji.Loader do
       if File.exists?(emoji_txt) do
         load_from_file(emoji_txt, emoji_groups)
       else
-        extensions = Pleroma.Config.get([:emoji, :pack_extensions])
+        extensions = Config.get([:emoji, :pack_extensions])
 
         Logger.info(
           "No emoji.txt found for pack \"#{pack_name}\", assuming all #{

@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
 
   defp check_reject(message, actions) do
     if :reject in actions do
-      {:reject, nil}
+      {:reject, "[ObjectAgePolicy]"}
     else
       {:ok, message}
     end
@@ -47,9 +47,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
 
         {:ok, message}
       else
-        # Unhandleable error: somebody is messing around, just drop the message.
         _e ->
-          {:reject, nil}
+          {:reject, "[ObjectAgePolicy] Unhandled error"}
       end
     else
       {:ok, message}
@@ -69,9 +68,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
 
         {:ok, message}
       else
-        # Unhandleable error: somebody is messing around, just drop the message.
         _e ->
-          {:reject, nil}
+          {:reject, "[ObjectAgePolicy] Unhandled error"}
       end
     else
       {:ok, message}
@@ -98,7 +96,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   @impl true
   def describe do
     mrf_object_age =
-      Pleroma.Config.get(:mrf_object_age)
+      Config.get(:mrf_object_age)
       |> Enum.into(%{})
 
     {:ok, %{mrf_object_age: mrf_object_age}}

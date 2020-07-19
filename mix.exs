@@ -90,8 +90,6 @@ defmodule Pleroma.Mixfile do
   defp elixirc_paths(_), do: ["lib"]
 
   defp warnings_as_errors(:prod), do: false
-  # Uncomment this if you need testing configurable_from_database logic
-  # defp warnings_as_errors(:dev), do: false
   defp warnings_as_errors(_), do: true
 
   # Specifies OAuth dependencies.
@@ -122,9 +120,9 @@ defmodule Pleroma.Mixfile do
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_enum, "~> 1.4"},
-      {:ecto_sql, "~> 3.3.2"},
+      {:ecto_sql, "~> 3.4.4"},
       {:postgrex, ">= 0.13.5"},
-      {:oban, "~> 1.2"},
+      {:oban, "~> 2.0.0"},
       {:gettext, "~> 0.15"},
       {:pbkdf2_elixir, "~> 1.0"},
       {:bcrypt_elixir, "~> 2.0"},
@@ -137,13 +135,11 @@ defmodule Pleroma.Mixfile do
       {:poison, "~> 3.0", override: true},
       # {:tesla, "~> 1.3", override: true},
       {:tesla,
-       git: "https://git.pleroma.social/pleroma/elixir-libraries/tesla.git",
-       ref: "61b7503cef33f00834f78ddfafe0d5d9dec2270b",
-       override: true},
+       github: "teamon/tesla", ref: "af3707078b10793f6a534938e56b963aff82fe3c", override: true},
       {:castore, "~> 0.1"},
       {:cowlib, "~> 2.8", override: true},
       {:gun,
-       github: "ninenines/gun", ref: "e1a69b36b180a574c0ac314ced9613fdd52312cc", override: true},
+       github: "ninenines/gun", ref: "921c47146b2d9567eac7e9a4d2ccc60fffd4f327", override: true},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
       {:ex_aws, "~> 2.1"},
@@ -178,6 +174,7 @@ defmodule Pleroma.Mixfile do
        ref: "293d77bb6f4a67ac8bde1428735c3b42f22cbb30"},
       {:telemetry, "~> 0.3"},
       {:poolboy, "~> 1.5"},
+      {:prometheus, "~> 4.6"},
       {:prometheus_ex, "~> 3.0"},
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.3"},
@@ -192,6 +189,9 @@ defmodule Pleroma.Mixfile do
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.12.1", only: :test},
       {:flake_id, "~> 0.1.0"},
+      {:concurrent_limiter,
+       git: "https://git.pleroma.social/pleroma/elixir-libraries/concurrent_limiter",
+       ref: "8eee96c6ba39b9286ec44c51c52d9f2758951365"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
        ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},

@@ -12,8 +12,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicyTest do
   describe "mrf_tag:disable-any-subscription" do
     test "rejects message" do
       actor = insert(:user, tags: ["mrf_tag:disable-any-subscription"])
-      message = %{"object" => actor.ap_id, "type" => "Follow"}
-      assert {:reject, nil} = TagPolicy.filter(message)
+      message = %{"object" => actor.ap_id, "type" => "Follow", "actor" => actor.ap_id}
+      assert {:reject, _} = TagPolicy.filter(message)
     end
   end
 
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicyTest do
       actor = insert(:user, tags: ["mrf_tag:disable-remote-subscription"])
       follower = insert(:user, tags: ["mrf_tag:disable-remote-subscription"], local: false)
       message = %{"object" => actor.ap_id, "type" => "Follow", "actor" => follower.ap_id}
-      assert {:reject, nil} = TagPolicy.filter(message)
+      assert {:reject, _} = TagPolicy.filter(message)
     end
 
     test "allows non-local follow requests" do

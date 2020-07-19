@@ -22,6 +22,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   setup do: clear_config([:instance, :federating])
   setup do: clear_config([:instance, :allow_relay])
   setup do: clear_config([:rich_media, :enabled])
+  setup do: clear_config([:mrf, :policies])
+  setup do: clear_config([:mrf_keyword, :reject])
 
   describe "posting statuses" do
     setup do: oauth_access(["write:statuses"])
@@ -154,6 +156,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
                  "status" => "oolong",
                  "expires_in" => expires_in
                })
+               |> json_response_and_validate_schema(422)
+    end
+
+    test "Get MRF reason when posting a status is rejected by one", %{conn: conn} do
+      Pleroma.Config.put([:mrf_keyword, :reject], ["GNO"])
+      Pleroma.Config.put([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+
+      assert %{"error" => "[KeywordPolicy] Matches with rejected keyword"} =
+               conn
+               |> put_req_header("content-type", "application/json")
+               |> post("api/v1/statuses", %{"status" => "GNO/Linux"})
                |> json_response_and_validate_schema(422)
     end
 
@@ -760,13 +773,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     test "when you created it" do
       %{user: author, conn: conn} = oauth_access(["write:statuses"])
       activity = insert(:note_activity, user: author)
+      object = Object.normalize(activity)
 
-      conn =
+      content = object.data["content"]
+      source = object.data["source"]
+
+      result =
         conn
         |> assign(:user, author)
         |> delete("/api/v1/statuses/#{activity.id}")
+        |> json_response_and_validate_schema(200)
 
-      assert %{} = json_response_and_validate_schema(conn, 200)
+      assert match?(%{"content" => ^content, "text" => ^source}, result)
 
       refute Activity.get_by_id(activity.id)
     end
@@ -789,7 +807,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       conn = delete(conn, "/api/v1/statuses/#{activity.id}")
 
-      assert %{"error" => _} = json_response_and_validate_schema(conn, 403)
+      assert %{"error" => "Record not found"} == json_response_and_validate_schema(conn, 404)
 
       assert Activity.get_by_id(activity.id) == activity
     end

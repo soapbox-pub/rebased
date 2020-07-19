@@ -64,13 +64,15 @@ Has these additional fields under the `pleroma` object:
 - `hide_follows`: boolean, true when the user has follow hiding enabled
 - `hide_followers_count`: boolean, true when the user has follower stat hiding enabled
 - `hide_follows_count`: boolean, true when the user has follow stat hiding enabled
-- `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
-- `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
+- `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `/api/v1/accounts/verify_credentials` and `/api/v1/accounts/update_credentials`
+- `chat_token`: The token needed for Pleroma chat. Only returned in `/api/v1/accounts/verify_credentials`
 - `deactivated`: boolean, true when the user is deactivated
 - `allow_following_move`: boolean, true when the user allows automatically follow moved following accounts
 - `unread_conversation_count`: The count of unread conversations. Only returned to the account owner.
 - `unread_notifications_count`: The count of unread notifications. Only returned to the account owner.
 - `notification_settings`: object, can be absent. See `/api/pleroma/notification_settings` for the parameters/keys returned.
+- `accepts_chat_messages`: boolean, but can be null if we don't have that information about a user
+- `favicon`: nullable URL string, Favicon image of the user's instance
 
 ### Source
 
@@ -167,7 +169,7 @@ Returns: array of Status.
 
 The maximum number of statuses is limited to 100 per request.
 
-## PATCH `/api/v1/update_credentials`
+## PATCH `/api/v1/accounts/update_credentials`
 
 Additional parameters can be added to the JSON body/Form data:
 
@@ -182,9 +184,12 @@ Additional parameters can be added to the JSON body/Form data:
 - `pleroma_settings_store` - Opaque user settings to be saved on the backend.
 - `skip_thread_containment` - if true, skip filtering out broken threads
 - `allow_following_move` - if true, allows automatically follow moved following accounts
-- `pleroma_background_image` - sets the background image of the user.
+- `pleroma_background_image` - sets the background image of the user. Can be set to "" (an empty string) to reset.
 - `discoverable` - if true, discovery of this account in search results and other services is allowed.
 - `actor_type` - the type of this account.
+- `accepts_chat_messages` - if false, this account will reject all chat messages.
+
+All images (avatar, banner and background) can be reset to the default by sending an empty string ("") instead of a file.
 
 ### Pleroma Settings Store
 
@@ -192,7 +197,7 @@ Pleroma has mechanism that allows frontends to save blobs of json for each user 
 
 The parameter should have a form of `{frontend_name: {...}}`, with `frontend_name` identifying your type of client, e.g. `pleroma_fe`. It will overwrite everything under this property, but will not overwrite other frontend's settings.
 
-This information is returned in the `verify_credentials` endpoint.
+This information is returned in the `/api/v1/accounts/verify_credentials` endpoint.
 
 ## Authentication
 
@@ -220,6 +225,8 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 `GET /api/v1/instance` has additional fields
 
 - `max_toot_chars`: The maximum characters per post
+- `chat_limit`: The maximum characters per chat message
+- `description_limit`: The maximum characters per image description
 - `poll_limits`: The limits of polls
 - `upload_limit`: The maximum upload file size
 - `avatar_upload_limit`: The same for avatars
@@ -228,6 +235,8 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `background_image`: A background image that frontends can use
 - `pleroma.metadata.features`: A list of supported features
 - `pleroma.metadata.federation`: The federation restrictions of this instance
+- `pleroma.metadata.fields_limits`: A list of values detailing the length and count limitation for various instance-configurable fields.
+- `pleroma.metadata.post_formats`: A list of the allowed post format types
 - `vapid_public_key`: The public key needed for push messages
 
 ## Markers

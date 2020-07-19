@@ -41,6 +41,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     {:ok, %{admin: admin, token: token, conn: conn}}
   end
 
+  test "with valid `admin_token` query parameter, skips OAuth scopes check" do
+    clear_config([:admin_token], "password123")
+
+    user = insert(:user)
+
+    conn = get(build_conn(), "/api/pleroma/admin/users/#{user.nickname}?admin_token=password123")
+
+    assert json_response(conn, 200)
+  end
+
   describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
     setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], true)
 
@@ -1512,6 +1522,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert get_in(first_entry, ["data", "message"]) ==
                "@#{moderator.nickname} unfollowed relay: https://example.org/relay"
     end
+  end
+
+  test "gets a remote users when [:instance, :limit_to_local_content] is set to :unauthenticated",
+       %{conn: conn} do
+    clear_config(Pleroma.Config.get([:instance, :limit_to_local_content]), :unauthenticated)
+    user = insert(:user, %{local: false, nickname: "u@peer1.com"})
+    conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials")
+
+    assert json_response(conn, 200)
   end
 
   describe "GET /users/:nickname/credentials" do

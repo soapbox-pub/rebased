@@ -333,6 +333,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblog: nil,
       card: card,
       content: content_html,
+      text: opts[:with_source] && object.data["source"],
       created_at: created_at,
       reblogs_count: announcement_count,
       replies_count: object.data["repliesCount"] || 0,

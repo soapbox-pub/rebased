@@ -12,12 +12,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MFR policy to set global expiration for all local Create activities
 - OGP rich media parser merged with TwitterCard
 - Configuration: `:instance, rewrite_policy` moved to `:mrf, policies`, `:instance, :mrf_transparency` moved to `:mrf, :transparency`, `:instance, :mrf_transparency_exclusions` moved to `:mrf, :transparency_exclusions`. Old config namespace is deprecated.
+- Configuration: `:media_proxy, whitelist` format changed to host with scheme (e.g. `http://example.com` instead of `example.com`). Domain format is deprecated.
 
 <details>
   <summary>API Changes</summary>
 
+- **Breaking:** Pleroma API: The routes to update avatar, banner and background have been removed.
+- **Breaking:** Image description length is limited now.
 - **Breaking:** Emoji API: changed methods and renamed routes.
+- MastodonAPI: Allow removal of avatar, banner and background.
 - Streaming: Repeats of a user's posts will no longer be pushed to the user's stream.
+- Mastodon API: Added `pleroma.metadata.fields_limits` to /api/v1/instance
+- Mastodon API: On deletion, returns the original post text.
+- Mastodon API: Add `pleroma.unread_count` to the Marker entity.
+- **Breaking:** Notification Settings API for suppressing notifications
+  has been simplified down to `block_from_strangers`.
+- **Breaking:** Notification Settings API option for hiding push notification
+  contents has been renamed to `hide_notification_contents`
+- Mastodon API: Added `pleroma.metadata.post_formats` to /api/v1/instance
 </details>
 
 <details>
@@ -33,6 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Chats: Added `accepts_chat_messages` field to user, exposed in APIs and federation.
 - Chats: Added support for federated chats. For details, see the docs.
 - ActivityPub: Added support for existing AP ids for instances migrated from Mastodon.
 - Instance: Add `background_image` to configuration and `/api/v1/instance`
@@ -49,6 +62,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added `:reject_deletes` group to SimplePolicy
 - MRF (`EmojiStealPolicy`): New MRF Policy which allows to automatically download emojis from remote instances
 - Support pagination in emoji packs API (for packs and for files in pack)
+- Support for viewing instances favicons next to posts and accounts
+- Added Pleroma.Upload.Filter.Exiftool as an alternate EXIF stripping mechanism targeting GPS/location metadata.
 
 <details>
   <summary>API Changes</summary>
@@ -56,8 +71,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
-- Mastodon API: Add support for filtering replies in public and home timelines
-- Mastodon API: Support for `bot` field in `/api/v1/accounts/update_credentials`
+- Mastodon API: Add support for filtering replies in public and home timelines.
+- Mastodon API: Support for `bot` field in `/api/v1/accounts/update_credentials`.
+- Mastodon API: Support irreversible property for filters.
+- Mastodon API: Add pleroma.favicon field to accounts.
 - Admin API: endpoints for create/update/delete OAuth Apps.
 - Admin API: endpoint for status view.
 - OTP: Add command to reload emoji packs
@@ -71,6 +88,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Resolving Peertube accounts with Webfinger
 - `blob:` urls not being allowed by connect-src CSP
 - Mastodon API: fix `GET /api/v1/notifications` not returning the full result set
+- Rich Media Previews for Twitter links
+- Admin API: fix `GET /api/pleroma/admin/users/:nickname/credentials` returning 404 when getting the credentials of a remote user while `:instance, :limit_to_local_content` is set to `:unauthenticated`
+- Fix CSP policy generation to include remote Captcha services
+- Fix edge case where MediaProxy truncates media, usually caused when Caddy is serving content for the other Federated instance.
 
 ## [Unreleased (patch)]
 
@@ -212,7 +233,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `pleroma.thread_muted` to the Status entity
 - Mastodon API: Mark the direct conversation as read for the author when they send a new direct message
 - Mastodon API, streaming: Add `pleroma.direct_conversation_id` to the `conversation` stream event payload.
-- Mastodon API: Add `pleroma.unread_count` to the Marker entity
 - Admin API: Render whole status in grouped reports
 - Mastodon API: User timelines will now respect blocks, unless you are getting the user timeline of somebody you blocked (which would be empty otherwise).
 - Mastodon API: Favoriting / Repeating a post multiple times will now return the identical response every time. Before, executing that action twice would return an error ("already favorited") on the second try.

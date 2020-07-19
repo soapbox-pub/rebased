@@ -60,26 +60,25 @@ unit-testing:
     alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
+    - apt-get update && apt-get install -y libimage-exiftool-perl
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
     - mix coveralls --preload-modules
 
-# Removed to fix CI issue. In this early state it wasn't adding much value anyway.
-# TODO Fix and reinstate federated testing
-# federated-testing:
-#   stage: test
-#   cache: *testing_cache_policy
-#   services:
-#   - name: minibikini/postgres-with-rum:12
-#     alias: postgres
-#     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-#   script:
-#     - mix deps.get
-#     - mix ecto.create
-#     - mix ecto.migrate
-#     - epmd -daemon
-#     - mix test --trace --only federated
+federated-testing:
+  stage: test
+  cache: *testing_cache_policy
+  services:
+  - name: minibikini/postgres-with-rum:12
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  script:
+    - mix deps.get
+    - mix ecto.create
+    - mix ecto.migrate
+    - epmd -daemon
+    - mix test --trace --only federated
 
 unit-testing-rum:
   stage: test
@@ -93,6 +92,7 @@ unit-testing-rum:
     <<: *global_variables
     RUM_ENABLED: "true"
   script:
+    - apt-get update && apt-get install -y libimage-exiftool-perl
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate

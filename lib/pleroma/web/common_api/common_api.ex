@@ -101,10 +101,14 @@ defmodule Pleroma.Web.CommonAPI do
   def follow(follower, followed) do
     timeout = Pleroma.Config.get([:activitypub, :follow_handshake_timeout])
 
-    with {:ok, follower} <- User.maybe_direct_follow(follower, followed),
-         {:ok, activity} <- ActivityPub.follow(follower, followed),
+    with {:ok, follow_data, _} <- Builder.follow(follower, followed),
+         {:ok, activity, _} <- Pipeline.common_pipeline(follow_data, local: true),
          {:ok, follower, followed} <- User.wait_and_refresh(timeout, follower, followed) do
-      {:ok, follower, followed, activity}
+      if activity.data["state"] == "reject" do
+        {:error, :rejected}
+      else
+        {:ok, follower, followed, activity}
+      end
     end
   end
 

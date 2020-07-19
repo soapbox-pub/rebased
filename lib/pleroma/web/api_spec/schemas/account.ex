@@ -90,11 +90,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
           notification_settings: %Schema{
             type: :object,
             properties: %{
-              followers: %Schema{type: :boolean},
-              follows: %Schema{type: :boolean},
-              non_followers: %Schema{type: :boolean},
-              non_follows: %Schema{type: :boolean},
-              privacy_option: %Schema{type: :boolean}
+              block_from_strangers: %Schema{type: :boolean},
+              hide_notification_contents: %Schema{type: :boolean}
             }
           },
           relationship: AccountRelationship,
@@ -102,6 +99,13 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
             type: :object,
             description:
               "A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`"
+          },
+          accepts_chat_messages: %Schema{type: :boolean, nullable: true},
+          favicon: %Schema{
+            type: :string,
+            format: :uri,
+            nullable: true,
+            description: "Favicon image of the user's instance"
           }
         }
       },
@@ -169,16 +173,14 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
         "is_admin" => false,
         "is_moderator" => false,
         "skip_thread_containment" => false,
+        "accepts_chat_messages" => true,
         "chat_token" =>
           "SFMyNTY.g3QAAAACZAAEZGF0YW0AAAASOXRLaTNlc2JHN09RZ1oyOTIwZAAGc2lnbmVkbgYARNplS3EB.Mb_Iaqew2bN1I1o79B_iP7encmVCpTKC4OtHZRxdjKc",
         "unread_conversation_count" => 0,
         "tags" => [],
         "notification_settings" => %{
-          "followers" => true,
-          "follows" => true,
-          "non_followers" => true,
-          "non_follows" => true,
-          "privacy_option" => false
+          "block_from_strangers" => false,
+          "hide_notification_contents" => false
         },
         "relationship" => %{
           "blocked_by" => false,

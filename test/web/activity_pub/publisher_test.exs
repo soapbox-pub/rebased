@@ -123,6 +123,39 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
   end
 
   describe "publish_one/1" do
+    test "publish to url with with different ports" do
+      inbox80 = "http://42.site/users/nick1/inbox"
+      inbox42 = "http://42.site:42/users/nick1/inbox"
+
+      mock(fn
+        %{method: :post, url: "http://42.site:42/users/nick1/inbox"} ->
+          {:ok, %Tesla.Env{status: 200, body: "port 42"}}
+
+        %{method: :post, url: "http://42.site/users/nick1/inbox"} ->
+          {:ok, %Tesla.Env{status: 200, body: "port 80"}}
+      end)
+
+      actor = insert(:user)
+
+      assert {:ok, %{body: "port 42"}} =
+               Publisher.publish_one(%{
+                 inbox: inbox42,
+                 json: "{}",
+                 actor: actor,
+                 id: 1,
+                 unreachable_since: true
+               })
+
+      assert {:ok, %{body: "port 80"}} =
+               Publisher.publish_one(%{
+                 inbox: inbox80,
+                 json: "{}",
+                 actor: actor,
+                 id: 1,
+                 unreachable_since: true
+               })
+    end
+
     test_with_mock "calls `Instances.set_reachable` on successful federation if `unreachable_since` is not specified",
                    Instances,
                    [:passthrough],
@@ -131,7 +164,6 @@ defmodule Pleroma.Web.ActivityPub.PublisherTest do
       inbox = "http://200.site/users/nick1/inbox"
 
       assert {:ok, _} = Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
-
       assert called(Instances.set_reachable(inbox))
     end
 

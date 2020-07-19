@@ -71,12 +71,9 @@ defmodule Pleroma.Web.MediaProxyTest do
     end
 
     test "validates signature" do
-      secret_key_base = Config.get([Endpoint, :secret_key_base])
-      clear_config([Endpoint, :secret_key_base], secret_key_base)
-
       encoded = MediaProxy.url("https://pleroma.social")
 
-      Config.put(
+      clear_config(
         [Endpoint, :secret_key_base],
         "00000000000000000000000000000000000000000000000"
       )
@@ -144,15 +141,17 @@ defmodule Pleroma.Web.MediaProxyTest do
                request_path,
                "https://mydomain.com/uploads/2019/07/ANALYSE-DAI-_-LE-STABLECOIN-100-DÉCENTRALISÉ-BQ.jpg"
              ) == :ok
+      assert MediaProxy.decode_url(sig, base64) == {:error, :invalid_signature}
     end
 
     test "uses the configured base_url" do
-      clear_config([:media_proxy, :base_url], "https://cache.pleroma.social")
+      base_url = "https://cache.pleroma.social"
+      clear_config([:media_proxy, :base_url], base_url)
 
       url = "https://pleroma.soykaf.com/static/logo.png"
       encoded = MediaProxy.url(url)
 
-      assert String.starts_with?(encoded, Config.get([:media_proxy, :base_url]))
+      assert String.starts_with?(encoded, base_url)
     end
 
     # Some sites expect ASCII encoded characters in the URL to be preserved even if
@@ -194,10 +193,25 @@ defmodule Pleroma.Web.MediaProxyTest do
     end
   end
 
+  defp decode_result(encoded) do
+    [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
+    {:ok, decoded} = MediaProxy.decode_url(sig, base64)
+    decoded
+  end
+
   describe "whitelist" do
     setup do: clear_config([:media_proxy, :enabled], true)
 
     test "mediaproxy whitelist" do
+      clear_config([:media_proxy, :whitelist], ["https://google.com", "https://feld.me"])
+      url = "https://feld.me/foo.png"
+
+      unencoded = MediaProxy.url(url)
+      assert unencoded == url
+    end
+
+    # TODO: delete after removing support bare domains for media proxy whitelist
+    test "mediaproxy whitelist bare domains whitelist (deprecated)" do
       clear_config([:media_proxy, :whitelist], ["google.com", "feld.me"])
       url = "https://feld.me/foo.png"
 

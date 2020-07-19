@@ -97,6 +97,7 @@ config :pleroma, :uri_schemes,
     "dat",
     "dweb",
     "gopher",
+    "hyper",
     "ipfs",
     "ipns",
     "irc",
@@ -171,7 +172,7 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :tesla, adapter: Tesla.Adapter.Hackney
+config :tesla, adapter: Tesla.Adapter.Gun
 
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
@@ -188,6 +189,7 @@ config :pleroma, :instance,
   background_image: "/images/city.jpg",
   instance_thumbnail: "/instance/thumbnail.jpeg",
   limit: 5_000,
+  description_limit: 5_000,
   chat_limit: 5_000,
   remote_limit: 100_000,
   upload_limit: 16_000_000,
@@ -448,8 +450,7 @@ config :pleroma, Pleroma.Web.Metadata,
 
 config :pleroma, Pleroma.Web.Preload,
   providers: [
-    Pleroma.Web.Preload.Providers.Instance,
-    Pleroma.Web.Preload.Providers.StatusNet
+    Pleroma.Web.Preload.Providers.Instance
   ]
 
 config :pleroma, :http_security,
@@ -509,8 +510,7 @@ config :pleroma, Pleroma.User,
 
 config :pleroma, Oban,
   repo: Pleroma.Repo,
-  verbose: false,
-  prune: {:maxlen, 1500},
+  log: false,
   queues: [
     activity_expiration: 10,
     federator_incoming: 50,
@@ -524,6 +524,7 @@ config :pleroma, Oban,
     attachments_cleanup: 5,
     new_users_digest: 1
   ],
+  plugins: [Oban.Plugins.Pruner],
   crontab: [
     {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
     {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
@@ -659,32 +660,30 @@ config :pleroma, Pleroma.Repo,
   prepare: :unnamed
 
 config :pleroma, :connections_pool,
-  checkin_timeout: 250,
+  reclaim_multiplier: 0.1,
+  connection_acquisition_wait: 250,
+  connection_acquisition_retries: 5,
   max_connections: 250,
-  retry: 1,
-  retry_timeout: 1000,
+  max_idle_time: 30_000,
+  retry: 0,
   await_up_timeout: 5_000
 
 config :pleroma, :pools,
   federation: [
     size: 50,
-    max_overflow: 10,
-    timeout: 150_000
+    max_waiting: 10
   ],
   media: [
     size: 50,
-    max_overflow: 10,
-    timeout: 150_000
+    max_waiting: 10
   ],
   upload: [
     size: 25,
-    max_overflow: 5,
-    timeout: 300_000
+    max_waiting: 5
   ],
   default: [
     size: 10,
-    max_overflow: 2,
-    timeout: 10_000
+    max_waiting: 2
   ]
 
 config :pleroma, :hackney_pools,
@@ -716,6 +715,8 @@ config :pleroma, :mrf,
 config :tzdata, :http_client, Pleroma.HTTP.Tzdata
 
 config :ex_aws, http_client: Pleroma.HTTP.ExAws
+
+config :pleroma, :instances_favicons, enabled: false
 
 config :pleroma, :exexec,
   root_mode: false,
