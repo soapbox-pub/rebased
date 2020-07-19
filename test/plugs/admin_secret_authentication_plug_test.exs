@@ -7,6 +7,8 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlugTest do
   import Pleroma.Factory
 
   alias Pleroma.Plugs.AdminSecretAuthenticationPlug
+  alias Pleroma.Plugs.OAuthScopesPlug
+  alias Pleroma.Plugs.PlugHelper
 
   test "does nothing if a user is assigned", %{conn: conn} do
     user = insert(:user)
@@ -39,6 +41,7 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlugTest do
         |> AdminSecretAuthenticationPlug.call(%{})
 
       assert conn.assigns[:user].is_admin
+      assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
     end
 
     test "with `x-admin-token` HTTP header", %{conn: conn} do
@@ -57,6 +60,7 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlugTest do
         |> AdminSecretAuthenticationPlug.call(%{})
 
       assert conn.assigns[:user].is_admin
+      assert PlugHelper.plug_skipped?(conn, OAuthScopesPlug)
     end
   end
 end

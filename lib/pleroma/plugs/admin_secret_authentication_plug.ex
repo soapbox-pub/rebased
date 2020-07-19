@@ -4,7 +4,9 @@
 
 defmodule Pleroma.Plugs.AdminSecretAuthenticationPlug do
   import Plug.Conn
+
   alias Pleroma.User
+  alias Pleroma.Plugs.OAuthScopesPlug
 
   def init(options) do
     options
@@ -26,7 +28,7 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlug do
 
   def authenticate(%{params: %{"admin_token" => admin_token}} = conn) do
     if admin_token == secret_token() do
-      assign(conn, :user, %User{is_admin: true})
+      assign_admin_user(conn)
     else
       conn
     end
@@ -36,8 +38,14 @@ defmodule Pleroma.Plugs.AdminSecretAuthenticationPlug do
     token = secret_token()
 
     case get_req_header(conn, "x-admin-token") do
-      [^token] -> assign(conn, :user, %User{is_admin: true})
+      [^token] -> assign_admin_user(conn)
       _ -> conn
     end
+  end
+
+  defp assign_admin_user(conn) do
+    conn
+    |> assign(:user, %User{is_admin: true})
+    |> OAuthScopesPlug.skip_plug()
   end
 end

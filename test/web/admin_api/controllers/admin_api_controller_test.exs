@@ -41,6 +41,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     {:ok, %{admin: admin, token: token, conn: conn}}
   end
 
+  test "with valid `admin_token` query parameter, skips OAuth scopes check" do
+    clear_config([:admin_token], "password123")
+
+    user = insert(:user)
+
+    conn = get(build_conn(), "/api/pleroma/admin/users/#{user.nickname}?admin_token=password123")
+
+    assert json_response(conn, 200)
+  end
+
   describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
     setup do: clear_config([:auth, :enforce_oauth_admin_scope_usage], true)
 
