@@ -67,7 +67,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 <details>
   <summary>API Changes</summary>
-- Mastodon API: Add pleroma.parents_visible field to statuses.
+
+- Mastodon API: Add pleroma.parent_visible field to statuses.
 - Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
@@ -121,6 +122,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Follow request notifications
 <details>
   <summary>API Changes</summary>
+
 - Admin API: `GET /api/pleroma/admin/need_reboot`.
 </details>
 
@@ -188,6 +190,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: Using third party engines for user recommendation
 <details>
   <summary>API Changes</summary>
+
 - **Breaking**: AdminAPI: migrate_from_db endpoint
 </details>
 
