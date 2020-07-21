@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - **Breaking:** Elixir >=1.9 is now required (was >= 1.8)
+- **Breaking:** Configuration: `:auto_linker, :opts` moved to `:pleroma, Pleroma.Formatter`. Old config namespace is deprecated.
 - In Conversations, return only direct messages as `last_status`
 - Using the `only_media` filter on timelines will now exclude reblog media
 - MFR policy to set global expiration for all local Create activities

@@ -527,16 +527,14 @@ config :pleroma, :workers,
     federator_outgoing: 5
   ]
 
-config :auto_linker,
-  opts: [
-    extra: true,
-    # TODO: Set to :no_scheme when it works properly
-    validate_tld: true,
-    class: false,
-    strip_prefix: false,
-    new_window: false,
-    rel: "ugc"
-  ]
+config :pleroma, Pleroma.Formatter,
+  class: false,
+  rel: "ugc",
+  new_window: false,
+  truncate: false,
+  strip_prefix: false,
+  extra: true,
+  validate_tld: :no_scheme
 
 config :pleroma, :ldap,
   enabled: System.get_env("LDAP_ENABLED") == "true",

@@ -934,30 +934,29 @@ Configure OAuth 2 provider capabilities:
 ### :uri_schemes
 * `valid_schemes`: List of the scheme part that is considered valid to be an URL.
 
-### :auto_linker
+### Pleroma.Formatter
 
-Configuration for the `auto_linker` library:
+Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.
 
-* `class: "auto-linker"` - specify the class to be added to the generated link. false to clear.
-* `rel: "noopener noreferrer"` - override the rel attribute. false to clear.
-* `new_window: true` - set to false to remove `target='_blank'` attribute.
-* `scheme: false` - Set to true to link urls with schema `http://google.com`.
-* `truncate: false` - Set to a number to truncate urls longer then the number. Truncated urls will end in `..`.
-* `strip_prefix: true` - Strip the scheme prefix.
-* `extra: false` - link urls with rarely used schemes (magnet, ipfs, irc, etc.).
+* `class` - specify the class to be added to the generated link (default: `false`)
+* `rel` - specify the rel attribute (default: `ugc`)
+* `new_window` - adds `target="_blank"` attribute (default: `false`)
+* `truncate` - Set to a number to truncate URLs longer then the number. Truncated URLs will end in `...` (default: `false`)
+* `strip_prefix` - Strip the scheme prefix (default: `false`)
+* `extra` - link URLs with rarely used schemes (magnet, ipfs, irc, etc.) (default: `true`)
+* `validate_tld` - Set to false to disable TLD validation for URLs/emails. Can be set to :no_scheme to validate TLDs only for urls without a scheme (e.g `example.com` will be validated, but `http://example.loki` won't) (default: `:no_scheme`)
 
 Example:
 
 ```elixir
-config :auto_linker,
-  opts: [
-    scheme: true,
-    extra: true,
-    class: false,
-    strip_prefix: false,
-    new_window: false,
-    rel: "ugc"
-  ]
+config :pleroma, Pleroma.Formatter,
+  class: false,
+  rel: "ugc",
+  new_window: false,
+  truncate: false,
+  strip_prefix: false,
+  extra: true,
+  validate_tld: :no_scheme
 ```
 
 ## Custom Runtime Modules (`:modules`)
