@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - **Breaking:** Elixir >=1.9 is now required (was >= 1.8)
+- **Breaking:** Configuration: `:auto_linker, :opts` moved to `:pleroma, Pleroma.Formatter`. Old config namespace is deprecated.
 - In Conversations, return only direct messages as `last_status`
 - Using the `only_media` filter on timelines will now exclude reblog media
 - MFR policy to set global expiration for all local Create activities
@@ -67,7 +68,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 <details>
   <summary>API Changes</summary>
-- Mastodon API: Add pleroma.parents_visible field to statuses.
+
+- Mastodon API: Add pleroma.parent_visible field to statuses.
 - Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
@@ -121,6 +123,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Follow request notifications
 <details>
   <summary>API Changes</summary>
+
 - Admin API: `GET /api/pleroma/admin/need_reboot`.
 </details>
 
@@ -188,6 +191,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: Using third party engines for user recommendation
 <details>
   <summary>API Changes</summary>
+
 - **Breaking**: AdminAPI: migrate_from_db endpoint
 </details>
 
