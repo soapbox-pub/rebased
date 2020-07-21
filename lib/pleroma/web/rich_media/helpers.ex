@@ -11,10 +11,10 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
-    validate_tld = Application.get_env(:auto_linker, :opts)[:validate_tld]
+    validate_tld = Pleroma.Config.get([Pleroma.Formatter, :validate_tld])
 
     page_url
-    |> AutoLinker.Parser.url?(scheme: true, validate_tld: validate_tld)
+    |> Linkify.Parser.url?(validate_tld: validate_tld)
     |> parse_uri(page_url)
   end
 
