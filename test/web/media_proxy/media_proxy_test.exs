@@ -127,21 +127,17 @@ defmodule Pleroma.Web.MediaProxyTest do
       )
 
       test_verify_request_path_and_url(
+        # Note: `conn.request_path` returns encoded url
+        "/ANALYSE-DAI-_-LE-STABLECOIN-100-D%C3%89CENTRALIS%C3%89-BQ.jpg",
+        "https://mydomain.com/uploads/2019/07/ANALYSE-DAI-_-LE-STABLECOIN-100-DÉCENTRALISÉ-BQ.jpg",
+        :ok
+      )
+
+      test_verify_request_path_and_url(
         "/my%2Flong%2Furl%2F2019%2F07%2FS",
         "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
         {:wrong_filename, "my%2Flong%2Furl%2F2019%2F07%2FS.jpg"}
       )
-    end
-
-    test "encoded url are tried to match for proxy as `conn.request_path` encodes the url" do
-      # conn.request_path will return encoded url
-      request_path = "/ANALYSE-DAI-_-LE-STABLECOIN-100-D%C3%89CENTRALIS%C3%89-BQ.jpg"
-
-      assert MediaProxy.verify_request_path_and_url(
-               request_path,
-               "https://mydomain.com/uploads/2019/07/ANALYSE-DAI-_-LE-STABLECOIN-100-DÉCENTRALISÉ-BQ.jpg"
-             ) == :ok
-      assert MediaProxy.decode_url(sig, base64) == {:error, :invalid_signature}
     end
 
     test "uses the configured base_url" do
@@ -191,12 +187,6 @@ defmodule Pleroma.Web.MediaProxyTest do
     test "does not encode remote urls" do
       assert MediaProxy.url("https://google.fr") == "https://google.fr"
     end
-  end
-
-  defp decode_result(encoded) do
-    [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
-    {:ok, decoded} = MediaProxy.decode_url(sig, base64)
-    decoded
   end
 
   describe "whitelist" do
