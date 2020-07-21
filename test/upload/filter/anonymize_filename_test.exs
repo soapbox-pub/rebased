@@ -9,6 +9,8 @@ defmodule Pleroma.Upload.Filter.AnonymizeFilenameTest do
   alias Pleroma.Upload
 
   setup do
+    File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
     upload_file = %Upload{
       name: "an… image.jpg",
       content_type: "image/jpg",
