@@ -57,6 +57,7 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
       description: "Remove a domain block, if it exists in the user's array of blocked domains.",
       operationId: "DomainBlockController.delete",
       requestBody: domain_block_request(),
+      parameters: [Operation.parameter(:domain, :query, %Schema{type: :string}, "Domain name")],
       security: [%{"oAuth" => ["follow", "write:blocks"]}],
       responses: %{
         200 => Operation.response("Empty object", "application/json", %Schema{type: :object})
@@ -71,10 +72,9 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
         type: :object,
         properties: %{
           domain: %Schema{type: :string}
-        },
-        required: [:domain]
+        }
       },
-      required: true,
+      required: false,
       example: %{
         "domain" => "facebook.com"
       }
