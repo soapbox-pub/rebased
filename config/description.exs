@@ -2216,12 +2216,11 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :pleroma,
-    key: Pleroma.Formatter,
+    group: :auto_linker,
+    key: :opts,
     label: "Auto Linker",
     type: :group,
-    description:
-      "Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.",
+    description: "Configuration for the auto_linker library",
     children: [
       %{
         key: :class,
@@ -2238,31 +2237,24 @@ config :pleroma, :config_description, [
       %{
         key: :new_window,
         type: :boolean,
-        description: "Link URLs will open in a new window/tab."
+        description: "Link URLs will open in new window/tab"
       },
       %{
         key: :truncate,
         type: [:integer, false],
         description:
-          "Set to a number to truncate URLs longer than the number. Truncated URLs will end in `...`",
+          "Set to a number to truncate URLs longer then the number. Truncated URLs will end in `..`",
         suggestions: [15, false]
       },
       %{
         key: :strip_prefix,
         type: :boolean,
-        description: "Strip the scheme prefix."
+        description: "Strip the scheme prefix"
       },
       %{
         key: :extra,
         type: :boolean,
         description: "Link URLs with rarely used schemes (magnet, ipfs, irc, etc.)"
-      },
-      %{
-        key: :validate_tld,
-        type: [:atom, :boolean],
-        description:
-          "Set to false to disable TLD validation for URLs/emails. Can be set to :no_scheme to validate TLDs only for URLs without a scheme (e.g `example.com` will be validated, but `http://example.loki` won't)",
-        suggestions: [:no_scheme, true]
       }
     ]
   },

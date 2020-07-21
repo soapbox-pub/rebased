@@ -156,6 +156,7 @@ defmodule Pleroma.ConfigDB do
       {:quack, :meta},
       {:mime, :types},
       {:cors_plug, [:max_age, :methods, :expose, :headers]},
+      {:auto_linker, :opts},
       {:swarm, :node_blacklist},
       {:logger, :backends}
     ]
