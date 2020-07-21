@@ -63,6 +63,18 @@ To add configuration to your config file, you can copy it from the base config. 
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 
+## Welcome
+* `direct_message`: - welcome message sent as a direct message.
+  * `enabled`: Enables the send a direct message to a newly registered user. Defaults to `false`.
+  * `sender_nickname`: The nickname of the local user that sends the welcome message.
+  * `message`: A message that will be send to a newly registered users as a direct message.
+* `email`: - welcome message sent as a email.
+  * `enabled`: Enables the send a welcome email to a newly registered user. Defaults to `false`.
+  * `sender_nickname`: The nickname of the local user that sends the welcome email.
+  * `subject`: A subject of welcome email.
+  * `html`: A html that will be send to a newly registered users as a email.
+  * `text`: A text that will be send to a newly registered users as a email.
+
 ## Message rewrite facility
 
 ### :mrf
