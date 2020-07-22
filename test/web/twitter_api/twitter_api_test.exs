@@ -4,11 +4,11 @@
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   use Pleroma.DataCase
+
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.UserInviteToken
-  alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   setup_all do
@@ -27,13 +27,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user} = TwitterAPI.register_user(data)
 
-    fetched_user = User.get_cached_by_nickname("lain")
-
-    assert AccountView.render("show.json", %{user: user}) ==
-             AccountView.render("show.json", %{user: fetched_user})
+    assert user == User.get_cached_by_nickname("lain")
   end
 
-  test "it registers a new user with empty string in bio and returns the user." do
+  test "it registers a new user with empty string in bio and returns the user" do
     data = %{
       :username => "lain",
       :email => "lain@wired.jp",
@@ -45,10 +42,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user} = TwitterAPI.register_user(data)
 
-    fetched_user = User.get_cached_by_nickname("lain")
-
-    assert AccountView.render("show.json", %{user: user}) ==
-             AccountView.render("show.json", %{user: fetched_user})
+    assert user == User.get_cached_by_nickname("lain")
   end
 
   test "it sends confirmation email if :account_activation_required is specified in instance config" do
@@ -134,13 +128,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
       {:ok, user} = TwitterAPI.register_user(data)
 
-      fetched_user = User.get_cached_by_nickname("vinny")
+      assert user == User.get_cached_by_nickname("vinny")
+
       invite = Repo.get_by(UserInviteToken, token: invite.token)
-
       assert invite.used == true
-
-      assert AccountView.render("show.json", %{user: user}) ==
-               AccountView.render("show.json", %{user: fetched_user})
     end
 
     test "returns error on invalid token" do
@@ -197,10 +188,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       check_fn = fn invite ->
         data = Map.put(data, :token, invite.token)
         {:ok, user} = TwitterAPI.register_user(data)
-        fetched_user = User.get_cached_by_nickname("vinny")
 
-        assert AccountView.render("show.json", %{user: user}) ==
-                 AccountView.render("show.json", %{user: fetched_user})
+        assert user == User.get_cached_by_nickname("vinny")
       end
 
       {:ok, data: data, check_fn: check_fn}
@@ -260,13 +249,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
-      fetched_user = User.get_cached_by_nickname("vinny")
+      assert user == User.get_cached_by_nickname("vinny")
+
       invite = Repo.get_by(UserInviteToken, token: invite.token)
-
       assert invite.used == true
-
-      assert AccountView.render("show.json", %{user: user}) ==
-               AccountView.render("show.json", %{user: fetched_user})
 
       data = %{
         :username => "GrimReaper",
@@ -302,13 +288,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
-      fetched_user = User.get_cached_by_nickname("vinny")
+      assert user == User.get_cached_by_nickname("vinny")
+
       invite = Repo.get_by(UserInviteToken, token: invite.token)
-
       refute invite.used
-
-      assert AccountView.render("show.json", %{user: user}) ==
-               AccountView.render("show.json", %{user: fetched_user})
     end
 
     test "error after max uses" do
@@ -327,12 +310,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
-      fetched_user = User.get_cached_by_nickname("vinny")
+      assert user == User.get_cached_by_nickname("vinny")
+
       invite = Repo.get_by(UserInviteToken, token: invite.token)
       assert invite.used == true
-
-      assert AccountView.render("show.json", %{user: user}) ==
-               AccountView.render("show.json", %{user: fetched_user})
 
       data = %{
         :username => "GrimReaper",

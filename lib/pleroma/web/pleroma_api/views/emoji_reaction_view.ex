@@ -17,7 +17,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionView do
     %{
       name: emoji,
       count: length(users),
-      accounts: render(AccountView, "index.json", users: users, for: user, as: :user),
+      accounts: render(AccountView, "index.json", users: users, for: user),
       me: !!(user && user.ap_id in user_ap_ids)
     }
   end

@@ -4,11 +4,14 @@
 
 defmodule Pleroma.Web.AdminAPI.ReportViewTest do
   use Pleroma.DataCase
+
   import Pleroma.Factory
+
+  alias Pleroma.Web.AdminAPI
   alias Pleroma.Web.AdminAPI.Report
   alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.MastodonAPI.StatusView
 
   test "renders a report" do
@@ -21,13 +24,13 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       content: nil,
       actor:
         Map.merge(
-          AccountView.render("show.json", %{user: user}),
-          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user})
+          MastodonAPI.AccountView.render("show.json", %{user: user, force: true}),
+          AdminAPI.AccountView.render("show.json", %{user: user})
         ),
       account:
         Map.merge(
-          AccountView.render("show.json", %{user: other_user}),
-          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: other_user})
+          MastodonAPI.AccountView.render("show.json", %{user: other_user, force: true}),
+          AdminAPI.AccountView.render("show.json", %{user: other_user})
         ),
       statuses: [],
       notes: [],
@@ -56,13 +59,13 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       content: nil,
       actor:
         Map.merge(
-          AccountView.render("show.json", %{user: user}),
-          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user})
+          MastodonAPI.AccountView.render("show.json", %{user: user, force: true}),
+          AdminAPI.AccountView.render("show.json", %{user: user})
         ),
       account:
         Map.merge(
-          AccountView.render("show.json", %{user: other_user}),
-          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: other_user})
+          MastodonAPI.AccountView.render("show.json", %{user: other_user, force: true}),
+          AdminAPI.AccountView.render("show.json", %{user: other_user})
         ),
       statuses: [StatusView.render("show.json", %{activity: activity})],
       state: "open",

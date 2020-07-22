@@ -27,19 +27,36 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           UserRelationship.view_relationships_option(reading_user, users)
       end
 
-    opts = Map.put(opts, :relationships, relationships_opt)
+    opts =
+      opts
+      |> Map.merge(%{relationships: relationships_opt, as: :user})
+      |> Map.delete(:users)
 
     users
     |> render_many(AccountView, "show.json", opts)
     |> Enum.filter(&Enum.any?/1)
   end
 
-  def render("show.json", %{user: user} = opts) do
-    if User.visible_for(user, opts[:for]) == :visible do
+  @doc """
+  Renders specified user account.
+    :force option skips visibility check and renders any user (local or remote)
+      regardless of [:pleroma, :restrict_unauthenticated] setting.
+    :for option specifies the requester and can be a User record or nil.
+  """
+  def render("show.json", %{user: _user, force: true} = opts) do
+    do_render("show.json", opts)
+  end
+
+  def render("show.json", %{user: user, for: for_user_or_nil} = opts) do
+    if User.visible_for(user, for_user_or_nil) == :visible do
       do_render("show.json", opts)
     else
       %{}
     end
+  end
+
+  def render("show.json", _) do
+    raise "In order to prevent account accessibility issues, :force or :for option is required."
   end
 
   def render("mention.json", %{user: user}) do
