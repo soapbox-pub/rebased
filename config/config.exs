@@ -260,7 +260,7 @@ config :pleroma, :welcome,
   ],
   email: [
     enabled: false,
-    sender_nickname: nil,
+    sender: nil,
     subject: "Welcome to <%= instance_name %>",
     html: "Welcome to <%= instance_name %>",
     text: "Welcome to <%= instance_name %>"

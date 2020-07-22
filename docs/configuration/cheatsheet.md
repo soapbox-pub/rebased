@@ -46,8 +46,6 @@ To add configuration to your config file, you can copy it from the base config. 
 * `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
 * `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
 * `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
-* `welcome_message`: A message that will be send to a newly registered users as a direct message.
-* `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
 * `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
@@ -70,10 +68,28 @@ To add configuration to your config file, you can copy it from the base config. 
   * `message`: A message that will be send to a newly registered users as a direct message.
 * `email`: - welcome message sent as a email.
   * `enabled`: Enables the send a welcome email to a newly registered user. Defaults to `false`.
-  * `sender_nickname`: The nickname of the local user that sends the welcome email.
+  * `sender`: The email address or tuple with `{nickname, email}` that will use as sender to the welcome email.
   * `subject`: A subject of welcome email.
   * `html`: A html that will be send to a newly registered users as a email.
   * `text`: A text that will be send to a newly registered users as a email.
+
+    Example:
+
+  ```elixir
+  config :pleroma, :welcome,
+      direct_message: [
+        enabled: true,
+        sender_nickname: "lain",
+        message: "Hi, @username! Welcome on board!"
+        ],
+      email: [
+        enabled: true,
+        sender: {"Pleroma App", "welcome@pleroma.app"},
+        subject: "Welcome to <%= instance_name %>",
+        html: "Welcome to <%= instance_name %>",
+        text: "Welcome to <%= instance_name %>"
+    ]
+  ```
 
 ## Message rewrite facility
 

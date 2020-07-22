@@ -414,7 +414,7 @@ defmodule Pleroma.UserTest do
       Pleroma.Config.put([:welcome, :direct_message, :message], "Hello, this is a cool site")
 
       Pleroma.Config.put([:welcome, :email, :enabled], true)
-      Pleroma.Config.put([:welcome, :email, :sender_nickname], welcome_user.nickname)
+      Pleroma.Config.put([:welcome, :email, :sender], welcome_user.email)
 
       Pleroma.Config.put(
         [:welcome, :email, :subject],

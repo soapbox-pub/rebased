@@ -27,7 +27,7 @@ defmodule Pleroma.User.WelcomeEmail do
     bindings = [user: user, instance_name: instance_name()]
 
     %{}
-    |> add_sender(Config.get([:welcome, :email, :sender_nickname], nil))
+    |> add_sender(Config.get([:welcome, :email, :sender], nil))
     |> add_option(:subject, bindings)
     |> add_option(:html, bindings)
     |> add_option(:text, bindings)
@@ -40,27 +40,21 @@ defmodule Pleroma.User.WelcomeEmail do
     |> merge_options(opts, option)
   end
 
-  def add_sender(opts, nickname) do
-    nickname
-    |> fetch_sender()
-    |> merge_options(opts, :sender)
+  defp add_sender(opts, {_name, _email} = sender) do
+    merge_options(sender, opts, :sender)
   end
+
+  defp add_sender(opts, sender) when is_binary(sender) do
+    add_sender(opts, {instance_name(), sender})
+  end
+
+  defp add_sender(opts, _), do: opts
 
   defp merge_options(nil, options, _option), do: options
 
   defp merge_options(value, options, option) do
     Map.merge(options, %{option => value})
   end
-
-  defp fetch_sender(nickname) when is_binary(nickname) do
-    with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      {instance_name(), user.email}
-    else
-      _ -> nil
-    end
-  end
-
-  defp fetch_sender(_), do: nil
 
   defp eval_string(nil, _), do: nil
   defp eval_string("", _), do: nil

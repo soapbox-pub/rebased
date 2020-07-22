@@ -990,11 +990,12 @@ config :pleroma, :config_description, [
             description: "Enables sends direct message for new user after registration"
           },
           %{
-            key: :sender_nickname,
-            type: :string,
-            description: "The nickname of the local user that sends the welcome email",
+            key: :sender,
+            type: [:string, :tuple],
+            description:
+              "The email address or tuple with `{nickname, email}` that will use as sender to the welcome email.",
             suggestions: [
-              "lain"
+              {"Pleroma App", "welcome@pleroma.app"}
             ]
           },
           %{
