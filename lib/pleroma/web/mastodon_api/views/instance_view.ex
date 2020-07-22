@@ -41,7 +41,8 @@ defmodule Pleroma.Web.MastodonAPI.InstanceView do
           account_activation_required: Keyword.get(instance, :account_activation_required),
           features: features(),
           federation: federation(),
-          fields_limits: fields_limits()
+          fields_limits: fields_limits(),
+          post_formats: Config.get([:instance, :allowed_post_formats])
         },
         vapid_public_key: Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
       }
