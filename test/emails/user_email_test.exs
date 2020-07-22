@@ -10,7 +10,6 @@ defmodule Pleroma.Emails.UserEmailTest do
   alias Pleroma.Web.Router
 
   import Pleroma.Factory
-  import Swoosh.TestAssertions
 
   test "build password reset email" do
     config = Pleroma.Config.get(:instance)
