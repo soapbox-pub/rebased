@@ -23,7 +23,7 @@ defmodule Pleroma.Repo.Migrations.AutolinkerToLinkify do
 
   defp maybe_get_params() do
     with %ConfigDB{value: opts} <- ConfigDB.get_by_params(@autolinker_path),
-         %{} = opts <- transform_opts(opts),
+         opts <- transform_opts(opts),
          %{} = linkify_params <- Map.put(@linkify_path, :value, opts) do
       {:ok, {@autolinker_path, linkify_params}}
     end
@@ -33,5 +33,6 @@ defmodule Pleroma.Repo.Migrations.AutolinkerToLinkify do
     opts
     |> Enum.into(%{})
     |> Map.take(@compat_opts)
+    |> Map.to_list()
   end
 end
