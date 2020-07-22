@@ -1,14 +1,10 @@
 defmodule Pleroma.Repo.Migrations.AutolinkerToLinkifyTest do
   use Pleroma.DataCase
   import Pleroma.Factory
+  import Pleroma.Tests.Helpers, only: [require_migration: 1]
   alias Pleroma.ConfigDB
 
-  setup_all do
-    [{module, _}] =
-      Code.require_file("20200716195806_autolinker_to_linkify.exs", "priv/repo/migrations")
-
-    {:ok, %{migration: module}}
-  end
+  setup_all do: require_migration("20200716195806_autolinker_to_linkify")
 
   test "change/0 converts auto_linker opts for Pleroma.Formatter", %{migration: migration} do
     autolinker_opts = [
