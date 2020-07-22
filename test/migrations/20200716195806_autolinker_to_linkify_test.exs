@@ -1,9 +1,10 @@
 defmodule Pleroma.Repo.Migrations.AutolinkerToLinkifyTest do
   use Pleroma.DataCase
   import Pleroma.Factory
-  import Pleroma.Tests.Helpers, only: [require_migration: 1]
+  import Pleroma.Tests.Helpers
   alias Pleroma.ConfigDB
 
+  setup do: clear_config(Pleroma.Formatter)
   setup_all do: require_migration("20200716195806_autolinker_to_linkify")
 
   test "change/0 converts auto_linker opts for Pleroma.Formatter", %{migration: migration} do
@@ -13,7 +14,7 @@ defmodule Pleroma.Repo.Migrations.AutolinkerToLinkifyTest do
       class: false,
       strip_prefix: false,
       new_window: false,
-      rel: "ugc"
+      rel: "testing"
     ]
 
     insert(:config, group: :auto_linker, key: :opts, value: autolinker_opts)
@@ -28,9 +29,12 @@ defmodule Pleroma.Repo.Migrations.AutolinkerToLinkifyTest do
              class: false,
              extra: true,
              new_window: false,
-             rel: "ugc",
+             rel: "testing",
              strip_prefix: false
            ]
+
+    Pleroma.Config.put(Pleroma.Formatter, new_opts)
+    assert new_opts == Pleroma.Config.get(Pleroma.Formatter)
 
     {text, _mentions, []} =
       Pleroma.Formatter.linkify(
@@ -38,7 +42,7 @@ defmodule Pleroma.Repo.Migrations.AutolinkerToLinkifyTest do
       )
 
     assert text ==
-             "<a href=\"https://www.businessinsider.com/walmart-will-close-stores-on-thanksgiving-ending-black-friday-tradition-2020-7\" rel=\"ugc\">https://www.businessinsider.com/walmart-will-close-stores-on-thanksgiving-ending-black-friday-tradition-2020-7</a>\n\nOmg will COVID finally end Black Friday???"
+             "<a href=\"https://www.businessinsider.com/walmart-will-close-stores-on-thanksgiving-ending-black-friday-tradition-2020-7\" rel=\"testing\">https://www.businessinsider.com/walmart-will-close-stores-on-thanksgiving-ending-black-friday-tradition-2020-7</a>\n\nOmg will COVID finally end Black Friday???"
   end
 
   test "transform_opts/1 returns a list of compatible opts", %{migration: migration} do
@@ -48,14 +52,14 @@ defmodule Pleroma.Repo.Migrations.AutolinkerToLinkifyTest do
       class: false,
       strip_prefix: false,
       new_window: false,
-      rel: "ugc"
+      rel: "qqq"
     ]
 
     expected_opts = [
       class: false,
       extra: true,
       new_window: false,
-      rel: "ugc",
+      rel: "qqq",
       strip_prefix: false
     ]
 

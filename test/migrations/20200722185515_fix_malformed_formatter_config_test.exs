@@ -1,9 +1,10 @@
 defmodule Pleroma.Repo.Migrations.FixMalformedFormatterConfigTest do
   use Pleroma.DataCase
   import Pleroma.Factory
-  import Pleroma.Tests.Helpers, only: [require_migration: 1]
+  import Pleroma.Tests.Helpers
   alias Pleroma.ConfigDB
 
+  setup do: clear_config(Pleroma.Formatter)
   setup_all do: require_migration("20200722185515_fix_malformed_formatter_config")
 
   test "change/0 converts a map into a list", %{migration: migration} do
@@ -11,7 +12,7 @@ defmodule Pleroma.Repo.Migrations.FixMalformedFormatterConfigTest do
       class: false,
       extra: true,
       new_window: false,
-      rel: "ugc",
+      rel: "F",
       strip_prefix: false
     }
 
@@ -25,9 +26,12 @@ defmodule Pleroma.Repo.Migrations.FixMalformedFormatterConfigTest do
              class: false,
              extra: true,
              new_window: false,
-             rel: "ugc",
+             rel: "F",
              strip_prefix: false
            ]
+
+    Pleroma.Config.put(Pleroma.Formatter, new_opts)
+    assert new_opts == Pleroma.Config.get(Pleroma.Formatter)
 
     {text, _mentions, []} =
       Pleroma.Formatter.linkify(
@@ -35,7 +39,7 @@ defmodule Pleroma.Repo.Migrations.FixMalformedFormatterConfigTest do
       )
 
     assert text ==
-             "<a href=\"https://www.businessinsider.com/walmart-will-close-stores-on-thanksgiving-ending-black-friday-tradition-2020-7\" rel=\"ugc\">https://www.businessinsider.com/walmart-will-close-stores-on-thanksgiving-ending-black-friday-tradition-2020-7</a>\n\nOmg will COVID finally end Black Friday???"
+             "<a href=\"https://www.businessinsider.com/walmart-will-close-stores-on-thanksgiving-ending-black-friday-tradition-2020-7\" rel=\"F\">https://www.businessinsider.com/walmart-will-close-stores-on-thanksgiving-ending-black-friday-tradition-2020-7</a>\n\nOmg will COVID finally end Black Friday???"
   end
 
   test "change/0 skips if Pleroma.Formatter config is already a list", %{migration: migration} do
