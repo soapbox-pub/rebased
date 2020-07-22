@@ -779,23 +779,6 @@ config :pleroma, :config_description, [
         description: "Enable to automatically add attachment link text to statuses"
       },
       %{
-        key: :welcome_message,
-        type: :string,
-        description:
-          "A message that will be sent to a newly registered users as a direct message",
-        suggestions: [
-          "Hi, @username! Welcome on board!"
-        ]
-      },
-      %{
-        key: :welcome_user_nickname,
-        type: :string,
-        description: "The nickname of the local user that sends the welcome message",
-        suggestions: [
-          "lain"
-        ]
-      },
-      %{
         key: :max_report_comment_size,
         type: :integer,
         description: "The maximum size of the report comment. Default: 1000.",
@@ -959,6 +942,83 @@ config :pleroma, :config_description, [
         description:
           "The instance thumbnail can be any image that represents your instance and is used by some apps or services when they display information about your instance.",
         suggestions: ["/instance/thumbnail.jpeg"]
+      }
+    ]
+  },
+  %{
+    group: :welcome,
+    type: :group,
+    description: "Welcome messages settings",
+    children: [
+      %{
+        group: :direct_message,
+        type: :group,
+        descpiption: "Direct message settings",
+        children: [
+          %{
+            key: :enabled,
+            type: :boolean,
+            description: "Enables sends direct message for new user after registration"
+          },
+          %{
+            key: :message,
+            type: :string,
+            description:
+              "A message that will be sent to a newly registered users as a direct message",
+            suggestions: [
+              "Hi, @username! Welcome on board!"
+            ]
+          },
+          %{
+            key: :sender_nickname,
+            type: :string,
+            description: "The nickname of the local user that sends the welcome message",
+            suggestions: [
+              "lain"
+            ]
+          }
+        ]
+      },
+      %{
+        group: :email,
+        type: :group,
+        descpiption: "Email message settings",
+        children: [
+          %{
+            key: :enabled,
+            type: :boolean,
+            description: "Enables sends direct message for new user after registration"
+          },
+          %{
+            key: :sender_nickname,
+            type: :string,
+            description: "The nickname of the local user that sends the welcome email",
+            suggestions: [
+              "lain"
+            ]
+          },
+          %{
+            key: :subject,
+            type: :string,
+            description:
+              "The subject of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+            suggestions: ["Welcome to <%= instance_name%>"]
+          },
+          %{
+            key: :html,
+            type: :string,
+            description:
+              "The html content of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+            suggestions: ["<h1>Hello <%= user.name%>. Welcome to <%= instance_name%></h1>"]
+          },
+          %{
+            key: :text,
+            type: :string,
+            description:
+              "The text content of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+            suggestions: ["Hello <%= user.name%>. \n Welcome to <%= instance_name%>\n"]
+          }
+        ]
       }
     ]
   },
