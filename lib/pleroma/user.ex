@@ -729,7 +729,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def send_welcome_email(user) do
+  def send_welcome_email(%User{email: email} = user) when is_binary(email) do
     if User.WelcomeEmail.enabled?() do
       User.WelcomeEmail.send_email(user)
       {:ok, :enqueued}
@@ -737,6 +737,7 @@ defmodule Pleroma.User do
       {:ok, :noop}
     end
   end
+  def send_welcome_email(_), do: {:ok, :noop}
 
   def try_send_confirmation_email(%User{} = user) do
     if user.confirmation_pending &&
