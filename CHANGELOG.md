@@ -93,6 +93,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: fix `GET /api/pleroma/admin/users/:nickname/credentials` returning 404 when getting the credentials of a remote user while `:instance, :limit_to_local_content` is set to `:unauthenticated`
 - Fix CSP policy generation to include remote Captcha services
 - Fix edge case where MediaProxy truncates media, usually caused when Caddy is serving content for the other Federated instance.
+- Emoji Packs could not be listed when instance was set to `public: false`
 
 ## [Unreleased (patch)]
 
