@@ -1,7 +1,5 @@
 defmodule Pleroma.Repo.Migrations.AutolinkerToLinkify do
   use Ecto.Migration
-
-  alias Pleroma.Repo
   alias Pleroma.ConfigDB
 
   @autolinker_path %{group: :auto_linker, key: :opts}
@@ -29,7 +27,7 @@ defmodule Pleroma.Repo.Migrations.AutolinkerToLinkify do
     end
   end
 
-  defp transform_opts(opts) when is_list(opts) do
+  def transform_opts(opts) when is_list(opts) do
     opts
     |> Enum.into(%{})
     |> Map.take(@compat_opts)
