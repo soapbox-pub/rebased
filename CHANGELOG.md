@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Notification Settings API option for hiding push notification
   contents has been renamed to `hide_notification_contents`
 - Mastodon API: Added `pleroma.metadata.post_formats` to /api/v1/instance
+- Mastodon API (legacy): Allow query parameters for `/api/v1/domain_blocks`, e.g. `/api/v1/domain_blocks?domain=badposters.zone`
 </details>
 
 <details>
