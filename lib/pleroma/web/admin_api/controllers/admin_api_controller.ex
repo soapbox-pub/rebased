@@ -345,7 +345,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)) do
       json(
         conn,
-        AccountView.render("index.json", users: users, count: count, page_size: page_size)
+        AccountView.render("index.json",
+          users: users,
+          count: count,
+          page_size: page_size
+        )
       )
     end
   end

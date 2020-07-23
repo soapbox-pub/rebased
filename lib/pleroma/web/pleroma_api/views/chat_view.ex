@@ -15,10 +15,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
   def render("show.json", %{chat: %Chat{} = chat} = opts) do
     recipient = User.get_cached_by_ap_id(chat.recipient)
     last_message = opts[:last_message] || MessageReference.last_message_for_chat(chat)
+    account_view_opts = account_view_opts(opts, recipient)
 
     %{
       id: chat.id |> to_string(),
-      account: AccountView.render("show.json", Map.put(opts, :user, recipient)),
+      account: AccountView.render("show.json", account_view_opts),
       unread: MessageReference.unread_count_for_chat(chat),
       last_message:
         last_message &&
@@ -27,7 +28,17 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
     }
   end
 
-  def render("index.json", %{chats: chats}) do
-    render_many(chats, __MODULE__, "show.json")
+  def render("index.json", %{chats: chats} = opts) do
+    render_many(chats, __MODULE__, "show.json", Map.delete(opts, :chats))
+  end
+
+  defp account_view_opts(opts, recipient) do
+    account_view_opts = Map.put(opts, :user, recipient)
+
+    if Map.has_key?(account_view_opts, :for) do
+      account_view_opts
+    else
+      Map.put(account_view_opts, :skip_visibility_check, true)
+    end
   end
 end

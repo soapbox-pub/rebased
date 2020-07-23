@@ -482,7 +482,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
         "id" => activity_ap_id,
         "content" => content,
         "published" => activity.object.data["published"],
-        "actor" => AccountView.render("show.json", %{user: target_account})
+        "actor" =>
+          AccountView.render("show.json", %{user: target_account, skip_visibility_check: true})
       }
 
       assert %{
