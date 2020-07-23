@@ -16,6 +16,7 @@ defmodule Pleroma.ApplicationRequirements do
   @spec verify!() :: :ok | VerifyError.t()
   def verify! do
     :ok
+    |> check_confirmation_accounts!
     |> check_migrations_applied!()
     |> check_welcome_message_config!()
     |> check_rum!()
@@ -40,6 +41,24 @@ defmodule Pleroma.ApplicationRequirements do
   end
 
   defp check_welcome_message_config!(result), do: result
+
+  # Checks account confirmation email
+  #
+  def check_confirmation_accounts!(:ok) do
+    if Pleroma.Config.get([:instance, :account_activation_required]) &&
+         not Pleroma.Config.get([Pleroma.Emails.Mailer, :enabled]) do
+      Logger.error(
+        "Account activation enabled, but no Mailer settings enabled.\nPlease set config :pleroma, :instance, account_activation_required: false\nOtherwise setup and enable Mailer."
+      )
+
+      {:error,
+       "Account activation enabled, but Mailer is disabled. Cannot send confirmation emails."}
+    else
+      :ok
+    end
+  end
+
+  def check_confirmation_accounts!(result), do: result
 
   # Checks for pending migrations.
   #

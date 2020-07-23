@@ -719,15 +719,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     case Activity.get_by_ap_id_with_object(id) do
       %Activity{} = activity ->
+        activity_actor = User.get_by_ap_id(activity.object.data["actor"])
+
         %{
           "type" => "Note",
           "id" => activity.data["id"],
           "content" => activity.object.data["content"],
           "published" => activity.object.data["published"],
           "actor" =>
-            AccountView.render("show.json", %{
-              user: User.get_by_ap_id(activity.object.data["actor"])
-            })
+            AccountView.render(
+              "show.json",
+              %{user: activity_actor, skip_visibility_check: true}
+            )
         }
 
       _ ->

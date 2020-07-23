@@ -386,9 +386,10 @@ defmodule Pleroma.UserTest do
       password_confirmation: "test",
       email: "email@example.com"
     }
-    setup do: clear_config([:instance, :autofollowed_nicknames])
 
+    setup do: clear_config([:instance, :autofollowed_nicknames])
     setup do: clear_config([:welcome])
+    setup do: clear_config([:instance, :account_activation_required])
 
     test "it autofollows accounts that are set for it" do
       user = insert(:user)
@@ -440,7 +441,14 @@ defmodule Pleroma.UserTest do
       )
     end
 
-    setup do: clear_config([:instance, :account_activation_required])
+    test "it sends a confirm email" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+      {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
+      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(registered_user))
+    end
 
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
