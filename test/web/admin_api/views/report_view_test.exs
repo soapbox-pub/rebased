@@ -24,12 +24,15 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       content: nil,
       actor:
         Map.merge(
-          MastodonAPI.AccountView.render("show.json", %{user: user, force: true}),
+          MastodonAPI.AccountView.render("show.json", %{user: user, skip_visibility_check: true}),
           AdminAPI.AccountView.render("show.json", %{user: user})
         ),
       account:
         Map.merge(
-          MastodonAPI.AccountView.render("show.json", %{user: other_user, force: true}),
+          MastodonAPI.AccountView.render("show.json", %{
+            user: other_user,
+            skip_visibility_check: true
+          }),
           AdminAPI.AccountView.render("show.json", %{user: other_user})
         ),
       statuses: [],
@@ -59,12 +62,15 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       content: nil,
       actor:
         Map.merge(
-          MastodonAPI.AccountView.render("show.json", %{user: user, force: true}),
+          MastodonAPI.AccountView.render("show.json", %{user: user, skip_visibility_check: true}),
           AdminAPI.AccountView.render("show.json", %{user: user})
         ),
       account:
         Map.merge(
-          MastodonAPI.AccountView.render("show.json", %{user: other_user, force: true}),
+          MastodonAPI.AccountView.render("show.json", %{
+            user: other_user,
+            skip_visibility_check: true
+          }),
           AdminAPI.AccountView.render("show.json", %{user: other_user})
         ),
       statuses: [StatusView.render("show.json", %{activity: activity})],

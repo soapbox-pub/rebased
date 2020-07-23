@@ -95,7 +95,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       }
     }
 
-    assert expected == AccountView.render("show.json", %{user: user, force: true})
+    assert expected == AccountView.render("show.json", %{user: user, skip_visibility_check: true})
   end
 
   test "Favicon is nil when :instances_favicons is disabled" do
@@ -108,12 +108,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                favicon:
                  "https://shitposter.club/plugins/Qvitter/img/gnusocial-favicons/favicon-16x16.png"
              }
-           } = AccountView.render("show.json", %{user: user, force: true})
+           } = AccountView.render("show.json", %{user: user, skip_visibility_check: true})
 
     Config.put([:instances_favicons, :enabled], false)
 
     assert %{pleroma: %{favicon: nil}} =
-             AccountView.render("show.json", %{user: user, force: true})
+             AccountView.render("show.json", %{user: user, skip_visibility_check: true})
   end
 
   test "Represent the user account for the account owner" do
@@ -190,7 +190,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       }
     }
 
-    assert expected == AccountView.render("show.json", %{user: user, force: true})
+    assert expected == AccountView.render("show.json", %{user: user, skip_visibility_check: true})
   end
 
   test "Represent a Funkwhale channel" do
@@ -199,7 +199,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         "https://channels.tests.funkwhale.audio/federation/actors/compositions"
       )
 
-    assert represented = AccountView.render("show.json", %{user: user, force: true})
+    assert represented =
+             AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+
     assert represented.acct == "compositions@channels.tests.funkwhale.audio"
     assert represented.url == "https://channels.tests.funkwhale.audio/channels/compositions"
   end
@@ -224,7 +226,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert expected == AccountView.render("mention.json", %{user: user})
   end
 
-  test "demands :for or :force option for account rendering" do
+  test "demands :for or :skip_visibility_check option for account rendering" do
     clear_config([:restrict_unauthenticated, :profiles, :local], false)
 
     user = insert(:user)
@@ -232,9 +234,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     assert %{id: ^user_id} = AccountView.render("show.json", %{user: user, for: nil})
     assert %{id: ^user_id} = AccountView.render("show.json", %{user: user, for: user})
-    assert %{id: ^user_id} = AccountView.render("show.json", %{user: user, force: true})
 
-    assert_raise RuntimeError, ~r/:force or :for option is required/, fn ->
+    assert %{id: ^user_id} =
+             AccountView.render("show.json", %{user: user, skip_visibility_check: true})
+
+    assert_raise RuntimeError, ~r/:skip_visibility_check or :for option is required/, fn ->
       AccountView.render("show.json", %{user: user})
     end
   end
@@ -361,13 +365,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
   test "doesn't sanitize display names" do
     user = insert(:user, name: "<marquee> username </marquee>")
-    result = AccountView.render("show.json", %{user: user, force: true})
+    result = AccountView.render("show.json", %{user: user, skip_visibility_check: true})
     assert result.display_name == "<marquee> username </marquee>"
   end
 
   test "never display nil user follow counts" do
     user = insert(:user, following_count: 0, follower_count: 0)
-    result = AccountView.render("show.json", %{user: user, force: true})
+    result = AccountView.render("show.json", %{user: user, skip_visibility_check: true})
 
     assert result.following_count == 0
     assert result.followers_count == 0
@@ -391,7 +395,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                followers_count: 0,
                following_count: 0,
                pleroma: %{hide_follows_count: true, hide_followers_count: true}
-             } = AccountView.render("show.json", %{user: user, force: true})
+             } = AccountView.render("show.json", %{user: user, skip_visibility_check: true})
     end
 
     test "shows when follows/followers are hidden" do
@@ -404,7 +408,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                followers_count: 1,
                following_count: 1,
                pleroma: %{hide_follows: true, hide_followers: true}
-             } = AccountView.render("show.json", %{user: user, force: true})
+             } = AccountView.render("show.json", %{user: user, skip_visibility_check: true})
     end
 
     test "shows actual follower/following count to the account owner" do
@@ -547,7 +551,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         emoji: %{"joker_smile" => "https://evil.website/society.png"}
       )
 
-    AccountView.render("show.json", %{user: user, force: true})
+    AccountView.render("show.json", %{user: user, skip_visibility_check: true})
     |> Enum.all?(fn
       {key, url} when key in [:avatar, :avatar_static, :header, :header_static] ->
         String.starts_with?(url, Pleroma.Web.base_url())

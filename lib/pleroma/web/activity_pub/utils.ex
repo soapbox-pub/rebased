@@ -729,7 +729,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
           "actor" =>
             AccountView.render(
               "show.json",
-              %{user: activity_actor, force: true}
+              %{user: activity_actor, skip_visibility_check: true}
             )
         }
 

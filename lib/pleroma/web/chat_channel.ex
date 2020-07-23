@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ChatChannel do
 
     if String.length(text) in 1..Pleroma.Config.get([:instance, :chat_limit]) do
       author = User.get_cached_by_nickname(user_name)
-      author_json = AccountView.render("show.json", user: author, force: true)
+      author_json = AccountView.render("show.json", user: author, skip_visibility_check: true)
 
       message = ChatChannelState.add_message(%{text: text, author: author_json})
 

@@ -39,11 +39,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   @doc """
   Renders specified user account.
-    :force option skips visibility check and renders any user (local or remote)
+    :skip_visibility_check option skips visibility check and renders any user (local or remote)
       regardless of [:pleroma, :restrict_unauthenticated] setting.
     :for option specifies the requester and can be a User record or nil.
+      Only use `user: user, for: user` when `user` is the actual requester of own profile.
   """
-  def render("show.json", %{user: _user, force: true} = opts) do
+  def render("show.json", %{user: _user, skip_visibility_check: true} = opts) do
     do_render("show.json", opts)
   end
 
@@ -56,7 +57,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   def render("show.json", _) do
-    raise "In order to prevent account accessibility issues, :force or :for option is required."
+    raise "In order to prevent account accessibility issues, " <>
+            ":skip_visibility_check or :for option is required."
   end
 
   def render("mention.json", %{user: user}) do

@@ -38,7 +38,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatView do
     if Map.has_key?(account_view_opts, :for) do
       account_view_opts
     else
-      Map.put(account_view_opts, :force, true)
+      Map.put(account_view_opts, :skip_visibility_check, true)
     end
   end
 end

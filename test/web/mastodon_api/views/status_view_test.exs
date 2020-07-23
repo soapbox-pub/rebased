@@ -177,7 +177,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       id: to_string(note.id),
       uri: object_data["id"],
       url: Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, note),
-      account: AccountView.render("show.json", %{user: user, force: true}),
+      account: AccountView.render("show.json", %{user: user, skip_visibility_check: true}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       card: nil,
