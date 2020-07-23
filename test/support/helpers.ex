@@ -32,6 +32,11 @@ defmodule Pleroma.Tests.Helpers do
     end
   end
 
+  def require_migration(migration_name) do
+    [{module, _}] = Code.require_file("#{migration_name}.exs", "priv/repo/migrations")
+    {:ok, %{migration: module}}
+  end
+
   defmacro __using__(_opts) do
     quote do
       import Pleroma.Tests.Helpers,
