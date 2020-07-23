@@ -737,6 +737,7 @@ defmodule Pleroma.User do
       {:ok, :noop}
     end
   end
+
   def send_welcome_email(_), do: {:ok, :noop}
 
   def try_send_confirmation_email(%User{} = user) do
