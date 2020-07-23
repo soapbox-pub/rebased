@@ -124,6 +124,10 @@ defmodule Pleroma.Object.Fetcher do
       {:error, "Object has been deleted"} ->
         nil
 
+      {:reject, reason} ->
+        Logger.info("Rejected #{id} while fetching: #{inspect(reason)}")
+        nil
+
       e ->
         Logger.error("Error while fetching #{id}: #{inspect(e)}")
         nil
