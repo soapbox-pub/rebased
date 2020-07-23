@@ -719,21 +719,25 @@ defmodule Pleroma.User do
     end
   end
 
-  def try_send_confirmation_email(%User{} = user) do
-    if user.confirmation_pending &&
-         Config.get([:instance, :account_activation_required]) do
-      user
-      |> Pleroma.Emails.UserEmail.account_confirmation_email()
-      |> Pleroma.Emails.Mailer.deliver_async()
-
+  @spec try_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
+  def try_send_confirmation_email(%User{confirmation_pending: true} = user) do
+    if Config.get([:instance, :account_activation_required]) do
+      send_confirmation_email(user)
       {:ok, :enqueued}
     else
       {:ok, :noop}
     end
   end
 
-  def try_send_confirmation_email(users) do
-    Enum.each(users, &try_send_confirmation_email/1)
+  def try_send_confirmation_email(_), do: {:ok, :noop}
+
+  @spec send_confirmation_email(Uset.t()) :: User.t()
+  def send_confirmation_email(%User{} = user) do
+    user
+    |> Pleroma.Emails.UserEmail.account_confirmation_email()
+    |> Pleroma.Emails.Mailer.deliver_async()
+
+    user
   end
 
   def needs_update?(%User{local: true}), do: false

@@ -616,29 +616,24 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def confirm_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
-    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
+    users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
 
     User.toggle_confirmation(users)
 
-    ModerationLog.insert_log(%{
-      actor: admin,
-      subject: users,
-      action: "confirm_email"
-    })
+    ModerationLog.insert_log(%{actor: admin, subject: users, action: "confirm_email"})
 
     json(conn, "")
   end
 
   def resend_confirmation_email(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
-    users = nicknames |> Enum.map(&User.get_cached_by_nickname/1)
+    users =
+      Enum.map(nicknames, fn nickname ->
+        nickname
+        |> User.get_cached_by_nickname()
+        |> User.send_confirmation_email()
+      end)
 
-    User.try_send_confirmation_email(users)
-
-    ModerationLog.insert_log(%{
-      actor: admin,
-      subject: users,
-      action: "resend_confirmation_email"
-    })
+    ModerationLog.insert_log(%{actor: admin, subject: users, action: "resend_confirmation_email"})
 
     json(conn, "")
   end
