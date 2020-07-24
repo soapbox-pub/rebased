@@ -11,7 +11,7 @@ defmodule Pleroma.User.WelcomeEmail do
   alias Pleroma.Emails
   alias Pleroma.User
 
-  import Pleroma.Config.Utils, only: [instance_name: 0]
+  import Pleroma.Config.Helpers, only: [instance_name: 0]
 
   @spec enabled?() :: boolean()
   def enabled?, do: Config.get([:welcome, :email, :enabled], false)
