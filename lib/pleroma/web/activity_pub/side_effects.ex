@@ -174,6 +174,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   def handle(%{data: %{"type" => "Undo", "object" => undone_object}} = object, meta) do
     with undone_object <- Activity.get_by_ap_id(undone_object),
          :ok <- handle_undoing(undone_object) do
+      meta =
+        meta
+        |> Keyword.put(:embedded_object, undone_object.data)
+
       {:ok, object, meta}
     end
   end
