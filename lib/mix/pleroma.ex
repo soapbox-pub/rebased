@@ -39,7 +39,8 @@ defmodule Mix.Pleroma do
       [
         Pleroma.Repo,
         {Pleroma.Config.TransferTask, false},
-        Pleroma.Web.Endpoint
+        Pleroma.Web.Endpoint,
+        {Oban, Pleroma.Config.get(Oban)}
       ] ++
         http_children(adapter)
 
