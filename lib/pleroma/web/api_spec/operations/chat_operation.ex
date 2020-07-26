@@ -300,11 +300,11 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
           "content" => "Check this out :firefox:",
           "id" => "13",
           "chat_id" => "1",
-          "actor_id" => "someflakeid",
+          "account_id" => "someflakeid",
           "unread" => false
         },
         %{
-          "actor_id" => "someflakeid",
+          "account_id" => "someflakeid",
           "content" => "Whats' up?",
           "id" => "12",
           "chat_id" => "1",
@@ -337,7 +337,7 @@ defmodule Pleroma.Web.ApiSpec.ChatOperation do
 
   def mark_as_read do
     %Schema{
-      title: "MarkAsReadRequest",
+      title: "MarkAsReadRequest",Update chat_operation.ex
       description: "POST body for marking a number of chat messages as read",
       type: :object,
       required: [:last_read_id],
