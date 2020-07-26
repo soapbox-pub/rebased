@@ -90,11 +90,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
           notification_settings: %Schema{
             type: :object,
             properties: %{
-              followers: %Schema{type: :boolean},
-              follows: %Schema{type: :boolean},
-              non_followers: %Schema{type: :boolean},
-              non_follows: %Schema{type: :boolean},
-              privacy_option: %Schema{type: :boolean}
+              block_from_strangers: %Schema{type: :boolean},
+              hide_notification_contents: %Schema{type: :boolean}
             }
           },
           relationship: AccountRelationship,
@@ -182,11 +179,8 @@ defmodule Pleroma.Web.ApiSpec.Schemas.Account do
         "unread_conversation_count" => 0,
         "tags" => [],
         "notification_settings" => %{
-          "followers" => true,
-          "follows" => true,
-          "non_followers" => true,
-          "non_follows" => true,
-          "privacy_option" => false
+          "block_from_strangers" => false,
+          "hide_notification_contents" => false
         },
         "relationship" => %{
           "blocked_by" => false,

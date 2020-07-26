@@ -10,11 +10,15 @@ defmodule Pleroma.Formatter do
   @link_regex ~r"((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+"ui
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
 
-  @auto_linker_config hashtag: true,
-                      hashtag_handler: &Pleroma.Formatter.hashtag_handler/4,
-                      mention: true,
-                      mention_handler: &Pleroma.Formatter.mention_handler/4,
-                      scheme: true
+  defp linkify_opts do
+    Pleroma.Config.get(Pleroma.Formatter) ++
+      [
+        hashtag: true,
+        hashtag_handler: &Pleroma.Formatter.hashtag_handler/4,
+        mention: true,
+        mention_handler: &Pleroma.Formatter.mention_handler/4
+      ]
+  end
 
   def escape_mention_handler("@" <> nickname = mention, buffer, _, _) do
     case User.get_cached_by_nickname(nickname) do
@@ -80,19 +84,19 @@ defmodule Pleroma.Formatter do
   @spec linkify(String.t(), keyword()) ::
           {String.t(), [{String.t(), User.t()}], [{String.t(), String.t()}]}
   def linkify(text, options \\ []) do
-    options = options ++ @auto_linker_config
+    options = linkify_opts() ++ options
 
     if options[:safe_mention] && Regex.named_captures(@safe_mention_regex, text) do
       %{"mentions" => mentions, "rest" => rest} = Regex.named_captures(@safe_mention_regex, text)
       acc = %{mentions: MapSet.new(), tags: MapSet.new()}
 
-      {text_mentions, %{mentions: mentions}} = AutoLinker.link_map(mentions, acc, options)
-      {text_rest, %{tags: tags}} = AutoLinker.link_map(rest, acc, options)
+      {text_mentions, %{mentions: mentions}} = Linkify.link_map(mentions, acc, options)
+      {text_rest, %{tags: tags}} = Linkify.link_map(rest, acc, options)
 
       {text_mentions <> text_rest, MapSet.to_list(mentions), MapSet.to_list(tags)}
     else
       acc = %{mentions: MapSet.new(), tags: MapSet.new()}
-      {text, %{mentions: mentions, tags: tags}} = AutoLinker.link_map(text, acc, options)
+      {text, %{mentions: mentions, tags: tags}} = Linkify.link_map(text, acc, options)
 
       {text, MapSet.to_list(mentions), MapSet.to_list(tags)}
     end
@@ -111,9 +115,9 @@ defmodule Pleroma.Formatter do
 
     if options[:safe_mention] && Regex.named_captures(@safe_mention_regex, text) do
       %{"mentions" => mentions, "rest" => rest} = Regex.named_captures(@safe_mention_regex, text)
-      AutoLinker.link(mentions, options) <> AutoLinker.link(rest, options)
+      Linkify.link(mentions, options) <> Linkify.link(rest, options)
     else
-      AutoLinker.link(text, options)
+      Linkify.link(text, options)
     end
   end
 

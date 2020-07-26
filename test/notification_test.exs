@@ -246,47 +246,16 @@ defmodule Pleroma.NotificationTest do
       assert Notification.create_notification(activity, muter)
     end
 
-    test "it disables notifications from followers" do
-      follower = insert(:user)
-
-      followed =
-        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{followers: false})
-
-      User.follow(follower, followed)
-      {:ok, activity} = CommonAPI.post(follower, %{status: "hey @#{followed.nickname}"})
-      refute Notification.create_notification(activity, followed)
-    end
-
-    test "it disables notifications from non-followers" do
+    test "it disables notifications from strangers" do
       follower = insert(:user)
 
       followed =
         insert(:user,
-          notification_settings: %Pleroma.User.NotificationSetting{non_followers: false}
+          notification_settings: %Pleroma.User.NotificationSetting{block_from_strangers: true}
         )
 
       {:ok, activity} = CommonAPI.post(follower, %{status: "hey @#{followed.nickname}"})
       refute Notification.create_notification(activity, followed)
-    end
-
-    test "it disables notifications from people the user follows" do
-      follower =
-        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{follows: false})
-
-      followed = insert(:user)
-      User.follow(follower, followed)
-      follower = Repo.get(User, follower.id)
-      {:ok, activity} = CommonAPI.post(followed, %{status: "hey @#{follower.nickname}"})
-      refute Notification.create_notification(activity, follower)
-    end
-
-    test "it disables notifications from people the user does not follow" do
-      follower =
-        insert(:user, notification_settings: %Pleroma.User.NotificationSetting{non_follows: false})
-
-      followed = insert(:user)
-      {:ok, activity} = CommonAPI.post(followed, %{status: "hey @#{follower.nickname}"})
-      refute Notification.create_notification(activity, follower)
     end
 
     test "it doesn't create a notification for user if he is the activity author" do

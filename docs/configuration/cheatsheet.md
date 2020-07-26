@@ -449,36 +449,32 @@ For each pool, the options are:
 
 *For `gun` adapter*
 
-Advanced settings for connections pool. Pool with opened connections. These connections can be reused in worker pools.
+Settings for HTTP connection pool.
 
-For big instances it's recommended to increase `config :pleroma, :connections_pool, max_connections: 500` up to 500-1000.
-It will increase memory usage, but federation would work faster.
-
-* `:checkin_timeout` - timeout to checkin connection from pool. Default: 250ms.
-* `:max_connections` - maximum number of connections in the pool. Default: 250 connections.
-* `:retry` - number of retries, while `gun` will try to reconnect if connection goes down. Default: 1.
-* `:retry_timeout` - time between retries when `gun` will try to reconnect in milliseconds. Default: 1000ms.
-* `:await_up_timeout` - timeout while `gun` will wait until connection is up. Default: 5000ms.
+* `:connection_acquisition_wait` - Timeout to acquire a connection from pool.The total max time is this value multiplied by the number of retries.
+* `connection_acquisition_retries` - Number of attempts to acquire the connection from the pool if it is overloaded. Each attempt is timed `:connection_acquisition_wait` apart.
+* `:max_connections` - Maximum number of connections in the pool.
+* `:await_up_timeout` - Timeout to connect to the host.
+* `:reclaim_multiplier` - Multiplied by `:max_connections` this will be the maximum number of idle connections that will be reclaimed in case the pool is overloaded.
 
 ### :pools
 
 *For `gun` adapter*
 
-Advanced settings for workers pools.
+Settings for request pools. These pools are limited on top of `:connections_pool`.
 
 There are four pools used:
 
-* `:federation` for the federation jobs.
-  You may want this pool max_connections to be at least equal to the number of federator jobs + retry queue jobs.
-* `:media` for rich media, media proxy
-* `:upload` for uploaded media (if using a remote uploader and `proxy_remote: true`)
-* `:default` for other requests
+* `:federation` for the federation jobs. You may want this pool's max_connections to be at least equal to the number of federator jobs + retry queue jobs.
+* `:media` - for rich media, media proxy.
+* `:upload` - for proxying media when a remote uploader is used and `proxy_remote: true`.
+* `:default` - for other requests.
 
 For each pool, the options are:
 
-* `:size` - how much workers the pool can hold
+* `:size` - limit to how much requests can be concurrently executed.
 * `:timeout` - timeout while `gun` will wait for response
-* `:max_overflow` - additional workers if pool is under load
+* `:max_waiting` - limit to how much requests can be waiting for others to finish, after this is reached, subsequent requests will be dropped.
 
 ## Captcha
 
@@ -939,30 +935,29 @@ Configure OAuth 2 provider capabilities:
 ### :uri_schemes
 * `valid_schemes`: List of the scheme part that is considered valid to be an URL.
 
-### :auto_linker
+### Pleroma.Formatter
 
-Configuration for the `auto_linker` library:
+Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.
 
-* `class: "auto-linker"` - specify the class to be added to the generated link. false to clear.
-* `rel: "noopener noreferrer"` - override the rel attribute. false to clear.
-* `new_window: true` - set to false to remove `target='_blank'` attribute.
-* `scheme: false` - Set to true to link urls with schema `http://google.com`.
-* `truncate: false` - Set to a number to truncate urls longer then the number. Truncated urls will end in `..`.
-* `strip_prefix: true` - Strip the scheme prefix.
-* `extra: false` - link urls with rarely used schemes (magnet, ipfs, irc, etc.).
+* `class` - specify the class to be added to the generated link (default: `false`)
+* `rel` - specify the rel attribute (default: `ugc`)
+* `new_window` - adds `target="_blank"` attribute (default: `false`)
+* `truncate` - Set to a number to truncate URLs longer then the number. Truncated URLs will end in `...` (default: `false`)
+* `strip_prefix` - Strip the scheme prefix (default: `false`)
+* `extra` - link URLs with rarely used schemes (magnet, ipfs, irc, etc.) (default: `true`)
+* `validate_tld` - Set to false to disable TLD validation for URLs/emails. Can be set to :no_scheme to validate TLDs only for urls without a scheme (e.g `example.com` will be validated, but `http://example.loki` won't) (default: `:no_scheme`)
 
 Example:
 
 ```elixir
-config :auto_linker,
-  opts: [
-    scheme: true,
-    extra: true,
-    class: false,
-    strip_prefix: false,
-    new_window: false,
-    rel: "ugc"
-  ]
+config :pleroma, Pleroma.Formatter,
+  class: false,
+  rel: "ugc",
+  new_window: false,
+  truncate: false,
+  strip_prefix: false,
+  extra: true,
+  validate_tld: :no_scheme
 ```
 
 ## Custom Runtime Modules (`:modules`)

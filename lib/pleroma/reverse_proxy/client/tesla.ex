@@ -48,7 +48,7 @@ defmodule Pleroma.ReverseProxy.Client.Tesla do
     # if there were redirects we need to checkout old conn
     conn = opts[:old_conn] || opts[:conn]
 
-    if conn, do: :ok = Pleroma.Pool.Connections.checkout(conn, self(), :gun_connections)
+    if conn, do: :ok = Pleroma.Gun.ConnectionPool.release_conn(conn)
 
     :done
   end

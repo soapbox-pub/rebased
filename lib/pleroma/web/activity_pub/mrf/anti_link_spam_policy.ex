@@ -39,14 +39,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
         {:ok, message}
 
       {:old_user, false} ->
-        {:reject, nil}
+        {:reject, "[AntiLinkSpamPolicy] User has no posts nor followers"}
 
       {:error, _} ->
-        {:reject, nil}
+        {:reject, "[AntiLinkSpamPolicy] Failed to get or fetch user by ap_id"}
 
       e ->
-        Logger.warn("[MRF anti-link-spam] WTF: unhandled error #{inspect(e)}")
-        {:reject, nil}
+        {:reject, "[AntiLinkSpamPolicy] Unhandled error #{inspect(e)}"}
     end
   end
 

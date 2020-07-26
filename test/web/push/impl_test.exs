@@ -238,9 +238,11 @@ defmodule Pleroma.Web.Push.ImplTest do
              }
     end
 
-    test "hides details for notifications when privacy option enabled" do
+    test "hides contents of notifications when option enabled" do
       user = insert(:user, nickname: "Bob")
-      user2 = insert(:user, nickname: "Rob", notification_settings: %{privacy_option: true})
+
+      user2 =
+        insert(:user, nickname: "Rob", notification_settings: %{hide_notification_contents: true})
 
       {:ok, activity} =
         CommonAPI.post(user, %{
@@ -284,9 +286,11 @@ defmodule Pleroma.Web.Push.ImplTest do
              }
     end
 
-    test "returns regular content for notifications with privacy option disabled" do
+    test "returns regular content when hiding contents option disabled" do
       user = insert(:user, nickname: "Bob")
-      user2 = insert(:user, nickname: "Rob", notification_settings: %{privacy_option: false})
+
+      user2 =
+        insert(:user, nickname: "Rob", notification_settings: %{hide_notification_contents: false})
 
       {:ok, activity} =
         CommonAPI.post(user, %{

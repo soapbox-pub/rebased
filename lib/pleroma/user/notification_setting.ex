@@ -10,21 +10,15 @@ defmodule Pleroma.User.NotificationSetting do
   @primary_key false
 
   embedded_schema do
-    field(:followers, :boolean, default: true)
-    field(:follows, :boolean, default: true)
-    field(:non_follows, :boolean, default: true)
-    field(:non_followers, :boolean, default: true)
-    field(:privacy_option, :boolean, default: false)
+    field(:block_from_strangers, :boolean, default: false)
+    field(:hide_notification_contents, :boolean, default: false)
   end
 
   def changeset(schema, params) do
     schema
     |> cast(prepare_attrs(params), [
-      :followers,
-      :follows,
-      :non_follows,
-      :non_followers,
-      :privacy_option
+      :block_from_strangers,
+      :hide_notification_contents
     ])
   end
 

@@ -54,6 +54,20 @@ defmodule Pleroma.PaginationTest do
 
       assert length(paginated) == 1
     end
+
+    test "handles id gracefully", %{notes: notes} do
+      id = Enum.at(notes, 1).id |> Integer.to_string()
+
+      paginated =
+        Pagination.fetch_paginated(Object, %{
+          id: "9s99Hq44Cnv8PKBwWG",
+          max_id: id,
+          limit: 20,
+          offset: 0
+        })
+
+      assert length(paginated) == 1
+    end
   end
 
   describe "offset" do

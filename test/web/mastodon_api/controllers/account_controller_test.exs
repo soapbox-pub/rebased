@@ -583,6 +583,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
                |> get("/api/v1/accounts/#{user.id}/followers?max_id=#{follower3_id}")
                |> json_response_and_validate_schema(200)
 
+      assert [%{"id" => ^follower2_id}, %{"id" => ^follower1_id}] =
+               conn
+               |> get(
+                 "/api/v1/accounts/#{user.id}/followers?id=#{user.id}&limit=20&max_id=#{
+                   follower3_id
+                 }"
+               )
+               |> json_response_and_validate_schema(200)
+
       res_conn = get(conn, "/api/v1/accounts/#{user.id}/followers?limit=1&max_id=#{follower3_id}")
 
       assert [%{"id" => ^follower2_id}] = json_response_and_validate_schema(res_conn, 200)
@@ -649,6 +658,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert id2 == following2.id
 
       res_conn = get(conn, "/api/v1/accounts/#{user.id}/following?max_id=#{following3.id}")
+
+      assert [%{"id" => id2}, %{"id" => id1}] = json_response_and_validate_schema(res_conn, 200)
+      assert id2 == following2.id
+      assert id1 == following1.id
+
+      res_conn =
+        get(
+          conn,
+          "/api/v1/accounts/#{user.id}/following?id=#{user.id}&limit=20&max_id=#{following3.id}"
+        )
 
       assert [%{"id" => id2}, %{"id" => id1}] = json_response_and_validate_schema(res_conn, 200)
       assert id2 == following2.id

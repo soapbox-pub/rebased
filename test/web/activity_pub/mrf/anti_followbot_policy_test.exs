@@ -21,7 +21,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicyTest do
         "id" => "https://example.com/activities/1234"
       }
 
-      {:reject, nil} = AntiFollowbotPolicy.filter(message)
+      assert {:reject, "[AntiFollowbotPolicy]" <> _} = AntiFollowbotPolicy.filter(message)
     end
 
     test "matches followbots by display name" do
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicyTest do
         "id" => "https://example.com/activities/1234"
       }
 
-      {:reject, nil} = AntiFollowbotPolicy.filter(message)
+      assert {:reject, "[AntiFollowbotPolicy]" <> _} = AntiFollowbotPolicy.filter(message)
     end
   end
 

@@ -9,6 +9,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   import ExUnit.CaptureLog
   import Mock
   import Pleroma.Factory
+  import Swoosh.TestAssertions
 
   alias Pleroma.Activity
   alias Pleroma.Config
@@ -1849,6 +1850,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} re-sent confirmation email for users: @#{first_user.nickname}, @#{
                  second_user.nickname
                }"
+
+      ObanHelpers.perform_all()
+      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(first_user))
     end
   end
 

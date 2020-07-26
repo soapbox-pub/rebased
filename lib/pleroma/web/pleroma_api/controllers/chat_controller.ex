@@ -89,11 +89,11 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
          cm_ref <- MessageReference.for_chat_and_object(chat, message) do
       conn
       |> put_view(MessageReferenceView)
-      |> render("show.json", for: user, chat_message_reference: cm_ref)
+      |> render("show.json", chat_message_reference: cm_ref)
     end
   end
 
-  def mark_message_as_read(%{assigns: %{user: %{id: user_id} = user}} = conn, %{
+  def mark_message_as_read(%{assigns: %{user: %{id: user_id}}} = conn, %{
         id: chat_id,
         message_id: message_id
       }) do
@@ -104,12 +104,15 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
          {:ok, cm_ref} <- MessageReference.mark_as_read(cm_ref) do
       conn
       |> put_view(MessageReferenceView)
-      |> render("show.json", for: user, chat_message_reference: cm_ref)
+      |> render("show.json", chat_message_reference: cm_ref)
     end
   end
 
   def mark_as_read(
-        %{body_params: %{last_read_id: last_read_id}, assigns: %{user: %{id: user_id}}} = conn,
+        %{
+          body_params: %{last_read_id: last_read_id},
+          assigns: %{user: %{id: user_id}}
+        } = conn,
         %{id: id}
       ) do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id),
@@ -121,7 +124,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
     end
   end
 
-  def messages(%{assigns: %{user: %{id: user_id} = user}} = conn, %{id: id} = params) do
+  def messages(%{assigns: %{user: %{id: user_id}}} = conn, %{id: id} = params) do
     with %Chat{} = chat <- Repo.get_by(Chat, id: id, user_id: user_id) do
       cm_refs =
         chat
@@ -130,7 +133,7 @@ defmodule Pleroma.Web.PleromaAPI.ChatController do
 
       conn
       |> put_view(MessageReferenceView)
-      |> render("index.json", for: user, chat_message_references: cm_refs)
+      |> render("index.json", chat_message_references: cm_refs)
     else
       _ ->
         conn
