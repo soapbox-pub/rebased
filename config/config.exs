@@ -225,8 +225,6 @@ config :pleroma, :instance,
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,
   attachment_links: false,
-  welcome_user_nickname: nil,
-  welcome_message: nil,
   max_report_comment_size: 1000,
   safe_dm_mentions: false,
   healthcheck: false,
@@ -252,6 +250,20 @@ config :pleroma, :instance,
       number: 5,
       length: 16
     ]
+  ]
+
+config :pleroma, :welcome,
+  direct_message: [
+    enabled: false,
+    sender_nickname: nil,
+    message: nil
+  ],
+  email: [
+    enabled: false,
+    sender: nil,
+    subject: "Welcome to <%= instance_name %>",
+    html: "Welcome to <%= instance_name %>",
+    text: "Welcome to <%= instance_name %>"
   ]
 
 config :pleroma, :feed,

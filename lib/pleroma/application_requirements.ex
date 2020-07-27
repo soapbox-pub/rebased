@@ -18,12 +18,29 @@ defmodule Pleroma.ApplicationRequirements do
     :ok
     |> check_confirmation_accounts!
     |> check_migrations_applied!()
+    |> check_welcome_message_config!()
     |> check_rum!()
     |> handle_result()
   end
 
   defp handle_result(:ok), do: :ok
   defp handle_result({:error, message}), do: raise(VerifyError, message: message)
+
+  defp check_welcome_message_config!(:ok) do
+    if Pleroma.Config.get([:welcome, :email, :enabled], false) and
+         not Pleroma.Emails.Mailer.enabled?() do
+      Logger.error("""
+      To send welcome email do you need to enable mail.
+      \nconfig :pleroma, Pleroma.Emails.Mailer, enabled: true
+      """)
+
+      {:error, "The mail disabled."}
+    else
+      :ok
+    end
+  end
+
+  defp check_welcome_message_config!(result), do: result
 
   # Checks account confirmation email
   #

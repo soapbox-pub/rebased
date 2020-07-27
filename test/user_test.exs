@@ -388,8 +388,7 @@ defmodule Pleroma.UserTest do
     }
 
     setup do: clear_config([:instance, :autofollowed_nicknames])
-    setup do: clear_config([:instance, :welcome_message])
-    setup do: clear_config([:instance, :welcome_user_nickname])
+    setup do: clear_config([:welcome])
     setup do: clear_config([:instance, :account_activation_required])
 
     test "it autofollows accounts that are set for it" do
@@ -411,17 +410,35 @@ defmodule Pleroma.UserTest do
 
     test "it sends a welcome message if it is set" do
       welcome_user = insert(:user)
+      Pleroma.Config.put([:welcome, :direct_message, :enabled], true)
+      Pleroma.Config.put([:welcome, :direct_message, :sender_nickname], welcome_user.nickname)
+      Pleroma.Config.put([:welcome, :direct_message, :message], "Hello, this is a cool site")
 
-      Pleroma.Config.put([:instance, :welcome_user_nickname], welcome_user.nickname)
-      Pleroma.Config.put([:instance, :welcome_message], "Hello, this is a cool site")
+      Pleroma.Config.put([:welcome, :email, :enabled], true)
+      Pleroma.Config.put([:welcome, :email, :sender], welcome_user.email)
+
+      Pleroma.Config.put(
+        [:welcome, :email, :subject],
+        "Hello, welcome to cool site: <%= instance_name %>"
+      )
+
+      instance_name = Pleroma.Config.get([:instance, :name])
 
       cng = User.register_changeset(%User{}, @full_user_data)
       {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
       assert Object.normalize(activity).data["content"] =~ "cool site"
       assert activity.actor == welcome_user.ap_id
+
+      assert_email_sent(
+        from: {instance_name, welcome_user.email},
+        to: {registered_user.name, registered_user.email},
+        subject: "Hello, welcome to cool site: #{instance_name}",
+        html_body: "Welcome to #{instance_name}"
+      )
     end
 
     test "it sends a confirm email" do

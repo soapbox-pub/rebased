@@ -9,6 +9,20 @@ defmodule Pleroma.ApplicationRequirementsTest do
 
   alias Pleroma.Repo
 
+  describe "check_welcome_message_config!/1" do
+    setup do: clear_config([:welcome])
+    setup do: clear_config([Pleroma.Emails.Mailer])
+
+    test "raises if welcome email enabled but mail disabled" do
+      Pleroma.Config.put([:welcome, :email, :enabled], true)
+      Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], false)
+
+      assert_raise Pleroma.ApplicationRequirements.VerifyError, "The mail disabled.", fn ->
+        capture_log(&Pleroma.ApplicationRequirements.verify!/0)
+      end
+    end
+  end
+
   describe "check_confirmation_accounts!" do
     setup_with_mocks([
       {Pleroma.ApplicationRequirements, [:passthrough],

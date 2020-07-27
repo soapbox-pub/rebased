@@ -779,23 +779,6 @@ config :pleroma, :config_description, [
         description: "Enable to automatically add attachment link text to statuses"
       },
       %{
-        key: :welcome_message,
-        type: :string,
-        description:
-          "A message that will be sent to a newly registered users as a direct message",
-        suggestions: [
-          "Hi, @username! Welcome on board!"
-        ]
-      },
-      %{
-        key: :welcome_user_nickname,
-        type: :string,
-        description: "The nickname of the local user that sends the welcome message",
-        suggestions: [
-          "lain"
-        ]
-      },
-      %{
         key: :max_report_comment_size,
         type: :integer,
         description: "The maximum size of the report comment. Default: 1000.",
@@ -959,6 +942,84 @@ config :pleroma, :config_description, [
         description:
           "The instance thumbnail can be any image that represents your instance and is used by some apps or services when they display information about your instance.",
         suggestions: ["/instance/thumbnail.jpeg"]
+      }
+    ]
+  },
+  %{
+    group: :welcome,
+    type: :group,
+    description: "Welcome messages settings",
+    children: [
+      %{
+        group: :direct_message,
+        type: :group,
+        descpiption: "Direct message settings",
+        children: [
+          %{
+            key: :enabled,
+            type: :boolean,
+            description: "Enables sends direct message for new user after registration"
+          },
+          %{
+            key: :message,
+            type: :string,
+            description:
+              "A message that will be sent to a newly registered users as a direct message",
+            suggestions: [
+              "Hi, @username! Welcome on board!"
+            ]
+          },
+          %{
+            key: :sender_nickname,
+            type: :string,
+            description: "The nickname of the local user that sends the welcome message",
+            suggestions: [
+              "lain"
+            ]
+          }
+        ]
+      },
+      %{
+        group: :email,
+        type: :group,
+        descpiption: "Email message settings",
+        children: [
+          %{
+            key: :enabled,
+            type: :boolean,
+            description: "Enables sends direct message for new user after registration"
+          },
+          %{
+            key: :sender,
+            type: [:string, :tuple],
+            description:
+              "The email address or tuple with `{nickname, email}` that will use as sender to the welcome email.",
+            suggestions: [
+              {"Pleroma App", "welcome@pleroma.app"}
+            ]
+          },
+          %{
+            key: :subject,
+            type: :string,
+            description:
+              "The subject of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+            suggestions: ["Welcome to <%= instance_name%>"]
+          },
+          %{
+            key: :html,
+            type: :string,
+            description:
+              "The html content of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+            suggestions: ["<h1>Hello <%= user.name%>. Welcome to <%= instance_name%></h1>"]
+          },
+          %{
+            key: :text,
+            type: :string,
+            description:
+              "The text content of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+            suggestions: ["Hello <%= user.name%>. \n Welcome to <%= instance_name%>\n"]
+          }
+        ]
       }
     ]
   },
@@ -2235,13 +2296,13 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :class,
-        type: [:string, false],
+        type: [:string, :boolean],
         description: "Specify the class to be added to the generated link. Disable to clear.",
         suggestions: ["auto-linker", false]
       },
       %{
         key: :rel,
-        type: [:string, false],
+        type: [:string, :boolean],
         description: "Override the rel attribute. Disable to clear.",
         suggestions: ["ugc", "noopener noreferrer", false]
       },
@@ -2252,7 +2313,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :truncate,
-        type: [:integer, false],
+        type: [:integer, :boolean],
         description:
           "Set to a number to truncate URLs longer than the number. Truncated URLs will end in `...`",
         suggestions: [15, false]
