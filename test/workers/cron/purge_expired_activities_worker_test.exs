@@ -13,7 +13,6 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorkerTest do
 
   setup do
     clear_config([ActivityExpiration, :enabled])
-    clear_config([:instance, :rewrite_policy])
   end
 
   test "deletes an expiration activity" do
@@ -33,7 +32,7 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorkerTest do
         %{activity_id: activity.id, scheduled_at: naive_datetime}
       )
 
-    Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker.perform(:ops, :pid)
+    Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker.perform(%Oban.Job{})
 
     refute Pleroma.Repo.get(Pleroma.Activity, activity.id)
     refute Pleroma.Repo.get(Pleroma.ActivityExpiration, expiration.id)
@@ -42,10 +41,7 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorkerTest do
   test "works with ActivityExpirationPolicy" do
     Pleroma.Config.put([ActivityExpiration, :enabled], true)
 
-    Pleroma.Config.put(
-      [:instance, :rewrite_policy],
-      Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy
-    )
+    clear_config([:mrf, :policies], Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy)
 
     user = insert(:user)
 
@@ -62,7 +58,7 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorkerTest do
     |> Ecto.Changeset.change(%{scheduled_at: past_date})
     |> Repo.update!()
 
-    Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker.perform(:ops, :pid)
+    Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker.perform(%Oban.Job{})
 
     assert [%{data: %{"type" => "Delete", "deleted_activity_id" => ^id}}] =
              Pleroma.Repo.all(Pleroma.Activity)

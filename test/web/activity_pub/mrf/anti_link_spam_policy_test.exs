@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
 
   describe "with new user" do
     test "it allows posts without links" do
-      user = insert(:user)
+      user = insert(:user, local: false)
 
       assert user.note_count == 0
 
@@ -45,7 +45,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
     end
 
     test "it disallows posts with links" do
-      user = insert(:user)
+      user = insert(:user, local: false)
 
       assert user.note_count == 0
 
@@ -54,6 +54,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
         |> Map.put("actor", user.ap_id)
 
       {:reject, _} = AntiLinkSpamPolicy.filter(message)
+    end
+
+    test "it allows posts with links for local users" do
+      user = insert(:user)
+
+      assert user.note_count == 0
+
+      message =
+        @linkful_message
+        |> Map.put("actor", user.ap_id)
+
+      {:ok, _message} = AntiLinkSpamPolicy.filter(message)
     end
   end
 

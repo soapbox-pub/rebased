@@ -13,6 +13,7 @@ defmodule Pleroma.Web.OAuth.MFAController do
   alias Pleroma.Web.Auth.TOTPAuthenticator
   alias Pleroma.Web.OAuth.MFAView, as: View
   alias Pleroma.Web.OAuth.OAuthController
+  alias Pleroma.Web.OAuth.OAuthView
   alias Pleroma.Web.OAuth.Token
 
   plug(:fetch_session when action in [:show, :verify])
@@ -74,7 +75,7 @@ defmodule Pleroma.Web.OAuth.MFAController do
          {:ok, %{user: user, authorization: auth}} <- MFA.Token.validate(mfa_token),
          {:ok, _} <- validates_challenge(user, params),
          {:ok, token} <- Token.exchange_token(app, auth) do
-      json(conn, Token.Response.build(user, token))
+      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
     else
       _error ->
         conn

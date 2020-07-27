@@ -55,6 +55,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
           %Schema{type: :integer, default: 50},
           "Number of statuses to return"
         )
+        | admin_api_params()
       ],
       responses: %{
         200 =>
@@ -71,7 +72,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
       tags: ["Admin", "Statuses"],
       summary: "Show Status",
       operationId: "AdminAPI.StatusController.show",
-      parameters: [id_param()],
+      parameters: [id_param() | admin_api_params()],
       security: [%{"oAuth" => ["read:statuses"]}],
       responses: %{
         200 => Operation.response("Status", "application/json", status()),
@@ -85,7 +86,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
       tags: ["Admin", "Statuses"],
       summary: "Change the scope of an individual reported status",
       operationId: "AdminAPI.StatusController.update",
-      parameters: [id_param()],
+      parameters: [id_param() | admin_api_params()],
       security: [%{"oAuth" => ["write:statuses"]}],
       requestBody: request_body("Parameters", update_request(), required: true),
       responses: %{
@@ -100,7 +101,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.StatusOperation do
       tags: ["Admin", "Statuses"],
       summary: "Delete an individual reported status",
       operationId: "AdminAPI.StatusController.delete",
-      parameters: [id_param()],
+      parameters: [id_param() | admin_api_params()],
       security: [%{"oAuth" => ["write:statuses"]}],
       responses: %{
         200 => empty_object_response(),

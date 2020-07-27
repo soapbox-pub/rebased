@@ -9,6 +9,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   import ExUnit.CaptureLog
   import Mock
   import Pleroma.Factory
+  import Swoosh.TestAssertions
 
   alias Pleroma.Activity
   alias Pleroma.Config
@@ -39,6 +40,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       |> assign(:token, token)
 
     {:ok, %{admin: admin, token: token, conn: conn}}
+  end
+
+  test "with valid `admin_token` query parameter, skips OAuth scopes check" do
+    clear_config([:admin_token], "password123")
+
+    user = insert(:user)
+
+    conn = get(build_conn(), "/api/pleroma/admin/users/#{user.nickname}?admin_token=password123")
+
+    assert json_response(conn, 200)
   end
 
   describe "with [:auth, :enforce_oauth_admin_scope_usage]," do
@@ -1514,6 +1525,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  test "gets a remote users when [:instance, :limit_to_local_content] is set to :unauthenticated",
+       %{conn: conn} do
+    clear_config(Pleroma.Config.get([:instance, :limit_to_local_content]), :unauthenticated)
+    user = insert(:user, %{local: false, nickname: "u@peer1.com"})
+    conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/credentials")
+
+    assert json_response(conn, 200)
+  end
+
   describe "GET /users/:nickname/credentials" do
     test "gets the user credentials", %{conn: conn} do
       user = insert(:user)
@@ -1712,6 +1732,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} re-sent confirmation email for users: @#{first_user.nickname}, @#{
                  second_user.nickname
                }"
+
+      ObanHelpers.perform_all()
+      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(first_user))
     end
   end
 
@@ -1730,6 +1753,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> json_response(200)
 
       assert %{"direct" => 0, "private" => 0, "public" => 1, "unlisted" => 2} =
+               response["status_visibility"]
+    end
+
+    test "by instance", %{conn: conn} do
+      admin = insert(:user, is_admin: true)
+      user1 = insert(:user)
+      instance2 = "instance2.tld"
+      user2 = insert(:user, %{ap_id: "https://#{instance2}/@actor"})
+
+      CommonAPI.post(user1, %{visibility: "public", status: "hey"})
+      CommonAPI.post(user2, %{visibility: "unlisted", status: "hey"})
+      CommonAPI.post(user2, %{visibility: "private", status: "hey"})
+
+      response =
+        conn
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/stats", instance: instance2)
+        |> json_response(200)
+
+      assert %{"direct" => 0, "private" => 1, "public" => 0, "unlisted" => 1} =
                response["status_visibility"]
     end
   end

@@ -63,6 +63,10 @@ defmodule Pleroma.Upload do
     with {:ok, upload} <- prepare_upload(upload, opts),
          upload = %__MODULE__{upload | path: upload.path || "#{upload.id}/#{upload.name}"},
          {:ok, upload} <- Pleroma.Upload.Filter.filter(opts.filters, upload),
+         description = Map.get(opts, :description) || upload.name,
+         {_, true} <-
+           {:description_limit,
+            String.length(description) <= Pleroma.Config.get([:instance, :description_limit])},
          {:ok, url_spec} <- Pleroma.Uploaders.Uploader.put_file(opts.uploader, upload) do
       {:ok,
        %{
@@ -75,9 +79,12 @@ defmodule Pleroma.Upload do
              "href" => url_from_spec(upload, opts.base_url, url_spec)
            }
          ],
-         "name" => Map.get(opts, :description) || upload.name
+         "name" => description
        }}
     else
+      {:description_limit, _} ->
+        {:error, :description_too_long}
+
       {:error, error} ->
         Logger.error(
           "#{__MODULE__} store (using #{inspect(opts.uploader)}) failed: #{inspect(error)}"

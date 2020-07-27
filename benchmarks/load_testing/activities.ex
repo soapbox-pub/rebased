@@ -24,6 +24,7 @@ defmodule Pleroma.LoadTesting.Activities do
   @visibility ~w(public private direct unlisted)
   @types [
     :simple,
+    :simple_filtered,
     :emoji,
     :mentions,
     :hell_thread,
@@ -240,6 +241,15 @@ defmodule Pleroma.LoadTesting.Activities do
 
   defp insert_activity(:simple, visibility, group, users, _opts) do
     insert_local_activity(visibility, group, users, "Simple status")
+  end
+
+  defp insert_activity(:simple_filtered, visibility, group, users, _opts)
+       when group in @remote_groups do
+    insert_remote_activity(visibility, group, users, "Remote status which must be filtered")
+  end
+
+  defp insert_activity(:simple_filtered, visibility, group, users, _opts) do
+    insert_local_activity(visibility, group, users, "Simple status which must be filtered")
   end
 
   defp insert_activity(:emoji, visibility, group, users, _opts)

@@ -56,6 +56,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
            ]
   end
 
+  test "works correctly with badly formatted emojis" do
+    user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{status: "yo"})
+
+    activity
+    |> Object.normalize(false)
+    |> Object.update_data(%{"reactions" => %{"☕" => [user.ap_id], "x" => 1}})
+
+    activity = Activity.get_by_id(activity.id)
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 1, me: true}
+           ]
+  end
+
   test "loads and returns the direct conversation id when given the `with_direct_conversation_id` option" do
     user = insert(:user)
 
@@ -177,12 +194,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       id: to_string(note.id),
       uri: object_data["id"],
       url: Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, note),
-      account: AccountView.render("show.json", %{user: user}),
+      account: AccountView.render("show.json", %{user: user, skip_visibility_check: true}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       card: nil,
       reblog: nil,
       content: HTML.filter_tags(object_data["content"]),
+      text: nil,
       created_at: created_at,
       reblogs_count: 0,
       replies_count: 0,
@@ -226,7 +244,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         expires_at: nil,
         direct_conversation_id: nil,
         thread_muted: false,
-        emoji_reactions: []
+        emoji_reactions: [],
+        parent_visible: false
       }
     }
 
@@ -619,5 +638,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("show.json", activity: activity)
 
     assert status.visibility == "list"
+  end
+
+  test "has a field for parent visibility" do
+    user = insert(:user)
+    poster = insert(:user)
+
+    {:ok, invisible} = CommonAPI.post(poster, %{status: "hey", visibility: "private"})
+
+    {:ok, visible} =
+      CommonAPI.post(poster, %{status: "hey", visibility: "private", in_reply_to_id: invisible.id})
+
+    status = StatusView.render("show.json", activity: visible, for: user)
+    refute status.pleroma.parent_visible
+
+    status = StatusView.render("show.json", activity: visible, for: poster)
+    assert status.pleroma.parent_visible
   end
 end

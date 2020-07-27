@@ -83,8 +83,8 @@ defmodule Pleroma.Object.Fetcher do
       {:transmogrifier, {:error, {:reject, nil}}} ->
         {:reject, nil}
 
-      {:transmogrifier, _} ->
-        {:error, "Transmogrifier failure."}
+      {:transmogrifier, _} = e ->
+        {:error, e}
 
       {:object, data, nil} ->
         reinject_object(%Object{}, data)
@@ -122,6 +122,10 @@ defmodule Pleroma.Object.Fetcher do
         nil
 
       {:error, "Object has been deleted"} ->
+        nil
+
+      {:reject, reason} ->
+        Logger.info("Rejected #{id} while fetching: #{inspect(reason)}")
         nil
 
       e ->

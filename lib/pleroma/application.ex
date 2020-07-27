@@ -35,13 +35,19 @@ defmodule Pleroma.Application do
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
-    Pleroma.Config.Holder.save_default()
+    # Scrubbers are compiled at runtime and therefore will cause a conflict
+    # every time the application is restarted, so we disable module
+    # conflicts at runtime
+    Code.compiler_options(ignore_module_conflict: true)
+    Pleroma.Telemetry.Logger.attach()
+    Config.Holder.save_default()
     Pleroma.HTML.compile_scrubbers()
     Config.DeprecationWarnings.warn()
     Pleroma.Plugs.HTTPSecurityPlug.warn_if_disabled()
-    Pleroma.Repo.check_migrations_applied!()
+    Pleroma.ApplicationRequirements.verify!()
     setup_instrumenters()
     load_custom_modules()
+    Pleroma.Docs.JSON.compile()
 
     adapter = Application.get_env(:tesla, :adapter)
 
@@ -162,7 +168,8 @@ defmodule Pleroma.Application do
   defp seconds_valid_interval,
     do: :timer.seconds(Config.get!([Pleroma.Captcha, :seconds_valid]))
 
-  defp build_cachex(type, opts),
+  @spec build_cachex(String.t(), keyword()) :: map()
+  def build_cachex(type, opts),
     do: %{
       id: String.to_atom("cachex_" <> type),
       start: {Cachex, :start_link, [String.to_atom(type <> "_cache"), opts]},
@@ -217,9 +224,7 @@ defmodule Pleroma.Application do
 
   # start hackney and gun pools in tests
   defp http_children(_, :test) do
-    hackney_options = Config.get([:hackney_pools, :federation])
-    hackney_pool = :hackney_pool.child_spec(:federation, hackney_options)
-    [hackney_pool, Pleroma.Pool.Supervisor]
+    http_children(Tesla.Adapter.Hackney, nil) ++ http_children(Tesla.Adapter.Gun, nil)
   end
 
   defp http_children(Tesla.Adapter.Hackney, _) do
@@ -238,7 +243,10 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp http_children(Tesla.Adapter.Gun, _), do: [Pleroma.Pool.Supervisor]
+  defp http_children(Tesla.Adapter.Gun, _) do
+    Pleroma.Gun.ConnectionPool.children() ++
+      [{Task, &Pleroma.HTTP.AdapterHelper.Gun.limiter_setup/0}]
+  end
 
   defp http_children(_, _), do: []
 end

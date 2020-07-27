@@ -21,7 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
-  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1]
+  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1, visible_for_user?: 2]
 
   # TODO: Add cached version.
   defp get_replied_to_activities([]), do: %{}
@@ -297,13 +297,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     emoji_reactions =
       with %{data: %{"reactions" => emoji_reactions}} <- object do
-        Enum.map(emoji_reactions, fn [emoji, users] ->
-          %{
-            name: emoji,
-            count: length(users),
-            me: !!(opts[:for] && opts[:for].ap_id in users)
-          }
+        Enum.map(emoji_reactions, fn
+          [emoji, users] when is_list(users) ->
+            build_emoji_map(emoji, users, opts[:for])
+
+          {emoji, users} when is_list(users) ->
+            build_emoji_map(emoji, users, opts[:for])
+
+          _ ->
+            nil
         end)
+        |> Enum.reject(&is_nil/1)
       else
         _ -> []
       end
@@ -333,6 +337,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblog: nil,
       card: card,
       content: content_html,
+      text: opts[:with_source] && object.data["source"],
       created_at: created_at,
       reblogs_count: announcement_count,
       replies_count: object.data["repliesCount"] || 0,
@@ -364,7 +369,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         expires_at: expires_at,
         direct_conversation_id: direct_conversation_id,
         thread_muted: thread_muted?,
-        emoji_reactions: emoji_reactions
+        emoji_reactions: emoji_reactions,
+        parent_visible: visible_for_user?(reply_to, opts[:for])
       }
     }
   end
@@ -543,4 +549,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   defp pinned?(%Activity{id: id}, %User{pinned_activities: pinned_activities}),
     do: id in pinned_activities
+
+  defp build_emoji_map(emoji, users, current_user) do
+    %{
+      name: emoji,
+      count: length(users),
+      me: !!(current_user && current_user.ap_id in users)
+    }
+  end
 end

@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Object.Fetcher
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.CommonAPI
@@ -161,7 +160,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:ok, _returned_activity} = Transmogrifier.handle_incoming(data)
-             end) =~ "[error] Couldn't fetch \"https://404.site/whatever\", error: nil"
+             end) =~ "[warn] Couldn't fetch \"https://404.site/whatever\", error: nil"
     end
 
     test "it works for incoming notices" do
@@ -401,162 +400,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       refute Map.has_key?(object_data, "reaction_count")
     end
 
-    test "it works for incoming update activities" do
-      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!()
-
-      object =
-        update_data["object"]
-        |> Map.put("actor", data["actor"])
-        |> Map.put("id", data["actor"])
-
-      update_data =
-        update_data
-        |> Map.put("actor", data["actor"])
-        |> Map.put("object", object)
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(update_data)
-
-      assert data["id"] == update_data["id"]
-
-      user = User.get_cached_by_ap_id(data["actor"])
-      assert user.name == "gargle"
-
-      assert user.avatar["url"] == [
-               %{
-                 "href" =>
-                   "https://cd.niu.moe/accounts/avatars/000/033/323/original/fd7f8ae0b3ffedc9.jpeg"
-               }
-             ]
-
-      assert user.banner["url"] == [
-               %{
-                 "href" =>
-                   "https://cd.niu.moe/accounts/headers/000/033/323/original/850b3448fa5fd477.png"
-               }
-             ]
-
-      assert user.bio == "<p>Some bio</p>"
-    end
-
-    test "it works with alsoKnownAs" do
-      {:ok, %Activity{data: %{"actor" => actor}}} =
-        "test/fixtures/mastodon-post-activity.json"
-        |> File.read!()
-        |> Poison.decode!()
-        |> Transmogrifier.handle_incoming()
-
-      assert User.get_cached_by_ap_id(actor).also_known_as == ["http://example.org/users/foo"]
-
-      {:ok, _activity} =
-        "test/fixtures/mastodon-update.json"
-        |> File.read!()
-        |> Poison.decode!()
-        |> Map.put("actor", actor)
-        |> Map.update!("object", fn object ->
-          object
-          |> Map.put("actor", actor)
-          |> Map.put("id", actor)
-          |> Map.put("alsoKnownAs", [
-            "http://mastodon.example.org/users/foo",
-            "http://example.org/users/bar"
-          ])
-        end)
-        |> Transmogrifier.handle_incoming()
-
-      assert User.get_cached_by_ap_id(actor).also_known_as == [
-               "http://mastodon.example.org/users/foo",
-               "http://example.org/users/bar"
-             ]
-    end
-
-    test "it works with custom profile fields" do
-      {:ok, activity} =
-        "test/fixtures/mastodon-post-activity.json"
-        |> File.read!()
-        |> Poison.decode!()
-        |> Transmogrifier.handle_incoming()
-
-      user = User.get_cached_by_ap_id(activity.actor)
-
-      assert user.fields == [
-               %{"name" => "foo", "value" => "bar"},
-               %{"name" => "foo1", "value" => "bar1"}
-             ]
-
-      update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!()
-
-      object =
-        update_data["object"]
-        |> Map.put("actor", user.ap_id)
-        |> Map.put("id", user.ap_id)
-
-      update_data =
-        update_data
-        |> Map.put("actor", user.ap_id)
-        |> Map.put("object", object)
-
-      {:ok, _update_activity} = Transmogrifier.handle_incoming(update_data)
-
-      user = User.get_cached_by_ap_id(user.ap_id)
-
-      assert user.fields == [
-               %{"name" => "foo", "value" => "updated"},
-               %{"name" => "foo1", "value" => "updated"}
-             ]
-
-      Pleroma.Config.put([:instance, :max_remote_account_fields], 2)
-
-      update_data =
-        put_in(update_data, ["object", "attachment"], [
-          %{"name" => "foo", "type" => "PropertyValue", "value" => "bar"},
-          %{"name" => "foo11", "type" => "PropertyValue", "value" => "bar11"},
-          %{"name" => "foo22", "type" => "PropertyValue", "value" => "bar22"}
-        ])
-
-      {:ok, _} = Transmogrifier.handle_incoming(update_data)
-
-      user = User.get_cached_by_ap_id(user.ap_id)
-
-      assert user.fields == [
-               %{"name" => "foo", "value" => "updated"},
-               %{"name" => "foo1", "value" => "updated"}
-             ]
-
-      update_data = put_in(update_data, ["object", "attachment"], [])
-
-      {:ok, _} = Transmogrifier.handle_incoming(update_data)
-
-      user = User.get_cached_by_ap_id(user.ap_id)
-
-      assert user.fields == []
-    end
-
-    test "it works for incoming update activities which lock the account" do
-      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-      update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!()
-
-      object =
-        update_data["object"]
-        |> Map.put("actor", data["actor"])
-        |> Map.put("id", data["actor"])
-        |> Map.put("manuallyApprovesFollowers", true)
-
-      update_data =
-        update_data
-        |> Map.put("actor", data["actor"])
-        |> Map.put("object", object)
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(update_data)
-
-      user = User.get_cached_by_ap_id(data["actor"])
-      assert user.locked == true
-    end
-
     test "it works for incomming unfollows with an existing follow" do
       user = insert(:user)
 
@@ -601,56 +444,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert [^pending_follower] = User.get_follow_requests(user)
     end
 
-    test "it works for incoming blocks" do
-      user = insert(:user)
-
-      data =
-        File.read!("test/fixtures/mastodon-block-activity.json")
-        |> Poison.decode!()
-        |> Map.put("object", user.ap_id)
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["type"] == "Block"
-      assert data["object"] == user.ap_id
-      assert data["actor"] == "http://mastodon.example.org/users/admin"
-
-      blocker = User.get_cached_by_ap_id(data["actor"])
-
-      assert User.blocks?(blocker, user)
-    end
-
-    test "incoming blocks successfully tear down any follow relationship" do
-      blocker = insert(:user)
-      blocked = insert(:user)
-
-      data =
-        File.read!("test/fixtures/mastodon-block-activity.json")
-        |> Poison.decode!()
-        |> Map.put("object", blocked.ap_id)
-        |> Map.put("actor", blocker.ap_id)
-
-      {:ok, blocker} = User.follow(blocker, blocked)
-      {:ok, blocked} = User.follow(blocked, blocker)
-
-      assert User.following?(blocker, blocked)
-      assert User.following?(blocked, blocker)
-
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-
-      assert data["type"] == "Block"
-      assert data["object"] == blocked.ap_id
-      assert data["actor"] == blocker.ap_id
-
-      blocker = User.get_cached_by_ap_id(data["actor"])
-      blocked = User.get_cached_by_ap_id(data["object"])
-
-      assert User.blocks?(blocker, blocked)
-
-      refute User.following?(blocker, blocked)
-      refute User.following?(blocked, blocker)
-    end
-
     test "it works for incoming accepts which were pre-accepted" do
       follower = insert(:user)
       followed = insert(:user)
@@ -658,7 +451,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, follower} = User.follow(follower, followed)
       assert User.following?(follower, followed) == true
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -688,7 +481,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = insert(:user)
       followed = insert(:user, locked: true)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -710,7 +503,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = insert(:user)
       followed = insert(:user, locked: true)
 
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
@@ -775,7 +568,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       followed = insert(:user, locked: true)
 
       {:ok, follower} = User.follow(follower, followed)
-      {:ok, _follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, followed)
 
       assert User.following?(follower, followed) == true
 
@@ -801,7 +594,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       followed = insert(:user, locked: true)
 
       {:ok, follower} = User.follow(follower, followed)
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
 
       assert User.following?(follower, followed) == true
 
@@ -865,22 +658,44 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
           "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
         )
 
-      attachment = %{
-        "type" => "Link",
-        "mediaType" => "video/mp4",
-        "url" => [
-          %{
-            "href" =>
-              "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-            "mediaType" => "video/mp4"
-          }
-        ]
-      }
-
       assert object.data["url"] ==
                "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
 
-      assert object.data["attachment"] == [attachment]
+      assert object.data["attachment"] == [
+               %{
+                 "type" => "Link",
+                 "mediaType" => "video/mp4",
+                 "url" => [
+                   %{
+                     "href" =>
+                       "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
+                     "mediaType" => "video/mp4"
+                   }
+                 ]
+               }
+             ]
+
+      {:ok, object} =
+        Fetcher.fetch_object_from_id(
+          "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
+        )
+
+      assert object.data["attachment"] == [
+               %{
+                 "type" => "Link",
+                 "mediaType" => "video/mp4",
+                 "url" => [
+                   %{
+                     "href" =>
+                       "https://framatube.org/static/webseed/6050732a-8a7a-43d4-a6cd-809525a1d206-1080.mp4",
+                     "mediaType" => "video/mp4"
+                   }
+                 ]
+               }
+             ]
+
+      assert object.data["url"] ==
+               "https://framatube.org/videos/watch/6050732a-8a7a-43d4-a6cd-809525a1d206"
     end
 
     test "it accepts Flag activities" do
@@ -895,7 +710,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "id" => activity.data["id"],
         "content" => "test post",
         "published" => object.data["published"],
-        "actor" => AccountView.render("show.json", %{user: user})
+        "actor" => AccountView.render("show.json", %{user: user, skip_visibility_check: true})
       }
 
       message = %{
@@ -946,6 +761,29 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "type" => "Create",
         "object" => %{
           "content" => "blah blah blah",
+          "type" => "Note",
+          "attributedTo" => user.ap_id,
+          "inReplyTo" => nil
+        },
+        "actor" => user.ap_id
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      assert ["https://www.w3.org/ns/activitystreams#Public"] == activity.data["cc"]
+      assert [user.follower_address] == activity.data["to"]
+    end
+
+    test "it correctly processes messages with weirdness in address fields" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => [nil, user.follower_address],
+        "cc" => ["https://www.w3.org/ns/activitystreams#Public", ["¿"]],
+        "type" => "Create",
+        "object" => %{
+          "content" => "…",
           "type" => "Note",
           "attributedTo" => user.ap_id,
           "inReplyTo" => nil

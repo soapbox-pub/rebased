@@ -20,11 +20,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
+  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.OAuth.OAuthView
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
@@ -99,12 +102,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
          :ok <- TwitterAPI.validate_captcha(app, params),
          {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
          {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
-      json(conn, %{
-        token_type: "Bearer",
-        access_token: token.token,
-        scope: app.scopes,
-        created_at: Token.Utils.format_created_at(token)
-      })
+      json(conn, OAuthView.render("token.json", %{user: user, token: token}))
     else
       {:error, error} -> json_response(conn, :bad_request, %{error: error})
     end
@@ -146,6 +144,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Enum.filter(fn {_, value} -> not is_nil(value) end)
       |> Enum.into(%{})
 
+    # We use an empty string as a special value to reset
+    # avatars, banners, backgrounds
+    user_image_value = fn
+      "" -> {:ok, nil}
+      value -> {:ok, value}
+    end
+
     user_params =
       [
         :no_rich_text,
@@ -158,7 +163,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :show_role,
         :skip_thread_containment,
         :allow_following_move,
-        :discoverable
+        :discoverable,
+        :accepts_chat_messages
       ]
       |> Enum.reduce(%{}, fn key, acc ->
         Maps.put_if_present(acc, key, params[key], &{:ok, truthy_param?(&1)})
@@ -166,9 +172,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       |> Maps.put_if_present(:name, params[:display_name])
       |> Maps.put_if_present(:bio, params[:note])
       |> Maps.put_if_present(:raw_bio, params[:note])
-      |> Maps.put_if_present(:avatar, params[:avatar])
-      |> Maps.put_if_present(:banner, params[:header])
-      |> Maps.put_if_present(:background, params[:pleroma_background_image])
+      |> Maps.put_if_present(:avatar, params[:avatar], user_image_value)
+      |> Maps.put_if_present(:banner, params[:header], user_image_value)
+      |> Maps.put_if_present(:background, params[:pleroma_background_image], user_image_value)
       |> Maps.put_if_present(
         :raw_fields,
         params[:fields_attributes],
@@ -182,32 +188,37 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
       end)
       |> Maps.put_if_present(:actor_type, params[:actor_type])
 
-    changeset = User.update_changeset(user, user_params)
-
-    with {:ok, user} <- User.update_and_set_cache(changeset) do
-      user
-      |> build_update_activity_params()
-      |> ActivityPub.update()
-
-      render(conn, "show.json", user: user, for: user, with_pleroma_settings: true)
+    # What happens here:
+    #
+    # We want to update the user through the pipeline, but the ActivityPub
+    # update information is not quite enough for this, because this also
+    # contains local settings that don't federate and don't even appear
+    # in the Update activity.
+    #
+    # So we first build the normal local changeset, then apply it to the
+    # user data, but don't persist it. With this, we generate the object
+    # data for our update activity. We feed this and the changeset as meta
+    # inforation into the pipeline, where they will be properly updated and
+    # federated.
+    with changeset <- User.update_changeset(user, user_params),
+         {:ok, unpersisted_user} <- Ecto.Changeset.apply_action(changeset, :update),
+         updated_object <-
+           Pleroma.Web.ActivityPub.UserView.render("user.json", user: user)
+           |> Map.delete("@context"),
+         {:ok, update_data, []} <- Builder.update(user, updated_object),
+         {:ok, _update, _} <-
+           Pipeline.common_pipeline(update_data,
+             local: true,
+             user_update_changeset: changeset
+           ) do
+      render(conn, "show.json",
+        user: unpersisted_user,
+        for: unpersisted_user,
+        with_pleroma_settings: true
+      )
     else
       _e -> render_error(conn, :forbidden, "Invalid request")
     end
-  end
-
-  # Hotfix, handling will be redone with the pipeline
-  defp build_update_activity_params(user) do
-    object =
-      Pleroma.Web.ActivityPub.UserView.render("user.json", user: user)
-      |> Map.delete("@context")
-
-    %{
-      local: true,
-      to: [user.follower_address],
-      cc: [],
-      object: object,
-      actor: user.ap_id
-    }
   end
 
   defp normalize_fields_attributes(fields) do
@@ -339,7 +350,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     {:error, "Can not follow yourself"}
   end
 
-  def follow(%{assigns: %{user: follower, account: followed}} = conn, params) do
+  def follow(%{body_params: params, assigns: %{user: follower, account: followed}} = conn, _) do
     with {:ok, follower} <- MastodonAPI.follow(follower, followed, params) do
       render(conn, "relationship.json", user: follower, target: followed)
     else
@@ -378,8 +389,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
 
   @doc "POST /api/v1/accounts/:id/block"
   def block(%{assigns: %{user: blocker, account: blocked}} = conn, _params) do
-    with {:ok, _user_block} <- User.block(blocker, blocked),
-         {:ok, _activity} <- ActivityPub.block(blocker, blocked) do
+    with {:ok, _activity} <- CommonAPI.block(blocker, blocked) do
       render(conn, "relationship.json", user: blocker, target: blocked)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})

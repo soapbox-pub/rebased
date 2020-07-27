@@ -237,5 +237,19 @@ defmodule Pleroma.HTMLTest do
 
       assert {:ok, nil} = HTML.extract_first_external_url(object, object.data["content"])
     end
+
+    test "skips attachment links" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          status:
+            "<a href=\"https://pleroma.gov/media/d24caa3a498e21e0298377a9ca0149a4f4f8b767178aacf837542282e2d94fb1.png?name=image.png\" class=\"attachment\">image.png</a>"
+        })
+
+      object = Object.normalize(activity)
+
+      assert {:ok, nil} = HTML.extract_first_external_url(object, object.data["content"])
+    end
   end
 end

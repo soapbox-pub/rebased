@@ -45,6 +45,7 @@ defmodule Pleroma.Emoji.Pack do
       shortcodes =
         pack.files
         |> Map.keys()
+        |> Enum.sort()
         |> paginate(opts[:page], opts[:page_size])
 
       pack = Map.put(pack, :files, Map.take(pack.files, shortcodes))

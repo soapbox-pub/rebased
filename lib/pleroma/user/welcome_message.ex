@@ -3,32 +3,45 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.WelcomeMessage do
+  alias Pleroma.Config
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
-  def post_welcome_message_to_user(user) do
-    with %User{} = sender_user <- welcome_user(),
-         message when is_binary(message) <- welcome_message() do
-      CommonAPI.post(sender_user, %{
-        visibility: "direct",
-        status: "@#{user.nickname}\n#{message}"
-      })
-    else
-      _ -> {:ok, nil}
-    end
+  @spec enabled?() :: boolean()
+  def enabled?, do: Config.get([:welcome, :direct_message, :enabled], false)
+
+  @spec post_message(User.t()) :: {:ok, Pleroma.Activity.t() | nil}
+  def post_message(user) do
+    [:welcome, :direct_message, :sender_nickname]
+    |> Config.get(nil)
+    |> fetch_sender()
+    |> do_post(user, welcome_message())
   end
 
-  defp welcome_user do
-    with nickname when is_binary(nickname) <-
-           Pleroma.Config.get([:instance, :welcome_user_nickname]),
-         %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
+  defp do_post(%User{} = sender, %User{nickname: nickname}, message)
+       when is_binary(message) do
+    CommonAPI.post(
+      sender,
+      %{
+        visibility: "direct",
+        status: "@#{nickname}\n#{message}"
+      }
+    )
+  end
+
+  defp do_post(_sender, _recipient, _message), do: {:ok, nil}
+
+  defp fetch_sender(nickname) when is_binary(nickname) do
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       user
     else
       _ -> nil
     end
   end
 
+  defp fetch_sender(_), do: nil
+
   defp welcome_message do
-    Pleroma.Config.get([:instance, :welcome_message])
+    Config.get([:welcome, :direct_message, :message], nil)
   end
 end

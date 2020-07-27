@@ -11,59 +11,59 @@ defmodule Pleroma.Workers.BackgroundWorker do
 
   @impl Oban.Worker
 
-  def perform(%{"op" => "deactivate_user", "user_id" => user_id, "status" => status}, _job) do
+  def perform(%Job{args: %{"op" => "deactivate_user", "user_id" => user_id, "status" => status}}) do
     user = User.get_cached_by_id(user_id)
     User.perform(:deactivate_async, user, status)
   end
 
-  def perform(%{"op" => "delete_user", "user_id" => user_id}, _job) do
+  def perform(%Job{args: %{"op" => "delete_user", "user_id" => user_id}}) do
     user = User.get_cached_by_id(user_id)
     User.perform(:delete, user)
   end
 
-  def perform(%{"op" => "force_password_reset", "user_id" => user_id}, _job) do
+  def perform(%Job{args: %{"op" => "force_password_reset", "user_id" => user_id}}) do
     user = User.get_cached_by_id(user_id)
     User.perform(:force_password_reset, user)
   end
 
-  def perform(
-        %{
+  def perform(%Job{
+        args: %{
           "op" => "blocks_import",
           "blocker_id" => blocker_id,
           "blocked_identifiers" => blocked_identifiers
-        },
-        _job
-      ) do
+        }
+      }) do
     blocker = User.get_cached_by_id(blocker_id)
     {:ok, User.perform(:blocks_import, blocker, blocked_identifiers)}
   end
 
-  def perform(
-        %{
+  def perform(%Job{
+        args: %{
           "op" => "follow_import",
           "follower_id" => follower_id,
           "followed_identifiers" => followed_identifiers
-        },
-        _job
-      ) do
+        }
+      }) do
     follower = User.get_cached_by_id(follower_id)
     {:ok, User.perform(:follow_import, follower, followed_identifiers)}
   end
 
-  def perform(%{"op" => "media_proxy_preload", "message" => message}, _job) do
+  def perform(%Job{args: %{"op" => "media_proxy_preload", "message" => message}}) do
     MediaProxyWarmingPolicy.perform(:preload, message)
   end
 
-  def perform(%{"op" => "media_proxy_prefetch", "url" => url}, _job) do
+  def perform(%Job{args: %{"op" => "media_proxy_prefetch", "url" => url}}) do
     MediaProxyWarmingPolicy.perform(:prefetch, url)
   end
 
-  def perform(%{"op" => "fetch_data_for_activity", "activity_id" => activity_id}, _job) do
+  def perform(%Job{args: %{"op" => "fetch_data_for_activity", "activity_id" => activity_id}}) do
     activity = Activity.get_by_id(activity_id)
     Pleroma.Web.RichMedia.Helpers.perform(:fetch, activity)
   end
 
-  def perform(%{"op" => "move_following", "origin_id" => origin_id, "target_id" => target_id}, _) do
+  def perform(%Job{
+        args: %{"op" => "move_following", "origin_id" => origin_id, "target_id" => target_id}
+      }) do
     origin = User.get_cached_by_id(origin_id)
     target = User.get_cached_by_id(target_id)
 

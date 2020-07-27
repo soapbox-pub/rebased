@@ -13,8 +13,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
   import Pleroma.Factory
   import Swoosh.TestAssertions
 
-  @image "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
-
   describe "POST /api/v1/pleroma/accounts/confirmation_resend" do
     setup do
       {:ok, user} =
@@ -65,103 +63,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
         to: {user.name, user.email},
         html_body: email.html_body
       )
-    end
-  end
-
-  describe "PATCH /api/v1/pleroma/accounts/update_avatar" do
-    setup do: oauth_access(["write:accounts"])
-
-    test "user avatar can be set", %{user: user, conn: conn} do
-      avatar_image = File.read!("test/fixtures/avatar_data_uri")
-
-      conn =
-        conn
-        |> put_req_header("content-type", "multipart/form-data")
-        |> patch("/api/v1/pleroma/accounts/update_avatar", %{img: avatar_image})
-
-      user = refresh_record(user)
-
-      assert %{
-               "name" => _,
-               "type" => _,
-               "url" => [
-                 %{
-                   "href" => _,
-                   "mediaType" => _,
-                   "type" => _
-                 }
-               ]
-             } = user.avatar
-
-      assert %{"url" => _} = json_response_and_validate_schema(conn, 200)
-    end
-
-    test "user avatar can be reset", %{user: user, conn: conn} do
-      conn =
-        conn
-        |> put_req_header("content-type", "multipart/form-data")
-        |> patch("/api/v1/pleroma/accounts/update_avatar", %{img: ""})
-
-      user = User.get_cached_by_id(user.id)
-
-      assert user.avatar == nil
-
-      assert %{"url" => nil} = json_response_and_validate_schema(conn, 200)
-    end
-  end
-
-  describe "PATCH /api/v1/pleroma/accounts/update_banner" do
-    setup do: oauth_access(["write:accounts"])
-
-    test "can set profile banner", %{user: user, conn: conn} do
-      conn =
-        conn
-        |> put_req_header("content-type", "multipart/form-data")
-        |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => @image})
-
-      user = refresh_record(user)
-      assert user.banner["type"] == "Image"
-
-      assert %{"url" => _} = json_response_and_validate_schema(conn, 200)
-    end
-
-    test "can reset profile banner", %{user: user, conn: conn} do
-      conn =
-        conn
-        |> put_req_header("content-type", "multipart/form-data")
-        |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => ""})
-
-      user = refresh_record(user)
-      assert user.banner == %{}
-
-      assert %{"url" => nil} = json_response_and_validate_schema(conn, 200)
-    end
-  end
-
-  describe "PATCH /api/v1/pleroma/accounts/update_background" do
-    setup do: oauth_access(["write:accounts"])
-
-    test "background image can be set", %{user: user, conn: conn} do
-      conn =
-        conn
-        |> put_req_header("content-type", "multipart/form-data")
-        |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => @image})
-
-      user = refresh_record(user)
-      assert user.background["type"] == "Image"
-      # assert %{"url" => _} = json_response(conn, 200)
-      assert %{"url" => _} = json_response_and_validate_schema(conn, 200)
-    end
-
-    test "background image can be reset", %{user: user, conn: conn} do
-      conn =
-        conn
-        |> put_req_header("content-type", "multipart/form-data")
-        |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => ""})
-
-      user = refresh_record(user)
-      assert user.background == %{}
-      assert %{"url" => nil} = json_response_and_validate_schema(conn, 200)
     end
   end
 

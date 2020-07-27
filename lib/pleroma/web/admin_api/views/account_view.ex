@@ -105,7 +105,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
   end
 
   def merge_account_views(%User{} = user) do
-    MastodonAPI.AccountView.render("show.json", %{user: user})
+    MastodonAPI.AccountView.render("show.json", %{user: user, skip_visibility_check: true})
     |> Map.merge(AdminAPI.AccountView.render("show.json", %{user: user}))
   end
 

@@ -17,6 +17,7 @@ defmodule Pleroma.UserTest do
 
   import Pleroma.Factory
   import ExUnit.CaptureLog
+  import Swoosh.TestAssertions
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -199,6 +200,16 @@ defmodule Pleroma.UserTest do
     assert [^pending_follower] = User.get_follow_requests(locked)
   end
 
+  test "doesn't return follow requests for deactivated accounts" do
+    locked = insert(:user, locked: true)
+    pending_follower = insert(:user, %{deactivated: true})
+
+    CommonAPI.follow(pending_follower, locked)
+
+    assert true == pending_follower.deactivated
+    assert [] = User.get_follow_requests(locked)
+  end
+
   test "clears follow requests when requester is blocked" do
     followed = insert(:user, locked: true)
     follower = insert(:user)
@@ -375,9 +386,10 @@ defmodule Pleroma.UserTest do
       password_confirmation: "test",
       email: "email@example.com"
     }
+
     setup do: clear_config([:instance, :autofollowed_nicknames])
-    setup do: clear_config([:instance, :welcome_message])
-    setup do: clear_config([:instance, :welcome_user_nickname])
+    setup do: clear_config([:welcome])
+    setup do: clear_config([:instance, :account_activation_required])
 
     test "it autofollows accounts that are set for it" do
       user = insert(:user)
@@ -398,20 +410,45 @@ defmodule Pleroma.UserTest do
 
     test "it sends a welcome message if it is set" do
       welcome_user = insert(:user)
+      Pleroma.Config.put([:welcome, :direct_message, :enabled], true)
+      Pleroma.Config.put([:welcome, :direct_message, :sender_nickname], welcome_user.nickname)
+      Pleroma.Config.put([:welcome, :direct_message, :message], "Hello, this is a cool site")
 
-      Pleroma.Config.put([:instance, :welcome_user_nickname], welcome_user.nickname)
-      Pleroma.Config.put([:instance, :welcome_message], "Hello, this is a cool site")
+      Pleroma.Config.put([:welcome, :email, :enabled], true)
+      Pleroma.Config.put([:welcome, :email, :sender], welcome_user.email)
+
+      Pleroma.Config.put(
+        [:welcome, :email, :subject],
+        "Hello, welcome to cool site: <%= instance_name %>"
+      )
+
+      instance_name = Pleroma.Config.get([:instance, :name])
 
       cng = User.register_changeset(%User{}, @full_user_data)
       {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
       assert Object.normalize(activity).data["content"] =~ "cool site"
       assert activity.actor == welcome_user.ap_id
+
+      assert_email_sent(
+        from: {instance_name, welcome_user.email},
+        to: {registered_user.name, registered_user.email},
+        subject: "Hello, welcome to cool site: #{instance_name}",
+        html_body: "Welcome to #{instance_name}"
+      )
     end
 
-    setup do: clear_config([:instance, :account_activation_required])
+    test "it sends a confirm email" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+      {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
+      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(registered_user))
+    end
 
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
@@ -475,6 +512,15 @@ defmodule Pleroma.UserTest do
       email: "email@example.com"
     }
     setup do: clear_config([:instance, :account_activation_required], true)
+
+    test "it sets the 'accepts_chat_messages' set to true" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.accepts_chat_messages
+    end
 
     test "it creates unconfirmed user" do
       changeset = User.register_changeset(%User{}, @full_user_data)
@@ -585,6 +631,31 @@ defmodule Pleroma.UserTest do
       assert user.inbox
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
+    end
+
+    test "if nicknames clash, the old user gets a prefix with the old id to the nickname" do
+      a_week_ago = NaiveDateTime.add(NaiveDateTime.utc_now(), -604_800)
+
+      orig_user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: "http://mastodon.example.org/users/harinezumigari",
+          last_refreshed_at: a_week_ago
+        )
+
+      assert orig_user.last_refreshed_at == a_week_ago
+
+      {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
+
+      assert user.inbox
+
+      refute user.id == orig_user.id
+
+      orig_user = User.get_by_id(orig_user.id)
+
+      assert orig_user.nickname == "#{orig_user.id}.admin@mastodon.example.org"
     end
 
     @tag capture_log: true

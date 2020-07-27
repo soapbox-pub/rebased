@@ -156,7 +156,6 @@ defmodule Pleroma.ConfigDB do
       {:quack, :meta},
       {:mime, :types},
       {:cors_plug, [:max_age, :methods, :expose, :headers]},
-      {:auto_linker, :opts},
       {:swarm, :node_blacklist},
       {:logger, :backends}
     ]
@@ -167,7 +166,9 @@ defmodule Pleroma.ConfigDB do
     end)
   end
 
-  @spec delete(map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
+  @spec delete(ConfigDB.t() | map()) :: {:ok, ConfigDB.t()} | {:error, Changeset.t()}
+  def delete(%ConfigDB{} = config), do: Repo.delete(config)
+
   def delete(params) do
     search_opts = Map.delete(params, :subkeys)
 

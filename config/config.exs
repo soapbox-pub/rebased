@@ -97,6 +97,7 @@ config :pleroma, :uri_schemes,
     "dat",
     "dweb",
     "gopher",
+    "hyper",
     "ipfs",
     "ipns",
     "irc",
@@ -171,7 +172,7 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :tesla, adapter: Tesla.Adapter.Hackney
+config :tesla, adapter: Tesla.Adapter.Gun
 
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
@@ -186,7 +187,9 @@ config :pleroma, :instance,
   notify_email: "noreply@example.com",
   description: "Pleroma: An efficient and flexible fediverse server",
   background_image: "/images/city.jpg",
+  instance_thumbnail: "/instance/thumbnail.jpeg",
   limit: 5_000,
+  description_limit: 5_000,
   chat_limit: 5_000,
   remote_limit: 100_000,
   upload_limit: 16_000_000,
@@ -209,7 +212,6 @@ config :pleroma, :instance,
     Pleroma.Web.ActivityPub.Publisher
   ],
   allow_relay: true,
-  rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
   quarantined_instances: [],
   managed_config: true,
@@ -220,13 +222,9 @@ config :pleroma, :instance,
     "text/markdown",
     "text/bbcode"
   ],
-  mrf_transparency: true,
-  mrf_transparency_exclusions: [],
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,
   attachment_links: false,
-  welcome_user_nickname: nil,
-  welcome_message: nil,
   max_report_comment_size: 1000,
   safe_dm_mentions: false,
   healthcheck: false,
@@ -252,6 +250,20 @@ config :pleroma, :instance,
       number: 5,
       length: 16
     ]
+  ]
+
+config :pleroma, :welcome,
+  direct_message: [
+    enabled: false,
+    sender_nickname: nil,
+    message: nil
+  ],
+  email: [
+    enabled: false,
+    sender: nil,
+    subject: "Welcome to <%= instance_name %>",
+    html: "Welcome to <%= instance_name %>",
+    text: "Welcome to <%= instance_name %>"
   ]
 
 config :pleroma, :feed,
@@ -436,6 +448,11 @@ config :pleroma, Pleroma.Web.Metadata,
   ],
   unfurl_nsfw: false
 
+config :pleroma, Pleroma.Web.Preload,
+  providers: [
+    Pleroma.Web.Preload.Providers.Instance
+  ]
+
 config :pleroma, :http_security,
   enabled: true,
   sts: false,
@@ -493,8 +510,7 @@ config :pleroma, Pleroma.User,
 
 config :pleroma, Oban,
   repo: Pleroma.Repo,
-  verbose: false,
-  prune: {:maxlen, 1500},
+  log: false,
   queues: [
     activity_expiration: 10,
     federator_incoming: 50,
@@ -508,6 +524,7 @@ config :pleroma, Oban,
     attachments_cleanup: 5,
     new_users_digest: 1
   ],
+  plugins: [Oban.Plugins.Pruner],
   crontab: [
     {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
     {"0 * * * *", Pleroma.Workers.Cron.StatsWorker},
@@ -522,16 +539,14 @@ config :pleroma, :workers,
     federator_outgoing: 5
   ]
 
-config :auto_linker,
-  opts: [
-    extra: true,
-    # TODO: Set to :no_scheme when it works properly
-    validate_tld: true,
-    class: false,
-    strip_prefix: false,
-    new_window: false,
-    rel: "ugc"
-  ]
+config :pleroma, Pleroma.Formatter,
+  class: false,
+  rel: "ugc",
+  new_window: false,
+  truncate: false,
+  strip_prefix: false,
+  extra: true,
+  validate_tld: :no_scheme
 
 config :pleroma, :ldap,
   enabled: System.get_env("LDAP_ENABLED") == "true",
@@ -643,32 +658,30 @@ config :pleroma, Pleroma.Repo,
   prepare: :unnamed
 
 config :pleroma, :connections_pool,
-  checkin_timeout: 250,
+  reclaim_multiplier: 0.1,
+  connection_acquisition_wait: 250,
+  connection_acquisition_retries: 5,
   max_connections: 250,
-  retry: 1,
-  retry_timeout: 1000,
+  max_idle_time: 30_000,
+  retry: 0,
   await_up_timeout: 5_000
 
 config :pleroma, :pools,
   federation: [
     size: 50,
-    max_overflow: 10,
-    timeout: 150_000
+    max_waiting: 10
   ],
   media: [
     size: 50,
-    max_overflow: 10,
-    timeout: 150_000
+    max_waiting: 10
   ],
   upload: [
     size: 25,
-    max_overflow: 5,
-    timeout: 300_000
+    max_waiting: 5
   ],
   default: [
     size: 10,
-    max_overflow: 2,
-    timeout: 10_000
+    max_waiting: 2
   ]
 
 config :pleroma, :hackney_pools,
@@ -691,6 +704,17 @@ config :pleroma, :restrict_unauthenticated,
   activities: %{local: false, remote: false}
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
+
+config :pleroma, :mrf,
+  policies: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
+  transparency: true,
+  transparency_exclusions: []
+
+config :tzdata, :http_client, Pleroma.HTTP.Tzdata
+
+config :ex_aws, http_client: Pleroma.HTTP.ExAws
+
+config :pleroma, :instances_favicons, enabled: false
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

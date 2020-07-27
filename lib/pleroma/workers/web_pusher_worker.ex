@@ -9,7 +9,7 @@ defmodule Pleroma.Workers.WebPusherWorker do
   use Pleroma.Workers.WorkerHelper, queue: "web_push"
 
   @impl Oban.Worker
-  def perform(%{"op" => "web_push", "notification_id" => notification_id}, _job) do
+  def perform(%Job{args: %{"op" => "web_push", "notification_id" => notification_id}}) do
     notification =
       Notification
       |> Repo.get(notification_id)

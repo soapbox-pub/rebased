@@ -20,7 +20,7 @@ defmodule Pleroma.Tests.ObanHelpers do
   end
 
   def perform(%Oban.Job{} = job) do
-    res = apply(String.to_existing_atom("Elixir." <> job.worker), :perform, [job.args, job])
+    res = apply(String.to_existing_atom("Elixir." <> job.worker), :perform, [job])
     Repo.delete(job)
     res
   end

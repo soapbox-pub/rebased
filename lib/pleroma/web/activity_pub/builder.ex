@@ -14,6 +14,19 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   require Pleroma.Constants
 
+  @spec follow(User.t(), User.t()) :: {:ok, map(), keyword()}
+  def follow(follower, followed) do
+    data = %{
+      "id" => Utils.generate_activity_id(),
+      "actor" => follower.ap_id,
+      "type" => "Follow",
+      "object" => followed.ap_id,
+      "to" => [followed.ap_id]
+    }
+
+    {:ok, data, []}
+  end
+
   @spec emoji_react(User.t(), Object.t(), String.t()) :: {:ok, map(), keyword()}
   def emoji_react(actor, object, emoji) do
     with {:ok, data, meta} <- object_action(actor, object) do
@@ -121,6 +134,33 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
       {:ok, data, meta}
     end
+  end
+
+  # Retricted to user updates for now, always public
+  @spec update(User.t(), Object.t()) :: {:ok, map(), keyword()}
+  def update(actor, object) do
+    to = [Pleroma.Constants.as_public(), actor.follower_address]
+
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "type" => "Update",
+       "actor" => actor.ap_id,
+       "object" => object,
+       "to" => to
+     }, []}
+  end
+
+  @spec block(User.t(), User.t()) :: {:ok, map(), keyword()}
+  def block(blocker, blocked) do
+    {:ok,
+     %{
+       "id" => Utils.generate_activity_id(),
+       "type" => "Block",
+       "actor" => blocker.ap_id,
+       "object" => blocked.ap_id,
+       "to" => [blocked.ap_id]
+     }, []}
   end
 
   @spec announce(User.t(), Object.t(), keyword()) :: {:ok, map(), keyword()}
