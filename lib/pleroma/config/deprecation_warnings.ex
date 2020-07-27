@@ -68,7 +68,7 @@ defmodule Pleroma.Config.DeprecationWarnings do
     if use_old_config do
       Logger.error("""
       !!!DEPRECATION WARNING!!!
-      Your config is using old namespaces for Welcome messages configuration. You are need to change to new namespaces:
+      Your config is using the old namespace for Welcome messages configuration. You need to change to the new namespace:
       \n* `config :pleroma, :instance, welcome_user_nickname` is now `config :pleroma, :welcome, :direct_message, :sender_nickname`
       \n* `config :pleroma, :instance, welcome_message` is now `config :pleroma, :welcome, :direct_message, :message`
       """)
