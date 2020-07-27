@@ -2235,13 +2235,13 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :class,
-        type: [:string, false],
+        type: [:string, :boolean],
         description: "Specify the class to be added to the generated link. Disable to clear.",
         suggestions: ["auto-linker", false]
       },
       %{
         key: :rel,
-        type: [:string, false],
+        type: [:string, :boolean],
         description: "Override the rel attribute. Disable to clear.",
         suggestions: ["ugc", "noopener noreferrer", false]
       },
@@ -2252,7 +2252,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :truncate,
-        type: [:integer, false],
+        type: [:integer, :boolean],
         description:
           "Set to a number to truncate URLs longer than the number. Truncated URLs will end in `...`",
         suggestions: [15, false]
