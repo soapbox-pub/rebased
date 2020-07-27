@@ -312,8 +312,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       }
     end
 
-    test "deletes the original block", %{block_undo: block_undo, block: block} do
-      {:ok, _block_undo, _} = SideEffects.handle(block_undo)
+    test "deletes the original block", %{
+      block_undo: block_undo,
+      block: block
+    } do
+      {:ok, _block_undo, _meta} = SideEffects.handle(block_undo)
+
       refute Activity.get_by_id(block.id)
     end
 
