@@ -641,6 +641,7 @@ defmodule Pleroma.User do
   def register_changeset(struct, params \\ %{}, opts \\ []) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
+    reason_limit = Config.get([:instance, :registration_reason_length], 500)
     params = Map.put_new(params, :accepts_chat_messages, true)
 
     need_confirmation? =
@@ -681,6 +682,7 @@ defmodule Pleroma.User do
     |> validate_format(:email, @email_regex)
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
+    |> validate_length(:registration_reason, max: reason_limit)
     |> maybe_validate_required_email(opts[:external])
     |> put_password_hash
     |> put_ap_id()

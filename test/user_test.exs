@@ -550,7 +550,8 @@ defmodule Pleroma.UserTest do
       nickname: "nick",
       password: "test",
       password_confirmation: "test",
-      email: "email@example.com"
+      email: "email@example.com",
+      registration_reason: "I'm a cool guy :)"
     }
     setup do: clear_config([:instance, :account_approval_required], true)
 
@@ -561,6 +562,21 @@ defmodule Pleroma.UserTest do
       {:ok, user} = Repo.insert(changeset)
 
       assert user.approval_pending
+      assert user.registration_reason == "I'm a cool guy :)"
+    end
+
+    test "it restricts length of registration reason" do
+      reason_limit = Pleroma.Config.get([:instance, :registration_reason_length])
+
+      assert is_integer(reason_limit)
+
+      params =
+        @full_user_data
+        |> Map.put(:registration_reason, "Quia et nesciunt dolores numquam ipsam nisi sapiente soluta. Ullam repudiandae nisi quam porro officiis officiis ad. Consequatur animi velit ex quia. Odit voluptatem perferendis quia ut nisi. Dignissimos sit soluta atque aliquid dolorem ut dolorum ut. Labore voluptates iste iusto amet voluptatum earum. Ad fugit illum nam eos ut nemo. Pariatur ea fuga non aspernatur. Dignissimos debitis officia corporis est nisi ab et. Atque itaque alias eius voluptas minus. Accusamus numquam tempore occaecati in.")
+
+      changeset = User.register_changeset(%User{}, params)
+
+      refute changeset.valid?
     end
   end
 
