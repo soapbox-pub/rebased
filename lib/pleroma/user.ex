@@ -713,11 +713,32 @@ defmodule Pleroma.User do
   def post_register_action(%User{} = user) do
     with {:ok, user} <- autofollow_users(user),
          {:ok, user} <- set_cache(user),
-         {:ok, _} <- User.WelcomeMessage.post_welcome_message_to_user(user),
+         {:ok, _} <- send_welcome_email(user),
+         {:ok, _} <- send_welcome_message(user),
          {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end
   end
+
+  def send_welcome_message(user) do
+    if User.WelcomeMessage.enabled?() do
+      User.WelcomeMessage.post_message(user)
+      {:ok, :enqueued}
+    else
+      {:ok, :noop}
+    end
+  end
+
+  def send_welcome_email(%User{email: email} = user) when is_binary(email) do
+    if User.WelcomeEmail.enabled?() do
+      User.WelcomeEmail.send_email(user)
+      {:ok, :enqueued}
+    else
+      {:ok, :noop}
+    end
+  end
+
+  def send_welcome_email(_), do: {:ok, :noop}
 
   @spec try_send_confirmation_email(User.t()) :: {:ok, :enqueued | :noop}
   def try_send_confirmation_email(%User{confirmation_pending: true} = user) do
