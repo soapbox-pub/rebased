@@ -14,10 +14,10 @@ defmodule Pleroma.Web.ActivityPub.PipelineTest do
       :ok
     end
 
-    test "when given an `embedded_object` in meta, Federation will receive a the original activity with the `object` field set to this embedded object" do
+    test "when given an `object_data` in meta, Federation will receive a the original activity with the `object` field set to this embedded object" do
       activity = insert(:note_activity)
       object = %{"id" => "1", "type" => "Love"}
-      meta = [local: true, embedded_object: object]
+      meta = [local: true, object_data: object]
 
       activity_with_object = %{activity | data: Map.put(activity.data, "object", object)}
 

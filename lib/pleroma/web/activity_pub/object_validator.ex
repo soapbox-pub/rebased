@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   the system.
   """
 
+  alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
   alias Pleroma.User
@@ -71,6 +72,12 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
            |> UndoValidator.cast_and_validate()
            |> Ecto.Changeset.apply_action(:insert) do
       object = stringify_keys(object)
+      undone_object = Activity.get_by_ap_id(object["object"])
+
+      meta =
+        meta
+        |> Keyword.put(:object_data, undone_object.data)
+
       {:ok, object, meta}
     end
   end

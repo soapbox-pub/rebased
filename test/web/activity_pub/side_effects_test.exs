@@ -312,13 +312,12 @@ defmodule Pleroma.Web.ActivityPub.SideEffectsTest do
       }
     end
 
-    test "deletes the original block, but sets `embedded_object`", %{
+    test "deletes the original block", %{
       block_undo: block_undo,
       block: block
     } do
-      {:ok, _block_undo, meta} = SideEffects.handle(block_undo)
+      {:ok, _block_undo, _meta} = SideEffects.handle(block_undo)
 
-      assert meta[:embedded_object] == block.data
       refute Activity.get_by_id(block.id)
     end
 

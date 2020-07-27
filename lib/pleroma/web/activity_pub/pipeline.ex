@@ -53,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.Pipeline do
 
       if !do_not_federate && local do
         activity =
-          if object = Keyword.get(meta, :embedded_object) do
+          if object = Keyword.get(meta, :object_data) do
             %{activity | data: Map.put(activity.data, "object", object)}
           else
             activity
