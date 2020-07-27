@@ -59,6 +59,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `max_remote_account_fields`: The maximum number of custom fields in the remote user profile (default: `20`).
 * `account_field_name_length`: An account field name maximum length (default: `512`).
 * `account_field_value_length`: An account field value maximum length (default: `2048`).
+* `registration_reason_length`: Maximum registration reason length (default: `500`).
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 

@@ -880,6 +880,14 @@ config :pleroma, :config_description, [
         ]
       },
       %{
+        key: :registration_reason_length,
+        type: :integer,
+        description: "Maximum registration reason length. Default: 500.",
+        suggestions: [
+          500
+        ]
+      },
+      %{
         key: :external_user_synchronization,
         type: :boolean,
         description: "Enabling following/followers counters synchronization for external users"
