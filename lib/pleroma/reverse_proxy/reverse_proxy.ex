@@ -165,6 +165,9 @@ defmodule Pleroma.ReverseProxy do
       {:ok, code, _, _} ->
         {:error, {:invalid_http_response, code}}
 
+      {:ok, code, _} ->
+        {:error, {:invalid_http_response, code}}
+
       {:error, error} ->
         {:error, error}
     end
