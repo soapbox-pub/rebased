@@ -1553,8 +1553,12 @@ defmodule Pleroma.User do
     status = account_status(user)
 
     case status do
-      :confirmation_pending -> delete_and_invalidate_cache(user)
-      :approval_pending -> delete_and_invalidate_cache(user)
+      :confirmation_pending ->
+        delete_and_invalidate_cache(user)
+
+      :approval_pending ->
+        delete_and_invalidate_cache(user)
+
       _ ->
         user
         |> change(%{deactivated: true, email: nil})
