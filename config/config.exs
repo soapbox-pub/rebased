@@ -647,7 +647,8 @@ config :pleroma, :static_fe, enabled: false
 
 # Example of frontend configuration
 # This example will make us serve the primary frontend from the
-# `/frontends/pleroma/develop` folder in your instance static directory.
+# frontends directory within your `:pleroma, :instance, static_dir`.
+# e.g., instance/static/frontends/pleroma/develop/
 #
 # With no frontend configuration, the bundled files from the `static` directory will
 # be used.
