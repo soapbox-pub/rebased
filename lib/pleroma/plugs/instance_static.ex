@@ -26,18 +26,14 @@ defmodule Pleroma.Plugs.InstanceStatic do
   def init(opts) do
     opts
     |> Keyword.put(:from, "__unconfigured_instance_static_plug")
-    |> Keyword.put(:at, "/__unconfigured_instance_static_plug")
     |> Plug.Static.init()
   end
 
   for only <- Pleroma.Constants.static_only_files() do
-    at = Plug.Router.Utils.split("/")
-
     def call(%{request_path: "/" <> unquote(only) <> _} = conn, opts) do
       call_static(
         conn,
         opts,
-        unquote(at),
         Pleroma.Config.get([:instance, :static_dir], "instance/static")
       )
     end
@@ -47,11 +43,10 @@ defmodule Pleroma.Plugs.InstanceStatic do
     conn
   end
 
-  defp call_static(conn, opts, at, from) do
+  defp call_static(conn, opts, from) do
     opts =
       opts
       |> Map.put(:from, from)
-      |> Map.put(:at, at)
 
     Plug.Static.call(conn, opts)
   end
