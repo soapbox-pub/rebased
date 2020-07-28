@@ -21,6 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   setup do: clear_config([:instance, :federating])
   setup do: clear_config([:instance, :allow_relay])
+  setup do: clear_config([:instance, :show_reactions])
   setup do: clear_config([:rich_media, :enabled])
   setup do: clear_config([:mrf, :policies])
   setup do: clear_config([:mrf_keyword, :reject])
@@ -1431,6 +1432,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       [%{"id" => id}] = response
       assert id == other_user.id
+    end
+
+    test "returns empty array when :show_reactions is disabled", %{conn: conn, activity: activity} do
+      Pleroma.Config.put([:instance, :show_reactions], false)
+
+      other_user = insert(:user)
+      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
+
+      response =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}/favourited_by")
+        |> json_response_and_validate_schema(:ok)
+
+      assert Enum.empty?(response)
     end
   end
 

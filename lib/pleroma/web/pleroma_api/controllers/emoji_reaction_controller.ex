@@ -25,7 +25,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionController do
   action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   def index(%{assigns: %{user: user}} = conn, %{id: activity_id} = params) do
-    with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
+    with true <- Pleroma.Config.get([:instance, :show_reactions]),
+         %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
          %Object{data: %{"reactions" => reactions}} when is_list(reactions) <-
            Object.normalize(activity) do
       reactions = filter(reactions, params)
