@@ -145,7 +145,7 @@ defmodule Pleroma.Mixfile do
       {:ex_aws, "~> 2.1"},
       {:ex_aws_s3, "~> 2.0"},
       {:sweet_xml, "~> 0.6.6"},
-      {:earmark, "~> 1.3"},
+      {:earmark, "1.4.3"},
       {:bbcode_pleroma, "~> 0.2.0"},
       {:ex_machina, "~> 2.3", only: :test},
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
