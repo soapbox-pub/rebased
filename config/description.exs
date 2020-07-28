@@ -3481,5 +3481,30 @@ config :pleroma, :config_description, [
         suggestions: ["s3.eu-central-1.amazonaws.com"]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: :frontends,
+    type: :group,
+    description: "Installed frontends management",
+    children: [
+      %{
+        key: :primary,
+        type: :map,
+        description: "Primary frontend, the one that is served for all pages by default",
+        children: [
+          %{
+            key: "name",
+            type: :string,
+            description: "Name of the installed primary frontend"
+          },
+          %{
+            key: "ref",
+            type: :string,
+            description: "reference of the installed primary frontend to be used"
+          }
+        ]
+      }
+    ]
   }
 ]
