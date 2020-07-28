@@ -645,6 +645,15 @@ config :pleroma, Pleroma.Plugs.RemoteIp, enabled: true
 
 config :pleroma, :static_fe, enabled: false
 
+# Example of frontend configuration
+# This example will make us serve the primary frontend from the
+# `/frontends/pleroma/develop` folder in your instance static directory.
+#
+# With no frontend configuration, the bundled files from the `static` directory will
+# be used.
+#
+# config :pleroma, :frontends, primary: %{"name" => "pleroma", "ref" => "develop"}
+
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,
   activity_pub_question: 30_000

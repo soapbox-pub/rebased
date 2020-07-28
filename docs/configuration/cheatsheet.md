@@ -1046,3 +1046,23 @@ Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practi
 Control favicons for instances.
 
 * `enabled`: Allow/disallow displaying and getting instances favicons
+
+## Frontend management
+
+Frontends in Pleroma are swappable - you can specify which one to use here.
+
+For now, you can set a frontend with the key `primary` and the options of `name` and `ref` set. This will then make Pleroma serve the frontend from a folder constructed by concatenating the instance static path, `frontends` and the name and ref.
+
+If you don't set anything here, the bundled frontend will be used.
+
+Example:
+
+```
+config :pleroma, :frontends,
+  primary: %{
+    "name" => "pleroma",
+    "ref" => "stable"
+  }
+```
+
+This would serve frontend from the the folder at `$instance_static/frontends/pleroma/stable`. You have to copy the frontend into this folder yourself.
