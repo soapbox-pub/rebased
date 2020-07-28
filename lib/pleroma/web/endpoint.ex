@@ -28,6 +28,17 @@ defmodule Pleroma.Web.Endpoint do
     }
   )
 
+  # Careful! No `only` restriction here, as we don't know what frontends contain.
+  plug(Pleroma.Plugs.FrontendStatic,
+    at: "/",
+    frontend_type: :primary,
+    gzip: true,
+    cache_control_for_etags: @static_cache_control,
+    headers: %{
+      "cache-control" => @static_cache_control
+    }
+  )
+
   # Serve at "/" the static files from "priv/static" directory.
   #
   # You should set gzip to true if you are running phoenix.digest
