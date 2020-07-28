@@ -36,10 +36,18 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   end
 
   @impl true
-  def handle_cast({:add_client, client_pid, send}, state) do
+  def handle_cast({:add_client, client_pid}, state) do
     case handle_call(:add_client, {client_pid, nil}, state) do
       {:reply, conn_pid, state, :hibernate} ->
-        if send, do: send(client_pid, {:conn_pid, conn_pid})
+        send(client_pid, {:conn_pid, conn_pid})
+        {:noreply, state, :hibernate}
+    end
+  end
+
+  @impl true
+  def handle_cast({:remove_client, client_pid}, state) do
+    case handle_call(:remove_client, {client_pid, nil}, state) do
+      {:reply, _, state, :hibernate} ->
         {:noreply, state, :hibernate}
     end
   end
@@ -115,7 +123,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
       %{key: state.key}
     )
 
-    handle_cast({:remove_client, pid, false}, state)
+    handle_cast({:remove_client, pid}, state)
   end
 
   # LRFU policy: https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.55.1478

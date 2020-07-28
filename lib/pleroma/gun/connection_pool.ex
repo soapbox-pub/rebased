@@ -45,7 +45,7 @@ defmodule Pleroma.Gun.ConnectionPool do
     # so instead we use cast + monitor
 
     ref = Process.monitor(worker_pid)
-    if register, do: GenServer.cast(worker_pid, {:add_client, self(), true})
+    if register, do: GenServer.cast(worker_pid, {:add_client, self()})
 
     receive do
       {:conn_pid, pid} ->
