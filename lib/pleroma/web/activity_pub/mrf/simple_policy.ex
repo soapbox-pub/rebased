@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   alias Pleroma.Config
+  alias Pleroma.FollowingRelationship
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
 
@@ -108,6 +109,32 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     {:ok, object}
   end
 
+  defp check_silence(%{host: actor_host} = _actor_info, object) do
+    silence =
+      Config.get([:mrf_simple, :silence])
+      |> MRF.subdomains_regex()
+
+    object =
+      with true <- MRF.subdomain_match?(silence, actor_host),
+           user <- User.get_cached_by_ap_id(object["actor"]) do
+        to =
+          FollowingRelationship.followers_ap_ids(user, Map.get(object, "to", [])) ++
+            [user.follower_address]
+
+        cc = FollowingRelationship.followers_ap_ids(user, Map.get(object, "cc", []))
+
+        object
+        |> Map.put("to", to)
+        |> Map.put("cc", cc)
+      else
+        _ -> object
+      end
+
+    {:ok, object}
+  end
+
+  defp check_silence(_actor_info, object), do: {:ok, object}
+
   defp check_report_removal(%{host: actor_host} = _actor_info, %{"type" => "Flag"} = object) do
     report_removal =
       Config.get([:mrf_simple, :report_removal])
@@ -174,6 +201,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_media_removal(actor_info, object),
          {:ok, object} <- check_media_nsfw(actor_info, object),
          {:ok, object} <- check_ftl_removal(actor_info, object),
+         {:ok, object} <- check_silence(actor_info, object),
          {:ok, object} <- check_report_removal(actor_info, object) do
       {:ok, object}
     else

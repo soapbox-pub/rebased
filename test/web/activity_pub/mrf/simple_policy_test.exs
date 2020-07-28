@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
   import Pleroma.Factory
   alias Pleroma.Config
   alias Pleroma.Web.ActivityPub.MRF.SimplePolicy
+  alias Pleroma.Web.CommonAPI
 
   setup do:
           clear_config(:mrf_simple,
@@ -15,6 +16,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
             federated_timeline_removal: [],
             report_removal: [],
             reject: [],
+            silence: [],
             accept: [],
             avatar_removal: [],
             banner_removal: [],
@@ -258,6 +260,51 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       remote_user = build_remote_user()
 
       assert {:reject, _} = SimplePolicy.filter(remote_user)
+    end
+  end
+
+  describe "when :silence" do
+    test "is empty" do
+      Config.put([:mrf_simple, :silence], [])
+      {_, ftl_message} = build_ftl_actor_and_message()
+      local_message = build_local_message()
+
+      assert SimplePolicy.filter(ftl_message) == {:ok, ftl_message}
+      assert SimplePolicy.filter(local_message) == {:ok, local_message}
+    end
+
+    test "has a matching host" do
+      actor = insert(:user)
+      following_user = insert(:user)
+      non_following_user = insert(:user)
+
+      {:ok, _, _, _} = CommonAPI.follow(following_user, actor)
+
+      activity = %{
+        "actor" => actor.ap_id,
+        "to" => [
+          "https://www.w3.org/ns/activitystreams#Public",
+          following_user.ap_id,
+          non_following_user.ap_id
+        ],
+        "cc" => [actor.follower_address, "http://foo.bar/qux"]
+      }
+
+      actor_domain =
+        activity
+        |> Map.fetch!("actor")
+        |> URI.parse()
+        |> Map.fetch!(:host)
+
+      Config.put([:mrf_simple, :silence], [actor_domain])
+
+      assert {:ok, new_activity} = SimplePolicy.filter(activity)
+      assert actor.follower_address in new_activity["to"]
+      assert following_user.ap_id in new_activity["to"]
+      refute "https://www.w3.org/ns/activitystreams#Public" in new_activity["to"]
+      refute "https://www.w3.org/ns/activitystreams#Public" in new_activity["cc"]
+      refute non_following_user.ap_id in new_activity["to"]
+      refute non_following_user.ap_id in new_activity["cc"]
     end
   end
 

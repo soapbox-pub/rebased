@@ -1525,6 +1525,12 @@ config :pleroma, :config_description, [
         suggestions: ["example.com", "*.example.com"]
       },
       %{
+        key: :silence,
+        type: {:list, :string},
+        description: "Force posts from the given instances to be visible by followers only",
+        suggestions: ["example.com", "*.example.com"]
+      },
+      %{
         key: :report_removal,
         type: {:list, :string},
         description: "List of instances to reject reports from",
