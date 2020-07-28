@@ -1051,7 +1051,9 @@ Control favicons for instances.
 
 Frontends in Pleroma are swappable - you can specify which one to use here.
 
-For now, you can set a frontend with the key `primary` and the options of `name` and `ref` set. This will then make Pleroma serve the frontend from a folder constructed by concatenating the instance static path, `frontends` and the name and ref.
+For now, you can set a frontend with the key `primary` and the options of `name` and `ref`. This will then make Pleroma serve the frontend from a folder constructed by concatenating the instance static path, `frontends` and the name and ref.
+
+The key `primary` refers to the frontend that will be served by default for general requests. In the future, other frontends like the admin frontend will also be configurable here.
 
 If you don't set anything here, the bundled frontend will be used.
 
