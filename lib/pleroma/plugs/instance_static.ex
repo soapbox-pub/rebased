@@ -16,11 +16,11 @@ defmodule Pleroma.Plugs.InstanceStatic do
     instance_path =
       Path.join(Pleroma.Config.get([:instance, :static_dir], "instance/static/"), path)
 
-    if File.exists?(instance_path) do
-      instance_path
-    else
+    frontend_path = Pleroma.Plugs.FrontendStatic.file_path(path, :primary)
+
+    (File.exists?(instance_path) && instance_path) ||
+      (frontend_path && File.exists?(frontend_path) && frontend_path) ||
       Path.join(Application.app_dir(:pleroma, "priv/static/"), path)
-    end
   end
 
   def init(opts) do
