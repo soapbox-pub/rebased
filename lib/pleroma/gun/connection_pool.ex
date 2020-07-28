@@ -19,7 +19,7 @@ defmodule Pleroma.Gun.ConnectionPool do
         get_gun_pid_from_worker(worker_pid, true)
 
       [{worker_pid, {gun_pid, _used_by, _crf, _last_reference}}] ->
-        GenServer.cast(worker_pid, {:add_client, self(), false})
+        GenServer.call(worker_pid, :add_client)
         {:ok, gun_pid}
 
       [] ->
@@ -70,7 +70,7 @@ defmodule Pleroma.Gun.ConnectionPool do
 
     case query_result do
       [worker_pid] ->
-        GenServer.cast(worker_pid, {:remove_client, self()})
+        GenServer.call(worker_pid, :remove_client)
 
       [] ->
         :ok
