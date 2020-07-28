@@ -1017,7 +1017,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
           password: "PlzDontHackLain",
           bio: "Test Bio",
           agreement: true,
-          reason: "I am a cool dude, bro"
+          reason: "I'm a cool dude, bro"
         })
 
       %{
@@ -1035,7 +1035,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert token_from_db.user.confirmation_pending
       assert token_from_db.user.approval_pending
 
-      assert token_from_db.user.registration_reason == "I am a cool dude, bro"
+      assert token_from_db.user.registration_reason == "I'm a cool dude, bro"
     end
 
     test "returns error when user already registred", %{conn: conn, valid_params: valid_params} do

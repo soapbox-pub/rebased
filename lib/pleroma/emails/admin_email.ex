@@ -8,6 +8,7 @@ defmodule Pleroma.Emails.AdminEmail do
   import Swoosh.Email
 
   alias Pleroma.Config
+  alias Pleroma.HTML
   alias Pleroma.Web.Router.Helpers
 
   defp instance_config, do: Config.get(:instance)
@@ -86,7 +87,7 @@ defmodule Pleroma.Emails.AdminEmail do
   def new_unapproved_registration(to, account) do
     html_body = """
     <p>New account for review: <a href="#{user_url(account)}">@#{account.nickname}</a></p>
-    <blockquote>#{account.registration_reason}</blockquote>
+    <blockquote>#{HTML.strip_tags(account.registration_reason)}</blockquote>
     <a href="#{Pleroma.Web.base_url()}/pleroma/admin">Visit AdminFE</a>
     """
 
