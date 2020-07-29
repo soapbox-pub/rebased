@@ -42,7 +42,12 @@ defmodule Pleroma.User do
   require Logger
 
   @type t :: %__MODULE__{}
-  @type account_status :: :active | :deactivated | :password_reset_pending | :confirmation_pending
+  @type account_status ::
+          :active
+          | :deactivated
+          | :password_reset_pending
+          | :confirmation_pending
+          | :approval_pending
   @primary_key {:id, FlakeId.Ecto.CompatType, autogenerate: true}
 
   # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
@@ -106,6 +111,8 @@ defmodule Pleroma.User do
     field(:locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
     field(:password_reset_pending, :boolean, default: false)
+    field(:approval_pending, :boolean, default: false)
+    field(:registration_reason, :string, default: nil)
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:domain_blocks, {:array, :string}, default: [])
@@ -262,6 +269,7 @@ defmodule Pleroma.User do
   @spec account_status(User.t()) :: account_status()
   def account_status(%User{deactivated: true}), do: :deactivated
   def account_status(%User{password_reset_pending: true}), do: :password_reset_pending
+  def account_status(%User{approval_pending: true}), do: :approval_pending
 
   def account_status(%User{confirmation_pending: true}) do
     if Config.get([:instance, :account_activation_required]) do
@@ -633,6 +641,7 @@ defmodule Pleroma.User do
   def register_changeset(struct, params \\ %{}, opts \\ []) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
+    reason_limit = Config.get([:instance, :registration_reason_length], 500)
     params = Map.put_new(params, :accepts_chat_messages, true)
 
     need_confirmation? =
@@ -642,8 +651,16 @@ defmodule Pleroma.User do
         opts[:need_confirmation]
       end
 
+    need_approval? =
+      if is_nil(opts[:need_approval]) do
+        Config.get([:instance, :account_approval_required])
+      else
+        opts[:need_approval]
+      end
+
     struct
     |> confirmation_changeset(need_confirmation: need_confirmation?)
+    |> approval_changeset(need_approval: need_approval?)
     |> cast(params, [
       :bio,
       :raw_bio,
@@ -653,7 +670,8 @@ defmodule Pleroma.User do
       :password,
       :password_confirmation,
       :emoji,
-      :accepts_chat_messages
+      :accepts_chat_messages,
+      :registration_reason
     ])
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
@@ -664,6 +682,7 @@ defmodule Pleroma.User do
     |> validate_format(:email, @email_regex)
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
+    |> validate_length(:registration_reason, max: reason_limit)
     |> maybe_validate_required_email(opts[:external])
     |> put_password_hash
     |> put_ap_id()
@@ -1494,6 +1513,19 @@ defmodule Pleroma.User do
     end
   end
 
+  def approve(users) when is_list(users) do
+    Repo.transaction(fn ->
+      Enum.map(users, fn user ->
+        with {:ok, user} <- approve(user), do: user
+      end)
+    end)
+  end
+
+  def approve(%User{} = user) do
+    change(user, approval_pending: false)
+    |> update_and_set_cache()
+  end
+
   def update_notification_settings(%User{} = user, settings) do
     user
     |> cast(%{notification_settings: settings}, [])
@@ -1520,12 +1552,17 @@ defmodule Pleroma.User do
   defp delete_or_deactivate(%User{local: true} = user) do
     status = account_status(user)
 
-    if status == :confirmation_pending do
-      delete_and_invalidate_cache(user)
-    else
-      user
-      |> change(%{deactivated: true, email: nil})
-      |> update_and_set_cache()
+    case status do
+      :confirmation_pending ->
+        delete_and_invalidate_cache(user)
+
+      :approval_pending ->
+        delete_and_invalidate_cache(user)
+
+      _ ->
+        user
+        |> change(%{deactivated: true, email: nil})
+        |> update_and_set_cache()
     end
   end
 
@@ -2176,6 +2213,12 @@ defmodule Pleroma.User do
       end
 
     cast(user, params, [:confirmation_pending, :confirmation_token])
+  end
+
+  @spec approval_changeset(User.t(), keyword()) :: Changeset.t()
+  def approval_changeset(user, need_approval: need_approval?) do
+    params = if need_approval?, do: %{approval_pending: true}, else: %{approval_pending: false}
+    cast(user, params, [:approval_pending])
   end
 
   def add_pinnned_activity(user, %Pleroma.Activity{id: id}) do
