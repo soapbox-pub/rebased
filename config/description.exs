@@ -3517,6 +3517,23 @@ config :pleroma, :config_description, [
             description: "reference of the installed primary frontend to be used"
           }
         ]
+      },
+      %{
+        key: :admin,
+        type: :map,
+        description: "Admin frontend",
+        children: [
+          %{
+            key: "name",
+            type: :string,
+            description: "Name of the installed Admin frontend"
+          },
+          %{
+            key: "ref",
+            type: :string,
+            description: "reference of the installed Admin frontend to be used"
+          }
+        ]
       }
     ]
   }
