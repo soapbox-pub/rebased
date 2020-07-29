@@ -337,6 +337,16 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     )
   end
 
+  defp handle_token_exchange_error(%Plug.Conn{} = conn, {:account_status, :approval_pending}) do
+    render_error(
+      conn,
+      :forbidden,
+      "Your account is awaiting approval.",
+      %{},
+      "awaiting_approval"
+    )
+  end
+
   defp handle_token_exchange_error(%Plug.Conn{} = conn, _error) do
     render_invalid_credentials_error(conn)
   end
