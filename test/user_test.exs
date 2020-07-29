@@ -543,6 +543,46 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "user registration, with :account_approval_required" do
+    @full_user_data %{
+      bio: "A guy",
+      name: "my name",
+      nickname: "nick",
+      password: "test",
+      password_confirmation: "test",
+      email: "email@example.com",
+      registration_reason: "I'm a cool guy :)"
+    }
+    setup do: clear_config([:instance, :account_approval_required], true)
+
+    test "it creates unapproved user" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.approval_pending
+      assert user.registration_reason == "I'm a cool guy :)"
+    end
+
+    test "it restricts length of registration reason" do
+      reason_limit = Pleroma.Config.get([:instance, :registration_reason_length])
+
+      assert is_integer(reason_limit)
+
+      params =
+        @full_user_data
+        |> Map.put(
+          :registration_reason,
+          "Quia et nesciunt dolores numquam ipsam nisi sapiente soluta. Ullam repudiandae nisi quam porro officiis officiis ad. Consequatur animi velit ex quia. Odit voluptatem perferendis quia ut nisi. Dignissimos sit soluta atque aliquid dolorem ut dolorum ut. Labore voluptates iste iusto amet voluptatum earum. Ad fugit illum nam eos ut nemo. Pariatur ea fuga non aspernatur. Dignissimos debitis officia corporis est nisi ab et. Atque itaque alias eius voluptas minus. Accusamus numquam tempore occaecati in."
+        )
+
+      changeset = User.register_changeset(%User{}, params)
+
+      refute changeset.valid?
+    end
+  end
+
   describe "get_or_fetch/1" do
     test "gets an existing user by nickname" do
       user = insert(:user)
@@ -1208,6 +1248,31 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "approve" do
+    test "approves a user" do
+      user = insert(:user, approval_pending: true)
+      assert true == user.approval_pending
+      {:ok, user} = User.approve(user)
+      assert false == user.approval_pending
+    end
+
+    test "approves a list of users" do
+      unapproved_users = [
+        insert(:user, approval_pending: true),
+        insert(:user, approval_pending: true),
+        insert(:user, approval_pending: true)
+      ]
+
+      {:ok, users} = User.approve(unapproved_users)
+
+      assert Enum.count(users) == 3
+
+      Enum.each(users, fn user ->
+        assert false == user.approval_pending
+      end)
+    end
+  end
+
   describe "delete" do
     setup do
       {:ok, user} = insert(:user) |> User.set_cache()
@@ -1295,6 +1360,17 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  test "delete/1 when approval is pending deletes the user" do
+    user = insert(:user, approval_pending: true)
+    {:ok, user: user}
+
+    {:ok, job} = User.delete(user)
+    {:ok, _} = ObanHelpers.perform(job)
+
+    refute User.get_cached_by_id(user.id)
+    refute User.get_by_id(user.id)
+  end
+
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
@@ -1368,6 +1444,14 @@ defmodule Pleroma.UserTest do
     test "returns :deactivated for deactivated user" do
       user = insert(:user, local: true, confirmation_pending: false, deactivated: true)
       assert User.account_status(user) == :deactivated
+    end
+
+    test "returns :approval_pending for unapproved user" do
+      user = insert(:user, local: true, approval_pending: true)
+      assert User.account_status(user) == :approval_pending
+
+      user = insert(:user, local: true, confirmation_pending: true, approval_pending: true)
+      assert User.account_status(user) == :approval_pending
     end
   end
 
