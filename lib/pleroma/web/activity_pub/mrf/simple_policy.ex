@@ -117,14 +117,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     object =
       with true <- MRF.subdomain_match?(silence, actor_host),
            user <- User.get_cached_by_ap_id(object["actor"]) do
-        to =
-          FollowingRelationship.followers_ap_ids(user, Map.get(object, "to", [])) ++
-            [user.follower_address]
+        # Don't use Map.get/3 intentionally, these must not be nil
+        fixed_to = object["to"] || []
+        fixed_cc = object["cc"] || []
 
-        cc = FollowingRelationship.followers_ap_ids(user, Map.get(object, "cc", []))
+        to = FollowingRelationship.followers_ap_ids(user, fixed_to)
+        cc = FollowingRelationship.followers_ap_ids(user, fixed_cc)
 
         object
-        |> Map.put("to", to)
+        |> Map.put("to", [user.follower_address] ++ to)
         |> Map.put("cc", cc)
       else
         _ -> object
@@ -132,8 +133,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
     {:ok, object}
   end
-
-  defp check_silence(_actor_info, object), do: {:ok, object}
 
   defp check_report_removal(%{host: actor_host} = _actor_info, %{"type" => "Flag"} = object) do
     report_removal =
