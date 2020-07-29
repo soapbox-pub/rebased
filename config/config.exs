@@ -653,7 +653,9 @@ config :pleroma, :static_fe, enabled: false
 # With no frontend configuration, the bundled files from the `static` directory will
 # be used.
 #
-# config :pleroma, :frontends, primary: %{"name" => "pleroma", "ref" => "develop"}
+# config :pleroma, :frontends, 
+# primary: %{"name" => "pleroma", "ref" => "develop"},
+# admin: %{"name" => "admin", "ref" => "stable"}
 
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,
