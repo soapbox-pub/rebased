@@ -13,8 +13,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionControllerTest do
 
   import Pleroma.Factory
 
-  setup do: clear_config([:instance, :show_reactions])
-
   test "PUT /api/v1/pleroma/statuses/:id/reactions/:emoji", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
@@ -109,7 +107,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionControllerTest do
   end
 
   test "GET /api/v1/pleroma/statuses/:id/reactions with :show_reactions disabled", %{conn: conn} do
-    Pleroma.Config.put([:instance, :show_reactions], false)
+    clear_config([:instance, :show_reactions], false)
 
     user = insert(:user)
     other_user = insert(:user)

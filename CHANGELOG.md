@@ -69,6 +69,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added Pleroma.Upload.Filter.Exiftool as an alternate EXIF stripping mechanism targeting GPS/location metadata.
 - "By approval" registrations mode.
 - Configuration: Added `:welcome` settings for the welcome message to newly registered users.
+- Ability to hide favourites and emoji reactions in the API with `[:instance, :show_reactions]` config.
 
 <details>
   <summary>API Changes</summary>
