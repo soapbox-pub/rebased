@@ -140,7 +140,7 @@ defmodule Pleroma.Mixfile do
       {:cowlib, "~> 2.9", override: true},
       {:gun,
        github: "ninenines/gun", ref: "921c47146b2d9567eac7e9a4d2ccc60fffd4f327", override: true},
-      {:jason, "~> 1.0"},
+      {:jason, "~> 1.2"},
       {:mogrify, "~> 0.6.1"},
       {:ex_aws, "~> 2.1"},
       {:ex_aws_s3, "~> 2.0"},
