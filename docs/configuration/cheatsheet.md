@@ -33,6 +33,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `registrations_open`: Enable registrations for anyone, invitations can be enabled when false.
 * `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
 * `account_activation_required`: Require users to confirm their emails before signing in.
+* `account_approval_required`: Require users to be manually approved by an admin before signing in.
 * `federating`: Enable federation with other instances.
 * `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
@@ -58,6 +59,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `max_remote_account_fields`: The maximum number of custom fields in the remote user profile (default: `20`).
 * `account_field_name_length`: An account field name maximum length (default: `512`).
 * `account_field_value_length`: An account field value maximum length (default: `2048`).
+* `registration_reason_length`: Maximum registration reason length (default: `500`).
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
 * `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).

@@ -44,6 +44,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            :user_toggle_activation,
            :user_activate,
            :user_deactivate,
+           :user_approve,
            :tag_users,
            :untag_users,
            :right_add,
@@ -303,6 +304,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> render("index.json", %{users: Keyword.values(updated_users)})
   end
 
+  def user_approve(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames}) do
+    users = Enum.map(nicknames, &User.get_cached_by_nickname/1)
+    {:ok, updated_users} = User.approve(users)
+
+    ModerationLog.insert_log(%{
+      actor: admin,
+      subject: users,
+      action: "approve"
+    })
+
+    conn
+    |> put_view(AccountView)
+    |> render("index.json", %{users: updated_users})
+  end
+
   def tag_users(%{assigns: %{user: admin}} = conn, %{"nicknames" => nicknames, "tags" => tags}) do
     with {:ok, _} <- User.tag(nicknames, tags) do
       ModerationLog.insert_log(%{
@@ -354,7 +370,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  @filters ~w(local external active deactivated is_admin is_moderator)
+  @filters ~w(local external active deactivated need_approval is_admin is_moderator)
 
   @spec maybe_parse_filters(String.t()) :: %{required(String.t()) => true} | %{}
   defp maybe_parse_filters(filters) when is_nil(filters) or filters == "", do: %{}
