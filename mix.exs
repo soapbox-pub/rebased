@@ -147,14 +147,10 @@ defmodule Pleroma.Mixfile do
       {:sweet_xml, "~> 0.6.6"},
       {:earmark, "1.4.3"},
       {:bbcode_pleroma, "~> 0.2.0"},
-      {:ex_machina, "~> 2.3", only: :test},
-      {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
-      {:mock, "~> 0.3.3", only: :test},
       {:crypt,
        git: "https://github.com/msantos/crypt.git",
        ref: "f63a705f92c26955977ee62a313012e309a4d77a"},
       {:cors_plug, "~> 1.5"},
-      {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
       {:swoosh,
        git: "https://github.com/swoosh/swoosh.git",
@@ -162,7 +158,6 @@ defmodule Pleroma.Mixfile do
        override: true},
       {:phoenix_swoosh, "~> 0.2"},
       {:gen_smtp, "~> 0.13"},
-      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
       {:ex_syslogger, "~> 1.4"},
       {:floki, "~> 0.25"},
       {:timex, "~> 3.5"},
@@ -186,7 +181,6 @@ defmodule Pleroma.Mixfile do
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
-      {:excoveralls, "~> 0.12.1", only: :test},
       {:flake_id, "~> 0.1.0"},
       {:concurrent_limiter,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/concurrent_limiter.git",
@@ -197,11 +191,19 @@ defmodule Pleroma.Mixfile do
       {:captcha,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/elixir-captcha.git",
        ref: "e0f16822d578866e186a0974d65ad58cddc1e2ab"},
-      {:mox, "~> 0.5", only: :test},
       {:restarter, path: "./restarter"},
       {:open_api_spex,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/open_api_spex.git",
-       ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"}
+       ref: "f296ac0924ba3cf79c7a588c4c252889df4c2edd"},
+
+      ## dev & test
+      {:ex_doc, "~> 0.22", only: :dev, runtime: false},
+      {:ex_machina, "~> 2.4", only: :test},
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:mock, "~> 0.3.5", only: :test},
+      {:excoveralls, "~> 0.13.1", only: :test},
+      {:mox, "~> 0.5", only: :test},
+      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ] ++ oauth_deps()
   end
 
