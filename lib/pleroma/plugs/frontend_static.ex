@@ -30,6 +30,7 @@ defmodule Pleroma.Plugs.FrontendStatic do
     opts
     |> Keyword.put(:from, "__unconfigured_frontend_static_plug")
     |> Plug.Static.init()
+    |> Map.put(:frontend_type, opts[:frontend_type])
   end
 
   def call(conn, opts) do
