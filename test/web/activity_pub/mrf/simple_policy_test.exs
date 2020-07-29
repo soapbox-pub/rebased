@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
             federated_timeline_removal: [],
             report_removal: [],
             reject: [],
-            silence: [],
+            followers_only: [],
             accept: [],
             avatar_removal: [],
             banner_removal: [],
@@ -263,9 +263,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
     end
   end
 
-  describe "when :silence" do
+  describe "when :followers_only" do
     test "is empty" do
-      Config.put([:mrf_simple, :silence], [])
+      Config.put([:mrf_simple, :followers_only], [])
       {_, ftl_message} = build_ftl_actor_and_message()
       local_message = build_local_message()
 
@@ -296,7 +296,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
         |> URI.parse()
         |> Map.fetch!(:host)
 
-      Config.put([:mrf_simple, :silence], [actor_domain])
+      Config.put([:mrf_simple, :followers_only], [actor_domain])
 
       assert {:ok, new_activity} = SimplePolicy.filter(activity)
       assert actor.follower_address in new_activity["to"]

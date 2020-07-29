@@ -109,13 +109,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     {:ok, object}
   end
 
-  defp check_silence(%{host: actor_host} = _actor_info, object) do
-    silence =
-      Config.get([:mrf_simple, :silence])
+  defp check_followers_only(%{host: actor_host} = _actor_info, object) do
+    followers_only =
+      Config.get([:mrf_simple, :followers_only])
       |> MRF.subdomains_regex()
 
     object =
-      with true <- MRF.subdomain_match?(silence, actor_host),
+      with true <- MRF.subdomain_match?(followers_only, actor_host),
            user <- User.get_cached_by_ap_id(object["actor"]) do
         # Don't use Map.get/3 intentionally, these must not be nil
         fixed_to = object["to"] || []
@@ -200,7 +200,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_media_removal(actor_info, object),
          {:ok, object} <- check_media_nsfw(actor_info, object),
          {:ok, object} <- check_ftl_removal(actor_info, object),
-         {:ok, object} <- check_silence(actor_info, object),
+         {:ok, object} <- check_followers_only(actor_info, object),
          {:ok, object} <- check_report_removal(actor_info, object) do
       {:ok, object}
     else

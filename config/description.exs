@@ -1525,7 +1525,7 @@ config :pleroma, :config_description, [
         suggestions: ["example.com", "*.example.com"]
       },
       %{
-        key: :silence,
+        key: :followers_only,
         type: {:list, :string},
         description: "Force posts from the given instances to be visible by followers only",
         suggestions: ["example.com", "*.example.com"]
