@@ -50,7 +50,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Authentication: not required
 * Params: none
 * Response: Provider specific JSON, the only guaranteed parameter is `type`
-* Example response: `{"type": "kocaptcha", "token": "whatever", "url": "https://captcha.kotobank.ch/endpoint", seconds_valid: 300}`
+* Example response: `{"type": "kocaptcha", "token": "whatever", "url": "https://captcha.kotobank.ch/endpoint", "seconds_valid": 300}`
 
 ## `/api/pleroma/delete_account`
 ### Delete an account
