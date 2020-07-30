@@ -904,6 +904,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     setup do: clear_config([:instance, :account_activation_required])
+    setup do: clear_config([:instance, :account_approval_required])
 
     test "Account registration via Application", %{conn: conn} do
       conn =
@@ -966,6 +967,75 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert token_from_db.user
 
       assert token_from_db.user.confirmation_pending
+    end
+
+    test "Account registration via app with account_approval_required", %{conn: conn} do
+      Pleroma.Config.put([:instance, :account_approval_required], true)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/apps", %{
+          client_name: "client_name",
+          redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
+          scopes: "read, write, follow"
+        })
+
+      assert %{
+               "client_id" => client_id,
+               "client_secret" => client_secret,
+               "id" => _,
+               "name" => "client_name",
+               "redirect_uri" => "urn:ietf:wg:oauth:2.0:oob",
+               "vapid_key" => _,
+               "website" => nil
+             } = json_response_and_validate_schema(conn, 200)
+
+      conn =
+        post(conn, "/oauth/token", %{
+          grant_type: "client_credentials",
+          client_id: client_id,
+          client_secret: client_secret
+        })
+
+      assert %{"access_token" => token, "refresh_token" => refresh, "scope" => scope} =
+               json_response(conn, 200)
+
+      assert token
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      assert refresh
+      assert scope == "read write follow"
+
+      conn =
+        build_conn()
+        |> put_req_header("content-type", "multipart/form-data")
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> post("/api/v1/accounts", %{
+          username: "lain",
+          email: "lain@example.org",
+          password: "PlzDontHackLain",
+          bio: "Test Bio",
+          agreement: true,
+          reason: "I'm a cool dude, bro"
+        })
+
+      %{
+        "access_token" => token,
+        "created_at" => _created_at,
+        "scope" => ^scope,
+        "token_type" => "Bearer"
+      } = json_response_and_validate_schema(conn, 200)
+
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      token_from_db = Repo.preload(token_from_db, :user)
+      assert token_from_db.user
+
+      assert token_from_db.user.confirmation_pending
+      assert token_from_db.user.approval_pending
+
+      assert token_from_db.user.registration_reason == "I'm a cool dude, bro"
     end
 
     test "returns error when user already registred", %{conn: conn, valid_params: valid_params} do

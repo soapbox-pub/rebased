@@ -27,7 +27,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
 
   def filter_by_summary(_in_reply_to, child), do: child
 
-  def filter(%{"type" => "Create", "object" => child_object} = object) do
+  def filter(%{"type" => "Create", "object" => child_object} = object)
+      when is_map(child_object) do
     child =
       child_object["inReplyTo"]
       |> Object.normalize(child_object["inReplyTo"])
