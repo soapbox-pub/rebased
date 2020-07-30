@@ -656,14 +656,21 @@ config :pleroma, :static_fe, enabled: false
 # be used.
 #
 # config :pleroma, :frontends, 
-# primary: %{"name" => "pleroma", "ref" => "develop"},
-# admin: %{"name" => "admin", "ref" => "stable"},
+# primary: %{"name" => "pleroma-fe", "ref" => "develop"},
+# admin: %{"name" => "admin-fe", "ref" => "stable"},
 # available: %{...}
 
 config :pleroma, :frontends,
   available: %{
-    "pleroma" => %{
-      "name" => "pleroma",
+    "kenoma" => %{
+      "name" => "kenoma",
+      "git" => "https://git.pleroma.social/lambadalambda/kenoma",
+      "build_url" =>
+        "https://git.pleroma.social/lambadalambda/kenoma/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "master"
+    },
+    "pleroma-fe" => %{
+      "name" => "pleroma-fe",
       "git" => "https://git.pleroma.social/pleroma/pleroma-fe",
       "build_url" =>
         "https://git.pleroma.social/pleroma/pleroma-fe/-/jobs/artifacts/${ref}/download?job=build",
