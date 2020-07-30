@@ -657,7 +657,41 @@ config :pleroma, :static_fe, enabled: false
 #
 # config :pleroma, :frontends, 
 # primary: %{"name" => "pleroma", "ref" => "develop"},
-# admin: %{"name" => "admin", "ref" => "stable"}
+# admin: %{"name" => "admin", "ref" => "stable"},
+# available: %{...}
+
+config :pleroma, :frontends,
+  available: %{
+    "pleroma" => %{
+      "name" => "pleroma",
+      "git" => "https://git.pleroma.social/pleroma/pleroma-fe",
+      "build_url" =>
+        "https://git.pleroma.social/pleroma/pleroma-fe/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "develop"
+    },
+    "fedi-fe" => %{
+      "name" => "fedi-fe",
+      "git" => "https://git.pleroma.social/pleroma/fedi-fe",
+      "build_url" =>
+        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "master"
+    },
+    "admin-fe" => %{
+      "name" => "admin-fe",
+      "git" => "https://git.pleroma.social/pleroma/admin-fe",
+      "build_url" =>
+        "https://git.pleroma.social/pleroma/admin-fe/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "develop"
+    },
+    "soapbox-fe" => %{
+      "name" => "soapbox-fe",
+      "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
+      "build_url" =>
+        "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
+      "ref" => "v1.0.0",
+      "build_dir" => "static"
+    }
+  }
 
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,
