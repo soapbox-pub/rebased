@@ -49,14 +49,23 @@ defmodule Pleroma.Web.RichMedia.Helpers do
     |> hd
   end
 
-  def fetch_data_for_activity(%Activity{data: %{"type" => "Create"}} = activity) do
+  def fetch_data_for_object(object) do
     with true <- Config.get([:rich_media, :enabled]),
-         %Object{} = object <- Object.normalize(activity),
          false <- object.data["sensitive"] || false,
-         {:ok, page_url} <- HTML.extract_first_external_url(object, object.data["content"]),
+         {:ok, page_url} <-
+           HTML.extract_first_external_url(object, object.data["content"]),
          :ok <- validate_page_url(page_url),
          {:ok, rich_media} <- Parser.parse(page_url) do
       %{page_url: page_url, rich_media: rich_media}
+    else
+      _ -> %{}
+    end
+  end
+
+  def fetch_data_for_activity(%Activity{data: %{"type" => "Create"}} = activity) do
+    with true <- Config.get([:rich_media, :enabled]),
+         %Object{} = object <- Object.normalize(activity) do
+      fetch_data_for_object(object)
     else
       _ -> %{}
     end
