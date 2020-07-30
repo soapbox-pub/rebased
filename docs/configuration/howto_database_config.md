@@ -5,13 +5,7 @@ The configuration of Pleroma has traditionally been managed with a config file, 
 
 ## Migration to database config
 
-1. Stop your Pleroma instance and edit your Pleroma config to enable database configuration: 
-
-  ```
-  config :pleroma, configurable_from_database: true
-  ```
-
-2. Run the mix task to migrate to the database. You'll receive some debugging output and a few messages informing you of what happened.
+1. Run the mix task to migrate to the database. You'll receive some debugging output and a few messages informing you of what happened.
 
   **Source:**
   
@@ -22,6 +16,8 @@ The configuration of Pleroma has traditionally been managed with a config file, 
   or
   
   **OTP:**
+  
+  *Note: OTP users need Pleroma to be running for `pleroma_ctl` commands to work*
   
   ```
   $ ./bin/pleroma_ctl config migrate_to_db
@@ -47,53 +43,56 @@ The configuration of Pleroma has traditionally been managed with a config file, 
    Settings for group :pleroma migrated.
   ```
   
-  
-3. It is recommended to backup your config file now.
+2. It is recommended to backup your config file now.
+
   ```
   cp config/dev.secret.exs config/dev.secret.exs.orig
   ```
   
-4. Now you can edit your config file and strip it down to the only settings which are not possible to control in the database. e.g., the Postgres and webserver (Endpoint) settings cannot be controlled in the database because the application needs the settings to start up and access the database.
+3. Edit your Pleroma config to enable database configuration:
 
- ⚠️ **THIS IS NOT REQUIRED**
+  ```
+  config :pleroma, configurable_from_database: true
+  ```
+
+4. ⚠️ **THIS IS NOT REQUIRED** ⚠️
+
+  Now you can edit your config file and strip it down to the only settings which are not possible to control in the database. e.g., the Postgres (Repo) and webserver (Endpoint) settings cannot be controlled in the database because the application needs the settings to start up and access the database.
+
+  Any settings in the database will override those in the config file, but you may find it less confusing if the setting is only declared in one place.
+
+  A non-exhaustive list of settings that are only possible in the config file include the following:
+
+  * config :pleroma, Pleroma.Web.Endpoint
+  * config :pleroma, Pleroma.Repo
+  * config :pleroma, configurable\_from\_database
+  * config :pleroma, :database, rum_enabled
+  * config :pleroma, :connections_pool
+
+  Here is an example of a server config stripped down after migration:
+
+  ```
+  use Mix.Config
+
+  config :pleroma, Pleroma.Web.Endpoint,
+    url: [host: "cool.pleroma.site", scheme: "https", port: 443]
+  
+  config :pleroma, Pleroma.Repo,
+    adapter: Ecto.Adapters.Postgres,
+    username: "pleroma",
+    password: "MySecretPassword",
+    database: "pleroma_prod",
+    hostname: "localhost"
+  
+  config :pleroma, configurable_from_database: true
+  ```
  
- Any settings in the database will override those in the config file, but you may find it less confusing if the setting is only declared in one place.
-
- A non-exhaustive list of settings that are only possible in the config file include the following:
-
-* config :pleroma, Pleroma.Web.Endpoint
-* config :pleroma, Pleroma.Repo
-* config :pleroma, configurable_from_database
-* config :pleroma, :database, rum_enabled
-* config :pleroma, :connections_pool
-
-Here is an example of a server config stripped down after migration:
-
-```
-use Mix.Config
-
-config :pleroma, Pleroma.Web.Endpoint,
-  url: [host: "cool.pleroma.site", scheme: "https", port: 443]
-
-
-config :pleroma, Pleroma.Repo,
-  adapter: Ecto.Adapters.Postgres,
-  username: "pleroma",
-  password: "MySecretPassword",
-  database: "pleroma_prod",
-  hostname: "localhost"
-
-config :pleroma, configurable_from_database: true
-```
-
-5. Start your instance back up and you can now access the Settings tab in AdminFE.
+5. Restart your instance and you can now access the Settings tab in AdminFE.
 
 
 ## Reverting back from database config
 
-1. Stop your Pleroma instance.
-
-2. Run the mix task to migrate back from the database. You'll receive some debugging output and a few messages informing you of what happened.
+1. Run the mix task to migrate back from the database. You'll receive some debugging output and a few messages informing you of what happened.
 
   **Source:**
   
@@ -118,7 +117,9 @@ config :pleroma, configurable_from_database: true
   Database configuration settings have been saved to config/dev.exported_from_db.secret.exs
   ```
 
-3. The in-database configuration still exists, but it will not be used if you remove `config :pleroma, configurable_from_database: true` from your config.
+2. Remove `config :pleroma, configurable_from_database: true` from your config. The in-database configuration still exists, but it will not be used. Future migrations will erase the database config before importing your config file again.
+
+3. Restart your instance.
 
 ## Debugging
 
