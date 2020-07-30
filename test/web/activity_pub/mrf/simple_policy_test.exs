@@ -290,6 +290,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
         "cc" => [actor.follower_address, "http://foo.bar/qux"]
       }
 
+      dm_activity = %{
+        "actor" => actor.ap_id,
+        "to" => [
+          following_user.ap_id,
+          non_following_user.ap_id
+        ],
+        "cc" => []
+      }
+
       actor_domain =
         activity
         |> Map.fetch!("actor")
@@ -305,6 +314,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       refute "https://www.w3.org/ns/activitystreams#Public" in new_activity["cc"]
       refute non_following_user.ap_id in new_activity["to"]
       refute non_following_user.ap_id in new_activity["cc"]
+
+      assert {:ok, new_dm_activity} = SimplePolicy.filter(dm_activity)
+      assert new_dm_activity["to"] == [following_user.ap_id]
+      assert new_dm_activity["cc"] == []
     end
   end
 
