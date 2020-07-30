@@ -23,27 +23,28 @@ The configuration of Pleroma has traditionally been managed with a config file, 
   $ ./bin/pleroma_ctl config migrate_to_db
   ```
 
-  ```  
-  10:04:34.155 [debug] QUERY OK source="config" db=1.6ms decode=2.0ms queue=33.5ms idle=0.0ms
-SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 []
-Migrating settings from file: /home/pleroma/config/dev.secret.exs
+  ```
+   10:04:34.155 [debug] QUERY OK source="config" db=1.6ms decode=2.0ms queue=33.5ms idle=0.0ms
+    SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 []
+    Migrating settings from file: /home/pleroma/config/dev.secret.exs
+    
+   10:04:34.240 [debug] QUERY OK db=4.5ms queue=0.3ms idle=92.2ms
+    TRUNCATE config; []
   
-  10:04:34.240 [debug] QUERY OK db=4.5ms queue=0.3ms idle=92.2ms
-TRUNCATE config; []
-  
-  10:04:34.244 [debug] QUERY OK db=2.8ms queue=0.3ms idle=97.2ms
-ALTER SEQUENCE config_id_seq RESTART; []
-  
-  10:04:34.256 [debug] QUERY OK source="config" db=0.8ms queue=1.4ms idle=109.8ms
-SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 WHERE ((c0."group" = $1) AND (c0."key" = $2)) [":pleroma", ":instance"]
-  
-  10:04:34.292 [debug] QUERY OK db=2.6ms queue=1.7ms idle=137.7ms
-INSERT INTO "config" ("group","key","value","inserted_at","updated_at") VALUES ($1,$2,$3,$4,$5) RETURNING "id" [":pleroma", ":instance", <<131, 108, 0, 0, 0, 1, 104, 2, 100, 0, 4, 110, 97, 109, 101, 109, 0, 0, 0, 7, 66, 108, 101, 114, 111, 109, 97, 106>>, ~N[2020-07-12 15:04:34], ~N[2020-07-12 15:04:34]]
-  Settings for key instance migrated.
-  Settings for group :pleroma migrated.
+   10:04:34.244 [debug] QUERY OK db=2.8ms queue=0.3ms idle=97.2ms
+    ALTER SEQUENCE config_id_seq RESTART; []
+    
+   10:04:34.256 [debug] QUERY OK source="config" db=0.8ms queue=1.4ms idle=109.8ms
+   SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 WHERE ((c0."group" = $1) AND (c0."key" = $2)) [":pleroma", ":instance"]
+    
+   10:04:34.292 [debug] QUERY OK db=2.6ms queue=1.7ms idle=137.7ms
+   INSERT INTO "config" ("group","key","value","inserted_at","updated_at") VALUES ($1,$2,$3,$4,$5) RETURNING "id" [":pleroma", ":instance", <<131, 108, 0, 0, 0, 1, 104, 2, 100, 0, 4, 110, 97, 109, 101, 109, 0, 0, 0, 7, 66, 108, 101, 114, 111, 109, 97, 106>>, ~N[2020-07-12 15:04:34], ~N[2020-07-12 15:04:34]]
+   Settings for key instance migrated.
+   Settings for group :pleroma migrated.
   ```
   
 2. It is recommended to backup your config file now.
+
   ```
   cp config/dev.secret.exs config/dev.secret.exs.orig
   ```
@@ -86,14 +87,12 @@ INSERT INTO "config" ("group","key","value","inserted_at","updated_at") VALUES (
   config :pleroma, configurable_from_database: true
   ```
  
-5. Restart instance you can now access the Settings tab in AdminFE.
+5. Restart your instance and you can now access the Settings tab in AdminFE.
 
 
 ## Reverting back from database config
 
-1. Stop your Pleroma instance.
-
-2. Run the mix task to migrate back from the database. You'll receive some debugging output and a few messages informing you of what happened.
+1. Run the mix task to migrate back from the database. You'll receive some debugging output and a few messages informing you of what happened.
 
   **Source:**
   
@@ -111,14 +110,16 @@ INSERT INTO "config" ("group","key","value","inserted_at","updated_at") VALUES (
 
   ```
   10:26:30.593 [debug] QUERY OK source="config" db=9.8ms decode=1.2ms queue=26.0ms idle=0.0ms
-SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 []
-
+  SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 []
+  
   10:26:30.659 [debug] QUERY OK source="config" db=1.1ms idle=80.7ms
-SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 []
-Database configuration settings have been saved to config/dev.exported_from_db.secret.exs
-```
+  SELECT c0."id", c0."key", c0."group", c0."value", c0."inserted_at", c0."updated_at" FROM "config" AS c0 []
+  Database configuration settings have been saved to config/dev.exported_from_db.secret.exs
+  ```
 
-3. The in-database configuration still exists, but it will not be used if you remove `config :pleroma, configurable_from_database: true` from your config.
+2. Remove `config :pleroma, configurable_from_database: true` from your config. The in-database configuration still exists, but it will not be used. Future migrations will erase the database config before importing your config file again.
+
+3. Restart your instance.
 
 ## Debugging
 
