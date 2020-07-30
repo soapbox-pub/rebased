@@ -149,7 +149,7 @@ defmodule Pleroma.Mixfile do
       {:crypt,
        git: "https://github.com/msantos/crypt.git",
        ref: "f63a705f92c26955977ee62a313012e309a4d77a"},
-      {:cors_plug, "~> 1.5"},
+      {:cors_plug, "~> 2.0"},
       {:web_push_encryption, "~> 0.3"},
       {:swoosh, "~> 1.0"},
       {:phoenix_swoosh, "~> 0.3"},
