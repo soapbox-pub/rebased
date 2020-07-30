@@ -500,6 +500,24 @@ defmodule Pleroma.UserTest do
 
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
     end
+
+    test "it sets the 'accepts_chat_messages' set to true" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.accepts_chat_messages
+    end
+
+    test "it creates a confirmed user" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      refute user.confirmation_pending
+    end
   end
 
   describe "user registration, with :account_activation_required" do
@@ -512,15 +530,6 @@ defmodule Pleroma.UserTest do
       email: "email@example.com"
     }
     setup do: clear_config([:instance, :account_activation_required], true)
-
-    test "it sets the 'accepts_chat_messages' set to true" do
-      changeset = User.register_changeset(%User{}, @full_user_data)
-      assert changeset.valid?
-
-      {:ok, user} = Repo.insert(changeset)
-
-      assert user.accepts_chat_messages
-    end
 
     test "it creates unconfirmed user" do
       changeset = User.register_changeset(%User{}, @full_user_data)

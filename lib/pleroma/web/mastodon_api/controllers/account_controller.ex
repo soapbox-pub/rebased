@@ -100,7 +100,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   def create(%{assigns: %{app: app}, body_params: params} = conn, _params) do
     with :ok <- validate_email_param(params),
          :ok <- TwitterAPI.validate_captcha(app, params),
-         {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
+         {:ok, user} <- TwitterAPI.register_user(params),
          {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
       json(conn, OAuthView.render("token.json", %{user: user, token: token}))
     else
