@@ -955,6 +955,11 @@ config :pleroma, :config_description, [
         description:
           "The instance thumbnail can be any image that represents your instance and is used by some apps or services when they display information about your instance.",
         suggestions: ["/instance/thumbnail.jpeg"]
+      },
+      %{
+        key: :show_reactions,
+        type: :boolean,
+        description: "Let favourites and emoji reactions be viewed through the API."
       }
     ]
   },

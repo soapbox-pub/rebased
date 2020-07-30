@@ -252,7 +252,8 @@ config :pleroma, :instance,
       number: 5,
       length: 16
     ]
-  ]
+  ],
+  show_reactions: true
 
 config :pleroma, :welcome,
   direct_message: [
