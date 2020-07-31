@@ -308,7 +308,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       Config.put([:mrf_simple, :followers_only], [actor_domain])
 
       assert {:ok, new_activity} = SimplePolicy.filter(activity)
-      assert actor.follower_address in new_activity["to"]
+      assert actor.follower_address in new_activity["cc"]
       assert following_user.ap_id in new_activity["to"]
       refute "https://www.w3.org/ns/activitystreams#Public" in new_activity["to"]
       refute "https://www.w3.org/ns/activitystreams#Public" in new_activity["cc"]

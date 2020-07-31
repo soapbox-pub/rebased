@@ -109,6 +109,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     {:ok, object}
   end
 
+  defp intersection(list1, list2) do
+    list1 -- list1 -- list2
+  end
+
   defp check_followers_only(%{host: actor_host} = _actor_info, object) do
     followers_only =
       Config.get([:mrf_simple, :followers_only])
@@ -125,8 +129,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
         cc = FollowingRelationship.followers_ap_ids(user, fixed_cc)
 
         object
-        |> Map.put("to", [user.follower_address] ++ to)
-        |> Map.put("cc", cc)
+        |> Map.put("to", intersection([user.follower_address | to], fixed_to))
+        |> Map.put("cc", intersection([user.follower_address | cc], fixed_cc))
       else
         _ -> object
       end
