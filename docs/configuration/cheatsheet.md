@@ -124,7 +124,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federated_timeline_removal`: List of instances to remove from Federated (aka The Whole Known Network) Timeline.
 * `reject`: List of instances to reject any activities from.
 * `accept`: List of instances to accept any activities from.
-* `followers_only`: List of instances to force posts as followers-only.
+* `followers_only`: List of instances to decrease post visibility to only the followers, including for DM mentions.
 * `report_removal`: List of instances to reject reports from.
 * `avatar_removal`: List of instances to strip avatars from.
 * `banner_removal`: List of instances to strip banners from.
