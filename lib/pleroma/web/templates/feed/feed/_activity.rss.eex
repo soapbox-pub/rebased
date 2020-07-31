@@ -21,8 +21,8 @@
     <link><%= @data["external_url"] %></link>
   <% end %>
 
-  <%= for tag <- @data["tag"] || [] do %>
-    <category term="<%= tag %>"></category>
+  <%= for hashtag <- @data["hashtags"] || [] do %>
+    <category term="<%= hashtag %>"></category>
   <% end %>
 
   <%= for attachment <- @data["attachment"] || [] do %>

@@ -347,7 +347,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       media_attachments: attachments,
       poll: render(PollView, "show.json", object: object, for: opts[:for]),
       mentions: mentions,
-      tags: build_tags(tags),
+      tags: build_tags(object.data["hashtags"] || tags),
       application: %{
         name: "Web",
         website: nil

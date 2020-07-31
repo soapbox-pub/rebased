@@ -18,7 +18,8 @@ defmodule Pleroma.Constants do
       "emoji",
       "context_id",
       "deleted_activity_id",
-      "pleroma_internal"
+      "pleroma_internal",
+      "hashtags"
     ]
   )
 

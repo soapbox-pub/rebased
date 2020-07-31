@@ -91,6 +91,16 @@ Can be safely re-run
     mix pleroma.database fix_likes_collections
     ```
 
+## Fill hashtags for old objects
+
+```sh tab="OTP"
+./bin/pleroma_ctl database fill_old_hashtags
+```
+
+```sh tab="From Source"
+mix pleroma.database fill_old_hashtags
+```
+
 ## Vacuum the database
 
 ### Analyze

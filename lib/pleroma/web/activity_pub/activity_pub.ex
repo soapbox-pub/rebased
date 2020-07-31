@@ -666,7 +666,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_tag_reject(query, %{tag_reject: [_ | _] = tag_reject}) do
     from(
       [_activity, object] in query,
-      where: fragment("not (?)->'tag' \\?| (?)", object.data, ^tag_reject)
+      where: fragment("not (?)->'hashtags' \\?| (?)", object.data, ^tag_reject)
     )
   end
 
@@ -679,7 +679,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_tag_all(query, %{tag_all: [_ | _] = tag_all}) do
     from(
       [_activity, object] in query,
-      where: fragment("(?)->'tag' \\?& (?)", object.data, ^tag_all)
+      where: fragment("(?)->'hashtags' \\?& (?)", object.data, ^tag_all)
     )
   end
 
@@ -692,14 +692,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_tag(query, %{tag: tag}) when is_list(tag) do
     from(
       [_activity, object] in query,
-      where: fragment("(?)->'tag' \\?| (?)", object.data, ^tag)
+      where: fragment("(?)->'hashtags' \\?| (?)", object.data, ^tag)
     )
   end
 
   defp restrict_tag(query, %{tag: tag}) when is_binary(tag) do
     from(
       [_activity, object] in query,
-      where: fragment("(?)->'tag' \\? (?)", object.data, ^tag)
+      where: fragment("(?)->'hashtags' \\? (?)", object.data, ^tag)
     )
   end
 

@@ -48,6 +48,10 @@ defmodule Pleroma.Activity.Ir.Topics do
     tags
   end
 
+  defp hashtags_to_topics(%{data: %{"hashtags" => tags}}) do
+    Enum.map(tags, fn tag -> "hashtag:" <> tag end)
+  end
+
   defp hashtags_to_topics(%{data: %{"tag" => tags}}) do
     tags
     |> Enum.filter(&is_bitstring(&1))

@@ -312,16 +312,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_emoji(object), do: object
 
   def fix_tag(%{"tag" => tag} = object) when is_list(tag) do
-    tags =
+    hashtags =
       tag
       |> Enum.filter(fn data -> data["type"] == "Hashtag" and data["name"] end)
-      |> Enum.map(fn %{"name" => name} ->
-        name
-        |> String.slice(1..-1)
-        |> String.downcase()
+      |> Enum.map(fn
+        %{"name" => "#" <> hashtag} -> String.downcase(hashtag)
+        %{"name" => hashtag} -> String.downcase(hashtag)
       end)
 
-    Map.put(object, "tag", tag ++ tags)
+    Map.put(object, "hashtags", hashtags)
   end
 
   def fix_tag(%{"tag" => %{} = tag} = object) do
@@ -865,7 +864,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def add_hashtags(object) do
     tags =
-      (object["tag"] || [])
+      ((object["hashtags"] || []) ++ (object["tag"] || []))
       |> Enum.map(fn
         # Expand internal representation tags into AS2 tags.
         tag when is_binary(tag) ->
@@ -936,7 +935,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def set_sensitive(object) do
-    tags = object["tag"] || []
+    tags = object["hashtags"] || object["tag"] || []
     Map.put(object, "sensitive", "nsfw" in tags)
   end
 

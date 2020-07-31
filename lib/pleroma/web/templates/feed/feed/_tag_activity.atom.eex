@@ -41,8 +41,8 @@
       <% end %>
     <% end %>
 
-    <%= for tag <- @data["tag"] || [] do %>
-      <category term="<%= tag %>"></category>
+    <%= for hashtag <- @data["hashtags"] || [] do %>
+      <category term="<%= hashtag %>"></category>
     <% end %>
 
     <%= for {emoji, file} <- @data["emoji"] || %{} do %>
