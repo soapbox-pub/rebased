@@ -236,6 +236,7 @@ Has theses additional parameters (which are the same as in Pleroma-API):
 - `pleroma.metadata.features`: A list of supported features
 - `pleroma.metadata.federation`: The federation restrictions of this instance
 - `pleroma.metadata.fields_limits`: A list of values detailing the length and count limitation for various instance-configurable fields.
+- `pleroma.metadata.post_formats`: A list of the allowed post format types
 - `vapid_public_key`: The public key needed for push messages
 
 ## Markers

@@ -413,6 +413,17 @@ defmodule Pleroma.ModerationLog do
   def get_log_entry_message(%ModerationLog{
         data: %{
           "actor" => %{"nickname" => actor_nickname},
+          "action" => "approve",
+          "subject" => users
+        }
+      }) do
+    "@#{actor_nickname} approved users: #{users_to_nicknames_string(users)}"
+  end
+
+  @spec get_log_entry_message(ModerationLog) :: String.t()
+  def get_log_entry_message(%ModerationLog{
+        data: %{
+          "actor" => %{"nickname" => actor_nickname},
           "nicknames" => nicknames,
           "tags" => tags,
           "action" => "tag"

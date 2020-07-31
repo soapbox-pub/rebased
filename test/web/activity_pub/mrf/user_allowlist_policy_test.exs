@@ -26,6 +26,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicyTest do
     actor = insert(:user)
     Pleroma.Config.put([:mrf_user_allowlist], %{"localhost" => ["test-ap-id"]})
     message = %{"actor" => actor.ap_id}
-    assert UserAllowListPolicy.filter(message) == {:reject, nil}
+    assert {:reject, _} = UserAllowListPolicy.filter(message)
   end
 end

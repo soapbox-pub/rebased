@@ -46,4 +46,24 @@ defmodule Pleroma.Emails.AdminEmailTest do
     assert res.to == [{to_user.name, to_user.email}]
     assert res.from == {config[:name], config[:notify_email]}
   end
+
+  test "new unapproved registration email" do
+    config = Pleroma.Config.get(:instance)
+    to_user = insert(:user)
+    account = insert(:user, registration_reason: "Plz let me in")
+
+    res = AdminEmail.new_unapproved_registration(to_user, account)
+
+    account_url = Helpers.user_feed_url(Pleroma.Web.Endpoint, :feed_redirect, account.id)
+
+    assert res.to == [{to_user.name, to_user.email}]
+    assert res.from == {config[:name], config[:notify_email]}
+    assert res.subject == "New account up for review on #{config[:name]} (@#{account.nickname})"
+
+    assert res.html_body == """
+           <p>New account for review: <a href="#{account_url}">@#{account.nickname}</a></p>
+           <blockquote>Plz let me in</blockquote>
+           <a href="http://localhost:4001/pleroma/admin">Visit AdminFE</a>
+           """
+  end
 end

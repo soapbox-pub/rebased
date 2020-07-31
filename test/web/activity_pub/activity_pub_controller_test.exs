@@ -1082,6 +1082,45 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert object = Object.get_by_ap_id(note_object.data["id"])
       assert object.data["like_count"] == 1
     end
+
+    test "it doesn't spreads faulty attributedTo or actor fields", %{
+      conn: conn,
+      activity: activity
+    } do
+      reimu = insert(:user, nickname: "reimu")
+      cirno = insert(:user, nickname: "cirno")
+
+      assert reimu.ap_id
+      assert cirno.ap_id
+
+      activity =
+        activity
+        |> put_in(["object", "actor"], reimu.ap_id)
+        |> put_in(["object", "attributedTo"], reimu.ap_id)
+        |> put_in(["actor"], reimu.ap_id)
+        |> put_in(["attributedTo"], reimu.ap_id)
+
+      _reimu_outbox =
+        conn
+        |> assign(:user, cirno)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{reimu.nickname}/outbox", activity)
+        |> json_response(403)
+
+      cirno_outbox =
+        conn
+        |> assign(:user, cirno)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{cirno.nickname}/outbox", activity)
+        |> json_response(201)
+
+      assert cirno_outbox["attributedTo"] == nil
+      assert cirno_outbox["actor"] == cirno.ap_id
+
+      assert cirno_object = Object.normalize(cirno_outbox["object"])
+      assert cirno_object.data["actor"] == cirno.ap_id
+      assert cirno_object.data["attributedTo"] == cirno.ap_id
+    end
   end
 
   describe "/relay/followers" do

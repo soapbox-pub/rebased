@@ -78,5 +78,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrependedTest do
       assert {:ok, res} = EnsureRePrepended.filter(message)
       assert res == message
     end
+
+    test "it skips if the object is only a reference" do
+      message = %{
+        "type" => "Create",
+        "object" => "somereference"
+      }
+
+      assert {:ok, res} = EnsureRePrepended.filter(message)
+      assert res == message
+    end
   end
 end
