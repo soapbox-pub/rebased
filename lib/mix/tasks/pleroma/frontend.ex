@@ -27,7 +27,9 @@ defmodule Mix.Tasks.Pleroma.Frontend do
         strict: [
           ref: :string,
           static_dir: :string,
-          build_url: :string
+          build_url: :string,
+          build_dir: :string,
+          file: :string
         ]
       )
 
@@ -39,7 +41,8 @@ defmodule Mix.Tasks.Pleroma.Frontend do
     cmd_frontend_info = %{
       "name" => frontend,
       "ref" => options[:ref],
-      "build_url" => options[:build_url]
+      "build_url" => options[:build_url],
+      "build_dir" => options[:build_dir]
     }
 
     config_frontend_info = Pleroma.Config.get([:frontends, :available, frontend], %{})
@@ -66,10 +69,10 @@ defmodule Mix.Tasks.Pleroma.Frontend do
 
     fe_label = "#{frontend} (#{ref})"
 
-    shell_info("Downloading pre-built bundle for #{fe_label}")
     tmp_dir = Path.join(dest, "tmp")
 
-    with {_, :ok} <- {:download, download_build(frontend_info, tmp_dir)},
+    with {_, :ok} <-
+           {:download_or_unzip, download_or_unzip(frontend_info, tmp_dir, options[:file])},
          shell_info("Installing #{fe_label} to #{dest}"),
          :ok <- install_frontend(frontend_info, tmp_dir, dest) do
       File.rm_rf!(tmp_dir)
@@ -77,20 +80,26 @@ defmodule Mix.Tasks.Pleroma.Frontend do
 
       Logger.configure(level: log_level)
     else
-      {:download, _} ->
-        shell_info("Could not download the frontend")
+      {:download_or_unzip, _} ->
+        shell_info("Could not download or unzip the frontend")
 
       _e ->
         shell_info("Could not install the frontend")
     end
   end
 
-  defp download_build(frontend_info, dest) do
-    url = String.replace(frontend_info["build_url"], "${ref}", frontend_info["ref"])
+  defp download_or_unzip(frontend_info, temp_dir, file) do
+    if file do
+      with {:ok, zip} <- File.read(Path.expand(file)) do
+        unzip(zip, temp_dir)
+      end
+    else
+      download_build(frontend_info, temp_dir)
+    end
+  end
 
-    with {:ok, %{status: 200, body: zip_body}} <-
-           Pleroma.HTTP.get(url, [], timeout: 120_000, recv_timeout: 120_000),
-         {:ok, unzipped} <- :zip.unzip(zip_body, [:memory]) do
+  def unzip(zip, dest) do
+    with {:ok, unzipped} <- :zip.unzip(zip, [:memory]) do
       File.rm_rf!(dest)
       File.mkdir_p!(dest)
 
@@ -107,6 +116,16 @@ defmodule Mix.Tasks.Pleroma.Frontend do
       end)
 
       :ok
+    end
+  end
+
+  defp download_build(frontend_info, dest) do
+    shell_info("Downloading pre-built bundle for #{frontend_info["name"]}")
+    url = String.replace(frontend_info["build_url"], "${ref}", frontend_info["ref"])
+
+    with {:ok, %{status: 200, body: zip_body}} <-
+           Pleroma.HTTP.get(url, [], timeout: 120_000, recv_timeout: 120_000) do
+      unzip(zip_body, dest)
     else
       e -> {:error, e}
     end
