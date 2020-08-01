@@ -178,7 +178,7 @@ defmodule Pleroma.Mixfile do
       {:flake_id, "~> 0.1.0"},
       {:concurrent_limiter,
        git: "https://git.pleroma.social/pleroma/elixir-libraries/concurrent_limiter.git",
-       ref: "8eee96c6ba39b9286ec44c51c52d9f2758951365"},
+       ref: "55e92f84b4ed531bd487952a71040a9c69dc2807"},
       {:remote_ip,
        git: "https://git.pleroma.social/pleroma/remote_ip.git",
        ref: "b647d0deecaa3acb140854fe4bda5b7e1dc6d1c8"},
