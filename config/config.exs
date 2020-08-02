@@ -509,7 +509,8 @@ config :pleroma, Pleroma.User,
     "user_exists",
     "users",
     "web"
-  ]
+  ],
+  email_blacklist: []
 
 config :pleroma, Oban,
   repo: Pleroma.Repo,
