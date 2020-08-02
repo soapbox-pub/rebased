@@ -311,7 +311,7 @@ defmodule Pleroma.Factory do
       "to" => [],
       "cc" => [activity.actor],
       "context" => activity.data["context"],
-      "state" => state,
+      "state" => state
     }
 
     %Pleroma.Activity{
