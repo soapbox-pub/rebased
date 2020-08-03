@@ -3515,6 +3515,23 @@ config :pleroma, :config_description, [
             key: "ref",
             type: :string,
             description: "reference of the installed primary frontend to be used"
+          },
+          %{
+            key: "git",
+            type: :string,
+            description: "URL of the git repository of the frontend"
+          },
+          %{
+            key: "build_url",
+            type: :string,
+            description:
+              "Either an url to a zip file containing the frontend or a template to build it by inserting the `ref`. The string `${ref}` will be replaced by the configured `ref`.",
+            example: "https://some.url/builds/${ref}.zip"
+          },
+          %{
+            key: "build_dir",
+            type: :string,
+            description: "The directory inside the zip file "
           }
         ]
       },
@@ -3532,6 +3549,23 @@ config :pleroma, :config_description, [
             key: "ref",
             type: :string,
             description: "reference of the installed Admin frontend to be used"
+          },
+          %{
+            key: "git",
+            type: :string,
+            description: "URL of the git repository of the frontend"
+          },
+          %{
+            key: "build_url",
+            type: :string,
+            description:
+              "Either an url to a zip file containing the frontend or a template to build it by inserting the `ref`. The string `${ref}` will be replaced by the configured `ref`.",
+            example: "https://some.url/builds/${ref}.zip"
+          },
+          %{
+            key: "build_dir",
+            type: :string,
+            description: "The directory inside the zip file "
           }
         ]
       }
