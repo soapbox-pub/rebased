@@ -3293,13 +3293,13 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :connections_pool,
     type: :group,
-    description: "Advanced settings for `gun` connections pool",
+    description: "Advanced settings for `Gun` connections pool",
     children: [
       %{
         key: :connection_acquisition_wait,
         type: :integer,
         description:
-          "Timeout to acquire a connection from pool.The total max time is this value multiplied by the number of retries. Default: 250ms.",
+          "Timeout to acquire a connection from pool. The total max time is this value multiplied by the number of retries. Default: 250ms.",
         suggestions: [250]
       },
       %{
@@ -3334,7 +3334,7 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :pools,
     type: :group,
-    description: "Advanced settings for `gun` workers pools",
+    description: "Advanced settings for `Gun` workers pools",
     children:
       Enum.map([:federation, :media, :upload, :default], fn pool_name ->
         %{
@@ -3363,7 +3363,7 @@ config :pleroma, :config_description, [
     group: :pleroma,
     key: :hackney_pools,
     type: :group,
-    description: "Advanced settings for `hackney` connections pools",
+    description: "Advanced settings for `Hackney` connections pools",
     children: [
       %{
         key: :federation,
@@ -3427,6 +3427,7 @@ config :pleroma, :config_description, [
   %{
     group: :pleroma,
     key: :restrict_unauthenticated,
+    label: "Restrict Unauthenticated",
     type: :group,
     description:
       "Disallow viewing timelines, user profiles and statuses for unauthenticated users.",
