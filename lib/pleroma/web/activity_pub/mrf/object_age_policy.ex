@@ -37,8 +37,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   defp check_delist(message, actions) do
     if :delist in actions do
       with %User{} = user <- User.get_cached_by_ap_id(message["actor"]) do
-        to = List.delete(message["to"], Pleroma.Constants.as_public()) ++ [user.follower_address]
-        cc = List.delete(message["cc"], user.follower_address) ++ [Pleroma.Constants.as_public()]
+        to =
+          List.delete(message["to"] || [], Pleroma.Constants.as_public()) ++
+            [user.follower_address]
+
+        cc =
+          List.delete(message["cc"] || [], user.follower_address) ++
+            [Pleroma.Constants.as_public()]
 
         message =
           message
@@ -58,8 +63,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy do
   defp check_strip_followers(message, actions) do
     if :strip_followers in actions do
       with %User{} = user <- User.get_cached_by_ap_id(message["actor"]) do
-        to = List.delete(message["to"], user.follower_address)
-        cc = List.delete(message["cc"], user.follower_address)
+        to = List.delete(message["to"] || [], user.follower_address)
+        cc = List.delete(message["cc"] || [], user.follower_address)
 
         message =
           message
