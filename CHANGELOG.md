@@ -48,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Frontends: Add mix task to install frontends.
 - Frontends: Add configurable frontends for primary and admin fe.
 - Chats: Added `accepts_chat_messages` field to user, exposed in APIs and federation.
 - Chats: Added support for federated chats. For details, see the docs.
