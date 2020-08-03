@@ -194,7 +194,7 @@ config :pleroma, :config_description, [
         type: [:string, {:list, :string}, {:list, :tuple}],
         description:
           "List of actions for the mogrify command. It's possible to add self-written settings as string. " <>
-            "For example `[\"auto-orient\", \"strip\", {\"resize\", \"3840x1080>\"}]` string will be parsed into list of the settings.",
+            "For example `auto-orient, strip, {\"resize\", \"3840x1080>\"}` value will be parsed into valid list of the settings.",
         suggestions: [
           "strip",
           "auto-orient",
