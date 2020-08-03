@@ -261,6 +261,11 @@ config :pleroma, :welcome,
     sender_nickname: nil,
     message: nil
   ],
+  chat_message: [
+    enabled: false,
+    sender_nickname: nil,
+    message: nil
+  ],
   email: [
     enabled: false,
     sender: nil,
