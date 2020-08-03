@@ -48,3 +48,6 @@ The installation process is the same, but you will have to give all the needed o
 ```bash
 mix pleroma.frontend install gensokyo --ref master --build-url https://gensokyo.2hu/builds/marisa.zip
 ```
+
+If you don't have a zip file but just want to install a frontend from a local path, you can simply copy the files over a folder of this template: `${instance_static}/frontends/${name}/${ref}`
+
