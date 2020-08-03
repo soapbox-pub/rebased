@@ -457,7 +457,7 @@ config :pleroma, :media_preview_proxy,
   image_quality: 85,
   min_content_length: 100 * 1024
 
-config :pleroma, :shoutbox, enabled: true
+config :pleroma, :shout, enabled: true
 
 config :phoenix, :format_encoders, json: Jason
 
