@@ -102,7 +102,7 @@ defmodule Pleroma.Application do
         ] ++
         task_children(@mix_env) ++
         dont_run_in_test(@mix_env) ++
-        chat_child(chat_enabled?()) ++
+        shout_child(shout_enabled?()) ++
         [Pleroma.Gopher.Server]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
@@ -216,7 +216,7 @@ defmodule Pleroma.Application do
       type: :worker
     }
 
-  defp chat_enabled?, do: Config.get([:chat, :enabled])
+  defp shout_enabled?, do: Config.get([:shout, :enabled])
 
   defp dont_run_in_test(env) when env in [:test, :benchmark], do: []
 
@@ -237,14 +237,14 @@ defmodule Pleroma.Application do
     ]
   end
 
-  defp chat_child(true) do
+  defp shout_child(true) do
     [
       Pleroma.Web.ShoutChannel.ShoutChannelState,
       {Phoenix.PubSub, [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]}
     ]
   end
 
-  defp chat_child(_), do: []
+  defp shout_child(_), do: []
 
   defp task_children(:test) do
     [
