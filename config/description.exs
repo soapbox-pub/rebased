@@ -964,25 +964,26 @@ config :pleroma, :config_description, [
     ]
   },
   %{
-    group: :welcome,
+    group: :pleroma,
+    key: :welcome,
     type: :group,
     description: "Welcome messages settings",
     children: [
       %{
-        group: :direct_message,
-        type: :group,
+        key: :direct_message,
+        type: :keyword,
         descpiption: "Direct message settings",
         children: [
           %{
             key: :enabled,
             type: :boolean,
-            description: "Enables sends direct message for new user after registration"
+            description: "Enables sending a direct message to newly registered users"
           },
           %{
             key: :message,
             type: :string,
             description:
-              "A message that will be sent to a newly registered users as a direct message",
+              "A message that will be sent to newly registered users",
             suggestions: [
               "Hi, @username! Welcome on board!"
             ]
@@ -990,7 +991,7 @@ config :pleroma, :config_description, [
           %{
             key: :sender_nickname,
             type: :string,
-            description: "The nickname of the local user that sends the welcome message",
+            description: "The nickname of the local user that sends a welcome message",
             suggestions: [
               "lain"
             ]
@@ -998,20 +999,20 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        group: :chat_message,
-        type: :group,
+        key: :chat_message,
+        type: :keyword,
         descpiption: "Chat message settings",
         children: [
           %{
             key: :enabled,
             type: :boolean,
-            description: "Enables sends chat message for new user after registration"
+            description: "Enables sending a chat message to newly registered users"
           },
           %{
             key: :message,
             type: :string,
             description:
-              "A message that will be sent to a newly registered users as a chat message",
+              "A message that will be sent to newly registered users as a chat message",
             suggestions: [
               "Hello, welcome on board!"
             ]
@@ -1019,7 +1020,7 @@ config :pleroma, :config_description, [
           %{
             key: :sender_nickname,
             type: :string,
-            description: "The nickname of the local user that sends the welcome message",
+            description: "The nickname of the local user that sends a welcome chat message",
             suggestions: [
               "lain"
             ]
@@ -1027,20 +1028,20 @@ config :pleroma, :config_description, [
         ]
       },
       %{
-        group: :email,
-        type: :group,
+        key: :email,
+        type: :keyword,
         descpiption: "Email message settings",
         children: [
           %{
             key: :enabled,
             type: :boolean,
-            description: "Enables sends direct message for new user after registration"
+            description: "Enables sending an email to newly registered users"
           },
           %{
             key: :sender,
             type: [:string, :tuple],
             description:
-              "The email address or tuple with `{nickname, email}` that will use as sender to the welcome email.",
+              "Email address and/or nickname that will be used to send the welcome email.",
             suggestions: [
               {"Pleroma App", "welcome@pleroma.app"}
             ]
@@ -1049,21 +1050,21 @@ config :pleroma, :config_description, [
             key: :subject,
             type: :string,
             description:
-              "The subject of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+              "Subject of the welcome email. EEX template with user and instance_name variables can be used.",
             suggestions: ["Welcome to <%= instance_name%>"]
           },
           %{
             key: :html,
             type: :string,
             description:
-              "The html content of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+              "HTML content of the welcome email. EEX template with user and instance_name variables can be used.",
             suggestions: ["<h1>Hello <%= user.name%>. Welcome to <%= instance_name%></h1>"]
           },
           %{
             key: :text,
             type: :string,
             description:
-              "The text content of welcome email. Can be use EEX template with `user` and `instance_name` variables.",
+              "Text content of the welcome email. EEX template with user and instance_name variables can be used.",
             suggestions: ["Hello <%= user.name%>. \n Welcome to <%= instance_name%>\n"]
           }
         ]
