@@ -8,7 +8,7 @@ defmodule Pleroma.Web.UserSocket do
 
   ## Channels
   # channel "room:*", Pleroma.Web.RoomChannel
-  channel("chat:*", Pleroma.Web.ChatChannel)
+  channel("shout:*", Pleroma.Web.ShoutChannel)
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.UserSocket do
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
   def connect(%{"token" => token}, socket) do
-    with true <- Pleroma.Config.get([:chat, :enabled]),
+    with true <- Pleroma.Config.get([:shout, :enabled]),
          {:ok, user_id} <- Phoenix.Token.verify(socket, "user socket", token, max_age: 84_600),
          %User{} = user <- Pleroma.User.get_cached_by_id(user_id) do
       {:ok, assign(socket, :user_name, user.nickname)}

@@ -190,7 +190,7 @@ config :pleroma, :instance,
   instance_thumbnail: "/instance/thumbnail.jpeg",
   limit: 5_000,
   description_limit: 5_000,
-  chat_limit: 5_000,
+  shout_limit: 5_000,
   remote_limit: 100_000,
   upload_limit: 16_000_000,
   avatar_upload_limit: 2_000_000,
@@ -457,7 +457,7 @@ config :pleroma, :media_preview_proxy,
   image_quality: 85,
   min_content_length: 100 * 1024
 
-config :pleroma, :chat, enabled: true
+config :pleroma, :shoutbox, enabled: true
 
 config :phoenix, :format_encoders, json: Jason
 
