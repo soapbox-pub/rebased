@@ -1013,7 +1013,7 @@ config :pleroma, :config_description, [
             description:
               "A message that will be sent to a newly registered users as a chat message",
             suggestions: [
-              "Hi, @username! Welcome on board!"
+              "Hello, welcome on board!"
             ]
           },
           %{
