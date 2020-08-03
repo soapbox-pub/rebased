@@ -392,8 +392,9 @@ config :pleroma, :mrf_vocabulary,
   accept: [],
   reject: []
 
+# threshold of 7 days
 config :pleroma, :mrf_object_age,
-  threshold: 172_800,
+  threshold: 604_800,
   actions: [:delist, :strip_followers]
 
 config :pleroma, :rich_media,
@@ -719,7 +720,7 @@ config :pleroma, :restrict_unauthenticated,
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 config :pleroma, :mrf,
-  policies: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
+  policies: Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy,
   transparency: true,
   transparency_exclusions: []
 
