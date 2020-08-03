@@ -14,22 +14,22 @@ defmodule Pleroma.User.WelcomeChatMessageTest do
 
   describe "post_message/1" do
     test "send a chat welcome message" do
-      welcome_user = insert(:user)
-      user = insert(:user, name: "mewmew")
+      welcome_user = insert(:user, name: "mewmew")
+      user = insert(:user)
 
       Config.put([:welcome, :chat_message, :enabled], true)
       Config.put([:welcome, :chat_message, :sender_nickname], welcome_user.nickname)
 
       Config.put(
         [:welcome, :chat_message, :message],
-        "Hello. Welcome to blob.cat"
+        "Hello, welcome to Blob/Cat!"
       )
 
       {:ok, %Pleroma.Activity{} = activity} = WelcomeChatMessage.post_message(user)
 
       assert user.ap_id in activity.recipients
       assert Pleroma.Object.normalize(activity).data["type"] == "ChatMessage"
-      assert Pleroma.Object.normalize(activity).data["content"] =~ "Hello. Welcome to "
+      assert Pleroma.Object.normalize(activity).data["content"] == "Hello, welcome to Blob/Cat!"
     end
   end
 end
