@@ -34,10 +34,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
 
     cng
     |> validate_change(field_name, fn field_name, actor ->
-      if User.get_cached_by_ap_id(actor) do
-        []
-      else
-        [{field_name, "can't find user"}]
+      case User.get_cached_by_ap_id(actor) do
+        %User{deactivated: true} ->
+          [{field_name, "user is deactivated"}]
+
+        %User{} ->
+          []
+
+        _ ->
+          [{field_name, "can't find user"}]
       end
     end)
   end
