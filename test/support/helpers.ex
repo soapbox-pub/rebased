@@ -17,9 +17,19 @@ defmodule Pleroma.Tests.Helpers do
 
   defmacro clear_config(config_path, do: yield) do
     quote do
-      initial_setting = Config.get(unquote(config_path))
+      initial_setting = Config.get(unquote(config_path), :__clear_config_absent__)
       unquote(yield)
-      on_exit(fn -> Config.put(unquote(config_path), initial_setting) end)
+
+      on_exit(fn ->
+        case initial_setting do
+          :__clear_config_absent__ ->
+            Config.delete(unquote(config_path))
+
+          _ ->
+            Config.put(unquote(config_path), initial_setting)
+        end
+      end)
+
       :ok
     end
   end

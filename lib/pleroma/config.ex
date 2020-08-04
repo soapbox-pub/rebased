@@ -11,13 +11,33 @@ defmodule Pleroma.Config do
 
   def get([key], default), do: get(key, default)
 
-  def get([parent_key | keys], default) do
-    case :pleroma
-         |> Application.get_env(parent_key)
-         |> get_in(keys) do
-      nil -> default
-      any -> any
-    end
+  def get([root_key | keys], default) do
+    # This is to mimic Application.get_env/3 behaviour that returns `nil` if the
+    # actual value is `nil`.
+    Enum.reduce_while(keys, Application.get_env(:pleroma, root_key), fn key, config ->
+      case key do
+        [last_key] when is_map(config) ->
+          {:halt, Map.get(config, last_key, default)}
+
+        [last_key] when is_list(config) ->
+          {:halt, Keyword.get(config, last_key, default)}
+
+        _ ->
+          case config do
+            %{^key => value} ->
+              {:cont, value}
+
+            [_ | _] ->
+              case :lists.keyfind(key, 1, config) do
+                {_, value} -> {:cont, value}
+                _ -> {:halt, default}
+              end
+
+            _ ->
+              {:halt, default}
+          end
+      end
+    end)
   end
 
   def get(key, default) do

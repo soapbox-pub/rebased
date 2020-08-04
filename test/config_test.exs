@@ -28,6 +28,34 @@ defmodule Pleroma.ConfigTest do
     assert Pleroma.Config.get([:azerty, :uiop], true) == true
   end
 
+  describe "nil values" do
+    setup do
+      Pleroma.Config.put(:lorem, nil)
+      Pleroma.Config.put(:ipsum, %{dolor: [sit: nil]})
+      Pleroma.Config.put(:dolor, sit: %{amet: nil})
+
+      on_exit(fn -> Enum.each(~w(lorem ipsum dolor)a, &Pleroma.Config.delete/1) end)
+    end
+
+    test "get/1 with an atom for nil value" do
+      assert Pleroma.Config.get(:lorem) == nil
+    end
+
+    test "get/2 with an atom for nil value" do
+      assert Pleroma.Config.get(:lorem, true) == nil
+    end
+
+    test "get/1 with a list of keys for nil value" do
+      assert Pleroma.Config.get([:ipsum, :dolor, :sit]) == nil
+      assert Pleroma.Config.get([:dolor, :sit, :amet]) == nil
+    end
+
+    test "get/2 with a list of keys for nil value" do
+      assert Pleroma.Config.get([:ipsum, :dolor, :sit], true) == nil
+      assert Pleroma.Config.get([:dolor, :sit, :amet], true) == nil
+    end
+  end
+
   test "get/1 when value is false" do
     Pleroma.Config.put([:instance, :false_test], false)
     Pleroma.Config.put([:instance, :nested], [])
