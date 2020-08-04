@@ -3550,13 +3550,15 @@ config :pleroma, :config_description, [
         children: [
           %{
             key: "name",
+            label: "Name",
             type: :string,
-            description: "Name of the installed primary frontend"
+            description: "Name of the installed primary frontend. Valid config must include both `Name` and `Reference` values."
           },
           %{
             key: "ref",
+            label: "Reference",
             type: :string,
-            description: "reference of the installed primary frontend to be used"
+            description: "Reference of the installed primary frontend to be used. Valid config must include both `Name` and `Reference` values."
           }
         ]
       }
