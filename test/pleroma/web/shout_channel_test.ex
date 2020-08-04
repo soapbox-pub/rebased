@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ShoutChannelTest do
   end
 
   describe "message lengths" do
-    setup do: clear_config([:instance, :shout_limit])
+    setup do: clear_config([:shout, :limit])
 
     test "it ignores messages of length zero", %{socket: socket} do
       push(socket, "new_msg", %{"text" => ""})
@@ -33,7 +33,7 @@ defmodule Pleroma.Web.ShoutChannelTest do
     end
 
     test "it ignores messages above a certain length", %{socket: socket} do
-      Pleroma.Config.put([:instance, :shout_limit], 2)
+      Pleroma.Config.put([:shout, :limit], 2)
       push(socket, "new_msg", %{"text" => "123"})
       refute_broadcast("new_msg", %{text: "123"})
     end

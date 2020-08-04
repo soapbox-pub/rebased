@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ShoutChannel do
   def handle_in("new_msg", %{"text" => text}, %{assigns: %{user_name: user_name}} = socket) do
     text = String.trim(text)
 
-    if String.length(text) in 1..Pleroma.Config.get([:instance, :shout_limit]) do
+    if String.length(text) in 1..Pleroma.Config.get([:shout, :limit]) do
       author = User.get_cached_by_nickname(user_name)
       author_json = AccountView.render("show.json", user: author, skip_visibility_check: true)
 
