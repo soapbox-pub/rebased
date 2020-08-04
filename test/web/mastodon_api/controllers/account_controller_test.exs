@@ -956,7 +956,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         |> put_req_header("authorization", "Bearer " <> token)
         |> post("/api/v1/accounts", params)
 
-      assert %{"error" => "{\"email\":[\"Email domain is blacklisted\"]}"} =
+      assert %{"error" => "{\"credentials\":[\"Invalid credentials\"]}"} =
                json_response_and_validate_schema(conn, 400)
 
       Pleroma.Config.put([User, :email_blacklist], [])
