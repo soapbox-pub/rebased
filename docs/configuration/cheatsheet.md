@@ -207,6 +207,11 @@ config :pleroma, :mrf_user_allowlist, %{
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
 
+## Pleroma.User
+
+* `restricted_nicknames`: List of nicknames users may not register with.
+* `email_blacklist`: List of email domains users may not register with.
+
 ## Pleroma.ScheduledActivity
 
 * `daily_user_limit`: the number of scheduled activities a user is allowed to create in a single day (Default: `25`)

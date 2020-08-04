@@ -3056,6 +3056,7 @@ config :pleroma, :config_description, [
       %{
         key: :restricted_nicknames,
         type: {:list, :string},
+        description: "List of nicknames users may not register with.",
         suggestions: [
           ".well-known",
           "~",
@@ -3088,6 +3089,12 @@ config :pleroma, :config_description, [
           "users",
           "web"
         ]
+      },
+      %{
+        key: :email_blacklist,
+        type: {:list, :string},
+        description: "List of email domains users may not register with.",
+        suggestions: ["mailinator.com", "maildrop.cc"]
       }
     ]
   },
