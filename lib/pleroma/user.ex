@@ -684,7 +684,7 @@ defmodule Pleroma.User do
           !String.ends_with?(email, ["@" <> blacklisted_domain, "." <> blacklisted_domain])
         end)
 
-      if valid?, do: [], else: [credentials: "Invalid credentials"]
+      if valid?, do: [], else: [email: "Invalid email"]
     end)
     |> unique_constraint(:nickname)
     |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
