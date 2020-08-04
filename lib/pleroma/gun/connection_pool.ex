@@ -10,6 +10,7 @@ defmodule Pleroma.Gun.ConnectionPool do
     ]
   end
 
+  @spec get_conn(URI.t(), keyword()) :: {:ok, pid()} | {:error, term()}
   def get_conn(uri, opts) do
     key = "#{uri.scheme}:#{uri.host}:#{uri.port}"
 
@@ -54,12 +55,14 @@ defmodule Pleroma.Gun.ConnectionPool do
 
       {:DOWN, ^ref, :process, ^worker_pid, reason} ->
         case reason do
-          {:shutdown, error} -> error
+          {:shutdown, {:error, _} = error} -> error
+          {:shutdown, error} -> {:error, error}
           _ -> {:error, reason}
         end
     end
   end
 
+  @spec release_conn(pid()) :: :ok
   def release_conn(conn_pid) do
     # :ets.fun2ms(fn {_, {worker_pid, {gun_pid, _, _, _}}} when gun_pid == conn_pid ->
     #    worker_pid end)

@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Config
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -16,8 +15,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
   import Pleroma.Factory
 
   describe "account fetching" do
-    setup do: clear_config([:instance, :limit_to_local_content])
-
     test "works by id" do
       %User{id: user_id} = insert(:user)
 
@@ -42,7 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "works by nickname for remote users" do
-      Config.put([:instance, :limit_to_local_content], false)
+      clear_config([:instance, :limit_to_local_content], false)
 
       user = insert(:user, nickname: "user@example.com", local: false)
 
@@ -53,7 +50,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "respects limit_to_local_content == :all for remote user nicknames" do
-      Config.put([:instance, :limit_to_local_content], :all)
+      clear_config([:instance, :limit_to_local_content], :all)
 
       user = insert(:user, nickname: "user@example.com", local: false)
 
@@ -63,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
     end
 
     test "respects limit_to_local_content == :unauthenticated for remote user nicknames" do
-      Config.put([:instance, :limit_to_local_content], :unauthenticated)
+      clear_config([:instance, :limit_to_local_content], :unauthenticated)
 
       user = insert(:user, nickname: "user@example.com", local: false)
       reading_user = insert(:user)
@@ -903,10 +900,93 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       [valid_params: valid_params]
     end
 
-    setup do: clear_config([:instance, :account_activation_required])
-    setup do: clear_config([:instance, :account_approval_required])
+    test "registers and logs in without :account_activation_required / :account_approval_required",
+         %{conn: conn} do
+      clear_config([:instance, :account_activation_required], false)
+      clear_config([:instance, :account_approval_required], false)
 
-    test "Account registration via Application", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/v1/apps", %{
+          client_name: "client_name",
+          redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
+          scopes: "read, write, follow"
+        })
+
+      assert %{
+               "client_id" => client_id,
+               "client_secret" => client_secret,
+               "id" => _,
+               "name" => "client_name",
+               "redirect_uri" => "urn:ietf:wg:oauth:2.0:oob",
+               "vapid_key" => _,
+               "website" => nil
+             } = json_response_and_validate_schema(conn, 200)
+
+      conn =
+        post(conn, "/oauth/token", %{
+          grant_type: "client_credentials",
+          client_id: client_id,
+          client_secret: client_secret
+        })
+
+      assert %{"access_token" => token, "refresh_token" => refresh, "scope" => scope} =
+               json_response(conn, 200)
+
+      assert token
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      assert refresh
+      assert scope == "read write follow"
+
+      clear_config([User, :email_blacklist], ["example.org"])
+
+      params = %{
+        username: "lain",
+        email: "lain@example.org",
+        password: "PlzDontHackLain",
+        bio: "Test Bio",
+        agreement: true
+      }
+
+      conn =
+        build_conn()
+        |> put_req_header("content-type", "multipart/form-data")
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> post("/api/v1/accounts", params)
+
+      assert %{"error" => "{\"email\":[\"Invalid email\"]}"} =
+               json_response_and_validate_schema(conn, 400)
+
+      Pleroma.Config.put([User, :email_blacklist], [])
+
+      conn =
+        build_conn()
+        |> put_req_header("content-type", "multipart/form-data")
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> post("/api/v1/accounts", params)
+
+      %{
+        "access_token" => token,
+        "created_at" => _created_at,
+        "scope" => ^scope,
+        "token_type" => "Bearer"
+      } = json_response_and_validate_schema(conn, 200)
+
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      user = Repo.preload(token_from_db, :user).user
+
+      assert user
+      refute user.confirmation_pending
+      refute user.approval_pending
+    end
+
+    test "registers but does not log in with :account_activation_required", %{conn: conn} do
+      clear_config([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_approval_required], false)
+
       conn =
         conn
         |> put_req_header("content-type", "application/json")
@@ -954,23 +1034,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
           agreement: true
         })
 
-      %{
-        "access_token" => token,
-        "created_at" => _created_at,
-        "scope" => ^scope,
-        "token_type" => "Bearer"
-      } = json_response_and_validate_schema(conn, 200)
+      response = json_response_and_validate_schema(conn, 200)
+      assert %{"identifier" => "missing_confirmed_email"} = response
+      refute response["access_token"]
+      refute response["token_type"]
 
-      token_from_db = Repo.get_by(Token, token: token)
-      assert token_from_db
-      token_from_db = Repo.preload(token_from_db, :user)
-      assert token_from_db.user
-
-      assert token_from_db.user.confirmation_pending
+      user = Repo.get_by(User, email: "lain@example.org")
+      assert user.confirmation_pending
     end
 
-    test "Account registration via app with account_approval_required", %{conn: conn} do
-      Pleroma.Config.put([:instance, :account_approval_required], true)
+    test "registers but does not log in with :account_approval_required", %{conn: conn} do
+      clear_config([:instance, :account_approval_required], true)
+      clear_config([:instance, :account_activation_required], false)
 
       conn =
         conn
@@ -1020,22 +1095,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
           reason: "I'm a cool dude, bro"
         })
 
-      %{
-        "access_token" => token,
-        "created_at" => _created_at,
-        "scope" => ^scope,
-        "token_type" => "Bearer"
-      } = json_response_and_validate_schema(conn, 200)
+      response = json_response_and_validate_schema(conn, 200)
+      assert %{"identifier" => "awaiting_approval"} = response
+      refute response["access_token"]
+      refute response["token_type"]
 
-      token_from_db = Repo.get_by(Token, token: token)
-      assert token_from_db
-      token_from_db = Repo.preload(token_from_db, :user)
-      assert token_from_db.user
+      user = Repo.get_by(User, email: "lain@example.org")
 
-      assert token_from_db.user.confirmation_pending
-      assert token_from_db.user.approval_pending
-
-      assert token_from_db.user.registration_reason == "I'm a cool dude, bro"
+      assert user.approval_pending
+      assert user.registration_reason == "I'm a cool dude, bro"
     end
 
     test "returns error when user already registred", %{conn: conn, valid_params: valid_params} do
@@ -1089,11 +1157,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       end)
     end
 
-    setup do: clear_config([:instance, :account_activation_required])
-
     test "returns bad_request if missing email params when :account_activation_required is enabled",
          %{conn: conn, valid_params: valid_params} do
-      Pleroma.Config.put([:instance, :account_activation_required], true)
+      clear_config([:instance, :account_activation_required], true)
 
       app_token = insert(:oauth_token, user: nil)
 
@@ -1258,8 +1324,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
         assert token_from_db
         token_from_db = Repo.preload(token_from_db, :user)
         assert token_from_db.user
-
-        assert token_from_db.user.confirmation_pending
       end
 
       conn =

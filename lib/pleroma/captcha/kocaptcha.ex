@@ -21,7 +21,8 @@ defmodule Pleroma.Captcha.Kocaptcha do
           type: :kocaptcha,
           token: json_resp["token"],
           url: endpoint <> json_resp["url"],
-          answer_data: json_resp["md5"]
+          answer_data: json_resp["md5"],
+          seconds_valid: Pleroma.Config.get([Pleroma.Captcha, :seconds_valid])
         }
     end
   end

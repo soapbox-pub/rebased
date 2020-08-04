@@ -676,10 +676,19 @@ defmodule Pleroma.User do
     |> validate_required([:name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
+    |> validate_format(:email, @email_regex)
+    |> validate_change(:email, fn :email, email ->
+      valid? =
+        Config.get([User, :email_blacklist])
+        |> Enum.all?(fn blacklisted_domain ->
+          !String.ends_with?(email, ["@" <> blacklisted_domain, "." <> blacklisted_domain])
+        end)
+
+      if valid?, do: [], else: [email: "Invalid email"]
+    end)
     |> unique_constraint(:nickname)
     |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
     |> validate_format(:nickname, local_nickname_regex())
-    |> validate_format(:email, @email_regex)
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_length(:registration_reason, max: reason_limit)
@@ -734,6 +743,7 @@ defmodule Pleroma.User do
          {:ok, user} <- set_cache(user),
          {:ok, _} <- send_welcome_email(user),
          {:ok, _} <- send_welcome_message(user),
+         {:ok, _} <- send_welcome_chat_message(user),
          {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end
@@ -742,6 +752,15 @@ defmodule Pleroma.User do
   def send_welcome_message(user) do
     if User.WelcomeMessage.enabled?() do
       User.WelcomeMessage.post_message(user)
+      {:ok, :enqueued}
+    else
+      {:ok, :noop}
+    end
+  end
+
+  def send_welcome_chat_message(user) do
+    if User.WelcomeChatMessage.enabled?() do
+      User.WelcomeChatMessage.post_message(user)
       {:ok, :enqueued}
     else
       {:ok, :noop}

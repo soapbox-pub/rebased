@@ -449,21 +449,32 @@ defmodule Pleroma.Web.ApiSpec.AccountOperation do
     }
   end
 
-  # TODO: This is actually a token respone, but there's no oauth operation file yet.
+  # Note: this is a token response (if login succeeds!), but there's no oauth operation file yet.
   defp create_response do
     %Schema{
       title: "AccountCreateResponse",
       description: "Response schema for an account",
       type: :object,
       properties: %{
+        # The response when auto-login on create succeeds (token is issued):
         token_type: %Schema{type: :string},
         access_token: %Schema{type: :string},
         refresh_token: %Schema{type: :string},
         scope: %Schema{type: :string},
         created_at: %Schema{type: :integer, format: :"date-time"},
         me: %Schema{type: :string},
-        expires_in: %Schema{type: :integer}
+        expires_in: %Schema{type: :integer},
+        #
+        # The response when registration succeeds but auto-login fails (no token):
+        identifier: %Schema{type: :string},
+        message: %Schema{type: :string}
       },
+      required: [],
+      # Note: example of successful registration with failed login response:
+      # example: %{
+      #   "identifier" => "missing_confirmed_email",
+      #   "message" => "You have been registered. Please check your email for further instructions."
+      # },
       example: %{
         "token_type" => "Bearer",
         "access_token" => "i9hAVVzGld86Pl5JtLtizKoXVvtTlSCJvwaugCxvZzk",

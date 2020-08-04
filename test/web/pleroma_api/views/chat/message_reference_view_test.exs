@@ -43,7 +43,17 @@ defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceViewTest do
     assert chat_message[:unread] == false
     assert match?([%{shortcode: "firefox"}], chat_message[:emojis])
 
-    {:ok, activity} = CommonAPI.post_chat_message(recipient, user, "gkgkgk", media_id: upload.id)
+    clear_config([:rich_media, :enabled], true)
+
+    Tesla.Mock.mock(fn
+      %{url: "https://example.com/ogp"} ->
+        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
+    end)
+
+    {:ok, activity} =
+      CommonAPI.post_chat_message(recipient, user, "gkgkgk https://example.com/ogp",
+        media_id: upload.id
+      )
 
     object = Object.normalize(activity)
 
@@ -52,10 +62,11 @@ defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceViewTest do
     chat_message_two = MessageReferenceView.render("show.json", chat_message_reference: cm_ref)
 
     assert chat_message_two[:id] == cm_ref.id
-    assert chat_message_two[:content] == "gkgkgk"
+    assert chat_message_two[:content] == object.data["content"]
     assert chat_message_two[:account_id] == recipient.id
     assert chat_message_two[:chat_id] == chat_message[:chat_id]
     assert chat_message_two[:attachment]
     assert chat_message_two[:unread] == true
+    assert chat_message_two[:card]
   end
 end

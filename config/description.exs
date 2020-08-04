@@ -955,6 +955,11 @@ config :pleroma, :config_description, [
         description:
           "The instance thumbnail can be any image that represents your instance and is used by some apps or services when they display information about your instance.",
         suggestions: ["/instance/thumbnail.jpeg"]
+      },
+      %{
+        key: :show_reactions,
+        type: :boolean,
+        description: "Let favourites and emoji reactions be viewed through the API."
       }
     ]
   },
@@ -980,6 +985,35 @@ config :pleroma, :config_description, [
               "A message that will be sent to a newly registered users as a direct message",
             suggestions: [
               "Hi, @username! Welcome on board!"
+            ]
+          },
+          %{
+            key: :sender_nickname,
+            type: :string,
+            description: "The nickname of the local user that sends the welcome message",
+            suggestions: [
+              "lain"
+            ]
+          }
+        ]
+      },
+      %{
+        group: :chat_message,
+        type: :group,
+        descpiption: "Chat message settings",
+        children: [
+          %{
+            key: :enabled,
+            type: :boolean,
+            description: "Enables sends chat message for new user after registration"
+          },
+          %{
+            key: :message,
+            type: :string,
+            description:
+              "A message that will be sent to a newly registered users as a chat message",
+            suggestions: [
+              "Hello, welcome on board!"
             ]
           },
           %{
@@ -1535,6 +1569,12 @@ config :pleroma, :config_description, [
         key: :accept,
         type: {:list, :string},
         description: "List of instances to only accept activities from (except deletes)",
+        suggestions: ["example.com", "*.example.com"]
+      },
+      %{
+        key: :followers_only,
+        type: {:list, :string},
+        description: "Force posts from the given instances to be visible by followers only",
         suggestions: ["example.com", "*.example.com"]
       },
       %{
@@ -3016,6 +3056,7 @@ config :pleroma, :config_description, [
       %{
         key: :restricted_nicknames,
         type: {:list, :string},
+        description: "List of nicknames users may not register with.",
         suggestions: [
           ".well-known",
           "~",
@@ -3048,6 +3089,12 @@ config :pleroma, :config_description, [
           "users",
           "web"
         ]
+      },
+      %{
+        key: :email_blacklist,
+        type: {:list, :string},
+        description: "List of email domains users may not register with.",
+        suggestions: ["mailinator.com", "maildrop.cc"]
       }
     ]
   },
