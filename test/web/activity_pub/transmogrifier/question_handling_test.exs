@@ -111,4 +111,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     assert {:error, {:validate_object, {:error, _}}} = Transmogrifier.handle_incoming(data)
   end
+
+  test "accepts a Question with no content" do
+    data =
+      File.read!("test/fixtures/mastodon-question-activity.json")
+      |> Poison.decode!()
+      |> Kernel.put_in(["object", "content"], "")
+
+    assert {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
+  end
 end

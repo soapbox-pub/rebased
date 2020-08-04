@@ -111,7 +111,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   def validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Question"])
-    |> validate_required([:id, :actor, :attributedTo, :type, :content, :context])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_is_active()
