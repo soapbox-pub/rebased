@@ -62,12 +62,17 @@ To add configuration to your config file, you can copy it from the base config. 
 * `registration_reason_length`: Maximum registration reason length (default: `500`).
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
+* `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
 
 ## Welcome
 * `direct_message`: - welcome message sent as a direct message.
   * `enabled`: Enables the send a direct message to a newly registered user. Defaults to `false`.
   * `sender_nickname`: The nickname of the local user that sends the welcome message.
   * `message`: A message that will be send to a newly registered users as a direct message.
+* `chat_message`: - welcome message sent as a chat message.
+  * `enabled`: Enables the send a chat message to a newly registered user. Defaults to `false`.
+  * `sender_nickname`: The nickname of the local user that sends the welcome message.
+  * `message`: A message that will be send to a newly registered users as a chat message.
 * `email`: - welcome message sent as a email.
   * `enabled`: Enables the send a welcome email to a newly registered user. Defaults to `false`.
   * `sender`: The email address or tuple with `{nickname, email}` that will use as sender to the welcome email.
@@ -124,6 +129,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federated_timeline_removal`: List of instances to remove from Federated (aka The Whole Known Network) Timeline.
 * `reject`: List of instances to reject any activities from.
 * `accept`: List of instances to accept any activities from.
+* `followers_only`: List of instances to decrease post visibility to only the followers, including for DM mentions.
 * `report_removal`: List of instances to reject reports from.
 * `avatar_removal`: List of instances to strip avatars from.
 * `banner_removal`: List of instances to strip banners from.
@@ -200,6 +206,11 @@ config :pleroma, :mrf_user_allowlist, %{
 * `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
+
+## Pleroma.User
+
+* `restricted_nicknames`: List of nicknames users may not register with.
+* `email_blacklist`: List of email domains users may not register with.
 
 ## Pleroma.ScheduledActivity
 

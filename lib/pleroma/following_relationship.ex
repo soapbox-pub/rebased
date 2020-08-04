@@ -95,7 +95,11 @@ defmodule Pleroma.FollowingRelationship do
     |> where([r], r.state == ^:follow_accept)
   end
 
-  def followers_ap_ids(%User{} = user, from_ap_ids \\ nil) do
+  def followers_ap_ids(user, from_ap_ids \\ nil)
+
+  def followers_ap_ids(_, []), do: []
+
+  def followers_ap_ids(%User{} = user, from_ap_ids) do
     query =
       user
       |> followers_query()

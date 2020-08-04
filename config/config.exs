@@ -172,7 +172,7 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :tesla, adapter: Tesla.Adapter.Gun
+config :tesla, adapter: Tesla.Adapter.Hackney
 
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
@@ -252,10 +252,16 @@ config :pleroma, :instance,
       number: 5,
       length: 16
     ]
-  ]
+  ],
+  show_reactions: true
 
 config :pleroma, :welcome,
   direct_message: [
+    enabled: false,
+    sender_nickname: nil,
+    message: nil
+  ],
+  chat_message: [
     enabled: false,
     sender_nickname: nil,
     message: nil
@@ -373,6 +379,7 @@ config :pleroma, :mrf_simple,
   federated_timeline_removal: [],
   report_removal: [],
   reject: [],
+  followers_only: [],
   accept: [],
   avatar_removal: [],
   banner_removal: [],
@@ -391,8 +398,9 @@ config :pleroma, :mrf_vocabulary,
   accept: [],
   reject: []
 
+# threshold of 7 days
 config :pleroma, :mrf_object_age,
-  threshold: 172_800,
+  threshold: 604_800,
   actions: [:delist, :strip_followers]
 
 config :pleroma, :rich_media,
@@ -508,7 +516,8 @@ config :pleroma, Pleroma.User,
     "user_exists",
     "users",
     "web"
-  ]
+  ],
+  email_blacklist: []
 
 config :pleroma, Oban,
   repo: Pleroma.Repo,
@@ -761,7 +770,7 @@ config :pleroma, :restrict_unauthenticated,
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
 config :pleroma, :mrf,
-  policies: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
+  policies: Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy,
   transparency: true,
   transparency_exclusions: []
 

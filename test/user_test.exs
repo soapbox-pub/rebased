@@ -412,8 +412,36 @@ defmodule Pleroma.UserTest do
       welcome_user = insert(:user)
       Pleroma.Config.put([:welcome, :direct_message, :enabled], true)
       Pleroma.Config.put([:welcome, :direct_message, :sender_nickname], welcome_user.nickname)
-      Pleroma.Config.put([:welcome, :direct_message, :message], "Hello, this is a cool site")
+      Pleroma.Config.put([:welcome, :direct_message, :message], "Hello, this is a direct message")
 
+      cng = User.register_changeset(%User{}, @full_user_data)
+      {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
+
+      activity = Repo.one(Pleroma.Activity)
+      assert registered_user.ap_id in activity.recipients
+      assert Object.normalize(activity).data["content"] =~ "direct message"
+      assert activity.actor == welcome_user.ap_id
+    end
+
+    test "it sends a welcome chat message if it is set" do
+      welcome_user = insert(:user)
+      Pleroma.Config.put([:welcome, :chat_message, :enabled], true)
+      Pleroma.Config.put([:welcome, :chat_message, :sender_nickname], welcome_user.nickname)
+      Pleroma.Config.put([:welcome, :chat_message, :message], "Hello, this is a chat message")
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+      {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
+
+      activity = Repo.one(Pleroma.Activity)
+      assert registered_user.ap_id in activity.recipients
+      assert Object.normalize(activity).data["content"] =~ "chat message"
+      assert activity.actor == welcome_user.ap_id
+    end
+
+    test "it sends a welcome email message if it is set" do
+      welcome_user = insert(:user)
       Pleroma.Config.put([:welcome, :email, :enabled], true)
       Pleroma.Config.put([:welcome, :email, :sender], welcome_user.email)
 
@@ -427,11 +455,6 @@ defmodule Pleroma.UserTest do
       cng = User.register_changeset(%User{}, @full_user_data)
       {:ok, registered_user} = User.register(cng)
       ObanHelpers.perform_all()
-
-      activity = Repo.one(Pleroma.Activity)
-      assert registered_user.ap_id in activity.recipients
-      assert Object.normalize(activity).data["content"] =~ "cool site"
-      assert activity.actor == welcome_user.ap_id
 
       assert_email_sent(
         from: {instance_name, welcome_user.email},
@@ -490,6 +513,29 @@ defmodule Pleroma.UserTest do
       refute changeset.valid?
     end
 
+    test "it blocks blacklisted email domains" do
+      clear_config([User, :email_blacklist], ["trolling.world"])
+
+      # Block with match
+      params = Map.put(@full_user_data, :email, "troll@trolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      refute changeset.valid?
+
+      # Block with subdomain match
+      params = Map.put(@full_user_data, :email, "troll@gnomes.trolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      refute changeset.valid?
+
+      # Pass with different domains that are similar
+      params = Map.put(@full_user_data, :email, "troll@gnomestrolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      assert changeset.valid?
+
+      params = Map.put(@full_user_data, :email, "troll@trolling.world.us")
+      changeset = User.register_changeset(%User{}, params)
+      assert changeset.valid?
+    end
+
     test "it sets the password_hash and ap_id" do
       changeset = User.register_changeset(%User{}, @full_user_data)
 
@@ -499,6 +545,24 @@ defmodule Pleroma.UserTest do
       assert changeset.changes[:ap_id] == User.ap_id(%User{nickname: @full_user_data.nickname})
 
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
+    end
+
+    test "it sets the 'accepts_chat_messages' set to true" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.accepts_chat_messages
+    end
+
+    test "it creates a confirmed user" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      refute user.confirmation_pending
     end
   end
 
@@ -512,15 +576,6 @@ defmodule Pleroma.UserTest do
       email: "email@example.com"
     }
     setup do: clear_config([:instance, :account_activation_required], true)
-
-    test "it sets the 'accepts_chat_messages' set to true" do
-      changeset = User.register_changeset(%User{}, @full_user_data)
-      assert changeset.valid?
-
-      {:ok, user} = Repo.insert(changeset)
-
-      assert user.accepts_chat_messages
-    end
 
     test "it creates unconfirmed user" do
       changeset = User.register_changeset(%User{}, @full_user_data)
