@@ -9,6 +9,11 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
 
+  @rich_media_options [
+    pool: :media,
+    max_body: 2_000_000
+  ]
+
   @spec validate_page_url(URI.t() | binary()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
     validate_tld = Pleroma.Config.get([Pleroma.Formatter, :validate_tld])
@@ -76,5 +81,21 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   def perform(:fetch, %Activity{} = activity) do
     fetch_data_for_activity(activity)
     :ok
+  end
+
+  def rich_media_get(url) do
+    headers = [{"user-agent", Pleroma.Application.user_agent() <> "; Bot"}]
+
+    options =
+      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Hackney do
+        Keyword.merge(@rich_media_options,
+          recv_timeout: 2_000,
+          with_body: true
+        )
+      else
+        @rich_media_options
+      end
+
+    Pleroma.HTTP.get(url, headers, options)
   end
 end
