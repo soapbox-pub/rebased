@@ -28,10 +28,6 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
          %User{} = user <- ldap_user(name, password) do
       {:ok, user}
     else
-      {:error, {:ldap_connection_error, _}} ->
-        # When LDAP is unavailable, try default authenticator
-        @base.get_user(conn)
-
       {:ldap, _} ->
         @base.get_user(conn)
 
