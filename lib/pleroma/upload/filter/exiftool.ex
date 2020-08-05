@@ -9,12 +9,16 @@ defmodule Pleroma.Upload.Filter.Exiftool do
   """
   @behaviour Pleroma.Upload.Filter
 
+  @spec filter(Pleroma.Upload.t()) :: :ok | {:error, String.t()}
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
-    if Pleroma.Utils.command_available?("exiftool") do
-      System.cmd("exiftool", ["-overwrite_original", "-gps:all=", file], parallelism: true)
-      :ok
-    else
-      {:error, "exiftool command not found"}
+    try do
+      case System.cmd("exiftool", ["-overwrite_original", "-gps:all=", file], parallelism: true) do
+        {_response, 0} -> :ok
+        {error, 1} -> {:error, error}
+      end
+    rescue
+      _e in ErlangError ->
+        {:error, "exiftool command not found"}
     end
   end
 

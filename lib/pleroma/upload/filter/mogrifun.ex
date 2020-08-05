@@ -34,12 +34,14 @@ defmodule Pleroma.Upload.Filter.Mogrifun do
     [{"fill", "yellow"}, {"tint", "40"}]
   ]
 
+  @spec filter(Pleroma.Upload.t()) :: :ok | {:error, String.t()}
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
-    if Pleroma.Utils.command_available?("mogrify") do
+    try do
       Filter.Mogrify.do_filter(file, [Enum.random(@filters)])
       :ok
-    else
-      {:error, "mogrify command not found"}
+    rescue
+      _e in ErlangError ->
+        {:error, "mogrify command not found"}
     end
   end
 
