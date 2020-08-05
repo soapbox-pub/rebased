@@ -163,6 +163,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
              end) =~ "[warn] Couldn't fetch \"https://404.site/whatever\", error: nil"
     end
 
+    test "it does not work for deactivated users" do
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+
+      insert(:user, ap_id: data["actor"], deactivated: true)
+
+      assert {:error, _} = Transmogrifier.handle_incoming(data)
+    end
+
     test "it works for incoming notices" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
