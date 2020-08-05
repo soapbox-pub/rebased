@@ -117,5 +117,21 @@ defmodule Pleroma.ConfigTest do
     Pleroma.Config.put([:delete_me, :delete_me], hello: "world", world: "Hello")
     Pleroma.Config.delete([:delete_me, :delete_me, :world])
     assert Pleroma.Config.get([:delete_me, :delete_me]) == [hello: "world"]
+
+    assert Pleroma.Config.delete([:this_key_does_not_exist])
+    assert Pleroma.Config.delete([:non, :existing, :key])
+  end
+
+  test "fetch/1" do
+    Pleroma.Config.put([:lorem], :ipsum)
+    Pleroma.Config.put([:ipsum], dolor: :sit)
+
+    assert Pleroma.Config.fetch([:lorem]) == {:ok, :ipsum}
+    assert Pleroma.Config.fetch([:ipsum, :dolor]) == {:ok, :sit}
+    assert Pleroma.Config.fetch([:lorem, :ipsum]) == :error
+    assert Pleroma.Config.fetch([:loremipsum]) == :error
+
+    Pleroma.Config.delete([:lorem])
+    Pleroma.Config.delete([:ipsum])
   end
 end

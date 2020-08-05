@@ -11,33 +11,11 @@ defmodule Pleroma.Config do
 
   def get([key], default), do: get(key, default)
 
-  def get([root_key | keys], default) do
-    # This is to mimic Application.get_env/3 behaviour that returns `nil` if the
-    # actual value is `nil`.
-    Enum.reduce_while(keys, Application.get_env(:pleroma, root_key), fn key, config ->
-      case key do
-        [last_key] when is_map(config) ->
-          {:halt, Map.get(config, last_key, default)}
-
-        [last_key] when is_list(config) ->
-          {:halt, Keyword.get(config, last_key, default)}
-
-        _ ->
-          case config do
-            %{^key => value} ->
-              {:cont, value}
-
-            [_ | _] ->
-              case :lists.keyfind(key, 1, config) do
-                {_, value} -> {:cont, value}
-                _ -> {:halt, default}
-              end
-
-            _ ->
-              {:halt, default}
-          end
-      end
-    end)
+  def get([_ | _] = path, default) do
+    case fetch(path) do
+      {:ok, value} -> value
+      :error -> default
+    end
   end
 
   def get(key, default) do
@@ -52,6 +30,22 @@ defmodule Pleroma.Config do
     else
       value
     end
+  end
+
+  def fetch([root_key | keys]) do
+    Enum.reduce_while(keys, Application.fetch_env(:pleroma, root_key), fn
+      key, {:ok, config} when is_map(config) or is_list(config) ->
+        case Access.fetch(config, key) do
+          :error ->
+            {:halt, :error}
+
+          value ->
+            {:cont, value}
+        end
+
+      _key, _config ->
+        {:halt, :error}
+    end)
   end
 
   def put([key], value), do: put(key, value)
@@ -70,12 +64,15 @@ defmodule Pleroma.Config do
 
   def delete([key]), do: delete(key)
 
-  def delete([parent_key | keys]) do
-    {_, parent} =
-      Application.get_env(:pleroma, parent_key)
-      |> get_and_update_in(keys, fn _ -> :pop end)
+  def delete([parent_key | keys] = path) do
+    with {:ok, _} <- fetch(path) do
+      {_, parent} =
+        parent_key
+        |> get()
+        |> get_and_update_in(keys, fn _ -> :pop end)
 
-    Application.put_env(:pleroma, parent_key, parent)
+      Application.put_env(:pleroma, parent_key, parent)
+    end
   end
 
   def delete(key) do

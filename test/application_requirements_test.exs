@@ -127,7 +127,10 @@ defmodule Pleroma.ApplicationRequirementsTest do
       :ok
     end
 
-    setup do: clear_config([:i_am_aware_this_may_cause_data_loss, :disable_migration_check])
+    setup do
+      Pleroma.Config.get(:i_am_aware_this_may_cause_data_loss, 42) |> IO.inspect()
+      clear_config([:i_am_aware_this_may_cause_data_loss, :disable_migration_check])
+    end
 
     test "raises if it detects unapplied migrations" do
       assert_raise Pleroma.ApplicationRequirements.VerifyError,
