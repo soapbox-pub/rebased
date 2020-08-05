@@ -47,19 +47,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end)
   end
 
-  def validate_actor_is_active(cng, options \\ []) do
-    field_name = Keyword.get(options, :field_name, :actor)
-
-    cng
-    |> validate_change(field_name, fn field_name, actor ->
-      if %User{deactivated: false} = User.get_cached_by_ap_id(actor) do
-        []
-      else
-        [{field_name, "can't find user (or deactivated)"}]
-      end
-    end)
-  end
-
   def validate_object_presence(cng, options \\ []) do
     field_name = Keyword.get(options, :field_name, :object)
     allowed_types = Keyword.get(options, :allowed_types, false)

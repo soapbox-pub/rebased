@@ -55,7 +55,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     cng
     |> validate_required([:actor, :type, :object])
     |> validate_inclusion(:type, ["Create"])
-    |> validate_actor_is_active()
+    |> validate_actor_presence()
     |> validate_any_presence([:to, :cc])
     |> validate_actors_match(meta)
     |> validate_context_match(meta)

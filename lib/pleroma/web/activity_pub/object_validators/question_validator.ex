@@ -114,7 +114,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
-    |> CommonValidations.validate_actor_is_active()
+    |> CommonValidations.validate_actor_presence()
     |> CommonValidations.validate_any_presence([:oneOf, :anyOf])
     |> CommonValidations.validate_host_match()
   end
