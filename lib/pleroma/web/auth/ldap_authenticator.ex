@@ -105,29 +105,21 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
            {:base, to_charlist(base)},
            {:filter, :eldap.equalityMatch(to_charlist(uid), to_charlist(name))},
            {:scope, :eldap.wholeSubtree()},
-           {:attributes, ['mail', 'email']},
            {:timeout, @search_timeout}
          ]) do
-      {:ok, {:eldap_search_result, [{:eldap_entry, _, attributes}], _}} ->
-        with {_, [mail]} <- List.keyfind(attributes, 'mail', 0) do
-          params = %{
-            email: :erlang.list_to_binary(mail),
-            name: name,
-            nickname: name,
-            password: password,
-            password_confirmation: password
-          }
+      {:ok, {:eldap_search_result, [{:eldap_entry, _, _}], _}} ->
+        params = %{
+          name: name,
+          nickname: name,
+          password: password,
+          password_confirmation: password
+        }
 
-          changeset = User.register_changeset(%User{}, params)
+        changeset = User.register_changeset(%User{}, params)
 
-          case User.register(changeset) do
-            {:ok, user} -> user
-            error -> error
-          end
-        else
-          _ ->
-            Logger.error("Could not find LDAP attribute mail: #{inspect(attributes)}")
-            {:error, :ldap_registration_missing_attributes}
+        case User.register(changeset) do
+          {:ok, user} -> user
+          error -> error
         end
 
       error ->
