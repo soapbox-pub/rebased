@@ -126,18 +126,21 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end
   end
 
-  def same_domain?(cng, field_one \\ :actor, field_two \\ :object) do
-    actor_uri =
-      cng
-      |> get_field(field_one)
-      |> URI.parse()
+  def same_domain?(cng, fields \\ [:actor, :object]) do
+    unique_domains =
+      fields
+      |> Enum.map(fn field ->
+        %URI{host: host} =
+          cng
+          |> get_field(field)
+          |> URI.parse()
 
-    object_uri =
-      cng
-      |> get_field(field_two)
-      |> URI.parse()
+        host
+      end)
+      |> Enum.uniq()
+      |> Enum.count()
 
-    object_uri.host == actor_uri.host
+    unique_domains == 1
   end
 
   # This figures out if a user is able to create, delete or modify something
