@@ -255,9 +255,7 @@ defmodule Pleroma.Object do
     end
   end
 
-  defp poll_is_multiple?(%Object{data: %{"anyOf" => anyOf}}) do
-    !Enum.empty?(anyOf)
-  end
+ defp poll_is_multiple?(%Object{data: %{"anyOf" => [_ | _]}}), do: true
 
   defp poll_is_multiple?(_), do: false
 
