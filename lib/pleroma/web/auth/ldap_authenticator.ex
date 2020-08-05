@@ -88,7 +88,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
             user
 
           _ ->
-            register_user(connection, base, uid, name, password)
+            register_user(connection, base, uid, name)
         end
 
       error ->
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
     end
   end
 
-  defp register_user(connection, base, uid, name, password) do
+  defp register_user(connection, base, uid, name) do
     case :eldap.search(connection, [
            {:base, to_charlist(base)},
            {:filter, :eldap.equalityMatch(to_charlist(uid), to_charlist(name))},
@@ -107,8 +107,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
         params = %{
           name: name,
           nickname: name,
-          password: password,
-          password_confirmation: password
+          password: nil
         }
 
         changeset = User.register_changeset(%User{}, params)
