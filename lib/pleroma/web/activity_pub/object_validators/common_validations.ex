@@ -125,4 +125,31 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
       end)
     end
   end
+
+  def same_domain?(cng, field_one \\ :actor, field_two \\ :object) do
+    actor_uri =
+      cng
+      |> get_field(field_one)
+      |> URI.parse()
+
+    object_uri =
+      cng
+      |> get_field(field_two)
+      |> URI.parse()
+
+    object_uri.host == actor_uri.host
+  end
+
+  # This figures out if a user is able to create, delete or modify something
+  # based on the domain and superuser status
+  def validate_modification_rights(cng) do
+    actor = User.get_cached_by_ap_id(get_field(cng, :actor))
+
+    if User.superuser?(actor) || same_domain?(cng) do
+      cng
+    else
+      cng
+      |> add_error(:actor, "is not allowed to modify object")
+    end
+  end
 end
