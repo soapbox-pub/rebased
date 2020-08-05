@@ -127,9 +127,11 @@ defmodule Pleroma.ConfigTest do
     Pleroma.Config.put([:ipsum], dolor: :sit)
 
     assert Pleroma.Config.fetch([:lorem]) == {:ok, :ipsum}
+    assert Pleroma.Config.fetch(:lorem) == {:ok, :ipsum}
     assert Pleroma.Config.fetch([:ipsum, :dolor]) == {:ok, :sit}
     assert Pleroma.Config.fetch([:lorem, :ipsum]) == :error
     assert Pleroma.Config.fetch([:loremipsum]) == :error
+    assert Pleroma.Config.fetch(:loremipsum) == :error
 
     Pleroma.Config.delete([:lorem])
     Pleroma.Config.delete([:ipsum])

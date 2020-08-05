@@ -32,6 +32,8 @@ defmodule Pleroma.Config do
     end
   end
 
+  def fetch(key) when is_atom(key), do: fetch([key])
+
   def fetch([root_key | keys]) do
     Enum.reduce_while(keys, Application.fetch_env(:pleroma, root_key), fn
       key, {:ok, config} when is_map(config) or is_list(config) ->
