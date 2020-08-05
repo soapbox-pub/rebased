@@ -181,6 +181,17 @@ defmodule Pleroma.Web.Feed.UserControllerTest do
 
       assert activity_titles == ['public', 'unlisted']
     end
+
+    test "returns 404 when the user is remote", %{conn: conn} do
+      user = insert(:user, local: false)
+
+      {:ok, _} = CommonAPI.post(user, %{status: "test"})
+
+      assert conn
+             |> put_req_header("accept", "application/atom+xml")
+             |> get(user_feed_path(conn, :feed, user.nickname))
+             |> response(404)
+    end
   end
 
   # Note: see ActivityPubControllerTest for JSON format tests

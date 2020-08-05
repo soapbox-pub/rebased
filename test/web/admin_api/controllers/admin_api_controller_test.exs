@@ -9,6 +9,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   import ExUnit.CaptureLog
   import Mock
   import Pleroma.Factory
+  import Swoosh.TestAssertions
 
   alias Pleroma.Activity
   alias Pleroma.Config
@@ -348,7 +349,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         "avatar" => User.avatar_url(user) |> MediaProxy.url(),
         "display_name" => HTML.strip_tags(user.name || user.nickname),
         "confirmation_pending" => false,
-        "url" => user.ap_id
+        "approval_pending" => false,
+        "url" => user.ap_id,
+        "registration_reason" => nil
       }
 
       assert expected == json_response(conn, 200)
@@ -612,6 +615,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   describe "GET /api/pleroma/admin/users" do
     test "renders users array for the first page", %{conn: conn, admin: admin} do
       user = insert(:user, local: false, tags: ["foo", "bar"])
+      user2 = insert(:user, approval_pending: true, registration_reason: "I'm a chill dude")
+
       conn = get(conn, "/api/pleroma/admin/users?page=1")
 
       users =
@@ -626,7 +631,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
             "display_name" => HTML.strip_tags(admin.name || admin.nickname),
             "confirmation_pending" => false,
-            "url" => admin.ap_id
+            "approval_pending" => false,
+            "url" => admin.ap_id,
+            "registration_reason" => nil
           },
           %{
             "deactivated" => user.deactivated,
@@ -638,13 +645,29 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "avatar" => User.avatar_url(user) |> MediaProxy.url(),
             "display_name" => HTML.strip_tags(user.name || user.nickname),
             "confirmation_pending" => false,
-            "url" => user.ap_id
+            "approval_pending" => false,
+            "url" => user.ap_id,
+            "registration_reason" => nil
+          },
+          %{
+            "deactivated" => user2.deactivated,
+            "id" => user2.id,
+            "nickname" => user2.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => true,
+            "tags" => [],
+            "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user2.name || user2.nickname),
+            "confirmation_pending" => false,
+            "approval_pending" => true,
+            "url" => user2.ap_id,
+            "registration_reason" => "I'm a chill dude"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
 
       assert json_response(conn, 200) == %{
-               "count" => 2,
+               "count" => 3,
                "page_size" => 50,
                "users" => users
              }
@@ -711,7 +734,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user.name || user.nickname),
                    "confirmation_pending" => false,
-                   "url" => user.ap_id
+                   "approval_pending" => false,
+                   "url" => user.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -737,7 +762,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user.name || user.nickname),
                    "confirmation_pending" => false,
-                   "url" => user.ap_id
+                   "approval_pending" => false,
+                   "url" => user.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -763,7 +790,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user.name || user.nickname),
                    "confirmation_pending" => false,
-                   "url" => user.ap_id
+                   "approval_pending" => false,
+                   "url" => user.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -789,7 +818,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user.name || user.nickname),
                    "confirmation_pending" => false,
-                   "url" => user.ap_id
+                   "approval_pending" => false,
+                   "url" => user.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -815,7 +846,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user.name || user.nickname),
                    "confirmation_pending" => false,
-                   "url" => user.ap_id
+                   "approval_pending" => false,
+                   "url" => user.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -841,7 +874,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user.name || user.nickname),
                    "confirmation_pending" => false,
-                   "url" => user.ap_id
+                   "approval_pending" => false,
+                   "url" => user.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -862,7 +897,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user2.name || user2.nickname),
                    "confirmation_pending" => false,
-                   "url" => user2.ap_id
+                   "approval_pending" => false,
+                   "url" => user2.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -895,7 +932,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user.name || user.nickname),
                    "confirmation_pending" => false,
-                   "url" => user.ap_id
+                   "approval_pending" => false,
+                   "url" => user.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -921,7 +960,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "avatar" => User.avatar_url(user) |> MediaProxy.url(),
             "display_name" => HTML.strip_tags(user.name || user.nickname),
             "confirmation_pending" => false,
-            "url" => user.ap_id
+            "approval_pending" => false,
+            "url" => user.ap_id,
+            "registration_reason" => nil
           },
           %{
             "deactivated" => admin.deactivated,
@@ -933,7 +974,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
             "display_name" => HTML.strip_tags(admin.name || admin.nickname),
             "confirmation_pending" => false,
-            "url" => admin.ap_id
+            "approval_pending" => false,
+            "url" => admin.ap_id,
+            "registration_reason" => nil
           },
           %{
             "deactivated" => false,
@@ -945,13 +988,53 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "avatar" => User.avatar_url(old_admin) |> MediaProxy.url(),
             "display_name" => HTML.strip_tags(old_admin.name || old_admin.nickname),
             "confirmation_pending" => false,
-            "url" => old_admin.ap_id
+            "approval_pending" => false,
+            "url" => old_admin.ap_id,
+            "registration_reason" => nil
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
 
       assert json_response(conn, 200) == %{
                "count" => 3,
+               "page_size" => 50,
+               "users" => users
+             }
+    end
+
+    test "only unapproved users", %{conn: conn} do
+      user =
+        insert(:user,
+          nickname: "sadboy",
+          approval_pending: true,
+          registration_reason: "Plz let me in!"
+        )
+
+      insert(:user, nickname: "happyboy", approval_pending: false)
+
+      conn = get(conn, "/api/pleroma/admin/users?filters=need_approval")
+
+      users =
+        [
+          %{
+            "deactivated" => user.deactivated,
+            "id" => user.id,
+            "nickname" => user.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => true,
+            "tags" => [],
+            "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user.name || user.nickname),
+            "confirmation_pending" => false,
+            "approval_pending" => true,
+            "url" => user.ap_id,
+            "registration_reason" => "Plz let me in!"
+          }
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
+      assert json_response(conn, 200) == %{
+               "count" => 1,
                "page_size" => 50,
                "users" => users
              }
@@ -976,7 +1059,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
             "display_name" => HTML.strip_tags(admin.name || admin.nickname),
             "confirmation_pending" => false,
-            "url" => admin.ap_id
+            "approval_pending" => false,
+            "url" => admin.ap_id,
+            "registration_reason" => nil
           },
           %{
             "deactivated" => false,
@@ -988,7 +1073,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "avatar" => User.avatar_url(second_admin) |> MediaProxy.url(),
             "display_name" => HTML.strip_tags(second_admin.name || second_admin.nickname),
             "confirmation_pending" => false,
-            "url" => second_admin.ap_id
+            "approval_pending" => false,
+            "url" => second_admin.ap_id,
+            "registration_reason" => nil
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -1021,7 +1108,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(moderator) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(moderator.name || moderator.nickname),
                    "confirmation_pending" => false,
-                   "url" => moderator.ap_id
+                   "approval_pending" => false,
+                   "url" => moderator.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -1047,7 +1136,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "avatar" => User.avatar_url(user1) |> MediaProxy.url(),
             "display_name" => HTML.strip_tags(user1.name || user1.nickname),
             "confirmation_pending" => false,
-            "url" => user1.ap_id
+            "approval_pending" => false,
+            "url" => user1.ap_id,
+            "registration_reason" => nil
           },
           %{
             "deactivated" => false,
@@ -1059,7 +1150,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
             "display_name" => HTML.strip_tags(user2.name || user2.nickname),
             "confirmation_pending" => false,
-            "url" => user2.ap_id
+            "approval_pending" => false,
+            "url" => user2.ap_id,
+            "registration_reason" => nil
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -1099,7 +1192,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(user.name || user.nickname),
                    "confirmation_pending" => false,
-                   "url" => user.ap_id
+                   "approval_pending" => false,
+                   "url" => user.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -1124,7 +1219,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
                    "display_name" => HTML.strip_tags(admin.name || admin.nickname),
                    "confirmation_pending" => false,
-                   "url" => admin.ap_id
+                   "approval_pending" => false,
+                   "url" => admin.ap_id,
+                   "registration_reason" => nil
                  }
                ]
              }
@@ -1171,6 +1268,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              "@#{admin.nickname} deactivated users: @#{user_one.nickname}, @#{user_two.nickname}"
   end
 
+  test "PATCH /api/pleroma/admin/users/approve", %{admin: admin, conn: conn} do
+    user_one = insert(:user, approval_pending: true)
+    user_two = insert(:user, approval_pending: true)
+
+    conn =
+      patch(
+        conn,
+        "/api/pleroma/admin/users/approve",
+        %{nicknames: [user_one.nickname, user_two.nickname]}
+      )
+
+    response = json_response(conn, 200)
+    assert Enum.map(response["users"], & &1["approval_pending"]) == [false, false]
+
+    log_entry = Repo.one(ModerationLog)
+
+    assert ModerationLog.get_log_entry_message(log_entry) ==
+             "@#{admin.nickname} approved users: @#{user_one.nickname}, @#{user_two.nickname}"
+  end
+
   test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation", %{admin: admin, conn: conn} do
     user = insert(:user)
 
@@ -1187,7 +1304,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "avatar" => User.avatar_url(user) |> MediaProxy.url(),
                "display_name" => HTML.strip_tags(user.name || user.nickname),
                "confirmation_pending" => false,
-               "url" => user.ap_id
+               "approval_pending" => false,
+               "url" => user.ap_id,
+               "registration_reason" => nil
              }
 
     log_entry = Repo.one(ModerationLog)
@@ -1731,6 +1850,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "@#{admin.nickname} re-sent confirmation email for users: @#{first_user.nickname}, @#{
                  second_user.nickname
                }"
+
+      ObanHelpers.perform_all()
+      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(first_user))
     end
   end
 

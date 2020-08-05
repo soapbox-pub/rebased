@@ -7,12 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - **Breaking:** Elixir >=1.9 is now required (was >= 1.8)
+- **Breaking:** Configuration: `:auto_linker, :opts` moved to `:pleroma, Pleroma.Formatter`. Old config namespace is deprecated.
 - In Conversations, return only direct messages as `last_status`
 - Using the `only_media` filter on timelines will now exclude reblog media
 - MFR policy to set global expiration for all local Create activities
 - OGP rich media parser merged with TwitterCard
 - Configuration: `:instance, rewrite_policy` moved to `:mrf, policies`, `:instance, :mrf_transparency` moved to `:mrf, :transparency`, `:instance, :mrf_transparency_exclusions` moved to `:mrf, :transparency_exclusions`. Old config namespace is deprecated.
 - Configuration: `:media_proxy, whitelist` format changed to host with scheme (e.g. `http://example.com` instead of `example.com`). Domain format is deprecated.
+- **Breaking:** Configuration: `:instance, welcome_user_nickname` moved to `:welcome, :direct_message, :sender_nickname`, `:instance, :welcome_message` moved to `:welcome, :direct_message, :message`. Old config namespace is deprecated.
 
 <details>
   <summary>API Changes</summary>
@@ -30,6 +32,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Notification Settings API option for hiding push notification
   contents has been renamed to `hide_notification_contents`
 - Mastodon API: Added `pleroma.metadata.post_formats` to /api/v1/instance
+- Mastodon API (legacy): Allow query parameters for `/api/v1/domain_blocks`, e.g. `/api/v1/domain_blocks?domain=badposters.zone`
+- Pleroma API: `/api/pleroma/captcha` responses now include `seconds_valid` with an integer value.
 </details>
 
 <details>
@@ -45,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Configuration: Added a blacklist for email servers.
 - Chats: Added `accepts_chat_messages` field to user, exposed in APIs and federation.
 - Chats: Added support for federated chats. For details, see the docs.
 - ActivityPub: Added support for existing AP ids for instances migrated from Mastodon.
@@ -64,10 +69,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Support pagination in emoji packs API (for packs and for files in pack)
 - Support for viewing instances favicons next to posts and accounts
 - Added Pleroma.Upload.Filter.Exiftool as an alternate EXIF stripping mechanism targeting GPS/location metadata.
+- "By approval" registrations mode.
+- Configuration: Added `:welcome` settings for the welcome message to newly registered users. You can send a welcome message as a direct message, chat or email.
+- Ability to hide favourites and emoji reactions in the API with `[:instance, :show_reactions]` config.
 
 <details>
   <summary>API Changes</summary>
-- Mastodon API: Add pleroma.parents_visible field to statuses.
+
+- Mastodon API: Add pleroma.parent_visible field to statuses.
 - Mastodon API: Extended `/api/v1/instance`.
 - Mastodon API: Support for `include_types` in `/api/v1/notifications`.
 - Mastodon API: Added `/api/v1/notifications/:id/dismiss` endpoint.
@@ -92,6 +101,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: fix `GET /api/pleroma/admin/users/:nickname/credentials` returning 404 when getting the credentials of a remote user while `:instance, :limit_to_local_content` is set to `:unauthenticated`
 - Fix CSP policy generation to include remote Captcha services
 - Fix edge case where MediaProxy truncates media, usually caused when Caddy is serving content for the other Federated instance.
+- Emoji Packs could not be listed when instance was set to `public: false`
 
 ## [Unreleased (patch)]
 
@@ -121,6 +131,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Follow request notifications
 <details>
   <summary>API Changes</summary>
+
 - Admin API: `GET /api/pleroma/admin/need_reboot`.
 </details>
 
@@ -188,6 +199,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: Using third party engines for user recommendation
 <details>
   <summary>API Changes</summary>
+
 - **Breaking**: AdminAPI: migrate_from_db endpoint
 </details>
 

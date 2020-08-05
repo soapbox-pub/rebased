@@ -260,11 +260,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       ) do
     with {:ok, %User{} = user} <- Authenticator.get_user(conn),
          {:ok, app} <- Token.Utils.fetch_app(conn),
-         {:account_status, :active} <- {:account_status, User.account_status(user)},
-         {:ok, scopes} <- validate_scopes(app, params),
-         {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
-         {:mfa_required, _, _, false} <- {:mfa_required, user, auth, MFA.require?(user)},
-         {:ok, token} <- Token.exchange_token(app, auth) do
+         requested_scopes <- Scopes.fetch_scopes(params, app.scopes),
+         {:ok, token} <- login(user, app, requested_scopes) do
       json(conn, OAuthView.render("token.json", %{user: user, token: token}))
     else
       error ->
@@ -334,6 +331,16 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       "Your login is missing a confirmed e-mail address",
       %{},
       "missing_confirmed_email"
+    )
+  end
+
+  defp handle_token_exchange_error(%Plug.Conn{} = conn, {:account_status, :approval_pending}) do
+    render_error(
+      conn,
+      :forbidden,
+      "Your account is awaiting approval.",
+      %{},
+      "awaiting_approval"
     )
   end
 
@@ -512,6 +519,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
+  defp do_create_authorization(conn, auth_attrs, user \\ nil)
+
   defp do_create_authorization(
          %Plug.Conn{} = conn,
          %{
@@ -521,16 +530,34 @@ defmodule Pleroma.Web.OAuth.OAuthController do
                "redirect_uri" => redirect_uri
              } = auth_attrs
          },
-         user \\ nil
+         user
        ) do
     with {_, {:ok, %User{} = user}} <-
            {:get_user, (user && {:ok, user}) || Authenticator.get_user(conn)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
-         {:ok, scopes} <- validate_scopes(app, auth_attrs),
-         {:account_status, :active} <- {:account_status, User.account_status(user)},
-         {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
+         requested_scopes <- Scopes.fetch_scopes(auth_attrs, app.scopes),
+         {:ok, auth} <- do_create_authorization(user, app, requested_scopes) do
       {:ok, auth, user}
+    end
+  end
+
+  defp do_create_authorization(%User{} = user, %App{} = app, requested_scopes)
+       when is_list(requested_scopes) do
+    with {:account_status, :active} <- {:account_status, User.account_status(user)},
+         {:ok, scopes} <- validate_scopes(app, requested_scopes),
+         {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
+      {:ok, auth}
+    end
+  end
+
+  # Note: intended to be a private function but opened for AccountController that logs in on signup
+  @doc "If checks pass, creates authorization and token for given user, app and requested scopes."
+  def login(%User{} = user, %App{} = app, requested_scopes) when is_list(requested_scopes) do
+    with {:ok, auth} <- do_create_authorization(user, app, requested_scopes),
+         {:mfa_required, _, _, false} <- {:mfa_required, user, auth, MFA.require?(user)},
+         {:ok, token} <- Token.exchange_token(app, auth) do
+      {:ok, token}
     end
   end
 
@@ -550,12 +577,15 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  @spec validate_scopes(App.t(), map()) ::
+  @spec validate_scopes(App.t(), map() | list()) ::
           {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}
-  defp validate_scopes(%App{} = app, params) do
-    params
-    |> Scopes.fetch_scopes(app.scopes)
-    |> Scopes.validate(app.scopes)
+  defp validate_scopes(%App{} = app, params) when is_map(params) do
+    requested_scopes = Scopes.fetch_scopes(params, app.scopes)
+    validate_scopes(app, requested_scopes)
+  end
+
+  defp validate_scopes(%App{} = app, requested_scopes) when is_list(requested_scopes) do
+    Scopes.validate(requested_scopes, app.scopes)
   end
 
   def default_redirect_uri(%App{} = app) do

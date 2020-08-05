@@ -75,6 +75,13 @@ Feel free to contact us to be added to this list!
 - Platform: Android, iOS
 - Features: No Streaming
 
+### Indigenous
+- Homepage: <https://indigenous.realize.be/>
+- Source Code: <https://github.com/swentel/indigenous-android/>
+- Contact: [@realize.be@realize.be](@realize.be@realize.be)
+- Platforms: Android
+- Features: No Streaming
+
 ## Alternative Web Interfaces
 ### Brutaldon
 - Homepage: <https://jfm.carcosa.net/projects/software/brutaldon/>

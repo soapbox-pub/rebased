@@ -17,7 +17,8 @@ defmodule Pleroma.Captcha.Native do
           type: :native,
           token: token(),
           url: "data:image/png;base64," <> Base.encode64(img_binary),
-          answer_data: answer_data
+          answer_data: answer_data,
+          seconds_valid: Pleroma.Config.get([Pleroma.Captcha, :seconds_valid])
         }
     end
   end
