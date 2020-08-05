@@ -643,12 +643,21 @@ defmodule Pleroma.User do
       when is_nil(password) do
     params = Map.put_new(params, :accepts_chat_messages, true)
 
+    params =
+      if Map.has_key?(params, :email) do
+        Map.put_new(params, :email, params[:email])
+      else
+        params
+      end
+
     struct
     |> cast(params, [
       :name,
       :nickname,
+      :email,
       :accepts_chat_messages
     ])
+    |> validate_required([:name, :nickname])
     |> unique_constraint(:nickname)
     |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
     |> validate_format(:nickname, local_nickname_regex())
