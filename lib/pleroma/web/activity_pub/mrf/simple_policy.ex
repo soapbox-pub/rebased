@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   alias Pleroma.Config
+  alias Pleroma.FollowingRelationship
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
 
@@ -21,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       accepts == [] -> {:ok, object}
       actor_host == Config.get([Pleroma.Web.Endpoint, :url, :host]) -> {:ok, object}
       MRF.subdomain_match?(accepts, actor_host) -> {:ok, object}
-      true -> {:reject, nil}
+      true -> {:reject, "[SimplePolicy] host not in accept list"}
     end
   end
 
@@ -31,7 +32,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(rejects, actor_host) do
-      {:reject, nil}
+      {:reject, "[SimplePolicy] host in reject list"}
     else
       {:ok, object}
     end
@@ -108,13 +109,42 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     {:ok, object}
   end
 
+  defp intersection(list1, list2) do
+    list1 -- list1 -- list2
+  end
+
+  defp check_followers_only(%{host: actor_host} = _actor_info, object) do
+    followers_only =
+      Config.get([:mrf_simple, :followers_only])
+      |> MRF.subdomains_regex()
+
+    object =
+      with true <- MRF.subdomain_match?(followers_only, actor_host),
+           user <- User.get_cached_by_ap_id(object["actor"]) do
+        # Don't use Map.get/3 intentionally, these must not be nil
+        fixed_to = object["to"] || []
+        fixed_cc = object["cc"] || []
+
+        to = FollowingRelationship.followers_ap_ids(user, fixed_to)
+        cc = FollowingRelationship.followers_ap_ids(user, fixed_cc)
+
+        object
+        |> Map.put("to", intersection([user.follower_address | to], fixed_to))
+        |> Map.put("cc", intersection([user.follower_address | cc], fixed_cc))
+      else
+        _ -> object
+      end
+
+    {:ok, object}
+  end
+
   defp check_report_removal(%{host: actor_host} = _actor_info, %{"type" => "Flag"} = object) do
     report_removal =
       Config.get([:mrf_simple, :report_removal])
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(report_removal, actor_host) do
-      {:reject, nil}
+      {:reject, "[SimplePolicy] host in report_removal list"}
     else
       {:ok, object}
     end
@@ -159,7 +189,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       |> MRF.subdomains_regex()
 
     if MRF.subdomain_match?(reject_deletes, actor_host) do
-      {:reject, nil}
+      {:reject, "[SimplePolicy] host in reject_deletes list"}
     else
       {:ok, object}
     end
@@ -174,10 +204,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_media_removal(actor_info, object),
          {:ok, object} <- check_media_nsfw(actor_info, object),
          {:ok, object} <- check_ftl_removal(actor_info, object),
+         {:ok, object} <- check_followers_only(actor_info, object),
          {:ok, object} <- check_report_removal(actor_info, object) do
       {:ok, object}
     else
-      _e -> {:reject, nil}
+      {:reject, nil} -> {:reject, "[SimplePolicy]"}
+      {:reject, _} = e -> e
+      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 
@@ -191,7 +224,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_banner_removal(actor_info, object) do
       {:ok, object}
     else
-      _e -> {:reject, nil}
+      {:reject, nil} -> {:reject, "[SimplePolicy]"}
+      {:reject, _} = e -> e
+      _ -> {:reject, "[SimplePolicy]"}
     end
   end
 

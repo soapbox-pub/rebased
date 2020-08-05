@@ -17,6 +17,7 @@ defmodule Pleroma.UserTest do
 
   import Pleroma.Factory
   import ExUnit.CaptureLog
+  import Swoosh.TestAssertions
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -385,9 +386,10 @@ defmodule Pleroma.UserTest do
       password_confirmation: "test",
       email: "email@example.com"
     }
+
     setup do: clear_config([:instance, :autofollowed_nicknames])
-    setup do: clear_config([:instance, :welcome_message])
-    setup do: clear_config([:instance, :welcome_user_nickname])
+    setup do: clear_config([:welcome])
+    setup do: clear_config([:instance, :account_activation_required])
 
     test "it autofollows accounts that are set for it" do
       user = insert(:user)
@@ -408,20 +410,68 @@ defmodule Pleroma.UserTest do
 
     test "it sends a welcome message if it is set" do
       welcome_user = insert(:user)
-
-      Pleroma.Config.put([:instance, :welcome_user_nickname], welcome_user.nickname)
-      Pleroma.Config.put([:instance, :welcome_message], "Hello, this is a cool site")
+      Pleroma.Config.put([:welcome, :direct_message, :enabled], true)
+      Pleroma.Config.put([:welcome, :direct_message, :sender_nickname], welcome_user.nickname)
+      Pleroma.Config.put([:welcome, :direct_message, :message], "Hello, this is a direct message")
 
       cng = User.register_changeset(%User{}, @full_user_data)
       {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
-      assert Object.normalize(activity).data["content"] =~ "cool site"
+      assert Object.normalize(activity).data["content"] =~ "direct message"
       assert activity.actor == welcome_user.ap_id
     end
 
-    setup do: clear_config([:instance, :account_activation_required])
+    test "it sends a welcome chat message if it is set" do
+      welcome_user = insert(:user)
+      Pleroma.Config.put([:welcome, :chat_message, :enabled], true)
+      Pleroma.Config.put([:welcome, :chat_message, :sender_nickname], welcome_user.nickname)
+      Pleroma.Config.put([:welcome, :chat_message, :message], "Hello, this is a chat message")
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+      {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
+
+      activity = Repo.one(Pleroma.Activity)
+      assert registered_user.ap_id in activity.recipients
+      assert Object.normalize(activity).data["content"] =~ "chat message"
+      assert activity.actor == welcome_user.ap_id
+    end
+
+    test "it sends a welcome email message if it is set" do
+      welcome_user = insert(:user)
+      Pleroma.Config.put([:welcome, :email, :enabled], true)
+      Pleroma.Config.put([:welcome, :email, :sender], welcome_user.email)
+
+      Pleroma.Config.put(
+        [:welcome, :email, :subject],
+        "Hello, welcome to cool site: <%= instance_name %>"
+      )
+
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+      {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
+
+      assert_email_sent(
+        from: {instance_name, welcome_user.email},
+        to: {registered_user.name, registered_user.email},
+        subject: "Hello, welcome to cool site: #{instance_name}",
+        html_body: "Welcome to #{instance_name}"
+      )
+    end
+
+    test "it sends a confirm email" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+      {:ok, registered_user} = User.register(cng)
+      ObanHelpers.perform_all()
+      assert_email_sent(Pleroma.Emails.UserEmail.account_confirmation_email(registered_user))
+    end
 
     test "it requires an email, name, nickname and password, bio is optional when account_activation_required is enabled" do
       Pleroma.Config.put([:instance, :account_activation_required], true)
@@ -463,6 +513,29 @@ defmodule Pleroma.UserTest do
       refute changeset.valid?
     end
 
+    test "it blocks blacklisted email domains" do
+      clear_config([User, :email_blacklist], ["trolling.world"])
+
+      # Block with match
+      params = Map.put(@full_user_data, :email, "troll@trolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      refute changeset.valid?
+
+      # Block with subdomain match
+      params = Map.put(@full_user_data, :email, "troll@gnomes.trolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      refute changeset.valid?
+
+      # Pass with different domains that are similar
+      params = Map.put(@full_user_data, :email, "troll@gnomestrolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      assert changeset.valid?
+
+      params = Map.put(@full_user_data, :email, "troll@trolling.world.us")
+      changeset = User.register_changeset(%User{}, params)
+      assert changeset.valid?
+    end
+
     test "it sets the password_hash and ap_id" do
       changeset = User.register_changeset(%User{}, @full_user_data)
 
@@ -472,6 +545,24 @@ defmodule Pleroma.UserTest do
       assert changeset.changes[:ap_id] == User.ap_id(%User{nickname: @full_user_data.nickname})
 
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
+    end
+
+    test "it sets the 'accepts_chat_messages' set to true" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.accepts_chat_messages
+    end
+
+    test "it creates a confirmed user" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      refute user.confirmation_pending
     end
   end
 
@@ -485,15 +576,6 @@ defmodule Pleroma.UserTest do
       email: "email@example.com"
     }
     setup do: clear_config([:instance, :account_activation_required], true)
-
-    test "it sets the 'accepts_chat_messages' set to true" do
-      changeset = User.register_changeset(%User{}, @full_user_data)
-      assert changeset.valid?
-
-      {:ok, user} = Repo.insert(changeset)
-
-      assert user.accepts_chat_messages
-    end
 
     test "it creates unconfirmed user" do
       changeset = User.register_changeset(%User{}, @full_user_data)
@@ -513,6 +595,46 @@ defmodule Pleroma.UserTest do
 
       refute user.confirmation_pending
       refute user.confirmation_token
+    end
+  end
+
+  describe "user registration, with :account_approval_required" do
+    @full_user_data %{
+      bio: "A guy",
+      name: "my name",
+      nickname: "nick",
+      password: "test",
+      password_confirmation: "test",
+      email: "email@example.com",
+      registration_reason: "I'm a cool guy :)"
+    }
+    setup do: clear_config([:instance, :account_approval_required], true)
+
+    test "it creates unapproved user" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.approval_pending
+      assert user.registration_reason == "I'm a cool guy :)"
+    end
+
+    test "it restricts length of registration reason" do
+      reason_limit = Pleroma.Config.get([:instance, :registration_reason_length])
+
+      assert is_integer(reason_limit)
+
+      params =
+        @full_user_data
+        |> Map.put(
+          :registration_reason,
+          "Quia et nesciunt dolores numquam ipsam nisi sapiente soluta. Ullam repudiandae nisi quam porro officiis officiis ad. Consequatur animi velit ex quia. Odit voluptatem perferendis quia ut nisi. Dignissimos sit soluta atque aliquid dolorem ut dolorum ut. Labore voluptates iste iusto amet voluptatum earum. Ad fugit illum nam eos ut nemo. Pariatur ea fuga non aspernatur. Dignissimos debitis officia corporis est nisi ab et. Atque itaque alias eius voluptas minus. Accusamus numquam tempore occaecati in."
+        )
+
+      changeset = User.register_changeset(%User{}, params)
+
+      refute changeset.valid?
     end
   end
 
@@ -1181,6 +1303,31 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "approve" do
+    test "approves a user" do
+      user = insert(:user, approval_pending: true)
+      assert true == user.approval_pending
+      {:ok, user} = User.approve(user)
+      assert false == user.approval_pending
+    end
+
+    test "approves a list of users" do
+      unapproved_users = [
+        insert(:user, approval_pending: true),
+        insert(:user, approval_pending: true),
+        insert(:user, approval_pending: true)
+      ]
+
+      {:ok, users} = User.approve(unapproved_users)
+
+      assert Enum.count(users) == 3
+
+      Enum.each(users, fn user ->
+        assert false == user.approval_pending
+      end)
+    end
+  end
+
   describe "delete" do
     setup do
       {:ok, user} = insert(:user) |> User.set_cache()
@@ -1268,6 +1415,17 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  test "delete/1 when approval is pending deletes the user" do
+    user = insert(:user, approval_pending: true)
+    {:ok, user: user}
+
+    {:ok, job} = User.delete(user)
+    {:ok, _} = ObanHelpers.perform(job)
+
+    refute User.get_cached_by_id(user.id)
+    refute User.get_by_id(user.id)
+  end
+
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
@@ -1341,6 +1499,14 @@ defmodule Pleroma.UserTest do
     test "returns :deactivated for deactivated user" do
       user = insert(:user, local: true, confirmation_pending: false, deactivated: true)
       assert User.account_status(user) == :deactivated
+    end
+
+    test "returns :approval_pending for unapproved user" do
+      user = insert(:user, local: true, approval_pending: true)
+      assert User.account_status(user) == :approval_pending
+
+      user = insert(:user, local: true, confirmation_pending: true, approval_pending: true)
+      assert User.account_status(user) == :approval_pending
     end
   end
 

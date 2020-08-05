@@ -68,6 +68,11 @@ defmodule Pleroma.Docs.Markdown do
     IO.write(file, "  #{list_mark}`#{inspect(suggestion)}`\n")
   end
 
+  defp print_suggestions(file, {:list_behaviour_implementations, behaviour}) do
+    suggestions = Pleroma.Docs.Generator.list_behaviour_implementations(behaviour)
+    print_suggestions(file, suggestions)
+  end
+
   defp print_suggestions(_file, nil), do: nil
 
   defp print_suggestions(_file, ""), do: nil

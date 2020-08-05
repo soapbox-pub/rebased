@@ -562,11 +562,11 @@ msgstr "Errore inaspettato durante l'aggiornamento del file nel pacchetto."
 msgid "Unexpected error occurred while updating pack metadata."
 msgstr "Errore inaspettato durante l'aggiornamento dei metadati del pacchetto."
 
-#: lib/pleroma/plugs/user_is_admin_plug.ex:40
+#: lib/pleroma/plugs/user_is_admin_plug.ex:21
 #, elixir-format
-msgid "User is not an admin or OAuth admin scope is not granted."
+msgid "User is not an admin."
 msgstr ""
-"L'utente non è un amministratore o non ha ricevuto questa autorizzazione "
+"L'utente non è un amministratore."
 "OAuth."
 
 #: lib/pleroma/web/mastodon_api/controllers/subscription_controller.ex:61

@@ -16,7 +16,8 @@ defmodule Pleroma.Captcha.Mock do
       type: :mock,
       token: "afa1815e14e29355e6c8f6b143a39fa2",
       answer_data: @solution,
-      url: "https://example.org/captcha.png"
+      url: "https://example.org/captcha.png",
+      seconds_valid: 300
     }
 
   @impl Service

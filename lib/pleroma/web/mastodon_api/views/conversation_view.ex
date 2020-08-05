@@ -38,7 +38,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
 
     %{
       id: participation.id |> to_string(),
-      accounts: render(AccountView, "index.json", users: users, as: :user),
+      accounts: render(AccountView, "index.json", users: users, for: user),
       unread: !participation.read,
       last_status:
         render(StatusView, "show.json",

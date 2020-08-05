@@ -351,6 +351,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
              ]
     end
 
+    test "emojis in fields labels", %{conn: conn} do
+      fields = [
+        %{"name" => ":firefox:", "value" => "is best 2hu"},
+        %{"name" => "they wins", "value" => ":blank:"}
+      ]
+
+      account_data =
+        conn
+        |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
+        |> json_response_and_validate_schema(200)
+
+      assert account_data["fields"] == [
+               %{"name" => ":firefox:", "value" => "is best 2hu"},
+               %{"name" => "they wins", "value" => ":blank:"}
+             ]
+
+      assert account_data["source"]["fields"] == [
+               %{"name" => ":firefox:", "value" => "is best 2hu"},
+               %{"name" => "they wins", "value" => ":blank:"}
+             ]
+
+      assert [%{"shortcode" => "blank"}, %{"shortcode" => "firefox"}] = account_data["emojis"]
+    end
+
     test "update fields via x-www-form-urlencoded", %{conn: conn} do
       fields =
         [

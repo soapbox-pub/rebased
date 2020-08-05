@@ -124,6 +124,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.ChatMessageTest do
       {:ok, %Activity{} = _activity} = Transmogrifier.handle_incoming(data)
     end
 
+    test "it doesn't work for deactivated users" do
+      data =
+        File.read!("test/fixtures/create-chat-message.json")
+        |> Poison.decode!()
+
+      _author =
+        insert(:user,
+          ap_id: data["actor"],
+          local: false,
+          last_refreshed_at: DateTime.utc_now(),
+          deactivated: true
+        )
+
+      _recipient = insert(:user, ap_id: List.first(data["to"]), local: true)
+
+      assert {:error, _} = Transmogrifier.handle_incoming(data)
+    end
+
     test "it inserts it and creates a chat" do
       data =
         File.read!("test/fixtures/create-chat-message.json")

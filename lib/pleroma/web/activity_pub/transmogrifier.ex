@@ -62,15 +62,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_summary(object), do: Map.put(object, "summary", "")
 
   def fix_addressing_list(map, field) do
-    cond do
-      is_binary(map[field]) ->
-        Map.put(map, field, [map[field]])
+    addrs = map[field]
 
-      is_nil(map[field]) ->
-        Map.put(map, field, [])
+    cond do
+      is_list(addrs) ->
+        Map.put(map, field, Enum.filter(addrs, &is_binary/1))
+
+      is_binary(addrs) ->
+        Map.put(map, field, [addrs])
 
       true ->
-        map
+        Map.put(map, field, [])
     end
   end
 
@@ -176,7 +178,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.drop(["conversation"])
       else
         e ->
-          Logger.error("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
+          Logger.warn("Couldn't fetch #{inspect(in_reply_to_id)}, error: #{inspect(e)}")
           object
       end
     else

@@ -27,8 +27,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.MastodonAPI.MastodonAPIController
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.OAuth.OAuthController
   alias Pleroma.Web.OAuth.OAuthView
-  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   plug(Pleroma.Web.ApiSpec.CastAndValidate)
@@ -100,11 +100,34 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
   def create(%{assigns: %{app: app}, body_params: params} = conn, _params) do
     with :ok <- validate_email_param(params),
          :ok <- TwitterAPI.validate_captcha(app, params),
-         {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
-         {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
+         {:ok, user} <- TwitterAPI.register_user(params),
+         {_, {:ok, token}} <-
+           {:login, OAuthController.login(user, app, app.scopes)} do
       json(conn, OAuthView.render("token.json", %{user: user, token: token}))
     else
-      {:error, error} -> json_response(conn, :bad_request, %{error: error})
+      {:login, {:account_status, :confirmation_pending}} ->
+        json_response(conn, :ok, %{
+          message: "You have been registered. Please check your email for further instructions.",
+          identifier: "missing_confirmed_email"
+        })
+
+      {:login, {:account_status, :approval_pending}} ->
+        json_response(conn, :ok, %{
+          message:
+            "You have been registered. You'll be able to log in once your account is approved.",
+          identifier: "awaiting_approval"
+        })
+
+      {:login, _} ->
+        json_response(conn, :ok, %{
+          message:
+            "You have been registered. Some post-registration steps may be pending. " <>
+              "Please log in manually.",
+          identifier: "manual_login_required"
+        })
+
+      {:error, error} ->
+        json_response(conn, :bad_request, %{error: error})
     end
   end
 

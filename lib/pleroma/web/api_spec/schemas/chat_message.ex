@@ -19,13 +19,46 @@ defmodule Pleroma.Web.ApiSpec.Schemas.ChatMessage do
       content: %Schema{type: :string, nullable: true},
       created_at: %Schema{type: :string, format: :"date-time"},
       emojis: %Schema{type: :array},
-      attachment: %Schema{type: :object, nullable: true}
+      attachment: %Schema{type: :object, nullable: true},
+      card: %Schema{
+        type: :object,
+        nullable: true,
+        description: "Preview card for links included within status content",
+        required: [:url, :title, :description, :type],
+        properties: %{
+          type: %Schema{
+            type: :string,
+            enum: ["link", "photo", "video", "rich"],
+            description: "The type of the preview card"
+          },
+          provider_name: %Schema{
+            type: :string,
+            nullable: true,
+            description: "The provider of the original resource"
+          },
+          provider_url: %Schema{
+            type: :string,
+            format: :uri,
+            description: "A link to the provider of the original resource"
+          },
+          url: %Schema{type: :string, format: :uri, description: "Location of linked resource"},
+          image: %Schema{
+            type: :string,
+            nullable: true,
+            format: :uri,
+            description: "Preview thumbnail"
+          },
+          title: %Schema{type: :string, description: "Title of linked resource"},
+          description: %Schema{type: :string, description: "Description of preview"}
+        }
+      }
     },
     example: %{
       "account_id" => "someflakeid",
       "chat_id" => "1",
       "content" => "hey you again",
       "created_at" => "2020-04-21T15:06:45.000Z",
+      "card" => nil,
       "emojis" => [
         %{
           "static_url" => "https://dontbulling.me/emoji/Firefox.gif",

@@ -7,7 +7,7 @@ defmodule Pleroma.HTTP do
     Wrapper for `Tesla.request/2`.
   """
 
-  alias Pleroma.HTTP.Connection
+  alias Pleroma.HTTP.AdapterHelper
   alias Pleroma.HTTP.Request
   alias Pleroma.HTTP.RequestBuilder, as: Builder
   alias Tesla.Client
@@ -60,49 +60,30 @@ defmodule Pleroma.HTTP do
           {:ok, Env.t()} | {:error, any()}
   def request(method, url, body, headers, options) when is_binary(url) do
     uri = URI.parse(url)
-    adapter_opts = Connection.options(uri, options[:adapter] || [])
-    options = put_in(options[:adapter], adapter_opts)
-    params = options[:params] || []
-    request = build_request(method, headers, options, url, body, params)
+    adapter_opts = AdapterHelper.options(uri, options[:adapter] || [])
 
-    adapter = Application.get_env(:tesla, :adapter)
-    client = Tesla.client([Tesla.Middleware.FollowRedirects], adapter)
+    case AdapterHelper.get_conn(uri, adapter_opts) do
+      {:ok, adapter_opts} ->
+        options = put_in(options[:adapter], adapter_opts)
+        params = options[:params] || []
+        request = build_request(method, headers, options, url, body, params)
 
-    pid = Process.whereis(adapter_opts[:pool])
+        adapter = Application.get_env(:tesla, :adapter)
 
-    pool_alive? =
-      if adapter == Tesla.Adapter.Gun && pid do
-        Process.alive?(pid)
-      else
-        false
-      end
+        client = Tesla.client(adapter_middlewares(adapter), adapter)
 
-    request_opts =
-      adapter_opts
-      |> Enum.into(%{})
-      |> Map.put(:env, Pleroma.Config.get([:env]))
-      |> Map.put(:pool_alive?, pool_alive?)
+        maybe_limit(
+          fn ->
+            request(client, request)
+          end,
+          adapter,
+          adapter_opts
+        )
 
-    response = request(client, request, request_opts)
-
-    Connection.after_request(adapter_opts)
-
-    response
-  end
-
-  @spec request(Client.t(), keyword(), map()) :: {:ok, Env.t()} | {:error, any()}
-  def request(%Client{} = client, request, %{env: :test}), do: request(client, request)
-
-  def request(%Client{} = client, request, %{body_as: :chunks}), do: request(client, request)
-
-  def request(%Client{} = client, request, %{pool_alive?: false}), do: request(client, request)
-
-  def request(%Client{} = client, request, %{pool: pool, timeout: timeout}) do
-    :poolboy.transaction(
-      pool,
-      &Pleroma.Pool.Request.execute(&1, client, request, timeout),
-      timeout
-    )
+      # Connection release is handled in a custom FollowRedirects middleware
+      err ->
+        err
+    end
   end
 
   @spec request(Client.t(), keyword()) :: {:ok, Env.t()} | {:error, any()}
@@ -118,4 +99,19 @@ defmodule Pleroma.HTTP do
     |> Builder.add_param(:query, :query, params)
     |> Builder.convert_to_keyword()
   end
+
+  @prefix Pleroma.Gun.ConnectionPool
+  defp maybe_limit(fun, Tesla.Adapter.Gun, opts) do
+    ConcurrentLimiter.limit(:"#{@prefix}.#{opts[:pool] || :default}", fun)
+  end
+
+  defp maybe_limit(fun, _, _) do
+    fun.()
+  end
+
+  defp adapter_middlewares(Tesla.Adapter.Gun) do
+    [Pleroma.HTTP.Middleware.FollowRedirects]
+  end
+
+  defp adapter_middlewares(_), do: []
 end

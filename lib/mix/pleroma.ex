@@ -24,8 +24,10 @@ defmodule Mix.Pleroma do
       Application.put_env(:logger, :console, level: :debug)
     end
 
+    adapter = Application.get_env(:tesla, :adapter)
+
     apps =
-      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Gun do
+      if adapter == Tesla.Adapter.Gun do
         [:gun | @apps]
       else
         [:hackney | @apps]
@@ -33,11 +35,14 @@ defmodule Mix.Pleroma do
 
     Enum.each(apps, &Application.ensure_all_started/1)
 
-    children = [
-      Pleroma.Repo,
-      {Pleroma.Config.TransferTask, false},
-      Pleroma.Web.Endpoint
-    ]
+    children =
+      [
+        Pleroma.Repo,
+        {Pleroma.Config.TransferTask, false},
+        Pleroma.Web.Endpoint,
+        {Oban, Pleroma.Config.get(Oban)}
+      ] ++
+        http_children(adapter)
 
     cachex_children = Enum.map(@cachex_children, &Pleroma.Application.build_cachex(&1, []))
 
@@ -115,4 +120,11 @@ defmodule Mix.Pleroma do
   def escape_sh_path(path) do
     ~S(') <> String.replace(path, ~S('), ~S(\')) <> ~S(')
   end
+
+  defp http_children(Tesla.Adapter.Gun) do
+    Pleroma.Gun.ConnectionPool.children() ++
+      [{Task, &Pleroma.HTTP.AdapterHelper.Gun.limiter_setup/0}]
+  end
+
+  defp http_children(_), do: []
 end

@@ -106,6 +106,23 @@ defmodule Pleroma.Web.PleromaAPI.EmojiReactionControllerTest do
              result
   end
 
+  test "GET /api/v1/pleroma/statuses/:id/reactions with :show_reactions disabled", %{conn: conn} do
+    clear_config([:instance, :show_reactions], false)
+
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{status: "#cofe"})
+    {:ok, _} = CommonAPI.react_with_emoji(activity.id, other_user, "🎅")
+
+    result =
+      conn
+      |> get("/api/v1/pleroma/statuses/#{activity.id}/reactions")
+      |> json_response_and_validate_schema(200)
+
+    assert result == []
+  end
+
   test "GET /api/v1/pleroma/statuses/:id/reactions/:emoji", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)

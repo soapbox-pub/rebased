@@ -50,7 +50,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Authentication: not required
 * Params: none
 * Response: Provider specific JSON, the only guaranteed parameter is `type`
-* Example response: `{"type": "kocaptcha", "token": "whatever", "url": "https://captcha.kotobank.ch/endpoint"}`
+* Example response: `{"type": "kocaptcha", "token": "whatever", "url": "https://captcha.kotobank.ch/endpoint", "seconds_valid": 300}`
 
 ## `/api/pleroma/delete_account`
 ### Delete an account
@@ -287,11 +287,8 @@ See [Admin-API](admin_api.md)
 * Method `PUT`
 * Authentication: required
 * Params:
-    * `followers`: BOOLEAN field, receives notifications from followers
-    * `follows`: BOOLEAN field, receives notifications from people the user follows
-    * `remote`: BOOLEAN field, receives notifications from people on remote instances
-    * `local`: BOOLEAN field, receives notifications from people on the local instance
-    * `privacy_option`: BOOLEAN field. When set to true, it removes the contents of a message from the push notification.
+    * `block_from_strangers`: BOOLEAN field, blocks notifications from accounts you do not follow
+    * `hide_notification_contents`: BOOLEAN field. When set to true, it removes the contents of a message from the push notification.
 * Response: JSON. Returns `{"status": "success"}` if the update was successful, otherwise returns `{"error": "error_msg"}`
 
 ## `/api/pleroma/healthcheck`

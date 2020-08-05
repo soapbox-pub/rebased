@@ -27,6 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.InstanceControllerTest do
              "thumbnail" => _,
              "languages" => _,
              "registrations" => _,
+             "approval_required" => _,
              "poll_limits" => _,
              "upload_limit" => _,
              "avatar_upload_limit" => _,

@@ -60,7 +60,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy do
     if score < 0.8 do
       {:ok, message}
     else
-      {:reject, nil}
+      {:reject, "[AntiFollowbotPolicy] Scored #{actor_id} as #{score}"}
     end
   end
 

@@ -27,6 +27,8 @@ erl_crash.dump
 # variables.
 /config/*.secret.exs
 /config/generated_config.exs
+/config/*.env
+
 
 # Database setup file, some may forget to delete it
 /config/setup_db.psql
