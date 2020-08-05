@@ -64,7 +64,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
   test "get a filter" do
     %{user: user, conn: conn} = oauth_access(["read:filters"])
 
-    # check whole_word true
+    # check whole_word false
     query = %Pleroma.Filter{
       user_id: user.id,
       filter_id: 2,
@@ -80,7 +80,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterControllerTest do
     assert response = json_response_and_validate_schema(conn, 200)
     assert response["whole_word"] == false
 
-    # check whole_word false
+    # check whole_word true
     %{user: user, conn: conn} = oauth_access(["read:filters"])
 
     query = %Pleroma.Filter{
