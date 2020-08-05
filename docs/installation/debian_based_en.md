@@ -101,6 +101,10 @@ sudo -Hu pleroma mix deps.get
 mv config/{generated_config.exs,prod.secret.exs}
 ```
 
+* Generate the environment file: `sudo -Hu pleroma mix pleroma.release_env gen`
+  * Input path to env file or keep default value `./config/pleroma.env`
+
+
 * The previous command creates also the file `config/setup_db.psql`, with which you can create the database:
 
 ```shell
@@ -181,6 +185,7 @@ sudo cp /opt/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.se
 ```
 
 * Edit the service file and make sure that all paths fit your installation
+* Check that `EnvironmentFile` contains the correct path to the env file. Or generate the env file: `sudo -Hu pleroma mix pleroma.release_env gen`
 * Enable and start `pleroma.service`:
 
 ```shell
