@@ -11,12 +11,10 @@ defmodule Pleroma.Config do
 
   def get([key], default), do: get(key, default)
 
-  def get([parent_key | keys], default) do
-    case :pleroma
-         |> Application.get_env(parent_key)
-         |> get_in(keys) do
-      nil -> default
-      any -> any
+  def get([_ | _] = path, default) do
+    case fetch(path) do
+      {:ok, value} -> value
+      :error -> default
     end
   end
 
@@ -32,6 +30,24 @@ defmodule Pleroma.Config do
     else
       value
     end
+  end
+
+  def fetch(key) when is_atom(key), do: fetch([key])
+
+  def fetch([root_key | keys]) do
+    Enum.reduce_while(keys, Application.fetch_env(:pleroma, root_key), fn
+      key, {:ok, config} when is_map(config) or is_list(config) ->
+        case Access.fetch(config, key) do
+          :error ->
+            {:halt, :error}
+
+          value ->
+            {:cont, value}
+        end
+
+      _key, _config ->
+        {:halt, :error}
+    end)
   end
 
   def put([key], value), do: put(key, value)
@@ -50,12 +66,15 @@ defmodule Pleroma.Config do
 
   def delete([key]), do: delete(key)
 
-  def delete([parent_key | keys]) do
-    {_, parent} =
-      Application.get_env(:pleroma, parent_key)
-      |> get_and_update_in(keys, fn _ -> :pop end)
+  def delete([parent_key | keys] = path) do
+    with {:ok, _} <- fetch(path) do
+      {_, parent} =
+        parent_key
+        |> get()
+        |> get_and_update_in(keys, fn _ -> :pop end)
 
-    Application.put_env(:pleroma, parent_key, parent)
+      Application.put_env(:pleroma, parent_key, parent)
+    end
   end
 
   def delete(key) do
