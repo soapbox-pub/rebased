@@ -737,6 +737,8 @@ config :ex_aws, http_client: Pleroma.HTTP.ExAws
 
 config :pleroma, :instances_favicons, enabled: false
 
+config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
