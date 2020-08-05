@@ -84,20 +84,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
   end
 
   def validate_host_match(cng, fields \\ [:id, :actor]) do
-    unique_hosts =
-      fields
-      |> Enum.map(fn field ->
-        %URI{host: host} =
-          cng
-          |> get_field(field)
-          |> URI.parse()
-
-        host
-      end)
-      |> Enum.uniq()
-      |> Enum.count()
-
-    if unique_hosts == 1 do
+    if same_domain?(cng, fields) do
       cng
     else
       fields
@@ -109,13 +96,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
   end
 
   def validate_fields_match(cng, fields) do
-    unique_fields =
-      fields
-      |> Enum.map(fn field -> get_field(cng, field) end)
-      |> Enum.uniq()
-      |> Enum.count()
-
-    if unique_fields == 1 do
+    if map_unique?(cng, fields) do
       cng
     else
       fields
@@ -126,21 +107,23 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
     end
   end
 
+  defp map_unique?(cng, fields, func \\ & &1) do
+    Enum.reduce_while(fields, nil, fn field, acc ->
+      value =
+        cng
+        |> get_field(field)
+        |> func.()
+
+      case {value, acc} do
+        {value, nil} -> {:cont, value}
+        {value, value} -> {:cont, value}
+        _ -> {:halt, false}
+      end
+    end)
+  end
+
   def same_domain?(cng, fields \\ [:actor, :object]) do
-    unique_domains =
-      fields
-      |> Enum.map(fn field ->
-        %URI{host: host} =
-          cng
-          |> get_field(field)
-          |> URI.parse()
-
-        host
-      end)
-      |> Enum.uniq()
-      |> Enum.count()
-
-    unique_domains == 1
+    map_unique?(cng, fields, fn value -> URI.parse(value).host end)
   end
 
   # This figures out if a user is able to create, delete or modify something
