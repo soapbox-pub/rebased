@@ -940,17 +940,32 @@ defmodule Pleroma.Web.MastodonAPI.AccountControllerTest do
       assert refresh
       assert scope == "read write follow"
 
+      clear_config([User, :email_blacklist], ["example.org"])
+
+      params = %{
+        username: "lain",
+        email: "lain@example.org",
+        password: "PlzDontHackLain",
+        bio: "Test Bio",
+        agreement: true
+      }
+
       conn =
         build_conn()
         |> put_req_header("content-type", "multipart/form-data")
         |> put_req_header("authorization", "Bearer " <> token)
-        |> post("/api/v1/accounts", %{
-          username: "lain",
-          email: "lain@example.org",
-          password: "PlzDontHackLain",
-          bio: "Test Bio",
-          agreement: true
-        })
+        |> post("/api/v1/accounts", params)
+
+      assert %{"error" => "{\"email\":[\"Invalid email\"]}"} =
+               json_response_and_validate_schema(conn, 400)
+
+      Pleroma.Config.put([User, :email_blacklist], [])
+
+      conn =
+        build_conn()
+        |> put_req_header("content-type", "multipart/form-data")
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> post("/api/v1/accounts", params)
 
       %{
         "access_token" => token,
