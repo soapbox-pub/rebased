@@ -928,7 +928,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_muted_reblogs(query, _), do: query
 
   defp restrict_instance(query, %{instance: instance}) when is_binary(instance) do
-    from(activity in query, where: ilike(activity.actor, ^"%://#{instance}/%"))
+    from(
+      activity in query,
+      where: fragment("split_part(actor::text, '/'::text, 3) = ?", ^instance)
+    )
   end
 
   defp restrict_instance(query, _), do: query

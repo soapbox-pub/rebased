@@ -1647,8 +1647,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "instances" do
     test "GET /instances/:instance/statuses", %{conn: conn} do
-      user = insert(:user, local: false, nickname: "archaeme@archae.me")
-      user2 = insert(:user, local: false, nickname: "test@test.com")
+      user = insert(:user, local: false, ap_id: "https://archae.me/users/archaeme")
+      user2 = insert(:user, local: false, ap_id: "https://test.com/users/test")
       insert_pair(:note_activity, user: user)
       activity = insert(:note_activity, user: user2)
 
