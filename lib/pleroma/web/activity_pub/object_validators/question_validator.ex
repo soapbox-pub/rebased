@@ -83,17 +83,23 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
 
   # based on Pleroma.Web.ActivityPub.Utils.lazy_put_objects_defaults
   defp fix_defaults(data) do
-    %{data: %{"id" => context}, id: context_id} = Utils.create_context(data["context"])
+    %{data: %{"id" => context}, id: context_id} =
+      Utils.create_context(data["context"] || data["conversation"])
 
     data
-    |> Map.put_new_lazy("id", &Utils.generate_object_id/0)
     |> Map.put_new_lazy("published", &Utils.make_date/0)
     |> Map.put_new("context", context)
     |> Map.put_new("context_id", context_id)
   end
 
+  defp fix_attribution(data) do
+    data
+    |> Map.put_new("actor", data["attributedTo"])
+  end
+
   defp fix(data) do
     data
+    |> fix_attribution()
     |> fix_closed()
     |> fix_defaults()
   end

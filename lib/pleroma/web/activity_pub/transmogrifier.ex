@@ -634,17 +634,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
+        %{"type" => "Create", "object" => %{"type" => objtype}} = data,
         _options
       )
-      when objtype in ["Question", "Answer"] do
-    data =
-      data
-      |> Map.put("object", fix_object(object))
-      |> fix_addressing()
-
-    data = Map.put_new(data, "context", data["object"]["context"])
-
+      when objtype in ["Question", "Answer", "ChatMessage"] do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}

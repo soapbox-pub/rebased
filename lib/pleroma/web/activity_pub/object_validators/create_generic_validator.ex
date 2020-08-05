@@ -29,7 +29,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
     field(:context, :string)
   end
 
-  def cast_data(data) do
+  def cast_data(data, meta \\ []) do
+    data = fix(data, meta)
+
     %__MODULE__{}
     |> changeset(data)
   end
@@ -42,13 +44,26 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CreateGenericValidator do
 
   def cast_and_validate(data, meta \\ []) do
     data
-    |> cast_data
+    |> cast_data(meta)
     |> validate_data(meta)
   end
 
   def changeset(struct, data) do
     struct
     |> cast(data, __schema__(:fields))
+  end
+
+  defp fix_context(data, meta) do
+    if object = meta[:object_data] do
+      Map.put_new(data, "context", object["context"])
+    else
+      data
+    end
+  end
+
+  defp fix(data, meta) do
+    data
+    |> fix_context(meta)
   end
 
   def validate_data(cng, meta \\ []) do
