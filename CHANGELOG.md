@@ -104,6 +104,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix CSP policy generation to include remote Captcha services
 - Fix edge case where MediaProxy truncates media, usually caused when Caddy is serving content for the other Federated instance.
 - Emoji Packs could not be listed when instance was set to `public: false`
+- Fix whole_word always returning false on filter get requests
 
 ## [Unreleased (patch)]
 

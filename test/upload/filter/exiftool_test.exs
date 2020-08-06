@@ -7,6 +7,8 @@ defmodule Pleroma.Upload.Filter.ExiftoolTest do
   alias Pleroma.Upload.Filter
 
   test "apply exiftool filter" do
+    assert Pleroma.Utils.command_available?("exiftool")
+
     File.cp!(
       "test/fixtures/DSCN0010.jpg",
       "test/fixtures/DSCN0010_tmp.jpg"
