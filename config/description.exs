@@ -12,6 +12,36 @@ websocket_config = [
   compress: false
 ]
 
+frontend_options = [
+  %{
+    key: "name",
+    type: :string,
+    description: "Name of the installed Admin frontend"
+  },
+  %{
+    key: "ref",
+    type: :string,
+    description: "reference of the installed Admin frontend to be used"
+  },
+  %{
+    key: "git",
+    type: :string,
+    description: "URL of the git repository of the frontend"
+  },
+  %{
+    key: "build_url",
+    type: :string,
+    description:
+      "Either an url to a zip file containing the frontend or a template to build it by inserting the `ref`. The string `${ref}` will be replaced by the configured `ref`.",
+    example: "https://some.url/builds/${ref}.zip"
+  },
+  %{
+    key: "build_dir",
+    type: :string,
+    description: "The directory inside the zip file "
+  }
+]
+
 config :pleroma, :config_description, [
   %{
     group: :pleroma,
@@ -3552,69 +3582,18 @@ config :pleroma, :config_description, [
         key: :primary,
         type: :map,
         description: "Primary frontend, the one that is served for all pages by default",
-        children: [
-          %{
-            key: "name",
-            type: :string,
-            description: "Name of the installed primary frontend"
-          },
-          %{
-            key: "ref",
-            type: :string,
-            description: "reference of the installed primary frontend to be used"
-          },
-          %{
-            key: "git",
-            type: :string,
-            description: "URL of the git repository of the frontend"
-          },
-          %{
-            key: "build_url",
-            type: :string,
-            description:
-              "Either an url to a zip file containing the frontend or a template to build it by inserting the `ref`. The string `${ref}` will be replaced by the configured `ref`.",
-            example: "https://some.url/builds/${ref}.zip"
-          },
-          %{
-            key: "build_dir",
-            type: :string,
-            description: "The directory inside the zip file "
-          }
-        ]
+        children: frontend_options
       },
       %{
         key: :admin,
         type: :map,
         description: "Admin frontend",
-        children: [
-          %{
-            key: "name",
-            type: :string,
-            description: "Name of the installed Admin frontend"
-          },
-          %{
-            key: "ref",
-            type: :string,
-            description: "reference of the installed Admin frontend to be used"
-          },
-          %{
-            key: "git",
-            type: :string,
-            description: "URL of the git repository of the frontend"
-          },
-          %{
-            key: "build_url",
-            type: :string,
-            description:
-              "Either an url to a zip file containing the frontend or a template to build it by inserting the `ref`. The string `${ref}` will be replaced by the configured `ref`.",
-            example: "https://some.url/builds/${ref}.zip"
-          },
-          %{
-            key: "build_dir",
-            type: :string,
-            description: "The directory inside the zip file "
-          }
-        ]
+        children: frontend_options
+      },
+      %{
+        key: :available,
+        type: :map,
+        description: "A map containing frontends that we have some knowledge of"
       }
     ]
   }
