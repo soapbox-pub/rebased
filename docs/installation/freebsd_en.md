@@ -69,7 +69,7 @@ Once this is done, restart Postgres with `# service postgresql restart`.
 
 Run the database migrations.
 
-Back as the pleroma user, you will need to do this whenever you update with `git pull`:
+Back as the pleroma user, run the following to implement any database migrations.
 
 ```
 # su -l pleroma
@@ -77,9 +77,11 @@ $ cd /home/pleroma/pleroma
 $ MIX_ENV=prod mix ecto.migrate
 ```
 
+You will need to do this whenever you update with `git pull`:
+
 ## Configuring nginx
 
-Install the example configuration file
+As root, install the example configuration file
 `/home/pleroma/pleroma/installation/pleroma.nginx` to
 `/usr/local/etc/nginx/nginx.conf`.
 
