@@ -278,6 +278,8 @@ docker:
     IMAGE_TAG_SLUG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
     IMAGE_TAG_LATEST: $CI_REGISTRY_IMAGE:latest
     IMAGE_TAG_LATEST_STABLE: $CI_REGISTRY_IMAGE:latest-stable
+    DOCKER_BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.4.1/buildx-v0.4.1.linux-amd64
+    DOCKER_BUILDX_HASH: 71a7d01439aa8c165a25b59c44d3f016fddbd98b
   before_script: &before-docker
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $IMAGE_TAG_SLUG || true
@@ -286,12 +288,13 @@ docker:
   allow_failure: true
   script:
     - mkdir -p /root/.docker/cli-plugins
-    - wget https://github.com/docker/buildx/releases/download/v0.4.1/buildx-v0.4.1.linux-amd64 -O ~/.docker/cli-plugins/docker-buildx
+    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
+    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
     - chmod +x ~/.docker/cli-plugins/docker-buildx
     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - docker buildx create --name mbuilder --driver docker-container --use
     - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST .
+    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST .
   tags:
     - dind
   only:
@@ -307,12 +310,13 @@ docker-stable:
   allow_failure: true
   script:
     - mkdir -p /root/.docker/cli-plugins
-    - wget https://github.com/docker/buildx/releases/download/v0.4.1/buildx-v0.4.1.linux-amd64 -O ~/.docker/cli-plugins/docker-buildx
+    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
+    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
     - chmod +x ~/.docker/cli-plugins/docker-buildx
     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - docker buildx create --name mbuilder --driver docker-container --use
     - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST_STABLE .
+    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG -t $IMAGE_TAG_LATEST_STABLE .
   tags:
     - dind
   only:
@@ -329,12 +333,13 @@ docker-release:
   script:
   script:
     - mkdir -p /root/.docker/cli-plugins
-    - wget https://github.com/docker/buildx/releases/download/v0.4.1/buildx-v0.4.1.linux-amd64 -O ~/.docker/cli-plugins/docker-buildx
+    - wget "${DOCKER_BUILDX_URL}" -O ~/.docker/cli-plugins/docker-buildx
+    - echo "${DOCKER_BUILDX_HASH}  /root/.docker/cli-plugins/docker-buildx" | sha1sum -c
     - chmod +x ~/.docker/cli-plugins/docker-buildx
     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - docker buildx create --name mbuilder --driver docker-container --use
     - docker buildx inspect --bootstrap
-    - docker buildx build --platform linux/amd64,linux/arm/v7 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG .
+    - docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm64/v8 --push --cache-from $IMAGE_TAG_SLUG --build-arg VCS_REF=$CI_VCS_REF --build-arg BUILD_DATE=$CI_JOB_TIMESTAMP -t $IMAGE_TAG -t $IMAGE_TAG_SLUG .
   tags:
     - dind
   only:
