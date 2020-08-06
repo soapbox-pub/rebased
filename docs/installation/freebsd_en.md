@@ -97,12 +97,12 @@ events {
 }
 ```
 
-Edit the defaults:
+Edit the defaults of `/usr/local/etc/nginx/nginx.conf`:
 
-* Change `ssl_certificate` and `ssl_trusted_certificate` to
-`/etc/ssl/example.tld/fullchain`.
-* Change `ssl_certificate_key` to `/etc/ssl/example.tld/key`.
-* Change `example.tld` to your instance's domain name.
+* Change `ssl_trusted_certificate` to `/etc/ssl/example.tld/chain.pem`.
+* Change `ssl_certificate` to `/etc/ssl/example.tld/fullchain.pem`.
+* Change `ssl_certificate_key` to `/etc/ssl/example.tld/privkey.pem`.
+* Change all references of `example.tld` to your instance's domain name.
 
 ## Configuring acme.sh
 
@@ -188,8 +188,6 @@ Run `# /etc/rc.d/pleroma start` to start Pleroma.
 ## Conclusion
 
 Restart nginx with `# /etc/rc.d/nginx restart` and you should be up and running.
-
-If you need further help, contact niaa on freenode.
 
 Make sure your time is in sync, or other instances will receive your posts with
 incorrect timestamps. You should have ntpd running.
