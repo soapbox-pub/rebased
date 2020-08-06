@@ -515,7 +515,13 @@ config :pleroma, Pleroma.User,
     "user-search",
     "user_exists",
     "users",
-    "web"
+    "web",
+    "verify_credentials",
+    "update_credentials",
+    "relationships",
+    "search",
+    "confirmation_resend",
+    "mfa"
   ],
   email_blacklist: []
 
