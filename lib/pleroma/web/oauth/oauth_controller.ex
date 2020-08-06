@@ -76,6 +76,13 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     available_scopes = (app && app.scopes) || []
     scopes = Scopes.fetch_scopes(params, available_scopes)
 
+    scopes =
+      if scopes == [] do
+        available_scopes
+      else
+        scopes
+      end
+
     # Note: `params` might differ from `conn.params`; use `@params` not `@conn.params` in template
     render(conn, Authenticator.auth_template(), %{
       response_type: params["response_type"],
