@@ -101,9 +101,6 @@ sudo -Hu pleroma mix deps.get
 mv config/{generated_config.exs,prod.secret.exs}
 ```
 
-* Generate the environment file: `sudo -Hu pleroma mix pleroma.release_env gen`
-  * Input path to env file or keep default value `./config/pleroma.env`
-
 
 * The previous command creates also the file `config/setup_db.psql`, with which you can create the database:
 

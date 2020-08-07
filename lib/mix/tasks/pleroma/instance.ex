@@ -36,7 +36,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           listen_port: :string,
           strip_uploads: :string,
           anonymize_uploads: :string,
-          dedupe_uploads: :string
+          dedupe_uploads: :string,
+          skip_release_env: :boolean
         ],
         aliases: [
           o: :output,
@@ -240,6 +241,16 @@ defmodule Mix.Tasks.Pleroma.Instance do
       File.write(psql_path, result_psql)
 
       write_robots_txt(static_dir, indexable, template_dir)
+
+      if Keyword.get(options, :skip_release_env, false) do
+        shell_info("""
+        Release environment file is skip. Please generate the release env file before start.
+        `MIX_ENV=#{Mix.env()} mix pleroma.release_env gen`
+        """)
+      else
+        shell_info("Generation the environment file:")
+        Mix.Tasks.Pleroma.ReleaseEnv.run(["gen"])
+      end
 
       shell_info(
         "\n All files successfully written! Refer to the installation instructions for your platform for next steps."
