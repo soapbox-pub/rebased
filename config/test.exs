@@ -118,6 +118,10 @@ config :pleroma, Pleroma.Uploaders.S3,
   streaming_enabled: true,
   public_endpoint: nil
 
+config :tzdata, :autoupdate, :disabled
+
+config :pleroma, :mrf, policies: []
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else

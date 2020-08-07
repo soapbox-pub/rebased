@@ -10,6 +10,7 @@ defmodule Pleroma.Gun.ConnectionPool do
     ]
   end
 
+  @spec get_conn(URI.t(), keyword()) :: {:ok, pid()} | {:error, term()}
   def get_conn(uri, opts) do
     key = "#{uri.scheme}:#{uri.host}:#{uri.port}"
 
@@ -19,7 +20,7 @@ defmodule Pleroma.Gun.ConnectionPool do
         get_gun_pid_from_worker(worker_pid, true)
 
       [{worker_pid, {gun_pid, _used_by, _crf, _last_reference}}] ->
-        GenServer.cast(worker_pid, {:add_client, self(), false})
+        GenServer.call(worker_pid, :add_client)
         {:ok, gun_pid}
 
       [] ->
@@ -45,7 +46,7 @@ defmodule Pleroma.Gun.ConnectionPool do
     # so instead we use cast + monitor
 
     ref = Process.monitor(worker_pid)
-    if register, do: GenServer.cast(worker_pid, {:add_client, self(), true})
+    if register, do: GenServer.cast(worker_pid, {:add_client, self()})
 
     receive do
       {:conn_pid, pid} ->
@@ -54,12 +55,14 @@ defmodule Pleroma.Gun.ConnectionPool do
 
       {:DOWN, ^ref, :process, ^worker_pid, reason} ->
         case reason do
-          {:shutdown, error} -> error
+          {:shutdown, {:error, _} = error} -> error
+          {:shutdown, error} -> {:error, error}
           _ -> {:error, reason}
         end
     end
   end
 
+  @spec release_conn(pid()) :: :ok
   def release_conn(conn_pid) do
     # :ets.fun2ms(fn {_, {worker_pid, {gun_pid, _, _, _}}} when gun_pid == conn_pid ->
     #    worker_pid end)
@@ -70,7 +73,7 @@ defmodule Pleroma.Gun.ConnectionPool do
 
     case query_result do
       [worker_pid] ->
-        GenServer.cast(worker_pid, {:remove_client, self()})
+        GenServer.call(worker_pid, :remove_client)
 
       [] ->
         :ok

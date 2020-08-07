@@ -56,6 +56,23 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
            ]
   end
 
+  test "works correctly with badly formatted emojis" do
+    user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{status: "yo"})
+
+    activity
+    |> Object.normalize(false)
+    |> Object.update_data(%{"reactions" => %{"☕" => [user.ap_id], "x" => 1}})
+
+    activity = Activity.get_by_id(activity.id)
+
+    status = StatusView.render("show.json", activity: activity, for: user)
+
+    assert status[:pleroma][:emoji_reactions] == [
+             %{name: "☕", count: 1, me: true}
+           ]
+  end
+
   test "loads and returns the direct conversation id when given the `with_direct_conversation_id` option" do
     user = insert(:user)
 
@@ -177,7 +194,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       id: to_string(note.id),
       uri: object_data["id"],
       url: Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, note),
-      account: AccountView.render("show.json", %{user: user}),
+      account: AccountView.render("show.json", %{user: user, skip_visibility_check: true}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       card: nil,

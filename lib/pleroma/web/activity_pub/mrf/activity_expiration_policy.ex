@@ -21,8 +21,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy do
   @impl true
   def describe, do: {:ok, %{}}
 
-  defp local?(%{"id" => id}) do
-    String.starts_with?(id, Pleroma.Web.Endpoint.url())
+  defp local?(%{"actor" => actor}) do
+    String.starts_with?(actor, Pleroma.Web.Endpoint.url())
   end
 
   defp note?(activity) do

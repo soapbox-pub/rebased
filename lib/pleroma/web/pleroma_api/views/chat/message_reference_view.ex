@@ -14,7 +14,7 @@ defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceView do
         %{
           chat_message_reference: %{
             id: id,
-            object: %{data: chat_message},
+            object: %{data: chat_message} = object,
             chat_id: chat_id,
             unread: unread
           }
@@ -30,7 +30,12 @@ defmodule Pleroma.Web.PleromaAPI.Chat.MessageReferenceView do
       attachment:
         chat_message["attachment"] &&
           StatusView.render("attachment.json", attachment: chat_message["attachment"]),
-      unread: unread
+      unread: unread,
+      card:
+        StatusView.render(
+          "card.json",
+          Pleroma.Web.RichMedia.Helpers.fetch_data_for_object(object)
+        )
     }
   end
 

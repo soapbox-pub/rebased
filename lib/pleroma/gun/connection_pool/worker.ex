@@ -36,15 +36,30 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
   end
 
   @impl true
-  def handle_cast({:add_client, client_pid, send_pid_back}, %{key: key} = state) do
+  def handle_cast({:add_client, client_pid}, state) do
+    case handle_call(:add_client, {client_pid, nil}, state) do
+      {:reply, conn_pid, state, :hibernate} ->
+        send(client_pid, {:conn_pid, conn_pid})
+        {:noreply, state, :hibernate}
+    end
+  end
+
+  @impl true
+  def handle_cast({:remove_client, client_pid}, state) do
+    case handle_call(:remove_client, {client_pid, nil}, state) do
+      {:reply, _, state, :hibernate} ->
+        {:noreply, state, :hibernate}
+    end
+  end
+
+  @impl true
+  def handle_call(:add_client, {client_pid, _}, %{key: key} = state) do
     time = :erlang.monotonic_time(:millisecond)
 
     {{conn_pid, _, _, _}, _} =
       Registry.update_value(@registry, key, fn {conn_pid, used_by, crf, last_reference} ->
         {conn_pid, [client_pid | used_by], crf(time - last_reference, crf), time}
       end)
-
-    if send_pid_back, do: send(client_pid, {:conn_pid, conn_pid})
 
     state =
       if state.timer != nil do
@@ -57,11 +72,11 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
     ref = Process.monitor(client_pid)
 
     state = put_in(state.client_monitors[client_pid], ref)
-    {:noreply, state, :hibernate}
+    {:reply, conn_pid, state, :hibernate}
   end
 
   @impl true
-  def handle_cast({:remove_client, client_pid}, %{key: key} = state) do
+  def handle_call(:remove_client, {client_pid, _}, %{key: key} = state) do
     {{_conn_pid, used_by, _crf, _last_reference}, _} =
       Registry.update_value(@registry, key, fn {conn_pid, used_by, crf, last_reference} ->
         {conn_pid, List.delete(used_by, client_pid), crf, last_reference}
@@ -78,7 +93,7 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
         nil
       end
 
-    {:noreply, %{state | timer: timer}, :hibernate}
+    {:reply, :ok, %{state | timer: timer}, :hibernate}
   end
 
   @impl true
@@ -102,22 +117,13 @@ defmodule Pleroma.Gun.ConnectionPool.Worker do
 
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, reason}, state) do
-    # Sometimes the client is dead before we demonitor it in :remove_client, so the message
-    # arrives anyway
+    :telemetry.execute(
+      [:pleroma, :connection_pool, :client_death],
+      %{client_pid: pid, reason: reason},
+      %{key: state.key}
+    )
 
-    case state.client_monitors[pid] do
-      nil ->
-        {:noreply, state, :hibernate}
-
-      _ref ->
-        :telemetry.execute(
-          [:pleroma, :connection_pool, :client_death],
-          %{client_pid: pid, reason: reason},
-          %{key: state.key}
-        )
-
-        handle_cast({:remove_client, pid}, state)
-    end
+    handle_cast({:remove_client, pid}, state)
   end
 
   # LRFU policy: https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.55.1478

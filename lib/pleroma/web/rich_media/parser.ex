@@ -3,11 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser do
-  @options [
-    pool: :media,
-    max_body: 2_000_000
-  ]
-
   defp parsers do
     Pleroma.Config.get([:rich_media, :parsers])
   end
@@ -75,21 +70,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
   end
 
   defp parse_url(url) do
-    opts =
-      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Hackney do
-        Keyword.merge(@options,
-          recv_timeout: 2_000,
-          with_body: true
-        )
-      else
-        @options
-      end
-
     try do
-      rich_media_agent = Pleroma.Application.user_agent() <> "; Bot"
-
-      {:ok, %Tesla.Env{body: html}} =
-        Pleroma.HTTP.get(url, [{"user-agent", rich_media_agent}], adapter: opts)
+      {:ok, %Tesla.Env{body: html}} = Pleroma.Web.RichMedia.Helpers.rich_media_get(url)
 
       html
       |> parse_html()

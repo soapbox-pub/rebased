@@ -33,6 +33,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `registrations_open`: Enable registrations for anyone, invitations can be enabled when false.
 * `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
 * `account_activation_required`: Require users to confirm their emails before signing in.
+* `account_approval_required`: Require users to be manually approved by an admin before signing in.
 * `federating`: Enable federation with other instances.
 * `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
@@ -46,8 +47,6 @@ To add configuration to your config file, you can copy it from the base config. 
 * `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
 * `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
 * `attachment_links`: Set to true to enable automatically adding attachment link text to statuses.
-* `welcome_message`: A message that will be send to a newly registered users as a direct message.
-* `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`).
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
 * `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
@@ -60,8 +59,44 @@ To add configuration to your config file, you can copy it from the base config. 
 * `max_remote_account_fields`: The maximum number of custom fields in the remote user profile (default: `20`).
 * `account_field_name_length`: An account field name maximum length (default: `512`).
 * `account_field_value_length`: An account field value maximum length (default: `2048`).
+* `registration_reason_length`: Maximum registration reason length (default: `500`).
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 * `cleanup_attachments`: Remove attachments along with statuses. Does not affect duplicate files and attachments without status. Enabling this will increase load to database when deleting statuses on larger instances.
+* `show_reactions`: Let favourites and emoji reactions be viewed through the API (default: `true`).
+
+## Welcome
+* `direct_message`: - welcome message sent as a direct message.
+  * `enabled`: Enables the send a direct message to a newly registered user. Defaults to `false`.
+  * `sender_nickname`: The nickname of the local user that sends the welcome message.
+  * `message`: A message that will be send to a newly registered users as a direct message.
+* `chat_message`: - welcome message sent as a chat message.
+  * `enabled`: Enables the send a chat message to a newly registered user. Defaults to `false`.
+  * `sender_nickname`: The nickname of the local user that sends the welcome message.
+  * `message`: A message that will be send to a newly registered users as a chat message.
+* `email`: - welcome message sent as a email.
+  * `enabled`: Enables the send a welcome email to a newly registered user. Defaults to `false`.
+  * `sender`: The email address or tuple with `{nickname, email}` that will use as sender to the welcome email.
+  * `subject`: A subject of welcome email.
+  * `html`: A html that will be send to a newly registered users as a email.
+  * `text`: A text that will be send to a newly registered users as a email.
+
+    Example:
+
+  ```elixir
+  config :pleroma, :welcome,
+      direct_message: [
+        enabled: true,
+        sender_nickname: "lain",
+        message: "Hi, @username! Welcome on board!"
+        ],
+      email: [
+        enabled: true,
+        sender: {"Pleroma App", "welcome@pleroma.app"},
+        subject: "Welcome to <%= instance_name %>",
+        html: "Welcome to <%= instance_name %>",
+        text: "Welcome to <%= instance_name %>"
+    ]
+  ```
 
 ## Message rewrite facility
 
@@ -94,6 +129,7 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federated_timeline_removal`: List of instances to remove from Federated (aka The Whole Known Network) Timeline.
 * `reject`: List of instances to reject any activities from.
 * `accept`: List of instances to accept any activities from.
+* `followers_only`: List of instances to decrease post visibility to only the followers, including for DM mentions.
 * `report_removal`: List of instances to reject reports from.
 * `avatar_removal`: List of instances to strip avatars from.
 * `banner_removal`: List of instances to strip banners from.
@@ -170,6 +206,11 @@ config :pleroma, :mrf_user_allowlist, %{
 * `deny_follow_blocked`: Whether to disallow following an account that has blocked the user in question
 * `sign_object_fetches`: Sign object fetches with HTTP signatures
 * `authorized_fetch_mode`: Require HTTP signatures for AP fetches
+
+## Pleroma.User
+
+* `restricted_nicknames`: List of nicknames users may not register with.
+* `email_blacklist`: List of email domains users may not register with.
 
 ## Pleroma.ScheduledActivity
 
@@ -817,9 +858,6 @@ Warning: it's discouraged to use this feature because of the associated security
 
 ### :auth
 
-* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator.
-* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication.
-
 Authentication / authorization settings.
 
 * `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`.
@@ -848,6 +886,9 @@ Pleroma account will be created with the same name as the LDAP user name.
 * `tlsopts`: additional TLS options
 * `base`: LDAP base, e.g. "dc=example,dc=com"
 * `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
+
+Note, if your LDAP server is an Active Directory server the correct value is commonly `uid: "cn"`, but if you use an
+OpenLDAP server the value may be `uid: "uid"`.
 
 ### OAuth consumer mode
 
@@ -934,30 +975,29 @@ Configure OAuth 2 provider capabilities:
 ### :uri_schemes
 * `valid_schemes`: List of the scheme part that is considered valid to be an URL.
 
-### :auto_linker
+### Pleroma.Formatter
 
-Configuration for the `auto_linker` library:
+Configuration for Pleroma's link formatter which parses mentions, hashtags, and URLs.
 
-* `class: "auto-linker"` - specify the class to be added to the generated link. false to clear.
-* `rel: "noopener noreferrer"` - override the rel attribute. false to clear.
-* `new_window: true` - set to false to remove `target='_blank'` attribute.
-* `scheme: false` - Set to true to link urls with schema `http://google.com`.
-* `truncate: false` - Set to a number to truncate urls longer then the number. Truncated urls will end in `..`.
-* `strip_prefix: true` - Strip the scheme prefix.
-* `extra: false` - link urls with rarely used schemes (magnet, ipfs, irc, etc.).
+* `class` - specify the class to be added to the generated link (default: `false`)
+* `rel` - specify the rel attribute (default: `ugc`)
+* `new_window` - adds `target="_blank"` attribute (default: `false`)
+* `truncate` - Set to a number to truncate URLs longer then the number. Truncated URLs will end in `...` (default: `false`)
+* `strip_prefix` - Strip the scheme prefix (default: `false`)
+* `extra` - link URLs with rarely used schemes (magnet, ipfs, irc, etc.) (default: `true`)
+* `validate_tld` - Set to false to disable TLD validation for URLs/emails. Can be set to :no_scheme to validate TLDs only for urls without a scheme (e.g `example.com` will be validated, but `http://example.loki` won't) (default: `:no_scheme`)
 
 Example:
 
 ```elixir
-config :auto_linker,
-  opts: [
-    scheme: true,
-    extra: true,
-    class: false,
-    strip_prefix: false,
-    new_window: false,
-    rel: "ugc"
-  ]
+config :pleroma, Pleroma.Formatter,
+  class: false,
+  rel: "ugc",
+  new_window: false,
+  truncate: false,
+  strip_prefix: false,
+  extra: true,
+  validate_tld: :no_scheme
 ```
 
 ## Custom Runtime Modules (`:modules`)
@@ -1019,3 +1059,25 @@ Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practi
 Control favicons for instances.
 
 * `enabled`: Allow/disallow displaying and getting instances favicons
+
+## Frontend management
+
+Frontends in Pleroma are swappable - you can specify which one to use here.
+
+For now, you can set a frontend with the key `primary` and the options of `name` and `ref`. This will then make Pleroma serve the frontend from a folder constructed by concatenating the instance static path, `frontends` and the name and ref.
+
+The key `primary` refers to the frontend that will be served by default for general requests. In the future, other frontends like the admin frontend will also be configurable here.
+
+If you don't set anything here, the bundled frontend will be used.
+
+Example:
+
+```
+config :pleroma, :frontends,
+  primary: %{
+    "name" => "pleroma",
+    "ref" => "stable"
+  }
+```
+
+This would serve the frontend from the the folder at `$instance_static/frontends/pleroma/stable`. You have to copy the frontend into this folder yourself. You can choose the name and ref any way you like, but they will be used by mix tasks to automate installation in the future, the name referring to the project and the ref referring to a commit.

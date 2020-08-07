@@ -297,13 +297,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     emoji_reactions =
       with %{data: %{"reactions" => emoji_reactions}} <- object do
-        Enum.map(emoji_reactions, fn [emoji, users] ->
-          %{
-            name: emoji,
-            count: length(users),
-            me: !!(opts[:for] && opts[:for].ap_id in users)
-          }
+        Enum.map(emoji_reactions, fn
+          [emoji, users] when is_list(users) ->
+            build_emoji_map(emoji, users, opts[:for])
+
+          {emoji, users} when is_list(users) ->
+            build_emoji_map(emoji, users, opts[:for])
+
+          _ ->
+            nil
         end)
+        |> Enum.reject(&is_nil/1)
       else
         _ -> []
       end
@@ -545,4 +549,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   defp pinned?(%Activity{id: id}, %User{pinned_activities: pinned_activities}),
     do: id in pinned_activities
+
+  defp build_emoji_map(emoji, users, current_user) do
+    %{
+      name: emoji,
+      count: length(users),
+      me: !!(current_user && current_user.ap_id in users)
+    }
+  end
 end

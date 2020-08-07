@@ -10,7 +10,7 @@
 <%= form_for @conn, mfa_verify_path(@conn, :verify), [as: "mfa"], fn f -> %>
 <div class="input">
   <%= label f, :code, "Recovery code" %>
-  <%= text_input f, :code %>
+  <%= text_input f, :code, [autocomplete: false, autocorrect: "off", autocapitalize: "off", autofocus: true, spellcheck: false] %>
   <%= hidden_input f, :mfa_token, value: @mfa_token %>
   <%= hidden_input f, :state, value: @state %>
   <%= hidden_input f, :redirect_uri, value: @redirect_uri %>

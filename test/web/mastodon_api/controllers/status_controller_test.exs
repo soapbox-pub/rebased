@@ -1432,6 +1432,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       [%{"id" => id}] = response
       assert id == other_user.id
     end
+
+    test "returns empty array when :show_reactions is disabled", %{conn: conn, activity: activity} do
+      clear_config([:instance, :show_reactions], false)
+
+      other_user = insert(:user)
+      {:ok, _} = CommonAPI.favorite(other_user, activity.id)
+
+      response =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}/favourited_by")
+        |> json_response_and_validate_schema(:ok)
+
+      assert Enum.empty?(response)
+    end
   end
 
   describe "GET /api/v1/statuses/:id/reblogged_by" do

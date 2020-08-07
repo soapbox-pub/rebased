@@ -29,5 +29,16 @@ defmodule Pleroma.Web.OAuth.AppTest do
       assert exist_app.id == app.id
       assert exist_app.scopes == ["read", "write", "follow", "push"]
     end
+
+    test "has unique client_id" do
+      insert(:oauth_app, client_name: "", redirect_uris: "", client_id: "boop")
+
+      error =
+        catch_error(insert(:oauth_app, client_name: "", redirect_uris: "", client_id: "boop"))
+
+      assert %Ecto.ConstraintError{} = error
+      assert error.constraint == "apps_client_id_index"
+      assert error.type == :unique
+    end
   end
 end

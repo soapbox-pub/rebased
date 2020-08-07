@@ -8,9 +8,7 @@
 
 ### Environment
 
-* Installation type:
-  - [ ] OTP
-  - [ ] From source
+* Installation type (OTP or From Source):
 * Pleroma version (could be found in the "Version" tab of settings in Pleroma-FE): 
 * Elixir version (`elixir -v` for from source installations, N/A for OTP):
 * Operating system:

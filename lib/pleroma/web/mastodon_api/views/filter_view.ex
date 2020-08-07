@@ -25,7 +25,7 @@ defmodule Pleroma.Web.MastodonAPI.FilterView do
       context: filter.context,
       expires_at: expires_at,
       irreversible: filter.hide,
-      whole_word: false
+      whole_word: filter.whole_word
     }
   end
 end

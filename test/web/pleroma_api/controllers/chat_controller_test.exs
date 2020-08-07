@@ -332,5 +332,27 @@ defmodule Pleroma.Web.PleromaAPI.ChatControllerTest do
                chat_1.id |> to_string()
              ]
     end
+
+    test "it is not affected by :restrict_unauthenticated setting (issue #1973)", %{
+      conn: conn,
+      user: user
+    } do
+      clear_config([:restrict_unauthenticated, :profiles, :local], true)
+      clear_config([:restrict_unauthenticated, :profiles, :remote], true)
+
+      user2 = insert(:user)
+      user3 = insert(:user, local: false)
+
+      {:ok, _chat_12} = Chat.get_or_create(user.id, user2.ap_id)
+      {:ok, _chat_13} = Chat.get_or_create(user.id, user3.ap_id)
+
+      result =
+        conn
+        |> get("/api/v1/pleroma/chats")
+        |> json_response_and_validate_schema(200)
+
+      account_ids = Enum.map(result, &get_in(&1, ["account", "id"]))
+      assert Enum.sort(account_ids) == Enum.sort([user2.id, user3.id])
+    end
   end
 end

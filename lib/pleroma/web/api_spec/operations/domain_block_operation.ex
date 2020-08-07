@@ -31,6 +31,7 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
     }
   end
 
+  # Supporting domain query parameter is deprecated in Mastodon API
   def create_operation do
     %Operation{
       tags: ["domain_blocks"],
@@ -45,11 +46,13 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
       """,
       operationId: "DomainBlockController.create",
       requestBody: domain_block_request(),
+      parameters: [Operation.parameter(:domain, :query, %Schema{type: :string}, "Domain name")],
       security: [%{"oAuth" => ["follow", "write:blocks"]}],
       responses: %{200 => empty_object_response()}
     }
   end
 
+  # Supporting domain query parameter is deprecated in Mastodon API
   def delete_operation do
     %Operation{
       tags: ["domain_blocks"],
@@ -57,6 +60,7 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
       description: "Remove a domain block, if it exists in the user's array of blocked domains.",
       operationId: "DomainBlockController.delete",
       requestBody: domain_block_request(),
+      parameters: [Operation.parameter(:domain, :query, %Schema{type: :string}, "Domain name")],
       security: [%{"oAuth" => ["follow", "write:blocks"]}],
       responses: %{
         200 => Operation.response("Empty object", "application/json", %Schema{type: :object})
@@ -71,10 +75,9 @@ defmodule Pleroma.Web.ApiSpec.DomainBlockOperation do
         type: :object,
         properties: %{
           domain: %Schema{type: :string}
-        },
-        required: [:domain]
+        }
       },
-      required: true,
+      required: false,
       example: %{
         "domain" => "facebook.com"
       }
