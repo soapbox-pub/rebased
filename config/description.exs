@@ -3593,7 +3593,7 @@ config :pleroma, :config_description, [
       %{
         key: :available,
         type: :map,
-        description: "A map containing frontends that we have some knowledge of"
+        description: "A map containing available frontends and parameters for their installation."
       }
     ]
   }
