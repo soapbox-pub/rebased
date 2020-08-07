@@ -8,7 +8,6 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyControllerTest do
   import Mock
 
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.Web.MediaProxy.MediaProxyController
   alias Plug.Conn
 
   setup do
