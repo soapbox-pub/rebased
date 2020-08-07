@@ -982,8 +982,7 @@ config :pleroma, :config_description, [
           %{
             key: :message,
             type: :string,
-            description:
-              "A message that will be sent to newly registered users",
+            description: "A message that will be sent to newly registered users",
             suggestions: [
               "Hi, @username! Welcome on board!"
             ]
@@ -3552,13 +3551,15 @@ config :pleroma, :config_description, [
             key: "name",
             label: "Name",
             type: :string,
-            description: "Name of the installed primary frontend. Valid config must include both `Name` and `Reference` values."
+            description:
+              "Name of the installed primary frontend. Valid config must include both `Name` and `Reference` values."
           },
           %{
             key: "ref",
             label: "Reference",
             type: :string,
-            description: "Reference of the installed primary frontend to be used. Valid config must include both `Name` and `Reference` values."
+            description:
+              "Reference of the installed primary frontend to be used. Valid config must include both `Name` and `Reference` values."
           }
         ]
       }
