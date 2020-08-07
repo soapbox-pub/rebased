@@ -22,6 +22,7 @@ stages:
   - docker
 
 before_script:
+  - apt-get update && apt-get install -y cmake
   - mix local.hex --force
   - mix local.rebar --force
 
