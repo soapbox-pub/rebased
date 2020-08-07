@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Pleroma.Frontend do
 
   @shortdoc "Manages bundled Pleroma frontends"
 
-  # @moduledoc File.read!("docs/administration/CLI_tasks/frontend.md")
+  @moduledoc File.read!("docs/administration/CLI_tasks/frontend.md")
 
   def run(["install", "none" | _args]) do
     shell_info("Skipping frontend installation because none was requested")
