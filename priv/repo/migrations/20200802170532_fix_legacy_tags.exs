@@ -22,7 +22,7 @@ defmodule Pleroma.Repo.Migrations.FixLegacyTags do
       where: fragment("? && ?", u.tags, ^legacy_tags),
       select: struct(u, [:tags, :id])
     )
-    |> Repo.all()
+    |> Repo.chunk_stream(100)
     |> Enum.each(fn user ->
       fix_tags_changeset(user)
       |> Repo.update()
