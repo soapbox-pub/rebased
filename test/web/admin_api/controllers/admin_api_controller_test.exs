@@ -439,7 +439,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user1: user1,
       user2: user2
     } do
-      assert json_response(conn, :no_content)
+      assert empty_json_response(conn)
       assert User.get_cached_by_id(user1.id).tags == ["x", "foo", "bar"]
       assert User.get_cached_by_id(user2.id).tags == ["y", "foo", "bar"]
 
@@ -457,7 +457,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
-      assert json_response(conn, :no_content)
+      assert empty_json_response(conn)
       assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
     end
   end
@@ -485,7 +485,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user1: user1,
       user2: user2
     } do
-      assert json_response(conn, :no_content)
+      assert empty_json_response(conn)
       assert User.get_cached_by_id(user1.id).tags == []
       assert User.get_cached_by_id(user2.id).tags == ["y"]
 
@@ -503,7 +503,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
-      assert json_response(conn, :no_content)
+      assert empty_json_response(conn)
       assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
     end
   end
@@ -1756,7 +1756,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         patch(conn, "/api/pleroma/admin/users/force_password_reset", %{nicknames: [user.nickname]})
 
-      assert json_response(conn, 204) == ""
+      assert empty_json_response(conn) == ""
 
       ObanHelpers.perform_all()
 
