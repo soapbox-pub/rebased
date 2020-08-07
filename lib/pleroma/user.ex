@@ -638,6 +638,34 @@ defmodule Pleroma.User do
   @spec force_password_reset(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def force_password_reset(user), do: update_password_reset_pending(user, true)
 
+  # Used to auto-register LDAP accounts which won't have a password hash stored locally
+  def register_changeset_ldap(struct, params = %{password: password})
+      when is_nil(password) do
+    params = Map.put_new(params, :accepts_chat_messages, true)
+
+    params =
+      if Map.has_key?(params, :email) do
+        Map.put_new(params, :email, params[:email])
+      else
+        params
+      end
+
+    struct
+    |> cast(params, [
+      :name,
+      :nickname,
+      :email,
+      :accepts_chat_messages
+    ])
+    |> validate_required([:name, :nickname])
+    |> unique_constraint(:nickname)
+    |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
+    |> validate_format(:nickname, local_nickname_regex())
+    |> put_ap_id()
+    |> unique_constraint(:ap_id)
+    |> put_following_and_follower_address()
+  end
+
   def register_changeset(struct, params \\ %{}, opts \\ []) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)

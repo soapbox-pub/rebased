@@ -887,6 +887,9 @@ Pleroma account will be created with the same name as the LDAP user name.
 * `base`: LDAP base, e.g. "dc=example,dc=com"
 * `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
 
+Note, if your LDAP server is an Active Directory server the correct value is commonly `uid: "cn"`, but if you use an
+OpenLDAP server the value may be `uid: "uid"`.
+
 ### OAuth consumer mode
 
 OAuth consumer mode allows sign in / sign up via external OAuth providers (e.g. Twitter, Facebook, Google, Microsoft, etc.).
