@@ -66,7 +66,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp check_remote_limit(_), do: true
 
-  defp increase_note_count_if_public(actor, object) do
+  def increase_note_count_if_public(actor, object) do
     if is_public?(object), do: User.increase_note_count(actor), else: {:ok, actor}
   end
 
@@ -85,17 +85,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
 
-  defp increase_poll_votes_if_vote(%{
-         "object" => %{"inReplyTo" => reply_ap_id, "name" => name},
-         "type" => "Create",
-         "actor" => actor
-       }) do
-    Object.increase_vote_count(reply_ap_id, name, actor)
-  end
-
-  defp increase_poll_votes_if_vote(_create_data), do: :noop
-
-  @object_types ["ChatMessage"]
+  @object_types ["ChatMessage", "Question", "Answer"]
   @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do
@@ -258,7 +248,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
-         _ <- increase_poll_votes_if_vote(create_data),
          {:quick_insert, false, activity} <- {:quick_insert, quick_insert?, activity},
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          _ <- notify_and_stream(activity),

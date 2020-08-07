@@ -255,6 +255,10 @@ defmodule Pleroma.Object do
     end
   end
 
+  defp poll_is_multiple?(%Object{data: %{"anyOf" => [_ | _]}}), do: true
+
+  defp poll_is_multiple?(_), do: false
+
   def decrease_replies_count(ap_id) do
     Object
     |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
@@ -281,10 +285,10 @@ defmodule Pleroma.Object do
   def increase_vote_count(ap_id, name, actor) do
     with %Object{} = object <- Object.normalize(ap_id),
          "Question" <- object.data["type"] do
-      multiple = Map.has_key?(object.data, "anyOf")
+      key = if poll_is_multiple?(object), do: "anyOf", else: "oneOf"
 
       options =
-        (object.data["anyOf"] || object.data["oneOf"] || [])
+        object.data[key]
         |> Enum.map(fn
           %{"name" => ^name} = option ->
             Kernel.update_in(option["replies"]["totalItems"], &(&1 + 1))
@@ -296,11 +300,8 @@ defmodule Pleroma.Object do
       voters = [actor | object.data["voters"] || []] |> Enum.uniq()
 
       data =
-        if multiple do
-          Map.put(object.data, "anyOf", options)
-        else
-          Map.put(object.data, "oneOf", options)
-        end
+        object.data
+        |> Map.put(key, options)
         |> Map.put("voters", voters)
 
       object
