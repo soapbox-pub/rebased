@@ -24,13 +24,12 @@ defmodule Pleroma.FrontendTest do
       "pleroma" => %{
         "ref" => "fantasy",
         "name" => "pleroma",
-        "build_url" => "http://gensokyo.2hu/builds/${ref}",
-        "build_dir" => ""
+        "build_url" => "http://gensokyo.2hu/builds/${ref}"
       }
     })
 
     Tesla.Mock.mock(fn %{url: "http://gensokyo.2hu/builds/fantasy"} ->
-      %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/frontend.zip")}
+      %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/frontend_dist.zip")}
     end)
 
     capture_io(fn ->
