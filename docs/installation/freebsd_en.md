@@ -172,18 +172,16 @@ Copy the startup script to the correct location and make sure it's executable:
 
 ```
 # cp /home/pleroma/pleroma/installation/freebsd/rc.d/pleroma /usr/local/etc/rc.d/pleroma
-# chmod +x /etc/rc.d/pleroma
+# chmod +x /usr/local/etc/rc.d/pleroma
 ```
 
-Add the following to `/etc/rc.conf`:
+Update the `/etc/rc.conf` file with the following command:
 
 ```
-pleroma=YES
-pleroma_home="/home/pleroma"
-pleroma_user="pleroma"
+# sysrc pleroma_enable=YES
 ```
 
-Run `# /etc/rc.d/pleroma start` to start Pleroma.
+Now you can start pleroma with `# service pleroma start`.
 
 ## Conclusion
 
