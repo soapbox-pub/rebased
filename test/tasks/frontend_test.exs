@@ -6,6 +6,8 @@ defmodule Pleroma.FrontendTest do
   use Pleroma.DataCase
   alias Mix.Tasks.Pleroma.Frontend
 
+  import ExUnit.CaptureIO, only: [capture_io: 1]
+
   @dir "test/frontend_static_test"
 
   setup do
@@ -31,7 +33,10 @@ defmodule Pleroma.FrontendTest do
       %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/frontend.zip")}
     end)
 
-    Frontend.run(["install", "pleroma"])
+    capture_io(fn ->
+      Frontend.run(["install", "pleroma"])
+    end)
+
     assert File.exists?(Path.join([@dir, "frontends", "pleroma", "fantasy", "test.txt"]))
   end
 
@@ -44,7 +49,10 @@ defmodule Pleroma.FrontendTest do
       }
     })
 
-    Frontend.run(["install", "pleroma", "--file", "test/fixtures/tesla_mock/frontend.zip"])
+    capture_io(fn ->
+      Frontend.run(["install", "pleroma", "--file", "test/fixtures/tesla_mock/frontend.zip"])
+    end)
+
     assert File.exists?(Path.join([@dir, "frontends", "pleroma", "fantasy", "test.txt"]))
   end
 
@@ -53,16 +61,18 @@ defmodule Pleroma.FrontendTest do
       %Tesla.Env{status: 200, body: File.read!("test/fixtures/tesla_mock/frontend.zip")}
     end)
 
-    Frontend.run([
-      "install",
-      "unknown",
-      "--ref",
-      "baka",
-      "--build-url",
-      "http://gensokyo.2hu/madeup.zip",
-      "--build-dir",
-      ""
-    ])
+    capture_io(fn ->
+      Frontend.run([
+        "install",
+        "unknown",
+        "--ref",
+        "baka",
+        "--build-url",
+        "http://gensokyo.2hu/madeup.zip",
+        "--build-dir",
+        ""
+      ])
+    end)
 
     assert File.exists?(Path.join([@dir, "frontends", "unknown", "baka", "test.txt"]))
   end
