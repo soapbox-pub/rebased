@@ -216,6 +216,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user_data["display_name"] == "markorepairs"
     end
 
+    test "updates the user's AKAs", %{conn: conn} do
+      conn =
+        patch(conn, "/api/v1/accounts/update_credentials", %{
+          "also_known_as" => ["https://mushroom.kingdom/users/mario"]
+        })
+
+      assert user_data = json_response_and_validate_schema(conn, 200)
+      assert user_data["pleroma"]["also_known_as"] == ["https://mushroom.kingdom/users/mario"]
+    end
+
     test "updates the user's avatar", %{user: user, conn: conn} do
       new_avatar = %Plug.Upload{
         content_type: "image/jpg",

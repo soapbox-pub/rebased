@@ -281,33 +281,4 @@ defmodule Pleroma.Web.PleromaAPI.AccountControllerTest do
       assert %{"error" => "Record not found"} = json_response_and_validate_schema(conn, 404)
     end
   end
-
-  describe "aliases controllers" do
-    setup do: oauth_access(["write:accounts"])
-
-    test "adds aliases", %{conn: conn} do
-      aliases = ["https://gleasonator.com/users/alex"]
-
-      conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/v1/pleroma/accounts/ap_aliases", %{"aliases" => aliases})
-
-      assert %{"pleroma" => %{"ap_aliases" => res}} = json_response_and_validate_schema(conn, 200)
-      assert Enum.count(res) == 1
-    end
-
-    test "deletes aliases", %{conn: conn, user: user} do
-      aliases = ["https://gleasonator.com/users/alex"]
-      User.add_aliases(user, aliases)
-
-      conn =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> delete("/api/v1/pleroma/accounts/ap_aliases", %{"aliases" => aliases})
-
-      assert %{"pleroma" => %{"ap_aliases" => res}} = json_response_and_validate_schema(conn, 200)
-      assert Enum.count(res) == 0
-    end
-  end
 end

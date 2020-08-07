@@ -345,9 +345,6 @@ defmodule Pleroma.Web.Router do
 
       post("/accounts/:id/subscribe", AccountController, :subscribe)
       post("/accounts/:id/unsubscribe", AccountController, :unsubscribe)
-
-      post("/accounts/ap_aliases", AccountController, :add_aliases)
-      delete("/accounts/ap_aliases", AccountController, :delete_aliases)
     end
 
     post("/accounts/confirmation_resend", AccountController, :confirmation_resend)

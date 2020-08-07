@@ -186,6 +186,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         :show_role,
         :skip_thread_containment,
         :allow_following_move,
+        :also_known_as,
         :discoverable,
         :accepts_chat_messages
       ]
@@ -210,6 +211,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
         if bot, do: {:ok, "Service"}, else: {:ok, "Person"}
       end)
       |> Maps.put_if_present(:actor_type, params[:actor_type])
+      |> Maps.put_if_present(:also_known_as, params[:also_known_as])
 
     # What happens here:
     #

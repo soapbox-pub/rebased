@@ -96,7 +96,6 @@ defmodule Pleroma.User do
     field(:keys, :string)
     field(:public_key, :string)
     field(:ap_id, :string)
-    field(:ap_aliases, {:array, :string}, default: [])
     field(:avatar, :map, default: %{})
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
@@ -486,6 +485,7 @@ defmodule Pleroma.User do
         :hide_follows_count,
         :hide_favorites,
         :allow_following_move,
+        :also_known_as,
         :background,
         :show_role,
         :skip_thread_containment,
@@ -494,12 +494,12 @@ defmodule Pleroma.User do
         :pleroma_settings_store,
         :discoverable,
         :actor_type,
-        :also_known_as,
         :accepts_chat_messages
       ]
     )
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
+    |> validate_also_known_as()
     |> validate_length(:bio, max: bio_limit)
     |> validate_length(:name, min: 1, max: name_limit)
     |> validate_inclusion(:actor_type, ["Person", "Service"])
@@ -2387,36 +2387,11 @@ defmodule Pleroma.User do
     |> Map.put(:fields, fields)
   end
 
-  def add_aliases(%User{} = user, aliases) when is_list(aliases) do
-    alias_set =
-      (user.ap_aliases ++ aliases)
-      |> MapSet.new()
-      |> MapSet.to_list()
-
-    user
-    |> change(%{ap_aliases: alias_set})
-    |> validate_ap_aliases()
-    |> Repo.update()
-  end
-
-  def delete_aliases(%User{} = user, aliases) when is_list(aliases) do
-    alias_set =
-      user.ap_aliases
-      |> MapSet.new()
-      |> MapSet.difference(MapSet.new(aliases))
-      |> MapSet.to_list()
-
-    user
-    |> change(%{ap_aliases: alias_set})
-    |> validate_ap_aliases()
-    |> Repo.update()
-  end
-
-  defp validate_ap_aliases(changeset) do
-    validate_change(changeset, :ap_aliases, fn :ap_aliases, ap_aliases ->
-      case Enum.all?(ap_aliases, fn a -> Regex.match?(@url_regex, a) end) do
+  defp validate_also_known_as(changeset) do
+    validate_change(changeset, :also_known_as, fn :also_known_as, also_known_as ->
+      case Enum.all?(also_known_as, fn a -> Regex.match?(@url_regex, a) end) do
         true -> []
-        false -> [ap_aliases: "Invalid ap_id format. Must be a URL."]
+        false -> [also_known_as: "Invalid ap_id format. Must be a URL."]
       end
     end)
   end

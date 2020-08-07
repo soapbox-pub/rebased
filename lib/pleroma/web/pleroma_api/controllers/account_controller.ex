@@ -39,11 +39,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
     %{scopes: ["read:favourites"], fallback: :proceed_unauthenticated} when action == :favourites
   )
 
-  plug(
-    OAuthScopesPlug,
-    %{scopes: ["write:accounts"]} when action in [:add_aliases, :delete_aliases]
-  )
-
   plug(RateLimiter, [name: :account_confirmation_resend] when action == :confirmation_resend)
 
   plug(:assign_account_by_id when action in [:favourites, :subscribe, :unsubscribe])
@@ -108,26 +103,6 @@ defmodule Pleroma.Web.PleromaAPI.AccountController do
   def unsubscribe(%{assigns: %{user: user, account: subscription_target}} = conn, _params) do
     with {:ok, _subscription} <- User.unsubscribe(user, subscription_target) do
       render(conn, "relationship.json", user: user, target: subscription_target)
-    else
-      {:error, message} -> json_response(conn, :forbidden, %{error: message})
-    end
-  end
-
-  @doc "POST /api/v1/pleroma/accounts/ap_aliases"
-  def add_aliases(%{assigns: %{user: user}, body_params: %{aliases: aliases}} = conn, _params)
-      when is_list(aliases) do
-    with {:ok, user} <- User.add_aliases(user, aliases) do
-      render(conn, "show.json", user: user)
-    else
-      {:error, message} -> json_response(conn, :forbidden, %{error: message})
-    end
-  end
-
-  @doc "DELETE /api/v1/pleroma/accounts/ap_aliases"
-  def delete_aliases(%{assigns: %{user: user}, body_params: %{aliases: aliases}} = conn, _params)
-      when is_list(aliases) do
-    with {:ok, user} <- User.delete_aliases(user, aliases) do
-      render(conn, "show.json", user: user)
     else
       {:error, message} -> json_response(conn, :forbidden, %{error: message})
     end

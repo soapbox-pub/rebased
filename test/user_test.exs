@@ -2024,48 +2024,4 @@ defmodule Pleroma.UserTest do
 
     assert User.avatar_url(user, no_default: true) == nil
   end
-
-  test "add_aliases/2" do
-    user = insert(:user)
-
-    aliases = [
-      "https://gleasonator.com/users/alex",
-      "https://gleasonator.com/users/alex",
-      "https://animalliberation.social/users/alex"
-    ]
-
-    {:ok, user} = User.add_aliases(user, aliases)
-
-    assert user.ap_aliases == [
-             "https://animalliberation.social/users/alex",
-             "https://gleasonator.com/users/alex"
-           ]
-  end
-
-  test "add_aliases/2 with invalid alias" do
-    user = insert(:user)
-    {:error, _} = User.add_aliases(user, ["invalid_alias"])
-    {:error, _} = User.add_aliases(user, ["http://still_invalid"])
-    {:error, _} = User.add_aliases(user, ["http://validalias.com/users/dude", "invalid_alias"])
-  end
-
-  test "delete_aliases/2" do
-    user =
-      insert(:user,
-        ap_aliases: [
-          "https://animalliberation.social/users/alex",
-          "https://benis.social/users/benis",
-          "https://gleasonator.com/users/alex"
-        ]
-      )
-
-    aliases = ["https://benis.social/users/benis"]
-
-    {:ok, user} = User.delete_aliases(user, aliases)
-
-    assert user.ap_aliases == [
-             "https://animalliberation.social/users/alex",
-             "https://gleasonator.com/users/alex"
-           ]
-  end
 end

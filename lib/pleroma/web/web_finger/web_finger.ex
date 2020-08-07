@@ -59,10 +59,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   defp gather_aliases(%User{} = user) do
-    user.ap_aliases
-    |> MapSet.new()
-    |> MapSet.put(user.ap_id)
-    |> MapSet.to_list()
+    [user.ap_id] ++ user.also_known_as
   end
 
   def represent_user(user, "JSON") do
@@ -78,6 +75,10 @@ defmodule Pleroma.Web.WebFinger do
   def represent_user(user, "XML") do
     {:ok, user} = User.ensure_keys_present(user)
 
+    aliases =
+      gather_aliases(user)
+      |> Enum.map(fn the_alias -> {:Alias, the_alias} end)
+
     links =
       gather_links(user)
       |> Enum.map(fn link -> {:Link, link} end)
@@ -86,9 +87,8 @@ defmodule Pleroma.Web.WebFinger do
       :XRD,
       %{xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0"},
       [
-        {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}"},
-        {:Alias, user.ap_id}
-      ] ++ links
+        {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}"}
+      ] ++ aliases ++ links
     }
     |> XmlBuilder.to_doc()
   end

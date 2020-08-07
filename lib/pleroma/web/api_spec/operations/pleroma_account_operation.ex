@@ -4,8 +4,6 @@
 
 defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
   alias OpenApiSpex.Operation
-  alias OpenApiSpex.Schema
-  alias Pleroma.Web.ApiSpec.Schemas.Account
   alias Pleroma.Web.ApiSpec.Schemas.AccountRelationship
   alias Pleroma.Web.ApiSpec.Schemas.ApiError
   alias Pleroma.Web.ApiSpec.Schemas.FlakeID
@@ -89,54 +87,10 @@ defmodule Pleroma.Web.ApiSpec.PleromaAccountOperation do
     }
   end
 
-  def add_aliases_operation do
-    %Operation{
-      tags: ["Accounts"],
-      summary: "Add ActivityPub aliases",
-      operationId: "PleromaAPI.AccountController.add_aliases",
-      requestBody: request_body("Parameters", alias_request(), required: true),
-      security: [%{"oAuth" => ["write:accounts"]}],
-      responses: %{
-        200 => Operation.response("Account", "application/json", Account),
-        403 => Operation.response("Forbidden", "application/json", ApiError)
-      }
-    }
-  end
-
-  def delete_aliases_operation do
-    %Operation{
-      tags: ["Accounts"],
-      summary: "Delete ActivityPub aliases",
-      operationId: "PleromaAPI.AccountController.delete_aliases",
-      requestBody: request_body("Parameters", alias_request(), required: true),
-      security: [%{"oAuth" => ["write:accounts"]}],
-      responses: %{
-        200 => Operation.response("Account", "application/json", Account)
-      }
-    }
-  end
-
   defp id_param do
     Operation.parameter(:id, :path, FlakeID, "Account ID",
       example: "9umDrYheeY451cQnEe",
       required: true
     )
-  end
-
-  defp alias_request do
-    %Schema{
-      title: "AccountAliasRequest",
-      description: "POST body for adding/deleting AP aliases",
-      type: :object,
-      properties: %{
-        aliases: %Schema{
-          type: :array,
-          items: %Schema{type: :string}
-        }
-      },
-      example: %{
-        "aliases" => ["https://beepboop.social/users/beep", "https://mushroom.kingdom/users/toad"]
-      }
-    }
   end
 end
