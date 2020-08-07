@@ -146,8 +146,8 @@ Let's add auto-renewal to `/etc/daily.local`
 (replace `example.com` with your domain):
 
 ```
-/usr/pkg/bin/sudo -Hu nginx -g nginx \
-    /usr/pkg/sbin/acme.sh -r \
+/usr/pkg/bin/sudo -Hu www -g www \
+    /usr/local/sbin/acme.sh -r \
     -d example.com \
     --cert-file /etc/nginx/tls/cert \
     --key-file /etc/nginx/tls/key \
@@ -175,24 +175,21 @@ Copy the startup script to the correct location and make sure it's executable:
 # chmod +x /usr/local/etc/rc.d/pleroma
 ```
 
-Update the `/etc/rc.conf` file with the following command:
+Update the `/etc/rc.conf` and start pleroma with the following commands:
 
 ```
 # sysrc pleroma_enable=YES
+# service pleroma start
 ```
 
 Now you can start pleroma with `# service pleroma start`.
 
 ## Conclusion
 
-Restart nginx with `# /etc/rc.d/nginx restart` and you should be up and running.
+Restart nginx with `# service nginx restart` and you should be up and running.
 
 Make sure your time is in sync, or other instances will receive your posts with
 incorrect timestamps. You should have ntpd running.
-
-#### Further reading
-
-{! backend/installation/further_reading.include !}
 
 ## Questions
 
