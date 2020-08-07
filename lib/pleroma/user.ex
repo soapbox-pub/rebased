@@ -639,7 +639,7 @@ defmodule Pleroma.User do
   def force_password_reset(user), do: update_password_reset_pending(user, true)
 
   # Used to auto-register LDAP accounts which won't have a password hash stored locally
-  def register_changeset(struct, params = %{password: password})
+  def register_changeset_ldap(struct, params = %{password: password})
       when is_nil(password) do
     params = Map.put_new(params, :accepts_chat_messages, true)
 

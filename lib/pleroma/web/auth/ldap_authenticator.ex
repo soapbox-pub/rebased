@@ -116,7 +116,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
             _ -> params
           end
 
-        changeset = User.register_changeset(%User{}, params)
+        changeset = User.register_changeset_ldap(%User{}, params)
 
         case User.register(changeset) do
           {:ok, user} -> user
