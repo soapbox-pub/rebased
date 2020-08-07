@@ -982,8 +982,7 @@ config :pleroma, :config_description, [
           %{
             key: :message,
             type: :string,
-            description:
-              "A message that will be sent to newly registered users",
+            description: "A message that will be sent to newly registered users",
             suggestions: [
               "Hi, @username! Welcome on board!"
             ]
@@ -3057,6 +3056,7 @@ config :pleroma, :config_description, [
       %{
         key: :restricted_nicknames,
         type: {:list, :string},
+        description: "List of nicknames users may not register with.",
         suggestions: [
           ".well-known",
           "~",
@@ -3089,6 +3089,12 @@ config :pleroma, :config_description, [
           "users",
           "web"
         ]
+      },
+      %{
+        key: :email_blacklist,
+        type: {:list, :string},
+        description: "List of email domains users may not register with.",
+        suggestions: ["mailinator.com", "maildrop.cc"]
       }
     ]
   },

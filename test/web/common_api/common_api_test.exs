@@ -458,6 +458,11 @@ defmodule Pleroma.Web.CommonAPITest do
   end
 
   describe "posting" do
+    test "deactivated users can't post" do
+      user = insert(:user, deactivated: true)
+      assert {:error, _} = CommonAPI.post(user, %{status: "ye"})
+    end
+
     test "it supports explicit addressing" do
       user = insert(:user)
       user_two = insert(:user)
