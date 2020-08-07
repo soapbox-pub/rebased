@@ -55,6 +55,24 @@ defmodule Pleroma.Config.DeprecationWarnings do
     mrf_user_allowlist()
     check_old_mrf_config()
     check_media_proxy_whitelist_config()
+    check_welcome_message_config()
+  end
+
+  def check_welcome_message_config do
+    instance_config = Pleroma.Config.get([:instance])
+
+    use_old_config =
+      Keyword.has_key?(instance_config, :welcome_user_nickname) or
+        Keyword.has_key?(instance_config, :welcome_message)
+
+    if use_old_config do
+      Logger.error("""
+      !!!DEPRECATION WARNING!!!
+      Your config is using the old namespace for Welcome messages configuration. You need to change to the new namespace:
+      \n* `config :pleroma, :instance, welcome_user_nickname` is now `config :pleroma, :welcome, :direct_message, :sender_nickname`
+      \n* `config :pleroma, :instance, welcome_message` is now `config :pleroma, :welcome, :direct_message, :message`
+      """)
+    end
   end
 
   def check_old_mrf_config do

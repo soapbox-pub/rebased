@@ -17,9 +17,19 @@ defmodule Pleroma.Tests.Helpers do
 
   defmacro clear_config(config_path, do: yield) do
     quote do
-      initial_setting = Config.get(unquote(config_path))
+      initial_setting = Config.fetch(unquote(config_path))
       unquote(yield)
-      on_exit(fn -> Config.put(unquote(config_path), initial_setting) end)
+
+      on_exit(fn ->
+        case initial_setting do
+          :error ->
+            Config.delete(unquote(config_path))
+
+          {:ok, value} ->
+            Config.put(unquote(config_path), value)
+        end
+      end)
+
       :ok
     end
   end
@@ -30,6 +40,11 @@ defmodule Pleroma.Tests.Helpers do
         Config.put(unquote(config_path), unquote(temp_setting))
       end
     end
+  end
+
+  def require_migration(migration_name) do
+    [{module, _}] = Code.require_file("#{migration_name}.exs", "priv/repo/migrations")
+    {:ok, %{migration: module}}
   end
 
   defmacro __using__(_opts) do

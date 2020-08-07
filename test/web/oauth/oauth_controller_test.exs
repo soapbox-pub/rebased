@@ -19,7 +19,10 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     key: "_test",
     signing_salt: "cooldude"
   ]
-  setup do: clear_config([:instance, :account_activation_required])
+  setup do
+    clear_config([:instance, :account_activation_required])
+    clear_config([:instance, :account_approval_required])
+  end
 
   describe "in OAuth consumer mode, " do
     setup do
@@ -993,6 +996,30 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
                "error" => "Your login is missing a confirmed e-mail address",
                "identifier" => "missing_confirmed_email"
              }
+    end
+
+    test "rejects token exchange for valid credentials belonging to an unapproved user" do
+      password = "testpassword"
+
+      user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password), approval_pending: true)
+
+      refute Pleroma.User.account_status(user) == :active
+
+      app = insert(:oauth_app)
+
+      conn =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "password",
+          "username" => user.nickname,
+          "password" => password,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+
+      assert resp = json_response(conn, 403)
+      assert %{"error" => _} = resp
+      refute Map.has_key?(resp, "access_token")
     end
 
     test "rejects an invalid authorization code" do

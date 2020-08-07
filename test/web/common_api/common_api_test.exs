@@ -458,6 +458,11 @@ defmodule Pleroma.Web.CommonAPITest do
   end
 
   describe "posting" do
+    test "deactivated users can't post" do
+      user = insert(:user, deactivated: true)
+      assert {:error, _} = CommonAPI.post(user, %{status: "ye"})
+    end
+
     test "it supports explicit addressing" do
       user = insert(:user)
       user_two = insert(:user)
@@ -624,14 +629,27 @@ defmodule Pleroma.Web.CommonAPITest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
-      {:ok, reaction} = CommonAPI.react_with_emoji(activity.id, user, "👍")
+      clear_config([:instance, :federating], true)
 
-      {:ok, unreaction} = CommonAPI.unreact_with_emoji(activity.id, user, "👍")
+      with_mock Pleroma.Web.Federator,
+        publish: fn _ -> nil end do
+        {:ok, activity} = CommonAPI.post(other_user, %{status: "cofe"})
+        {:ok, reaction} = CommonAPI.react_with_emoji(activity.id, user, "👍")
 
-      assert unreaction.data["type"] == "Undo"
-      assert unreaction.data["object"] == reaction.data["id"]
-      assert unreaction.local
+        {:ok, unreaction} = CommonAPI.unreact_with_emoji(activity.id, user, "👍")
+
+        assert unreaction.data["type"] == "Undo"
+        assert unreaction.data["object"] == reaction.data["id"]
+        assert unreaction.local
+
+        # On federation, it contains the undone (and deleted) object
+        unreaction_with_object = %{
+          unreaction
+          | data: Map.put(unreaction.data, "object", reaction.data)
+        }
+
+        assert called(Pleroma.Web.Federator.publish(unreaction_with_object))
+      end
     end
 
     test "repeating a status" do

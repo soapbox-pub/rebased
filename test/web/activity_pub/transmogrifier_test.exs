@@ -160,7 +160,15 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert capture_log(fn ->
                {:ok, _returned_activity} = Transmogrifier.handle_incoming(data)
-             end) =~ "[error] Couldn't fetch \"https://404.site/whatever\", error: nil"
+             end) =~ "[warn] Couldn't fetch \"https://404.site/whatever\", error: nil"
+    end
+
+    test "it does not work for deactivated users" do
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+
+      insert(:user, ap_id: data["actor"], deactivated: true)
+
+      assert {:error, _} = Transmogrifier.handle_incoming(data)
     end
 
     test "it works for incoming notices" do
@@ -710,7 +718,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "id" => activity.data["id"],
         "content" => "test post",
         "published" => object.data["published"],
-        "actor" => AccountView.render("show.json", %{user: user})
+        "actor" => AccountView.render("show.json", %{user: user, skip_visibility_check: true})
       }
 
       message = %{

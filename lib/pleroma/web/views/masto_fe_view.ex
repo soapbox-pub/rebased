@@ -9,36 +9,6 @@ defmodule Pleroma.Web.MastoFEView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.CustomEmojiView
 
-  @default_settings %{
-    onboarded: true,
-    home: %{
-      shows: %{
-        reblog: true,
-        reply: true
-      }
-    },
-    notifications: %{
-      alerts: %{
-        follow: true,
-        favourite: true,
-        reblog: true,
-        mention: true
-      },
-      shows: %{
-        follow: true,
-        favourite: true,
-        reblog: true,
-        mention: true
-      },
-      sounds: %{
-        follow: true,
-        favourite: true,
-        reblog: true,
-        mention: true
-      }
-    }
-  }
-
   def initial_state(token, user, custom_emojis) do
     limit = Config.get([:instance, :limit])
 
@@ -86,7 +56,7 @@ defmodule Pleroma.Web.MastoFEView do
           "video\/mp4"
         ]
       },
-      settings: user.mastofe_settings || @default_settings,
+      settings: user.mastofe_settings || %{},
       push_subscription: nil,
       accounts: %{user.id => render(AccountView, "show.json", user: user, for: user)},
       custom_emojis: render(CustomEmojiView, "index.json", custom_emojis: custom_emojis),

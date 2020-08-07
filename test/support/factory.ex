@@ -297,6 +297,30 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def report_activity_factory(attrs \\ %{}) do
+    user = attrs[:user] || insert(:user)
+    activity = attrs[:activity] || insert(:note_activity)
+    state = attrs[:state] || "open"
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+      "actor" => user.ap_id,
+      "type" => "Flag",
+      "object" => [activity.actor, activity.data["id"]],
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "to" => [],
+      "cc" => [activity.actor],
+      "context" => activity.data["context"],
+      "state" => state
+    }
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"] ++ data["cc"]
+    }
+  end
+
   def oauth_app_factory do
     %Pleroma.Web.OAuth.App{
       client_name: sequence(:client_name, &"Some client #{&1}"),
