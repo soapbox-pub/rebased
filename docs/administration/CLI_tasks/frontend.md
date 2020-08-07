@@ -19,7 +19,11 @@ You can still install frontends that are not configured, see below.
 
 For a frontend configured under the `available` key, it's enough to install it by name.
 
-```bash
+```sh tab="OTP"
+./bin/pleroma_ctl frontend install pleroma
+```
+
+```sh tab="From Source"
 mix pleroma.frontend install pleroma
 ```
 
@@ -27,13 +31,21 @@ This will download the latest build for the the pre-configured `ref` and install
 
 You can override any of the details. To install a pleroma build from a different url, you could do this:
 
-```bash
-mix pleroma.frontend install pleroma --ref 2huedition --build-url https://example.org/raymoo.zip
+```sh tab="OPT"
+./bin/pleroma_ctl frontend install pleroma --ref 2hu_edition --build-url https://example.org/raymoo.zip
+```
+
+```sh tab="From Source"
+mix pleroma.frontend install pleroma --ref 2hu_edition --build-url https://example.org/raymoo.zip
 ```
 
 Similarly, you can also install from a local zip file.
 
-```bash
+```sh tab="OTP"
+./bin/pleroma_ctl frontend install pleroma --ref mybuild --file ~/Downloads/doomfe.zip
+```
+
+```sh tab="From Source"
 mix pleroma.frontend install pleroma --ref mybuild --file ~/Downloads/doomfe.zip
 ```
 
@@ -45,7 +57,11 @@ Careful: This folder will be completely replaced on installation
 
 The installation process is the same, but you will have to give all the needed options on the commond line. For example:
 
-```bash
+```sh tab="OTP"
+./bin/pleroma_ctl frontend install gensokyo --ref master --build-url https://gensokyo.2hu/builds/marisa.zip
+```
+
+```sh tab="From Source"
 mix pleroma.frontend install gensokyo --ref master --build-url https://gensokyo.2hu/builds/marisa.zip
 ```
 
