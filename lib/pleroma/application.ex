@@ -47,6 +47,7 @@ defmodule Pleroma.Application do
     Pleroma.ApplicationRequirements.verify!()
     setup_instrumenters()
     load_custom_modules()
+    check_system_commands()
     Pleroma.Docs.JSON.compile()
 
     adapter = Application.get_env(:tesla, :adapter)
@@ -249,4 +250,21 @@ defmodule Pleroma.Application do
   end
 
   defp http_children(_, _), do: []
+
+  defp check_system_commands do
+    filters = Config.get([Pleroma.Upload, :filters])
+
+    check_filter = fn filter, command_required ->
+      with true <- filter in filters,
+           false <- Pleroma.Utils.command_available?(command_required) do
+        Logger.error(
+          "#{filter} is specified in list of Pleroma.Upload filters, but the #{command_required} command is not found"
+        )
+      end
+    end
+
+    check_filter.(Pleroma.Upload.Filters.Exiftool, "exiftool")
+    check_filter.(Pleroma.Upload.Filters.Mogrify, "mogrify")
+    check_filter.(Pleroma.Upload.Filters.Mogrifun, "mogrify")
+  end
 end

@@ -513,6 +513,29 @@ defmodule Pleroma.UserTest do
       refute changeset.valid?
     end
 
+    test "it blocks blacklisted email domains" do
+      clear_config([User, :email_blacklist], ["trolling.world"])
+
+      # Block with match
+      params = Map.put(@full_user_data, :email, "troll@trolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      refute changeset.valid?
+
+      # Block with subdomain match
+      params = Map.put(@full_user_data, :email, "troll@gnomes.trolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      refute changeset.valid?
+
+      # Pass with different domains that are similar
+      params = Map.put(@full_user_data, :email, "troll@gnomestrolling.world")
+      changeset = User.register_changeset(%User{}, params)
+      assert changeset.valid?
+
+      params = Map.put(@full_user_data, :email, "troll@trolling.world.us")
+      changeset = User.register_changeset(%User{}, params)
+      assert changeset.valid?
+    end
+
     test "it sets the password_hash and ap_id" do
       changeset = User.register_changeset(%User{}, @full_user_data)
 

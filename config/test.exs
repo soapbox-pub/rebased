@@ -120,6 +120,8 @@ config :pleroma, Pleroma.Uploaders.S3,
 
 config :tzdata, :autoupdate, :disabled
 
+config :pleroma, :mrf, policies: []
+
 if File.exists?("./config/test.secret.exs") do
   import_config "test.secret.exs"
 else

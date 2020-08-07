@@ -49,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Configuration: Added a blacklist for email servers.
 - Chats: Added `accepts_chat_messages` field to user, exposed in APIs and federation.
 - Chats: Added support for federated chats. For details, see the docs.
 - ActivityPub: Added support for existing AP ids for instances migrated from Mastodon.
@@ -101,6 +102,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix CSP policy generation to include remote Captcha services
 - Fix edge case where MediaProxy truncates media, usually caused when Caddy is serving content for the other Federated instance.
 - Emoji Packs could not be listed when instance was set to `public: false`
+- Fix whole_word always returning false on filter get requests
 
 ## [Unreleased (patch)]
 
