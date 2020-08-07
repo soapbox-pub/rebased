@@ -9,7 +9,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
   alias Pleroma.Object
   alias Pleroma.User
 
-  def validate_recipients_presence(cng, fields \\ [:to, :cc]) do
+  def validate_any_presence(cng, fields) do
     non_empty =
       fields
       |> Enum.map(fn field -> get_field(cng, field) end)
@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
       fields
       |> Enum.reduce(cng, fn field, cng ->
         cng
-        |> add_error(field, "no recipients in any field")
+        |> add_error(field, "none of #{inspect(fields)} present")
       end)
     end
   end
@@ -81,5 +81,61 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations do
       |> validate_object_presence(options)
 
     if actor_cng.valid?, do: actor_cng, else: object_cng
+  end
+
+  def validate_host_match(cng, fields \\ [:id, :actor]) do
+    if same_domain?(cng, fields) do
+      cng
+    else
+      fields
+      |> Enum.reduce(cng, fn field, cng ->
+        cng
+        |> add_error(field, "hosts of #{inspect(fields)} aren't matching")
+      end)
+    end
+  end
+
+  def validate_fields_match(cng, fields) do
+    if map_unique?(cng, fields) do
+      cng
+    else
+      fields
+      |> Enum.reduce(cng, fn field, cng ->
+        cng
+        |> add_error(field, "Fields #{inspect(fields)} aren't matching")
+      end)
+    end
+  end
+
+  defp map_unique?(cng, fields, func \\ & &1) do
+    Enum.reduce_while(fields, nil, fn field, acc ->
+      value =
+        cng
+        |> get_field(field)
+        |> func.()
+
+      case {value, acc} do
+        {value, nil} -> {:cont, value}
+        {value, value} -> {:cont, value}
+        _ -> {:halt, false}
+      end
+    end)
+  end
+
+  def same_domain?(cng, fields \\ [:actor, :object]) do
+    map_unique?(cng, fields, fn value -> URI.parse(value).host end)
+  end
+
+  # This figures out if a user is able to create, delete or modify something
+  # based on the domain and superuser status
+  def validate_modification_rights(cng) do
+    actor = User.get_cached_by_ap_id(get_field(cng, :actor))
+
+    if User.superuser?(actor) || same_domain?(cng) do
+      cng
+    else
+      cng
+      |> add_error(:actor, "is not allowed to modify object")
+    end
   end
 end

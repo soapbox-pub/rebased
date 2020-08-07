@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
 
   alias Pleroma.Activity
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
-  alias Pleroma.User
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
@@ -59,38 +58,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.DeleteValidator do
     |> validate_required([:id, :type, :actor, :to, :cc, :object])
     |> validate_inclusion(:type, ["Delete"])
     |> validate_actor_presence()
-    |> validate_deletion_rights()
+    |> validate_modification_rights()
     |> validate_object_or_user_presence(allowed_types: @deletable_types)
     |> add_deleted_activity_id()
   end
 
   def do_not_federate?(cng) do
     !same_domain?(cng)
-  end
-
-  defp same_domain?(cng) do
-    actor_uri =
-      cng
-      |> get_field(:actor)
-      |> URI.parse()
-
-    object_uri =
-      cng
-      |> get_field(:object)
-      |> URI.parse()
-
-    object_uri.host == actor_uri.host
-  end
-
-  def validate_deletion_rights(cng) do
-    actor = User.get_cached_by_ap_id(get_field(cng, :actor))
-
-    if User.superuser?(actor) || same_domain?(cng) do
-      cng
-    else
-      cng
-      |> add_error(:actor, "is not allowed to delete object")
-    end
   end
 
   def cast_and_validate(data) do

@@ -225,23 +225,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Enum.at(object.data["tag"], 2) == "moo"
     end
 
-    test "it works for incoming questions" do
-      data = File.read!("test/fixtures/mastodon-question-activity.json") |> Poison.decode!()
-
-      {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
-
-      object = Object.normalize(activity)
-
-      assert Enum.all?(object.data["oneOf"], fn choice ->
-               choice["name"] in [
-                 "Dunno",
-                 "Everyone knows that!",
-                 "25 char limit is dumb",
-                 "I can't even fit a funny"
-               ]
-             end)
-    end
-
     test "it works for incoming listens" do
       data = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
@@ -269,38 +252,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert object.data["artist"] == "lain"
       assert object.data["album"] == "lain radio"
       assert object.data["length"] == 180_000
-    end
-
-    test "it rewrites Note votes to Answers and increments vote counters on question activities" do
-      user = insert(:user)
-
-      {:ok, activity} =
-        CommonAPI.post(user, %{
-          status: "suya...",
-          poll: %{options: ["suya", "suya.", "suya.."], expires_in: 10}
-        })
-
-      object = Object.normalize(activity)
-
-      data =
-        File.read!("test/fixtures/mastodon-vote.json")
-        |> Poison.decode!()
-        |> Kernel.put_in(["to"], user.ap_id)
-        |> Kernel.put_in(["object", "inReplyTo"], object.data["id"])
-        |> Kernel.put_in(["object", "to"], user.ap_id)
-
-      {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
-      answer_object = Object.normalize(activity)
-      assert answer_object.data["type"] == "Answer"
-      object = Object.get_by_ap_id(object.data["id"])
-
-      assert Enum.any?(
-               object.data["oneOf"],
-               fn
-                 %{"name" => "suya..", "replies" => %{"totalItems" => 1}} -> true
-                 _ -> false
-               end
-             )
     end
 
     test "it works for incoming notices with contentMap" do
@@ -677,7 +628,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                    %{
                      "href" =>
                        "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
-                     "mediaType" => "video/mp4"
+                     "mediaType" => "video/mp4",
+                     "type" => "Link"
                    }
                  ]
                }
@@ -696,7 +648,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                    %{
                      "href" =>
                        "https://framatube.org/static/webseed/6050732a-8a7a-43d4-a6cd-809525a1d206-1080.mp4",
-                     "mediaType" => "video/mp4"
+                     "mediaType" => "video/mp4",
+                     "type" => "Link"
                    }
                  ]
                }
@@ -1269,30 +1222,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     end
   end
 
-  test "Rewrites Answers to Notes" do
-    user = insert(:user)
-
-    {:ok, poll_activity} =
-      CommonAPI.post(user, %{
-        status: "suya...",
-        poll: %{options: ["suya", "suya.", "suya.."], expires_in: 10}
-      })
-
-    poll_object = Object.normalize(poll_activity)
-    # TODO: Replace with CommonAPI vote creation when implemented
-    data =
-      File.read!("test/fixtures/mastodon-vote.json")
-      |> Poison.decode!()
-      |> Kernel.put_in(["to"], user.ap_id)
-      |> Kernel.put_in(["object", "inReplyTo"], poll_object.data["id"])
-      |> Kernel.put_in(["object", "to"], user.ap_id)
-
-    {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
-    {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
-
-    assert data["object"]["type"] == "Note"
-  end
-
   describe "fix_explicit_addressing" do
     setup do
       user = insert(:user)
@@ -1540,8 +1469,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "attachment" => [
                  %{
                    "mediaType" => "video/mp4",
+                   "type" => "Document",
                    "url" => [
-                     %{"href" => "https://peertube.moe/stat-480.mp4", "mediaType" => "video/mp4"}
+                     %{
+                       "href" => "https://peertube.moe/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
                    ]
                  }
                ]
@@ -1558,14 +1492,24 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "attachment" => [
                  %{
                    "mediaType" => "video/mp4",
+                   "type" => "Document",
                    "url" => [
-                     %{"href" => "https://pe.er/stat-480.mp4", "mediaType" => "video/mp4"}
+                     %{
+                       "href" => "https://pe.er/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
                    ]
                  },
                  %{
                    "mediaType" => "video/mp4",
+                   "type" => "Document",
                    "url" => [
-                     %{"href" => "https://pe.er/stat-480.mp4", "mediaType" => "video/mp4"}
+                     %{
+                       "href" => "https://pe.er/stat-480.mp4",
+                       "mediaType" => "video/mp4",
+                       "type" => "Link"
+                     }
                    ]
                  }
                ]

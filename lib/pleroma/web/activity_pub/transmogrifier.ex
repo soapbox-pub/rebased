@@ -157,7 +157,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
-    Map.put(object, "actor", Containment.get_actor(%{"actor" => actor}))
+    actor = Containment.get_actor(%{"actor" => actor})
+
+    # TODO: Remove actor field for Objects
+    object
+    |> Map.put("actor", actor)
+    |> Map.put("attributedTo", actor)
   end
 
   def fix_in_reply_to(object, options \\ [])
@@ -240,13 +245,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         if href do
           attachment_url =
-            %{"href" => href}
+            %{
+              "href" => href,
+              "type" => Map.get(url || %{}, "type", "Link")
+            }
             |> Maps.put_if_present("mediaType", media_type)
-            |> Maps.put_if_present("type", Map.get(url || %{}, "type"))
 
-          %{"url" => [attachment_url]}
+          %{
+            "url" => [attachment_url],
+            "type" => data["type"] || "Document"
+          }
           |> Maps.put_if_present("mediaType", media_type)
-          |> Maps.put_if_present("type", data["type"])
           |> Maps.put_if_present("name", data["name"])
         else
           nil
@@ -419,6 +428,29 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end)
   end
 
+  # Compatibility wrapper for Mastodon votes
+  defp handle_create(%{"object" => %{"type" => "Answer"}} = data, _user) do
+    handle_incoming(data)
+  end
+
+  defp handle_create(%{"object" => object} = data, user) do
+    %{
+      to: data["to"],
+      object: object,
+      actor: user,
+      context: object["context"],
+      local: false,
+      published: data["published"],
+      additional:
+        Map.take(data, [
+          "cc",
+          "directMessage",
+          "id"
+        ])
+    }
+    |> ActivityPub.create()
+  end
+
   def handle_incoming(data, options \\ [])
 
   # Flag objects are placed ahead of the ID check because Mastodon 2.8 and earlier send them
@@ -457,30 +489,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
         options
       )
-      when objtype in ["Article", "Event", "Note", "Video", "Page", "Question", "Answer", "Audio"] do
+      when objtype in ["Article", "Event", "Note", "Video", "Page", "Audio"] do
     actor = Containment.get_actor(data)
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
-         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(actor),
-         data <- Map.put(data, "actor", actor) |> fix_addressing() do
-      object = fix_object(object, options)
+         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(actor) do
+      data =
+        data
+        |> Map.put("object", fix_object(object, options))
+        |> Map.put("actor", actor)
+        |> fix_addressing()
 
-      params = %{
-        to: data["to"],
-        object: object,
-        actor: user,
-        context: object["context"],
-        local: false,
-        published: data["published"],
-        additional:
-          Map.take(data, [
-            "cc",
-            "directMessage",
-            "id"
-          ])
-      }
-
-      with {:ok, created_activity} <- ActivityPub.create(params) do
+      with {:ok, created_activity} <- handle_create(data, user) do
         reply_depth = (options[:depth] || 0) + 1
 
         if Federator.allowed_thread_distance?(reply_depth) do
@@ -611,6 +631,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("type", "EmojiReact")
     |> Map.put("content", @misskey_reactions[reaction] || reaction)
     |> handle_incoming(options)
+  end
+
+  def handle_incoming(
+        %{"type" => "Create", "object" => %{"type" => objtype}} = data,
+        _options
+      )
+      when objtype in ["Question", "Answer", "ChatMessage"] do
+    with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
+         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+      {:ok, activity}
+    end
   end
 
   def handle_incoming(

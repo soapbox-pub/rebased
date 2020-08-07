@@ -858,9 +858,6 @@ Warning: it's discouraged to use this feature because of the associated security
 
 ### :auth
 
-* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator.
-* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication.
-
 Authentication / authorization settings.
 
 * `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`.
