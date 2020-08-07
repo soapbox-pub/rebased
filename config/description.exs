@@ -951,7 +951,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :instance_thumbnail,
-        type: :string,
+        type: {:string, :image},
         description:
           "The instance thumbnail can be any image that represents your instance and is used by some apps or services when they display information about your instance.",
         suggestions: ["/instance/thumbnail.jpeg"]
@@ -1237,7 +1237,7 @@ config :pleroma, :config_description, [
           },
           %{
             key: :background,
-            type: :string,
+            type: {:string, :image},
             description:
               "URL of the background, unless viewing a user profile with a background that is set",
             suggestions: ["/images/city.jpg"]
@@ -1294,7 +1294,7 @@ config :pleroma, :config_description, [
           },
           %{
             key: :logo,
-            type: :string,
+            type: {:string, :image},
             description: "URL of the logo, defaults to Pleroma's logo",
             suggestions: ["/static/logo.png"]
           },
@@ -1326,7 +1326,7 @@ config :pleroma, :config_description, [
           %{
             key: :nsfwCensorImage,
             label: "NSFW Censor Image",
-            type: :string,
+            type: {:string, :image},
             description:
               "URL of the image to use for hiding NSFW media attachments in the timeline",
             suggestions: ["/static/img/nsfw.74818f9.png"]
@@ -1452,7 +1452,7 @@ config :pleroma, :config_description, [
       },
       %{
         key: :default_user_avatar,
-        type: :string,
+        type: {:string, :image},
         description: "URL of the default user avatar",
         suggestions: ["/images/avi.png"]
       }
@@ -2643,7 +2643,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :logo,
-        type: :string,
+        type: {:string, :image},
         description: "A path to a custom logo. Set it to `nil` to use the default Pleroma logo.",
         suggestions: ["some/path/logo.png"]
       },
@@ -3552,13 +3552,15 @@ config :pleroma, :config_description, [
             key: "name",
             label: "Name",
             type: :string,
-            description: "Name of the installed primary frontend. Valid config must include both `Name` and `Reference` values."
+            description:
+              "Name of the installed primary frontend. Valid config must include both `Name` and `Reference` values."
           },
           %{
             key: "ref",
             label: "Reference",
             type: :string,
-            description: "Reference of the installed primary frontend to be used. Valid config must include both `Name` and `Reference` values."
+            description:
+              "Reference of the installed primary frontend to be used. Valid config must include both `Name` and `Reference` values."
           }
         ]
       }
