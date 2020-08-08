@@ -37,7 +37,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           strip_uploads: :string,
           anonymize_uploads: :string,
           dedupe_uploads: :string,
-          skip_release_env: :boolean
+          skip_release_env: :boolean,
+          release_env_file: :string
         ],
         aliases: [
           o: :output,
@@ -249,7 +250,15 @@ defmodule Mix.Tasks.Pleroma.Instance do
         """)
       else
         shell_info("Generation the environment file:")
-        Mix.Tasks.Pleroma.ReleaseEnv.run(["gen"])
+
+        release_env_args =
+          with path when not is_nil(path) <- Keyword.get(options, :release_env_file) do
+            ["gen", "--path", path]
+          else
+            _ -> ["gen"]
+          end
+
+        Mix.Tasks.Pleroma.ReleaseEnv.run(release_env_args)
       end
 
       shell_info(
