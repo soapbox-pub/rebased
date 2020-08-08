@@ -7,7 +7,6 @@ defmodule Pleroma.Repo.Migrations.OnlyExpireCreates do
       activity_expirations A USING activities B
     WHERE
       A.activity_id = B.id
-      AND B.local = false
       AND B.data->>'type' != 'Create';
     """
 
