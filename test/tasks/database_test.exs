@@ -127,4 +127,43 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
       assert Enum.empty?(Object.get_by_id(object2.id).data["likes"])
     end
   end
+
+  describe "ensure_expiration" do
+    test "it adds to expiration old statuses" do
+      %{id: activity_id1} = insert(:note_activity)
+
+      %{id: activity_id2} =
+        insert(:note_activity, %{inserted_at: NaiveDateTime.from_iso8601!("2015-01-23 23:50:07")})
+
+      %{id: activity_id3} = activity3 = insert(:note_activity)
+
+      expires_at =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(60 * 61, :second)
+        |> NaiveDateTime.truncate(:second)
+
+      Pleroma.ActivityExpiration.create(activity3, expires_at)
+
+      Mix.Tasks.Pleroma.Database.run(["ensure_expiration"])
+
+      expirations =
+        Pleroma.ActivityExpiration
+        |> order_by(:activity_id)
+        |> Repo.all()
+
+      assert [
+               %Pleroma.ActivityExpiration{
+                 activity_id: ^activity_id1
+               },
+               %Pleroma.ActivityExpiration{
+                 activity_id: ^activity_id2,
+                 scheduled_at: ~N[2016-01-23 23:50:07]
+               },
+               %Pleroma.ActivityExpiration{
+                 activity_id: ^activity_id3,
+                 scheduled_at: ^expires_at
+               }
+             ] = expirations
+    end
+  end
 end
