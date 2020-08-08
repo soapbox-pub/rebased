@@ -20,11 +20,11 @@ defmodule Pleroma.ActivityExpiration do
     field(:scheduled_at, :naive_datetime)
   end
 
-  def changeset(%ActivityExpiration{} = expiration, attrs) do
+  def changeset(%ActivityExpiration{} = expiration, attrs, validate_scheduled_at) do
     expiration
     |> cast(attrs, [:scheduled_at])
     |> validate_required([:scheduled_at])
-    |> validate_scheduled_at()
+    |> validate_scheduled_at(validate_scheduled_at)
   end
 
   def get_by_activity_id(activity_id) do
@@ -33,9 +33,9 @@ defmodule Pleroma.ActivityExpiration do
     |> Repo.one()
   end
 
-  def create(%Activity{} = activity, scheduled_at) do
+  def create(%Activity{} = activity, scheduled_at, validate_scheduled_at \\ true) do
     %ActivityExpiration{activity_id: activity.id}
-    |> changeset(%{scheduled_at: scheduled_at})
+    |> changeset(%{scheduled_at: scheduled_at}, validate_scheduled_at)
     |> Repo.insert()
   end
 
@@ -49,7 +49,9 @@ defmodule Pleroma.ActivityExpiration do
     |> Repo.all()
   end
 
-  def validate_scheduled_at(changeset) do
+  def validate_scheduled_at(changeset, false), do: changeset
+
+  def validate_scheduled_at(changeset, true) do
     validate_change(changeset, :scheduled_at, fn _, scheduled_at ->
       if not expires_late_enough?(scheduled_at) do
         [scheduled_at: "an ephemeral activity must live for at least one hour"]
