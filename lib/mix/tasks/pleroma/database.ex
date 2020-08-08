@@ -136,6 +136,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> join(:left, [a], u in assoc(a, :expiration))
     |> where(local: true)
     |> where([a, u], is_nil(u))
+    |> where([a], fragment("(? ->> 'type'::text) = 'Create'", a.data))
     |> Pleroma.RepoStreamer.chunk_stream(100)
     |> Stream.each(fn activities ->
       Enum.each(activities, fn activity ->
