@@ -46,6 +46,7 @@ defmodule Pleroma.ActivityExpiration do
 
     ActivityExpiration
     |> where([exp], exp.scheduled_at < ^naive_datetime)
+    |> limit(50)
     |> Repo.all()
   end
 
