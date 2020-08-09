@@ -858,9 +858,6 @@ Warning: it's discouraged to use this feature because of the associated security
 
 ### :auth
 
-* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator.
-* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication.
-
 Authentication / authorization settings.
 
 * `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`.
@@ -889,6 +886,9 @@ Pleroma account will be created with the same name as the LDAP user name.
 * `tlsopts`: additional TLS options
 * `base`: LDAP base, e.g. "dc=example,dc=com"
 * `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
+
+Note, if your LDAP server is an Active Directory server the correct value is commonly `uid: "cn"`, but if you use an
+OpenLDAP server the value may be `uid: "uid"`.
 
 ### OAuth consumer mode
 
