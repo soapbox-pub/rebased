@@ -26,7 +26,7 @@ There's a mix tasks to [generate a new robot.txt](../../administration/CLI_tasks
 
 For more complex things, you can write your own robots.txt to `$static_dir/robots.txt`.
 
-E.g. if you want to block all crawerls except for [fediverse.newtork](https://fediverse.network/about) you can use
+E.g. if you want to block all crawlers except for [fediverse.network](https://fediverse.network/about) you can use
 
 ```
 User-Agent: *
