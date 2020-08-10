@@ -1164,6 +1164,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
     end
 
+    test "`active` filters out users pending approval", %{token: token} do
+      insert(:user, approval_pending: true)
+      %{id: user_id} = insert(:user, approval_pending: false)
+      %{id: admin_id} = token.user
+
+      conn =
+        build_conn()
+        |> assign(:user, token.user)
+        |> assign(:token, token)
+        |> get("/api/pleroma/admin/users?filters=active")
+
+      assert %{
+               "count" => 2,
+               "page_size" => 50,
+               "users" => [
+                 %{"id" => ^admin_id},
+                 %{"id" => ^user_id}
+               ]
+             } = json_response(conn, 200)
+    end
+
     test "it works with multiple filters" do
       admin = insert(:user, nickname: "john", is_admin: true)
       token = insert(:oauth_admin_token, user: admin)
