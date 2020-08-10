@@ -214,6 +214,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
 
       assert user_data = json_response_and_validate_schema(conn, 200)
       assert user_data["display_name"] == "markorepairs"
+
+      update_activity = Repo.one(Pleroma.Activity)
+      assert update_activity.data["type"] == "Update"
+      assert update_activity.data["object"]["name"] == "markorepairs"
     end
 
     test "updates the user's avatar", %{user: user, conn: conn} do
