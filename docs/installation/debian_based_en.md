@@ -12,6 +12,7 @@ This guide will assume you are on Debian Stretch. This guide should also work wi
 * `erlang-nox`
 * `git`
 * `build-essential`
+* `cmake`
 
 #### Optional packages used in this guide
 
@@ -30,7 +31,7 @@ sudo apt full-upgrade
 * Install some of the above mentioned programs:
 
 ```shell
-sudo apt install git build-essential postgresql postgresql-contrib
+sudo apt install git build-essential postgresql postgresql-contrib cmake
 ```
 
 ### Install Elixir and Erlang
