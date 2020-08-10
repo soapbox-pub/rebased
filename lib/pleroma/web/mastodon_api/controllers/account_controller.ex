@@ -226,7 +226,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountController do
     with changeset <- User.update_changeset(user, user_params),
          {:ok, unpersisted_user} <- Ecto.Changeset.apply_action(changeset, :update),
          updated_object <-
-           Pleroma.Web.ActivityPub.UserView.render("user.json", user: user)
+           Pleroma.Web.ActivityPub.UserView.render("user.json", user: unpersisted_user)
            |> Map.delete("@context"),
          {:ok, update_data, []} <- Builder.update(user, updated_object),
          {:ok, _update, _} <-
