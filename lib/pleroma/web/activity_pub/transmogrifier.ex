@@ -644,16 +644,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => "ChatMessage"}} = data,
-        _options
-      ) do
-    with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
-         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
-      {:ok, activity}
-    end
-  end
-
   def handle_incoming(%{"type" => type} = data, _options)
       when type in ~w{Like EmojiReact Announce} do
     with :ok <- ObjectValidator.fetch_actor_and_object(data),
