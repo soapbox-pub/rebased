@@ -19,6 +19,7 @@ databases/postgresql11-client
 databases/postgresql11-server
 devel/git-base
 devel/git-docs
+devel/cmake
 lang/elixir
 security/acmesh
 security/sudo
