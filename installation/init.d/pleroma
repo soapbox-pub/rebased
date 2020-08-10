@@ -8,7 +8,6 @@ pidfile="/var/run/pleroma.pid"
 directory=/opt/pleroma
 healthcheck_delay=60
 healthcheck_timer=30
-export $(cat /opt/pleroma/config/pleroma.env)
 
 : ${pleroma_port:-4000}
 
