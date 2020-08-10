@@ -45,7 +45,7 @@ Add `$static_dir/instance/thumbnail.jpeg` with your selfie or other neat picture
 
 ## Instance-specific panel
 
-Create and Edit your file on `$static_dir/instance/panel.html`.
+Create and Edit your file at `$static_dir/instance/panel.html`.
 
 ## Background
 
