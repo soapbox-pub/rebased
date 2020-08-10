@@ -14,6 +14,7 @@ It assumes that you have administrative rights, either as root or a user with [s
 * `erlang-xmerl`
 * `git`
 * Development Tools
+* `cmake`
 
 #### Optional packages used in this guide
 
@@ -39,7 +40,7 @@ sudo apk upgrade
 * Install some tools, which are needed later:
 
 ```shell
-sudo apk add git build-base
+sudo apk add git build-base cmake
 ```
 
 ### Install Elixir and Erlang
