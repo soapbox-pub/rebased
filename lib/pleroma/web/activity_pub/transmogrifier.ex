@@ -391,27 +391,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp fix_content(object), do: object
 
-  defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
-    with true <- id =~ "follows",
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follower_id),
-         %Activity{} = activity <- Utils.fetch_latest_follow(follower, followed) do
-      {:ok, activity}
-    else
-      _ -> {:error, nil}
-    end
-  end
-
-  defp mastodon_follow_hack(_, _), do: {:error, nil}
-
-  defp get_follow_activity(follow_object, followed) do
+  defp get_follow_activity(follow_object, _followed) do
     with object_id when not is_nil(object_id) <- Utils.get_ap_id(follow_object),
          {_, %Activity{} = activity} <- {:activity, Activity.get_by_ap_id(object_id)} do
       {:ok, activity}
     else
-      # Can't find the activity. This might a Mastodon 2.3 "Accept"
-      {:activity, nil} ->
-        mastodon_follow_hack(follow_object, followed)
-
       _ ->
         {:error, nil}
     end

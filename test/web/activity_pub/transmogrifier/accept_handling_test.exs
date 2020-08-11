@@ -44,28 +44,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AcceptHandlingTest do
     assert User.following?(follower, followed) == true
   end
 
-  test "it works for incoming accepts which were orphaned" do
-    follower = insert(:user)
-    followed = insert(:user, locked: true)
-
-    {:ok, _, _, follow_activity} = CommonAPI.follow(follower, followed)
-
-    accept_data =
-      File.read!("test/fixtures/mastodon-accept-activity.json")
-      |> Poison.decode!()
-      |> Map.put("actor", followed.ap_id)
-
-    accept_data =
-      Map.put(accept_data, "object", Map.put(accept_data["object"], "actor", follower.ap_id))
-
-    {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
-    assert activity.data["object"] == follow_activity.data["id"]
-
-    follower = User.get_cached_by_id(follower.id)
-
-    assert User.following?(follower, followed) == true
-  end
-
   test "it works for incoming accepts which are referenced by IRI only" do
     follower = insert(:user)
     followed = insert(:user, locked: true)
