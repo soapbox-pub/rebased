@@ -55,7 +55,7 @@ defmodule Pleroma.Object.Containment do
   defp compare_uris(_id_uri, _other_uri), do: :error
 
   @doc """
-  Checks that an imported AP object's actor matches the domain it came from.
+  Checks that an imported AP object's actor matches the host it came from.
   """
   def contain_origin(_id, %{"actor" => nil}), do: :error
 

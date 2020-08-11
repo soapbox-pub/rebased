@@ -127,7 +127,7 @@ defmodule Pleroma.Mixfile do
       {:pbkdf2_elixir, "~> 1.2"},
       {:bcrypt_elixir, "~> 2.2"},
       {:trailing_format_plug, "~> 0.0.7"},
-      {:fast_sanitize, "~> 0.1"},
+      {:fast_sanitize, "~> 0.2.0"},
       {:html_entities, "~> 0.5", override: true},
       {:phoenix_html, "~> 2.14"},
       {:calendar, "~> 1.0"},

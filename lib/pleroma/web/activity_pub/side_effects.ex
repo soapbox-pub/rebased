@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   """
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics
+  alias Pleroma.ActivityExpiration
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.FollowingRelationship
@@ -19,6 +20,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
+  alias Pleroma.Workers.BackgroundWorker
 
   def handle(object, meta \\ [])
 
@@ -135,10 +137,26 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Tasks this handles
   # - Actually create object
   # - Rollback if we couldn't create it
+  # - Increase the user note count
+  # - Increase the reply count
+  # - Increase replies count
+  # - Set up ActivityExpiration
   # - Set up notifications
   def handle(%{data: %{"type" => "Create"}} = activity, meta) do
-    with {:ok, _object, meta} <- handle_object_creation(meta[:object_data], meta) do
+    with {:ok, object, meta} <- handle_object_creation(meta[:object_data], meta),
+         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, notifications} = Notification.create_notifications(activity, do_send: false)
+      {:ok, _user} = ActivityPub.increase_note_count_if_public(user, object)
+
+      if in_reply_to = object.data["inReplyTo"] do
+        Object.increase_replies_count(in_reply_to)
+      end
+
+      if expires_at = activity.data["expires_at"] do
+        ActivityExpiration.create(activity, expires_at)
+      end
+
+      BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
 
       meta =
         meta
@@ -268,9 +286,27 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     end
   end
 
+  def handle_object_creation(%{"type" => "Answer"} = object_map, meta) do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object_map, meta) do
+      Object.increase_vote_count(
+        object.data["inReplyTo"],
+        object.data["name"],
+        object.data["actor"]
+      )
+
+      {:ok, object, meta}
+    end
+  end
+
+  def handle_object_creation(%{"type" => "Question"} = object, meta) do
+    with {:ok, object, meta} <- Pipeline.common_pipeline(object, meta) do
+      {:ok, object, meta}
+    end
+  end
+
   # Nothing to do
-  def handle_object_creation(object) do
-    {:ok, object}
+  def handle_object_creation(object, meta) do
+    {:ok, object, meta}
   end
 
   defp undo_like(nil, object), do: delete_object(object)

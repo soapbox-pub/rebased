@@ -308,18 +308,19 @@ defmodule Pleroma.Web.CommonAPI do
          {:ok, options, choices} <- normalize_and_validate_choices(choices, object) do
       answer_activities =
         Enum.map(choices, fn index ->
-          answer_data = make_answer_data(user, object, Enum.at(options, index)["name"])
+          {:ok, answer_object, _meta} =
+            Builder.answer(user, object, Enum.at(options, index)["name"])
 
-          {:ok, activity} =
-            ActivityPub.create(%{
-              to: answer_data["to"],
-              actor: user,
-              context: object.data["context"],
-              object: answer_data,
-              additional: %{"cc" => answer_data["cc"]}
-            })
+          {:ok, activity_data, _meta} = Builder.create(user, answer_object, [])
 
-          activity
+          {:ok, activity, _meta} =
+            activity_data
+            |> Map.put("cc", answer_object["cc"])
+            |> Map.put("context", answer_object["context"])
+            |> Pipeline.common_pipeline(local: true)
+
+          # TODO: Do preload of Pleroma.Object in Pipeline
+          Activity.normalize(activity.data)
         end)
 
       object = Object.get_cached_by_ap_id(object.data["id"])
@@ -340,8 +341,13 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp get_options_and_max_count(%{data: %{"anyOf" => any_of}}), do: {any_of, Enum.count(any_of)}
-  defp get_options_and_max_count(%{data: %{"oneOf" => one_of}}), do: {one_of, 1}
+  defp get_options_and_max_count(%{data: %{"anyOf" => any_of}})
+       when is_list(any_of) and any_of != [],
+       do: {any_of, Enum.count(any_of)}
+
+  defp get_options_and_max_count(%{data: %{"oneOf" => one_of}})
+       when is_list(one_of) and one_of != [],
+       do: {one_of, 1}
 
   defp normalize_and_validate_choices(choices, object) do
     choices = Enum.map(choices, fn i -> if is_binary(i), do: String.to_integer(i), else: i end)

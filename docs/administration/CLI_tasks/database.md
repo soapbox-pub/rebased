@@ -98,3 +98,13 @@ but should only be run if necessary. **It is safe to cancel this.**
 ```sh tab="From Source"
 mix pleroma.database vacuum full
 ```
+
+## Add expiration to all local statuses
+
+```sh tab="OTP"
+./bin/pleroma_ctl database ensure_expiration
+```
+
+```sh tab="From Source"
+mix pleroma.database ensure_expiration
+```
