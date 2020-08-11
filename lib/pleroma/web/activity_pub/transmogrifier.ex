@@ -661,7 +661,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       )
       when type in ~w{Update Block Follow} do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
-         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+         {:ok, activity, _} <-
+           Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     end
   end
@@ -670,7 +671,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Delete"} = data,
         _options
       ) do
-    with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+    with {:ok, activity, _} <-
+           Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     else
       {:error, {:validate_object, _}} = e ->

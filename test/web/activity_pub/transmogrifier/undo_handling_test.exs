@@ -130,7 +130,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.UndoHandlingTest do
              "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
   end
 
-  test "it works for incomming unfollows with an existing follow" do
+  test "it works for incoming unfollows with an existing follow" do
     user = insert(:user)
 
     follow_data =
