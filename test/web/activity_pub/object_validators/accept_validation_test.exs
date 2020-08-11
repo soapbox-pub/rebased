@@ -41,4 +41,15 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptValidationTest do
 
     assert {:error, _} = ObjectValidator.validate(accept_data, [])
   end
+
+  test "for an accepted follow, it only validates if the actor of the accept is the followed actor",
+       %{accept_data: accept_data} do
+    stranger = insert(:user)
+
+    accept_data =
+      accept_data
+      |> Map.put("actor", stranger.ap_id)
+
+    assert {:error, _} = ObjectValidator.validate(accept_data, [])
+  end
 end
