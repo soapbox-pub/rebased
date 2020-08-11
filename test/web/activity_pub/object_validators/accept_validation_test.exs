@@ -4,9 +4,10 @@
 
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptValidationTest do
   use Pleroma.DataCase
+
   alias Pleroma.Web.ActivityPub.Builder
-  alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.ObjectValidator
+  alias Pleroma.Web.ActivityPub.Pipeline
 
   import Pleroma.Factory
 

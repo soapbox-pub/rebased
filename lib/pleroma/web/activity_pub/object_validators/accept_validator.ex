@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.ObjectValidators.AcceptValidator do
   use Ecto.Schema
 
-  alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Activity
+  alias Pleroma.EctoType.ActivityPub.ObjectValidators
 
   import Ecto.Changeset
   import Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
