@@ -22,7 +22,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
   alias Pleroma.Workers.BackgroundWorker
-  alias Pleroma.FollowingRelationship
 
   def handle(object, meta \\ [])
 
