@@ -58,7 +58,7 @@ defmodule Pleroma.Web.ConnCase do
 
       defp empty_json_response(conn) do
         body = response(conn, 204)
-        _ = response_content_type(conn, :json)
+        response_content_type(conn, :json)
 
         body
       end
