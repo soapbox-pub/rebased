@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.FollowingRelationship
   alias Pleroma.Maps
-  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
@@ -536,35 +535,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => id} = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
-      User.update_follower_count(followed)
-      User.update_following_count(follower)
-
-      Notification.update_notification_type(followed, follow_activity)
-
-      ActivityPub.accept(%{
-        to: follow_activity.data["to"],
-        type: "Accept",
-        actor: followed,
-        object: follow_activity.data["id"],
-        local: false,
-        activity_id: id
-      })
-    else
-      _e ->
-        :error
-    end
-  end
-
-  def handle_incoming(
         %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => id} = data,
         _options
       ) do
@@ -643,7 +613,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => type} = data,
         _options
       )
-      when type in ~w{Update Block Follow} do
+      when type in ~w{Update Block Follow Accept} do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <-
            Pipeline.common_pipeline(data, local: false) do

@@ -21,8 +21,36 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
   alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.FollowingRelationship
 
   def handle(object, meta \\ [])
+
+  # Task this handles
+  # - Follows
+  # - Sends a notification
+  def handle(
+        %{
+          data: %{
+            "actor" => actor,
+            "type" => "Accept",
+            "object" => follow_activity_id
+          }
+        } = object,
+        meta
+      ) do
+    with %Activity{actor: follower_id} = follow_activity <-
+           Activity.get_by_ap_id(follow_activity_id),
+         %User{} = followed <- User.get_cached_by_ap_id(actor),
+         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
+         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
+      Notification.update_notification_type(followed, follow_activity)
+      User.update_follower_count(followed)
+      User.update_following_count(follower)
+    end
+
+    {:ok, object, meta}
+  end
 
   # Tasks this handle
   # - Follows if possible
