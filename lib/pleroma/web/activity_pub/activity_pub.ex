@@ -285,11 +285,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec accept(map()) :: {:ok, Activity.t()} | {:error, any()}
-  def accept(params) do
-    accept_or_reject("Accept", params)
-  end
-
   @spec reject(map()) :: {:ok, Activity.t()} | {:error, any()}
   def reject(params) do
     accept_or_reject("Reject", params)

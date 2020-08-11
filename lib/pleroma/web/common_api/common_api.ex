@@ -122,17 +122,8 @@ defmodule Pleroma.Web.CommonAPI do
 
   def accept_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follower} <- User.follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept),
-         {:ok, _activity} <-
-           ActivityPub.accept(%{
-             to: [follower.ap_id],
-             actor: followed,
-             object: follow_activity.data["id"],
-             type: "Accept"
-           }) do
-      Notification.update_notification_type(followed, follow_activity)
+         {:ok, accept_data, _} <- Builder.accept(followed, follow_activity),
+         {:ok, _activity, _} <- Pipeline.common_pipeline(accept_data, local: true) do
       {:ok, follower}
     end
   end

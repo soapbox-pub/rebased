@@ -16,6 +16,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Builder
   alias Pleroma.Web.ActivityPub.Pipeline
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Push
@@ -72,18 +73,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          {_, {:ok, _}, _, _} <-
            {:following, User.follow(follower, followed, :follow_pending), follower, followed} do
       if followed.local && !followed.locked do
-        Utils.update_follow_state_for_all(object, "accept")
-        FollowingRelationship.update(follower, followed, :follow_accept)
-        User.update_follower_count(followed)
-        User.update_following_count(follower)
-
-        %{
-          to: [following_user],
-          actor: followed,
-          object: follow_id,
-          local: true
-        }
-        |> ActivityPub.accept()
+        {:ok, accept_data, _} = Builder.accept(followed, object)
+        {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
       end
     else
       {:following, {:error, _}, follower, followed} ->
