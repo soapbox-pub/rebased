@@ -743,6 +743,8 @@ config :ex_aws, http_client: Pleroma.HTTP.ExAws
 
 config :pleroma, :instances_favicons, enabled: false
 
+config :floki, :html_parser, Floki.HTMLParser.FastHtml
+
 config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator
 
 # Import environment specific config. This must remain at the bottom

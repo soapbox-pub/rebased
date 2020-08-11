@@ -18,8 +18,11 @@ defmodule Pleroma.Repo.Migrations.FixLegacyTags do
   def change do
     legacy_tags = Map.keys(@old_new_map)
 
-    from(u in User, where: fragment("? && ?", u.tags, ^legacy_tags))
-    |> Repo.all()
+    from(u in User,
+      where: fragment("? && ?", u.tags, ^legacy_tags),
+      select: struct(u, [:tags, :id])
+    )
+    |> Repo.chunk_stream(100)
     |> Enum.each(fn user ->
       fix_tags_changeset(user)
       |> Repo.update()

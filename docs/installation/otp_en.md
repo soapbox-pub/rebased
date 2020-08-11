@@ -121,9 +121,6 @@ chown -R pleroma /etc/pleroma
 # Run the config generator
 su pleroma -s $SHELL -lc "./bin/pleroma_ctl instance gen --output /etc/pleroma/config.exs --output-psql /tmp/setup_db.psql"
 
-# Run the environment file generator.
-su pleroma -s $SHELL -lc "./bin/pleroma_ctl release_env gen"
-
 # Create the postgres database
 su postgres -s $SHELL -lc "psql -f /tmp/setup_db.psql"
 
@@ -134,7 +131,7 @@ su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate"
 # su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
 
 # Start the instance to verify that everything is working as expected
-su pleroma -s $SHELL -lc "export $(cat /opt/pleroma/config/pleroma.env); ./bin/pleroma daemon"
+su pleroma -s $SHELL -lc "./bin/pleroma daemon"
 
 # Wait for about 20 seconds and query the instance endpoint, if it shows your uri, name and email correctly, you are configured correctly
 sleep 20 && curl http://localhost:4000/api/v1/instance
@@ -202,7 +199,6 @@ rc-update add pleroma
 ```sh tab="Debian/Ubuntu"
 # Copy the service into a proper directory
 cp /opt/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
-
 
 # Start pleroma and enable it on boot
 systemctl start pleroma
@@ -279,3 +275,4 @@ This will create an account withe the username of 'joeuser' with the email addre
 ## Questions
 
 Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.
+
