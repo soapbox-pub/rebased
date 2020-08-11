@@ -422,32 +422,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       refute User.following?(follower, followed) == true
     end
 
-    test "it works for incoming rejects which are orphaned" do
-      follower = insert(:user)
-      followed = insert(:user, locked: true)
-
-      {:ok, follower} = User.follow(follower, followed)
-      {:ok, _, _, _follow_activity} = CommonAPI.follow(follower, followed)
-
-      assert User.following?(follower, followed) == true
-
-      reject_data =
-        File.read!("test/fixtures/mastodon-reject-activity.json")
-        |> Poison.decode!()
-        |> Map.put("actor", followed.ap_id)
-
-      reject_data =
-        Map.put(reject_data, "object", Map.put(reject_data["object"], "actor", follower.ap_id))
-
-      {:ok, activity} = Transmogrifier.handle_incoming(reject_data)
-      refute activity.local
-      assert activity.data["id"] == reject_data["id"]
-
-      follower = User.get_cached_by_id(follower.id)
-
-      assert User.following?(follower, followed) == false
-    end
-
     test "it works for incoming rejects which are referenced by IRI only" do
       follower = insert(:user)
       followed = insert(:user, locked: true)
