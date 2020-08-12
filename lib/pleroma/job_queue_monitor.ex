@@ -15,8 +15,8 @@ defmodule Pleroma.JobQueueMonitor do
 
   @impl true
   def init(state) do
-    :telemetry.attach("oban-monitor-failure", [:oban, :failure], &handle_event/4, nil)
-    :telemetry.attach("oban-monitor-success", [:oban, :success], &handle_event/4, nil)
+    :telemetry.attach("oban-monitor-failure", [:oban, :job, :exception], &handle_event/4, nil)
+    :telemetry.attach("oban-monitor-success", [:oban, :job, :stop], &handle_event/4, nil)
 
     {:ok, state}
   end
@@ -25,8 +25,11 @@ defmodule Pleroma.JobQueueMonitor do
     GenServer.call(__MODULE__, :stats)
   end
 
-  def handle_event([:oban, status], %{duration: duration}, meta, _) do
-    GenServer.cast(__MODULE__, {:process_event, status, duration, meta})
+  def handle_event([:oban, :job, event], %{duration: duration}, meta, _) do
+    GenServer.cast(
+      __MODULE__,
+      {:process_event, mapping_status(event), duration, meta}
+    )
   end
 
   @impl true
@@ -75,4 +78,7 @@ defmodule Pleroma.JobQueueMonitor do
     |> Map.update!(:processed_jobs, &(&1 + 1))
     |> Map.update!(status, &(&1 + 1))
   end
+
+  defp mapping_status(:stop), do: :success
+  defp mapping_status(:exception), do: :failure
 end
