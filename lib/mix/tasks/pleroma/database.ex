@@ -150,10 +150,8 @@ defmodule Mix.Tasks.Pleroma.Database do
     |> Pleroma.RepoStreamer.chunk_stream(100)
     |> Stream.each(fn activities ->
       Enum.each(activities, fn activity ->
-        if not Pleroma.Activity.pinned_by_actor?(activity) do
-          expires_at = Timex.shift(activity.inserted_at, days: days)
-          Pleroma.ActivityExpiration.create(activity, expires_at, false)
-        end
+        expires_at = Timex.shift(activity.inserted_at, days: days)
+        Pleroma.ActivityExpiration.create(activity, expires_at, false)
       end)
     end)
     |> Stream.run()
