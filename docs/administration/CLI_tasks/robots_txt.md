@@ -1,8 +1,8 @@
-# Managing robot.txt
+# Managing robots.txt
 
 {! backend/administration/CLI_tasks/general_cli_task_info.include !}
 
-## Generate a new robot.txt file and add it to the static directory
+## Generate a new robots.txt file and add it to the static directory
 
 The `robots.txt` that ships by default is permissive. It allows well-behaved search engines to index all of your instance's URIs.
 
