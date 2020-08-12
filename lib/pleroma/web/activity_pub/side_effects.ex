@@ -55,6 +55,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Task this handles
   # - Rejects all existing follow activities for this person
   # - Updates the follow state
+  # - Dismisses notificatios
   def handle(
         %{
           data: %{
@@ -71,6 +72,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
          %User{} = follower <- User.get_cached_by_ap_id(follower_id),
          {:ok, _follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject") do
       FollowingRelationship.update(follower, followed, :follow_reject)
+      Notification.dismiss(follow_activity)
     end
 
     {:ok, object, meta}
@@ -100,19 +102,9 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
         {:ok, _activity, _} = Pipeline.common_pipeline(accept_data, local: true)
       end
     else
-      {:following, {:error, _}, follower, followed} ->
-        Utils.update_follow_state_for_all(object, "reject")
-        FollowingRelationship.update(follower, followed, :follow_reject)
-
-        if followed.local do
-          %{
-            to: [follower.ap_id],
-            actor: followed,
-            object: follow_id,
-            local: true
-          }
-          |> ActivityPub.reject()
-        end
+      {:following, {:error, _}, _follower, followed} ->
+        {:ok, reject_data, _} = Builder.reject(followed, object)
+        {:ok, _activity, _} = Pipeline.common_pipeline(reject_data, local: true)
 
       _ ->
         nil
