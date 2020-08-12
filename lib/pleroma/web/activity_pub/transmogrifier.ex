@@ -9,7 +9,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Activity
   alias Pleroma.EarmarkRenderer
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
-  alias Pleroma.FollowingRelationship
   alias Pleroma.Maps
   alias Pleroma.Object
   alias Pleroma.Object.Containment
@@ -390,16 +389,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp fix_content(object), do: object
 
-  defp get_follow_activity(follow_object, _followed) do
-    with object_id when not is_nil(object_id) <- Utils.get_ap_id(follow_object),
-         {_, %Activity{} = activity} <- {:activity, Activity.get_by_ap_id(object_id)} do
-      {:ok, activity}
-    else
-      _ ->
-        {:error, nil}
-    end
-  end
-
   # Reduce the object list to find the reported user.
   defp get_reported(objects) do
     Enum.reduce_while(objects, nil, fn ap_id, _ ->
@@ -534,31 +523,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming(
-        %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => id} = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_reject),
-         {:ok, activity} <-
-           ActivityPub.reject(%{
-             to: follow_activity.data["to"],
-             type: "Reject",
-             actor: followed,
-             object: follow_activity.data["id"],
-             local: false,
-             activity_id: id
-           }) do
-      {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
   @misskey_reactions %{
     "like" => "👍",
     "love" => "❤️",
@@ -613,7 +577,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => type} = data,
         _options
       )
-      when type in ~w{Update Block Follow Accept} do
+      when type in ~w{Update Block Follow Accept Reject} do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <-
            Pipeline.common_pipeline(data, local: false) do

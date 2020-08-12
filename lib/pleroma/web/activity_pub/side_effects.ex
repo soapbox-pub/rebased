@@ -52,6 +52,30 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
     {:ok, object, meta}
   end
 
+  # Task this handles
+  # - Rejects all existing follow activities for this person
+  # - Updates the follow state
+  def handle(
+        %{
+          data: %{
+            "actor" => actor,
+            "type" => "Reject",
+            "object" => follow_activity_id
+          }
+        } = object,
+        meta
+      ) do
+    with %Activity{actor: follower_id} = follow_activity <-
+           Activity.get_by_ap_id(follow_activity_id),
+         %User{} = followed <- User.get_cached_by_ap_id(actor),
+         %User{} = follower <- User.get_cached_by_ap_id(follower_id),
+         {:ok, _follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject") do
+      FollowingRelationship.update(follower, followed, :follow_reject)
+    end
+
+    {:ok, object, meta}
+  end
+
   # Tasks this handle
   # - Follows if possible
   # - Sends a notification

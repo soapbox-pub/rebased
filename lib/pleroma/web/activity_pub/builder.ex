@@ -14,17 +14,26 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
   require Pleroma.Constants
 
-  @spec accept(User.t(), Activity.t()) :: {:ok, map(), keyword()}
-  def accept(actor, accepted_activity) do
+  def accept_or_reject(actor, activity, type) do
     data = %{
       "id" => Utils.generate_activity_id(),
       "actor" => actor.ap_id,
-      "type" => "Accept",
-      "object" => accepted_activity.data["id"],
-      "to" => [accepted_activity.actor]
+      "type" => type,
+      "object" => activity.data["id"],
+      "to" => [activity.actor]
     }
 
     {:ok, data, []}
+  end
+
+  @spec reject(User.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def reject(actor, rejected_activity) do
+    accept_or_reject(actor, rejected_activity, "Reject")
+  end
+
+  @spec accept(User.t(), Activity.t()) :: {:ok, map(), keyword()}
+  def accept(actor, accepted_activity) do
+    accept_or_reject(actor, accepted_activity, "Accept")
   end
 
   @spec follow(User.t(), User.t()) :: {:ok, map(), keyword()}

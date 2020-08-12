@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.RejectHandlingTest do
     accept_data =
       Map.put(accept_data, "object", Map.put(accept_data["object"], "actor", follower.ap_id))
 
-    :error = Transmogrifier.handle_incoming(accept_data)
+    {:error, _} = Transmogrifier.handle_incoming(accept_data)
 
     follower = User.get_cached_by_id(follower.id)
 
