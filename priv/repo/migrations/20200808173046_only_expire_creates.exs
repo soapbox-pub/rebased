@@ -4,10 +4,10 @@ defmodule Pleroma.Repo.Migrations.OnlyExpireCreates do
   def up do
     statement = """
     DELETE FROM
-      activity_expirations A USING activities B
+      activity_expirations a_exp USING activities a, objects o
     WHERE
-      A.activity_id = B.id
-      AND B.data->>'type' != 'Create';
+      a_exp.activity_id = a.id AND (o.data->>'id') = COALESCE(a.data->'object'->>'id', a.data->>'object')
+      AND (a.data->>'type' != 'Create' OR o.data->>'type' != 'Note');
     """
 
     execute(statement)
