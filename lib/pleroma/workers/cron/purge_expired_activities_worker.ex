@@ -21,11 +21,12 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker do
 
   @impl Oban.Worker
   def perform(_job) do
-    if Config.get([ActivityExpiration, :enabled]) do
-      Enum.each(ActivityExpiration.due_expirations(@interval), &delete_activity/1)
-    else
-      :ok
-    end
+   if Config.get([ActivityExpiration, :enabled]) do
+     Enum.each(ActivityExpiration.due_expirations(@interval), &delete_activity/1)
+   end
+
+  after
+    :ok
   end
 
   def delete_activity(%ActivityExpiration{activity_id: activity_id}) do
@@ -41,7 +42,7 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker do
 
       {:user, _} ->
         Logger.error(
-          "#{__MODULE__} Couldn't delete expired activity: not found actorof ##{activity_id}"
+          "#{__MODULE__} Couldn't delete expired activity: not found actor of ##{activity_id}"
         )
     end
   end
