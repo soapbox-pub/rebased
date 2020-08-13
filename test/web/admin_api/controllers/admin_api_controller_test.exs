@@ -158,6 +158,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user = insert(:user)
       clear_config([:instance, :federating], true)
 
+      refute user.deactivated
+
       with_mock Pleroma.Web.Federator,
         publish: fn _ -> nil end do
         conn =
@@ -175,6 +177,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  "@#{admin.nickname} deleted users: @#{user.nickname}"
 
         assert json_response(conn, 200) == [user.nickname]
+
+        user = Repo.get(User, user.id)
+        assert user.deactivated
 
         assert called(Pleroma.Web.Federator.publish(:_))
       end
