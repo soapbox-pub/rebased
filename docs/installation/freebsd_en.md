@@ -46,7 +46,7 @@ Configure Pleroma. Note that you need a domain name at this point:
 
 ```
 $ cd /home/pleroma/pleroma
-$ mix deps.get
+$ mix deps.get # Enter "y" when asked to install Hex
 $ mix pleroma.instance gen # You will be asked a few questions here.
 $ cp config/generated_config.exs config/prod.secret.exs # The default values should be sufficient but you should edit it and check that everything seems OK.
 ```
