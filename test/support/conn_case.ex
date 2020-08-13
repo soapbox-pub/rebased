@@ -56,6 +56,13 @@ defmodule Pleroma.Web.ConnCase do
         [conn: conn]
       end
 
+      defp empty_json_response(conn) do
+        body = response(conn, 204)
+        response_content_type(conn, :json)
+
+        body
+      end
+
       defp json_response_and_validate_schema(
              %{
                private: %{
@@ -79,7 +86,7 @@ defmodule Pleroma.Web.ConnCase do
         end
 
         schema = lookup[op_id].responses[status].content[content_type].schema
-        json = json_response(conn, status)
+        json = if status == 204, do: empty_json_response(conn), else: json_response(conn, status)
 
         case OpenApiSpex.cast_value(json, schema, spec) do
           {:ok, _data} ->
