@@ -21,10 +21,9 @@ defmodule Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker do
 
   @impl Oban.Worker
   def perform(_job) do
-   if Config.get([ActivityExpiration, :enabled]) do
-     Enum.each(ActivityExpiration.due_expirations(@interval), &delete_activity/1)
-   end
-
+    if Config.get([ActivityExpiration, :enabled]) do
+      Enum.each(ActivityExpiration.due_expirations(@interval), &delete_activity/1)
+    end
   after
     :ok
   end
