@@ -108,10 +108,10 @@ Edit the defaults of `/usr/local/etc/nginx/nginx.conf`:
 
 We'll be using acme.sh in Stateless Mode for TLS certificate renewal.
 
-First, get your account fingerprint:
+First, as root, get your account fingerprint:
 
 ```
-$ sudo -Hu nginx -g nginx acme.sh --register-account
+# sudo -Hu acme -g acme acme.sh --register-account
 ```
 
 You need to add the following to your nginx configuration for the server
@@ -136,7 +136,7 @@ It should now be possible to issue a cert (replace `example.com`
 with your domain name):
 
 ```
-$ sudo -Hu nginx -g nginx acme.sh --issue -d example.com --stateless
+$ sudo -Hu acme -g acme acme.sh --issue -d example.com --stateless
 $ acme.sh --install-cert -d example.com \
 	--key-file       /path/to/keyfile/in/nginx/key.pem  \
 	--fullchain-file /path/to/fullchain/nginx/cert.pem \
@@ -146,7 +146,7 @@ Let's add auto-renewal to `/etc/daily.local`
 (replace `example.com` with your domain):
 
 ```
-/usr/pkg/bin/sudo -Hu www -g www \
+/usr/local/bin/sudo -Hu acme -g acme \
     /usr/local/sbin/acme.sh -r \
     -d example.com \
     --cert-file /etc/nginx/tls/cert \
