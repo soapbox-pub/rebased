@@ -13,6 +13,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ObjectValidators.AcceptRejectValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnnounceValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.AnswerValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.BlockValidator
@@ -29,6 +30,17 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidator do
 
   @spec validate(map(), keyword()) :: {:ok, map(), keyword()} | {:error, any()}
   def validate(object, meta)
+
+  def validate(%{"type" => type} = object, meta)
+      when type in ~w[Accept Reject] do
+    with {:ok, object} <-
+           object
+           |> AcceptRejectValidator.cast_and_validate()
+           |> Ecto.Changeset.apply_action(:insert) do
+      object = stringify_keys(object)
+      {:ok, object, meta}
+    end
+  end
 
   def validate(%{"type" => "Follow"} = object, meta) do
     with {:ok, object} <-

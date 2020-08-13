@@ -285,32 +285,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @spec accept(map()) :: {:ok, Activity.t()} | {:error, any()}
-  def accept(params) do
-    accept_or_reject("Accept", params)
-  end
-
-  @spec reject(map()) :: {:ok, Activity.t()} | {:error, any()}
-  def reject(params) do
-    accept_or_reject("Reject", params)
-  end
-
-  @spec accept_or_reject(String.t(), map()) :: {:ok, Activity.t()} | {:error, any()}
-  defp accept_or_reject(type, %{to: to, actor: actor, object: object} = params) do
-    local = Map.get(params, :local, true)
-    activity_id = Map.get(params, :activity_id, nil)
-
-    data =
-      %{"to" => to, "type" => type, "actor" => actor.ap_id, "object" => object}
-      |> Maps.put_if_present("id", activity_id)
-
-    with {:ok, activity} <- insert(data, local),
-         _ <- notify_and_stream(activity),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
-    end
-  end
-
   @spec unfollow(User.t(), User.t(), String.t() | nil, boolean()) ::
           {:ok, Activity.t()} | nil | {:error, any()}
   def unfollow(follower, followed, activity_id \\ nil, local \\ true) do
