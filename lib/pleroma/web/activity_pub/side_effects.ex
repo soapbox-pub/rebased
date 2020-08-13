@@ -55,7 +55,7 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # Task this handles
   # - Rejects all existing follow activities for this person
   # - Updates the follow state
-  # - Dismisses notificatios
+  # - Dismisses notification
   def handle(
         %{
           data: %{
