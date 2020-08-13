@@ -46,7 +46,12 @@ defmodule Pleroma.ActivityExpiration do
 
     ActivityExpiration
     |> where([exp], exp.scheduled_at < ^naive_datetime)
+    |> limit(50)
+    |> preload(:activity)
     |> Repo.all()
+    |> Enum.reject(fn %{activity: activity} ->
+      Activity.pinned_by_actor?(activity)
+    end)
   end
 
   def validate_scheduled_at(changeset, false), do: changeset

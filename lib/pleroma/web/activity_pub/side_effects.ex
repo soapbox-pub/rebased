@@ -23,6 +23,8 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   alias Pleroma.Web.Streamer
   alias Pleroma.Workers.BackgroundWorker
 
+  require Logger
+
   def handle(object, meta \\ [])
 
   # Task this handles
@@ -251,13 +253,15 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   # - Stream out the activity
   def handle(%{data: %{"type" => "Delete", "object" => deleted_object}} = object, meta) do
     deleted_object =
-      Object.normalize(deleted_object, false) || User.get_cached_by_ap_id(deleted_object)
+      Object.normalize(deleted_object, false) ||
+        User.get_cached_by_ap_id(deleted_object)
 
     result =
       case deleted_object do
         %Object{} ->
           with {:ok, deleted_object, activity} <- Object.delete(deleted_object),
-               %User{} = user <- User.get_cached_by_ap_id(deleted_object.data["actor"]) do
+               {_, actor} when is_binary(actor) <- {:actor, deleted_object.data["actor"]},
+               %User{} = user <- User.get_cached_by_ap_id(actor) do
             User.remove_pinnned_activity(user, activity)
 
             {:ok, user} = ActivityPub.decrease_note_count_if_public(user, deleted_object)
@@ -271,6 +275,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
             ActivityPub.stream_out(object)
             ActivityPub.stream_out_participations(deleted_object, user)
             :ok
+          else
+            {:actor, _} ->
+              Logger.error("The object doesn't have an actor: #{inspect(deleted_object)}")
+              :no_object_actor
           end
 
         %User{} ->
