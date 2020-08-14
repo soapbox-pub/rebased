@@ -79,36 +79,19 @@ $ MIX_ENV=prod mix ecto.migrate
 
 You will need to do this whenever you update with `git pull`:
 
-## Configuring nginx
-
-As root, install the example configuration file
-`/home/pleroma/pleroma/installation/pleroma.nginx` to
-`/usr/local/etc/nginx/nginx.conf`.
-
-Note that it will need to be wrapped in a `http {}` block. You should add
-settings for the nginx daemon outside of the http block, for example:
-
-```
-user                    nginx  nginx;
-error_log               /var/log/nginx/error.log;
-worker_processes        4;
-
-events {
-}
-```
-
-Edit the defaults of `/usr/local/etc/nginx/nginx.conf`:
-
-* Change `ssl_trusted_certificate` to `/etc/ssl/example.tld/chain.pem`.
-* Change `ssl_certificate` to `/etc/ssl/example.tld/fullchain.pem`.
-* Change `ssl_certificate_key` to `/etc/ssl/example.tld/privkey.pem`.
-* Change all references of `example.tld` to your instance's domain name.
-
 ## Configuring acme.sh
 
 We'll be using acme.sh in Stateless Mode for TLS certificate renewal.
 
-First, as root, get your account fingerprint:
+First, as root, allow the user `acme` to have access to the acme log file, as follows:
+
+```
+# touch /var/log/acme.sh.log
+# chown acme:acme /var/log/acme.sh.log
+# chmod 600 /var/log/acme.sh.log
+```
+
+Next, obtain your account fingerprint:
 
 ```
 # sudo -Hu acme -g acme acme.sh --register-account
@@ -155,6 +138,38 @@ Let's add auto-renewal to `/etc/daily.local`
     --fullchain-file /etc/nginx/tls/fullchain \
     --stateless
 ```
+
+### Configuring nginx
+
+FreeBSD's default nginx configuration does not contain an include directive, which is
+typically used for multiple sites. Therefore, you will need to first create the required
+directory as follows:
+
+
+```
+# mkdir -p /usr/local/etc/nginx/sites-available
+```
+
+Next, add an `include` directive to `/usr/local/etc/nginx/nginx.conf`, within the `http {}`
+block, as follows:
+
+
+```
+http {
+...
+	include /usr/local/etc/nginx/sites-available/*.conf;
+}
+```
+
+As root, copy `/home/pleroma/pleroma/installation/pleroma.nginx` to
+`/usr/local/etc/nginx/sites-available/pleroma.conf`.
+
+Edit the defaults of `/usr/local/etc/nginx/sites-available/pleroma.conf`:
+
+* Change `ssl_trusted_certificate` to `/etc/ssl/example.tld/chain.pem`.
+* Change `ssl_certificate` to `/etc/ssl/example.tld/fullchain.pem`.
+* Change `ssl_certificate_key` to `/etc/ssl/example.tld/privkey.pem`.
+* Change all references of `example.tld` to your instance's domain name.
 
 ## Creating a startup script for Pleroma
 
