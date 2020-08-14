@@ -123,8 +123,8 @@ with your domain name):
 # sudo -Hu acme -g acme acme.sh --issue -d example.com --stateless
 # acme.sh --home /var/db/acme/.acme.sh/ --install-cert -d example.com \
 	--ca-file /etc/ssl/example.com/ca.pem \
-	--key-file /etc/ssl/example.com/key.pem \
-	--cert-file /etc/ssl/example.com/cert.pem \
+	--key-file /etc/ssl/example.com/privkey.pem \
+	--cert-file /etc/ssl/example.com/chain.pem \
 	--fullchain-file /etc/ssl/example.com/fullchain.pem
 ```
 
@@ -135,8 +135,8 @@ Let's add auto-renewal to `/etc/crontab`
 /usr/local/bin/sudo -Hu acme -g acme /usr/local/sbin/acme.sh -r -d example.com --stateless
 /usr/local/sbin/acme.sh --home /var/db/acme/.acme.sh/ --install-cert -d example.com \
 	--ca-file /etc/ssl/example.com/ca.pem \
-	--key-file /etc/ssl/example.com/key.pem \
-	--cert-file /etc/ssl/test-app.mailchar.com/cert.pem \
+	--key-file /etc/ssl/example.com/privkey.pem \
+	--cert-file /etc/ssl/example.com/chain.pem \
 	--fullchain-file /etc/ssl/example.com/fullchain.pem
 ```
 
@@ -158,7 +158,7 @@ block, as follows:
 ```
 http {
 ...
-	include /usr/local/etc/nginx/sites-available/*.conf;
+	include /usr/local/etc/nginx/sites-available/*;
 }
 ```
 
