@@ -1,13 +1,14 @@
 # Installing on FreeBSD 
 
-This document was written for FreeBSD 12.1, but should be trivially trailerable to future releases.
-Additionally, this guide document can be modified to 
+This document was written for FreeBSD 12.1, but should be work on future releases.
 
 ## Required software 
 
 This assumes the target system has `pkg(8)`.
 
-`# pkg install elixir postgresql12-server postgresql12-client postgresql12-contrib git-lite sudo nginx gmake acme.sh`
+```
+# pkg install elixir postgresql12-server postgresql12-client postgresql12-contrib git-lite sudo nginx gmake acme.sh
+```
 
 Copy the rc.d scripts to the right directory:
 
@@ -48,7 +49,7 @@ Configure Pleroma. Note that you need a domain name at this point:
 $ cd /home/pleroma/pleroma
 $ mix deps.get # Enter "y" when asked to install Hex
 $ mix pleroma.instance gen # You will be asked a few questions here.
-$ cp config/generated_config.exs config/prod.secret.exs # The default values should be sufficient but you should edit it and check that everything seems OK.
+$ cp config/generated_config.exs config/prod.secret.exs
 ```
 
 Since Postgres is configured, we can now initialize the database. There should
@@ -65,7 +66,10 @@ Postgres allows connections from all users without a password by default. To
 fix this, edit `/var/db/postgres/data12/pg_hba.conf`. Change every `trust` to
 `password`.
 
-Once this is done, restart Postgres with `# service postgresql restart`.
+Once this is done, restart Postgres with:
+```
+# service postgresql restart
+```
 
 Run the database migrations.
 
@@ -119,13 +123,7 @@ It should now be possible to issue a cert (replace `example.com`
 with your domain name):
 
 ```
-# mkdir -p /etc/ssl/example.com
 # sudo -Hu acme -g acme acme.sh --issue -d example.com --stateless
-# acme.sh --home /var/db/acme/.acme.sh/ --install-cert -d example.com \
-	--ca-file /etc/ssl/example.com/ca.pem \
-	--key-file /etc/ssl/example.com/privkey.pem \
-	--cert-file /etc/ssl/example.com/chain.pem \
-	--fullchain-file /etc/ssl/example.com/fullchain.pem
 ```
 
 Let's add auto-renewal to `/etc/crontab`
@@ -133,11 +131,6 @@ Let's add auto-renewal to `/etc/crontab`
 
 ```
 /usr/local/bin/sudo -Hu acme -g acme /usr/local/sbin/acme.sh -r -d example.com --stateless
-/usr/local/sbin/acme.sh --home /var/db/acme/.acme.sh/ --install-cert -d example.com \
-	--ca-file /etc/ssl/example.com/ca.pem \
-	--key-file /etc/ssl/example.com/privkey.pem \
-	--cert-file /etc/ssl/example.com/chain.pem \
-	--fullchain-file /etc/ssl/example.com/fullchain.pem
 ```
 
 ### Configuring nginx
@@ -163,13 +156,13 @@ http {
 ```
 
 As root, copy `/home/pleroma/pleroma/installation/pleroma.nginx` to
-`/usr/local/etc/nginx/sites-available/pleroma.conf`.
+`/usr/local/etc/nginx/sites-available/pleroma.nginx`.
 
-Edit the defaults of `/usr/local/etc/nginx/sites-available/pleroma.conf`:
+Edit the defaults of `/usr/local/etc/nginx/sites-available/pleroma.nginx`:
 
-* Change `ssl_trusted_certificate` to `/etc/ssl/example.tld/chain.pem`.
-* Change `ssl_certificate` to `/etc/ssl/example.tld/fullchain.pem`.
-* Change `ssl_certificate_key` to `/etc/ssl/example.tld/privkey.pem`.
+* Change `ssl_trusted_certificate` to `/var/db/acme/certs/example.tld/example.tld.cer`.
+* Change `ssl_certificate` to `/var/db/acme/certs/example.tld/fullchain.cer`.
+* Change `ssl_certificate_key` to `/var/db/acme/certs/example.tld/example.tld.key`.
 * Change all references of `example.tld` to your instance's domain name.
 
 ## Creating a startup script for Pleroma
@@ -198,6 +191,13 @@ Update the `/etc/rc.conf` and start pleroma with the following commands:
 # service pleroma start
 ```
 
+#### Create your first user
+
+If your instance is up and running, you can create your first user with administrative rights with the following task:
+
+```shell
+sudo -Hu pleroma MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress> --admin
+```
 ## Conclusion
 
 Restart nginx with `# service nginx restart` and you should be up and running.
