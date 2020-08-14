@@ -6,6 +6,10 @@ defmodule Pleroma.Upload.Filter.Mogrifun do
   @behaviour Pleroma.Upload.Filter
   alias Pleroma.Upload.Filter
 
+  @moduledoc """
+  This module is just an example of an Upload filter. It's not supposed to be used in production.
+  """
+
   @filters [
     {"implode", "1"},
     {"-raise", "20"},
