@@ -59,12 +59,9 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   end
 
   def visible_for_user?(%{local: local} = activity, nil) do
-    cfg_key =
-      if local,
-        do: :local,
-        else: :remote
+    cfg_key = if local, do: :local, else: :remote
 
-    if Pleroma.Config.get([:restrict_unauthenticated, :activities, cfg_key]),
+    if Pleroma.Config.restrict_unauthenticated_access?(:activities, cfg_key),
       do: false,
       else: is_public?(activity)
   end
