@@ -119,10 +119,11 @@ It should now be possible to issue a cert (replace `example.com`
 with your domain name):
 
 ```
-$ sudo -Hu acme -g acme acme.sh --issue -d example.com --stateless
-$ acme.sh --install-cert -d example.com \
-	--key-file       /path/to/keyfile/in/nginx/key.pem  \
-	--fullchain-file /path/to/fullchain/nginx/cert.pem \
+# mkdir -p /etc/ssl/example.com
+# sudo -Hu acme -g acme acme.sh --issue -d example.com --stateless
+# acme.sh --home /var/db/acme/.acme.sh/ --install-cert -d example.com \
+	--key-file /etc/ssl/example.com/key.pem
+	--fullchain-file /etc/ssl/example.com/fullchain.pem
 ```
 
 Let's add auto-renewal to `/etc/daily.local`
