@@ -198,8 +198,6 @@ Update the `/etc/rc.conf` and start pleroma with the following commands:
 # service pleroma start
 ```
 
-Now you can start pleroma with `# service pleroma start`.
-
 ## Conclusion
 
 Restart nginx with `# service nginx restart` and you should be up and running.
