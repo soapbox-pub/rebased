@@ -1810,12 +1810,12 @@ config :pleroma, :config_description, [
           %{
             key: :enabled,
             type: :boolean,
-            description: "Enables invalidate media cache"
+            description: "Enables media cache object invalidation."
           },
           %{
             key: :provider,
             type: :module,
-            description: "Module which will be used to cache purge.",
+            description: "Module which will be used to purge objects from the cache.",
             suggestions: [
               Pleroma.Web.MediaProxy.Invalidation.Script,
               Pleroma.Web.MediaProxy.Invalidation.Http
