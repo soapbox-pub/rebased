@@ -8,10 +8,14 @@ The `robots.txt` that ships by default is permissive. It allows well-behaved sea
 
 If you want to generate a restrictive `robots.txt`, you can run the following mix task. The generated `robots.txt` will be written in your instance [static directory](../../../configuration/static_dir/).
 
-```elixir tab="OTP"
-./bin/pleroma_ctl robots_txt disallow_all
-```
+=== "OTP"
 
-```elixir tab="From Source"
-mix pleroma.robots_txt disallow_all
-```
+    ```sh
+    ./bin/pleroma_ctl robots_txt disallow_all
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.robots_txt disallow_all
+    ```
