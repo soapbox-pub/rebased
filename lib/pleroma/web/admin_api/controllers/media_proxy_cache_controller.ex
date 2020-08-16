@@ -38,17 +38,19 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheController do
 
   defp fetch_entries(params) do
     MediaProxy.cache_table()
-    |> Cachex.export!()
-    |> filter_urls(params[:query])
+    |> Cachex.stream!(Cachex.Query.create(true, :key))
+    |> filter_entries(params[:query])
   end
 
-  defp filter_urls(entries, query) when is_binary(query) do
-    for {_, url, _, _, _} <- entries, String.contains?(url, query), do: url
+  defp filter_entries(stream, query) when is_binary(query) do
+    regex = ~r/#{query}/i
+
+    stream
+    |> Enum.filter(fn url -> String.match?(url, regex) end)
+    |> Enum.to_list()
   end
 
-  defp filter_urls(entries, _) do
-    Enum.map(entries, fn {_, url, _, _, _} -> url end)
-  end
+  defp filter_entries(stream, _), do: Enum.to_list(stream)
 
   defp paginate_entries(entries, page, page_size) do
     offset = page_size * (page - 1)

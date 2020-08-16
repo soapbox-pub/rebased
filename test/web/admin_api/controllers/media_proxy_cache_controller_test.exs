@@ -89,7 +89,7 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
 
       response =
         conn
-        |> get("/api/pleroma/admin/media_proxy_caches?page_size=2&query=f44")
+        |> get("/api/pleroma/admin/media_proxy_caches?page_size=2&query=F44")
         |> json_response_and_validate_schema(200)
 
       assert response["urls"] == [
