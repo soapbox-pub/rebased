@@ -2,8 +2,7 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.FrontendStaticPlugTest do
-  alias Pleroma.Plugs.FrontendStatic
+defmodule Pleroma.Web.Plugs.FrontendStaticPlugTest do
   use Pleroma.Web.ConnCase
 
   @dir "test/tmp/instance_static"
@@ -21,7 +20,7 @@ defmodule Pleroma.Web.FrontendStaticPlugTest do
         at: "/admin",
         frontend_type: :admin
       ]
-      |> FrontendStatic.init()
+      |> Pleroma.Web.Plugs.FrontendStatic.init()
 
     assert opts[:at] == ["admin"]
     assert opts[:frontend_type] == :admin
