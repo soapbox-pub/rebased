@@ -15,6 +15,7 @@ defmodule Pleroma.Notification do
   alias Pleroma.Repo
   alias Pleroma.ThreadMute
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
@@ -637,7 +638,7 @@ defmodule Pleroma.Notification do
 
   def mark_as_read?(activity, target_user) do
     user = Activity.user_actor(activity)
-    User.mutes_user?(target_user, user)
+    User.mutes_user?(target_user, user) || CommonAPI.thread_muted?(target_user, activity)
   end
 
   def for_user_and_activity(user, activity) do
