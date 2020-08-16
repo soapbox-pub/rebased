@@ -24,7 +24,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiPackController do
 
   @skip_plugs [
     Pleroma.Web.Plugs.OAuthScopesPlug,
-    Pleroma.Web.Plugs.ExpectPublicOrAuthenticatedCheckPlug
+    Pleroma.Web.Plugs.EnsurePublicOrAuthenticatedPlug
   ]
   plug(:skip_plug, @skip_plugs when action in [:index, :archive, :show])
 

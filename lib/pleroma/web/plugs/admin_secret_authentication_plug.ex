@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.Plugs.AdminSecretAuthenticationPlug do
   import Plug.Conn
 
-  alias Pleroma.Plugs.OAuthScopesPlug
-  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
+  alias Pleroma.Web.Plugs.OAuthScopesPlug
+  alias Pleroma.Web.Plugs.RateLimiter
 
   def init(options) do
     options
