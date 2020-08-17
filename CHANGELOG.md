@@ -120,6 +120,7 @@ switched to a new configuration mechanism, however it was not officially removed
 - Mastodon API (legacy): Allow query parameters for `/api/v1/domain_blocks`, e.g. `/api/v1/domain_blocks?domain=badposters.zone`
 - Mastodon API: Make notifications about statuses from muted users and threads read automatically
 - Pleroma API: `/api/pleroma/captcha` responses now include `seconds_valid` with an integer value.
+- Pleroma API: Pagination for remote/local packs and emoji.
 
 </details>
 
