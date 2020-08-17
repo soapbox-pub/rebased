@@ -105,6 +105,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix edge case where MediaProxy truncates media, usually caused when Caddy is serving content for the other Federated instance.
 - Emoji Packs could not be listed when instance was set to `public: false`
 - Fix whole_word always returning false on filter get requests
+- Migrations not working on OTP releases if the database was connected over ssl
 
 ## [Unreleased (patch)]
 

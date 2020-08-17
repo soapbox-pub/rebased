@@ -40,6 +40,10 @@ defmodule Mix.Tasks.Pleroma.Ecto.Rollback do
     load_pleroma()
     {opts, _} = OptionParser.parse!(args, strict: @switches, aliases: @aliases)
 
+    if Application.get_env(:pleroma, Pleroma.Repo)[:ssl] do
+      Application.ensure_all_started(:ssl)
+    end
+
     opts =
       if opts[:to] || opts[:step] || opts[:all],
         do: opts,
