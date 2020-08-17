@@ -445,6 +445,23 @@ defmodule Pleroma.Web.MastodonAPI.TimelineControllerTest do
       assert length(json_response(res_conn, 200)) == 2
     end
 
+    test "with default settings on private instances, returns 403 for unauthenticated users", %{
+      conn: conn,
+      base_uri: base_uri,
+      error_response: error_response
+    } do
+      clear_config([:instance, :public], false)
+      clear_config([:restrict_unauthenticated, :timelines])
+
+      for local <- [true, false] do
+        res_conn = get(conn, "#{base_uri}?local=#{local}")
+
+        assert json_response(res_conn, :unauthorized) == error_response
+      end
+
+      ensure_authenticated_access(base_uri)
+    end
+
     test "with `%{local: true, federated: true}`, returns 403 for unauthenticated users", %{
       conn: conn,
       base_uri: base_uri,

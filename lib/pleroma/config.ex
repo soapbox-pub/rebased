@@ -81,6 +81,16 @@ defmodule Pleroma.Config do
     Application.delete_env(:pleroma, key)
   end
 
+  def restrict_unauthenticated_access?(resource, kind) do
+    setting = get([:restrict_unauthenticated, resource, kind])
+
+    if setting in [nil, :if_instance_is_private] do
+      !get!([:instance, :public])
+    else
+      setting
+    end
+  end
+
   def oauth_consumer_strategies, do: get([:auth, :oauth_consumer_strategies], [])
 
   def oauth_consumer_enabled?, do: oauth_consumer_strategies() != []
