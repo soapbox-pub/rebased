@@ -72,7 +72,8 @@ config :pleroma, Pleroma.Upload,
       pool: :upload
     ]
   ],
-  filename_display_max_length: 30
+  filename_display_max_length: 30,
+  default_description: nil
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
