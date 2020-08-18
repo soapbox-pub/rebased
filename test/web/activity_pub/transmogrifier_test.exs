@@ -225,35 +225,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Enum.at(object.data["tag"], 2) == "moo"
     end
 
-    test "it works for incoming listens" do
-      data = %{
-        "@context" => "https://www.w3.org/ns/activitystreams",
-        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
-        "cc" => [],
-        "type" => "Listen",
-        "id" => "http://mastodon.example.org/users/admin/listens/1234/activity",
-        "actor" => "http://mastodon.example.org/users/admin",
-        "object" => %{
-          "type" => "Audio",
-          "id" => "http://mastodon.example.org/users/admin/listens/1234",
-          "attributedTo" => "http://mastodon.example.org/users/admin",
-          "title" => "lain radio episode 1",
-          "artist" => "lain",
-          "album" => "lain radio",
-          "length" => 180_000
-        }
-      }
-
-      {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
-
-      object = Object.normalize(activity)
-
-      assert object.data["title"] == "lain radio episode 1"
-      assert object.data["artist"] == "lain"
-      assert object.data["album"] == "lain radio"
-      assert object.data["length"] == 180_000
-    end
-
     test "it works for incoming notices with contentMap" do
       data =
         File.read!("test/fixtures/mastodon-post-activity-contentmap.json") |> Poison.decode!()
