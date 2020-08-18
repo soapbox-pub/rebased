@@ -155,13 +155,30 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "DELETE /api/pleroma/admin/users" do
     test "single user", %{admin: admin, conn: conn} do
-      user = insert(:user)
       clear_config([:instance, :federating], true)
 
+      user =
+        insert(:user,
+          avatar: %{"url" => [%{"href" => "https://someurl"}]},
+          banner: %{"url" => [%{"href" => "https://somebanner"}]},
+          bio: "Hello world!",
+          name: "A guy"
+        )
+
+      # Create some activities to check they got deleted later
+      follower = insert(:user)
+      {:ok, _} = CommonAPI.post(user, %{status: "test"})
+      {:ok, _, _, _} = CommonAPI.follow(user, follower)
+      {:ok, _, _, _} = CommonAPI.follow(follower, user)
+      user = Repo.get(User, user.id)
+      assert user.note_count == 1
+      assert user.follower_count == 1
+      assert user.following_count == 1
       refute user.deactivated
 
       with_mock Pleroma.Web.Federator,
-        publish: fn _ -> nil end do
+        publish: fn _ -> nil end,
+        perform: fn _, _ -> nil end do
         conn =
           conn
           |> put_req_header("accept", "application/json")
@@ -180,6 +197,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
         user = Repo.get(User, user.id)
         assert user.deactivated
+
+        assert user.avatar == %{}
+        assert user.banner == %{}
+        assert user.note_count == 0
+        assert user.follower_count == 0
+        assert user.following_count == 0
+        assert user.bio == nil
+        assert user.name == nil
 
         assert called(Pleroma.Web.Federator.publish(:_))
       end
