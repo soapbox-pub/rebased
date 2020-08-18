@@ -12,6 +12,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
 
   import Pleroma.Factory
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   test "it works for incoming listens" do
     _user = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
 
@@ -41,5 +46,35 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
     assert object.data["artist"] == "lain"
     assert object.data["album"] == "lain radio"
     assert object.data["length"] == 180_000
+  end
+
+  test "Funkwhale Audio object" do
+    data = File.read!("test/fixtures/tesla_mock/funkwhale_create_audio.json") |> Poison.decode!()
+
+    {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
+
+    assert object = Object.normalize(activity, false)
+
+    assert object.data["to"] == ["https://www.w3.org/ns/activitystreams#Public"]
+
+    assert object.data["cc"] == []
+
+    assert object.data["url"] == "https://channels.tests.funkwhale.audio/library/tracks/74"
+
+    assert object.data["attachment"] == [
+             %{
+               "mediaType" => "audio/ogg",
+               "type" => "Link",
+               "name" => nil,
+               "url" => [
+                 %{
+                   "href" =>
+                     "https://channels.tests.funkwhale.audio/api/v1/listen/3901e5d8-0445-49d5-9711-e096cf32e515/?upload=42342395-0208-4fee-a38d-259a6dae0871&download=false",
+                   "mediaType" => "audio/ogg",
+                   "type" => "Link"
+                 }
+               ]
+             }
+           ]
   end
 end

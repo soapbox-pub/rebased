@@ -41,7 +41,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioValidator do
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
     field(:inReplyTo, :string)
-    field(:uri, ObjectValidators.Uri)
+    field(:url, ObjectValidators.Uri)
     # short identifier for PleromaFE to group statuses by context
     field(:context_id, :integer)
 
@@ -66,10 +66,24 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioValidator do
     |> changeset(data)
   end
 
+  defp fix_url(%{"url" => url} = data) when is_list(url) do
+    attachment =
+      Enum.find(url, fn x -> is_map(x) and String.starts_with?(x["mimeType"], "audio/") end)
+
+    link_element = Enum.find(url, fn x -> is_map(x) and x["mimeType"] == "text/html" end)
+
+    data
+    |> Map.put("attachment", [attachment])
+    |> Map.put("url", link_element["href"])
+  end
+
+  defp fix_url(data), do: data
+
   defp fix(data) do
     data
     |> CommonFixes.fix_defaults()
     |> CommonFixes.fix_attribution()
+    |> fix_url()
   end
 
   def changeset(struct, data) do
@@ -83,7 +97,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioValidator do
   def validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Audio"])
-    |> validate_required([:id, :actor, :attributedTo, :type, :context])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context, :attachment])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_presence()

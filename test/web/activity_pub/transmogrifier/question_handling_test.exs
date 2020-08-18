@@ -24,6 +24,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.QuestionHandlingTest do
 
     object = Object.normalize(activity, false)
 
+    assert object.data["url"] == "https://mastodon.sdf.org/@rinpatch/102070944809637304"
+
     assert object.data["closed"] == "2019-05-11T09:03:36Z"
 
     assert object.data["context"] == activity.data["context"]

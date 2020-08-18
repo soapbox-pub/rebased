@@ -276,13 +276,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "url", url["href"])
   end
 
-  def fix_url(%{"type" => object_type, "url" => url} = object)
-      when object_type in ["Video", "Audio"] and is_list(url) do
+  def fix_url(%{"type" => "Video", "url" => url} = object) when is_list(url) do
     attachment =
       Enum.find(url, fn x ->
         media_type = x["mediaType"] || x["mimeType"] || ""
 
-        is_map(x) and String.starts_with?(media_type, ["audio/", "video/"])
+        is_map(x) and String.starts_with?(media_type, "video/")
       end)
 
     link_element =
