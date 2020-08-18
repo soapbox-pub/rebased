@@ -1,28 +1,27 @@
 #!/bin/sh
-# REQUIRE: DAEMON postgresql
+# $FreeBSD$
 # PROVIDE: pleroma
+# REQUIRE: DAEMON postgresql
+# KEYWORD: shutdown
 
 # sudo -u pleroma MIX_ENV=prod elixir --erl \"-detached\" -S mix phx.server
 
 . /etc/rc.subr
 
-name="pleroma"
+name=pleroma
+rcvar=pleroma_enable
+
 desc="Pleroma Social Media Platform"
-rcvar=${name}_enable
-command="/usr/local/bin/elixir"
-command_args="--erl \"-detached\" -S /usr/local/bin/mix phx.server"
-pidfile="/dev/null"
-
-pleroma_user="pleroma"
-pleroma_home="/home/pleroma"
-pleroma_chdir="${pleroma_home}/pleroma"
-pleroma_env="HOME=${pleroma_home} MIX_ENV=prod"
-
-check_pidfile()
-{
-	pid=$(pgrep beam.smp$)
-	echo -n "${pid}"
-}
 
 load_rc_config ${name}
+
+: ${pleroma_user:=pleroma}
+: ${pleroma_home:=$(getent passwd ${pleroma_user} | awk -F: '{print $6}')}
+: ${pleroma_chdir:="${pleroma_home}/pleroma"}
+: ${pleroma_env:="HOME=${pleroma_home} MIX_ENV=prod"}
+
+command=/usr/local/bin/elixir
+command_args="--erl \"-detached\" -S /usr/local/bin/mix phx.server"
+procname="*beam.smp"
+
 run_rc_command "$1"
