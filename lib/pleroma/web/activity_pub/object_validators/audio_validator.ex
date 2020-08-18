@@ -2,21 +2,19 @@
 # Copyright © 2017-2020 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
+defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioValidator do
   use Ecto.Schema
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
-  alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator
 
   import Ecto.Changeset
 
   @primary_key false
   @derive Jason.Encoder
 
-  # Extends from NoteValidator
   embedded_schema do
     field(:id, ObjectValidators.ObjectID, primary_key: true)
     field(:to, ObjectValidators.Recipients, default: [])
@@ -42,18 +40,13 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     field(:replies_count, :integer, default: 0)
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
-    field(:inReplyTo, ObjectValidators.ObjectID)
+    field(:inReplyTo, :string)
     field(:uri, ObjectValidators.Uri)
     # short identifier for PleromaFE to group statuses by context
     field(:context_id, :integer)
 
     field(:likes, {:array, :string}, default: [])
     field(:announcements, {:array, :string}, default: [])
-
-    field(:closed, ObjectValidators.DateTime)
-    field(:voters, {:array, ObjectValidators.ObjectID}, default: [])
-    embeds_many(:anyOf, QuestionOptionsValidator)
-    embeds_many(:oneOf, QuestionOptionsValidator)
   end
 
   def cast_and_apply(data) do
@@ -73,39 +66,27 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     |> changeset(data)
   end
 
-  defp fix_closed(data) do
-    cond do
-      is_binary(data["closed"]) -> data
-      is_binary(data["endTime"]) -> Map.put(data, "closed", data["endTime"])
-      true -> Map.drop(data, ["closed"])
-    end
-  end
-
   defp fix(data) do
     data
     |> CommonFixes.fix_defaults()
     |> CommonFixes.fix_attribution()
-    |> fix_closed()
   end
 
   def changeset(struct, data) do
     data = fix(data)
 
     struct
-    |> cast(data, __schema__(:fields) -- [:anyOf, :oneOf, :attachment])
+    |> cast(data, __schema__(:fields) -- [:attachment])
     |> cast_embed(:attachment)
-    |> cast_embed(:anyOf)
-    |> cast_embed(:oneOf)
   end
 
   def validate_data(data_cng) do
     data_cng
-    |> validate_inclusion(:type, ["Question"])
-    |> validate_required([:id, :actor, :attributedTo, :type, :context, :context_id])
+    |> validate_inclusion(:type, ["Audio"])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_presence()
-    |> CommonValidations.validate_any_presence([:oneOf, :anyOf])
     |> CommonValidations.validate_host_match()
   end
 end

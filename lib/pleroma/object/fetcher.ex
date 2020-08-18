@@ -125,8 +125,8 @@ defmodule Pleroma.Object.Fetcher do
   defp prepare_activity_params(data) do
     %{
       "type" => "Create",
-      "to" => data["to"],
-      "cc" => data["cc"],
+      "to" => data["to"] || [],
+      "cc" => data["cc"] || [],
       # Should we seriously keep this attributedTo thing?
       "actor" => data["actor"] || data["attributedTo"],
       "object" => data
