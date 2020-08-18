@@ -586,10 +586,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       end
     end
 
-    test "with proper permissions and valid password", %{conn: conn} do
+    test "with proper permissions and valid password", %{conn: conn, user: user} do
       conn = post(conn, "/api/pleroma/delete_account", %{"password" => "test"})
-
+      ObanHelpers.perform_all()
       assert json_response(conn, 200) == %{"status" => "success"}
+
+      user = User.get_by_id(user.id)
+      assert user.deactivated == true
+      assert user.name == nil
+      assert user.bio == nil
+      assert user.password_hash == nil
     end
   end
 end

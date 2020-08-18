@@ -19,10 +19,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   # Extends from NoteValidator
   embedded_schema do
     field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:to, {:array, :string}, default: [])
-    field(:cc, {:array, :string}, default: [])
-    field(:bto, {:array, :string}, default: [])
-    field(:bcc, {:array, :string}, default: [])
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
+    field(:bto, ObjectValidators.Recipients, default: [])
+    field(:bcc, ObjectValidators.Recipients, default: [])
     # TODO: Write type
     field(:tag, {:array, :map}, default: [])
     field(:type, :string)
@@ -42,7 +42,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     field(:replies_count, :integer, default: 0)
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
-    field(:inReplyTo, :string)
+    field(:inReplyTo, ObjectValidators.ObjectID)
     field(:uri, ObjectValidators.Uri)
     # short identifier for PleromaFE to group statuses by context
     field(:context_id, :integer)
@@ -101,7 +101,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
   def validate_data(data_cng) do
     data_cng
     |> validate_inclusion(:type, ["Question"])
-    |> validate_required([:id, :actor, :attributedTo, :type, :context])
+    |> validate_required([:id, :actor, :attributedTo, :type, :context, :context_id])
     |> CommonValidations.validate_any_presence([:cc, :to])
     |> CommonValidations.validate_fields_match([:actor, :attributedTo])
     |> CommonValidations.validate_actor_presence()
