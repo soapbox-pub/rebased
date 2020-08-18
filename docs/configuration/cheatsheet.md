@@ -552,6 +552,7 @@ the source code is here: [kocaptcha](https://github.com/koto-bank/kocaptcha). Th
 * `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
 * `filename_display_max_length`: Set max length of a filename to display. 0 = no limit. Default: 30.
+* `default_description`: Sets which default description an image has if none is set explicitly. Options: nil (default) - Don't set a default, :filename - use the filename of the file, a string (e.g. "attachment") - Use this string
 
 !!! warning
     `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.

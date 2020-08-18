@@ -21,7 +21,10 @@ config :logger, :console,
 
 config :pleroma, :auth, oauth_consumer_strategies: []
 
-config :pleroma, Pleroma.Upload, filters: [], link_name: false
+config :pleroma, Pleroma.Upload,
+  filters: [],
+  link_name: false,
+  default_description: :filename
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
