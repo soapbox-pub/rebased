@@ -160,7 +160,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user =
         insert(:user,
           avatar: %{"url" => [%{"href" => "https://someurl"}]},
-          banner: %{"url" => [%{"href" => "https://somebanner"}]}
+          banner: %{"url" => [%{"href" => "https://somebanner"}]},
+          bio: "Hello world!",
+          name: "A guy"
         )
 
       # Create some activities to check they got deleted later
@@ -201,6 +203,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         assert user.note_count == 0
         assert user.follower_count == 0
         assert user.following_count == 0
+        assert user.bio == nil
+        assert user.name == nil
 
         assert called(Pleroma.Web.Federator.publish(:_))
       end

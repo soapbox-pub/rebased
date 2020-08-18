@@ -1591,7 +1591,9 @@ defmodule Pleroma.User do
       avatar: %{},
       banner: %{},
       background: %{},
-      fields: []
+      fields: [],
+      bio: nil,
+      name: nil
     })
   end
 
