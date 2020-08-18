@@ -1266,11 +1266,14 @@ Loads json generated from `config/descriptions.exs`.
 - Params:
 - *optional* `page`: **integer** page number
 - *optional* `page_size`: **integer** number of log entries per page (default is `50`)
+- *optional* `query`: **string** search term
 
 - Response:
 
 ``` json
 {
+  "page_size": integer,
+  "count": integer,
   "urls": [
     "http://example.com/media/a688346.jpg",
     "http://example.com/media/fb1f4d.jpg"
@@ -1290,12 +1293,7 @@ Loads json generated from `config/descriptions.exs`.
 - Response:
 
 ``` json
-{
-  "urls": [
-    "http://example.com/media/a688346.jpg",
-    "http://example.com/media/fb1f4d.jpg"
-  ]
-}
+{ }
 
 ```
 
@@ -1311,11 +1309,6 @@ Loads json generated from `config/descriptions.exs`.
 - Response:
 
 ``` json
-{
-  "urls": [
-    "http://example.com/media/a688346.jpg",
-    "http://example.com/media/fb1f4d.jpg"
-  ]
-}
+{ }
 
 ```

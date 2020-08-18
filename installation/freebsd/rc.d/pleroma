@@ -1,0 +1,28 @@
+#!/bin/sh
+# REQUIRE: DAEMON postgresql
+# PROVIDE: pleroma
+
+# sudo -u pleroma MIX_ENV=prod elixir --erl \"-detached\" -S mix phx.server
+
+. /etc/rc.subr
+
+name="pleroma"
+desc="Pleroma Social Media Platform"
+rcvar=${name}_enable
+command="/usr/local/bin/elixir"
+command_args="--erl \"-detached\" -S /usr/local/bin/mix phx.server"
+pidfile="/dev/null"
+
+pleroma_user="pleroma"
+pleroma_home="/home/pleroma"
+pleroma_chdir="${pleroma_home}/pleroma"
+pleroma_env="HOME=${pleroma_home} MIX_ENV=prod"
+
+check_pidfile()
+{
+	pid=$(pgrep beam.smp$)
+	echo -n "${pid}"
+}
+
+load_rc_config ${name}
+run_rc_command "$1"

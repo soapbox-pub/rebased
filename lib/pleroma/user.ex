@@ -311,10 +311,12 @@ defmodule Pleroma.User do
 
   def visible_for(_, _), do: :invisible
 
-  defp restrict_unauthenticated?(%User{local: local}) do
-    config_key = if local, do: :local, else: :remote
+  defp restrict_unauthenticated?(%User{local: true}) do
+    Config.restrict_unauthenticated_access?(:profiles, :local)
+  end
 
-    Config.get([:restrict_unauthenticated, :profiles, config_key], false)
+  defp restrict_unauthenticated?(%User{local: _}) do
+    Config.restrict_unauthenticated_access?(:profiles, :remote)
   end
 
   defp visible_account_status(user) do
@@ -1581,6 +1583,49 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
+  @spec purge_user_changeset(User.t()) :: Changeset.t()
+  def purge_user_changeset(user) do
+    # "Right to be forgotten"
+    # https://gdpr.eu/right-to-be-forgotten/
+    change(user, %{
+      bio: nil,
+      raw_bio: nil,
+      email: nil,
+      name: nil,
+      password_hash: nil,
+      keys: nil,
+      public_key: nil,
+      avatar: %{},
+      tags: [],
+      last_refreshed_at: nil,
+      last_digest_emailed_at: nil,
+      banner: %{},
+      background: %{},
+      note_count: 0,
+      follower_count: 0,
+      following_count: 0,
+      locked: false,
+      confirmation_pending: false,
+      password_reset_pending: false,
+      approval_pending: false,
+      registration_reason: nil,
+      confirmation_token: nil,
+      domain_blocks: [],
+      deactivated: true,
+      ap_enabled: false,
+      is_moderator: false,
+      is_admin: false,
+      mastofe_settings: nil,
+      mascot: nil,
+      emoji: %{},
+      pleroma_settings_store: %{},
+      fields: [],
+      raw_fields: [],
+      discoverable: false,
+      also_known_as: []
+    })
+  end
+
   def delete(users) when is_list(users) do
     for user <- users, do: delete(user)
   end
@@ -1608,7 +1653,7 @@ defmodule Pleroma.User do
 
       _ ->
         user
-        |> change(%{deactivated: true, email: nil})
+        |> purge_user_changeset()
         |> update_and_set_cache()
     end
   end

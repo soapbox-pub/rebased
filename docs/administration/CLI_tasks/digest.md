@@ -4,22 +4,30 @@
 
 ## Send digest email since given date (user registration date by default) ignoring user activity status.
 
-```sh tab="OTP"
- ./bin/pleroma_ctl digest test <nickname> [since_date]
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.digest test <nickname> [since_date]
-```
+    ```sh
+     ./bin/pleroma_ctl digest test <nickname> [since_date]
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.digest test <nickname> [since_date]
+    ```
 
 
 Example: 
 
-```sh tab="OTP"
-./bin/pleroma_ctl digest test donaldtheduck 2019-05-20
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.digest test donaldtheduck 2019-05-20
-```
+    ```sh
+    ./bin/pleroma_ctl digest test donaldtheduck 2019-05-20
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.digest test donaldtheduck 2019-05-20
+    ```
 

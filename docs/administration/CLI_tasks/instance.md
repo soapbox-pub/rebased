@@ -3,13 +3,17 @@
 {! backend/administration/CLI_tasks/general_cli_task_info.include !}
 
 ## Generate a new configuration file
-```sh tab="OTP"
- ./bin/pleroma_ctl instance gen [option ...]
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.instance gen [option ...]
-```
+    ```sh
+     ./bin/pleroma_ctl instance gen [option ...]
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.instance gen [option ...]
+    ```
 
 
 If any of the options are left unspecified, you will be prompted interactively.

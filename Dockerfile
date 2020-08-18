@@ -4,7 +4,7 @@ COPY . .
 
 ENV MIX_ENV=prod
 
-RUN apk add git gcc g++ musl-dev make &&\
+RUN apk add git gcc g++ musl-dev make cmake &&\
 	echo "import Mix.Config" > config/prod.secret.exs &&\
 	mix local.hex --force &&\
 	mix local.rebar --force &&\

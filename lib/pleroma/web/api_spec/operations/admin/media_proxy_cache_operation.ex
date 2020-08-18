@@ -22,6 +22,12 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
       security: [%{"oAuth" => ["read:media_proxy_caches"]}],
       parameters: [
         Operation.parameter(
+          :query,
+          :query,
+          %Schema{type: :string, default: nil},
+          "Page"
+        ),
+        Operation.parameter(
           :page,
           :query,
           %Schema{type: :integer, default: 1},
@@ -36,7 +42,26 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
         | admin_api_params()
       ],
       responses: %{
-        200 => success_response()
+        200 =>
+          Operation.response(
+            "Array of banned MediaProxy URLs in Cachex",
+            "application/json",
+            %Schema{
+              type: :object,
+              properties: %{
+                count: %Schema{type: :integer},
+                page_size: %Schema{type: :integer},
+                urls: %Schema{
+                  type: :array,
+                  items: %Schema{
+                    type: :string,
+                    format: :uri,
+                    description: "MediaProxy URLs"
+                  }
+                }
+              }
+            }
+          )
       }
     }
   end
@@ -61,7 +86,7 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
           required: true
         ),
       responses: %{
-        200 => success_response(),
+        200 => empty_object_response(),
         400 => Operation.response("Error", "application/json", ApiError)
       }
     }
@@ -88,25 +113,9 @@ defmodule Pleroma.Web.ApiSpec.Admin.MediaProxyCacheOperation do
           required: true
         ),
       responses: %{
-        200 => success_response(),
+        200 => empty_object_response(),
         400 => Operation.response("Error", "application/json", ApiError)
       }
     }
-  end
-
-  defp success_response do
-    Operation.response("Array of banned MediaProxy URLs in Cachex", "application/json", %Schema{
-      type: :object,
-      properties: %{
-        urls: %Schema{
-          type: :array,
-          items: %Schema{
-            type: :string,
-            format: :uri,
-            description: "MediaProxy URLs"
-          }
-        }
-      }
-    })
   end
 end

@@ -38,8 +38,8 @@ To add configuration to your config file, you can copy it from the base config. 
 * `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance.
-* `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. See also: `restrict_unauthenticated`.
-* `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
+* `public`: Makes the client API in authenticated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network. Note that there is a dependent setting restricting or allowing unauthenticated access to specific resources, see `restrict_unauthenticated` for more details.
+* `quarantined_instances`: List of ActivityPub instances where private (DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in [:frontend_configurations](#frontend_configurations) or in ``static/config.json``.
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML).
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
@@ -114,6 +114,7 @@ To add configuration to your config file, you can copy it from the base config. 
     * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (See [`:mrf_mention`](#mrf_mention)).
     * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (See [`:mrf_vocabulary`](#mrf_vocabulary)).
     * `Pleroma.Web.ActivityPub.MRF.ObjectAgePolicy`: Rejects or delists posts based on their age when received. (See [`:mrf_object_age`](#mrf_object_age)).
+    * `Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy`: Sets a default expiration on all posts made by users of the local instance. Requires `Pleroma.ActivityExpiration` to be enabled for processing the scheduled delections.
 * `transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 
@@ -219,6 +220,8 @@ config :pleroma, :mrf_user_allowlist, %{
 * `enabled`: whether scheduled activities are sent to the job queue to be executed
 
 ## Pleroma.ActivityExpiration
+
+Enables the worker which processes posts scheduled for deletion. Pinned posts are exempt from expiration.
 
 * `enabled`: whether expired activities will be sent to the job queue to be deleted
 
@@ -1047,6 +1050,8 @@ Restrict access for unauthenticated users to timelines (public and federated), u
 * `activities`: statuses
   * `local`
   * `remote`
+
+Note: when `:instance, :public` is set to `false`, all `:restrict_unauthenticated` items be effectively set to `true` by default. If you'd like to allow unauthenticated access to specific API endpoints on a private instance, please explicitly set `:restrict_unauthenticated` to non-default value in `config/prod.secret.exs`.
 
 Note: setting `restrict_unauthenticated/timelines/local` to `true` has no practical sense if `restrict_unauthenticated/timelines/federated` is set to `false` (since local public activities will still be delivered to unauthenticated users as part of federated timeline).
 

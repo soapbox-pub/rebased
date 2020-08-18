@@ -48,6 +48,9 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
         |> get("/api/pleroma/admin/media_proxy_caches?page_size=2")
         |> json_response_and_validate_schema(200)
 
+      assert response["page_size"] == 2
+      assert response["count"] == 5
+
       assert response["urls"] == [
                "http://localhost:4001/media/fb1f4d.jpg",
                "http://localhost:4001/media/a688346.jpg"
@@ -63,12 +66,39 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
                "http://localhost:4001/media/tb13f47.jpg"
              ]
 
+      assert response["page_size"] == 2
+      assert response["count"] == 5
+
       response =
         conn
         |> get("/api/pleroma/admin/media_proxy_caches?page_size=2&page=3")
         |> json_response_and_validate_schema(200)
 
       assert response["urls"] == ["http://localhost:4001/media/wb1f46.jpg"]
+    end
+
+    test "search banned MediaProxy URLs", %{conn: conn} do
+      MediaProxy.put_in_banned_urls([
+        "http://localhost:4001/media/a688346.jpg",
+        "http://localhost:4001/media/ff44b1f4d.jpg"
+      ])
+
+      MediaProxy.put_in_banned_urls("http://localhost:4001/media/gb1f44.jpg")
+      MediaProxy.put_in_banned_urls("http://localhost:4001/media/tb13f47.jpg")
+      MediaProxy.put_in_banned_urls("http://localhost:4001/media/wb1f46.jpg")
+
+      response =
+        conn
+        |> get("/api/pleroma/admin/media_proxy_caches?page_size=2&query=F44")
+        |> json_response_and_validate_schema(200)
+
+      assert response["urls"] == [
+               "http://localhost:4001/media/gb1f44.jpg",
+               "http://localhost:4001/media/ff44b1f4d.jpg"
+             ]
+
+      assert response["page_size"] == 2
+      assert response["count"] == 2
     end
   end
 
@@ -79,15 +109,13 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
         "http://localhost:4001/media/fb1f4d.jpg"
       ])
 
-      response =
-        conn
-        |> put_req_header("content-type", "application/json")
-        |> post("/api/pleroma/admin/media_proxy_caches/delete", %{
-          urls: ["http://localhost:4001/media/a688346.jpg"]
-        })
-        |> json_response_and_validate_schema(200)
+      conn
+      |> put_req_header("content-type", "application/json")
+      |> post("/api/pleroma/admin/media_proxy_caches/delete", %{
+        urls: ["http://localhost:4001/media/a688346.jpg"]
+      })
+      |> json_response_and_validate_schema(200)
 
-      assert response["urls"] == ["http://localhost:4001/media/a688346.jpg"]
       refute MediaProxy.in_banned_urls("http://localhost:4001/media/a688346.jpg")
       assert MediaProxy.in_banned_urls("http://localhost:4001/media/fb1f4d.jpg")
     end
@@ -106,13 +134,10 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
            purge: fn _, _ -> {"ok", 0} end
          ]}
       ] do
-        response =
-          conn
-          |> put_req_header("content-type", "application/json")
-          |> post("/api/pleroma/admin/media_proxy_caches/purge", %{urls: urls, ban: false})
-          |> json_response_and_validate_schema(200)
-
-        assert response["urls"] == urls
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post("/api/pleroma/admin/media_proxy_caches/purge", %{urls: urls, ban: false})
+        |> json_response_and_validate_schema(200)
 
         refute MediaProxy.in_banned_urls("http://example.com/media/a688346.jpg")
         refute MediaProxy.in_banned_urls("http://example.com/media/fb1f4d.jpg")
@@ -126,16 +151,13 @@ defmodule Pleroma.Web.AdminAPI.MediaProxyCacheControllerTest do
       ]
 
       with_mocks [{MediaProxy.Invalidation.Script, [], [purge: fn _, _ -> {"ok", 0} end]}] do
-        response =
-          conn
-          |> put_req_header("content-type", "application/json")
-          |> post("/api/pleroma/admin/media_proxy_caches/purge", %{
-            urls: urls,
-            ban: true
-          })
-          |> json_response_and_validate_schema(200)
-
-        assert response["urls"] == urls
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post(
+          "/api/pleroma/admin/media_proxy_caches/purge",
+          %{urls: urls, ban: true}
+        )
+        |> json_response_and_validate_schema(200)
 
         assert MediaProxy.in_banned_urls("http://example.com/media/a688346.jpg")
         assert MediaProxy.in_banned_urls("http://example.com/media/fb1f4d.jpg")

@@ -7,10 +7,14 @@
 Optional params:
   * `-s SCOPES` - scopes for app, e.g. `read,write,follow,push`.
 
-```sh tab="OTP"
- ./bin/pleroma_ctl app create -n APP_NAME -r REDIRECT_URI
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.app create -n APP_NAME -r REDIRECT_URI
-```
+    ```sh
+     ./bin/pleroma_ctl app create -n APP_NAME -r REDIRECT_URI
+    ```
+
+=== "From Source"
+
+    ```sh
+    mix pleroma.app create -n APP_NAME -r REDIRECT_URI
+    ```

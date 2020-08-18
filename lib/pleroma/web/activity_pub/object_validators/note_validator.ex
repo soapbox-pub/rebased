@@ -13,10 +13,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
 
   embedded_schema do
     field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:to, {:array, :string}, default: [])
-    field(:cc, {:array, :string}, default: [])
-    field(:bto, {:array, :string}, default: [])
-    field(:bcc, {:array, :string}, default: [])
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
+    field(:bto, ObjectValidators.Recipients, default: [])
+    field(:bcc, ObjectValidators.Recipients, default: [])
     # TODO: Write type
     field(:tag, {:array, :map}, default: [])
     field(:type, :string)
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     field(:replies_count, :integer, default: 0)
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
-    field(:inReplyTo, :string)
+    field(:inReplyTo, ObjectValidators.ObjectID)
     field(:uri, ObjectValidators.Uri)
 
     field(:likes, {:array, :string}, default: [])

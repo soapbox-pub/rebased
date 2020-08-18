@@ -20,8 +20,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EmojiReactValidator do
     field(:actor, ObjectValidators.ObjectID)
     field(:context, :string)
     field(:content, :string)
-    field(:to, {:array, :string}, default: [])
-    field(:cc, {:array, :string}, default: [])
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
   end
 
   def cast_and_validate(data) do

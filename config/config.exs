@@ -737,10 +737,12 @@ config :pleroma, :hackney_pools,
     timeout: 300_000
   ]
 
+private_instance? = :if_instance_is_private
+
 config :pleroma, :restrict_unauthenticated,
-  timelines: %{local: false, federated: false},
-  profiles: %{local: false, remote: false},
-  activities: %{local: false, remote: false}
+  timelines: %{local: private_instance?, federated: private_instance?},
+  profiles: %{local: private_instance?, remote: private_instance?},
+  activities: %{local: private_instance?, remote: private_instance?}
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 

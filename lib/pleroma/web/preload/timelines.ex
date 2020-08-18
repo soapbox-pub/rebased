@@ -16,7 +16,7 @@ defmodule Pleroma.Web.Preload.Providers.Timelines do
   end
 
   def build_public_tag(acc, params) do
-    if Pleroma.Config.get([:restrict_unauthenticated, :timelines, :federated], true) do
+    if Pleroma.Config.restrict_unauthenticated_access?(:timelines, :federated) do
       acc
     else
       Map.put(acc, @public_url, public_timeline(params))
