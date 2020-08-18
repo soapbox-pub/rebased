@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes do
       Utils.create_context(data["context"] || data["conversation"])
 
     data
-    |> Map.put_new_lazy("published", &Utils.make_date/0)
     |> Map.put_new("context", context)
     |> Map.put_new("context_id", context_id)
   end
