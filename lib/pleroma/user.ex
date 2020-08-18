@@ -1583,6 +1583,18 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
+  @spec purge_user_changeset(User.t()) :: Changeset.t()
+  def purge_user_changeset(user) do
+    change(user, %{
+      deactivated: true,
+      email: nil,
+      avatar: %{},
+      banner: %{},
+      background: %{},
+      fields: []
+    })
+  end
+
   def delete(users) when is_list(users) do
     for user <- users, do: delete(user)
   end
@@ -1610,7 +1622,7 @@ defmodule Pleroma.User do
 
       _ ->
         user
-        |> change(%{deactivated: true, email: nil})
+        |> purge_user_changeset()
         |> update_and_set_cache()
     end
   end
