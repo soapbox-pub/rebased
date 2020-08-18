@@ -66,6 +66,35 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
+  defp handle_preview("image/" <> _ = _content_type, conn, url) do
+    handle_image_or_video_preview(conn, url)
+  end
+
+  defp handle_preview("video/" <> _ = _content_type, conn, url) do
+    handle_image_or_video_preview(conn, url)
+  end
+
+  defp handle_preview(content_type, conn, _url) do
+    send_resp(conn, :unprocessable_entity, "Unsupported content type: #{content_type}.")
+  end
+
+  defp handle_image_or_video_preview(%{params: params} = conn, url) do
+    with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(params),
+         media_proxy_url <- MediaProxy.url(url),
+         {:ok, thumbnail_binary} <-
+           MediaHelper.ffmpeg_resize(
+             media_proxy_url,
+             %{max_width: thumbnail_max_width, max_height: thumbnail_max_height}
+           ) do
+      conn
+      |> put_resp_header("content-type", "image/jpeg")
+      |> send_resp(200, thumbnail_binary)
+    else
+      _ ->
+        send_resp(conn, :failed_dependency, "Can't handle preview.")
+    end
+  end
+
   defp thumbnail_max_dimensions(params) do
     config = Config.get([:media_preview_proxy], [])
 
@@ -84,27 +113,6 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
       end
 
     {thumbnail_max_width, thumbnail_max_height}
-  end
-
-  defp handle_preview("image/" <> _ = _content_type, %{params: params} = conn, url) do
-    with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(params),
-         media_proxy_url <- MediaProxy.url(url),
-         {:ok, thumbnail_binary} <-
-           MediaHelper.ffmpeg_resize_remote(
-             media_proxy_url,
-             %{max_width: thumbnail_max_width, max_height: thumbnail_max_height}
-           ) do
-      conn
-      |> put_resp_header("content-type", "image/jpeg")
-      |> send_resp(200, thumbnail_binary)
-    else
-      _ ->
-        send_resp(conn, :failed_dependency, "Can't handle image preview.")
-    end
-  end
-
-  defp handle_preview(content_type, conn, _url) do
-    send_resp(conn, :unprocessable_entity, "Unsupported content type: #{content_type}.")
   end
 
   defp preview_head_request_timeout do

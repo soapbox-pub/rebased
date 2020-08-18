@@ -761,10 +761,6 @@ config :floki, :html_parser, Floki.HTMLParser.FastHtml
 
 config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator
 
-config :pleroma, :exexec,
-  root_mode: false,
-  options: %{}
-
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

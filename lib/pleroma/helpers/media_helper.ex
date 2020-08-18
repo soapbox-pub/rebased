@@ -7,19 +7,24 @@ defmodule Pleroma.Helpers.MediaHelper do
   Handles common media-related operations.
   """
 
-  def ffmpeg_resize_remote(uri, %{max_width: max_width, max_height: max_height}) do
+  def ffmpeg_resize(uri_or_path, %{max_width: max_width, max_height: max_height}) do
     cmd = ~s"""
-    curl -L "#{uri}" |
-    ffmpeg -i pipe:0 -f lavfi -i color=c=white \
+    ffmpeg -i #{uri_or_path} -f lavfi -i color=c=white \
       -filter_complex "[0:v] scale='min(#{max_width},iw)':'min(#{max_height},ih)': \
         force_original_aspect_ratio=decrease [scaled]; \
         [1][scaled] scale2ref [bg][img]; [bg] setsar=1 [bg]; [bg][img] overlay=shortest=1" \
-      -f image2 -vcodec mjpeg -frames:v 1 pipe:1 | \
-    cat
+      -loglevel quiet -f image2 -vcodec mjpeg -frames:v 1 pipe:1
     """
 
-    with {:ok, [stdout: stdout_list]} <- Pleroma.Exec.cmd(cmd) do
-      {:ok, Enum.join(stdout_list)}
+    pid = Port.open({:spawn, cmd}, [:use_stdio, :in, :stream, :exit_status, :binary])
+
+    receive do
+      {^pid, {:data, data}} ->
+        send(pid, {self(), :close})
+        {:ok, data}
+
+      {^pid, {:exit_status, status}} when status > 0 ->
+        {:error, status}
     end
   end
 end
