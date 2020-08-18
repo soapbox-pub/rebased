@@ -10,19 +10,13 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   alias Pleroma.Web.CommonAPI
   require Logger
 
-  @relay_nickname "relay"
+  @nickname "relay"
 
-  def get_actor do
-    actor =
-      relay_ap_id()
-      |> User.get_or_create_service_actor_by_ap_id(@relay_nickname)
+  @spec ap_id() :: String.t()
+  def ap_id, do: "#{Pleroma.Web.Endpoint.url()}/#{@nickname}"
 
-    actor
-  end
-
-  def relay_ap_id do
-    "#{Pleroma.Web.Endpoint.url()}/relay"
-  end
+  @spec get_actor() :: User.t() | nil
+  def get_actor, do: User.get_or_create_service_actor_by_ap_id(ap_id(), @nickname)
 
   @spec follow(String.t()) :: {:ok, Activity.t()} | {:error, any()}
   def follow(target_instance) do
@@ -61,32 +55,36 @@ defmodule Pleroma.Web.ActivityPub.Relay do
 
   def publish(_), do: {:error, "Not implemented"}
 
-  @spec list(boolean()) :: {:ok, [String.t()]} | {:error, any()}
-  def list(with_not_accepted \\ false) do
+  @spec list() :: {:ok, [%{actor: String.t(), followed_back: boolean()}]} | {:error, any()}
+  def list do
     with %User{} = user <- get_actor() do
       accepted =
         user
-        |> User.following()
-        |> Enum.map(fn entry -> URI.parse(entry).host end)
+        |> following()
+        |> Enum.map(fn actor -> %{actor: actor, followed_back: true} end)
+
+      without_accept =
+        user
+        |> Pleroma.Activity.following_requests_for_actor()
+        |> Enum.map(fn activity -> %{actor: activity.data["object"], followed_back: false} end)
         |> Enum.uniq()
 
-      list =
-        if with_not_accepted do
-          without_accept =
-            user
-            |> Pleroma.Activity.following_requests_for_actor()
-            |> Enum.map(fn a -> URI.parse(a.data["object"]).host <> " (no Accept received)" end)
-            |> Enum.uniq()
-
-          accepted ++ without_accept
-        else
-          accepted
-        end
-
-      {:ok, list}
+      {:ok, accepted ++ without_accept}
     else
       error -> format_error(error)
     end
+  end
+
+  @spec following() :: [String.t()]
+  def following do
+    get_actor()
+    |> following()
+  end
+
+  defp following(user) do
+    user
+    |> User.following_ap_ids()
+    |> Enum.uniq()
   end
 
   defp format_error({:error, error}), do: format_error(error)

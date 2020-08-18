@@ -42,7 +42,11 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       assert activity.data["object"] == target_user.ap_id
 
       :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
-      assert_receive {:mix_shell, :info, ["mastodon.example.org (no Accept received)"]}
+
+      assert_receive {:mix_shell, :info,
+                      [
+                        "http://mastodon.example.org/users/admin - no Accept received (relay didn't follow back)"
+                      ]}
     end
   end
 
@@ -95,8 +99,8 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
 
       :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
 
-      assert_receive {:mix_shell, :info, ["mstdn.io"]}
-      assert_receive {:mix_shell, :info, ["mastodon.example.org"]}
+      assert_receive {:mix_shell, :info, ["https://mstdn.io/users/mayuutann"]}
+      assert_receive {:mix_shell, :info, ["http://mastodon.example.org/users/admin"]}
     end
   end
 end
