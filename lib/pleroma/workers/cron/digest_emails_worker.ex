@@ -37,9 +37,9 @@ defmodule Pleroma.Workers.Cron.DigestEmailsWorker do
       )
       |> Repo.all()
       |> send_emails
-    else
-      :ok
     end
+
+    :ok
   end
 
   def send_emails(users) do

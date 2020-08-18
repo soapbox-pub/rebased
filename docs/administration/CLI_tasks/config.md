@@ -11,14 +11,17 @@
     config :pleroma, configurable_from_database: true
     ```
 
-```sh tab="OTP"
- ./bin/pleroma_ctl config migrate_to_db
-```
+=== "OTP"
 
-```sh tab="From Source"
-mix pleroma.config migrate_to_db
-```
+    ```sh
+    ./bin/pleroma_ctl config migrate_to_db
+    ```
 
+=== "From Source"
+
+    ```sh
+    mix pleroma.config migrate_to_db
+    ```
 
 ## Transfer config from DB to `config/env.exported_from_db.secret.exs`
 
@@ -31,10 +34,12 @@ mix pleroma.config migrate_to_db
 
 To delete transfered settings from database optional flag `-d` can be used. `<env>` is `prod` by default.
 
-```sh tab="OTP"
- ./bin/pleroma_ctl config migrate_from_db [--env=<env>] [-d]
-```
+=== "OTP"
+    ```sh
+     ./bin/pleroma_ctl config migrate_from_db [--env=<env>] [-d]
+    ```
 
-```sh tab="From Source"
-mix pleroma.config migrate_from_db [--env=<env>] [-d]
-```
+=== "From Source"
+    ```sh
+    mix pleroma.config migrate_from_db [--env=<env>] [-d]
+    ```

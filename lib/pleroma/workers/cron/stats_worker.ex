@@ -12,5 +12,6 @@ defmodule Pleroma.Workers.Cron.StatsWorker do
   @impl Oban.Worker
   def perform(_job) do
     Pleroma.Stats.do_collect()
+    :ok
   end
 end

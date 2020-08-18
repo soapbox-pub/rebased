@@ -311,10 +311,12 @@ defmodule Pleroma.User do
 
   def visible_for(_, _), do: :invisible
 
-  defp restrict_unauthenticated?(%User{local: local}) do
-    config_key = if local, do: :local, else: :remote
+  defp restrict_unauthenticated?(%User{local: true}) do
+    Config.restrict_unauthenticated_access?(:profiles, :local)
+  end
 
-    Config.get([:restrict_unauthenticated, :profiles, config_key], false)
+  defp restrict_unauthenticated?(%User{local: _}) do
+    Config.restrict_unauthenticated_access?(:profiles, :remote)
   end
 
   defp visible_account_status(user) do

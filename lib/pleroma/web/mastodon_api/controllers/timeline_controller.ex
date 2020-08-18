@@ -8,6 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   import Pleroma.Web.ControllerHelper,
     only: [add_link_headers: 2, add_link_headers: 3]
 
+  alias Pleroma.Config
   alias Pleroma.Pagination
   alias Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug
   alias Pleroma.Plugs.OAuthScopesPlug
@@ -89,11 +90,11 @@ defmodule Pleroma.Web.MastodonAPI.TimelineController do
   end
 
   defp restrict_unauthenticated?(true = _local_only) do
-    Pleroma.Config.get([:restrict_unauthenticated, :timelines, :local])
+    Config.restrict_unauthenticated_access?(:timelines, :local)
   end
 
   defp restrict_unauthenticated?(_) do
-    Pleroma.Config.get([:restrict_unauthenticated, :timelines, :federated])
+    Config.restrict_unauthenticated_access?(:timelines, :federated)
   end
 
   # GET /api/v1/timelines/public

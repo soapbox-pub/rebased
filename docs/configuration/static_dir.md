@@ -4,15 +4,19 @@ Static frontend files are shipped with pleroma. If you want to overwrite or upda
 
 You can find the location of the static directory in the [configuration](../cheatsheet/#instance).
 
-```elixir tab="OTP"
-config :pleroma, :instance,
-  static_dir: "/var/lib/pleroma/static/",
-```
+=== "OTP"
 
-```elixir tab="From Source"
-config :pleroma, :instance,
-  static_dir: "instance/static/",
-```
+    ```elixir
+    config :pleroma, :instance,
+      static_dir: "/var/lib/pleroma/static/"
+    ```
+
+=== "From Source"
+
+    ```elixir
+    config :pleroma, :instance,
+    static_dir: "instance/static/"
+    ```
 
 Alternatively, you can overwrite this value in your configuration to use a different static instance directory.
 
