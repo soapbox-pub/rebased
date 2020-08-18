@@ -1417,13 +1417,91 @@ defmodule Pleroma.UserTest do
 
   test "delete/1 when approval is pending deletes the user" do
     user = insert(:user, approval_pending: true)
-    {:ok, user: user}
 
     {:ok, job} = User.delete(user)
     {:ok, _} = ObanHelpers.perform(job)
 
     refute User.get_cached_by_id(user.id)
     refute User.get_by_id(user.id)
+  end
+
+  test "delete/1 purges a user when they wouldn't be fully deleted" do
+    user =
+      insert(:user, %{
+        bio: "eyy lmao",
+        name: "qqqqqqq",
+        password_hash: "pdfk2$1b3n159001",
+        keys: "RSA begin buplic key",
+        public_key: "--PRIVATE KEYE--",
+        avatar: %{"a" => "b"},
+        tags: ["qqqqq"],
+        banner: %{"a" => "b"},
+        background: %{"a" => "b"},
+        note_count: 9,
+        follower_count: 9,
+        following_count: 9001,
+        locked: true,
+        confirmation_pending: true,
+        password_reset_pending: true,
+        approval_pending: true,
+        registration_reason: "ahhhhh",
+        confirmation_token: "qqqq",
+        domain_blocks: ["lain.com"],
+        deactivated: true,
+        ap_enabled: true,
+        is_moderator: true,
+        is_admin: true,
+        mastofe_settings: %{"a" => "b"},
+        mascot: %{"a" => "b"},
+        emoji: %{"a" => "b"},
+        pleroma_settings_store: %{"q" => "x"},
+        fields: [%{"gg" => "qq"}],
+        raw_fields: [%{"gg" => "qq"}],
+        discoverable: true,
+        also_known_as: ["https://lol.olo/users/loll"]
+      })
+
+    {:ok, job} = User.delete(user)
+    {:ok, _} = ObanHelpers.perform(job)
+    user = User.get_by_id(user.id)
+
+    assert %User{
+             bio: nil,
+             raw_bio: nil,
+             email: nil,
+             name: nil,
+             password_hash: nil,
+             keys: nil,
+             public_key: nil,
+             avatar: %{},
+             tags: [],
+             last_refreshed_at: nil,
+             last_digest_emailed_at: nil,
+             banner: %{},
+             background: %{},
+             note_count: 0,
+             follower_count: 0,
+             following_count: 0,
+             locked: false,
+             confirmation_pending: false,
+             password_reset_pending: false,
+             approval_pending: false,
+             registration_reason: nil,
+             confirmation_token: nil,
+             domain_blocks: [],
+             deactivated: true,
+             ap_enabled: false,
+             is_moderator: false,
+             is_admin: false,
+             mastofe_settings: nil,
+             mascot: nil,
+             emoji: %{},
+             pleroma_settings_store: %{},
+             fields: [],
+             raw_fields: [],
+             discoverable: false,
+             also_known_as: []
+           } = user
   end
 
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
