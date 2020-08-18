@@ -1585,15 +1585,44 @@ defmodule Pleroma.User do
 
   @spec purge_user_changeset(User.t()) :: Changeset.t()
   def purge_user_changeset(user) do
+    # "Right to be forgotten"
+    # https://gdpr.eu/right-to-be-forgotten/
     change(user, %{
-      deactivated: true,
+      bio: nil,
+      raw_bio: nil,
       email: nil,
+      name: nil,
+      password_hash: nil,
+      keys: nil,
+      public_key: nil,
       avatar: %{},
+      tags: [],
+      last_refreshed_at: nil,
+      last_digest_emailed_at: nil,
       banner: %{},
       background: %{},
+      note_count: 0,
+      follower_count: 0,
+      following_count: 0,
+      locked: false,
+      confirmation_pending: false,
+      password_reset_pending: false,
+      approval_pending: false,
+      registration_reason: nil,
+      confirmation_token: nil,
+      domain_blocks: [],
+      deactivated: true,
+      ap_enabled: false,
+      is_moderator: false,
+      is_admin: false,
+      mastofe_settings: nil,
+      mascot: nil,
+      emoji: %{},
+      pleroma_settings_store: %{},
       fields: [],
-      bio: nil,
-      name: nil
+      raw_fields: [],
+      discoverable: false,
+      also_known_as: []
     })
   end
 
