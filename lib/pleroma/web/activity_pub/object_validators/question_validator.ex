@@ -7,9 +7,9 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
+  alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
   alias Pleroma.Web.ActivityPub.ObjectValidators.QuestionOptionsValidator
-  alias Pleroma.Web.ActivityPub.Utils
 
   import Ecto.Changeset
 
@@ -81,27 +81,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     end
   end
 
-  # based on Pleroma.Web.ActivityPub.Utils.lazy_put_objects_defaults
-  defp fix_defaults(data) do
-    %{data: %{"id" => context}, id: context_id} =
-      Utils.create_context(data["context"] || data["conversation"])
-
-    data
-    |> Map.put_new_lazy("published", &Utils.make_date/0)
-    |> Map.put_new("context", context)
-    |> Map.put_new("context_id", context_id)
-  end
-
-  defp fix_attribution(data) do
-    data
-    |> Map.put_new("actor", data["attributedTo"])
-  end
-
   defp fix(data) do
     data
-    |> fix_attribution()
+    |> CommonFixes.fix_defaults()
+    |> CommonFixes.fix_attribution()
     |> fix_closed()
-    |> fix_defaults()
   end
 
   def changeset(struct, data) do
