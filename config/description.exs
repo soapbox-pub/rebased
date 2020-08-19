@@ -1831,6 +1831,7 @@ config :pleroma, :config_description, [
         suggestions: [
           redirect_on_failure: false,
           max_body_length: 25 * 1_048_576,
+          max_read_duration: 30_000,
           http: [
             follow_redirect: true,
             pool: :media
@@ -1850,6 +1851,11 @@ config :pleroma, :config_description, [
             description:
               "Limits the content length to be approximately the " <>
                 "specified length. It is validated with the `content-length` header and also verified when proxying."
+          },
+          %{
+            key: :max_read_duration,
+            type: :integer,
+            description: "Timeout (in milliseconds) of GET request to remote URI."
           },
           %{
             key: :http,
@@ -1886,6 +1892,51 @@ config :pleroma, :config_description, [
                 suggestions: ["127.0.0.1:8123", {:socks5, :localhost, 9050}]
               }
             ]
+          }
+        ]
+      },
+      %{
+        key: :whitelist,
+        type: {:list, :string},
+        description: "List of hosts with scheme to bypass the mediaproxy",
+        suggestions: ["http://example.com"]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: :media_preview_proxy,
+    type: :group,
+    description: "Media preview proxy",
+    children: [
+      %{
+        key: :enabled,
+        type: :boolean,
+        description:
+          "Enables proxying of remote media preview to the instance's proxy. Requires enabled media proxy."
+      },
+      %{
+        key: :thumbnail_max_width,
+        type: :integer,
+        description: "Max width of preview thumbnail."
+      },
+      %{
+        key: :thumbnail_max_height,
+        type: :integer,
+        description: "Max height of preview thumbnail."
+      },
+      %{
+        key: :proxy_opts,
+        type: :keyword,
+        description: "Media proxy options",
+        suggestions: [
+          head_request_max_read_duration: 5_000
+        ],
+        children: [
+          %{
+            key: :head_request_max_read_duration,
+            type: :integer,
+            description: "Timeout (in milliseconds) of HEAD request to remote URI."
           }
         ]
       },

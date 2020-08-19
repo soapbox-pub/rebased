@@ -444,8 +444,7 @@ config :pleroma, :media_preview_proxy,
   thumbnail_max_width: 400,
   thumbnail_max_height: 200,
   proxy_opts: [
-    head_request_max_read_duration: 5_000,
-    max_read_duration: 10_000
+    head_request_max_read_duration: 5_000
   ]
 
 config :pleroma, :chat, enabled: true

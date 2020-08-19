@@ -15,8 +15,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),
          {_, false} <- {:in_banned_urls, MediaProxy.in_banned_urls(url)},
          :ok <- MediaProxy.verify_request_path_and_url(conn, url) do
-      proxy_opts = Config.get([:media_proxy, :proxy_opts], [])
-      ReverseProxy.call(conn, url, proxy_opts)
+      ReverseProxy.call(conn, url, media_proxy_opts())
     else
       {:enabled, false} ->
         send_resp(conn, 404, Plug.Conn.Status.reason_phrase(404))
@@ -116,13 +115,16 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   end
 
   defp preview_head_request_timeout do
-    Config.get([:media_preview_proxy, :proxy_opts, :head_request_max_read_duration]) ||
-      preview_timeout()
+    Keyword.get(media_preview_proxy_opts(), :head_request_max_read_duration) ||
+      Keyword.get(media_proxy_opts(), :max_read_duration) ||
+      ReverseProxy.max_read_duration_default()
   end
 
-  defp preview_timeout do
-    Config.get([:media_preview_proxy, :proxy_opts, :max_read_duration]) ||
-      Config.get([:media_proxy, :proxy_opts, :max_read_duration]) ||
-      ReverseProxy.max_read_duration_default()
+  defp media_proxy_opts do
+    Config.get([:media_proxy, :proxy_opts], [])
+  end
+
+  defp media_preview_proxy_opts do
+    Config.get([:media_preview_proxy, :proxy_opts], [])
   end
 end
