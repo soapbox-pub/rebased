@@ -16,6 +16,8 @@ defmodule Mix.Tasks.Pleroma.EmailTest do
     :ok
   end
 
+  setup do: clear_config([Pleroma.Emails.Mailer, :enabled], true)
+
   describe "pleroma.email test" do
     test "Sends test email with no given address" do
       mail_to = Config.get([:instance, :email])
