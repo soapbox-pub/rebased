@@ -12,11 +12,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
 
   import Pleroma.Factory
 
-  setup_all do
-    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-    :ok
-  end
-
   test "it works for incoming listens" do
     _user = insert(:user, ap_id: "http://mastodon.example.org/users/admin")
 
@@ -49,6 +44,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.AudioHandlingTest do
   end
 
   test "Funkwhale Audio object" do
+    Tesla.Mock.mock(fn
+      %{url: "https://channels.tests.funkwhale.audio/federation/actors/compositions"} ->
+        %Tesla.Env{
+          status: 200,
+          body: File.read!("test/fixtures/tesla_mock/funkwhale_channel.json")
+        }
+    end)
+
     data = File.read!("test/fixtures/tesla_mock/funkwhale_create_audio.json") |> Poison.decode!()
 
     {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
