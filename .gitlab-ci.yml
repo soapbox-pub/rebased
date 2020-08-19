@@ -194,7 +194,7 @@ amd64:
   variables: &release-variables
     MIX_ENV: prod
   before_script: &before-release
-  - apt install cmake -y
+  - apt-get update && apt-get install -y cmake
   - echo "import Mix.Config" > config/prod.secret.exs
   - mix local.hex --force
   - mix local.rebar --force
