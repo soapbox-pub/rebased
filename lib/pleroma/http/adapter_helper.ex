@@ -10,6 +10,7 @@ defmodule Pleroma.HTTP.AdapterHelper do
 
   @type proxy_type() :: :socks4 | :socks5
   @type host() :: charlist() | :inet.ip_address()
+  @type pool() :: :federation | :upload | :media | :default
 
   alias Pleroma.Config
   alias Pleroma.HTTP.AdapterHelper
@@ -44,14 +45,13 @@ defmodule Pleroma.HTTP.AdapterHelper do
   @spec options(URI.t(), keyword()) :: keyword()
   def options(%URI{} = uri, opts \\ []) do
     @defaults
-    |> put_timeout()
     |> Keyword.merge(opts)
+    |> put_timeout()
     |> adapter_helper().options(uri)
   end
 
-  # For Hackney, this is the time a connection can stay idle in the pool.
-  # For Gun, this is the timeout to receive a message from Gun.
-  defp put_timeout(opts) do
+  @spec pool_timeout(pool()) :: non_neg_integer()
+  def pool_timeout(pool) do
     {config_key, default} =
       if adapter() == Tesla.Adapter.Gun do
         {:pools, Config.get([:pools, :default, :timeout], 5_000)}
@@ -59,9 +59,13 @@ defmodule Pleroma.HTTP.AdapterHelper do
         {:hackney_pools, 10_000}
       end
 
-    timeout = Config.get([config_key, opts[:pool], :timeout], default)
+    Config.get([config_key, pool, :timeout], default)
+  end
 
-    Keyword.merge(opts, timeout: timeout)
+  # For Hackney, this is the time a connection can stay idle in the pool.
+  # For Gun, this is the timeout to receive a message from Gun.
+  defp put_timeout(opts) do
+    Keyword.put_new(opts, :timeout, pool_timeout(opts[:pool]))
   end
 
   def get_conn(uri, opts), do: adapter_helper().get_conn(uri, opts)

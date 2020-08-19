@@ -46,12 +46,19 @@ defmodule Pleroma.Uploaders.S3 do
 
     op =
       if streaming do
-        upload.tempfile
-        |> ExAws.S3.Upload.stream_file()
-        |> ExAws.S3.upload(bucket, s3_name, [
-          {:acl, :public_read},
-          {:content_type, upload.content_type}
-        ])
+        op =
+          upload.tempfile
+          |> ExAws.S3.Upload.stream_file()
+          |> ExAws.S3.upload(bucket, s3_name, [
+            {:acl, :public_read},
+            {:content_type, upload.content_type}
+          ])
+
+        # set s3 upload timeout to respect :upload pool timeout
+        # timeout should be slightly larger, so s3 can retry upload on fail
+        timeout = Pleroma.HTTP.AdapterHelper.pool_timeout(:upload) + 1_000
+        opts = Keyword.put(op.opts, :timeout, timeout)
+        Map.put(op, :opts, opts)
       else
         {:ok, file_data} = File.read(upload.tempfile)
 
