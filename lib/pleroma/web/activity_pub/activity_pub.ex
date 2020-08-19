@@ -85,7 +85,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
 
-  @object_types ["ChatMessage", "Question", "Answer"]
+  @object_types ~w[ChatMessage Question Answer Audio]
   @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do

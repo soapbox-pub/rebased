@@ -35,7 +35,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
     field(:inReplyTo, ObjectValidators.ObjectID)
-    field(:uri, ObjectValidators.Uri)
+    field(:url, ObjectValidators.Uri)
 
     field(:likes, {:array, :string}, default: [])
     field(:announcements, {:array, :string}, default: [])

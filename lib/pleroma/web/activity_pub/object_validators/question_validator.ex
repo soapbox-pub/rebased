@@ -43,7 +43,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.QuestionValidator do
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
     field(:inReplyTo, ObjectValidators.ObjectID)
-    field(:uri, ObjectValidators.Uri)
+    field(:url, ObjectValidators.Uri)
     # short identifier for PleromaFE to group statuses by context
     field(:context_id, :integer)
 
