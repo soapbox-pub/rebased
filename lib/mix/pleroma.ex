@@ -14,7 +14,7 @@ defmodule Mix.Pleroma do
     :swoosh,
     :timex
   ]
-  @cachex_children ["object", "user"]
+  @cachex_children ["object", "user", "scrubber"]
   @doc "Common functions to be reused in mix tasks"
   def start_pleroma do
     Pleroma.Config.Holder.save_default()
