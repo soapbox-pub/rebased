@@ -87,6 +87,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
            ) do
       conn
       |> put_resp_header("content-type", "image/jpeg")
+      |> put_resp_header("content-disposition", "inline; filename=\"preview.jpg\"")
       |> send_resp(200, thumbnail_binary)
     else
       _ ->
