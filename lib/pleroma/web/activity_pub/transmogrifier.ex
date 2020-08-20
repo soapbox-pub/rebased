@@ -424,7 +424,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
         options
       )
-      when objtype in ~w{Article Note Page} do
+      when objtype in ~w{Note Page} do
     actor = Containment.get_actor(data)
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
@@ -518,7 +518,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype}} = data,
         _options
       )
-      when objtype in ~w{Question Answer ChatMessage Audio Video Event} do
+      when objtype in ~w{Question Answer ChatMessage Audio Video Event Article} do
     data = Map.put(data, "object", strip_internal_fields(data["object"]))
 
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
