@@ -49,8 +49,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.AudioVideoValidator do
     field(:inReplyTo, ObjectValidators.ObjectID)
     field(:url, ObjectValidators.Uri)
 
-    field(:likes, {:array, :string}, default: [])
-    field(:announcements, {:array, :string}, default: [])
+    field(:likes, {:array, ObjectValidators.ObjectID}, default: [])
+    field(:announcements, {:array, ObjectValidators.ObjectID}, default: [])
   end
 
   def cast_and_apply(data) do
