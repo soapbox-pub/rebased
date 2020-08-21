@@ -38,5 +38,4 @@ defmodule Pleroma.Helpers.MediaHelper do
         {:error, status}
     end
   end
-
 end
