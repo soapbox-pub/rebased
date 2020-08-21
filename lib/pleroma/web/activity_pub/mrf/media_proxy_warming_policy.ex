@@ -27,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
       end
 
     url
-    |> MediaProxy.url()
+    |> MediaProxy.preview_url()
     |> HTTP.get([], adapter: opts)
   end
 
