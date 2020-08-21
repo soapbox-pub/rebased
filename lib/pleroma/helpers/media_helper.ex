@@ -19,14 +19,24 @@ defmodule Pleroma.Helpers.MediaHelper do
     """
 
     pid = Port.open({:spawn, cmd}, [:use_stdio, :in, :stream, :exit_status, :binary])
+    loop_recv(pid)
+  end
 
+  defp loop_recv(pid) do
+    loop_recv(pid, <<>>)
+  end
+
+  defp loop_recv(pid, acc) do
     receive do
       {^pid, {:data, data}} ->
-        send(pid, {self(), :close})
-        {:ok, data}
+        loop_recv(pid, acc <> data)
 
-      {^pid, {:exit_status, status}} when status > 0 ->
+      {^pid, {:exit_status, 0}} ->
+        {:ok, acc}
+
+      {^pid, {:exit_status, status}} ->
         {:error, status}
     end
   end
+
 end
