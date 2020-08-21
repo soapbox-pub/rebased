@@ -381,7 +381,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         "confirmation_pending" => false,
         "approval_pending" => false,
         "url" => user.ap_id,
-        "registration_reason" => nil
+        "registration_reason" => nil,
+        "actor_type" => "Person"
       }
 
       assert expected == json_response(conn, 200)
@@ -663,7 +664,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => admin.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => user.deactivated,
@@ -677,7 +679,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => user.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => user2.deactivated,
@@ -691,7 +694,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => true,
             "url" => user2.ap_id,
-            "registration_reason" => "I'm a chill dude"
+            "registration_reason" => "I'm a chill dude",
+            "actor_type" => "Person"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -766,7 +770,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -794,7 +799,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -822,7 +828,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -850,7 +857,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -878,7 +886,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -906,7 +915,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -929,7 +939,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user2.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -964,7 +975,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -992,7 +1004,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => user.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => admin.deactivated,
@@ -1006,7 +1019,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => admin.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => false,
@@ -1020,7 +1034,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => old_admin.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -1058,7 +1073,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => true,
             "url" => user.ap_id,
-            "registration_reason" => "Plz let me in!"
+            "registration_reason" => "Plz let me in!",
+            "actor_type" => "Person"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -1091,7 +1107,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => admin.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => false,
@@ -1105,7 +1122,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => second_admin.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -1140,7 +1158,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => moderator.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -1168,7 +1187,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => user1.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           },
           %{
             "deactivated" => false,
@@ -1182,7 +1202,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "confirmation_pending" => false,
             "approval_pending" => false,
             "url" => user2.ap_id,
-            "registration_reason" => nil
+            "registration_reason" => nil,
+            "actor_type" => "Person"
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -1245,7 +1266,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => user.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -1272,7 +1294,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "confirmation_pending" => false,
                    "approval_pending" => false,
                    "url" => admin.ap_id,
-                   "registration_reason" => nil
+                   "registration_reason" => nil,
+                   "actor_type" => "Person"
                  }
                ]
              }
@@ -1357,7 +1380,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "confirmation_pending" => false,
                "approval_pending" => false,
                "url" => user.ap_id,
-               "registration_reason" => nil
+               "registration_reason" => nil,
+               "actor_type" => "Person"
              }
 
     log_entry = Repo.one(ModerationLog)
