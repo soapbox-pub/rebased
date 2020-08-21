@@ -1926,6 +1926,11 @@ config :pleroma, :config_description, [
         description: "Max height of preview thumbnail."
       },
       %{
+        key: :quality,
+        type: :integer,
+        description: "Quality of the output. Ranges from 1 (max quality) to 31 (lowest quality)."
+      },
+      %{
         key: :proxy_opts,
         type: :keyword,
         description: "Media proxy options",
