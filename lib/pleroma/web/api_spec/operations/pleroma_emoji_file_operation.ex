@@ -24,6 +24,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
       parameters: [name_param()],
       responses: %{
         200 => Operation.response("Files Object", "application/json", files_object()),
+        422 => Operation.response("Unprocessable Entity", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError),
         400 => Operation.response("Bad Request", "application/json", ApiError),
         409 => Operation.response("Conflict", "application/json", ApiError)
       }
@@ -67,6 +69,7 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
       parameters: [name_param()],
       responses: %{
         200 => Operation.response("Files Object", "application/json", files_object()),
+        404 => Operation.response("Not Found", "application/json", ApiError),
         400 => Operation.response("Bad Request", "application/json", ApiError),
         409 => Operation.response("Conflict", "application/json", ApiError)
       }
@@ -114,7 +117,8 @@ defmodule Pleroma.Web.ApiSpec.PleromaEmojiFileOperation do
       ],
       responses: %{
         200 => Operation.response("Files Object", "application/json", files_object()),
-        400 => Operation.response("Bad Request", "application/json", ApiError)
+        400 => Operation.response("Bad Request", "application/json", ApiError),
+        404 => Operation.response("Not Found", "application/json", ApiError)
       }
     }
   end

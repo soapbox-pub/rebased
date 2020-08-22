@@ -22,7 +22,9 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
     filename = params[:filename] || get_filename(params[:file])
     shortcode = params[:shortcode] || Path.basename(filename, Path.extname(filename))
 
-    with {:ok, pack} <- Pack.add_file(pack_name, shortcode, filename, params[:file]) do
+    with {:ok, pack} <- Pack.load_pack(pack_name),
+         {:ok, file} <- get_file(params[:file]),
+         {:ok, pack} <- Pack.add_file(pack, shortcode, filename, file) do
       json(conn, pack.files)
     else
       {:error, :already_exists} ->
@@ -32,12 +34,12 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
 
       {:error, :not_found} ->
         conn
-        |> put_status(:bad_request)
+        |> put_status(:not_found)
         |> json(%{error: "pack \"#{pack_name}\" is not found"})
 
       {:error, :empty_values} ->
         conn
-        |> put_status(:bad_request)
+        |> put_status(:unprocessable_entity)
         |> json(%{error: "pack name, shortcode or filename cannot be empty"})
 
       {:error, _} ->
@@ -54,7 +56,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
     new_filename = params[:new_filename]
     force = params[:force]
 
-    with {:ok, pack} <- Pack.update_file(pack_name, shortcode, new_shortcode, new_filename, force) do
+    with {:ok, pack} <- Pack.load_pack(pack_name),
+         {:ok, pack} <- Pack.update_file(pack, shortcode, new_shortcode, new_filename, force) do
       json(conn, pack.files)
     else
       {:error, :doesnt_exist} ->
@@ -72,7 +75,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
 
       {:error, :not_found} ->
         conn
-        |> put_status(:bad_request)
+        |> put_status(:not_found)
         |> json(%{error: "pack \"#{pack_name}\" is not found"})
 
       {:error, :empty_values} ->
@@ -90,7 +93,8 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
   end
 
   def delete(conn, %{name: pack_name, shortcode: shortcode}) do
-    with {:ok, pack} <- Pack.delete_file(pack_name, shortcode) do
+    with {:ok, pack} <- Pack.load_pack(pack_name),
+         {:ok, pack} <- Pack.delete_file(pack, shortcode) do
       json(conn, pack.files)
     else
       {:error, :doesnt_exist} ->
@@ -100,7 +104,7 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
 
       {:error, :not_found} ->
         conn
-        |> put_status(:bad_request)
+        |> put_status(:not_found)
         |> json(%{error: "pack \"#{pack_name}\" is not found"})
 
       {:error, :empty_values} ->
@@ -119,4 +123,28 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
 
   defp get_filename(%Plug.Upload{filename: filename}), do: filename
   defp get_filename(url) when is_binary(url), do: Path.basename(url)
+
+  def get_file(%Plug.Upload{} = file), do: {:ok, file}
+
+  def get_file(url) when is_binary(url) do
+    with {:ok, %Tesla.Env{body: body, status: code, headers: headers}}
+         when code in 200..299 <- Pleroma.HTTP.get(url) do
+      path = Plug.Upload.random_file!("emoji")
+
+      content_type =
+        case List.keyfind(headers, "content-type", 0) do
+          {"content-type", value} -> value
+          nil -> nil
+        end
+
+      File.write(path, body)
+
+      {:ok,
+       %Plug.Upload{
+         filename: Path.basename(url),
+         path: path,
+         content_type: content_type
+       }}
+    end
+  end
 end
