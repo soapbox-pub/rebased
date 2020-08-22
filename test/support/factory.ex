@@ -200,25 +200,6 @@ defmodule Pleroma.Factory do
     |> Map.merge(attrs)
   end
 
-  defp expiration_offset_by_minutes(attrs, minutes) do
-    scheduled_at =
-      NaiveDateTime.utc_now()
-      |> NaiveDateTime.add(:timer.minutes(minutes), :millisecond)
-      |> NaiveDateTime.truncate(:second)
-
-    %Pleroma.ActivityExpiration{}
-    |> Map.merge(attrs)
-    |> Map.put(:scheduled_at, scheduled_at)
-  end
-
-  def expiration_in_the_past_factory(attrs \\ %{}) do
-    expiration_offset_by_minutes(attrs, -60)
-  end
-
-  def expiration_in_the_future_factory(attrs \\ %{}) do
-    expiration_offset_by_minutes(attrs, 61)
-  end
-
   def article_activity_factory do
     article = insert(:article)
 

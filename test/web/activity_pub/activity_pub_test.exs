@@ -2069,18 +2069,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "global activity expiration" do
-    setup do: clear_config([:mrf, :policies])
-
     test "creates an activity expiration for local Create activities" do
-      Pleroma.Config.put(
-        [:mrf, :policies],
-        Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy
+      clear_config([:mrf, :policies], Pleroma.Web.ActivityPub.MRF.ActivityExpirationPolicy)
+
+      {:ok, activity} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
+      {:ok, follow} = ActivityBuilder.insert(%{"type" => "Follow", "context" => "3hu"})
+
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: activity.id},
+        scheduled_at:
+          activity.inserted_at
+          |> DateTime.from_naive!("Etc/UTC")
+          |> Timex.shift(days: 365)
       )
 
-      {:ok, %{id: id_create}} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
-      {:ok, _follow} = ActivityBuilder.insert(%{"type" => "Follow", "context" => "3hu"})
-
-      assert [%{activity_id: ^id_create}] = Pleroma.ActivityExpiration |> Repo.all()
+      refute_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: follow.id}
+      )
     end
   end
 

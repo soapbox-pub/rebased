@@ -4,9 +4,9 @@
 
 defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
   use Pleroma.Web.ConnCase
+  use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Activity
-  alias Pleroma.ActivityExpiration
   alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Object
@@ -29,8 +29,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     setup do: oauth_access(["write:statuses"])
 
     test "posting a status does not increment reblog_count when relaying", %{conn: conn} do
-      Pleroma.Config.put([:instance, :federating], true)
-      Pleroma.Config.get([:instance, :allow_relay], true)
+      Config.put([:instance, :federating], true)
+      Config.get([:instance, :allow_relay], true)
 
       response =
         conn
@@ -103,7 +103,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
       # An activity that will expire:
       # 2 hours
-      expires_in = 120 * 60
+      expires_in = 2 * 60 * 60
+
+      expires_at = DateTime.add(DateTime.utc_now(), expires_in)
 
       conn_four =
         conn
@@ -116,19 +118,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
       assert fourth_response =
                %{"id" => fourth_id} = json_response_and_validate_schema(conn_four, 200)
 
-      assert activity = Activity.get_by_id(fourth_id)
-      assert expiration = ActivityExpiration.get_by_activity_id(fourth_id)
+      assert Activity.get_by_id(fourth_id)
 
-      estimated_expires_at =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(expires_in)
-        |> NaiveDateTime.truncate(:second)
-
-      # This assert will fail if the test takes longer than a minute. I sure hope it never does:
-      assert abs(NaiveDateTime.diff(expiration.scheduled_at, estimated_expires_at, :second)) < 60
-
-      assert fourth_response["pleroma"]["expires_at"] ==
-               NaiveDateTime.to_iso8601(expiration.scheduled_at)
+      assert_enqueued(
+        worker: Pleroma.Workers.PurgeExpiredActivity,
+        args: %{activity_id: fourth_id},
+        scheduled_at: expires_at
+      )
     end
 
     test "it fails to create a status if `expires_in` is less or equal than an hour", %{
@@ -160,8 +156,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
     end
 
     test "Get MRF reason when posting a status is rejected by one", %{conn: conn} do
-      Pleroma.Config.put([:mrf_keyword, :reject], ["GNO"])
-      Pleroma.Config.put([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
+      Config.put([:mrf_keyword, :reject], ["GNO"])
+      Config.put([:mrf, :policies], [Pleroma.Web.ActivityPub.MRF.KeywordPolicy])
 
       assert %{"error" => "[KeywordPolicy] Matches with rejected keyword"} =
                conn
@@ -1681,18 +1677,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusControllerTest do
 
   test "expires_at is nil for another user" do
     %{conn: conn, user: user} = oauth_access(["read:statuses"])
+    expires_at = DateTime.add(DateTime.utc_now(), 1_000_000)
     {:ok, activity} = CommonAPI.post(user, %{status: "foobar", expires_in: 1_000_000})
 
-    expires_at =
-      activity.id
-      |> ActivityExpiration.get_by_activity_id()
-      |> Map.get(:scheduled_at)
-      |> NaiveDateTime.to_iso8601()
-
-    assert %{"pleroma" => %{"expires_at" => ^expires_at}} =
+    assert %{"pleroma" => %{"expires_at" => a_expires_at}} =
              conn
              |> get("/api/v1/statuses/#{activity.id}")
              |> json_response_and_validate_schema(:ok)
+
+    {:ok, a_expires_at, 0} = DateTime.from_iso8601(a_expires_at)
+    assert DateTime.diff(expires_at, a_expires_at) == 0
 
     %{conn: conn} = oauth_access(["read:statuses"])
 

@@ -133,8 +133,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     days = Pleroma.Config.get([:mrf_activity_expiration, :days], 365)
 
     Pleroma.Activity
-    |> join(:left, [a], u in assoc(a, :expiration))
-    |> join(:inner, [a, _u], o in Object,
+    |> join(:inner, [a], o in Object,
       on:
         fragment(
           "(?->>'id') = COALESCE((?)->'object'->> 'id', (?)->>'object')",
@@ -144,14 +143,21 @@ defmodule Mix.Tasks.Pleroma.Database do
         )
     )
     |> where(local: true)
-    |> where([a, u], is_nil(u))
     |> where([a], fragment("(? ->> 'type'::text) = 'Create'", a.data))
-    |> where([_a, _u, o], fragment("?->>'type' = 'Note'", o.data))
+    |> where([_a, o], fragment("?->>'type' = 'Note'", o.data))
     |> Pleroma.RepoStreamer.chunk_stream(100)
     |> Stream.each(fn activities ->
       Enum.each(activities, fn activity ->
-        expires_at = Timex.shift(activity.inserted_at, days: days)
-        Pleroma.ActivityExpiration.create(activity, expires_at, false)
+        expires_at =
+          activity.inserted_at
+          |> DateTime.from_naive!("Etc/UTC")
+          |> Timex.shift(days: days)
+
+        Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+          activity_id: activity.id,
+          expires_at: expires_at,
+          validate: false
+        })
       end)
     end)
     |> Stream.run()

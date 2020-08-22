@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
   """
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics
-  alias Pleroma.ActivityExpiration
   alias Pleroma.Chat
   alias Pleroma.Chat.MessageReference
   alias Pleroma.FollowingRelationship
@@ -189,7 +188,10 @@ defmodule Pleroma.Web.ActivityPub.SideEffects do
       end
 
       if expires_at = activity.data["expires_at"] do
-        ActivityExpiration.create(activity, expires_at)
+        Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+          activity_id: activity.id,
+          expires_at: expires_at
+        })
       end
 
       BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})

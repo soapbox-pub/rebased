@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
   alias Pleroma.Activity.Ir.Topics
-  alias Pleroma.ActivityExpiration
   alias Pleroma.Config
   alias Pleroma.Constants
   alias Pleroma.Conversation
@@ -165,7 +164,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp maybe_create_activity_expiration({:ok, %{data: %{"expires_at" => expires_at}} = activity}) do
-    with {:ok, _} <- ActivityExpiration.create(activity, expires_at) do
+    with {:ok, _job} <-
+           Pleroma.Workers.PurgeExpiredActivity.enqueue(%{
+             activity_id: activity.id,
+             expires_at: expires_at
+           }) do
       {:ok, activity}
     end
   end
