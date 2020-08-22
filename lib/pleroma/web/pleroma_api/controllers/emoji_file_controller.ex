@@ -32,22 +32,13 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
         |> put_status(:conflict)
         |> json(%{error: "An emoji with the \"#{shortcode}\" shortcode already exists"})
 
-      {:error, :not_found} ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "pack \"#{pack_name}\" is not found"})
-
       {:error, :empty_values} ->
         conn
         |> put_status(:unprocessable_entity)
         |> json(%{error: "pack name, shortcode or filename cannot be empty"})
 
-      {:error, _} ->
-        render_error(
-          conn,
-          :internal_server_error,
-          "Unexpected error occurred while adding file to pack."
-        )
+      {:error, _} = error ->
+        handle_error(conn, error, %{pack_name: pack_name})
     end
   end
 
@@ -60,11 +51,6 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
          {:ok, pack} <- Pack.update_file(pack, shortcode, new_shortcode, new_filename, force) do
       json(conn, pack.files)
     else
-      {:error, :doesnt_exist} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{error: "Emoji \"#{shortcode}\" does not exist"})
-
       {:error, :already_exists} ->
         conn
         |> put_status(:conflict)
@@ -73,22 +59,13 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
             "New shortcode \"#{new_shortcode}\" is already used. If you want to override emoji use 'force' option"
         })
 
-      {:error, :not_found} ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "pack \"#{pack_name}\" is not found"})
-
       {:error, :empty_values} ->
         conn
-        |> put_status(:bad_request)
+        |> put_status(:unprocessable_entity)
         |> json(%{error: "new_shortcode or new_filename cannot be empty"})
 
-      {:error, _} ->
-        render_error(
-          conn,
-          :internal_server_error,
-          "Unexpected error occurred while updating file in pack."
-        )
+      {:error, _} = error ->
+        handle_error(conn, error, %{pack_name: pack_name, code: shortcode})
     end
   end
 
@@ -97,28 +74,34 @@ defmodule Pleroma.Web.PleromaAPI.EmojiFileController do
          {:ok, pack} <- Pack.delete_file(pack, shortcode) do
       json(conn, pack.files)
     else
-      {:error, :doesnt_exist} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{error: "Emoji \"#{shortcode}\" does not exist"})
-
-      {:error, :not_found} ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "pack \"#{pack_name}\" is not found"})
-
       {:error, :empty_values} ->
         conn
-        |> put_status(:bad_request)
+        |> put_status(:unprocessable_entity)
         |> json(%{error: "pack name or shortcode cannot be empty"})
 
-      {:error, _} ->
-        render_error(
-          conn,
-          :internal_server_error,
-          "Unexpected error occurred while removing file from pack."
-        )
+      {:error, _} = error ->
+        handle_error(conn, error, %{pack_name: pack_name, code: shortcode})
     end
+  end
+
+  defp handle_error(conn, {:error, :doesnt_exist}, %{code: emoji_code}) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: "Emoji \"#{emoji_code}\" does not exist"})
+  end
+
+  defp handle_error(conn, {:error, :not_found}, %{pack_name: pack_name}) do
+    conn
+    |> put_status(:not_found)
+    |> json(%{error: "pack \"#{pack_name}\" is not found"})
+  end
+
+  defp handle_error(conn, {:error, _}, _) do
+    render_error(
+      conn,
+      :internal_server_error,
+      "Unexpected error occurred while adding file to pack."
+    )
   end
 
   defp get_filename(%Plug.Upload{filename: filename}), do: filename
