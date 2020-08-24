@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
   use Ecto.Schema
 
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
+  alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
 
@@ -32,8 +33,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     field(:actor, ObjectValidators.ObjectID)
     field(:attributedTo, ObjectValidators.ObjectID)
     field(:published, ObjectValidators.DateTime)
-    # TODO: Write type
-    field(:emoji, :map, default: %{})
+    field(:emoji, ObjectValidators.Emoji, default: %{})
     field(:sensitive, :boolean, default: false)
     # TODO: Write type
     field(:attachment, {:array, :map}, default: [])
@@ -53,7 +53,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     |> validate_data()
   end
 
+  defp fix(data) do
+    data
+    |> Transmogrifier.fix_emoji()
+  end
+
   def cast_data(data) do
+    data = fix(data)
+
     %__MODULE__{}
     |> cast(data, __schema__(:fields))
   end

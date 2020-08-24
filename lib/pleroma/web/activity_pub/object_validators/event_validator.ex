@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
   alias Pleroma.Web.ActivityPub.ObjectValidators.AttachmentValidator
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonFixes
   alias Pleroma.Web.ActivityPub.ObjectValidators.CommonValidations
+  alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Ecto.Changeset
 
@@ -39,8 +40,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
 
     field(:attributedTo, ObjectValidators.ObjectID)
     field(:published, ObjectValidators.DateTime)
-    # TODO: Write type
-    field(:emoji, :map, default: %{})
+    field(:emoji, ObjectValidators.Emoji, default: %{})
     field(:sensitive, :boolean, default: false)
     embeds_many(:attachment, AttachmentValidator)
     field(:replies_count, :integer, default: 0)
@@ -74,6 +74,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.EventValidator do
     data
     |> CommonFixes.fix_defaults()
     |> CommonFixes.fix_attribution()
+    |> Transmogrifier.fix_emoji()
   end
 
   def changeset(struct, data) do

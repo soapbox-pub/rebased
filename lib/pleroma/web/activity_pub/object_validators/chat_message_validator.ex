@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.ChatMessageValidator do
     field(:content, ObjectValidators.SafeText)
     field(:actor, ObjectValidators.ObjectID)
     field(:published, ObjectValidators.DateTime)
-    field(:emoji, :map, default: %{})
+    field(:emoji, ObjectValidators.Emoji, default: %{})
 
     embeds_one(:attachment, AttachmentValidator)
   end
