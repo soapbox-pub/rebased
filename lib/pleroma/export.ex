@@ -12,15 +12,17 @@ defmodule Pleroma.Export do
 
   import Ecto.Query
 
+  @files ['actor.json', 'outbox.json', 'likes.json', 'bookmarks.json']
+
   def run(user) do
-    with {:ok, dir} <- create_dir(),
-         :ok <- actor(dir, user),
-         :ok <- statuses(dir, user),
-         :ok <- likes(dir, user),
-         :ok <- bookmarks(dir, user) do
-      IO.inspect({"DONE", dir})
-    else
-      err -> IO.inspect({"export error", err})
+    with {:ok, path} <- create_dir(user),
+         :ok <- actor(path, user),
+         :ok <- statuses(path, user),
+         :ok <- likes(path, user),
+         :ok <- bookmarks(path, user),
+         {:ok, zip_path} <- :zip.create('#{path}.zip', @files, cwd: path),
+         {:ok, _} <- File.rm_rf(path) do
+      {:ok, zip_path}
     end
   end
 
@@ -33,9 +35,9 @@ defmodule Pleroma.Export do
     end
   end
 
-  defp create_dir do
+  defp create_dir(user) do
     datetime = Calendar.NaiveDateTime.Format.iso8601_basic(NaiveDateTime.utc_now())
-    dir = Path.join(System.tmp_dir!(), "archive-" <> datetime)
+    dir = Path.join(System.tmp_dir!(), "archive-#{user.id}-#{datetime}")
 
     with :ok <- File.mkdir(dir), do: {:ok, dir}
   end
