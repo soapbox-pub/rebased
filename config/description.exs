@@ -3571,5 +3571,24 @@ config :pleroma, :config_description, [
         ]
       }
     ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.Preload,
+    type: :group,
+    description: "Preload-related settings",
+    children: [
+      %{
+        key: :providers,
+        type: {:list, :module},
+        description: "List of preload providers to enable",
+        suggestions: [
+          Pleroma.Web.Preload.Providers.Instance,
+          Pleroma.Web.Preload.Providers.User,
+          Pleroma.Web.Preload.Providers.Timelines,
+          Pleroma.Web.Preload.Providers.StatusNet
+        ]
+      }
+    ]
   }
 ]
