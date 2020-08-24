@@ -28,14 +28,16 @@ defmodule Pleroma.Utils do
   @doc "creates the uniq temporary directory"
   @spec tmp_dir(String.t()) :: {:ok, String.t()} | {:error, :file.posix()}
   def tmp_dir(prefix \\ "") do
-    sub_dir = [
-      prefix,
-      Timex.to_unix(Timex.now()),
-      :os.getpid(),
-      String.downcase(Integer.to_string(:rand.uniform(0x100000000), 36))
-    ]
+    sub_dir =
+      [
+        prefix,
+        Timex.to_unix(Timex.now()),
+        :os.getpid(),
+        String.downcase(Integer.to_string(:rand.uniform(0x100000000), 36))
+      ]
+      |> Enum.join("-")
 
-    tmp_dir = Path.join(System.tmp_dir!(), Enum.join(sub_dir, "-"))
+    tmp_dir = Path.join(System.tmp_dir!(), sub_dir)
 
     case File.mkdir(tmp_dir) do
       :ok -> {:ok, tmp_dir}
