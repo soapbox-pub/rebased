@@ -21,8 +21,18 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
   @impl true
   def perform(%Oban.Job{args: %{"activity_id" => id}}) do
     with %Pleroma.Activity{} = activity <- find_activity(id),
-         %Pleroma.User{} = user <- find_user(activity.object.data["actor"]) do
+         %Pleroma.User{} = user <- find_user(activity.object.data["actor"]),
+         false <- pinned_by_actor?(activity, user) do
       Pleroma.Web.CommonAPI.delete(activity.id, user)
+    else
+      :pinned_by_actor ->
+        # if activity is pinned, schedule deletion on next day
+        enqueue(%{activity_id: id, expires_at: DateTime.add(DateTime.utc_now(), 24 * 3600)})
+
+        :ok
+
+      error ->
+        error
     end
   end
 
@@ -51,6 +61,12 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
   defp find_user(ap_id) do
     with nil <- Pleroma.User.get_by_ap_id(ap_id) do
       {:error, :user_not_found}
+    end
+  end
+
+  defp pinned_by_actor?(activity, user) do
+    with true <- Pleroma.Activity.pinned_by_actor?(activity, user) do
+      :pinned_by_actor
     end
   end
 

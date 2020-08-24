@@ -301,14 +301,14 @@ defmodule Pleroma.Activity do
     |> Repo.all()
   end
 
-  def follow_requests_for_actor(%Pleroma.User{ap_id: ap_id}) do
+  def follow_requests_for_actor(%User{ap_id: ap_id}) do
     ap_id
     |> Queries.by_object_id()
     |> Queries.by_type("Follow")
     |> where([a], fragment("? ->> 'state' = 'pending'", a.data))
   end
 
-  def following_requests_for_actor(%Pleroma.User{ap_id: ap_id}) do
+  def following_requests_for_actor(%User{ap_id: ap_id}) do
     Queries.by_type("Follow")
     |> where([a], fragment("?->>'state' = 'pending'", a.data))
     |> where([a], a.actor == ^ap_id)
@@ -342,5 +342,10 @@ defmodule Pleroma.Activity do
   def pinned_by_actor?(%Activity{} = activity) do
     actor = user_actor(activity)
     activity.id in actor.pinned_activities
+  end
+
+  @spec pinned_by_actor?(Activity.t(), User.t()) :: boolean()
+  def pinned_by_actor?(%Activity{id: id}, %User{} = user) do
+    id in user.pinned_activities
   end
 end
