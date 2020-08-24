@@ -533,7 +533,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       end)
 
       :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
-      assert_receive {:mix_shell, :info, ["relay.mastodon.host"]}
+      assert_receive {:mix_shell, :info, ["https://relay.mastodon.host/actor"]}
     end
 
     @tag capture_log: true

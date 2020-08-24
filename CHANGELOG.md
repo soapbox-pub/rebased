@@ -6,19 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [unreleased]
 
 ### Changed
+
 - **Breaking:** The default descriptions on uploads are now empty. The old behavior (filename as default) can be configured, see the cheat sheet.
 - **Breaking:** Added the ObjectAgePolicy to the default set of MRFs. This will delist and strip the follower collection of any message received that is older than 7 days. This will stop users from seeing very old messages in the timelines. The messages can still be viewed on the user's page and in conversations. They also still trigger notifications.
 - **Breaking:** Elixir >=1.9 is now required (was >= 1.8)
 - **Breaking:** Configuration: `:auto_linker, :opts` moved to `:pleroma, Pleroma.Formatter`. Old config namespace is deprecated.
+- **Breaking:** Configuration: `:instance, welcome_user_nickname` moved to `:welcome, :direct_message, :sender_nickname`, `:instance, :welcome_message` moved to `:welcome, :direct_message, :message`. Old config namespace is deprecated.
+- **Breaking:** LDAP: Fallback to local database authentication has been removed for security reasons and lack of a mechanism to ensure the passwords are synchronized when LDAP passwords are updated.
+- **Breaking** Changed defaults for `:restrict_unauthenticated` so that when `:instance, :public` is set to `false` then all `:restrict_unauthenticated` items be effectively set to `true`. If you'd like to allow unauthenticated access to specific API endpoints on a private instance, please explicitly set `:restrict_unauthenticated` to non-default value in `config/prod.secret.exs`.
 - In Conversations, return only direct messages as `last_status`
 - Using the `only_media` filter on timelines will now exclude reblog media
 - MFR policy to set global expiration for all local Create activities
 - OGP rich media parser merged with TwitterCard
 - Configuration: `:instance, rewrite_policy` moved to `:mrf, policies`, `:instance, :mrf_transparency` moved to `:mrf, :transparency`, `:instance, :mrf_transparency_exclusions` moved to `:mrf, :transparency_exclusions`. Old config namespace is deprecated.
 - Configuration: `:media_proxy, whitelist` format changed to host with scheme (e.g. `http://example.com` instead of `example.com`). Domain format is deprecated.
-- **Breaking:** Configuration: `:instance, welcome_user_nickname` moved to `:welcome, :direct_message, :sender_nickname`, `:instance, :welcome_message` moved to `:welcome, :direct_message, :message`. Old config namespace is deprecated.
-- **Breaking:** LDAP: Fallback to local database authentication has been removed for security reasons and lack of a mechanism to ensure the passwords are synchronized when LDAP passwords are updated.
-- **Breaking** Changed defaults for `:restrict_unauthenticated` so that when `:instance, :public` is set to `false` then all `:restrict_unauthenticated` items be effectively set to `true`. If you'd like to allow unauthenticated access to specific API endpoints on a private instance, please explicitly set `:restrict_unauthenticated` to non-default value in `config/prod.secret.exs`. 
 
 <details>
   <summary>API Changes</summary>
@@ -26,29 +27,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking:** Pleroma API: The routes to update avatar, banner and background have been removed.
 - **Breaking:** Image description length is limited now.
 - **Breaking:** Emoji API: changed methods and renamed routes.
+- **Breaking:** Notification Settings API for suppressing notifications has been simplified down to `block_from_strangers`.
+- **Breaking:** Notification Settings API option for hiding push notification contents has been renamed to `hide_notification_contents`.
 - MastodonAPI: Allow removal of avatar, banner and background.
 - Streaming: Repeats of a user's posts will no longer be pushed to the user's stream.
 - Mastodon API: Added `pleroma.metadata.fields_limits` to /api/v1/instance
 - Mastodon API: On deletion, returns the original post text.
 - Mastodon API: Add `pleroma.unread_count` to the Marker entity.
-- **Breaking:** Notification Settings API for suppressing notifications
-  has been simplified down to `block_from_strangers`.
-- **Breaking:** Notification Settings API option for hiding push notification
-  contents has been renamed to `hide_notification_contents`
 - Mastodon API: Added `pleroma.metadata.post_formats` to /api/v1/instance
 - Mastodon API (legacy): Allow query parameters for `/api/v1/domain_blocks`, e.g. `/api/v1/domain_blocks?domain=badposters.zone`
 - Pleroma API: `/api/pleroma/captcha` responses now include `seconds_valid` with an integer value.
+
 </details>
 
 <details>
   <summary>Admin API Changes</summary>
 
+- **Breaking** Changed relay `/api/pleroma/admin/relay` endpoints response format.
 - Status visibility stats: now can return stats per instance.
-
 - Mix task to refresh counter cache (`mix pleroma.refresh_counter_cache`)
+
 </details>
 
 ### Removed
+
 - **Breaking:** removed `with_move` parameter from notifications timeline.
 
 ### Added
@@ -108,6 +110,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Emoji Packs could not be listed when instance was set to `public: false`
 - Fix whole_word always returning false on filter get requests
 - Migrations not working on OTP releases if the database was connected over ssl
+- Fix relay following
 
 ## [Unreleased (patch)]
 
