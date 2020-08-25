@@ -74,7 +74,7 @@ defmodule Pleroma.Emoji.Pack do
           shortcode <- Path.basename(filename, Path.extname(filename)),
           false <- Emoji.exist?(shortcode)
         ) do
-          acc ++ [%{path: path, filename: path, shortcode: shortcode}]
+          [%{path: path, filename: path, shortcode: shortcode} | acc]
         else
           _ -> acc
         end
