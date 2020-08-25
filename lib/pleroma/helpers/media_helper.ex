@@ -11,7 +11,7 @@ defmodule Pleroma.Helpers.MediaHelper do
     quality = options[:quality] || 85
 
     cmd = ~s"""
-    convert - -resize '#{max_width}x#{max_height}>' -quality #{quality} -
+    convert fd:0 -resize '#{max_width}x#{max_height}>' -quality #{quality} jpg:-
     """
 
     pid = Port.open({:spawn, cmd}, [:use_stdio, :stream, :exit_status, :binary])
