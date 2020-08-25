@@ -36,8 +36,7 @@ defmodule Pleroma.Object.Fetcher do
   defp reinject_object(%Object{data: %{"type" => "Question"}} = object, new_data) do
     Logger.debug("Reinjecting object #{new_data["id"]}")
 
-    with new_data <- Transmogrifier.fix_object(new_data),
-         data <- maybe_reinject_internal_fields(object, new_data),
+    with data <- maybe_reinject_internal_fields(object, new_data),
          {:ok, data, _} <- ObjectValidator.validate(data, %{}),
          changeset <- Object.change(object, %{data: data}),
          changeset <- touch_changeset(changeset),
