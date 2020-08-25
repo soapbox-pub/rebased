@@ -12,20 +12,35 @@ websocket_config = [
   compress: false
 ]
 
-frontend_options = [
+installed_frontend_options = [
   %{
     key: "name",
     label: "Name",
     type: :string,
     description:
-      "Name of the frontend. Valid config must include both `Name` and `Reference` values."
+      "Name of the installed frontend. Valid config must include both `Name` and `Reference` values."
   },
   %{
     key: "ref",
     label: "Reference",
     type: :string,
     description:
-      "Reference of the frontend to be used. Valid config must include both `Name` and `Reference` values."
+      "Reference of the installed frontend to be used. Valid config must include both `Name` and `Reference` values."
+  }
+]
+
+frontend_options = [
+  %{
+    key: "name",
+    label: "Name",
+    type: :string,
+    description: "Name of the frontend."
+  },
+  %{
+    key: "ref",
+    label: "Reference",
+    type: :string,
+    description: "Reference of the frontend to be used."
   },
   %{
     key: "git",
@@ -3587,13 +3602,13 @@ config :pleroma, :config_description, [
         key: :primary,
         type: :map,
         description: "Primary frontend, the one that is served for all pages by default",
-        children: frontend_options
+        children: installed_frontend_options
       },
       %{
         key: :admin,
         type: :map,
         description: "Admin frontend",
-        children: frontend_options
+        children: installed_frontend_options
       },
       %{
         key: :available,
