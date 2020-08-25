@@ -11,7 +11,10 @@ defmodule Pleroma.ActivityExpirationTest do
 
   test "finds activities due to be deleted only" do
     activity = insert(:note_activity)
-    expiration_due = insert(:expiration_in_the_past, %{activity_id: activity.id})
+
+    expiration_due =
+      insert(:expiration_in_the_past, %{activity_id: activity.id}) |> Repo.preload(:activity)
+
     activity2 = insert(:note_activity)
     insert(:expiration_in_the_future, %{activity_id: activity2.id})
 

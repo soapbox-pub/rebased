@@ -72,7 +72,8 @@ config :pleroma, Pleroma.Upload,
       pool: :upload
     ]
   ],
-  filename_display_max_length: 30
+  filename_display_max_length: 30,
+  default_description: nil
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
@@ -515,7 +516,13 @@ config :pleroma, Pleroma.User,
     "user-search",
     "user_exists",
     "users",
-    "web"
+    "web",
+    "verify_credentials",
+    "update_credentials",
+    "relationships",
+    "search",
+    "confirmation_resend",
+    "mfa"
   ],
   email_blacklist: []
 
@@ -762,10 +769,12 @@ config :pleroma, :hackney_pools,
     timeout: 300_000
   ]
 
+private_instance? = :if_instance_is_private
+
 config :pleroma, :restrict_unauthenticated,
-  timelines: %{local: false, federated: false},
-  profiles: %{local: false, remote: false},
-  activities: %{local: false, remote: false}
+  timelines: %{local: private_instance?, federated: private_instance?},
+  profiles: %{local: private_instance?, remote: private_instance?},
+  activities: %{local: private_instance?, remote: private_instance?}
 
 config :pleroma, Pleroma.Web.ApiSpec.CastAndValidate, strict: false
 
@@ -779,6 +788,10 @@ config :tzdata, :http_client, Pleroma.HTTP.Tzdata
 config :ex_aws, http_client: Pleroma.HTTP.ExAws
 
 config :pleroma, :instances_favicons, enabled: false
+
+config :floki, :html_parser, Floki.HTMLParser.FastHtml
+
+config :pleroma, Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

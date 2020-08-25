@@ -247,6 +247,13 @@ defmodule Pleroma.User do
     end
   end
 
+  defdelegate following_count(user), to: FollowingRelationship
+  defdelegate following(user), to: FollowingRelationship
+  defdelegate following?(follower, followed), to: FollowingRelationship
+  defdelegate following_ap_ids(user), to: FollowingRelationship
+  defdelegate get_follow_requests(user), to: FollowingRelationship
+  defdelegate search(query, opts \\ []), to: User.Search
+
   @doc """
   Dumps Flake Id to SQL-compatible format (16-byte UUID).
   E.g. "9pQtDGXuq4p3VlcJEm" -> <<0, 0, 1, 110, 179, 218, 42, 92, 213, 41, 44, 227, 95, 213, 0, 0>>
@@ -311,10 +318,12 @@ defmodule Pleroma.User do
 
   def visible_for(_, _), do: :invisible
 
-  defp restrict_unauthenticated?(%User{local: local}) do
-    config_key = if local, do: :local, else: :remote
+  defp restrict_unauthenticated?(%User{local: true}) do
+    Config.restrict_unauthenticated_access?(:profiles, :local)
+  end
 
-    Config.get([:restrict_unauthenticated, :profiles, config_key], false)
+  defp restrict_unauthenticated?(%User{local: _}) do
+    Config.restrict_unauthenticated_access?(:profiles, :remote)
   end
 
   defp visible_account_status(user) do
@@ -369,8 +378,6 @@ defmodule Pleroma.User do
   def restrict_deactivated(query) do
     from(u in query, where: u.deactivated != ^true)
   end
-
-  defdelegate following_count(user), to: FollowingRelationship
 
   defp truncate_fields_param(params) do
     if Map.has_key?(params, :fields) do
@@ -638,6 +645,34 @@ defmodule Pleroma.User do
   @spec force_password_reset(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def force_password_reset(user), do: update_password_reset_pending(user, true)
 
+  # Used to auto-register LDAP accounts which won't have a password hash stored locally
+  def register_changeset_ldap(struct, params = %{password: password})
+      when is_nil(password) do
+    params = Map.put_new(params, :accepts_chat_messages, true)
+
+    params =
+      if Map.has_key?(params, :email) do
+        Map.put_new(params, :email, params[:email])
+      else
+        params
+      end
+
+    struct
+    |> cast(params, [
+      :name,
+      :nickname,
+      :email,
+      :accepts_chat_messages
+    ])
+    |> validate_required([:name, :nickname])
+    |> unique_constraint(:nickname)
+    |> validate_exclusion(:nickname, Config.get([User, :restricted_nicknames]))
+    |> validate_format(:nickname, local_nickname_regex())
+    |> put_ap_id()
+    |> unique_constraint(:ap_id)
+    |> put_following_and_follower_address()
+  end
+
   def register_changeset(struct, params \\ %{}, opts \\ []) do
     bio_limit = Config.get([:instance, :user_bio_length], 5000)
     name_limit = Config.get([:instance, :user_name_length], 100)
@@ -838,8 +873,6 @@ defmodule Pleroma.User do
     set_cache(follower)
   end
 
-  defdelegate following(user), to: FollowingRelationship
-
   def follow(%User{} = follower, %User{} = followed, state \\ :follow_accept) do
     deny_follow_blocked = Config.get([:user, :deny_follow_blocked])
 
@@ -892,8 +925,6 @@ defmodule Pleroma.User do
         {:error, "Not subscribed!"}
     end
   end
-
-  defdelegate following?(follower, followed), to: FollowingRelationship
 
   @doc "Returns follow state as Pleroma.FollowingRelationship.State value"
   def get_follow_state(%User{} = follower, %User{} = following) do
@@ -1158,8 +1189,6 @@ defmodule Pleroma.User do
     |> select([u], u.id)
     |> Repo.all()
   end
-
-  defdelegate get_follow_requests(user), to: FollowingRelationship
 
   def increase_note_count(%User{} = user) do
     User
@@ -1553,6 +1582,49 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
+  @spec purge_user_changeset(User.t()) :: Changeset.t()
+  def purge_user_changeset(user) do
+    # "Right to be forgotten"
+    # https://gdpr.eu/right-to-be-forgotten/
+    change(user, %{
+      bio: nil,
+      raw_bio: nil,
+      email: nil,
+      name: nil,
+      password_hash: nil,
+      keys: nil,
+      public_key: nil,
+      avatar: %{},
+      tags: [],
+      last_refreshed_at: nil,
+      last_digest_emailed_at: nil,
+      banner: %{},
+      background: %{},
+      note_count: 0,
+      follower_count: 0,
+      following_count: 0,
+      locked: false,
+      confirmation_pending: false,
+      password_reset_pending: false,
+      approval_pending: false,
+      registration_reason: nil,
+      confirmation_token: nil,
+      domain_blocks: [],
+      deactivated: true,
+      ap_enabled: false,
+      is_moderator: false,
+      is_admin: false,
+      mastofe_settings: nil,
+      mascot: nil,
+      emoji: %{},
+      pleroma_settings_store: %{},
+      fields: [],
+      raw_fields: [],
+      discoverable: false,
+      also_known_as: []
+    })
+  end
+
   def delete(users) when is_list(users) do
     for user <- users, do: delete(user)
   end
@@ -1580,7 +1652,7 @@ defmodule Pleroma.User do
 
       _ ->
         user
-        |> change(%{deactivated: true, email: nil})
+        |> purge_user_changeset()
         |> update_and_set_cache()
     end
   end
@@ -2089,8 +2161,6 @@ defmodule Pleroma.User do
     )
     |> Repo.all()
   end
-
-  defdelegate search(query, opts \\ []), to: User.Search
 
   defp put_password_hash(
          %Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset

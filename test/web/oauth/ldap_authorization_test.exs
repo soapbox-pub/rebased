@@ -7,7 +7,6 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
   alias Pleroma.Repo
   alias Pleroma.Web.OAuth.Token
   import Pleroma.Factory
-  import ExUnit.CaptureLog
   import Mock
 
   @skip if !Code.ensure_loaded?(:eldap), do: :skip
@@ -72,9 +71,7 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
          equalityMatch: fn _type, _value -> :ok end,
          wholeSubtree: fn -> :ok end,
          search: fn _connection, _options ->
-           {:ok,
-            {:eldap_search_result, [{:eldap_entry, '', [{'mail', [to_charlist(user.email)]}]}],
-             []}}
+           {:ok, {:eldap_search_result, [{:eldap_entry, '', []}], []}}
          end,
          close: fn _connection ->
            send(self(), :close_connection)
@@ -98,50 +95,6 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
 
       assert token.user.nickname == user.nickname
       assert_received :close_connection
-    end
-  end
-
-  @tag @skip
-  test "falls back to the default authorization when LDAP is unavailable" do
-    password = "testpassword"
-    user = insert(:user, password_hash: Pbkdf2.hash_pwd_salt(password))
-    app = insert(:oauth_app, scopes: ["read", "write"])
-
-    host = Pleroma.Config.get([:ldap, :host]) |> to_charlist
-    port = Pleroma.Config.get([:ldap, :port])
-
-    with_mocks [
-      {:eldap, [],
-       [
-         open: fn [^host], [{:port, ^port}, {:ssl, false} | _] -> {:error, 'connect failed'} end,
-         simple_bind: fn _connection, _dn, ^password -> :ok end,
-         close: fn _connection ->
-           send(self(), :close_connection)
-           :ok
-         end
-       ]}
-    ] do
-      log =
-        capture_log(fn ->
-          conn =
-            build_conn()
-            |> post("/oauth/token", %{
-              "grant_type" => "password",
-              "username" => user.nickname,
-              "password" => password,
-              "client_id" => app.client_id,
-              "client_secret" => app.client_secret
-            })
-
-          assert %{"access_token" => token} = json_response(conn, 200)
-
-          token = Repo.get_by(Token, token: token)
-
-          assert token.user_id == user.id
-        end)
-
-      assert log =~ "Could not open LDAP connection: 'connect failed'"
-      refute_received :close_connection
     end
   end
 

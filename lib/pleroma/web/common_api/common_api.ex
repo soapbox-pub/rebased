@@ -6,9 +6,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
-  alias Pleroma.FollowingRelationship
   alias Pleroma.Formatter
-  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.ThreadMute
   alias Pleroma.User
@@ -122,33 +120,16 @@ defmodule Pleroma.Web.CommonAPI do
 
   def accept_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follower} <- User.follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept),
-         {:ok, _activity} <-
-           ActivityPub.accept(%{
-             to: [follower.ap_id],
-             actor: followed,
-             object: follow_activity.data["id"],
-             type: "Accept"
-           }) do
-      Notification.update_notification_type(followed, follow_activity)
+         {:ok, accept_data, _} <- Builder.accept(followed, follow_activity),
+         {:ok, _activity, _} <- Pipeline.common_pipeline(accept_data, local: true) do
       {:ok, follower}
     end
   end
 
   def reject_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_reject),
-         {:ok, _notifications} <- Notification.dismiss(follow_activity),
-         {:ok, _activity} <-
-           ActivityPub.reject(%{
-             to: [follower.ap_id],
-             actor: followed,
-             object: follow_activity.data["id"],
-             type: "Reject"
-           }) do
+         {:ok, reject_data, _} <- Builder.reject(followed, follow_activity),
+         {:ok, _activity, _} <- Pipeline.common_pipeline(reject_data, local: true) do
       {:ok, follower}
     end
   end
@@ -308,18 +289,19 @@ defmodule Pleroma.Web.CommonAPI do
          {:ok, options, choices} <- normalize_and_validate_choices(choices, object) do
       answer_activities =
         Enum.map(choices, fn index ->
-          answer_data = make_answer_data(user, object, Enum.at(options, index)["name"])
+          {:ok, answer_object, _meta} =
+            Builder.answer(user, object, Enum.at(options, index)["name"])
 
-          {:ok, activity} =
-            ActivityPub.create(%{
-              to: answer_data["to"],
-              actor: user,
-              context: object.data["context"],
-              object: answer_data,
-              additional: %{"cc" => answer_data["cc"]}
-            })
+          {:ok, activity_data, _meta} = Builder.create(user, answer_object, [])
 
-          activity
+          {:ok, activity, _meta} =
+            activity_data
+            |> Map.put("cc", answer_object["cc"])
+            |> Map.put("context", answer_object["context"])
+            |> Pipeline.common_pipeline(local: true)
+
+          # TODO: Do preload of Pleroma.Object in Pipeline
+          Activity.normalize(activity.data)
         end)
 
       object = Object.get_cached_by_ap_id(object.data["id"])
@@ -340,8 +322,13 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp get_options_and_max_count(%{data: %{"anyOf" => any_of}}), do: {any_of, Enum.count(any_of)}
-  defp get_options_and_max_count(%{data: %{"oneOf" => one_of}}), do: {one_of, 1}
+  defp get_options_and_max_count(%{data: %{"anyOf" => any_of}})
+       when is_list(any_of) and any_of != [],
+       do: {any_of, Enum.count(any_of)}
+
+  defp get_options_and_max_count(%{data: %{"oneOf" => one_of}})
+       when is_list(one_of) and one_of != [],
+       do: {one_of, 1}
 
   defp normalize_and_validate_choices(choices, object) do
     choices = Enum.map(choices, fn i -> if is_binary(i), do: String.to_integer(i), else: i end)

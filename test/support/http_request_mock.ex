@@ -82,6 +82,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://patch.cx/objects/tesla_mock/poll_attachment", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/poll_attachment.json")
+     }}
+  end
+
   def get(
         "https://mastodon.social/.well-known/webfinger?resource=https://mastodon.social/users/emelie",
         _,

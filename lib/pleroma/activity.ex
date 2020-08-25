@@ -340,4 +340,10 @@ defmodule Pleroma.Activity do
       _ -> nil
     end
   end
+
+  @spec pinned_by_actor?(Activity.t()) :: boolean()
+  def pinned_by_actor?(%Activity{} = activity) do
+    actor = user_actor(activity)
+    activity.id in actor.pinned_activities
+  end
 end

@@ -16,6 +16,7 @@
 - `erlang-nox`
 - `git`
 - `build-essential`
+- `cmake`
 
 #### このガイドで利用している追加パッケージ
 
@@ -32,7 +33,7 @@ sudo apt full-upgrade
 
 * 上記に挙げたパッケージをインストールしておきます。
 ```
-sudo apt install git build-essential postgresql postgresql-contrib
+sudo apt install git build-essential postgresql postgresql-contrib cmake
 ```
 
 

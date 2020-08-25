@@ -548,17 +548,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def make_answer_data(%User{ap_id: ap_id}, object, name) do
-    %{
-      "type" => "Answer",
-      "actor" => ap_id,
-      "cc" => [object.data["actor"]],
-      "to" => [],
-      "name" => name,
-      "inReplyTo" => object.data["id"]
-    }
-  end
-
   def validate_character_limit("" = _full_payload, [] = _attachments) do
     {:error, dgettext("errors", "Cannot post an empty status without attachments")}
   end

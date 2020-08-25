@@ -130,6 +130,7 @@ defmodule Pleroma.User.Query do
   defp compose_query({:active, _}, query) do
     User.restrict_deactivated(query)
     |> where([u], not is_nil(u.nickname))
+    |> where([u], u.approval_pending == false)
   end
 
   defp compose_query({:legacy_active, _}, query) do

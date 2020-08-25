@@ -9,9 +9,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Activity
   alias Pleroma.EarmarkRenderer
   alias Pleroma.EctoType.ActivityPub.ObjectValidators
-  alias Pleroma.FollowingRelationship
   alias Pleroma.Maps
-  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
@@ -157,7 +155,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
-    Map.put(object, "actor", Containment.get_actor(%{"actor" => actor}))
+    actor = Containment.get_actor(%{"actor" => actor})
+
+    # TODO: Remove actor field for Objects
+    object
+    |> Map.put("actor", actor)
+    |> Map.put("attributedTo", actor)
   end
 
   def fix_in_reply_to(object, options \\ [])
@@ -240,13 +243,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         if href do
           attachment_url =
-            %{"href" => href}
+            %{
+              "href" => href,
+              "type" => Map.get(url || %{}, "type", "Link")
+            }
             |> Maps.put_if_present("mediaType", media_type)
-            |> Maps.put_if_present("type", Map.get(url || %{}, "type"))
 
-          %{"url" => [attachment_url]}
+          %{
+            "url" => [attachment_url],
+            "type" => data["type"] || "Document"
+          }
           |> Maps.put_if_present("mediaType", media_type)
-          |> Maps.put_if_present("type", data["type"])
           |> Maps.put_if_present("name", data["name"])
         else
           nil
@@ -269,13 +276,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "url", url["href"])
   end
 
-  def fix_url(%{"type" => object_type, "url" => url} = object)
-      when object_type in ["Video", "Audio"] and is_list(url) do
+  def fix_url(%{"type" => "Video", "url" => url} = object) when is_list(url) do
     attachment =
       Enum.find(url, fn x ->
         media_type = x["mediaType"] || x["mimeType"] || ""
 
-        is_map(x) and String.starts_with?(media_type, ["audio/", "video/"])
+        is_map(x) and String.starts_with?(media_type, "video/")
       end)
 
     link_element =
@@ -382,32 +388,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp fix_content(object), do: object
 
-  defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
-    with true <- id =~ "follows",
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follower_id),
-         %Activity{} = activity <- Utils.fetch_latest_follow(follower, followed) do
-      {:ok, activity}
-    else
-      _ -> {:error, nil}
-    end
-  end
-
-  defp mastodon_follow_hack(_, _), do: {:error, nil}
-
-  defp get_follow_activity(follow_object, followed) do
-    with object_id when not is_nil(object_id) <- Utils.get_ap_id(follow_object),
-         {_, %Activity{} = activity} <- {:activity, Activity.get_by_ap_id(object_id)} do
-      {:ok, activity}
-    else
-      # Can't find the activity. This might a Mastodon 2.3 "Accept"
-      {:activity, nil} ->
-        mastodon_follow_hack(follow_object, followed)
-
-      _ ->
-        {:error, nil}
-    end
-  end
-
   # Reduce the object list to find the reported user.
   defp get_reported(objects) do
     Enum.reduce_while(objects, nil, fn ap_id, _ ->
@@ -417,6 +397,29 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         _ -> {:cont, nil}
       end
     end)
+  end
+
+  # Compatibility wrapper for Mastodon votes
+  defp handle_create(%{"object" => %{"type" => "Answer"}} = data, _user) do
+    handle_incoming(data)
+  end
+
+  defp handle_create(%{"object" => object} = data, user) do
+    %{
+      to: data["to"],
+      object: object,
+      actor: user,
+      context: object["context"],
+      local: false,
+      published: data["published"],
+      additional:
+        Map.take(data, [
+          "cc",
+          "directMessage",
+          "id"
+        ])
+    }
+    |> ActivityPub.create()
   end
 
   def handle_incoming(data, options \\ [])
@@ -457,30 +460,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
         options
       )
-      when objtype in ["Article", "Event", "Note", "Video", "Page", "Question", "Answer", "Audio"] do
+      when objtype in ~w{Article Note Video Page} do
     actor = Containment.get_actor(data)
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
-         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(actor),
-         data <- Map.put(data, "actor", actor) |> fix_addressing() do
-      object = fix_object(object, options)
+         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(actor) do
+      data =
+        data
+        |> Map.put("object", fix_object(object, options))
+        |> Map.put("actor", actor)
+        |> fix_addressing()
 
-      params = %{
-        to: data["to"],
-        object: object,
-        actor: user,
-        context: object["context"],
-        local: false,
-        published: data["published"],
-        additional:
-          Map.take(data, [
-            "cc",
-            "directMessage",
-            "id"
-          ])
-      }
-
-      with {:ok, created_activity} <- ActivityPub.create(params) do
+      with {:ok, created_activity} <- handle_create(data, user) do
         reply_depth = (options[:depth] || 0) + 1
 
         if Federator.allowed_thread_distance?(reply_depth) do
@@ -531,60 +522,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming(
-        %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => id} = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_accept) do
-      User.update_follower_count(followed)
-      User.update_following_count(follower)
-
-      Notification.update_notification_type(followed, follow_activity)
-
-      ActivityPub.accept(%{
-        to: follow_activity.data["to"],
-        type: "Accept",
-        actor: followed,
-        object: follow_activity.data["id"],
-        local: false,
-        activity_id: id
-      })
-    else
-      _e ->
-        :error
-    end
-  end
-
-  def handle_incoming(
-        %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => id} = data,
-        _options
-      ) do
-    with actor <- Containment.get_actor(data),
-         {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
-         {:ok, _relationship} <- FollowingRelationship.update(follower, followed, :follow_reject),
-         {:ok, activity} <-
-           ActivityPub.reject(%{
-             to: follow_activity.data["to"],
-             type: "Reject",
-             actor: followed,
-             object: follow_activity.data["id"],
-             local: false,
-             activity_id: id
-           }) do
-      {:ok, activity}
-    else
-      _e -> :error
-    end
-  end
-
   @misskey_reactions %{
     "like" => "👍",
     "love" => "❤️",
@@ -614,9 +551,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Create", "object" => %{"type" => "ChatMessage"}} = data,
+        %{"type" => "Create", "object" => %{"type" => objtype}} = data,
         _options
-      ) do
+      )
+      when objtype in ~w{Question Answer ChatMessage Audio Event} do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
@@ -638,9 +576,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => type} = data,
         _options
       )
-      when type in ~w{Update Block Follow} do
+      when type in ~w{Update Block Follow Accept Reject} do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
-         {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+         {:ok, activity, _} <-
+           Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     end
   end
@@ -649,7 +588,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Delete"} = data,
         _options
       ) do
-    with {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
+    with {:ok, activity, _} <-
+           Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
     else
       {:error, {:validate_object, _}} = e ->

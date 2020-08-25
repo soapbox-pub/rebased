@@ -13,18 +13,24 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
 
   embedded_schema do
     field(:id, ObjectValidators.ObjectID, primary_key: true)
-    field(:to, {:array, :string}, default: [])
-    field(:cc, {:array, :string}, default: [])
-    field(:bto, {:array, :string}, default: [])
-    field(:bcc, {:array, :string}, default: [])
+    field(:to, ObjectValidators.Recipients, default: [])
+    field(:cc, ObjectValidators.Recipients, default: [])
+    field(:bto, ObjectValidators.Recipients, default: [])
+    field(:bcc, ObjectValidators.Recipients, default: [])
     # TODO: Write type
     field(:tag, {:array, :map}, default: [])
     field(:type, :string)
+
+    field(:name, :string)
+    field(:summary, :string)
     field(:content, :string)
+
     field(:context, :string)
+    # short identifier for PleromaFE to group statuses by context
+    field(:context_id, :integer)
+
     field(:actor, ObjectValidators.ObjectID)
     field(:attributedTo, ObjectValidators.ObjectID)
-    field(:summary, :string)
     field(:published, ObjectValidators.DateTime)
     # TODO: Write type
     field(:emoji, :map, default: %{})
@@ -34,14 +40,11 @@ defmodule Pleroma.Web.ActivityPub.ObjectValidators.NoteValidator do
     field(:replies_count, :integer, default: 0)
     field(:like_count, :integer, default: 0)
     field(:announcement_count, :integer, default: 0)
-    field(:inRepyTo, :string)
-    field(:uri, ObjectValidators.Uri)
+    field(:inReplyTo, ObjectValidators.ObjectID)
+    field(:url, ObjectValidators.Uri)
 
     field(:likes, {:array, :string}, default: [])
     field(:announcements, {:array, :string}, default: [])
-
-    # see if needed
-    field(:context_id, :string)
   end
 
   def cast_and_validate(data) do

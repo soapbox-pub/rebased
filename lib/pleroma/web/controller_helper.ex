@@ -18,6 +18,12 @@ defmodule Pleroma.Web.ControllerHelper do
 
   def truthy_param?(value), do: not falsy_param?(value)
 
+  def json_response(conn, status, _) when status in [204, :no_content] do
+    conn
+    |> put_resp_header("content-type", "application/json")
+    |> send_resp(status, "")
+  end
+
   def json_response(conn, status, json) do
     conn
     |> put_status(status)
