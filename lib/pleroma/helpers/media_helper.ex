@@ -14,7 +14,7 @@ defmodule Pleroma.Helpers.MediaHelper do
     convert - -resize '#{max_width}x#{max_height}>' -quality #{quality} -
     """
 
-    pid = Port.open({:spawn, cmd}, [:use_stdio, :in, :stream, :exit_status, :binary])
+    pid = Port.open({:spawn, cmd}, [:use_stdio, :stream, :exit_status, :binary])
     {:ok, env} = url |> Pleroma.Web.MediaProxy.url() |> Pleroma.HTTP.get()
     image = env.body
     Port.command(pid, image)
