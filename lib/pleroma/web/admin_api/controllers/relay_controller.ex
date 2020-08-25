@@ -39,7 +39,7 @@ defmodule Pleroma.Web.AdminAPI.RelayController do
         target: target
       })
 
-      json(conn, target)
+      json(conn, %{actor: target, followed_back: target in Relay.following()})
     else
       _ ->
         conn

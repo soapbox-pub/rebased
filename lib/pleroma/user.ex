@@ -247,6 +247,13 @@ defmodule Pleroma.User do
     end
   end
 
+  defdelegate following_count(user), to: FollowingRelationship
+  defdelegate following(user), to: FollowingRelationship
+  defdelegate following?(follower, followed), to: FollowingRelationship
+  defdelegate following_ap_ids(user), to: FollowingRelationship
+  defdelegate get_follow_requests(user), to: FollowingRelationship
+  defdelegate search(query, opts \\ []), to: User.Search
+
   @doc """
   Dumps Flake Id to SQL-compatible format (16-byte UUID).
   E.g. "9pQtDGXuq4p3VlcJEm" -> <<0, 0, 1, 110, 179, 218, 42, 92, 213, 41, 44, 227, 95, 213, 0, 0>>
@@ -371,8 +378,6 @@ defmodule Pleroma.User do
   def restrict_deactivated(query) do
     from(u in query, where: u.deactivated != ^true)
   end
-
-  defdelegate following_count(user), to: FollowingRelationship
 
   defp truncate_fields_param(params) do
     if Map.has_key?(params, :fields) do
@@ -868,8 +873,6 @@ defmodule Pleroma.User do
     set_cache(follower)
   end
 
-  defdelegate following(user), to: FollowingRelationship
-
   def follow(%User{} = follower, %User{} = followed, state \\ :follow_accept) do
     deny_follow_blocked = Config.get([:user, :deny_follow_blocked])
 
@@ -922,8 +925,6 @@ defmodule Pleroma.User do
         {:error, "Not subscribed!"}
     end
   end
-
-  defdelegate following?(follower, followed), to: FollowingRelationship
 
   @doc "Returns follow state as Pleroma.FollowingRelationship.State value"
   def get_follow_state(%User{} = follower, %User{} = following) do
@@ -1188,8 +1189,6 @@ defmodule Pleroma.User do
     |> select([u], u.id)
     |> Repo.all()
   end
-
-  defdelegate get_follow_requests(user), to: FollowingRelationship
 
   def increase_note_count(%User{} = user) do
     User
@@ -2162,8 +2161,6 @@ defmodule Pleroma.User do
     )
     |> Repo.all()
   end
-
-  defdelegate search(query, opts \\ []), to: User.Search
 
   defp put_password_hash(
          %Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset

@@ -313,31 +313,53 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On failure: `Not found`
   - On success: JSON array of user's latest statuses
 
+## `GET /api/pleroma/admin/relay`
+
+### List Relays
+
+Params: none
+Response:
+
+* On success: JSON array of relays
+
+```json
+[
+  {"actor": "https://example.com/relay", "followed_back": true},
+  {"actor": "https://example2.com/relay", "followed_back": false}
+]
+```
+
 ## `POST /api/pleroma/admin/relay`
 
 ### Follow a Relay
 
-- Params:
-  - `relay_url`
-- Response:
-  - On success: URL of the followed relay
+Params:
+
+* `relay_url`
+
+Response:
+
+* On success: relay json object
+
+```json
+{"actor": "https://example.com/relay", "followed_back": true}
+```
 
 ## `DELETE /api/pleroma/admin/relay`
 
 ### Unfollow a Relay
 
-- Params:
-  - `relay_url`
-- Response:
-  - On success: URL of the unfollowed relay
+Params:
 
-## `GET /api/pleroma/admin/relay`
+* `relay_url`
 
-### List Relays
+Response:
 
-- Params: none
-- Response:
-  - On success: JSON array of relays
+* On success: URL of the unfollowed relay
+
+```json
+{"https://example.com/relay"}
+```
 
 ## `POST /api/pleroma/admin/users/invite_token`
 

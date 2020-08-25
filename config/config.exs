@@ -72,7 +72,8 @@ config :pleroma, Pleroma.Upload,
       pool: :upload
     ]
   ],
-  filename_display_max_length: 30
+  filename_display_max_length: 30,
+  default_description: nil
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
@@ -682,7 +683,50 @@ config :pleroma, :static_fe, enabled: false
 # With no frontend configuration, the bundled files from the `static` directory will
 # be used.
 #
-# config :pleroma, :frontends, primary: %{"name" => "pleroma", "ref" => "develop"}
+# config :pleroma, :frontends, 
+# primary: %{"name" => "pleroma-fe", "ref" => "develop"},
+# admin: %{"name" => "admin-fe", "ref" => "stable"},
+# available: %{...}
+
+config :pleroma, :frontends,
+  available: %{
+    "kenoma" => %{
+      "name" => "kenoma",
+      "git" => "https://git.pleroma.social/lambadalambda/kenoma",
+      "build_url" =>
+        "https://git.pleroma.social/lambadalambda/kenoma/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "master"
+    },
+    "pleroma-fe" => %{
+      "name" => "pleroma-fe",
+      "git" => "https://git.pleroma.social/pleroma/pleroma-fe",
+      "build_url" =>
+        "https://git.pleroma.social/pleroma/pleroma-fe/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "develop"
+    },
+    "fedi-fe" => %{
+      "name" => "fedi-fe",
+      "git" => "https://git.pleroma.social/pleroma/fedi-fe",
+      "build_url" =>
+        "https://git.pleroma.social/pleroma/fedi-fe/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "master"
+    },
+    "admin-fe" => %{
+      "name" => "admin-fe",
+      "git" => "https://git.pleroma.social/pleroma/admin-fe",
+      "build_url" =>
+        "https://git.pleroma.social/pleroma/admin-fe/-/jobs/artifacts/${ref}/download?job=build",
+      "ref" => "develop"
+    },
+    "soapbox-fe" => %{
+      "name" => "soapbox-fe",
+      "git" => "https://gitlab.com/soapbox-pub/soapbox-fe",
+      "build_url" =>
+        "https://gitlab.com/soapbox-pub/soapbox-fe/-/jobs/artifacts/${ref}/download?job=build-production",
+      "ref" => "v1.0.0",
+      "build_dir" => "static"
+    }
+  }
 
 config :pleroma, :web_cache_ttl,
   activity_pub: nil,

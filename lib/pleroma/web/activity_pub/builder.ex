@@ -215,7 +215,7 @@ defmodule Pleroma.Web.ActivityPub.Builder do
 
     to =
       cond do
-        actor.ap_id == Relay.relay_ap_id() ->
+        actor.ap_id == Relay.ap_id() ->
           [actor.follower_address]
 
         public? ->

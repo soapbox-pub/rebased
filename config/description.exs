@@ -12,6 +12,55 @@ websocket_config = [
   compress: false
 ]
 
+installed_frontend_options = [
+  %{
+    key: "name",
+    label: "Name",
+    type: :string,
+    description:
+      "Name of the installed frontend. Valid config must include both `Name` and `Reference` values."
+  },
+  %{
+    key: "ref",
+    label: "Reference",
+    type: :string,
+    description:
+      "Reference of the installed frontend to be used. Valid config must include both `Name` and `Reference` values."
+  }
+]
+
+frontend_options = [
+  %{
+    key: "name",
+    label: "Name",
+    type: :string,
+    description: "Name of the frontend."
+  },
+  %{
+    key: "ref",
+    label: "Reference",
+    type: :string,
+    description: "Reference of the frontend to be used."
+  },
+  %{
+    key: "git",
+    type: :string,
+    description: "URL of the git repository of the frontend"
+  },
+  %{
+    key: "build_url",
+    type: :string,
+    description:
+      "Either an url to a zip file containing the frontend or a template to build it by inserting the `ref`. The string `${ref}` will be replaced by the configured `ref`.",
+    example: "https://some.url/builds/${ref}.zip"
+  },
+  %{
+    key: "build_dir",
+    type: :string,
+    description: "The directory inside the zip file "
+  }
+]
+
 config :pleroma, :config_description, [
   %{
     group: :pleroma,
@@ -3609,21 +3658,40 @@ config :pleroma, :config_description, [
         key: :primary,
         type: :map,
         description: "Primary frontend, the one that is served for all pages by default",
+        children: installed_frontend_options
+      },
+      %{
+        key: :admin,
+        type: :map,
+        description: "Admin frontend",
+        children: installed_frontend_options
+      },
+      %{
+        key: :available,
+        type: :map,
+        description:
+          "A map containing available frontends and parameters for their installation.",
         children: [
-          %{
-            key: "name",
-            label: "Name",
-            type: :string,
-            description:
-              "Name of the installed primary frontend. Valid config must include both `Name` and `Reference` values."
-          },
-          %{
-            key: "ref",
-            label: "Reference",
-            type: :string,
-            description:
-              "Reference of the installed primary frontend to be used. Valid config must include both `Name` and `Reference` values."
-          }
+          frontend_options
+        ]
+      }
+    ]
+  },
+  %{
+    group: :pleroma,
+    key: Pleroma.Web.Preload,
+    type: :group,
+    description: "Preload-related settings",
+    children: [
+      %{
+        key: :providers,
+        type: {:list, :module},
+        description: "List of preload providers to enable",
+        suggestions: [
+          Pleroma.Web.Preload.Providers.Instance,
+          Pleroma.Web.Preload.Providers.User,
+          Pleroma.Web.Preload.Providers.Timelines,
+          Pleroma.Web.Preload.Providers.StatusNet
         ]
       }
     ]

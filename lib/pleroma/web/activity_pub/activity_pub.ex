@@ -85,7 +85,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp increase_replies_count_if_reply(_create_data), do: :noop
 
-  @object_types ["ChatMessage", "Question", "Answer"]
+  @object_types ~w[ChatMessage Question Answer Audio Event]
   @spec persist(map(), keyword()) :: {:ok, Activity.t() | Object.t()}
   def persist(%{"type" => type} = object, meta) when type in @object_types do
     with {:ok, object} <- Object.create(object) do
@@ -1344,9 +1344,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def maybe_handle_clashing_nickname(data) do
-    nickname = data[:nickname]
-
-    with %User{} = old_user <- User.get_by_nickname(nickname),
+    with nickname when is_binary(nickname) <- data[:nickname],
+         %User{} = old_user <- User.get_by_nickname(nickname),
          {_, false} <- {:ap_id_comparison, data[:ap_id] == old_user.ap_id} do
       Logger.info(
         "Found an old user for #{nickname}, the old ap id is #{old_user.ap_id}, new one is #{
@@ -1360,7 +1359,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     else
       {:ap_id_comparison, true} ->
         Logger.info(
-          "Found an old user for #{nickname}, but the ap id #{data[:ap_id]} is the same as the new user. Race condition? Not changing anything."
+          "Found an old user for #{data[:nickname]}, but the ap id #{data[:ap_id]} is the same as the new user. Race condition? Not changing anything."
         )
 
       _ ->

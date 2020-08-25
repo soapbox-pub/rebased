@@ -264,4 +264,12 @@ defmodule Pleroma.FollowingRelationship do
       end
     end)
   end
+
+  @spec following_ap_ids(User.t()) :: [String.t()]
+  def following_ap_ids(%User{} = user) do
+    user
+    |> following_query()
+    |> select([r, u], u.ap_id)
+    |> Repo.all()
+  end
 end

@@ -276,13 +276,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "url", url["href"])
   end
 
-  def fix_url(%{"type" => object_type, "url" => url} = object)
-      when object_type in ["Video", "Audio"] and is_list(url) do
+  def fix_url(%{"type" => "Video", "url" => url} = object) when is_list(url) do
     attachment =
       Enum.find(url, fn x ->
         media_type = x["mediaType"] || x["mimeType"] || ""
 
-        is_map(x) and String.starts_with?(media_type, ["audio/", "video/"])
+        is_map(x) and String.starts_with?(media_type, "video/")
       end)
 
     link_element =
@@ -461,7 +460,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
         options
       )
-      when objtype in ~w{Article Event Note Video Page} do
+      when objtype in ~w{Article Note Video Page} do
     actor = Containment.get_actor(data)
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
@@ -555,7 +554,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Create", "object" => %{"type" => objtype}} = data,
         _options
       )
-      when objtype in ~w{Question Answer ChatMessage Audio} do
+      when objtype in ~w{Question Answer ChatMessage Audio Event} do
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}

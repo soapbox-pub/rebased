@@ -474,23 +474,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def render_content(%{data: %{"type" => object_type}} = object)
-      when object_type in ["Video", "Event", "Audio"] do
-    with name when not is_nil(name) and name != "" <- object.data["name"] do
-      "<p><a href=\"#{object.data["id"]}\">#{name}</a></p>#{object.data["content"]}"
-    else
-      _ -> object.data["content"] || ""
-    end
-  end
+  def render_content(%{data: %{"name" => name}} = object) when not is_nil(name) and name != "" do
+    url = object.data["url"] || object.data["id"]
 
-  def render_content(%{data: %{"type" => object_type}} = object)
-      when object_type in ["Article", "Page"] do
-    with summary when not is_nil(summary) and summary != "" <- object.data["name"],
-         url when is_bitstring(url) <- object.data["url"] do
-      "<p><a href=\"#{url}\">#{summary}</a></p>#{object.data["content"]}"
-    else
-      _ -> object.data["content"] || ""
-    end
+    "<p><a href=\"#{url}\">#{name}</a></p>#{object.data["content"]}"
   end
 
   def render_content(object), do: object.data["content"] || ""
