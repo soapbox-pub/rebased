@@ -12,7 +12,6 @@ defmodule Pleroma.Web.OAuth.Token.CleanWorker do
   @one_day 86_400_000
 
   alias Pleroma.MFA
-  alias Pleroma.Web.OAuth
   alias Pleroma.Workers.BackgroundWorker
 
   def start_link(_), do: GenServer.start_link(__MODULE__, %{})
@@ -32,7 +31,6 @@ defmodule Pleroma.Web.OAuth.Token.CleanWorker do
   end
 
   def perform(:clean) do
-    OAuth.Token.delete_expired_tokens()
     MFA.Token.delete_expired_tokens()
   end
 end

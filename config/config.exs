@@ -530,6 +530,7 @@ config :pleroma, Oban,
   log: false,
   queues: [
     activity_expiration: 10,
+    oauth_token_expiration: 1,
     federator_incoming: 50,
     federator_outgoing: 50,
     web_push: 50,
@@ -543,7 +544,6 @@ config :pleroma, Oban,
   ],
   plugins: [Oban.Plugins.Pruner],
   crontab: [
-    {"0 0 * * *", Pleroma.Workers.Cron.ClearOauthTokenWorker},
     {"* * * * *", Pleroma.Workers.Cron.PurgeExpiredActivitiesWorker},
     {"0 0 * * 0", Pleroma.Workers.Cron.DigestEmailsWorker},
     {"0 0 * * *", Pleroma.Workers.Cron.NewUsersDigestWorker}
