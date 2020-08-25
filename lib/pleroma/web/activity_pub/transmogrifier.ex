@@ -550,6 +550,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         _options
       )
       when objtype in ~w{Question Answer ChatMessage Audio Event} do
+    data = Map.put(data, "object", strip_internal_fields(data["object"]))
+
     with {:ok, %User{}} <- ObjectValidator.fetch_actor(data),
          {:ok, activity, _} <- Pipeline.common_pipeline(data, local: false) do
       {:ok, activity}
