@@ -2472,14 +2472,14 @@ config :pleroma, :config_description, [
   },
   %{
     group: :pleroma,
-    key: Pleroma.ActivityExpiration,
+    key: Pleroma.Workers.PurgeExpiredActivity,
     type: :group,
-    description: "Expired activity settings",
+    description: "Expired activities settings",
     children: [
       %{
         key: :enabled,
         type: :boolean,
-        description: "Whether expired activities will be sent to the job queue to be deleted"
+        description: "Enables expired activities addition & deletion"
       }
     ]
   },

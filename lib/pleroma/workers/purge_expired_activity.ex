@@ -7,6 +7,8 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
 
   import Ecto.Query
 
+  alias Pleroma.Activity
+
   def enqueue(args) do
     with true <- enabled?(),
          args when is_map(args) <- validate_expires_at(args) do
@@ -20,7 +22,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
 
   @impl true
   def perform(%Oban.Job{args: %{"activity_id" => id}}) do
-    with %Pleroma.Activity{} = activity <- find_activity(id),
+    with %Activity{} = activity <- find_activity(id),
          %Pleroma.User{} = user <- find_user(activity.object.data["actor"]),
          false <- pinned_by_actor?(activity, user) do
       Pleroma.Web.CommonAPI.delete(activity.id, user)
@@ -53,7 +55,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
   end
 
   defp find_activity(id) do
-    with nil <- Pleroma.Activity.get_by_id_with_object(id) do
+    with nil <- Activity.get_by_id_with_object(id) do
       {:error, :activity_not_found}
     end
   end
@@ -65,7 +67,7 @@ defmodule Pleroma.Workers.PurgeExpiredActivity do
   end
 
   defp pinned_by_actor?(activity, user) do
-    with true <- Pleroma.Activity.pinned_by_actor?(activity, user) do
+    with true <- Activity.pinned_by_actor?(activity, user) do
       :pinned_by_actor
     end
   end
