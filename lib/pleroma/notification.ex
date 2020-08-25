@@ -15,6 +15,7 @@ defmodule Pleroma.Notification do
   alias Pleroma.Repo
   alias Pleroma.ThreadMute
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
@@ -441,6 +442,7 @@ defmodule Pleroma.Notification do
         |> Multi.insert(:notification, %Notification{
           user_id: user.id,
           activity: activity,
+          seen: mark_as_read?(activity, user),
           type: type_from_activity(activity)
         })
         |> Marker.multi_set_last_read_id(user, "notifications")
@@ -633,6 +635,11 @@ defmodule Pleroma.Notification do
   end
 
   def skip?(_, _, _), do: false
+
+  def mark_as_read?(activity, target_user) do
+    user = Activity.user_actor(activity)
+    User.mutes_user?(target_user, user) || CommonAPI.thread_muted?(target_user, activity)
+  end
 
   def for_user_and_activity(user, activity) do
     from(n in __MODULE__,

@@ -465,7 +465,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def thread_muted?(%User{id: user_id}, %{data: %{"context" => context}})
-      when is_binary("context") do
+      when is_binary(context) do
     ThreadMute.exists?(user_id, context)
   end
 
