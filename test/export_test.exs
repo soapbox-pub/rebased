@@ -6,8 +6,8 @@ defmodule Pleroma.ExportTest do
   use Pleroma.DataCase
   import Pleroma.Factory
 
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Bookmark
+  alias Pleroma.Web.CommonAPI
 
   test "it exports user data" do
     user = insert(:user, %{nickname: "cofe", name: "Cofe", ap_id: "http://cofe.io/users/cofe"})
