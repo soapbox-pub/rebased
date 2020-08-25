@@ -26,7 +26,7 @@ defmodule Pleroma.Export do
     end
   end
 
-  def actor(dir, user) do
+  defp actor(dir, user) do
     with {:ok, json} <-
            UserView.render("user.json", %{user: user})
            |> Map.merge(%{"likes" => "likes.json", "bookmarks" => "bookmarks.json"})
@@ -82,7 +82,7 @@ defmodule Pleroma.Export do
     end
   end
 
-  def bookmarks(dir, %{id: user_id} = _user) do
+  defp bookmarks(dir, %{id: user_id} = _user) do
     Bookmark
     |> where(user_id: ^user_id)
     |> join(:inner, [b], activity in assoc(b, :activity))
@@ -90,7 +90,7 @@ defmodule Pleroma.Export do
     |> write(dir, "bookmarks", fn a -> {:ok, "\"#{a.object}\""} end)
   end
 
-  def likes(dir, user) do
+  defp likes(dir, user) do
     user.ap_id
     |> Activity.Queries.by_actor()
     |> Activity.Queries.by_type("Like")
@@ -98,7 +98,7 @@ defmodule Pleroma.Export do
     |> write(dir, "likes", fn a -> {:ok, "\"#{a.object}\""} end)
   end
 
-  def statuses(dir, user) do
+  defp statuses(dir, user) do
     opts =
       %{}
       |> Map.put(:type, ["Create", "Announce"])
