@@ -69,6 +69,12 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     handle_image_preview(conn, url)
   end
 
+  defp handle_preview("video/" <> _ = _content_type, conn, url) do
+    mediaproxy_url = url |> MediaProxy.url()
+
+    redirect(conn, external: mediaproxy_url)
+  end
+
   defp handle_preview(content_type, conn, _url) do
     send_resp(conn, :unprocessable_entity, "Unsupported content type: #{content_type}.")
   end
