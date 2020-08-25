@@ -149,6 +149,18 @@ defmodule Pleroma.Web.WebFinger do
     end
   end
 
+  defp get_address_from_domain(domain, encoded_account) when is_binary(domain) do
+    case find_lrdd_template(domain) do
+      {:ok, template} ->
+        String.replace(template, "{uri}", encoded_account)
+
+      _ ->
+        "https://#{domain}/.well-known/webfinger?resource=#{encoded_account}"
+    end
+  end
+
+  defp get_address_from_domain(_, _), do: nil
+
   @spec finger(String.t()) :: {:ok, map()} | {:error, any()}
   def finger(account) do
     account = String.trim_leading(account, "@")
@@ -163,16 +175,8 @@ defmodule Pleroma.Web.WebFinger do
 
     encoded_account = URI.encode("acct:#{account}")
 
-    address =
-      case find_lrdd_template(domain) do
-        {:ok, template} ->
-          String.replace(template, "{uri}", encoded_account)
-
-        _ ->
-          "https://#{domain}/.well-known/webfinger?resource=#{encoded_account}"
-      end
-
-    with response <-
+    with address when is_binary(address) <- get_address_from_domain(domain, encoded_account),
+         response <-
            HTTP.get(
              address,
              [{"accept", "application/xrd+xml,application/jrd+json"}]
