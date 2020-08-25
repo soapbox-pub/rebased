@@ -66,25 +66,20 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   end
 
   defp handle_preview("image/" <> _ = _content_type, conn, url) do
-    handle_image_or_video_preview(conn, url)
-  end
-
-  defp handle_preview("video/" <> _ = _content_type, conn, url) do
-    handle_image_or_video_preview(conn, url)
+    handle_image_preview(conn, url)
   end
 
   defp handle_preview(content_type, conn, _url) do
     send_resp(conn, :unprocessable_entity, "Unsupported content type: #{content_type}.")
   end
 
-  defp handle_image_or_video_preview(%{params: params} = conn, url) do
-    quality = Config.get!([:media_preview_proxy, :quality])
+  defp handle_image_preview(%{params: params} = conn, url) do
+    quality = Config.get!([:media_preview_proxy, :image_quality])
 
     with {thumbnail_max_width, thumbnail_max_height} <- thumbnail_max_dimensions(params),
-         media_proxy_url <- MediaProxy.url(url),
          {:ok, thumbnail_binary} <-
-           MediaHelper.ffmpeg_resize(
-             media_proxy_url,
+           MediaHelper.image_resize(
+             url,
              %{max_width: thumbnail_max_width, max_height: thumbnail_max_height, quality: quality}
            ) do
       conn

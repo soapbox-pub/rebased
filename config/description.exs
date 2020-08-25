@@ -1975,9 +1975,9 @@ config :pleroma, :config_description, [
         description: "Max height of preview thumbnail."
       },
       %{
-        key: :quality,
+        key: :image_quality,
         type: :integer,
-        description: "Quality of the output. Ranges from 1 (max quality) to 31 (lowest quality)."
+        description: "Quality of the output. Ranges from 0 (min quality) to 100 (max quality)."
       },
       %{
         key: :proxy_opts,

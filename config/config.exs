@@ -444,7 +444,7 @@ config :pleroma, :media_preview_proxy,
   enabled: false,
   thumbnail_max_width: 600,
   thumbnail_max_height: 600,
-  quality: 2,
+  image_quality: 85,
   proxy_opts: [
     head_request_max_read_duration: 5_000
   ]
