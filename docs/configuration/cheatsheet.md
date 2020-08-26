@@ -87,7 +87,7 @@ To add configuration to your config file, you can copy it from the base config. 
       direct_message: [
         enabled: true,
         sender_nickname: "lain",
-        message: "Hi, @username! Welcome on board!"
+        message: "Hi! Welcome on board!"
         ],
       email: [
         enabled: true,
