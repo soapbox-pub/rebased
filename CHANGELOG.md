@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `pleroma.unread_count` to the Marker entity.
 - Mastodon API: Added `pleroma.metadata.post_formats` to /api/v1/instance
 - Mastodon API (legacy): Allow query parameters for `/api/v1/domain_blocks`, e.g. `/api/v1/domain_blocks?domain=badposters.zone`
+- Mastodon API: Make notifications about statuses from muted users and threads read automatically
 - Pleroma API: `/api/pleroma/captcha` responses now include `seconds_valid` with an integer value.
 
 </details>
