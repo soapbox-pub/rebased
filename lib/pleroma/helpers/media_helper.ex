@@ -29,7 +29,8 @@ defmodule Pleroma.Helpers.MediaHelper do
     args = [
     "-interlace", "Plane",
     "-resize", resize,
-    "-quality", to_string(quality)
+    "-quality", to_string(quality),
+    "jpg:-"
     ]
     {:ok, args}
   end
@@ -37,7 +38,7 @@ defmodule Pleroma.Helpers.MediaHelper do
   defp prepare_image_resize_args(_), do: {:error, :missing_options}
 
   defp run_fifo(fifo_path, env, executable, args) do
-    args = List.flatten([fifo_path, args, "jpg:-"])
+    args = List.flatten([fifo_path, args])
     pid = Port.open({:spawn_executable, executable}, [:use_stdio, :stream, :exit_status, :binary, args: args])
     fifo = Port.open(to_charlist(fifo_path), [:eof, :binary, :stream, :out])
     true = Port.command(fifo, env.body)
