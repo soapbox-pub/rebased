@@ -217,7 +217,10 @@ defmodule Pleroma.NotificationTest do
       muter = Repo.get(User, muter.id)
       {:ok, activity} = CommonAPI.post(muted, %{status: "Hi @#{muter.nickname}"})
 
-      assert Notification.create_notification(activity, muter)
+      notification = Notification.create_notification(activity, muter)
+
+      assert notification.id
+      assert notification.seen
     end
 
     test "notification created if user is muted without notifications" do
@@ -243,7 +246,10 @@ defmodule Pleroma.NotificationTest do
           in_reply_to_status_id: activity.id
         })
 
-      assert Notification.create_notification(activity, muter)
+      notification = Notification.create_notification(activity, muter)
+
+      assert notification.id
+      assert notification.seen
     end
 
     test "it disables notifications from strangers" do
@@ -317,6 +323,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, [notification]} = Notification.create_notifications(status)
 
       assert notification
+      refute notification.seen
     end
 
     test "it creates notifications when someone likes user's status with a filtered word" do
@@ -330,6 +337,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, [notification]} = Notification.create_notifications(activity_two)
 
       assert notification
+      refute notification.seen
     end
   end
 
@@ -1012,6 +1020,7 @@ defmodule Pleroma.NotificationTest do
       [notification] = Notification.for_user(user)
 
       assert notification.activity.object
+      assert notification.seen
     end
 
     test "it doesn't return notifications for muted user with notifications", %{user: user} do

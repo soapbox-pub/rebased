@@ -219,7 +219,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
 
     expected = %{
       id: to_string(notification.id),
-      pleroma: %{is_seen: false, is_muted: true},
+      pleroma: %{is_seen: true, is_muted: true},
       type: "favourite",
       account: AccountView.render("show.json", %{user: another_user, for: user}),
       status: StatusView.render("show.json", %{activity: create_activity, for: user}),
