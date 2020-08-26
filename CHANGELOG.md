@@ -138,6 +138,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix whole_word always returning false on filter get requests
 - Migrations not working on OTP releases if the database was connected over ssl
 - Fix relay following
+- Fixed uploading webp images when the Exiftool Upload Filter is enabled
 
 ## [2.0.7] - 2020-06-13
 
