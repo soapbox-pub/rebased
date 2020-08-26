@@ -27,7 +27,6 @@ defmodule Pleroma.Helpers.MediaHelper do
     quality = options[:quality] || 85
     resize = Enum.join([max_width, "x", max_height, ">"])
     args = [
-    "-auto-orient", # Support for EXIF rotation
     "-resize", resize,
     "-quality", to_string(quality)
     ]
