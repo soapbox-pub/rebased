@@ -11,7 +11,7 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   def image_resize(url, options) do
     with executable when is_binary(executable) <- System.find_executable("convert"),
-         {:ok, args} <- prepare_resize_args(options),
+         {:ok, args} <- prepare_image_resize_args(options),
          url = Pleroma.Web.MediaProxy.url(url),
          {:ok, env} <- Pleroma.HTTP.get(url),
          {:ok, fifo_path} <- mkfifo()
@@ -23,7 +23,7 @@ defmodule Pleroma.Helpers.MediaHelper do
     end
   end
 
-  defp prepare_resize_args(%{max_width: max_width, max_height: max_height} = options) do
+  defp prepare_image_resize_args(%{max_width: max_width, max_height: max_height} = options) do
     quality = options[:quality] || 85
     resize = Enum.join([max_width, "x", max_height, ">"])
     args = [
@@ -34,7 +34,7 @@ defmodule Pleroma.Helpers.MediaHelper do
     {:ok, args}
   end
 
-  defp prepare_resize_args(_), do: {:error, :missing_options}
+  defp prepare_image_resize_args(_), do: {:error, :missing_options}
 
   defp run_fifo(fifo_path, env, executable, args) do
     args = List.flatten([fifo_path, args, "jpg:-"])
