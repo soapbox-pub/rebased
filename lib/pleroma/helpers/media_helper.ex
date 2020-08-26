@@ -27,6 +27,7 @@ defmodule Pleroma.Helpers.MediaHelper do
     quality = options[:quality] || 85
     resize = Enum.join([max_width, "x", max_height, ">"])
     args = [
+    "-interlace", "Plane",
     "-resize", resize,
     "-quality", to_string(quality)
     ]
@@ -36,7 +37,7 @@ defmodule Pleroma.Helpers.MediaHelper do
   defp prepare_resize_args(_), do: {:error, :missing_options}
 
   defp run_fifo(fifo_path, env, executable, args) do
-    args = List.flatten([fifo_path, args, "jpg:fd:1"])
+    args = List.flatten([fifo_path, args, "jpg:-"])
     pid = Port.open({:spawn_executable, executable}, [:use_stdio, :stream, :exit_status, :binary, args: args])
     fifo = Port.open(to_charlist(fifo_path), [:eof, :binary, :stream, :out])
     true = Port.command(fifo, env.body)
