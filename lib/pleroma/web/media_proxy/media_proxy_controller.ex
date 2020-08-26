@@ -65,6 +65,12 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
+  defp handle_preview("image/gif" = _content_type, conn, url) do
+    mediaproxy_url = url |> MediaProxy.url()
+
+    redirect(conn, external: mediaproxy_url)
+  end
+
   defp handle_preview("image/" <> _ = _content_type, conn, url) do
     handle_image_preview(conn, url)
   end
