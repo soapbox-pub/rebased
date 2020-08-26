@@ -99,6 +99,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 </details>
 
 ### Fixed
+- Fix list pagination and other list issues.
 - Support pagination in conversations API
 - **Breaking**: SimplePolicy `:reject` and `:accept` allow deletions again
 - Fix follower/blocks import when nicknames starts with @
