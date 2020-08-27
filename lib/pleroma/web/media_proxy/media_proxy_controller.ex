@@ -50,7 +50,9 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
 
   defp handle_preview(conn, url) do
     with {:ok, %{status: status} = head_response} when status in 200..299 <-
-           Tesla.head(url, opts: [adapter: [timeout: preview_head_request_timeout()]]) do
+           Tesla.head(url,
+             opts: [adapter: [timeout: preview_head_request_timeout(), follow_redirect: true]]
+           ) do
       content_type = Tesla.get_header(head_response, "content-type")
       handle_preview(content_type, conn, url)
     else
