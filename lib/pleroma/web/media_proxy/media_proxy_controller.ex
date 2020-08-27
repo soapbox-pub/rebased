@@ -78,9 +78,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   end
 
   defp handle_preview("video/" <> _ = _content_type, conn, url) do
-    mediaproxy_url = url |> MediaProxy.url()
-
-    redirect(conn, external: mediaproxy_url)
+    handle_video_preview(conn, url)
   end
 
   defp handle_preview(content_type, conn, _url) do
@@ -96,6 +94,19 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
              url,
              %{max_width: thumbnail_max_width, max_height: thumbnail_max_height, quality: quality}
            ) do
+      conn
+      |> put_resp_header("content-type", "image/jpeg")
+      |> put_resp_header("content-disposition", "inline; filename=\"preview.jpg\"")
+      |> send_resp(200, thumbnail_binary)
+    else
+      _ ->
+        send_resp(conn, :failed_dependency, "Can't handle preview.")
+    end
+  end
+
+  defp handle_video_preview(conn, url) do
+    with {:ok, thumbnail_binary} <-
+           MediaHelper.video_framegrab(url) do
       conn
       |> put_resp_header("content-type", "image/jpeg")
       |> put_resp_header("content-disposition", "inline; filename=\"preview.jpg\"")

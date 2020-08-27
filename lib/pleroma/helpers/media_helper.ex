@@ -37,6 +37,25 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   defp prepare_image_resize_args(_), do: {:error, :missing_options}
 
+  def video_framegrab(url) do
+    with executable when is_binary(executable) <- System.find_executable("ffmpeg"),
+         args = [
+           "-i", "-",
+           "-vframes", "1",
+           "-f", "mjpeg",
+           "-loglevel", "error",
+           "-"
+         ],
+         url = Pleroma.Web.MediaProxy.url(url),
+         {:ok, env} <- Pleroma.HTTP.get(url),
+         {:ok, fifo_path} <- mkfifo() do
+      run_fifo(fifo_path, env, executable, args)
+    else
+      nil -> {:error, {:ffmpeg, :command_not_found}}
+      {:error, _} = error -> error
+    end
+  end
+
   defp run_fifo(fifo_path, env, executable, args) do
     args = List.flatten([fifo_path, args])
     pid = Port.open({:spawn_executable, executable}, [:use_stdio, :stream, :exit_status, :binary, args: args])
