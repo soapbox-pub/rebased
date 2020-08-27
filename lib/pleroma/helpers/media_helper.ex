@@ -43,11 +43,12 @@ defmodule Pleroma.Helpers.MediaHelper do
          {:ok, env} <- Pleroma.HTTP.get(url),
          {:ok, fifo_path} <- mkfifo(),
          args = [
+           "-y",
            "-i", fifo_path,
            "-vframes", "1",
            "-f", "mjpeg",
            "-loglevel", "error",
-           "-"
+           "pipe:"
          ] do
       run_fifo(fifo_path, env, executable, args)
     else
