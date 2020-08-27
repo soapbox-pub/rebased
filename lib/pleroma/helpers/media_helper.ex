@@ -16,6 +16,7 @@ defmodule Pleroma.Helpers.MediaHelper do
          {:ok, env} <- Pleroma.HTTP.get(url),
          {:ok, fifo_path} <- mkfifo()
     do
+      args = List.flatten([fifo_path, args])
       run_fifo(fifo_path, env, executable, args)
     else
       nil -> {:error, {:convert, :command_not_found}}
@@ -58,12 +59,6 @@ defmodule Pleroma.Helpers.MediaHelper do
   end
 
   defp run_fifo(fifo_path, env, executable, args) do
-    args =
-      if _executable = System.find_executable("convert") do
-        List.flatten([fifo_path, args])
-      else
-        args
-      end
     pid = Port.open({:spawn_executable, executable}, [:use_stdio, :stream, :exit_status, :binary, args: args])
     fifo = Port.open(to_charlist(fifo_path), [:eof, :binary, :stream, :out])
     true = Port.command(fifo, env.body)
