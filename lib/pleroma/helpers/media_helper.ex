@@ -39,16 +39,16 @@ defmodule Pleroma.Helpers.MediaHelper do
 
   def video_framegrab(url) do
     with executable when is_binary(executable) <- System.find_executable("ffmpeg"),
+         url = Pleroma.Web.MediaProxy.url(url),
+         {:ok, env} <- Pleroma.HTTP.get(url),
+         {:ok, fifo_path} <- mkfifo(),
          args = [
-           "-i", "-",
+           "-i", fifo_path,
            "-vframes", "1",
            "-f", "mjpeg",
            "-loglevel", "error",
            "-"
-         ],
-         url = Pleroma.Web.MediaProxy.url(url),
-         {:ok, env} <- Pleroma.HTTP.get(url),
-         {:ok, fifo_path} <- mkfifo() do
+         ] do
       run_fifo(fifo_path, env, executable, args)
     else
       nil -> {:error, {:ffmpeg, :command_not_found}}
@@ -57,7 +57,12 @@ defmodule Pleroma.Helpers.MediaHelper do
   end
 
   defp run_fifo(fifo_path, env, executable, args) do
-    args = List.flatten([fifo_path, args])
+    args =
+      if _executable = System.find_executable("convert") do
+        List.flatten([fifo_path, args])
+      else
+        args
+      end
     pid = Port.open({:spawn_executable, executable}, [:use_stdio, :stream, :exit_status, :binary, args: args])
     fifo = Port.open(to_charlist(fifo_path), [:eof, :binary, :stream, :out])
     true = Port.command(fifo, env.body)
